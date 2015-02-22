@@ -1,0 +1,92 @@
+.progNotesView
+	display flex
+	flex-direction column
+
+	> .toolbar
+		border-bottom 2px solid sidebar-borders
+
+		padding 20px
+
+		> .btn
+			margin-right 15px
+
+			> .fa
+				padding-right 8px
+
+		> .popover
+			max-width none
+
+			.popover-content
+				> textarea
+					width 500px
+					height 300px
+
+				> .buttonBar
+					padding 10px 0 0
+
+					text-align right
+
+					> .btn
+						margin-left 5px
+
+	> .progNotes
+		flex 1
+		overflow auto
+
+		padding 10px 20px
+
+		> .progNote
+			padding-bottom 30px
+
+			> .header
+				display flex
+
+				border-bottom 2px solid sidebar-borders
+
+				padding 5px 0
+
+				font-size 24px
+				font-weight 300
+
+				> .timestamp
+					flex 1
+
+			&.basic
+				> .notes
+					padding 20px 0
+
+					> br
+						display block
+
+			&.full
+				> .sections
+					> .section
+						> .name
+							font-size 24px
+							font-weight 400
+
+						&.basic
+							> .empty
+								padding 0 2px
+
+								color #888
+
+						&.plan
+							> .empty
+								padding 0 2px
+
+								color #888
+
+							> .targets
+								> .target
+									> .name
+										margin 10px 0 5px
+
+										color #666
+										font-size 16px
+										font-weight 600
+
+									> .empty
+										padding 0 2px
+
+										color #888

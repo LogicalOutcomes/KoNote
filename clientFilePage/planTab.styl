@@ -1,0 +1,140 @@
+.planView
+	display flex
+
+	> .targetList
+		flex 1
+		overflow auto
+
+		padding 30px 30px
+
+		> .empty
+			text-align center
+
+			> .message
+				padding 100px 80px 50px
+
+				color #888
+				font-size 16px
+
+			> .btn > .fa
+				padding-right 10px
+
+		> .toolbar
+			width 100%
+
+			> .addSection
+				float right
+
+			> .btn > .fa
+				padding-right 8px
+
+		> .sections
+			> .section
+				padding-top 15px
+
+				&:last-child
+					padding-bottom 15px
+
+				> .sectionHeader
+					display flex
+					align-items center
+					justify-content space-between
+
+					border-color sidebar-borders
+					border-style none none solid
+					border-width 3px
+
+					> .sectionName
+						padding 5px 0
+
+						font-size 24px
+						font-weight 300
+
+					> .btn > .fa
+						padding-right 6px
+
+				> .noTargets
+					padding 25px 0
+
+					color #888
+					text-align center
+
+				> .targets
+					> .target
+						margin-top 20px
+
+						border 1px solid sidebar-borders
+						border-radius 5px
+
+						padding 15px 20px
+
+						transition background 0.15s linear
+
+						&.active
+							background #f0f0f0
+
+						> .nameContainer, > .notesContainer
+							> div
+								cursor pointer
+
+								&:hover
+									background sidebar-bg
+
+							> .field
+								width 100%
+
+								padding 2px 5px
+
+						> .nameContainer
+							padding-bottom 15px
+
+							font-weight 700
+
+	> .targetDetail
+		overflow auto
+		flex 1
+
+		border-left 2px solid sidebar-borders
+
+		padding 0 30px
+
+		> .noSelection
+			padding 100px 0
+
+			color #888
+			text-align center
+
+		> .history
+			padding 20px 0
+
+			> .header
+				font-size 24px
+				font-weight 300
+
+			> .noRevisions
+				padding 20px
+
+				color #888
+				text-align center
+
+			> .revisions
+				> .revision
+					padding 25px 0
+
+					border-bottom 1px solid sidebar-borders
+
+					&:last-child
+						border-bottom none
+
+					> .nameLine
+						display flex
+
+						padding-bottom 20px
+
+						> .name
+							flex 1
+
+							font-weight 700
+
+						> .tag
+							color #888

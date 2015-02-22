@@ -1,0 +1,94 @@
+#container > .clientSelectionPage
+	display flex
+	flex-direction column
+
+	height 100%
+
+	// header animation durations
+	duration-to-small = 0.2s
+	duration-to-big1 = 0.5s
+	duration-to-big2 = 0.1s
+	duration-to-big3 = 0.3s
+
+	> .header
+		display flex
+		flex-direction column
+		align-items center
+		justify-content center
+
+		height 100%
+
+		border-bottom-color hsla(0, 0%, 90%, 0.0)
+		border-bottom-style solid
+		border-bottom-width 1px
+
+		padding 0 20px
+
+		transition-property height, border-bottom-color
+		transition-timing-function ease
+		transition-duration duration-to-big1
+		transition-delay 0
+
+		.logoContainer
+			overflow hidden
+
+			padding 10px
+
+			transition all duration-to-big1 ease
+
+			img, .subtitle
+				transition opacity duration-to-big3 linear (duration-to-big1 + duration-to-big2)
+				opacity 1
+
+			.subtitle
+				font-size 36px
+				text-align center
+
+		&.small
+			height 100px
+
+			border-bottom-color hsla(0, 0%, 90%, 1.0)
+
+			transition-property height, border-bottom-color
+			transition-timing-function ease
+			transition-duration duration-to-small
+			transition-delay 0
+
+			.logoContainer
+				height 0
+
+				padding 0
+
+				transition all duration-to-small ease
+
+				img, .subtitle
+					transition opacity duration-to-small step-start
+					opacity 0
+
+		.searchBoxContainer
+			width 500px
+			max-width 100%
+
+			padding 30px
+
+	> .smallHeaderLogo
+		position absolute
+		left 30px
+		top 30px
+
+		img
+			max-height 40px
+
+	> .results
+		overflow auto
+		flex 1
+
+		> .result
+			padding 20px 25px
+
+			cursor pointer
+			font-weight 600
+
+			&:hover 
+				color white
+				background hsl(200, 80%, 80%)

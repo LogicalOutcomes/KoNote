@@ -1,0 +1,10 @@
+{
+	"clientId": "client1",
+	"clientName": {
+		"first": "John",
+		"last": "Smith"
+	},
+	"plan": {
+		"sections": []
+	}
+}

@@ -1,0 +1,68 @@
+logo-maroon = #892652
+logo-teal = #70b0d3
+logo-light-blue = #83c4ea
+sidebar-bg = hsl(hue(logo-light-blue), 35%, 94%)
+sidebar-borders = darken(sidebar-bg, 10%)
+
+#container > .clientFilePage
+	display flex
+
+	height 100%
+
+	> .sidebar
+		display flex
+		flex-direction column
+
+		width 250px
+
+		border-right 2px solid sidebar-borders
+
+		background sidebar-bg
+		color hsl(hue(sidebar-bg), 15%, 35%)
+
+		> img
+			margin 0 auto
+
+			max-width 150px
+
+			padding 15px 20px 5px
+
+		> .logoSubtitle
+			color hsl(202, 15%, 55%)
+			font-size 20px
+			text-align center
+
+		> .clientName
+			display flex
+			align-items center
+
+			width 100%
+
+			padding 21px 20px 20px
+
+			font-size 24px
+
+		> .tabStrip
+			width 100%
+
+			> .tab
+				padding 15px 20px
+
+				cursor pointer
+				font-weight 600
+
+				&:hover
+					background darken(sidebar-bg, 5%)
+
+				&.active
+					background darken(sidebar-bg, 5%)
+
+				> .fa
+					padding-right 5px
+
+	> .view
+		flex 1
+		overflow auto
+
+	@require 'planTab'
+	@require 'progNotesTab'
