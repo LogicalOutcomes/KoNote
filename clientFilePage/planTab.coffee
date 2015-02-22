@@ -310,6 +310,7 @@ load = (win) ->
 					"target-#{@props.key}"
 					if @props.isActive then 'active' else ''
 				].join ' '
+				onClick: @_onTargetClick
 			},
 				R.div({className: 'nameContainer'},
 					R.input({
@@ -341,6 +342,9 @@ load = (win) ->
 		_updateField: (fieldName, event) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
+		_onTargetClick: (event) ->
+			if event.target.classList.contains 'target'
+				@refs.nameField.getDOMNode().focus()
 
 	return {PlanView}
 
