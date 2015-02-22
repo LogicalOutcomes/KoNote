@@ -33,7 +33,7 @@
     "underscore": "^1.7.0"
   },
   "scripts": {
-    "start": "node_modules/nw/nwjs/nw .",
-    "test": "node_modules/.bin/mocha --compilers coffee:coffee-script/register --ui tdd --recursive --bail"
+    "start": "nw .",
+    "test": "mocha --compilers coffee:coffee-script/register --ui tdd --recursive --bail"
   }
 }
