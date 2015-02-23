@@ -11,9 +11,15 @@ load = (win) ->
 	R = React.DOM
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
+		getInitialState: ->
+			return {
+				selectedItemType: null
+				selectedItem: null
+			}
 		componentDidMount: ->
 			quickNoteToggle = $(@refs.quickNoteToggle.getDOMNode())
 			quickNoteToggle.data 'isVisible', false
@@ -48,102 +54,23 @@ load = (win) ->
 						"Add quick note"
 					)
 				)
-				R.div({className: 'progNotes'},
-					(@props.progressNotes.reverse().map (progNote) =>
-						switch progNote.get('type')
-							when 'basic'
-								R.div({className: 'basic progNote', key: progNote.get('id')},
-									R.div({className: 'header'},
-										R.div({className: 'timestamp'},
-											Moment(progNote.get('timestamp'))
-											.format 'MMMM D, YYYY [at] HH:mm'
-										)
-										R.div({className: 'author'},
-											' by '
-											progNote.get('author')
-										)
-									)
-									R.div({className: 'notes'},
-										renderLineBreaks progNote.get('notes')
-									)
-								)
-							when 'full'
-								R.div({className: 'full progNote', key: progNote.get('id')},
-									R.div({className: 'header'},
-										R.div({className: 'timestamp'},
-											Moment(progNote.get('timestamp'))
-											.format 'MMMM D, YYYY [at] HH:mm'
-										)
-										R.div({className: 'author'},
-											' by '
-											progNote.get('author')
-										)
-									)
-									R.div({className: 'sections'},
-										(progNote.get('sections').map (section) =>
-											switch section.get('type')
-												when 'basic'
-													R.div({className: 'basic section', key: section.get('id')},
-														R.h1({className: 'name'}, section.get('name'))
-														R.div({className: "empty #{showWhen section.get('notes').length is 0}"},
-															'(blank)'
-														)
-														R.div({className: 'notes'},
-															renderLineBreaks section.get('notes')
-														)
-														R.div({className: 'metrics'},
-															(section.get('metrics').map (metric) =>
-																MetricWidget({
-																	isEditable: false
-																	key: metric.get('id')
-																	name: metric.get('name')
-																	definition: metric.get('definition')
-																	value: metric.get('value')
-																})
-															).toJS()...
-														)
-													)
-												when 'plan'
-													R.div({className: 'plan section', key: section.get('id')},
-														R.h1({className: 'name'},
-															section.get('name')
-														)
-														R.div({className: "empty #{showWhen section.get('targets') is ''}"},
-															"This section is empty because the client has no plan targets."
-														)
-														R.div({className: 'targets'},
-															(section.get('targets').map (target) =>
-																R.div({className: 'target', key: target.get('id')},
-																	R.h2({className: 'name'},
-																		target.get('name')
-																	)
-																	R.div({className: "empty #{showWhen target.get('notes') is ''}"},
-																		'(blank)'
-																	)
-																	R.div({className: 'notes'},
-																		renderLineBreaks target.get('notes')
-																	)
-																	R.div({className: 'metrics'},
-																		(target.get('metrics').map (metric) =>
-																			MetricWidget({
-																				isEditable: false
-																				key: metric.get('id')
-																				name: metric.get('name')
-																				definition: metric.get('definition')
-																				value: metric.get('value')
-																			})
-																		).toJS()...
-																	)
-																)
-															).toJS()...
-														)
-													)
-										).toJS()...
-									)
-								)
-							else
-								throw new Error "unknown prognote type: #{progNote.get('type')}"
-					).toJS()...
+				R.div({className: 'panes'},
+					R.div({className: 'progNotes'},
+						(@props.progressNotes.reverse().map (progNote) =>
+							switch progNote.get('type')
+								when 'basic'
+									BasicProgNoteView({progNote, key: progNote.get('id')})
+								when 'full'
+									FullProgNoteView({progNote, key: progNote.get('id')})
+								else
+									throw new Error "unknown prognote type: #{progNote.get('type')}"
+						).toJS()...
+					)
+					ProgNoteDetailView({
+						itemType: @state.selectedItemType
+						item: @state.selectedItem
+						progNotes: @props.progNotes
+					})
 				)
 			)
 		_openNewProgNote: ->
@@ -187,6 +114,101 @@ load = (win) ->
 
 				@_toggleQuickNotePopover()
 				@props.unregisterTask 'quickNote-save'
+
+	# These are called 'quick notes' in the UI
+	BasicProgNoteView = React.createFactory React.createClass
+		render: ->
+			R.div({className: 'basic progNote'},
+				R.div({className: 'header'},
+					R.div({className: 'timestamp'},
+						Moment(@props.progNote.get('timestamp'))
+						.format 'MMMM D, YYYY [at] HH:mm'
+					)
+					R.div({className: 'author'},
+						' by '
+						@props.progNote.get('author')
+					)
+				)
+				R.div({className: 'notes'},
+					renderLineBreaks @props.progNote.get('notes')
+				)
+			)
+
+	FullProgNoteView = React.createFactory React.createClass
+		render: ->
+			R.div({className: 'full progNote'},
+				R.div({className: 'header'},
+					R.div({className: 'timestamp'},
+						Moment(@props.progNote.get('timestamp'))
+						.format 'MMMM D, YYYY [at] HH:mm'
+					)
+					R.div({className: 'author'},
+						' by '
+						@props.progNote.get('author')
+					)
+				)
+				R.div({className: 'sections'},
+					(@props.progNote.get('sections').map (section) =>
+						switch section.get('type')
+							when 'basic'
+								R.div({className: 'basic section', key: section.get('id')},
+									R.h1({className: 'name'}, section.get('name'))
+									R.div({className: "empty #{showWhen section.get('notes').length is 0}"},
+										'(blank)'
+									)
+									R.div({className: 'notes'},
+										renderLineBreaks section.get('notes')
+									)
+									R.div({className: 'metrics'},
+										(section.get('metrics').map (metric) =>
+											MetricWidget({
+												isEditable: false
+												key: metric.get('id')
+												name: metric.get('name')
+												definition: metric.get('definition')
+												value: metric.get('value')
+											})
+										).toJS()...
+									)
+								)
+							when 'plan'
+								R.div({className: 'plan section', key: section.get('id')},
+									R.h1({className: 'name'},
+										section.get('name')
+									)
+									R.div({className: "empty #{showWhen section.get('targets') is ''}"},
+										"This section is empty because the client has no plan targets."
+									)
+									R.div({className: 'targets'},
+										(section.get('targets').map (target) =>
+											R.div({className: 'target', key: target.get('id')},
+												R.h2({className: 'name'},
+													target.get('name')
+												)
+												R.div({className: "empty #{showWhen target.get('notes') is ''}"},
+													'(blank)'
+												)
+												R.div({className: 'notes'},
+													renderLineBreaks target.get('notes')
+												)
+												R.div({className: 'metrics'},
+													(target.get('metrics').map (metric) =>
+														MetricWidget({
+															isEditable: false
+															key: metric.get('id')
+															name: metric.get('name')
+															definition: metric.get('definition')
+															value: metric.get('value')
+														})
+													).toJS()...
+												)
+											)
+										).toJS()...
+									)
+								)
+					).toJS()...
+				)
+			)
 
 	return {ProgNotesView}
 

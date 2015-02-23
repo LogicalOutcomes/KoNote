@@ -29,70 +29,82 @@
 					> .btn
 						margin-left 5px
 
-	> .progNotes
+	> .panes
+		display flex
 		flex 1
-		overflow auto
 
-		padding 10px 20px
+		> .progNotes
+			flex 50%
+			overflow auto
 
-		> .progNote
-			padding-bottom 30px
+			padding 10px 20px
 
-			> .header
-				display flex
+			> .progNote
+				flex 1
+				overflow auto
 
-				border-bottom 2px solid sidebar-borders
+				padding-bottom 30px
 
-				padding 5px 0
+				> .header
+					display flex
 
-				font-size 24px
-				font-weight 300
+					border-bottom 2px solid sidebar-borders
 
-				> .timestamp
-					flex 1
+					padding 5px 0
 
-			&.basic
-				> .notes
-					padding 20px 0
+					font-size 24px
+					font-weight 300
 
-					> br
-						display block
+					> .timestamp
+						flex 1
 
-			&.full
-				> .sections
-					> .section
-						> .name
-							font-size 24px
-							font-weight 400
+				&.basic
+					> .notes
+						padding 20px 0
 
-						&.basic
-							> .empty
-								padding 0 2px
+						> br
+							display block
 
-								color #888
+				&.full
+					> .sections
+						> .section
+							> .name
+								font-size 24px
+								font-weight 400
 
-							> .metrics
-								padding-top 5px
+							&.basic
+								> .empty
+									padding 0 2px
 
-						&.plan
-							> .empty
-								padding 0 2px
+									color #888
 
-								color #888
+								> .metrics
+									padding-top 5px
 
-							> .targets
-								> .target
-									> .name
-										margin 10px 0 5px
+							&.plan
+								> .empty
+									padding 0 2px
 
-										color #666
-										font-size 16px
-										font-weight 600
+									color #888
 
-									> .empty
-										padding 0 2px
+								> .targets
+									> .target
+										> .name
+											margin 15px 0 5px
 
-										color #888
+											color #666
+											font-size 16px
+											font-weight 600
 
-									> .metrics
-										padding-top 5px
+										> .empty
+											padding 0 2px
+
+											color #888
+
+										> .metrics
+											padding-top 5px
+
+		> .progNoteDetailView
+			flex 50%
+
+			border-left 2px solid sidebar-borders

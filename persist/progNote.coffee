@@ -14,7 +14,7 @@ ObjectUtils = require './object'
 schema = [
 	Joi.object().keys({
 		id: IdSchema
-		type: 'basic'
+		type: 'basic' # aka "Quick Notes"
 		clientId: IdSchema
 		author: Joi.string() # TODO
 		timestamp: Joi.date().iso().raw() # TODO

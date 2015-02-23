@@ -151,11 +151,11 @@ load = (win, {clientId}) ->
 								switch section.get('type')
 									when 'basic'
 										section.get('metrics').forEach (metric) =>
-											loadMetric metric.id
+											loadMetric metric.get('id')
 									when 'plan'
 										section.get('targets').forEach (target) =>
 											target.get('metrics').forEach (metric) =>
-												loadMetric metric.id
+												loadMetric metric.get('id')
 									else
 										throw new Error "
 											unknown prog note section type:
