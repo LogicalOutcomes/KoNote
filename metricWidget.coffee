@@ -5,13 +5,20 @@ load = (win) ->
 
 	MetricWidget = React.createFactory React.createClass
 		render: ->
+			isEditable = @props.isEditable isnt false
+
 			return R.div({className: 'metricWidget'},
 				(if @props.value?
 					R.input({
 						className: 'value circle'
 						value: @props.value
 						onChange: @_onChange
-						placeholder: '__'
+						placeholder: (if isEditable
+							'__'
+						else
+							'--'
+						)
+						disabled: isEditable is false
 					})
 				else
 					R.div({className: 'icon circle'},

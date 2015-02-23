@@ -10,6 +10,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	MetricWidget = require('../metricWidget').load(win)
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
@@ -90,7 +91,17 @@ load = (win) ->
 														R.div({className: 'notes'},
 															renderLineBreaks section.get('notes')
 														)
-														# TODO metrics
+														R.div({className: 'metrics'},
+															(section.get('metrics').map (metric) =>
+																MetricWidget({
+																	isEditable: false
+																	key: metric.get('id')
+																	name: metric.get('name')
+																	definition: metric.get('definition')
+																	value: metric.get('value')
+																})
+															).toJS()...
+														)
 													)
 												when 'plan'
 													R.div({className: 'plan section', key: section.get('id')},
@@ -112,7 +123,17 @@ load = (win) ->
 																	R.div({className: 'notes'},
 																		renderLineBreaks target.get('notes')
 																	)
-																	# TODO metrics
+																	R.div({className: 'metrics'},
+																		(target.get('metrics').map (metric) =>
+																			MetricWidget({
+																				isEditable: false
+																				key: metric.get('id')
+																				name: metric.get('name')
+																				definition: metric.get('definition')
+																				value: metric.get('value')
+																			})
+																		).toJS()...
+																	)
 																)
 															).toJS()...
 														)

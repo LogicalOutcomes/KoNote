@@ -32,7 +32,7 @@ load = (win, {clientId}) ->
 				id: 'section1'
 				type: 'basic'
 				name: 'Subjective'
-				metricIds: []
+				metricIds: ['score']
 			}
 			{
 				id: 'section2'
