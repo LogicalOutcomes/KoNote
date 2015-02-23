@@ -36,6 +36,8 @@ schema = [
 					metrics: Joi.array().includes(
 						Joi.object().keys({
 							id: IdSchema
+							name: Joi.string()
+							definition: Joi.string()
 							value: Joi.string()
 						})
 					)
@@ -52,6 +54,8 @@ schema = [
 							metrics: Joi.array().includes(
 								Joi.object().keys({
 									id: IdSchema
+									name: Joi.string()
+									definition: Joi.string()
 									value: Joi.string()
 								})
 							)

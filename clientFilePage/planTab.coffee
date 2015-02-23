@@ -13,6 +13,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	MetricWidget = require('../metricWidget').load(win)
 	{FaIcon, renderLineBreaks, showWhen} = require('../utils').load(win)
 
 	PlanView = React.createFactory React.createClass
@@ -95,6 +96,7 @@ load = (win) ->
 									(section.get('targetIds').map (targetId) =>
 										PlanTarget({
 											currentRevision: @state.currentTargetRevisionsById.get targetId
+											metricsById: @props.metricsById
 											key: targetId
 											isActive: targetId is @state.selectedTargetId
 											onTargetUpdate: @_updateTarget.bind null, targetId
@@ -333,9 +335,13 @@ load = (win) ->
 				)
 				R.div({className: 'metrics'},
 					(currentRevision.get('metricIds').map (metricId) =>
-						R.div({className: 'metric'},
-							metricId
-						)
+						metric = @props.metricsById.get(metricId)
+
+						MetricWidget({
+							name: metric.get('name')
+							value: metric.get('value')
+							key: metricId
+						})
 					).toJS()...
 				)
 			)
@@ -343,7 +349,7 @@ load = (win) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
 		_onTargetClick: (event) ->
-			if event.target.classList.contains 'target'
+			unless event.target.classList.contains 'field'
 				@refs.nameField.getDOMNode().focus()
 
 	return {PlanView}

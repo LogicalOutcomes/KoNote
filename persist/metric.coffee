@@ -1,14 +1,18 @@
+_ = require 'underscore'
+Fs = require 'fs'
 Joi = require 'joi'
+Mkdirp = require 'mkdirp'
 Path = require 'path'
 
 ObjectHistory = require './objectHistory'
 
-{IdSchema} = require './utils'
+{IdSchema, ObjectNotFoundError, PathSafeString} = require './utils'
 
 revisionSchema = Joi.object().keys({
 	id: IdSchema
+	revisionId: IdSchema
 	timestamp: Joi.date().iso().raw() # TODO should be done through crypto
-	name: Joi.string()
+	name: PathSafeString
 	definition: Joi.string()
 })
 
@@ -28,16 +32,52 @@ _getObjectDirectory = (metricId, cb) ->
 
 		cb null, Path.join(metricsDir, metricFileName)
 
-readRevisions = (metricId, cb) ->
+ensureObjectDirectory = (metric, cb) ->
+	dirName = [
+		metric.get('name')
+		metric.get('id')
+	].join '.'
+
+	expectedPath = Path.join 'data', 'metrics', dirName
+
+	_getObjectDirectory metric.get('id'), (err, actualPath) ->
+		if err
+			if err instanceof ObjectNotFoundError
+				# New object, just create the dir and return
+				Mkdirp expectedPath, (err) ->
+					if err
+						cb err
+						return
+
+					cb null, expectedPath
+				return
+
+			cb err
+			return
+
+		if actualPath is expectedPath
+			# Everything's good!
+			cb null, actualPath
+			return
+
+		# It looks like the metric name changed
+		Fs.rename actualPath, expectedPath, (err) ->
+			if err
+				cb err
+				return
+
+			cb null, expectedPath
+
+readLatestRevisions = (metricId, limit, cb) ->
 	_getObjectDirectory metricId, (err, objDir) ->
 		if err
 			cb err
 			return
 
-		ObjectHistory.readRevisions objDir, revisionSchema, cb
+		ObjectHistory.readLatestRevisions objDir, revisionSchema, limit, cb
 
 createRevision = (newRevision, cb) ->
-	_getObjectDirectory newRevision.get('id'), (err, objDir) ->
+	ensureObjectDirectory newRevision, (err, objDir) ->
 		if err
 			cb err
 			return
@@ -50,4 +90,4 @@ createRevision = (newRevision, cb) ->
 			global.EventBus.trigger 'newMetricRevision', result
 			cb null, result
 
-module.exports = {readRevisions, createRevision}
+module.exports = {readLatestRevisions, createRevision}

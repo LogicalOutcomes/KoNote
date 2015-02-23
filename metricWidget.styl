@@ -1,0 +1,42 @@
+.metricWidget
+	display flex
+	align-items center
+
+	> .icon.circle
+		diameter = 30px
+
+		margin-right 8px
+
+		width diameter
+		height diameter
+
+		border-radius diameter // needs to be > (width/2)
+
+		background hsl(202, 95%, 74%)
+		color white
+		font-size 14px
+		font-weight 700
+		line-height diameter
+		text-align center
+
+	> .value.circle
+		diameter = 35px
+
+		margin-right 8px
+
+		width diameter
+		height diameter
+
+		border 2px solid hsl(202, 95%, 74%)
+		border-radius diameter // needs to be > (width/2)
+		outline none
+
+		color #555
+		font-size 16px
+		font-weight 700
+		line-height diameter
+		text-align center
+
+	> .name
+		color #555
+		font-weight 700

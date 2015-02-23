@@ -3,6 +3,7 @@
 # TODO New plan: create new prognote object/file, trigger update via event bus
 
 _ = require 'underscore'
+Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
 
@@ -17,6 +18,7 @@ load = (win, {clientId}) ->
 	R = React.DOM
 	Gui = win.require 'nw.gui'
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	MetricWidget = require('../metricWidget').load(win)
 	Spinner = require('../spinner').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
 
@@ -52,66 +54,142 @@ load = (win, {clientId}) ->
 		]
 	}
 
-	createProgNoteFromTemplate = (template, clientFile, planTargetsById, metricsById) ->
-		return Imm.fromJS {
-			type: 'full'
-			author: 'xxx' # TODO
-			clientId: clientFile.get('clientId')
-			sections: template.get('sections').map (section) =>
-				switch section.get('type')
-					when 'basic'
-						return Imm.fromJS {
-							type: 'basic'
-							id: section.get 'id'
-							name: section.get 'name'
-							notes: ''
-							metrics: section.get('metricIds').map (metricId) =>
-								# TODO how is this going to be loaded async'ly?
-								m = metricsById[metricId]
-								return Imm.fromJS {
-									id: m.get('id')
-									name: m.get('name')
-									definition: m.get('definition')
-									value: ''
-								}
-						}
-					when 'plan'
-						return Imm.fromJS {
-							type: 'plan'
-							id: section.get 'id'
-							name: section.get 'name'
-							targets: clientFile.getIn(['plan', 'sections']).flatMap (section) =>
-								section.get('targetIds').map (targetId) =>
-									target = planTargetsById.get(targetId)
-									lastRev = target.get('revisions').last()
-									return Imm.fromJS {
-										id: target.get 'id'
-										name: lastRev.get 'name'
-										notes: ''
-										metrics: lastRev.get('metricIds').map (metricId) =>
-											m = metricsById.get(metricId)
-											return Imm.fromJS {
-												id: m.get('id')
-												name: m.get('name')
-												definition: m.get('definition')
-												value: ''
-											}
-									}
-						}
-		}
+	do ->
+		progNote = null
+		clientFile = null
 
-	process.nextTick ->
-		React.render new NewProgNotePage(), $('#container')[0]
+		init = ->
+			render()
+			loadData()
+
+		process.nextTick init
+
+		render = ->
+			unless progNote?
+				React.render Spinner({isOverlay: true}), $('#container')[0]
+				return
+
+			React.render new NewProgNotePage({
+				progNote
+				clientFile
+			}), $('#container')[0]
+
+		loadData = ->
+			template = myTemplate # TODO
+			planTargetsById = null
+			metricsById = null
+
+			Async.series [
+				(cb) =>
+					Persist.ClientFile.readLatestRevisions clientId, 1, (err, revisions) =>
+						if err
+							cb err
+							return
+
+						clientFile = revisions[0]
+						cb null
+				(cb) =>
+					Persist.PlanTarget.readClientFileTargets clientFile, (err, result) =>
+						if err
+							cb err
+							return
+
+						planTargetsById = result
+						cb null
+				(cb) =>
+					# Figure out which metrics we need to load
+					requiredMetricIds = Imm.Set()
+					.union template.get('sections').flatMap (section) =>
+						switch section.get('type')
+							when 'basic'
+								return section.get('metricIds')
+							when 'plan'
+								return []
+							else
+								throw new Error "unknown section type: #{section.get('type')}"
+					.union planTargetsById.valueSeq().flatMap (planTarget) =>
+						return planTarget.getIn ['revisions', 0, 'metricIds']
+
+					metricsById = Imm.Map()
+					Async.each requiredMetricIds.toArray(), (metricId, cb) =>
+						Persist.Metric.readLatestRevisions metricId, 1, (err, revisions) =>
+							if err
+								cb err
+								return
+
+							metricsById = metricsById.set metricId, revisions[0]
+							cb null
+					, cb
+			], (err) =>
+				if err
+					console.error err.stack
+					Bootbox.alert "An error occurred while loading the necessary files."
+					return
+
+				# Done loading data, we can generate the prognote now
+				progNote = createProgNoteFromTemplate(
+					template, clientFile, planTargetsById, metricsById
+				)
+
+				render()
+
+		createProgNoteFromTemplate = (template, clientFile, planTargetsById, metricsById) ->
+			return Imm.fromJS {
+				type: 'full'
+				author: 'xxx' # TODO
+				clientId: clientFile.get('clientId')
+				sections: template.get('sections').map (section) =>
+					switch section.get('type')
+						when 'basic'
+							return Imm.fromJS {
+								type: 'basic'
+								id: section.get 'id'
+								name: section.get 'name'
+								notes: ''
+								metrics: section.get('metricIds').map (metricId) =>
+									m = metricsById.get(metricId)
+									return Imm.fromJS {
+										id: m.get('id')
+										name: m.get('name')
+										definition: m.get('definition')
+										value: ''
+									}
+							}
+						when 'plan'
+							return Imm.fromJS {
+								type: 'plan'
+								id: section.get 'id'
+								name: section.get 'name'
+								targets: clientFile.getIn(['plan', 'sections']).flatMap (section) =>
+									section.get('targetIds').map (targetId) =>
+										target = planTargetsById.get(targetId)
+										lastRev = target.get('revisions').last()
+										return Imm.fromJS {
+											id: target.get 'id'
+											name: lastRev.get 'name'
+											notes: ''
+											metrics: lastRev.get('metricIds').map (metricId) =>
+												m = metricsById.get(metricId)
+												return Imm.fromJS {
+													id: m.get('id')
+													name: m.get('name')
+													definition: m.get('definition')
+													value: ''
+												}
+										}
+							}
+			}
 
 	NewProgNotePage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
-				clientFile: null
-				metricsById: Imm.Map()
-				progNote: null
+				progNote: @props.progNote
 				success: false
 			}
 		componentDidMount: ->
+			clientName = renderName @props.clientFile.get('clientName')
+			nwWin.title = "#{clientName}: Progress Note - KoNote"
+
 			nwWin.on 'close', (event) =>
 				# TODO
 				if @_hasChanges()
@@ -140,46 +218,9 @@ load = (win, {clientId}) ->
 					}
 				else
 					nwWin.close(true)
-
-			# Start loading stuff
-			Persist.ClientFile.readLatestRevisions clientId, 1, (err, revisions) =>
-				if err
-					console.error err.stack
-					Bootbox.alert "An error occurred while loading the client file"
-					return
-
-				clientFile = revisions[0]
-				@setState {clientFile}, =>
-					Persist.PlanTarget.readClientFileTargets clientFile, (err, planTargetsById) =>
-						if err
-							cb err
-							return
-
-						@setState {planTargetsById}, =>
-							@_onDataLoaded()
-			# TODO read metrics
-		_onDataLoaded: ->
-			# TODO check if metrics done
-
-			unless @state.clientFile?
-				return
-
-			# Done loading data, we can generate the prognote now
-			progNote = createProgNoteFromTemplate(
-				myTemplate, @state.clientFile, @state.planTargetsById, @state.metricsById
-			)
-			@setState {progNote}
 		_hasChanges: ->
 			# TODO
 		render: ->
-			unless @state.progNote?
-				return R.div({className: 'newProgNotePage'},
-					Spinner({isOverlay: true, isVisible: not @state.progNote?})
-				)
-
-			clientName = renderName @state.clientFile.get('clientName')
-			nwWin.title = "#{clientName}: Progress Note - KoNote"
-
 			return R.div({className: 'newProgNotePage'},
 				R.div({className: 'sections'},
 					(@state.progNote.get('sections').map (section) =>
@@ -191,7 +232,19 @@ load = (win, {clientId}) ->
 										value: section.get('notes')
 										onChange: @_updateBasicSectionNotes.bind null, section.get('id')
 									})
-									# TODO metrics
+									R.div({className: 'metrics'},
+										(section.get('metrics').map (metric) =>
+											MetricWidget({
+												key: metric.get('id')
+												name: metric.get('name')
+												definition: metric.get('definition')
+												value: metric.get('value')
+												onChange: @_updateBasicSectionMetric.bind(
+													null, section.get('id'), metric.get('id')
+												)
+											})
+										).toJS()...
+									)
 								)
 							when 'plan'
 								R.div({className: 'plan section', key: section.get('id')},
@@ -209,9 +262,24 @@ load = (win, {clientId}) ->
 												)
 												ExpandingTextArea({
 													value: target.get('notes')
-													onChange: @_updatePlanSectionNotes.bind null, section.get('id'), target.get('id')
+													onChange: @_updatePlanSectionNotes.bind(
+														null, section.get('id'), target.get('id')
+													)
 												})
-												# TODO metrics
+												R.div({className: 'metrics'},
+													(target.get('metrics').map (metric) =>
+														MetricWidget({
+															key: metric.get('id')
+															name: metric.get('name')
+															definition: metric.get('definition')
+															value: metric.get('value')
+															onChange: @_updatePlanSectionMetric.bind(
+																null, section.get('id'),
+																target.get('id'), metric.get('id')
+															)
+														})
+													).toJS()...
+												)
 											)
 										).toJS()...
 									)
@@ -231,11 +299,26 @@ load = (win, {clientId}) ->
 		_getSectionIndex: (sectionId) ->
 			return @state.progNote.get('sections').findIndex (s) =>
 				return s.get('id') is sectionId
+		_getTargetIndex: (sectionIndex, targetId) ->
+			return @state.progNote.getIn(['sections', sectionIndex, 'targets']).findIndex (t) =>
+				return t.get('id') is targetId
 		_updateBasicSectionNotes: (sectionId, event) ->
 			sectionIndex = @_getSectionIndex sectionId
 
 			@setState {
 				progNote: @state.progNote.setIn ['sections', sectionIndex, 'notes'], event.target.value
+			}
+		_updateBasicSectionMetric: (sectionId, metricId, newValue) ->
+			sectionIndex = @_getSectionIndex sectionId
+
+			metricIndex = @state.progNote.getIn(['sections', sectionIndex, 'metrics']).findIndex (m) =>
+				return m.get('id') is metricId
+
+			@setState {
+				progNote: @state.progNote.setIn(
+					['sections', sectionIndex, 'metrics', metricIndex, 'value']
+					newValue
+				)
 			}
 		_updatePlanSectionNotes: (sectionId, targetId, event) ->
 			sectionIndex = @_getSectionIndex sectionId
@@ -247,6 +330,21 @@ load = (win, {clientId}) ->
 				progNote: @state.progNote.setIn(
 					['sections', sectionIndex, 'targets', targetIndex, 'notes'],
 					event.target.value
+				)
+			}
+		_updatePlanSectionMetric: (sectionId, targetId, metricId, newValue) ->
+			sectionIndex = @_getSectionIndex sectionId
+			targetIndex = @_getTargetIndex sectionIndex, targetId
+
+			metricIndex = @state.progNote.getIn(
+				['sections', sectionIndex, 'targets', targetIndex, 'metrics']
+			).findIndex (m) =>
+				return m.get('id') is metricId
+
+			@setState {
+				progNote: @state.progNote.setIn(
+					['sections', sectionIndex, 'targets', targetIndex, 'metrics', metricIndex, 'value']
+					newValue
 				)
 			}
 		_save: ->

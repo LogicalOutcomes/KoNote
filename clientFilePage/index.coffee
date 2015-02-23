@@ -129,8 +129,7 @@ load = (win, {clientId}) ->
 
 					unregisterTask "readPlanTargets", true
 
-				# TODO remove this
-				setTimeout (-> unregisterTask 'readClientFile', true), 500
+				unregisterTask 'readClientFile', true
 
 			registerTask 'readProgressNotes', true
 			Persist.ProgNote.readAll clientId, (err, results) =>
@@ -177,13 +176,14 @@ load = (win, {clientId}) ->
 
 			registerTask taskId, true
 			Persist.Metric.readLatestRevisions metricId, 1, (err, revisions) =>
-				unregisterTask taskId, true
-
 				if err
+					unregisterTask taskId, true
 					console.error err.stack
 					return
 
 				metricsById = metricsById.set metricId, revisions[0]
+
+				unregisterTask taskId, true
 
 		updateClientFile = (context, newValue) ->
 			clientFile = clientFile.setIn context, newValue
@@ -354,7 +354,7 @@ load = (win, {clientId}) ->
 					})
 					SidebarTab({
 						name: "Metrics"
-						icon: 'bar-chart'
+						icon: 'line-chart'
 						isActive: activeTabId is 'metrics'
 						onClick: @props.onTabChange.bind null, 'metrics'
 					})
