@@ -24,35 +24,7 @@ load = (win, {clientId}) ->
 
 	nwWin = Gui.Window.get(win)
 
-	myTemplate = Imm.fromJS {
-		id: 'fake-template-lolololol'
-		name: 'Fake Template'
-		sections: [
-			{
-				id: 'section1'
-				type: 'basic'
-				name: 'Subjective'
-				metricIds: ['score']
-			}
-			{
-				id: 'section2'
-				type: 'basic'
-				name: 'Objective'
-				metricIds: []
-			}
-			{
-				id: 'section3'
-				type: 'basic'
-				name: 'Assessment'
-				metricIds: []
-			}
-			{
-				id: 'section4'
-				type: 'plan'
-				name: 'Plan'
-			}
-		]
-	}
+	myTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
 	do ->
 		progNote = null
