@@ -1,0 +1,7 @@
+{
+	"id": "th3",
+	"revisionId": "rev1",
+	"timestamp": "2015-02-22T16:00:10-05:00",
+	"name": "Wiping after #2",
+	"definition": "1 - done independently\n2 - done with 1 prompt\n3 - done with +1 prompt\n4 - refused"
+}

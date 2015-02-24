@@ -1,0 +1,7 @@
+{
+	"id": "hb1",
+	"revisionId": "rev1",
+	"timestamp": "2015-02-22T16:00:10-05:00",
+	"name": "Head-Banging Incidents",
+	"definition": "# of incidents per day"
+}
