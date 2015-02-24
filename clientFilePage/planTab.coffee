@@ -339,6 +339,7 @@ load = (win) ->
 
 						MetricWidget({
 							name: metric.get('name')
+							definition: metric.get('definition')
 							value: metric.get('value')
 							key: metricId
 						})

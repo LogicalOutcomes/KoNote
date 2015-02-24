@@ -38,7 +38,7 @@ schema = [
 							id: IdSchema
 							name: Joi.string()
 							definition: Joi.string()
-							value: Joi.string()
+							value: [Joi.string(), '']
 						})
 					)
 				})
@@ -56,7 +56,7 @@ schema = [
 									id: IdSchema
 									name: Joi.string()
 									definition: Joi.string()
-									value: Joi.string()
+									value: [Joi.string(), '']
 								})
 							)
 						})

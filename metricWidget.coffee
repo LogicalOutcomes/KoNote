@@ -1,9 +1,18 @@
 load = (win) ->
+	$ = win.jQuery
 	React = win.React
 	R = React.DOM
-	{FaIcon, showWhen} = require('./utils').load(win)
+	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
 	MetricWidget = React.createFactory React.createClass
+		componentDidMount: ->
+			tooltipContent = R.div({className: 'tooltipContent'},
+				renderLineBreaks @props.definition
+			)
+			$(@refs.name.getDOMNode()).tooltip {
+				html: true
+				title: React.renderToString tooltipContent
+			}
 		render: ->
 			isEditable = @props.isEditable isnt false
 
@@ -25,7 +34,7 @@ load = (win) ->
 						FaIcon 'line-chart'
 					)
 				)
-				R.div({className: 'name'},
+				R.div({className: 'name', ref: 'name'},
 					@props.name
 				)
 			)

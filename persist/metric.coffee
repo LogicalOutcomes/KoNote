@@ -12,7 +12,8 @@ revisionSchema = Joi.object().keys({
 	id: IdSchema
 	revisionId: IdSchema
 	timestamp: Joi.date().iso().raw() # TODO should be done through crypto
-	name: PathSafeString
+	name: Joi.string() # TODO this should be path safe...
+	#name: PathSafeString
 	definition: Joi.string()
 })
 

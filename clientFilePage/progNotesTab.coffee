@@ -67,7 +67,8 @@ load = (win) ->
 						).toJS()...
 					)
 					ProgNoteDetailView({
-						itemType: @state.selectedItemType
+						#itemType: @state.selectedItemType
+						itemType: 'basicSection'
 						item: @state.selectedItem
 						progNotes: @props.progNotes
 					})
@@ -101,7 +102,7 @@ load = (win) ->
 			note = Imm.fromJS {
 				type: 'basic'
 				clientId: @props.clientId
-				author: 'xxx'
+				author: 'David'
 				notes
 			}
 

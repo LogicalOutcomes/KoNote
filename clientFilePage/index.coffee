@@ -39,6 +39,7 @@ load = (win, {clientId}) ->
 		metricsById = Imm.Map()
 		startupTasks = Imm.Set() # set of task IDs
 		ongoingTasks = Imm.Set() # set of task IDs
+		isClosed = false
 
 		init = ->
 			render()
@@ -64,6 +65,7 @@ load = (win, {clientId}) ->
 				loadData
 				loadMetric
 				updateClientFile
+				unregisterListeners
 			}), $('#container')[0]
 
 		registerTask = (taskId, isStartupTask) ->
@@ -206,6 +208,12 @@ load = (win, {clientId}) ->
 
 		registerListeners = ->
 			global.EventBus.on 'newPlanTargetRevision', (newRev) ->
+				if isClosed
+					return
+
+				unless newRev.get('clientId') is clientId
+					return
+
 				targetId = newRev.get('id')
 
 				if planTargetsById.has targetId
@@ -220,9 +228,18 @@ load = (win, {clientId}) ->
 				render()
 
 			global.EventBus.on 'newProgNote', (newProgNote) ->
+				if isClosed
+					return
+
+				unless newProgNote.get('clientId') is clientId
+					return
+
 				progressNotes = progressNotes.push newProgNote
 
 				render()
+
+		unregisterListeners = ->
+			isClosed = true
 
 		return {}
 
@@ -235,6 +252,7 @@ load = (win, {clientId}) ->
 			nwWin.maximize()
 			nwWin.on 'close', (event) =>
 				# TODO handle this
+				@props.unregisterListeners()
 				nwWin.close(true)
 				return
 

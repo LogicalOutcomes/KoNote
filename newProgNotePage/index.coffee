@@ -108,7 +108,7 @@ load = (win, {clientId}) ->
 		createProgNoteFromTemplate = (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
 				type: 'full'
-				author: 'xxx' # TODO
+				author: 'David' # TODO
 				clientId: clientFile.get('clientId')
 				sections: template.get('sections').map (section) =>
 					switch section.get('type')
