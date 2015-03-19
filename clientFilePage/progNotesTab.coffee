@@ -17,7 +17,6 @@ load = (win) ->
 	ProgNotesView = React.createFactory React.createClass
 		getInitialState: ->
 			return {
-				selectedItemType: null
 				selectedItem: null
 			}
 		componentDidMount: ->
@@ -56,19 +55,24 @@ load = (win) ->
 				)
 				R.div({className: 'panes'},
 					R.div({className: 'progNotes'},
-						(@props.progressNotes.reverse().map (progNote) =>
+						(@props.progNotes.reverse().map (progNote) =>
 							switch progNote.get('type')
 								when 'basic'
-									BasicProgNoteView({progNote, key: progNote.get('id')})
+									BasicProgNoteView({
+										progNote
+										key: progNote.get('id')
+									})
 								when 'full'
-									FullProgNoteView({progNote, key: progNote.get('id')})
+									FullProgNoteView({
+										progNote
+										key: progNote.get('id')
+										setSelectedItem: @_setSelectedItem
+									})
 								else
 									throw new Error "unknown prognote type: #{progNote.get('type')}"
 						).toJS()...
 					)
 					ProgNoteDetailView({
-						#itemType: @state.selectedItemType
-						itemType: 'basicSection'
 						item: @state.selectedItem
 						progNotes: @props.progNotes
 					})
@@ -115,6 +119,8 @@ load = (win) ->
 
 				@_toggleQuickNotePopover()
 				@props.unregisterTask 'quickNote-save'
+		_setSelectedItem: (selectedItem) ->
+			@setState {selectedItem}
 
 	# These are called 'quick notes' in the UI
 	BasicProgNoteView = React.createFactory React.createClass
@@ -153,7 +159,12 @@ load = (win) ->
 						switch section.get('type')
 							when 'basic'
 								R.div({className: 'basic section', key: section.get('id')},
-									R.h1({className: 'name'}, section.get('name'))
+									R.h1({
+										className: 'name'
+										onClick: @_selectBasicSection.bind null, section
+									},
+										section.get('name')
+									)
 									R.div({className: "empty #{showWhen section.get('notes').length is 0}"},
 										'(blank)'
 									)
@@ -183,7 +194,12 @@ load = (win) ->
 									R.div({className: 'targets'},
 										(section.get('targets').map (target) =>
 											R.div({className: 'target', key: target.get('id')},
-												R.h2({className: 'name'},
+												R.h2({
+													className: 'name'
+													onClick: @_selectPlanSectionTarget.bind(
+														null, section, target
+													)
+												},
 													target.get('name')
 												)
 												R.div({className: "empty #{showWhen target.get('notes') is ''}"},
@@ -210,6 +226,19 @@ load = (win) ->
 					).toJS()...
 				)
 			)
+		_selectBasicSection: (section) ->
+			@props.setSelectedItem Imm.fromJS {
+				type: 'basicSection'
+				sectionId: section.get('id')
+				sectionName: section.get('name')
+			}
+		_selectPlanSectionTarget: (section, target) ->
+			@props.setSelectedItem Imm.fromJS {
+				type: 'planSectionTarget'
+				sectionId: section.get('id')
+				targetId: target.get('id')
+				targetName: target.get('name')
+			}
 
 	return {ProgNotesView}
 

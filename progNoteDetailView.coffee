@@ -1,3 +1,9 @@
+Imm = require 'immutable'
+Moment = require 'moment'
+
+Config = require './config'
+Persist = require './persist'
+
 load = (win) ->
 	React = win.React
 	R = React.DOM
@@ -5,60 +11,87 @@ load = (win) ->
 
 	ProgNoteDetailView = React.createFactory React.createClass
 		render: ->
-			R.div({className: 'progNoteDetailView'},
-				switch @props.itemType
-					when null
-						R.div({className: 'noSelection'},
-							"Select an entry on the left to see more information about it here."
-						)
-					when 'basicSection'
-						R.div({className: 'basicSection'},
-							# TODO use real data
-							R.div({className: 'sectionName'},
-								"Section Name Goes Here"
+			unless @props.item
+				return R.div({className: 'progNoteDetailView'},
+					R.div({className: 'noSelection'},
+						"Select an entry on the left to see more information about it here."
+					)
+				)
+
+			switch @props.item.get('type')
+				when 'basicSection'
+					sectionId = @props.item.get('sectionId')
+					itemName = @props.item.get('sectionName')
+					entries = @props.progNotes.flatMap (progNote) =>
+						switch progNote.get('type')
+							when 'basic'
+								return Imm.List()
+							when 'full'
+								return progNote.get('sections')
+								.filter (section) => # find relevant sections
+									return section.get('id') is sectionId
+								.map (section) => # turn them into entries
+									return Imm.fromJS {
+										progNoteId: progNote.get('id')
+										author: progNote.get('author')
+										timestamp: progNote.get('timestamp')
+										notes: section.get('notes')
+									}
+							else
+								throw new Error "unknown prognote type: #{progNote.get('type')}"
+				when 'planSectionTarget'
+					sectionId = @props.item.get('sectionId')
+					targetId = @props.item.get('targetId')
+					itemName = @props.item.get('targetName')
+					entries = @props.progNotes.flatMap (progNote) =>
+						switch progNote.get('type')
+							when 'basic'
+								return Imm.List()
+							when 'full'
+								return progNote.get('sections')
+								.filter (section) => # find relevant sections
+									return section.get('id') is sectionId
+								.flatMap (section) => # turn them into entries
+									return section.get('targets')
+									.filter (target) => # find relevant targets
+										return target.get('id') is targetId
+									.map (target) =>
+										return Imm.fromJS {
+											progNoteId: progNote.get('id')
+											author: progNote.get('author')
+											timestamp: progNote.get('timestamp')
+											notes: target.get('notes')
+										}
+							else
+								throw new Error "unknown prognote type: #{progNote.get('type')}"
+				else
+					throw new Error "unknown item type: #{JSON.stringify @props.item?.get('type')}"
+
+			entries = entries
+			.filter (entry) -> # remove blank entries
+				return entry.get('notes').trim() isnt ''
+			.sortBy (entry) -> # sort by reverse chronological order
+				return entry.get('timestamp')
+			.reverse()
+
+			return R.div({className: 'progNoteDetailView'},
+				R.div({className: 'itemName'},
+					itemName
+				)
+				R.div({className: 'history'},
+					(entries.map (entry) =>
+						R.div({className: 'entry'},
+							# TODO author!!
+							R.div({className: 'timestamp'},
+								Moment(entry.get('timestamp'))
+								.format('MMMM D, YYYY [at] HH:mm')
 							)
-							R.div({className: 'history'},
-								R.div({className: 'revision'},
-									# TODO author!!
-									R.div({className: 'timestamp'},
-										"February 18, 2015 at 3:02pm"
-									)
-									R.div({className: 'notes'},
-										"""
-											Notes about what happened that day would go here.
-											This makes it easy to see how things changed
-											over time, or just to see what happened yesterday.
-										"""
-									)
-								)
-								R.div({className: 'revision'},
-									R.div({className: 'timestamp'},
-										"February 17, 2015 at 3:07pm"
-									)
-									R.div({className: 'notes'},
-										"""
-											Another days worth of notes about what
-											happened would go here.  These notes
-											can be as long or short as you like.
-										"""
-									)
-								)
-								R.div({className: 'revision'},
-									R.div({className: 'timestamp'},
-										"February 16, 2015 at 2:31pm"
-									)
-									R.div({className: 'notes'},
-										"""
-											More notes about what happened that day would go here.
-											This makes it easy to see how things changed
-											over time, or just to see what happened yesterday.
-										"""
-									)
-								)
+							R.div({className: 'notes'},
+								entry.get('notes')
 							)
 						)
-					else
-						throw new Error "unknown item type: #{JSON.stringify @props.itemType}"
+					).toJS()...
+				)
 			)
 
 	return ProgNoteDetailView

@@ -94,7 +94,12 @@
 							display flex
 							flex-wrap wrap
 
+							margin -5px
+
 							padding-top 15px
+
+							> .metricWidget
+								margin 5px
 
 	> .targetDetail
 		overflow auto
@@ -110,37 +115,67 @@
 			color #888
 			text-align center
 
-		> .history
-			padding 20px 0
+		> .targetDetailContainer
+			> .metricsSection
+				padding 20px 0
 
-			> .header
-				font-size 24px
-				font-weight 300
+				> .header
+					display flex
+					align-items center
+					justify-content space-between
 
-			> .noRevisions
-				padding 20px
+					> .text
+						font-size 24px
+						font-weight 300
 
-				color #888
-				text-align center
+					> .btn > .fa
+						padding-right 6px
 
-			> .revisions
-				> .revision
-					padding 25px 0
+				> .noMetrics
+					padding 20px
 
-					border-bottom 1px solid sidebar-borders
+					color #888
+					text-align center
 
-					&:last-child
-						border-bottom none
+				> .metrics
+					display flex
+					flex-direction column
+					align-items flex-start
 
-					> .nameLine
-						display flex
+					> .metricWidget
+						margin 5px 0
 
-						padding-bottom 20px
+			> .history
+				padding 20px 0
 
-						> .name
-							flex 1
+				> .heading
+					font-size 24px
+					font-weight 300
 
-							font-weight 700
+				> .noRevisions
+					padding 20px
 
-						> .tag
-							color #888
+					color #888
+					text-align center
+
+				> .revisions
+					> .revision
+						padding 25px 0
+
+						border-bottom 1px solid sidebar-borders
+
+						&:last-child
+							border-bottom none
+
+						> .nameLine
+							display flex
+
+							padding-bottom 20px
+
+							> .name
+								flex 1
+
+								font-weight 700
+
+							> .tag
+								color #888

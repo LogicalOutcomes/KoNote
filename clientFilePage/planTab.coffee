@@ -20,7 +20,10 @@ load = (win) ->
 		getInitialState: ->
 			currentTargetRevisionsById = @props.planTargetsById.mapEntries ([targetId, target]) =>
 				latestRev = target.get('revisions').first()
-				return [targetId, latestRev]
+				return [
+					targetId,
+					latestRev.delete('revisionId')
+				]
 
 			return {
 				plan: @props.plan
@@ -30,10 +33,13 @@ load = (win) ->
 		render: ->
 			plan = @state.plan
 
-			if @state.selectedTargetId?
+			# If something selected and that target has not been deleted
+			if @state.selectedTargetId? and @state.currentTargetRevisionsById.has(@state.selectedTargetId)
+				# If this target has been saved at least once
 				if @props.planTargetsById.has @state.selectedTargetId
 					selectedTarget = @props.planTargetsById.get @state.selectedTargetId
 				else
+					# New target with no revision history
 					selectedTarget = Imm.fromJS {
 						id: @state.selectedTargetId
 						revisions: []
@@ -115,33 +121,74 @@ load = (win) ->
 							"a target on the left."
 						)
 					else
-						R.div({className: 'history'},
-							R.div({className: 'header'}, 'History')
-							(if selectedTarget.get('revisions').size is 0
-								R.div({className: 'noRevisions'},
-									"This target is new.  ",
-									"It won't have any history until the client file is saved."
+						currentRev = @state.currentTargetRevisionsById.get(selectedTarget.get('id'))
+						metricDefs = currentRev.get('metricIds').map (metricId) =>
+							return @props.metricsById.get(metricId, null)
+
+						R.div({className: 'targetDetailContainer'},
+							R.div({className: 'metricsSection'},
+								R.div({className: 'header'},
+									R.div({className: 'text'}, 'Metrics')
+									R.button({
+										className: 'addMetric btn btn-primary btn-sm'
+										onClick: @_promptToAddMetric.bind(
+											null, selectedTarget.get('id')
+										)
+									},
+										FaIcon('plus')
+										"Add metric"
+									)
+								)
+								(if metricDefs.size is 0
+									R.div({className: 'noMetrics'},
+										"This target has no metrics attached."
+									)
+								)
+								R.div({className: 'metrics'},
+									(metricDefs.map (metricDef) =>
+										MetricWidget({
+											isEditable: false
+											allowDeleting: true
+											onDelete: @_deleteMetricFromTarget.bind(
+												null, selectedTarget.get('id'), metricDef.get('id')
+											)
+											key: metricDef.get('id')
+											name: metricDef.get('name')
+											definition: metricDef.get('definition')
+										})
+									).toJS()...
 								)
 							)
-							R.div({className: 'revisions'},
-								(selectedTarget.get('revisions').map (rev) =>
-									R.div({className: 'revision'},
-										R.div({className: 'nameLine'},
-											R.div({className: 'name'},
-												rev.get('name')
-											)
-											R.div({className: 'tag'},
-												Moment(rev.get('timestamp'))
-													.format('MMM D, YYYY [at] HH:mm'),
-												" by ",
-												rev.get('author')
-											)
-										)
-										R.div({className: 'notes'},
-											renderLineBreaks rev.get('notes')
-										)
+							R.div({className: 'history'},
+								R.div({className: 'heading'},
+									'History'
+								)
+								(if selectedTarget.get('revisions').size is 0
+									R.div({className: 'noRevisions'},
+										"This target is new.  ",
+										"It won't have any history until the client file is saved."
 									)
-								).toJS()...
+								)
+								R.div({className: 'revisions'},
+									(selectedTarget.get('revisions').map (rev) =>
+										R.div({className: 'revision'},
+											R.div({className: 'nameLine'},
+												R.div({className: 'name'},
+													rev.get('name')
+												)
+												R.div({className: 'tag'},
+													Moment(rev.get('timestamp'))
+														.format('MMM D, YYYY [at] HH:mm'),
+													" by ",
+													rev.get('author')
+												)
+											)
+											R.div({className: 'notes'},
+												renderLineBreaks rev.get('notes')
+											)
+										)
+									).toJS()...
+								)
 							)
 						)
 					)
@@ -173,10 +220,7 @@ load = (win) ->
 
 			lastRev = target.getIn ['revisions', 0]
 
-			if currentRev.get('name') isnt lastRev.get('name')
-				return true
-
-			if currentRev.get('notes') isnt lastRev.get('notes')
+			unless Imm.is(currentRev, lastRev.delete('revisionId'))
 				return true
 
 			return false
@@ -204,8 +248,9 @@ load = (win) ->
 					# Remove unused targets
 					emptyName = currentRev.get('name') is ''
 					emptyNotes = currentRev.get('notes') is ''
+					noMetrics = currentRev.get('metricIds').size is 0
 					noHistory = @props.planTargetsById.get(targetId, null) is null
-					if emptyName and emptyNotes and noHistory
+					if emptyName and emptyNotes and noMetrics and noHistory
 						newCurrentRevs = newCurrentRevs.delete targetId
 						return
 
@@ -301,6 +346,23 @@ load = (win) ->
 			}
 		_setSelectedTarget: (targetId) ->
 			@setState {selectedTargetId: targetId}
+		_promptToAddMetric: (targetId) ->
+			Bootbox.prompt "Enter a metric ID", (metricId) =>
+				if metricId
+					@props.loadMetric metricId, false, =>
+						@setState {
+							currentTargetRevisionsById: @state.currentTargetRevisionsById
+							.update targetId, (currentRev) ->
+								return currentRev.update 'metricIds', (metricIds) ->
+									return metricIds.push metricId
+						}
+		_deleteMetricFromTarget: (targetId, metricId) ->
+			@setState {
+				currentTargetRevisionsById: @state.currentTargetRevisionsById.update targetId, (currentRev) ->
+					return currentRev.update 'metricIds', (metricIds) ->
+						return metricIds.filter (id) ->
+							return id isnt metricId
+			}
 
 	PlanTarget = React.createFactory React.createClass
 		render: ->

@@ -1,38 +1,65 @@
 #container > .newProgNotePage
-	padding 20px
+	display flex
 
-	> .sections
-		> .section
-			> .name
-				font-size 24px
-				font-weight 400
+	height 100%
 
-			&.basic
-				> .metrics
-					padding-top 5px
+	> .progNote
+		flex 1
+		overflow auto
 
-			&.plan
-				> .empty
-					padding 0 2px
-
-					color #888
-
-				> .targets
-					> .target
-						> .name
-							margin 10px 0 5px
-
-							color #666
-							font-size 16px
-							font-weight 600
-
-						> .metrics
-							padding-top 5px
-
-	> .buttonRow
 		padding 20px
 
-		text-align center
+		> .sections
+			> .section
+				> .name
+					font-size 24px
+					font-weight 400
 
-		> .btn > .fa
-			padding-right 8px
+				&.basic
+					> .metrics
+						display flex
+						flex-wrap wrap
+
+						margin -3px
+
+						padding-top 5px
+
+						> .metricWidget
+							margin 3px
+
+				&.plan
+					> .empty
+						padding 0 2px
+
+						color #888
+
+					> .targets
+						> .target
+							> .name
+								margin 10px 0 5px
+
+								color #666
+								font-size 16px
+								font-weight 600
+
+							> .metrics
+								display flex
+								flex-wrap wrap
+
+								margin -3px
+
+								padding-top 5px
+
+								> .metricWidget
+									margin 3px
+
+		> .buttonRow
+			padding 20px
+
+			text-align center
+
+			> .btn > .fa
+				padding-right 8px
+
+	> .progNoteDetailView
+		flex 1

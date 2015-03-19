@@ -127,7 +127,7 @@ load = (win, {clientId}) ->
 					# Load metrics
 					planTargetsById.valueSeq().forEach (target) =>
 						target.getIn(['revisions', 0, 'metricIds']).forEach (metricId) =>
-							loadMetric metricId
+							loadMetric metricId, true
 
 					unregisterTask "readPlanTargets", true
 
@@ -153,11 +153,11 @@ load = (win, {clientId}) ->
 								switch section.get('type')
 									when 'basic'
 										section.get('metrics').forEach (metric) =>
-											loadMetric metric.get('id')
+											loadMetric metric.get('id'), true
 									when 'plan'
 										section.get('targets').forEach (target) =>
 											target.get('metrics').forEach (metric) =>
-												loadMetric metric.get('id')
+												loadMetric metric.get('id'), true
 									else
 										throw new Error "
 											unknown prog note section type:
@@ -169,23 +169,24 @@ load = (win, {clientId}) ->
 				progressNotes = progNotes
 				unregisterTask 'readProgressNotes', true
 
-		loadMetric = (metricId) ->
+		loadMetric = (metricId, isStartupTask=false, cb=(->)) ->
 			taskId = "readMetric.#{metricId}"
 
 			# If already loaded or being loaded
 			if metricsById.has(metricId) or startupTasks.has(taskId)
 				return
 
-			registerTask taskId, true
+			registerTask taskId, isStartupTask
 			Persist.Metric.readLatestRevisions metricId, 1, (err, revisions) =>
 				if err
-					unregisterTask taskId, true
+					unregisterTask taskId, isStartupTask
 					console.error err.stack
 					return
 
 				metricsById = metricsById.set metricId, revisions[0]
 
-				unregisterTask taskId, true
+				unregisterTask taskId, isStartupTask
+				cb()
 
 		updateClientFile = (context, newValue) ->
 			clientFile = clientFile.setIn context, newValue
@@ -330,11 +331,12 @@ load = (win, {clientId}) ->
 					registerTask: @props.registerTask
 					unregisterTask: @props.unregisterTask
 					updatePlan: @props.updateClientFile.bind null, ['plan']
+					loadMetric: @props.loadMetric
 				})
 				ProgNotesTab.ProgNotesView({
 					isVisible: activeTabId is 'progressNotes'
 					clientId
-					progressNotes: @props.progressNotes
+					progNotes: @props.progressNotes
 					metricsById: @props.metricsById
 					registerTask: @props.registerTask
 					unregisterTask: @props.unregisterTask

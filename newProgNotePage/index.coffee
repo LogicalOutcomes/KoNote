@@ -19,6 +19,7 @@ load = (win, {clientId}) ->
 	Gui = win.require 'nw.gui'
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	Spinner = require('../spinner').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
 
@@ -29,6 +30,7 @@ load = (win, {clientId}) ->
 	do ->
 		progNote = null
 		clientFile = null
+		progNotes = null
 
 		init = ->
 			render()
@@ -44,6 +46,7 @@ load = (win, {clientId}) ->
 			React.render new NewProgNotePage({
 				progNote
 				clientFile
+				progNotes
 			}), $('#container')[0]
 
 		loadData = ->
@@ -80,7 +83,7 @@ load = (win, {clientId}) ->
 							else
 								throw new Error "unknown section type: #{section.get('type')}"
 					.union planTargetsById.valueSeq().flatMap (planTarget) =>
-						return planTarget.getIn ['revisions', 0, 'metricIds']
+						return planTarget.get('revisions').last().get('metricIds')
 
 					metricsById = Imm.Map()
 					Async.each requiredMetricIds.toArray(), (metricId, cb) =>
@@ -92,6 +95,14 @@ load = (win, {clientId}) ->
 							metricsById = metricsById.set metricId, revisions[0]
 							cb null
 					, cb
+				(cb) =>
+					Persist.ProgNote.readAll clientId, (err, results) =>
+						if err
+							cb err
+							return
+
+						progNotes = Imm.fromJS results
+						cb null
 			], (err) =>
 				if err
 					console.error err.stack
@@ -156,8 +167,99 @@ load = (win, {clientId}) ->
 		getInitialState: ->
 			return {
 				progNote: @props.progNote
+				selectedItem: null
 				success: false
 			}
+		render: ->
+			return R.div({className: 'newProgNotePage'},
+				R.div({className: 'progNote'},
+					R.div({className: 'sections'},
+						(@state.progNote.get('sections').map (section) =>
+							switch section.get('type')
+								when 'basic'
+									R.div({className: 'basic section', key: section.get('id')},
+										R.h1({className: 'name'}, section.get('name'))
+										ExpandingTextArea({
+											value: section.get('notes')
+											onFocus: @_selectBasicSection.bind null, section
+											onChange: @_updateBasicSectionNotes.bind null, section.get('id')
+										})
+										R.div({className: 'metrics'},
+											(section.get('metrics').map (metric) =>
+												MetricWidget({
+													key: metric.get('id')
+													name: metric.get('name')
+													definition: metric.get('definition')
+													onFocus: @_selectBasicSection.bind null, section
+													onChange: @_updateBasicSectionMetric.bind(
+														null, section.get('id'), metric.get('id')
+													)
+													value: metric.get('value')
+												})
+											).toJS()...
+										)
+									)
+								when 'plan'
+									R.div({className: 'plan section', key: section.get('id')},
+										R.h1({className: 'name'},
+											section.get('name')
+										)
+										R.div({className: "empty #{showWhen section.get('targets').size is 0}"},
+											"This section is empty because the client has no plan targets."
+										)
+										R.div({className: 'targets'},
+											(section.get('targets').map (target) =>
+												R.div({className: 'target', key: target.get('id')},
+													R.h2({className: 'name'},
+														target.get('name')
+													)
+													ExpandingTextArea({
+														value: target.get('notes')
+														onFocus: @_selectPlanSectionTarget.bind(
+															null, section, target
+														)
+														onChange: @_updatePlanSectionNotes.bind(
+															null, section.get('id'), target.get('id')
+														)
+													})
+													R.div({className: 'metrics'},
+														(target.get('metrics').map (metric) =>
+															MetricWidget({
+																key: metric.get('id')
+																name: metric.get('name')
+																definition: metric.get('definition')
+																onFocus: @_selectPlanSectionTarget.bind(
+																	null, section, target
+																)
+																onChange: @_updatePlanSectionMetric.bind(
+																	null, section.get('id'),
+																	target.get('id'), metric.get('id')
+																)
+																value: metric.get('value')
+															})
+														).toJS()...
+													)
+												)
+											).toJS()...
+										)
+									)
+						).toJS()...
+					)
+					R.div({className: 'buttonRow'},
+						R.button({
+							className: 'save btn btn-primary'
+							onClick: @_save
+						},
+							FaIcon 'check'
+							'Save'
+						)
+					)
+				)
+				ProgNoteDetailView({
+					item: @state.selectedItem
+					progNotes: @props.progNotes
+				})
+			)
 		componentDidMount: ->
 			clientName = renderName @props.clientFile.get('clientName')
 			nwWin.title = "#{clientName}: Progress Note - KoNote"
@@ -192,88 +294,29 @@ load = (win, {clientId}) ->
 					nwWin.close(true)
 		_hasChanges: ->
 			# TODO
-		render: ->
-			return R.div({className: 'newProgNotePage'},
-				R.div({className: 'sections'},
-					(@state.progNote.get('sections').map (section) =>
-						switch section.get('type')
-							when 'basic'
-								R.div({className: 'basic section', key: section.get('id')},
-									R.h1({className: 'name'}, section.get('name'))
-									ExpandingTextArea({
-										value: section.get('notes')
-										onChange: @_updateBasicSectionNotes.bind null, section.get('id')
-									})
-									R.div({className: 'metrics'},
-										(section.get('metrics').map (metric) =>
-											MetricWidget({
-												key: metric.get('id')
-												name: metric.get('name')
-												definition: metric.get('definition')
-												value: metric.get('value')
-												onChange: @_updateBasicSectionMetric.bind(
-													null, section.get('id'), metric.get('id')
-												)
-											})
-										).toJS()...
-									)
-								)
-							when 'plan'
-								R.div({className: 'plan section', key: section.get('id')},
-									R.h1({className: 'name'},
-										section.get('name')
-									)
-									R.div({className: "empty #{showWhen section.get('targets').size is 0}"},
-										"This section is empty because the client has no plan targets."
-									)
-									R.div({className: 'targets'},
-										(section.get('targets').map (target) =>
-											R.div({className: 'target', key: target.get('id')},
-												R.h2({className: 'name'},
-													target.get('name')
-												)
-												ExpandingTextArea({
-													value: target.get('notes')
-													onChange: @_updatePlanSectionNotes.bind(
-														null, section.get('id'), target.get('id')
-													)
-												})
-												R.div({className: 'metrics'},
-													(target.get('metrics').map (metric) =>
-														MetricWidget({
-															key: metric.get('id')
-															name: metric.get('name')
-															definition: metric.get('definition')
-															value: metric.get('value')
-															onChange: @_updatePlanSectionMetric.bind(
-																null, section.get('id'),
-																target.get('id'), metric.get('id')
-															)
-														})
-													).toJS()...
-												)
-											)
-										).toJS()...
-									)
-								)
-					).toJS()...
-				)
-				R.div({className: 'buttonRow'},
-					R.button({
-						className: 'save btn btn-primary'
-						onClick: @_save
-					},
-						FaIcon 'check'
-						'Save'
-					)
-				)
-			)
 		_getSectionIndex: (sectionId) ->
 			return @state.progNote.get('sections').findIndex (s) =>
 				return s.get('id') is sectionId
 		_getTargetIndex: (sectionIndex, targetId) ->
 			return @state.progNote.getIn(['sections', sectionIndex, 'targets']).findIndex (t) =>
 				return t.get('id') is targetId
+		_selectBasicSection: (section) ->
+			@setState {
+				selectedItem: Imm.fromJS {
+					type: 'basicSection'
+					sectionId: section.get('id')
+					sectionName: section.get('name')
+				}
+			}
+		_selectPlanSectionTarget: (section, target) ->
+			@setState {
+				selectedItem: Imm.fromJS {
+					type: 'planSectionTarget'
+					sectionId: section.get('id')
+					targetId: target.get('id')
+					targetName: target.get('name')
+				}
+			}
 		_updateBasicSectionNotes: (sectionId, event) ->
 			sectionIndex = @_getSectionIndex sectionId
 

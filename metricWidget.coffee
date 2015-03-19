@@ -15,11 +15,13 @@ load = (win) ->
 			}
 		render: ->
 			isEditable = @props.isEditable isnt false
+			allowDeleting = @props.allowDeleting is true
 
 			return R.div({className: 'metricWidget'},
 				(if @props.value?
 					R.input({
 						className: 'value circle'
+						onFocus: @props.onFocus
 						value: @props.value
 						onChange: @_onChange
 						placeholder: (if isEditable
@@ -36,6 +38,13 @@ load = (win) ->
 				)
 				R.div({className: 'name', ref: 'name'},
 					@props.name
+				)
+				(if allowDeleting
+					R.div({className: 'delete', onClick: @props.onDelete},
+						FaIcon 'times'
+					)
+				else
+					null
 				)
 			)
 		_onChange: (event) ->

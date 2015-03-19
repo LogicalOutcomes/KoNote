@@ -2,46 +2,54 @@
 	display flex
 	align-items center
 
-	padding 5px 25px 0 0
+	height 30px
 
-	> .icon.circle
-		diameter = 30px
+	background hsl(202, 95%, 74%)
 
-		margin-right 8px
+	border-radius 3px
 
-		width diameter
-		height diameter
+	color white
 
-		border-radius diameter // needs to be > (width/2)
+	> .icon
+		margin-right -4px
 
-		background hsl(202, 95%, 74%)
-		color white
+		width 30px
+		height 30px
+
 		font-size 14px
 		font-weight 700
-		line-height diameter
+		line-height 30px
 		text-align center
 
-	> .value.circle
-		diameter = 35px
+	> .value
+		margin 4px
 
-		margin-right 8px
+		width 35px
+		height 22px
 
-		width diameter
-		height diameter
-
-		border 2px solid hsl(202, 95%, 74%)
-		border-radius diameter // needs to be > (width/2)
+		border none
+		border-radius 3px
 		outline none
 
-		background white
-		color #555
+		background hsl(202, 95%, 94%)
+		color hsl(202, 25%, 25%)
 		font-size 16px
-		font-weight 700
+		font-weight 400
 		text-align center
 
 	> .name
-		color #555
+		padding 0 9px 0 3px
+
+		color white
 		font-weight 700
+		line-height 30px
+
+	> .delete
+		margin-left -3px
+
+		padding-right 7px
+
+		cursor pointer
 
 	.tooltipContent
 		text-align left

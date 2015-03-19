@@ -41,7 +41,6 @@
 
 			> .progNote
 				flex 1
-				overflow auto
 
 				padding-bottom 30px
 
@@ -73,6 +72,9 @@
 								font-weight 400
 
 							&.basic
+								> .name
+									cursor pointer
+
 								> .empty
 									padding 0 2px
 
@@ -93,6 +95,7 @@
 											margin 15px 0 5px
 
 											color #666
+											cursor pointer
 											font-size 16px
 											font-weight 600
 
@@ -102,7 +105,15 @@
 											color #888
 
 										> .metrics
+											display flex
+											flex-wrap wrap
+
+											margin -5px
+
 											padding-top 5px
+
+											> .metricWidget
+												margin 5px
 
 		> .progNoteDetailView
 			flex 50%

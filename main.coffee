@@ -39,6 +39,12 @@ init = (win) ->
 		, false
 
 		win.document.addEventListener 'keyup', (event) ->
+			# If Ctrl-R
+			if event.ctrlKey and (not event.shiftKey) and event.which is 82
+				win.location.reload(true)
+		, false
+
+		win.document.addEventListener 'keyup', (event) ->
 			# If Ctrl-W
 			if event.ctrlKey and (not event.shiftKey) and event.which is 87
 				Gui.Window.get(win).close()
