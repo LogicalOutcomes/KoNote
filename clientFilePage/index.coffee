@@ -174,6 +174,7 @@ load = (win, {clientId}) ->
 
 			# If already loaded or being loaded
 			if metricsById.has(metricId) or startupTasks.has(taskId)
+				cb()
 				return
 
 			registerTask taskId, isStartupTask

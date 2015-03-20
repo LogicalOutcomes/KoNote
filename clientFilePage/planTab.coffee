@@ -347,8 +347,10 @@ load = (win) ->
 		_setSelectedTarget: (targetId) ->
 			@setState {selectedTargetId: targetId}
 		_promptToAddMetric: (targetId) ->
+			currentMetricIds = @state.currentTargetRevisionsById.getIn [targetId, 'metricIds']
+
 			Bootbox.prompt "Enter a metric ID", (metricId) =>
-				if metricId
+				if metricId and not currentMetricIds.contains(metricId)
 					@props.loadMetric metricId, false, =>
 						@setState {
 							currentTargetRevisionsById: @state.currentTargetRevisionsById
