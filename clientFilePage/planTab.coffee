@@ -13,6 +13,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	MetricLookupField = require('../metricLookupField').load(win)
 	MetricWidget = require('../metricWidget').load(win)
 	{FaIcon, renderLineBreaks, showWhen} = require('../utils').load(win)
 
@@ -129,15 +130,6 @@ load = (win) ->
 							R.div({className: 'metricsSection'},
 								R.div({className: 'header'},
 									R.div({className: 'text'}, 'Metrics')
-									R.button({
-										className: 'addMetric btn btn-primary btn-sm'
-										onClick: @_promptToAddMetric.bind(
-											null, selectedTarget.get('id')
-										)
-									},
-										FaIcon('plus')
-										"Add metric"
-									)
 								)
 								(if metricDefs.size is 0
 									R.div({className: 'noMetrics'},
@@ -157,6 +149,14 @@ load = (win) ->
 											definition: metricDef.get('definition')
 										})
 									).toJS()...
+								)
+								R.div({},
+									MetricLookupField({
+										metrics: @props.metricsById.valueSeq()
+										onSelection: @_addMetricToTarget.bind(
+											null, selectedTarget.get('id')
+										)
+									})
 								)
 							)
 							R.div({className: 'history'},
@@ -358,6 +358,16 @@ load = (win) ->
 								return currentRev.update 'metricIds', (metricIds) ->
 									return metricIds.push metricId
 						}
+		_addMetricToTarget: (targetId, metricId) ->
+			if @state.currentTargetRevisionsById.getIn([targetId, 'metricIds']).contains metricId
+				Bootbox.alert "This metric has already been added to the selected target."
+				return
+
+			@setState {
+				currentTargetRevisionsById: @state.currentTargetRevisionsById.update targetId, (currentRev) ->
+					return currentRev.update 'metricIds', (metricIds) ->
+						return metricIds.push metricId
+			}
 		_deleteMetricFromTarget: (targetId, metricId) ->
 			@setState {
 				currentTargetRevisionsById: @state.currentTargetRevisionsById.update targetId, (currentRev) ->

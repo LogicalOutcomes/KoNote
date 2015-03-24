@@ -30,6 +30,7 @@
     "react": "^0.12.2",
     "rimraf": "~2.2.8",
     "stylus": "^0.49.3",
+    "typeahead.js": "^0.10.5",
     "underscore": "^1.7.0"
   },
   "scripts": {

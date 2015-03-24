@@ -1,3 +1,5 @@
+# A component for indicating the presence or displaying the value of a metric.
+
 load = (win) ->
 	$ = win.jQuery
 	React = win.React

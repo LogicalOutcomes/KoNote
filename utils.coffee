@@ -55,6 +55,21 @@ load = (win) ->
 
 		return 'hide'
 
-	return {FaIcon, openWindow, renderLineBreaks, renderName, showWhen}
+	# Ensures that `text` does not exceed `maxLength` by replacing excess
+	# characters with an ellipsis character.
+	truncateText = (maxLength, text) ->
+		if text.length <= maxLength
+			return text
+
+		return text[...(maxLength - 1)] + '…'
+
+	return {
+		FaIcon
+		openWindow
+		renderLineBreaks
+		renderName
+		showWhen
+		truncateText
+	}
 
 module.exports = {load}
