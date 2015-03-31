@@ -28,11 +28,11 @@ revisionSchema = Joi.object().keys({
 		last: PathSafeString
 	})
 	plan: Joi.object().keys({
-		sections: Joi.array().includes(
+		sections: Joi.array().items(
 			Joi.object().keys({
 				id: IdSchema
 				name: Joi.string()
-				targetIds: Joi.array().includes(
+				targetIds: Joi.array().items(
 					IdSchema
 				)
 			})

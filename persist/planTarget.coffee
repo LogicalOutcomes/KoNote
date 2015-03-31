@@ -16,7 +16,7 @@ revisionSchema = Joi.object().keys({
 	timestamp: Joi.date().iso().raw() # TODO should be done through crypto
 	name: Joi.string()
 	notes: Joi.string()
-	metricIds: Joi.array().includes(
+	metricIds: Joi.array().items(
 		IdSchema
 	)
 })

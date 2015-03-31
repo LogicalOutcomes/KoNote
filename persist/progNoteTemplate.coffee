@@ -7,12 +7,12 @@ Joi = require 'joi'
 schema = Joi.object().keys({
 	id: IdSchema
 	name: Joi.string()
-	sections: Joi.array().includes(
+	sections: Joi.array().items(
 		[
 			Joi.object().keys({
 				type: 'basic'
 				name: Joi.string()
-				metricIds: Joi.array().includes(
+				metricIds: Joi.array().items(
 					IdSchema
 				)
 			})

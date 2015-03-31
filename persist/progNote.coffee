@@ -26,14 +26,14 @@ schema = [
 		clientId: IdSchema
 		author: Joi.string() # TODO
 		timestamp: Joi.date().iso().raw() # TODO
-		sections: Joi.array().includes(
+		sections: Joi.array().items(
 			[
 				Joi.object().keys({
 					id: IdSchema
 					type: 'basic'
 					name: Joi.string()
 					notes: [Joi.string(), '']
-					metrics: Joi.array().includes(
+					metrics: Joi.array().items(
 						Joi.object().keys({
 							id: IdSchema
 							name: Joi.string()
@@ -46,12 +46,12 @@ schema = [
 					id: IdSchema
 					type: 'plan'
 					name: Joi.string()
-					targets: Joi.array().includes(
+					targets: Joi.array().items(
 						Joi.object().keys({
 							id: IdSchema
 							name: Joi.string()
 							notes: [Joi.string(), '']
-							metrics: Joi.array().includes(
+							metrics: Joi.array().items(
 								Joi.object().keys({
 									id: IdSchema
 									name: Joi.string()
