@@ -6,6 +6,11 @@ Path = require 'path'
 
 {generateId} = require './utils'
 
+# This is a special script written to run on "Windows Scripting Host".
+# This allows me to access Windows-specific functionality without having to
+# write native code.
+# Fun fact: this isn't actually JavaScript, it's Microsoft's proprietary
+# implementation of JavaScript called "JScript".
 windowsLockScript = '''
 	var fso = new ActiveXObject('Scripting.FileSystemObject');
 	var stdout = WScript.StdOut;
