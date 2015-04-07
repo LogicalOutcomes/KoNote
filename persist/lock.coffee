@@ -77,6 +77,7 @@ acquireLock_win32 = (lockFilePath, cb) ->
 				if hasRunCallback
 					return
 
+				# TODO Add check for "Permission denied" -- means lock conflict
 				hasRunCallback = true
 				console.error "stderr output from Windows file locking script: #{JSON.stringify data.toString()}"
 				cb new Error "stderr output from Windows file locking script"
