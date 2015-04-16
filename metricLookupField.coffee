@@ -1,9 +1,17 @@
 # An auto-completing text field for selecting a metric.
+#
+# I used typeahead.js for this field.  This was a poor life choice.
+# The library provides very little functionality, and made some things more
+# difficult.  We should probably just implement our own auto-complete
+# functionality -- it might even make this file shorter.
 
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+
+	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
+	DefineMetricDialog = require('./defineMetricDialog').load(win)
 
 	{
 		FaIcon
@@ -13,6 +21,11 @@ load = (win) ->
 	} = require('./utils').load(win)
 
 	MetricLookupField = React.createFactory React.createClass
+		mixins: [LayeredComponentMixin]
+		getInitialState: ->
+			return {
+				isDefineMetricDialogVisible: false
+			}
 		componentDidMount: ->
 			lookupField = $(@refs.lookupField.getDOMNode())
 
@@ -27,18 +40,34 @@ load = (win) ->
 				templates: {
 					empty: '''
 						<div class="empty">
-							No metrics found under that name.  You can create a new metric using TODO
+							No metrics found under that name.
 						</div>
 					'''
 					suggestion: (metric) =>
 						suggestionComponent = Suggestion({metric})
 						return React.renderToString(suggestionComponent)
+					footer: (query, isEmpty) ->
+						return '''
+							<div class="createMetricContainer">
+								<button class="createMetric btn btn-success">Define a new metric</button>
+							</div>
+						'''
 				}
 			}
 
 			lookupField.on 'typeahead:selected', (event, metric) =>
 				lookupField.typeahead 'val', ''
 				@props.onSelection metric.id
+
+			# We need to reattach an event listener to the create button, but
+			# it would get wiped out every time typeahead.js rerenders.  So,
+			# instead, we'll let the event bubble up to an ancestor element and
+			# check the target.
+			lookupField.parent().on 'click', (event) =>
+				target = event.target
+				if target.classList.contains('btn') and target.classList.contains('createMetric')
+					lookupField.typeahead 'close'
+					@_createMetric()
 		render: ->
 			return R.div({className: 'metricLookupField'},
 				R.input({
@@ -47,6 +76,23 @@ load = (win) ->
 					placeholder: @props.placeholder
 				})
 			)
+		renderLayer: ->
+			unless @state.isDefineMetricDialogVisible
+				return R.div()
+
+			return DefineMetricDialog({
+				onCancel: =>
+					@setState {isDefineMetricDialogVisible: false}
+				onSuccess: (newMetricId) =>
+					@setState {isDefineMetricDialogVisible: false}
+
+					lookupField = $(@refs.lookupField.getDOMNode())
+					lookupField.typeahead 'val', ''
+
+					@props.onSelection newMetricId
+			})
+		_createMetric: ->
+			@setState {isDefineMetricDialogVisible: true}
 		_lookupMetric: (query, cb) ->
 			query = query.toLowerCase()
 
@@ -55,7 +101,12 @@ load = (win) ->
 				.filter (metric) =>
 					name = metric.get('name')
 					definition = metric.get('definition')
+
+					# Looks for an exact match in either the name or
+					# definition.  It might be useful to change this to a
+					# word-by-word fuzzy comparison.
 					return name.toLowerCase().includes(query) or definition.toLowerCase().includes(query)
+				.take(10) # limit to first 10 results
 				.toJS()
 			)
 

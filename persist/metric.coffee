@@ -1,5 +1,6 @@
 _ = require 'underscore'
 Fs = require 'fs'
+Imm = require 'immutable'
 Joi = require 'joi'
 Mkdirp = require 'mkdirp'
 Path = require 'path'
@@ -17,6 +18,10 @@ revisionSchema = Joi.object().keys({
 	definition: Joi.string()
 })
 
+parseDirectoryName = (dirName) ->
+	[name, id] = dirName.split '.'
+	return Imm.fromJS {name, id}
+
 _getObjectDirectory = (metricId, cb) ->
 	metricsDir = Path.join 'data', 'metrics'
 	Fs.readdir metricsDir, (err, metricFileNames) ->
@@ -33,11 +38,14 @@ _getObjectDirectory = (metricId, cb) ->
 
 		cb null, Path.join(metricsDir, metricFileName)
 
-ensureObjectDirectory = (metric, cb) ->
-	dirName = [
+_getObjDirName = (metric) ->
+	return [
 		metric.get('name')
 		metric.get('id')
 	].join '.'
+
+ensureObjectDirectory = (metric, cb) ->
+	dirName = _getObjDirName metric
 
 	expectedPath = Path.join 'data', 'metrics', dirName
 
@@ -69,6 +77,17 @@ ensureObjectDirectory = (metric, cb) ->
 
 			cb null, expectedPath
 
+create = (newObject, cb) ->
+	objDirName = _getObjDirName newObject
+	objDirPath = Path.join 'data', 'metrics', objDirName
+
+	Fs.mkdir objDirPath, (err) ->
+		if err
+			cb err
+			return
+
+		createRevision newObject, cb
+
 readLatestRevisions = (metricId, limit, cb) ->
 	_getObjectDirectory metricId, (err, objDir) ->
 		if err
@@ -91,4 +110,17 @@ createRevision = (newRevision, cb) ->
 			global.EventBus.trigger 'newMetricRevision', result
 			cb null, result
 
-module.exports = {readLatestRevisions, createRevision}
+list = (cb) ->
+	metricsDir = Path.join 'data', 'metrics'
+	Fs.readdir metricsDir, (err, files) ->
+		if err
+			if err.code is 'ENOENT'
+				cb null, Imm.List()
+				return
+
+			cb err
+			return
+
+		cb null, Imm.fromJS(files).map(parseDirectoryName)
+
+module.exports = {create, readLatestRevisions, createRevision, list}

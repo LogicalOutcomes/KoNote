@@ -141,33 +141,21 @@ load = (win, {clientId}) ->
 					Bootbox.alert "Error loading progress notes"
 					return
 
-				progNotes = Imm.fromJS results
-
-				# Load metrics
-				progNotes.forEach (progNote) =>
-					switch progNote.get('type')
-						when 'basic'
-							return
-						when 'full'
-							progNote.get('sections').forEach (section) =>
-								switch section.get('type')
-									when 'basic'
-										section.get('metrics').forEach (metric) =>
-											loadMetric metric.get('id'), true
-									when 'plan'
-										section.get('targets').forEach (target) =>
-											target.get('metrics').forEach (metric) =>
-												loadMetric metric.get('id'), true
-									else
-										throw new Error "
-											unknown prog note section type:
-											#{progNote.get('type')}
-										"
-						else
-							throw new Error "unknown prog note type: #{progNote.get('type')}"
-
-				progressNotes = progNotes
+				progressNotes = Imm.fromJS results
 				unregisterTask 'readProgressNotes', true
+
+			registerTask 'listMetrics', true
+			Persist.Metric.list (err, results) ->
+				if err
+					unregisterTask 'listMetrics', true
+					console.error err.stack
+					Bootbox.alert "Error listing metrics"
+					return
+
+				results.forEach (metricHeader) ->
+					loadMetric metricHeader.get('id')
+
+				unregisterTask 'listMetrics', true
 
 		loadMetric = (metricId, isStartupTask=false, cb=(->)) ->
 			taskId = "readMetric.#{metricId}"
@@ -237,6 +225,14 @@ load = (win, {clientId}) ->
 					return
 
 				progressNotes = progressNotes.push newProgNote
+
+				render()
+
+			global.EventBus.on 'newMetricRevision', (newRev) ->
+				if isClosed
+					return
+
+				metricsById = metricsById.set newRev.get('id'), newRev
 
 				render()
 
