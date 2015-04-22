@@ -1,3 +1,16 @@
+# Defines the ProgNote data structure used for storing progress notes.
+#
+# There are two types of progress notes: basic and full.  Basic progress notes
+# are called "Quick Notes" in the UI.  They consist of just a single text area.
+#
+# Full progress notes are built from a template.  The template determines what
+# sections the progress note should contain.  There are two types of sections:
+# basic and plan.  A basic section has a name (determined by the template), a
+# text area for notes, and zero or more metrics (from the template).  A plan
+# section has a name (from the template), and contains one text area for every
+# one of the client's plan targets.  This means that the number of text areas
+# will vary depending on which client the progress note is for.
+
 Async = require 'async'
 Fs = require 'fs'
 Joi = require 'joi'
