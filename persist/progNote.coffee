@@ -8,9 +8,6 @@ ClientFile = require './clientFile'
 ObjectUtils = require './object'
 {generateId, IdSchema, SafeTimestampFormat} = require './utils'
 
-# TODO add information about original template
-# will be helpful for tracking "how many of these did we fill out?"
-
 schema = [
 	Joi.object().keys({
 		id: IdSchema
@@ -26,6 +23,7 @@ schema = [
 		clientId: IdSchema
 		author: Joi.string() # TODO
 		timestamp: Joi.date().iso().raw() # TODO
+		templateId: IdSchema
 		sections: Joi.array().items(
 			[
 				Joi.object().keys({

@@ -121,6 +121,7 @@ load = (win, {clientId}) ->
 				type: 'full'
 				author: 'David' # TODO
 				clientId: clientFile.get('clientId')
+				templateId: template.get('id')
 				sections: template.get('sections').map (section) =>
 					switch section.get('type')
 						when 'basic'
