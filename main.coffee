@@ -23,6 +23,8 @@ init = (win) ->
 		# Decide what to render based on the page parameter
 		# URL would look something like `.../main.html?page=client`
 		switch urlParams.page
+			when 'login'
+				require('./loginPage').load(win, urlParams)
 			when 'clientSelection'
 				require('./clientSelectionPage').load(win, urlParams)
 			when 'clientFile'
@@ -30,7 +32,7 @@ init = (win) ->
 			when 'newProgNote'
 				require('./newProgNotePage').load(win, urlParams)
 			else
-				require('./clientSelectionPage').load(win, urlParams)
+				require('./loginPage').load(win, urlParams)
 
 		win.document.addEventListener 'keyup', (event) ->
 			# If Ctrl-Shift-J
