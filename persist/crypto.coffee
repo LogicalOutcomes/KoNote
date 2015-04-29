@@ -35,18 +35,19 @@ class SymmetricEncryptionKey
 		return new SymmetricEncryptionKey(keyMat, 'iknowwhatimdoing')
 
 	# Convert a password into an encryption key
-	@derive: (password, salt, cb) ->
+	# `params` should be saved somewhere public.
+	# To generate params the first time:
+	#  params = {salt: generateSalt()}
+	@derive: (password, params, cb) ->
 		unless typeof password is 'string'
 			# Note: it's probably not safe to pass in arbitrary binary here
 			throw new Error "password must be a string"
 
-		iterationCount = Math.pow(2, 20)
+		unless params.salt
+			throw new Error "cannot derive key without a salt, see generateSalt"
 
-		# To speed up unit tests, cut iteration count
-		if password is 'pass' or password is 'password'
-			# If a user actually uses one of these passwords,
-			# no amount of hashing will save them.
-			iterationCount = Math.pow(2, 10)
+		iterationCount = params.iterationCount or Math.pow(2, 20)
+		salt = params.salt
 
 		Crypto.pbkdf2 password, salt, iterationCount, 32, 'sha256', (err, keyMat) ->
 			if err
@@ -136,4 +137,13 @@ class SymmetricEncryptionKey
 			decipher.final()
 		]
 
-module.exports = {SymmetricEncryptionKey}
+	# Wipe the key from memory.  A key object should not be used after being
+	# erased (it will fail).
+	erase: ->
+		@_rawKeyMaterial.fill(0)
+		@_rawKeyMaterial = null
+
+generateSalt = ->
+	return Crypto.randomBytes(16).toString('hex')
+
+module.exports = {SymmetricEncryptionKey, generateSalt}
