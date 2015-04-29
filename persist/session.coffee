@@ -17,7 +17,7 @@ login = (dataDir, userName, password, cb) ->
 
 	userDir = Path.join dataDir, 'users', userName
 	authParams = null
-	userSymmKey = null
+	userEncryptionKey = null
 	privKeyFile = null
 
 	Async.series [
@@ -39,7 +39,7 @@ login = (dataDir, userName, password, cb) ->
 					cb err
 					return
 
-				userSymmKey = result
+				userEncryptionKey = result
 				cb()
 		(cb) ->
 			Fs.readFile Path.join(userDir, 'private-keys'), (err, buf) ->
@@ -48,7 +48,7 @@ login = (dataDir, userName, password, cb) ->
 					return
 
 				try
-					decryptedJson = userSymmKey.decrypt buf
+					decryptedJson = userEncryptionKey.decrypt buf
 				catch err
 					# If decryption fails, we're probably using the wrong key
 					cb new IncorrectPasswordError()
@@ -61,17 +61,24 @@ login = (dataDir, userName, password, cb) ->
 			cb err
 			return
 
-		globalKey = SymmetricEncryptionKey.import privKeyFile.globalEncryptionKey
-		cb null, new Session(userName, globalKey)
+		globalEncryptionKey = SymmetricEncryptionKey.import privKeyFile.globalEncryptionKey
+		cb null, new Session(userName, userEncryptionKey, globalEncryptionKey)
 
 class Session
-	constructor: (@_userName, @_globalEncryptionKey) ->
+	constructor: (@_userName, @_userEncryptionKey, @_globalEncryptionKey) ->
+		unless @_userEncryptionKey instanceof SymmetricEncryptionKey
+			throw new Error "invalid userEncryptionKey"
+
+		unless @_globalEncryptionKey instanceof SymmetricEncryptionKey
+			throw new Error "invalid globalEncryptionKey"
+
 		@_ended = false
 	logout: ->
 		if @_ended
 			throw new Error "session has already ended"
 
 		@_ended = true
+		@_userEncryptionKey.erase()
 		@_globalEncryptionKey.erase()
 
 class UnknownUserNameError extends Error

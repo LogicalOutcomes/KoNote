@@ -64,6 +64,10 @@ load = (win) ->
 							className: 'btn btn-primary'
 							onClick: @_login
 						}, "Sign in")
+						R.button({
+							className: 'btn btn-default'
+							onClick: @_skip
+						}, "Skip login step")
 					)
 				)
 			)
@@ -93,7 +97,13 @@ load = (win) ->
 					Bootbox.alert "An error occurred while logging in.  Please try again later."
 					return
 
-				Bootbox.alert "Success!"
-				# TODO ...
+				# Store this session for later use
+				global.ActiveSession = session
+
+				# Proceed to clientSelectionPage
+				# TODO this should be abstracted similar to openWindow (see utils)
+				win.location.href = 'main.html?page=clientSelection'
+		_skip: -> # TODO remove this once login system fully functional
+			win.location.href = 'main.html?page=clientSelection'
 
 module.exports = {load}
