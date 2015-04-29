@@ -35,6 +35,6 @@
   },
   "scripts": {
     "start": "nw .",
-    "test": "mocha --compilers coffee:coffee-script/register --ui tdd --recursive --bail"
+    "test": "mocha --compilers coffee:coffee-script/register --recursive --bail"
   }
 }
