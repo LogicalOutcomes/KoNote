@@ -61,7 +61,8 @@ login = (dataDir, userName, password, cb) ->
 			cb err
 			return
 
-		cb null, new Session(userName, privKeyFile.globalEncryptionKey)
+		globalKey = SymmetricEncryptionKey.import privKeyFile.globalEncryptionKey
+		cb null, new Session(userName, globalKey)
 
 class Session
 	constructor: (@_userName, @_globalEncryptionKey) ->

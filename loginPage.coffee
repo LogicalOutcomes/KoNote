@@ -72,6 +72,28 @@ load = (win) ->
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
 		_login: (event) ->
-			# TODO login
+			# TODO check if fields are blank
+			# TODO show loading indicator
+			# TODO where to get data dir path? config?
+			Persist.Session.login 'data', @state.userName, @state.password, (err, session) =>
+				if err
+					if err instanceof Persist.Session.UnknownUserNameError
+						Bootbox.alert "Unknown user name.  Please try again.", =>
+							@refs.userNameField.getDOMNode().select()
+						return
+
+					if err instanceof Persist.Session.IncorrectPasswordError
+						Bootbox.alert "Incorrect password.  Please try again.", =>
+							pwField = @refs.passwordField.getDOMNode()
+							pwField.value = ''
+							pwField.focus()
+						return
+
+					console.error err.stack
+					Bootbox.alert "An error occurred while logging in.  Please try again later."
+					return
+
+				Bootbox.alert "Success!"
+				# TODO ...
 
 module.exports = {load}
