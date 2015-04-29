@@ -72,6 +72,18 @@ describe 'SymmetricEncryptionKey', ->
 			Assert keys[0]._rawKeyMaterial.equals keys[1]._rawKeyMaterial
 			cb()
 
+	it 'refuses to derive a key without a salt', (cb) ->
+		SymmetricEncryptionKey.derive 'pass', {iterationCount: 10}, (err, k) ->
+			Assert err
+			Assert not k
+			cb()
+
+	it 'refuses to derive a key without an iteration count', (cb) ->
+		SymmetricEncryptionKey.derive 'pass', {salt: 'nacl'}, (err, k) ->
+			Assert err
+			Assert not k
+			cb()
+
 	it 'imports keys from hex', ->
 		keyText = 'symmkey-v1:abcdabcd12341234abcdabcd12341234abcdabcd12341234abcdabcd12341234'
 		k = SymmetricEncryptionKey.import keyText

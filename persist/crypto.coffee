@@ -36,17 +36,26 @@ class SymmetricEncryptionKey
 
 	# Convert a password into an encryption key
 	# `params` should be saved somewhere public.
+	#
 	# To generate params the first time:
-	#  params = {salt: generateSalt()}
+	#   params = {salt: generateSalt(), iterationCount: 500000}
+	#
+	# iterationCount is the security level: higher means safer but slower.
 	@derive: (password, params, cb) ->
 		unless typeof password is 'string'
-			# Note: it's probably not safe to pass in arbitrary binary here
-			throw new Error "password must be a string"
+			# Note: it's probably not safe to pass in arbitrary binary as a password
+			cb new Error "password must be a string"
+			return
+
+		unless params.iterationCount
+			cb new Error "key derivation params must contain an iteration count"
+			return
 
 		unless params.salt
-			throw new Error "cannot derive key without a salt, see generateSalt"
+			cb new Error "key derivation params must contain a salt, see generateSalt"
+			return
 
-		iterationCount = params.iterationCount or Math.pow(2, 20)
+		iterationCount = +params.iterationCount
 		salt = params.salt
 
 		Crypto.pbkdf2 password, salt, iterationCount, 32, 'sha256', (err, keyMat) ->
