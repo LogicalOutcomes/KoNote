@@ -1,0 +1,4 @@
+{
+	"salt": "nacl",
+	"iterationCount": 500000
+}
