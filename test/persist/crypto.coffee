@@ -1,9 +1,32 @@
 Assert = require 'assert'
 Async = require 'async'
 
-{SymmetricEncryptionKey} = require '../../persist/crypto'
+{SymmetricEncryptionKey, generateSalt} = require '../../persist/crypto'
+
+describe 'generateSalt', ->
+	it 'should generate unique salts', ->
+		s1 = generateSalt()
+		s2 = generateSalt()
+		Assert.equal typeof s1, 'string'
+		Assert s1.length is 32
+		Assert.notEqual s1, s2
 
 describe 'SymmetricEncryptionKey', ->
+	# Super low iteration count to make the tests run quickly.
+	# Salts would normally come from generateSalt()
+	kdfParams1 = {
+		iterationCount: Math.pow(2, 8)
+		salt: 'nacl1'
+	}
+	kdfParams2 = {
+		iterationCount: Math.pow(2, 8)
+		salt: 'nacl2'
+	}
+	kdfParams3 = {
+		iterationCount: Math.pow(2, 8)
+		salt: new Buffer('nacl2', 'utf8')
+	}
+
 	it 'prevents accidental instantiation', ->
 		Assert.throws ->
 			new SymmetricEncryptionKey(new Buffer(32))
@@ -16,9 +39,9 @@ describe 'SymmetricEncryptionKey', ->
 	it 'derives different keys for different passwords', (cb) ->
 		Async.parallel [
 			(cb) ->
-				SymmetricEncryptionKey.derive 'password', 'nacl', cb
+				SymmetricEncryptionKey.derive 'password', kdfParams1, cb
 			(cb) ->
-				SymmetricEncryptionKey.derive 'pass', 'nacl', cb
+				SymmetricEncryptionKey.derive 'pass', kdfParams1, cb
 		], (err, keys) ->
 			if err then throw err
 
@@ -28,9 +51,9 @@ describe 'SymmetricEncryptionKey', ->
 	it 'derives different keys for different salts', (cb) ->
 		Async.parallel [
 			(cb) ->
-				SymmetricEncryptionKey.derive 'pass', 'nacl1', cb
+				SymmetricEncryptionKey.derive 'pass', kdfParams1, cb
 			(cb) ->
-				SymmetricEncryptionKey.derive 'pass', 'nacl2', cb
+				SymmetricEncryptionKey.derive 'pass', kdfParams2, cb
 		], (err, keys) ->
 			if err then throw err
 
@@ -40,13 +63,25 @@ describe 'SymmetricEncryptionKey', ->
 	it 'derives the same key for buffer vs string', (cb) ->
 		Async.parallel [
 			(cb) ->
-				SymmetricEncryptionKey.derive 'pass', 'nacl', cb
+				SymmetricEncryptionKey.derive 'pass', kdfParams2, cb
 			(cb) ->
-				SymmetricEncryptionKey.derive 'pass', new Buffer('nacl', 'utf8'), cb
+				SymmetricEncryptionKey.derive 'pass', kdfParams3, cb
 		], (err, keys) ->
 			if err then throw err
 
 			Assert keys[0]._rawKeyMaterial.equals keys[1]._rawKeyMaterial
+			cb()
+
+	it 'refuses to derive a key without a salt', (cb) ->
+		SymmetricEncryptionKey.derive 'pass', {iterationCount: 10}, (err, k) ->
+			Assert err
+			Assert not k
+			cb()
+
+	it 'refuses to derive a key without an iteration count', (cb) ->
+		SymmetricEncryptionKey.derive 'pass', {salt: 'nacl'}, (err, k) ->
+			Assert err
+			Assert not k
 			cb()
 
 	it 'imports keys from hex', ->
@@ -109,3 +144,8 @@ describe 'SymmetricEncryptionKey', ->
 
 		Assert.throws ->
 			pt = k2.decrypt ct
+
+	it 'erases the key material when requested', ->
+		k = SymmetricEncryptionKey.generate()
+		k.erase()
+		Assert.strictEqual k._rawKeyMaterial, null
