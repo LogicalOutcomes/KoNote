@@ -11,6 +11,7 @@ load = (win) ->
 	R = React.DOM
 
 	ExpandingTextArea = require('./expandingTextArea').load(win)
+	Dialog = require('./dialog').load(win)
 
 	DefineMetricDialog = React.createFactory React.createClass
 		getInitialState: ->
@@ -19,55 +20,45 @@ load = (win) ->
 				definition: ''
 			}
 		render: ->
-			# This should be refactored into a generic "dialog" mixin when this
-			# project needs its next type of dialog.
-
-			return R.div({
-				className: 'dialogContainer'
-				onClick: @_onBackgroundClick
+			Dialog({
+				title: "Define a new metric"
+				onClose: @_cancel
 			},
-				R.div({className: 'dialog panel panel-primary'},
-					R.div({className: 'panel-heading'},
-						R.h3({className: 'panel-title'}, "Define a new metric")
+				R.div({className: 'defineMetricDialog'},
+					R.div({className: 'form-group'},
+						R.label({}, "Name"),
+						R.input({
+							className: 'form-control'
+							onChange: @_updateName
+							value: @state.name
+						})
 					)
-					R.div({className: 'panel-body'},
-						R.div({className: 'form-group'},
-							R.label({}, "Name"),
-							R.input({
-								className: 'form-control'
-								onChange: @_updateName
-								value: @state.name
-							})
-						)
-						R.div({className: 'form-group'},
-							R.label({}, "Definition"),
-							ExpandingTextArea({
-								onChange: @_updateDefinition
-								value: @state.definition
-							})
-						)
-						R.div({className: 'btn-toolbar'},
-							R.button({
-								className: 'btn btn-default'
-								onClick: @props.onCancel
-							}, "Cancel"),
-							R.button({
-								className: 'btn btn-primary'
-								onClick: @_onSubmit
-							}, "Create metric")
-						)
+					R.div({className: 'form-group'},
+						R.label({}, "Definition"),
+						ExpandingTextArea({
+							onChange: @_updateDefinition
+							value: @state.definition
+						})
+					)
+					R.div({className: 'btn-toolbar'},
+						R.button({
+							className: 'btn btn-default'
+							onClick: @_cancel
+						}, "Cancel"),
+						R.button({
+							className: 'btn btn-primary'
+							onClick: @_submit
+						}, "Create metric")
 					)
 				)
 			)
-		_onBackgroundClick: (event) ->
-			# If click was on background, not the dialog itself
-			if event.target.classList.contains 'dialogContainer'
-				@props.onCancel()
+		_cancel: ->
+			@props.onCancel()
 		_updateName: (event) ->
 			@setState {name: event.target.value}
 		_updateDefinition: (event) ->
 			@setState {definition: event.target.value}
-		_onSubmit: ->
+		_submit: ->
 			unless @state.name.trim()
 				Bootbox.alert "Metric name is required"
 				return
