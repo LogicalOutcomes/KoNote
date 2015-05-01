@@ -6,73 +6,31 @@ Fs = require 'fs'
 Path = require 'path'
 
 {SymmetricEncryptionKey} = require './crypto'
-
-usersDirPath = Path.join 'data', 'users'
-
-userNameRegex = /^[a-zA-Z0-9_-]+$/
+Users = require './users'
 
 login = (dataDir, userName, password, cb) ->
-	unless userNameRegex.exec userName
-		throw new Error "invalid characters in user name"
-
-	userDir = Path.join dataDir, 'users', userName
-	authParams = null
-	userEncryptionKey = null
-	privKeyFile = null
-
-	Async.series [
-		(cb) ->
-			Fs.readFile Path.join(userDir, 'auth-params'), (err, buf) ->
-				if err
-					if err.code is 'ENOENT'
-						cb new UnknownUserNameError()
-						return
-
-					cb err
-					return
-
-				authParams = JSON.parse buf
-				cb()
-		(cb) ->
-			SymmetricEncryptionKey.derive password, authParams, (err, result) ->
-				if err
-					cb err
-					return
-
-				userEncryptionKey = result
-				cb()
-		(cb) ->
-			Fs.readFile Path.join(userDir, 'private-keys'), (err, buf) ->
-				if err
-					cb err
-					return
-
-				try
-					decryptedJson = userEncryptionKey.decrypt buf
-				catch err
-					# If decryption fails, we're probably using the wrong key
-					cb new IncorrectPasswordError()
-					return
-
-				privKeyFile = JSON.parse decryptedJson
-				cb()
-	], (err) ->
+	Users.readAccount dataDir, userName, password, (err, account) ->
 		if err
 			cb err
 			return
 
-		globalEncryptionKey = SymmetricEncryptionKey.import privKeyFile.globalEncryptionKey
-		cb null, new Session(userName, userEncryptionKey, globalEncryptionKey)
+		cb null, new Session(
+			account.userName
+			account.accountType
+			account.globalEncryptionKey
+		)
 
 class Session
-	constructor: (@_userName, @_userEncryptionKey, @_globalEncryptionKey) ->
-		unless @_userEncryptionKey instanceof SymmetricEncryptionKey
-			throw new Error "invalid userEncryptionKey"
-
+	constructor: (@_userName, @_accountType, @_globalEncryptionKey) ->
 		unless @_globalEncryptionKey instanceof SymmetricEncryptionKey
 			throw new Error "invalid globalEncryptionKey"
 
+		unless @_accountType in ['normal', 'admin']
+			throw new Error "unknown account type: #{JSON.stringify @_accountType}"
+
 		@_ended = false
+	isAdmin: ->
+		return @_accountType is 'admin'
 	logout: ->
 		if @_ended
 			throw new Error "session has already ended"
@@ -81,12 +39,8 @@ class Session
 		@_userEncryptionKey.erase()
 		@_globalEncryptionKey.erase()
 
-class UnknownUserNameError extends Error
-	constructor: ->
-		super
-
-class IncorrectPasswordError extends Error
-	constructor: ->
-		super
-
-module.exports = {login, UnknownUserNameError, IncorrectPasswordError}
+module.exports = {
+	login
+	UnknownUserNameError: Users.UnknownUserNameError
+	IncorrectPasswordError: Users.IncorrectPasswordError
+}
