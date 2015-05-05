@@ -35,11 +35,16 @@ load = (win) ->
 				# TODO Remove this before release, lol
 				userName: 'testuser'
 				password: 'pass'
+				isLoading: false
 			}
 		componentDidMount: ->
 			@refs.userNameField.getDOMNode().focus()
 		render: ->
 			return R.div({className: 'loginPage'},
+				Spinner({
+					isVisible: @state.isLoading
+					isOverlay: true
+				})
 				R.div({className: 'loginForm'},
 					R.div({className: 'form-group'},
 						R.label({}, "User name")
@@ -73,10 +78,10 @@ load = (win) ->
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
 		_login: (event) ->
-			# TODO check if fields are blank
-			# TODO show loading indicator
 			# TODO where to get data dir path? config?
+			@setState {isLoading: true}
 			Persist.Session.login 'data', @state.userName, @state.password, (err, session) =>
+				@setState {isLoading: false}
 				if err
 					if err instanceof Persist.Session.UnknownUserNameError
 						Bootbox.alert "Unknown user name.  Please try again.", =>
