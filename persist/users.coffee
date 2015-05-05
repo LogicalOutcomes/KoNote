@@ -6,7 +6,10 @@ Async = require 'async'
 Fs = require 'fs'
 Path = require 'path'
 
-{SymmetricEncryptionKey} = require './crypto'
+{
+	generateSalt
+	SymmetricEncryptionKey
+} = require './crypto'
 
 userNameRegex = /^[a-zA-Z0-9_-]+$/
 
@@ -23,8 +26,70 @@ getUserDir = (dataDir, userName) ->
 
 	return Path.join 'data', 'users', userName
 
+# Create a new user account
+# User must have full file system access (i.e. be an admin)
+createAccount = (dataDir, userName, password, accountType, cb) ->
+	unless accountType in ['normal', 'admin']
+		cb new Error "unknown account type #{JSON.stringify accountType}"
+		return
+
+	userName = userName.toLowerCase()
+
+	userDir = getUserDir dataDir, userName
+	authParams = {
+		salt: generateSalt()
+		iterationCount: 600000 # higher is more secure, but slower
+	}
+	userEncryptionKey = null
+
+	Async.series [
+		(cb) ->
+			Fs.mkdir userDir, (err) ->
+				if err
+					if err.code is 'EEXIST'
+						cb new UserNameTakenError()
+						return
+
+					cb err
+					return
+
+				cb()
+		(cb) ->
+			SymmetricEncryptionKey.derive password, authParams, (err, result) ->
+				if err
+					cb err
+					return
+
+				userEncryptionKey = result
+				cb()
+		(cb) ->
+			authParamsPath = Path.join(userDir, 'auth-params')
+
+			Fs.writeFile authParamsPath, JSON.stringify(authParams), cb
+		(cb) ->
+			accountTypePath = Path.join(userDir, 'account-type')
+
+			Fs.writeFile accountTypePath, JSON.stringify(accountType), cb
+		(cb) ->
+			privateKeysPath = Path.join(userDir, 'private-keys')
+
+			privateKeys = {
+				globalEncryptionKey: global.ActiveSession.globalEncryptionKey.export()
+			}
+			encryptedData = userEncryptionKey.encrypt JSON.stringify privateKeys
+
+			Fs.writeFile privateKeysPath, encryptedData, cb
+	], (err) ->
+		if err
+			cb err
+			return
+
+		cb()
+
 # Read a user's private account data
 readAccount = (dataDir, userName, password, cb) ->
+	userName = userName.toLowerCase()
+
 	userDir = getUserDir dataDir, userName
 	authParams = null
 	userEncryptionKey = null
@@ -73,7 +138,7 @@ readAccount = (dataDir, userName, password, cb) ->
 					cb err
 					return
 
-				accountType = result
+				accountType = JSON.parse result
 				cb()
 	], (err) ->
 		if err
@@ -85,6 +150,10 @@ readAccount = (dataDir, userName, password, cb) ->
 		globalEncryptionKey = SymmetricEncryptionKey.import privKeyFile.globalEncryptionKey
 		cb null, {userName, accountType, globalEncryptionKey}
 
+class UserNameTakenError extends Error
+	constructor: ->
+		super
+
 class UnknownUserNameError extends Error
 	constructor: ->
 		super
@@ -93,4 +162,10 @@ class IncorrectPasswordError extends Error
 	constructor: ->
 		super
 
-module.exports = {readAccount, UnknownUserNameError, IncorrectPasswordError}
+module.exports = {
+	createAccount
+	readAccount
+	UserNameTakenError
+	UnknownUserNameError
+	IncorrectPasswordError
+}

@@ -21,23 +21,22 @@ login = (dataDir, userName, password, cb) ->
 		)
 
 class Session
-	constructor: (@_userName, @_accountType, @_globalEncryptionKey) ->
-		unless @_globalEncryptionKey instanceof SymmetricEncryptionKey
+	constructor: (@userName, @accountType, @globalEncryptionKey) ->
+		unless @globalEncryptionKey instanceof SymmetricEncryptionKey
 			throw new Error "invalid globalEncryptionKey"
 
-		unless @_accountType in ['normal', 'admin']
+		unless @accountType in ['normal', 'admin']
 			throw new Error "unknown account type: #{JSON.stringify @_accountType}"
 
 		@_ended = false
 	isAdmin: ->
-		return @_accountType is 'admin'
+		return @accountType is 'admin'
 	logout: ->
 		if @_ended
 			throw new Error "session has already ended"
 
 		@_ended = true
-		@_userEncryptionKey.erase()
-		@_globalEncryptionKey.erase()
+		@globalEncryptionKey.erase()
 
 module.exports = {
 	login

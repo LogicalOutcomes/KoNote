@@ -32,8 +32,9 @@ load = (win) ->
 	LoginPage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
-				userName: ''
-				password: ''
+				# TODO Remove this before release, lol
+				userName: 'testuser'
+				password: 'pass'
 			}
 		componentDidMount: ->
 			@refs.userNameField.getDOMNode().focus()
@@ -64,10 +65,6 @@ load = (win) ->
 							className: 'btn btn-primary'
 							onClick: @_login
 						}, "Sign in")
-						R.button({
-							className: 'btn btn-default'
-							onClick: @_skip
-						}, "Skip login step")
 					)
 				)
 			)
@@ -103,7 +100,5 @@ load = (win) ->
 				# Proceed to clientSelectionPage
 				# TODO this should be abstracted similar to openWindow (see utils)
 				win.location.href = 'main.html?page=clientSelection'
-		_skip: -> # TODO remove this once login system fully functional
-			win.location.href = 'main.html?page=clientSelection'
 
 module.exports = {load}

@@ -31,7 +31,7 @@ validate = (value, schema, cb) ->
 SafeTimestampFormat = 'YYYYMMDDTHHmmss'
 
 class ObjectNotFoundError extends Error
-	constructer: ->
+	constructor: ->
 		super
 
 validateClientName = (name) ->

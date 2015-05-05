@@ -18,6 +18,7 @@ ProgNote = require './progNote'
 ProgNoteTemplate = require './progNoteTemplate'
 Metric = require './metric'
 Session = require './session'
+Users = require './users'
 Utils = require './utils'
 
 module.exports = {
@@ -28,4 +29,5 @@ module.exports = {
 	Metric
 	generateId: Utils.generateId
 	Session
+	Users
 }

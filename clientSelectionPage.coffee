@@ -10,6 +10,10 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+
+	AccountManagerDialog = require('./accountManagerDialog').load(win)
+	Dialog = require('./dialog').load(win)
+	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
@@ -64,6 +68,11 @@ load = (win) ->
 					isVisible: @_isLoading()
 					isOverlay: true
 				})
+				(if global.ActiveSession.isAdmin()
+					R.div({},
+						OpenAccountManagerButton()
+					)
+				)
 				R.div({
 					className: [
 						'header'
@@ -149,5 +158,32 @@ load = (win) ->
 				page: 'clientFile'
 				clientId
 			}
+
+	# In the future, it might make sense to refactor this into a generic
+	# OpenDialogButton component.
+	# See also: OpenCreateAccountDialogButton
+	OpenAccountManagerButton = React.createFactory React.createClass
+		mixins: [LayeredComponentMixin]
+		getInitialState: ->
+			return {
+				isOpen: false
+			}
+		render: ->
+			return R.button({
+				className: 'btn btn-default'
+				onClick: @_open
+			},
+				"Open Account Manager"
+			)
+		renderLayer: ->
+			unless @state.isOpen
+				return R.div()
+
+			return AccountManagerDialog({
+				onClose: =>
+					@setState {isOpen: false}
+			})
+		_open: ->
+			@setState {isOpen: true}
 
 module.exports = {load}
