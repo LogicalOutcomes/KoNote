@@ -68,6 +68,7 @@ load = (win) ->
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-primary'
+							disabled: if not @state.userName or not @state.password then true
 							onClick: @_login
 						}, "Sign in")
 					)
