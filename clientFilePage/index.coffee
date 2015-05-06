@@ -375,6 +375,16 @@ load = (win, {clientId}) ->
 						isActive: activeTabId is 'metrics'
 						onClick: @props.onTabChange.bind null, 'metrics'
 					})
+				)				
+				R.div({className: 'konodeBrandContainer brandLeft'},
+					R.img({
+						src: './img/konode-kn.svg',
+						className: 'logoKN'
+					})
+					R.img({
+						src: './img/konode-konode.svg',
+						className: 'logoKonode'
+					})
 				)
 			)
 

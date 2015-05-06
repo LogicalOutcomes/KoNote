@@ -80,6 +80,16 @@ load = (win) ->
 						showWhen not @_isLoading()
 					].join ' '
 				},
+					R.div({className: 'konodeBrandContainer brandRight'},
+						R.img({
+							src: './img/konode-kn.svg',
+							className: 'logoKN'
+						})
+						R.img({
+							src: './img/konode-konode.svg',
+							className: 'logoKonode'
+						})
+					)
 					R.div({className: 'logoContainer'},
 						R.img({src: 'customer-logo-lg.png'})
 						R.div({
