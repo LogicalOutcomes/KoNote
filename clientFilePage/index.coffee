@@ -26,6 +26,7 @@ load = (win, {clientId}) ->
 	R = React.DOM
 	Gui = win.require 'nw.gui'
 	Spinner = require('../spinner').load(win)
+	BrandWidget = require('../brandWidget').load(win)
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
@@ -376,16 +377,7 @@ load = (win, {clientId}) ->
 						onClick: @props.onTabChange.bind null, 'metrics'
 					})
 				)				
-				R.div({className: 'konodeBrandContainer brandLeft'},
-					R.img({
-						src: './img/konode-kn.svg',
-						className: 'logoKN'
-					})
-					R.img({
-						src: './img/konode-konode.svg',
-						className: 'logoKonode'
-					})
-				)
+				BrandWidget()
 			)
 
 	SidebarTab = React.createFactory React.createClass

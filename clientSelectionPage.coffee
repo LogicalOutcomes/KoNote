@@ -15,6 +15,7 @@ load = (win) ->
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
+	BrandWidget = require('./brandWidget').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
 	do ->
@@ -80,16 +81,9 @@ load = (win) ->
 						showWhen not @_isLoading()
 					].join ' '
 				},
-					R.div({className: 'konodeBrandContainer brandRight'},
-						R.img({
-							src: './img/konode-kn.svg',
-							className: 'logoKN'
-						})
-						R.img({
-							src: './img/konode-konode.svg',
-							className: 'logoKonode'
-						})
-					)
+					BrandWidget({
+						reverse: true
+					})
 					R.div({className: 'logoContainer'},
 						R.img({src: 'customer-logo-lg.png'})
 						R.div({
