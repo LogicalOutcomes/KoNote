@@ -7,21 +7,22 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
 	BrandWidget = React.createFactory React.createClass
-
-	return
-		R.div({
-			className: ->
-				classes = ['brandContainer', @props.reverse ? 'reverse' : '']
-				return classes.join(' ')
-				},
-			R.img({
-				src: './img/konode-kn.svg',
-				className: 'logoKN'
-			})
-			R.img({
-				src: './img/konode-konode.svg',
-				className: 'logoKonode'
-			})
-		)
+		render: ->
+			return
+				R.div({
+					className: [
+						'brandContainer',
+						'reverse' if @props.reverse
+					].join(' ')
+					},
+					R.img({
+						src: './img/konode-kn.svg',
+						className: 'logoKN'
+					})
+					R.img({
+						src: './img/konode-konode.svg',
+						className: 'logoKonode'
+					})
+				)
 
 module.exports = {load}
