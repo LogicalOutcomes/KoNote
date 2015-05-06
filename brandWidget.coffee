@@ -24,4 +24,6 @@ load = (win) ->
 				})
 			)
 
+	return BrandWidget
+
 module.exports = {load}
