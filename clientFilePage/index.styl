@@ -12,6 +12,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 	> .sidebar
 		display flex
 		flex-direction column
+		position relative
 
 		width 250px
 
@@ -19,6 +20,17 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 		background sidebar-bg
 		color hsl(hue(sidebar-bg), 15%, 35%)
+		
+		.brandContainer {
+			position absolute
+			left 0px
+			bottom 0px
+			width 100%
+			
+			.logoKonode {
+				margin-left 45px
+			}
+		}
 
 		> img
 			margin 0 auto

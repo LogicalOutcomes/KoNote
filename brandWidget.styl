@@ -1,6 +1,4 @@
-.konodeBrandContainer
-	position absolute
-	bottom 0px
+.brandContainer
 	overflow-y hidden
 	overflow-x visible
 	padding 20px
@@ -8,41 +6,35 @@
 	.logoKN
 		height 20px
 		display inline-flex
+		float left
 		
-		transition transform 0.8s ease
+		transition all 1s ease
 		transform rotate(-180deg)
-	
+		-webkit-filter grayscale(100%)
+		opacity 0.5
+    
 	.logoKonode
 		display inline-flex
 		height 15px
 		width auto
+		margin-left 10px
 		
 		transition all 0.5s ease
-		margin-bottom -20px				
+		margin-bottom -20px
 		opacity 0
 		
 	&:hover
-		
 		.logoKN
 			transform rotate(360deg)
-		
+			-webkit-filter grayscale(0%)
+			opacity 1
 		.logoKonode
 			margin-bottom 2px
 			opacity 1
 			
-
-.brandLeft
-	left 0px
-	
-	.logoKN
-		float left
-	.logoKonode
-		margin-left 10px
-
-.brandRight
-	right 0px
-	
-	.logoKN
-		float right
-	.logoKonode
-		margin-right 10px
+	&.reverse
+		.logoKN
+			float right
+		.logoKonode
+			margin-right 10px
+			margin-left 0px
