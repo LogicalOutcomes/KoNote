@@ -97,7 +97,7 @@ load = (win) ->
 							R.input({
 								type: 'checkbox'
 								onChange: @_updateIsAdmin
-								value: @state.isAdmin
+								checked: @state.isAdmin
 							}),
 							"Give this user administrative powers"
 						)
@@ -121,7 +121,8 @@ load = (win) ->
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
 		_updateIsAdmin: (event) ->
-			@setState {isAdmin: event.target.value}
+			console.log event.target.checked
+			@setState {isAdmin: event.target.checked}
 		_submit: ->
 			unless @state.userName
 				Bootbox.alert "User name is required"
