@@ -6,6 +6,7 @@ Fs = require 'fs'
 Path = require 'path'
 
 {SymmetricEncryptionKey} = require './crypto'
+DataModels = require './dataModels'
 Users = require './users'
 
 login = (dataDir, userName, password, cb) ->
@@ -18,10 +19,11 @@ login = (dataDir, userName, password, cb) ->
 			account.userName
 			account.accountType
 			account.globalEncryptionKey
+			dataDir
 		)
 
 class Session
-	constructor: (@userName, @accountType, @globalEncryptionKey) ->
+	constructor: (@userName, @accountType, @globalEncryptionKey, @dataDirectory) ->
 		unless @globalEncryptionKey instanceof SymmetricEncryptionKey
 			throw new Error "invalid globalEncryptionKey"
 
@@ -29,6 +31,8 @@ class Session
 			throw new Error "unknown account type: #{JSON.stringify @_accountType}"
 
 		@_ended = false
+
+		@persist = DataModels.getApi(@)
 	isAdmin: ->
 		return @accountType is 'admin'
 	logout: ->

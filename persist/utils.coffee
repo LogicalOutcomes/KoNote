@@ -28,7 +28,7 @@ validate = (value, schema, cb) ->
 	cb null, results.value
 
 # Safe for including in file paths
-SafeTimestampFormat = 'YYYYMMDDTHHmmss'
+SafeTimestampFormat = 'YYYYMMDDTHHmmssSSSZZ'
 
 class ObjectNotFoundError extends Error
 	constructor: ->

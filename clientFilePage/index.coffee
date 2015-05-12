@@ -12,6 +12,7 @@
 
 # Libraries from Node.js context
 _ = require 'underscore'
+Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
 
@@ -105,48 +106,83 @@ load = (win, {clientId}) ->
 
 		loadData = ->
 			registerTask 'readClientFile', true
-			Persist.ClientFile.readLatestRevisions clientId, 1, (err, revisions) =>
+			ActiveSession.persist.clientFiles.readLatestRevisions clientId, 1, (err, revisions) =>
 				if err
 					unregisterTask 'readClientFile', true
+					console.error err
 					console.error err.stack
 					Bootbox.alert "Could not load client data."
 					return
 
-				clientFile = Imm.fromJS revisions[0]
+				clientFile = revisions.get(0)
 
 				# Load plan targets
 				registerTask "readPlanTargets", true
-				Persist.PlanTarget.readClientFileTargets clientFile, (err, result) =>
+				planTargetHeaders = null
+				Async.series [
+					(cb) ->
+						ActiveSession.persist.planTargets.list clientId, (err, results) =>
+							if err
+								cb err
+								return
+
+							planTargetHeaders = results
+							cb()
+					(cb) ->
+						Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
+							ActiveSession.persist.planTargets.read clientId, planTargetHeader.get('id'), cb
+						, (err, results) ->
+							if err
+								cb err
+								return
+
+							planTargetsById = Imm.List(results).map (planTarget) ->
+								return [planTarget.get('id'), planTarget]
+							planTargetsById = Imm.Map(planTargetsById.fromEntrySeq())
+
+							cb()
+				], (err) ->
+					unregisterTask "readPlanTargets", true
+
 					if err
-						unregisterTask "readPlanTargets", true
 						console.error err.stack
 						Bootbox.alert "Could not load client data."
 						return
 
-					planTargetsById = result
-
-					# Load metrics
-					planTargetsById.valueSeq().forEach (target) =>
-						target.getIn(['revisions', 0, 'metricIds']).forEach (metricId) =>
-							loadMetric metricId, true
-
-					unregisterTask "readPlanTargets", true
-
 				unregisterTask 'readClientFile', true
 
 			registerTask 'readProgressNotes', true
-			Persist.ProgNote.readAll clientId, (err, results) =>
+			progNoteHeaders = null
+			Async.series [
+				(cb) ->
+					ActiveSession.persist.progNotes.list clientId, (err, results) =>
+						if err
+							cb err
+							return
+
+						progNoteHeaders = results
+						cb()
+				(cb) ->
+					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
+						ActiveSession.persist.progNotes.read clientId, progNoteHeader.get('id'), cb
+					, (err, results) ->
+						if err
+							cb err
+							return
+
+						progressNotes = Imm.fromJS results
+						cb()
+			], (err) ->
 				if err
 					unregisterTask 'readProgressNotes', true
 					console.error err.stack
 					Bootbox.alert "Error loading progress notes"
 					return
 
-				progressNotes = Imm.fromJS results
 				unregisterTask 'readProgressNotes', true
 
 			registerTask 'listMetrics', true
-			Persist.Metric.list (err, results) ->
+			ActiveSession.persist.metrics.list (err, results) ->
 				if err
 					unregisterTask 'listMetrics', true
 					console.error err.stack
@@ -167,13 +203,13 @@ load = (win, {clientId}) ->
 				return
 
 			registerTask taskId, isStartupTask
-			Persist.Metric.readLatestRevisions metricId, 1, (err, revisions) =>
+			ActiveSession.persist.metrics.read metricId, (err, result) =>
 				if err
 					unregisterTask taskId, isStartupTask
 					console.error err.stack
 					return
 
-				metricsById = metricsById.set metricId, revisions[0]
+				metricsById = metricsById.set metricId, result
 
 				unregisterTask taskId, isStartupTask
 				cb()
@@ -182,7 +218,7 @@ load = (win, {clientId}) ->
 			clientFile = clientFile.setIn context, newValue
 
 			registerTask "updateClientFile"
-			Persist.ClientFile.createRevision clientFile, (err) =>
+			ActiveSession.persist.clientFiles.createRevision clientFile, (err) =>
 				unregisterTask "updateClientFile"
 
 				if err
@@ -202,7 +238,7 @@ load = (win, {clientId}) ->
 				if isClosed
 					return
 
-				unless newRev.get('clientId') is clientId
+				unless newRev.get('clientFileId') is clientId
 					return
 
 				targetId = newRev.get('id')
@@ -222,7 +258,7 @@ load = (win, {clientId}) ->
 				if isClosed
 					return
 
-				unless newProgNote.get('clientId') is clientId
+				unless newProgNote.get('clientFileId') is clientId
 					return
 
 				progressNotes = progressNotes.push newProgNote

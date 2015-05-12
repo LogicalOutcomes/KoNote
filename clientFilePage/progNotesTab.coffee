@@ -2,7 +2,6 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
-Persist = require '../persist'
 
 load = (win) ->
 	$ = win.jQuery
@@ -111,7 +110,7 @@ load = (win) ->
 			}
 
 			@props.registerTask 'quickNote-save'
-			Persist.ProgNote.create note, (err) =>
+			ActiveSession.persist.progNotes.create note, (err) =>
 				if err
 					console.error err.stack
 					Bootbox.alert "An error occurred while saving your quick note."

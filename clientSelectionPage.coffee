@@ -2,7 +2,6 @@
 Imm = require 'immutable'
 
 Config = require './config'
-Persist = require './persist'
 
 load = (win) ->
 	# Libraries from browser context
@@ -34,7 +33,7 @@ load = (win) ->
 			}), $('#container')[0]
 
 		loadData = ->
-			Persist.ClientFile.list (err, result) ->
+			ActiveSession.persist.clientFiles.list (err, result) ->
 				if err
 					console.error err.stack
 					Bootbox.alert "Could not load client file information."
@@ -124,9 +123,9 @@ load = (win) ->
 						(results.map (result) =>
 							R.div({
 								className: 'result'
-								onClick: @_onResultSelection.bind(null, result.get('clientId'))
+								onClick: @_onResultSelection.bind(null, result.get('id'))
 							},
-								renderName result.get('name')
+								renderName result.get('clientName')
 							)
 						).toJS()
 					else
@@ -143,8 +142,8 @@ load = (win) ->
 
 			return @props.clientFileList
 			.filter (clientFile) ->
-				firstName = clientFile.getIn(['name', 'first']).toLowerCase()
-				lastName = clientFile.getIn(['name', 'last']).toLowerCase()
+				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
+				lastName = clientFile.getIn(['clientName', 'last']).toLowerCase()
 
 				return queryParts
 				.every (part) ->

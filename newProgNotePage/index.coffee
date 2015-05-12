@@ -8,7 +8,6 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
-Persist = require '../persist'
 
 load = (win, {clientId}) ->
 	# Libraries from browser context
@@ -56,7 +55,7 @@ load = (win, {clientId}) ->
 
 			Async.series [
 				(cb) =>
-					Persist.ClientFile.readLatestRevisions clientId, 1, (err, revisions) =>
+					ActiveSession.persist.clientFiles.readLatestRevisions clientId, 1, (err, revisions) =>
 						if err
 							cb err
 							return
@@ -64,7 +63,7 @@ load = (win, {clientId}) ->
 						clientFile = revisions[0]
 						cb null
 				(cb) =>
-					Persist.PlanTarget.readClientFileTargets clientFile, (err, result) =>
+					ActiveSession.persist.planTargets.readClientFileTargets clientFile, (err, result) =>
 						if err
 							cb err
 							return
@@ -87,7 +86,7 @@ load = (win, {clientId}) ->
 
 					metricsById = Imm.Map()
 					Async.each requiredMetricIds.toArray(), (metricId, cb) =>
-						Persist.Metric.readLatestRevisions metricId, 1, (err, revisions) =>
+						ActiveSession.persist.metrics.readLatestRevisions metricId, 1, (err, revisions) =>
 							if err
 								cb err
 								return
@@ -96,7 +95,7 @@ load = (win, {clientId}) ->
 							cb null
 					, cb
 				(cb) =>
-					Persist.ProgNote.readAll clientId, (err, results) =>
+					ActiveSession.persist.progNotes.readAll clientId, (err, results) =>
 						if err
 							cb err
 							return
@@ -364,7 +363,7 @@ load = (win, {clientId}) ->
 				)
 			}
 		_save: ->
-			Persist.ProgNote.create @state.progNote, (err) =>
+			ActiveSession.persist.progNotes.create @state.progNote, (err) =>
 				if err
 					console.error err.stack
 					Bootbox.alert "An error occurred while saving your progress note."

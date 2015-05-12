@@ -24,7 +24,7 @@ getUserDir = (dataDir, userName) ->
 	unless userNameRegex.exec userName
 		throw new Error "invalid characters in user name"
 
-	return Path.join 'data', 'users', userName
+	return Path.join dataDir, 'users', userName
 
 # Create a new user account
 # User must have full file system access (i.e. be an admin)

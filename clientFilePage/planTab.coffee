@@ -279,10 +279,13 @@ load = (win) ->
 						cb null
 						return
 
+					# TODO shit, it's using a temp ID, will have to rewrite that on first persist
+					console.log JSON.stringify @state.currentTargetRevisionsById.get(targetId)
 					currentRev = @_normalizeTargetFields @state.currentTargetRevisionsById.get(targetId)
 
+					# TODO need to create if doesn't exist yet
 					@props.registerTask "updateTarget-#{targetId}"
-					Persist.PlanTarget.createRevision currentRev, (err) =>
+					ActiveSession.persist.planTargets.createRevision currentRev, (err) =>
 						@props.unregisterTask "updateTarget-#{targetId}"
 
 						if err
@@ -292,6 +295,7 @@ load = (win) ->
 						cb null
 				, (err) =>
 					if err
+						console.error err
 						console.error err.stack
 						Bootbox.alert 'An error occurred while saving.'
 						return
@@ -325,7 +329,7 @@ load = (win) ->
 
 			newTarget = Imm.fromJS {
 				id: targetId
-				clientId: @props.clientId
+				clientFileId: @props.clientId
 				name: ''
 				notes: ''
 				metricIds: []

@@ -1,7 +1,0 @@
-{
-	"id": "score",
-	"revisionId": "rev1",
-	"timestamp": "2015-02-22T16:00:10-05:00",
-	"name": "Score",
-	"definition": "Rate 1-5, 1=worst, 5=best"
-}

@@ -2,8 +2,6 @@
 
 Imm = require 'immutable'
 
-Persist = require './persist'
-
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -68,12 +66,11 @@ load = (win) ->
 				return
 
 			newMetric = Imm.fromJS {
-				id: Persist.generateId()
 				name: @state.name.trim()
 				definition: @state.definition.trim()
 			}
 
-			Persist.Metric.create newMetric, (err, result) =>
+			ActiveSession.persist.metrics.create newMetric, (err, result) =>
 				if err
 					console.error err.stack
 					Bootbox.alert "Error creating metric definition"

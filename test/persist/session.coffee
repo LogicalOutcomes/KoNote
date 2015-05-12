@@ -36,6 +36,9 @@ describe 'Session', ->
 				}
 				Fs.writeFileSync Path.join(userDir, 'auth-params'), JSON.stringify(authParams)
 
+				accountType = "normal"
+				Fs.writeFileSync Path.join(userDir, 'account-type'), JSON.stringify(accountType)
+
 				SymmetricEncryptionKey.derive 'pass', authParams, (err, userKey) ->
 					if err
 						cb err

@@ -12,21 +12,13 @@
 #  - Cryptographic verification of timestamps (coming soon)
 #  - Caching (coming soon?)
 
-ClientFile = require './clientFile'
-PlanTarget = require './planTarget'
-ProgNote = require './progNote'
-ProgNoteTemplate = require './progNoteTemplate'
-Metric = require './metric'
+Imm = require 'immutable'
+
 Session = require './session'
 Users = require './users'
 Utils = require './utils'
 
 module.exports = {
-	ClientFile
-	PlanTarget
-	ProgNote
-	ProgNoteTemplate
-	Metric
 	generateId: Utils.generateId
 	Session
 	Users

@@ -2,7 +2,6 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require './config'
-Persist = require './persist'
 
 load = (win) ->
 	React = win.React
