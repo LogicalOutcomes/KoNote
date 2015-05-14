@@ -130,14 +130,18 @@ load = (win, {clientId}) ->
 							cb()
 					(cb) ->
 						Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
-							ActiveSession.persist.planTargets.read clientId, planTargetHeader.get('id'), cb
+							ActiveSession.persist.planTargets.readRevisions clientId, planTargetHeader.get('id'), cb
 						, (err, results) ->
 							if err
 								cb err
 								return
 
-							planTargetsById = Imm.List(results).map (planTarget) ->
-								return [planTarget.get('id'), planTarget]
+							planTargetsById = Imm.List(results).map (planTargetRevs) ->
+								id = planTargetRevs.getIn([0, 'id'])
+								return [
+									id
+									Imm.Map({id, revisions: planTargetRevs})
+								]
 							planTargetsById = Imm.Map(planTargetsById.fromEntrySeq())
 
 							cb()

@@ -272,6 +272,8 @@ load = (win) ->
 					Bootbox.alert 'Cannot save plan: there are empty target fields.'
 					return
 
+				updatedIds = Imm.Map()
+
 				# Create new revisions for any plan targets that have changed
 				targetIds = @state.currentTargetRevisionsById.keySeq().toJS()
 				Async.each targetIds, (targetId, cb) =>
@@ -279,20 +281,33 @@ load = (win) ->
 						cb null
 						return
 
-					# TODO shit, it's using a temp ID, will have to rewrite that on first persist
-					console.log JSON.stringify @state.currentTargetRevisionsById.get(targetId)
 					currentRev = @_normalizeTargetFields @state.currentTargetRevisionsById.get(targetId)
 
-					# TODO need to create if doesn't exist yet
-					@props.registerTask "updateTarget-#{targetId}"
-					ActiveSession.persist.planTargets.createRevision currentRev, (err) =>
-						@props.unregisterTask "updateTarget-#{targetId}"
+					# If this target has been saved to persistent storage before
+					if @props.planTargetsById.has(targetId)
+						@props.registerTask "updateTarget-#{targetId}"
+						ActiveSession.persist.planTargets.createRevision currentRev, (err) =>
+							@props.unregisterTask "updateTarget-#{targetId}"
 
-						if err
-							cb err
-							return
+							if err
+								cb err
+								return
 
-						cb null
+							cb()
+					else # this is a new target
+						newObj = currentRev.delete('id')
+
+						@props.registerTask "createTarget-#{targetId}"
+						ActiveSession.persist.planTargets.create newObj, (err, result) =>
+							@props.unregisterTask "createTarget-#{targetId}"
+
+							if err
+								cb err
+								return
+
+							updatedIds = updatedIds.set targetId, result.get('id')
+
+							cb()
 				, (err) =>
 					if err
 						console.error err
@@ -300,8 +315,18 @@ load = (win) ->
 						Bootbox.alert 'An error occurred while saving.'
 						return
 
-					# Trigger clientFile save
-					@props.updatePlan @state.plan
+					# Replace transient IDs
+					newPlan = @state.plan.updateIn ['sections'], (sections) ->
+						return sections.map (section) ->
+							return section.update 'targetIds', (targetIds) ->
+								return targetIds.map (oldTargetId) ->
+									return updatedIds.get(oldTargetId, oldTargetId)
+					currentTargetRevs = @state.currentTargetRevisionsById.mapKeys (oldId) ->
+						return updatedIds.get oldId, oldId
+
+					@setState {plan: newPlan, currentTargetRevisionsById: currentTargetRevs}, =>
+						# Trigger clientFile save
+						@props.updatePlan @state.plan
 		_addSection: ->
 			sectionId = Persist.generateId()
 
@@ -323,7 +348,7 @@ load = (win) ->
 		_addTargetToSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
 
-			targetId = Persist.generateId()
+			targetId = '__transient__' + Persist.generateId()
 			newPlan = @state.plan.updateIn ['sections', sectionIndex, 'targetIds'], (targetIds) =>
 				return targetIds.push targetId
 
