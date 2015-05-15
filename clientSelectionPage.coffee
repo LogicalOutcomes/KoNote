@@ -11,6 +11,7 @@ load = (win) ->
 	R = React.DOM
 
 	AccountManagerDialog = require('./accountManagerDialog').load(win)
+	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
@@ -71,6 +72,7 @@ load = (win) ->
 				(if global.ActiveSession.isAdmin()
 					R.div({},
 						OpenAccountManagerButton()
+						OpenNewClientFileButton()
 					)
 				)
 				R.div({
@@ -184,6 +186,33 @@ load = (win) ->
 
 			return AccountManagerDialog({
 				onClose: =>
+					@setState {isOpen: false}
+			})
+		_open: ->
+			@setState {isOpen: true}
+
+	# Yep, this definitely needs to be a component! Show me how? Or is this to be a 'widget' like the logo? :)
+	OpenNewClientFileButton = React.createFactory React.createClass
+		mixins: [LayeredComponentMixin]
+		getInitialState: ->
+			return {
+				isOpen: false
+			}
+		render: ->
+			return R.button({
+				className: 'btn btn-default'
+				onClick: @_open
+			},
+				"New Client File"
+			)
+		renderLayer: ->
+			unless @state.isOpen
+				return R.div()
+
+			return CreateClientFileDialog({
+				onClose: =>
+					@setState {isOpen: false}
+				onCancel: =>
 					@setState {isOpen: false}
 			})
 		_open: ->
