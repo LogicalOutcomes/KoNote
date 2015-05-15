@@ -11,13 +11,6 @@ generateId = ->
 # All object IDs match this pattern
 IdSchema = Joi.string().regex(/^[a-zA-Z0-9_-]+$/)
 
-# Defines which strings are safe to use as a file name.
-# Note: this is mainly to prevent Windows from blowing up.
-# We don't want users to be able to use '/' or '\' because paths.
-# We also don't want users to be able to use '.' because that's how we delimit
-# the pieces of our file names.
-PathSafeString = Joi.string().regex(/^[ 'a-zA-Z0-9_-]+$/)
-
 validate = (value, schema, cb) ->
 	results = Joi.validate value, schema
 
@@ -34,24 +27,9 @@ class ObjectNotFoundError extends Error
 	constructor: ->
 		super
 
-validateClientName = (name) ->
-	first = name.get('first')
-	middle = name.get('middle')
-	last = name.get('last')
-
-	if Joi.validate(first, PathSafeString).error?
-		throw new Error "invalid client first name: #{JSON.stringify first}"
-
-	if middle? and Joi.validate(middle, PathSafeString).error?
-		throw new Error "invalid client middle name: #{JSON.stringify middle}"
-
-	if Joi.validate(last, PathSafeString).error?
-		throw new Error "invalid client last name: #{JSON.stringify last}"
-
 module.exports = {
 	IdSchema
 	ObjectNotFoundError
-	PathSafeString
 	SafeTimestampFormat
 	generateId
 	validate
