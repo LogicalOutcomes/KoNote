@@ -55,6 +55,14 @@ load = (win) ->
 
 		return 'hide'
 
+	# Persistent objects come with metadata that makes it difficult to compare
+	# revisions (e.g. timestamp).  This method removes those attributes.
+	stripMetadata = (persistObj) ->
+		return persistObj
+		.delete('revisionId')
+		.delete('author')
+		.delete('timestamp')
+
 	# Ensures that `text` does not exceed `maxLength` by replacing excess
 	# characters with an ellipsis character.
 	truncateText = (maxLength, text) ->
@@ -69,6 +77,7 @@ load = (win) ->
 		renderLineBreaks
 		renderName
 		showWhen
+		stripMetadata
 		truncateText
 	}
 

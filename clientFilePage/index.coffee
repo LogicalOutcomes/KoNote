@@ -30,7 +30,7 @@ load = (win, {clientId}) ->
 	BrandWidget = require('../brandWidget').load(win)
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
-	{FaIcon, renderName, showWhen} = require('../utils').load(win)
+	{FaIcon, renderName, showWhen, stripMetadata} = require('../utils').load(win)
 
 	nwWin = Gui.Window.get(win)
 
@@ -114,7 +114,7 @@ load = (win, {clientId}) ->
 					Bootbox.alert "Could not load client data."
 					return
 
-				clientFile = revisions.get(0)
+				clientFile = stripMetadata revisions.get(0)
 
 				# Load plan targets
 				registerTask "readPlanTargets", true
@@ -219,7 +219,12 @@ load = (win, {clientId}) ->
 				cb()
 
 		updateClientFile = (context, newValue) ->
+			oldClientFile = clientFile
 			clientFile = clientFile.setIn context, newValue
+
+			# If there were no changes
+			if Imm.is(clientFile, oldClientFile)
+				return
 
 			registerTask "updateClientFile"
 			ActiveSession.persist.clientFiles.createRevision clientFile, (err) =>

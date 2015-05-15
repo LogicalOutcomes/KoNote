@@ -15,15 +15,12 @@ load = (win) ->
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricLookupField = require('../metricLookupField').load(win)
 	MetricWidget = require('../metricWidget').load(win)
-	{FaIcon, renderLineBreaks, showWhen} = require('../utils').load(win)
+	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
 
 	PlanView = React.createFactory React.createClass
 		getInitialState: ->
 			currentTargetRevisionsById = @props.planTargetsById.mapEntries ([targetId, target]) =>
-				latestRev = target.get('revisions').first()
-					.delete('revisionId')
-					.delete('author')
-					.delete('timestamp')
+				latestRev = stripMetadata target.get('revisions').first()
 				return [targetId, latestRev]
 
 			return {
