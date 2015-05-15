@@ -21,10 +21,10 @@ load = (win) ->
 		getInitialState: ->
 			currentTargetRevisionsById = @props.planTargetsById.mapEntries ([targetId, target]) =>
 				latestRev = target.get('revisions').first()
-				return [
-					targetId,
-					latestRev.delete('revisionId')
-				]
+					.delete('revisionId')
+					.delete('author')
+					.delete('timestamp')
+				return [targetId, latestRev]
 
 			return {
 				plan: @props.plan
@@ -220,7 +220,11 @@ load = (win) ->
 
 			lastRev = target.getIn ['revisions', 0]
 
-			unless Imm.is(currentRev, lastRev.delete('revisionId'))
+			lastRevNormalized = lastRev
+				.delete('revisionId')
+				.delete('author')
+				.delete('timestamp')
+			unless Imm.is(currentRev, lastRevNormalized)
 				return true
 
 			return false

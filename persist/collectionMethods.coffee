@@ -21,7 +21,7 @@ Path = require 'path'
 # 		api: apiInner
 # 	})
 # ])
-createCollectionApi = (session, context, modelDef) ->
+createCollectionApi = (session, eventBus, context, modelDef) ->
 	childCollectionNames = Imm.List(modelDef.children).map (childDef) ->
 		return childDef.collectionName
 
@@ -80,6 +80,10 @@ createCollectionApi = (session, context, modelDef) ->
 			if err
 				cb err
 				return
+
+			# Dispatch event via event bus
+			process.nextTick ->
+				eventBus.trigger "create:#{modelDef.name}", obj
 
 			cb null, obj
 
@@ -171,7 +175,7 @@ createCollectionApi = (session, context, modelDef) ->
 		.set 'timestamp', Moment().format(SafeTimestampFormat)
 
 		objDir = null
-		Async.waterfall [
+		Async.series [
 			(cb) ->
 				lookupObjDirById contextualIds, obj.get('id'), (err, result) ->
 					if err
@@ -199,7 +203,16 @@ createCollectionApi = (session, context, modelDef) ->
 			(cb) ->
 				revFile = Path.join(objDir, createRevisionFileName(obj))
 				writeObjectFile obj, revFile, cb
-		], cb
+		], (err) ->
+			if err
+				cb err
+				return
+
+			# Dispatch event via event bus
+			process.nextTick ->
+				eventBus.trigger "createRevision:#{modelDef.name}", obj
+
+			cb null, obj
 
 	listRevisions = (contextualIds..., id, cb) ->
 		if contextualIds.length isnt context.size

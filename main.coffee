@@ -13,10 +13,6 @@ init = (win) ->
 	Gui = win.require 'nw.gui'
 
 	win.jQuery ->
-		# Create a global event bus if one hasn't already been created by another page
-		unless global.EventBus
-			global.EventBus = Object.create Backbone.Events
-
 		# Pull any parameters out of the URL
 		urlParams = QueryString.parse win.location.search.substr(1)
 

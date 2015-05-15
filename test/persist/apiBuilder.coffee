@@ -37,6 +37,7 @@ describe 'ApiBuilder', ->
 		it 'returns basic API with no collections if no definitions', ->
 			api = buildApi(s, [])
 			Assert.deepEqual api, {
+				eventBus: api.eventBus
 				setUpDataDirectory: api.setUpDataDirectory
 				ObjectNotFoundError: api.ObjectNotFoundError
 			}
@@ -571,7 +572,7 @@ describe 'ApiBuilder', ->
 			it 'does not provide a read method', ->
 				Assert.strictEqual api.people.read, undefined
 
-		describe 'nested data models', ->
+		describe 'nested data models with event listeners', ->
 			modelDefs = [
 				{
 					name: 'immSuper'
@@ -622,6 +623,12 @@ describe 'ApiBuilder', ->
 
 				Async.series [
 					(cb) ->
+						api.eventBus.once 'create:immSuper', (newObj) ->
+							Assert.strictEqual newObj.get('id'), supObjId
+							Assert.strictEqual newObj.get('a'), 'hey'
+
+							cb()
+
 						api.immSupers.create Imm.Map({a: 'hey'}), (err, result) ->
 							if err
 								cb err
@@ -631,8 +638,16 @@ describe 'ApiBuilder', ->
 							Assert.strictEqual result.get('a'), 'hey'
 
 							supObjId = result.get('id')
-							cb()
+
+							# See event listener
 					(cb) ->
+						api.eventBus.once 'create:mutSub', (newObj) ->
+							Assert.strictEqual newObj.get('id'), subObj1Id
+							Assert.strictEqual newObj.get('immSuperId'), supObjId
+							Assert.strictEqual newObj.get('b'), 'hiya'
+
+							cb()
+
 						api.mutSubs.create Imm.Map({
 							immSuperId: supObjId
 							b: 'hiya'
@@ -647,8 +662,16 @@ describe 'ApiBuilder', ->
 							Assert.strictEqual result.get('b'), 'hiya'
 
 							subObj1Id = result.get('id')
-							cb()
+
+							# See event listener
 					(cb) ->
+						api.eventBus.once 'create:mutSub', (newObj) ->
+							Assert.strictEqual newObj.get('id'), subObj2Id
+							Assert.strictEqual newObj.get('immSuperId'), supObjId
+							Assert.strictEqual newObj.get('b'), 'yo'
+
+							cb()
+
 						api.mutSubs.create Imm.Map({
 							immSuperId: supObjId
 							b: 'yo'
@@ -664,7 +687,8 @@ describe 'ApiBuilder', ->
 							Assert.strictEqual result.get('b'), 'yo'
 
 							subObj2Id = result.get('id')
-							cb()
+
+							# See event listener
 					(cb) ->
 						api.immSupers.list (err, results) ->
 							if err
@@ -713,6 +737,13 @@ describe 'ApiBuilder', ->
 
 							cb()
 					(cb) ->
+						api.eventBus.once 'createRevision:mutSub', (newRev) ->
+							Assert.strictEqual newRev.get('id'), subObj1Id
+							Assert.strictEqual newRev.get('immSuperId'), supObjId
+							Assert.strictEqual newRev.get('b'), 'xx'
+
+							cb()
+
 						api.mutSubs.createRevision Imm.Map({
 							immSuperId: supObjId
 							id: subObj1Id
@@ -726,7 +757,7 @@ describe 'ApiBuilder', ->
 							Assert.strictEqual result.get('immSuperId'), supObjId
 							Assert.strictEqual result.get('b'), 'xx'
 
-							cb()
+							# See event listener
 					(cb) ->
 						api.mutSubs.readRevisions supObjId, subObj1Id, (err, revs) ->
 							if err
@@ -787,6 +818,13 @@ describe 'ApiBuilder', ->
 							supObjRevId1 = result.get('revisionId')
 							cb()
 					(cb) ->
+						api.eventBus.once 'create:immSub', (newObj) ->
+							Assert.strictEqual newObj.get('id'), subObjId
+							Assert.strictEqual newObj.get('mutSuperId'), supObjId
+							Assert.strictEqual newObj.get('d'), 'thing2'
+
+							cb()
+
 						api.immSubs.create Imm.Map({
 							mutSuperId: supObjId
 							d: 'thing2'
@@ -805,8 +843,16 @@ describe 'ApiBuilder', ->
 
 							subObjId = result.get('id')
 							subObjRevId = result.get('revisionId')
-							cb()
+
+							# See event listener
 					(cb) ->
+						api.eventBus.once 'createRevision:mutSuper', (newRev) ->
+							Assert.strictEqual newRev.get('id'), supObjId
+							Assert.strictEqual newRev.get('revisionId'), supObjRevId2
+							Assert.strictEqual newRev.get('c'), 'thing3'
+
+							cb()
+
 						api.mutSupers.createRevision Imm.Map({
 							id: supObjId
 							c: 'thing3'
@@ -823,7 +869,8 @@ describe 'ApiBuilder', ->
 							Assert not result.has('d')
 
 							supObjRevId2 = result.get('revisionId')
-							cb()
+
+							# See event listener
 					(cb) ->
 						api.mutSupers.list (err, results) ->
 							if err

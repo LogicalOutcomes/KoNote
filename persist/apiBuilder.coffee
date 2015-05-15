@@ -1,4 +1,5 @@
 Async = require 'async'
+Backbone = require 'backbone'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
@@ -8,8 +9,11 @@ CollectionMethods = require './collectionMethods'
 {ObjectNotFoundError} = require './utils'
 
 buildApi = (session, dataModelDefinitions) ->
-	result = processModels(session, dataModelDefinitions).toJS()
+	eventBus = Object.create Backbone.Events
 
+	result = processModels(session, eventBus, dataModelDefinitions).toJS()
+
+	result.eventBus = eventBus
 	result.setUpDataDirectory = (cb) ->
 		# Set up top-level directories
 		Async.each dataModelDefinitions, (modelDef, cb) ->
@@ -19,11 +23,11 @@ buildApi = (session, dataModelDefinitions) ->
 
 	return result
 
-processModels = (session, modelDefs, context=Imm.List()) ->
+processModels = (session, eventBus, modelDefs, context=Imm.List()) ->
 	result = Imm.Map()
 
 	for modelDef in modelDefs
-		partialResult = processModel session, modelDef, context
+		partialResult = processModel session, eventBus, modelDef, context
 
 		if mapKeysOverlap partialResult, result
 			throw new Error "Detected duplicate collection names.  Check data model definitions."
@@ -39,7 +43,7 @@ mapKeysOverlap = (map1, map2) ->
 	# true if there is overlap between the two key sets
 	return map1Keys.intersect(map2Keys).size > 0
 
-processModel = (session, modelDef, context=Imm.List()) ->
+processModel = (session, eventBus, modelDef, context=Imm.List()) ->
 	result = Imm.Map({})
 
 	if modelDef.name is ''
@@ -47,7 +51,8 @@ processModel = (session, modelDef, context=Imm.List()) ->
 			Invalid name: #{JSON.stringify modelDef.name}
 		"""
 
-	if modelDef.collectionName in ['', 'setUpDataDirectory'] or modelDef.collectionName[0] is '_'
+	invalidCollNames = ['', 'setUpDataDirectory', 'eventBus']
+	if modelDef.collectionName in invalidCollNames or modelDef.collectionName[0] is '_'
 		throw new Error """
 			Invalid collection name: #{JSON.stringify modelDef.collectionName}
 		"""
@@ -55,14 +60,14 @@ processModel = (session, modelDef, context=Imm.List()) ->
 	modelDef.indexes or= []
 	modelDef.children or= []
 
-	collectionApi = CollectionMethods.createCollectionApi session, context, modelDef
+	collectionApi = CollectionMethods.createCollectionApi session, eventBus, context, modelDef
 	result = result.set modelDef.collectionName, collectionApi
 
 	contextEntry = Imm.Map({
 		definition: modelDef
 		api: collectionApi
 	})
-	children = processModels session, modelDef.children, context.push(contextEntry)
+	children = processModels session, eventBus, modelDef.children, context.push(contextEntry)
 
 	if children.has modelDef.name
 		throw new Error """

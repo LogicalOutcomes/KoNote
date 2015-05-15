@@ -140,7 +140,7 @@ load = (win, {clientId}) ->
 								id = planTargetRevs.getIn([0, 'id'])
 								return [
 									id
-									Imm.Map({id, revisions: planTargetRevs})
+									Imm.Map({id, revisions: planTargetRevs.reverse()})
 								]
 							planTargetsById = Imm.Map(planTargetsById.fromEntrySeq())
 
@@ -238,7 +238,7 @@ load = (win, {clientId}) ->
 				setTimeout unregisterTask.bind(null, slowSaveTaskId), 500
 
 		registerListeners = ->
-			global.EventBus.on 'newPlanTargetRevision', (newRev) ->
+			global.ActiveSession.persist.eventBus.on 'create:planTarget createRevision:planTarget', (newRev) ->
 				if isClosed
 					return
 
@@ -258,7 +258,7 @@ load = (win, {clientId}) ->
 
 				render()
 
-			global.EventBus.on 'newProgNote', (newProgNote) ->
+			global.ActiveSession.persist.eventBus.on 'create:progNote', (newProgNote) ->
 				if isClosed
 					return
 
@@ -269,11 +269,11 @@ load = (win, {clientId}) ->
 
 				render()
 
-			global.EventBus.on 'newMetricRevision', (newRev) ->
+			global.ActiveSession.persist.eventBus.on 'create:metric', (newMetric) ->
 				if isClosed
 					return
 
-				metricsById = metricsById.set newRev.get('id'), newRev
+				metricsById = metricsById.set newMetric.get('id'), newMetric
 
 				render()
 
