@@ -82,8 +82,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				return
 
 			# Dispatch event via event bus
-			process.nextTick ->
-				eventBus.trigger "create:#{modelDef.name}", obj
+			eventBus.trigger "create:#{modelDef.name}", obj
 
 			cb null, obj
 
@@ -209,8 +208,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				return
 
 			# Dispatch event via event bus
-			process.nextTick ->
-				eventBus.trigger "createRevision:#{modelDef.name}", obj
+			eventBus.trigger "createRevision:#{modelDef.name}", obj
 
 			cb null, obj
 
