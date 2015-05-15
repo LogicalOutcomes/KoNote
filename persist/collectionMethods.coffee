@@ -5,7 +5,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 Path = require 'path'
 
-{IdSchema, generateId, ObjectNotFoundError, SafeTimestampFormat} = require './utils'
+{IdSchema, generateId, ObjectNotFoundError, TimestampFormat} = require './utils'
 
 # Create an API based on the specified model definition.
 #
@@ -48,7 +48,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		.set 'id', generateId()
 		.set 'revisionId', generateId()
 		.set 'author', session.userName
-		.set 'timestamp', Moment().format(SafeTimestampFormat)
+		.set 'timestamp', Moment().format(TimestampFormat)
 
 		objDir = null
 
@@ -171,7 +171,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		obj = obj
 		.set 'revisionId', generateId()
 		.set 'author', session.userName
-		.set 'timestamp', Moment().format(SafeTimestampFormat)
+		.set 'timestamp', Moment().format(TimestampFormat)
 
 		objDir = null
 		Async.series [
@@ -245,7 +245,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 							objDir
 							rev.get('_fileName')
 						)
-					.sortBy (rev) -> Moment(rev.timestamp, SafeTimestampFormat)
+					.sortBy (rev) -> Moment(rev.timestamp, TimestampFormat)
 
 					cb()
 		], (err) ->
@@ -424,7 +424,7 @@ prepareSchema = (schema, context) ->
 	newKeys = {
 		id: IdSchema
 		revisionId: IdSchema
-		timestamp: Joi.date().format(SafeTimestampFormat).raw()
+		timestamp: Joi.date().format(TimestampFormat).raw()
 		author: Joi.string().regex(/^[a-zA-Z0-9_-]+$/)
 	}
 

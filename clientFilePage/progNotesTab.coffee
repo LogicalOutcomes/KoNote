@@ -2,6 +2,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Persist = require '../persist'
 
 load = (win) ->
 	$ = win.jQuery
@@ -127,7 +128,7 @@ load = (win) ->
 			R.div({className: 'basic progNote'},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
-						Moment(@props.progNote.get('timestamp'))
+						Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
 						.format 'MMMM D, YYYY [at] HH:mm'
 					)
 					R.div({className: 'author'},
@@ -145,7 +146,7 @@ load = (win) ->
 			R.div({className: 'full progNote'},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
-						Moment(@props.progNote.get('timestamp'))
+						Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
 						.format 'MMMM D, YYYY [at] HH:mm'
 					)
 					R.div({className: 'author'},

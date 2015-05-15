@@ -10,7 +10,7 @@ Rimraf = require 'rimraf'
 
 {buildApi} = require '../../persist/apiBuilder'
 {SymmetricEncryptionKey} = require '../../persist/crypto'
-{SafeTimestampFormat} = require '../../persist/utils'
+{TimestampFormat} = require '../../persist/utils'
 
 dataDir = Path.join process.cwd(), 'testData'
 
@@ -132,7 +132,7 @@ describe 'ApiBuilder', ->
 
 					Assert.strictEqual typeof result.get('id'), 'string'
 					Assert.strictEqual typeof result.get('revisionId'), 'string'
-					ts = Moment(result.get('timestamp'), SafeTimestampFormat)
+					ts = Moment(result.get('timestamp'), TimestampFormat)
 					Assert Math.abs(ts.diff(now)) < 2000
 					Assert.strictEqual result.get('author'), 'test-user'
 
@@ -283,7 +283,7 @@ describe 'ApiBuilder', ->
 
 					Assert.strictEqual typeof result.get('id'), 'string'
 					Assert.strictEqual typeof result.get('revisionId'), 'string'
-					ts = Moment(result.get('timestamp'), SafeTimestampFormat)
+					ts = Moment(result.get('timestamp'), TimestampFormat)
 					Assert Math.abs(ts.diff(now)) < 2000
 					Assert.strictEqual result.get('author'), 'test-user'
 

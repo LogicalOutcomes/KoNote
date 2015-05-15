@@ -82,7 +82,7 @@ load = (win) ->
 						R.div({className: 'entry'},
 							# TODO author!!
 							R.div({className: 'timestamp'},
-								Moment(entry.get('timestamp'))
+								Moment(entry.get('timestamp'), Persist.TimestampFormat)
 								.format('MMMM D, YYYY [at] HH:mm')
 							)
 							R.div({className: 'notes'},

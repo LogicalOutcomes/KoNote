@@ -20,8 +20,7 @@ validate = (value, schema, cb) ->
 
 	cb null, results.value
 
-# Safe for including in file paths
-SafeTimestampFormat = 'YYYYMMDDTHHmmssSSSZZ'
+TimestampFormat = 'YYYYMMDDTHHmmssSSSZZ'
 
 class ObjectNotFoundError extends Error
 	constructor: ->
@@ -30,8 +29,7 @@ class ObjectNotFoundError extends Error
 module.exports = {
 	IdSchema
 	ObjectNotFoundError
-	SafeTimestampFormat
+	TimestampFormat
 	generateId
 	validate
-	validateClientName
 }

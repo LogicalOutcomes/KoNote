@@ -174,7 +174,7 @@ load = (win) ->
 													rev.get('name')
 												)
 												R.div({className: 'tag'},
-													Moment(rev.get('timestamp'))
+													Moment(rev.get('timestamp'), Persist.TimestampFormat)
 														.format('MMM D, YYYY [at] HH:mm'),
 													" by ",
 													rev.get('author')

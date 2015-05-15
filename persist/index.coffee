@@ -20,6 +20,7 @@ Utils = require './utils'
 
 module.exports = {
 	generateId: Utils.generateId
+	TimestampFormat: Utils.TimestampFormat
 	Session
 	Users
 }
