@@ -30,6 +30,7 @@ load = (win, {clientFileId}) ->
 	BrandWidget = require('../brandWidget').load(win)
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
+	AnalysisTab = require('./analysisTab').load(win)
 	{FaIcon, renderName, showWhen, stripMetadata} = require('../utils').load(win)
 
 	nwWin = Gui.Window.get(win)
@@ -384,6 +385,14 @@ load = (win, {clientFileId}) ->
 					registerTask: @props.registerTask
 					unregisterTask: @props.unregisterTask
 				})
+				AnalysisTab.AnalysisView({
+					isVisible: activeTabId is 'analysis'
+					clientFileId
+					progNotes: @props.progressNotes
+					metricsById: @props.metricsById
+					registerTask: @props.registerTask
+					unregisterTask: @props.unregisterTask
+				})
 			)
 		_changeTab: (newTabId) ->
 			@setState {
@@ -416,10 +425,10 @@ load = (win, {clientFileId}) ->
 						onClick: @props.onTabChange.bind null, 'progressNotes'
 					})
 					SidebarTab({
-						name: "Metrics"
+						name: "Analysis"
 						icon: 'line-chart'
-						isActive: activeTabId is 'metrics'
-						onClick: @props.onTabChange.bind null, 'metrics'
+						isActive: activeTabId is 'analysis'
+						onClick: @props.onTabChange.bind null, 'analysis'
 					})
 				)				
 				BrandWidget()

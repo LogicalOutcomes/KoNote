@@ -1,0 +1,124 @@
+# The Analysis tab on the client file page.
+# Provides various tools for visualizing metrics and events.
+
+Async = require 'async'
+Imm = require 'immutable'
+Moment = require 'moment'
+
+Config = require '../config'
+Persist = require '../persist'
+
+load = (win) ->
+	$ = win.jQuery
+	Bootbox = win.bootbox
+	C3 = win.c3
+	React = win.React
+	R = React.DOM
+	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
+
+	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
+
+	AnalysisView = React.createFactory React.createClass
+		getInitialState: ->
+			return {}
+		render: ->
+			metricValues = @props.progNotes.flatMap (progNote) ->
+				return extractMetricsFromProgNote progNote
+			.filter (metricValue) -> # remove blank metrics
+				return metricValue.get('value').trim().length > 0
+			.groupBy (metricValue) -> # group by metric
+				return metricValue.get('id')
+			.map (metricValues) -> # for each data series
+				return metricValues.map (metricValue) -> # for each data point
+					# [x, y]
+					return [metricValue.get('timestamp'), metricValue.get('value')]
+			# metricValues is now a Map from metric ID to data series,
+			# where each data series is a sequence of [x, y] pairs
+
+			seriesNamesById = metricValues.keySeq().map (metricId) =>
+				return [metricId, @props.metricsById.get(metricId).get('name')]
+			.fromEntrySeq().toMap()
+
+			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
+				(if @props.isVisible
+					# Force chart to be recreated when tab is opened
+					Chart({data: metricValues, seriesNamesById})
+				)
+			)
+
+	Chart = React.createFactory React.createClass
+		render: ->
+			return R.div({ref: 'chartDiv'})
+		componentDidMount: ->
+			xsMap = @props.data.keySeq()
+			.map (seriesId) ->
+				return ['y-' + seriesId, 'x-' + seriesId]
+			.fromEntrySeq().toMap()
+
+			dataSeriesNames = @props.data.keySeq()
+			.map (seriesId) =>
+				return ['y-' + seriesId, @props.seriesNamesById.get(seriesId)]
+			.fromEntrySeq().toMap()
+
+			dataSeries = @props.data.entrySeq().flatMap ([seriesId, dataPoints]) ->
+				xValues = Imm.List(['x-' + seriesId]).concat(
+					dataPoints.map ([x, y]) -> x
+				)
+				yValues = Imm.List(['y-' + seriesId]).concat(
+					dataPoints.map ([x, y]) -> y
+				)
+				return Imm.List([xValues, yValues])
+
+			console.log JSON.stringify(dataSeriesNames, null, 4)
+			C3.generate {
+				bindto: @refs.chartDiv.getDOMNode()
+				axis: {
+					x: {
+						type: 'timeseries'
+						tick: {
+							format: '%Y-%m-%d'
+						}
+					}
+				}
+				data: {
+					xFormat: D3TimestampFormat
+					xs: xsMap.toJS()
+					names: dataSeriesNames.toJS()
+					columns: dataSeries.toJS()
+				}
+			}
+
+	extractMetricsFromProgNote = (progNote) ->
+		switch progNote.get('type')
+			when 'basic'
+				# Quick notes don't have metrics
+				return Imm.List()
+			when 'full'
+				return progNote.get('sections').flatMap (section) ->
+					return extractMetricsFromProgNoteSection section, progNote.get('timestamp')
+			else
+				throw new Error "unknown prognote type: #{JSON.stringify progNote.get('type')}"
+
+	extractMetricsFromProgNoteSection = (section, timestamp) ->
+		switch section.get('type')
+			when 'basic'
+				return section.get('metrics').map (metric) ->
+					return Imm.Map({
+						id: metric.get('id')
+						timestamp
+						value: metric.get('value')
+					})
+			when 'plan'
+				return section.get('targets').flatMap (target) ->
+					return target.get('metrics').map (metric) ->
+						return Imm.Map({
+							id: metric.get('id')
+							timestamp
+							value: metric.get('value')
+						})
+			else
+				throw new Error "unknown prognote section type: #{JSON.stringify section.get('type')}"
+
+	return {AnalysisView}
+
+module.exports = {load}
