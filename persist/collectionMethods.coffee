@@ -475,11 +475,27 @@ encodeFileNameComponent = (s) ->
 	# Percent encode all character except for a few safe characters
 	return s.replace /[^a-zA-Z0-9 $#&_\-]/g, (c) ->
 		charInHex = c.charCodeAt(0).toString(16)
-		return '%' + charInHex
+
+		if charInHex.length is 1
+			return '%0' + charInHex
+
+		if charInHex.length is 2
+			return '%' + charInHex
+
+		if charInHex.length is 3
+			return '%%0' + charInHex
+
+		if charInHex.length is 4
+			return '%%' + charInHex
+
+		throw new Error "unexpected character: \\u#{charInHex}"
 
 decodeFileNameComponent = (s) ->
-	# Compatibility for the win!
-	return decodeURIComponent s
+	s = s.replace /%%([a-fA-F0-9]{4})/g, (match, hex) ->
+		return String.fromCharCode parseInt(hex, 16)
+	s = s.replace /%([a-fA-F0-9]{2})/g, (match, hex) ->
+		return String.fromCharCode parseInt(hex, 16)
+	return s
 
 module.exports = {
 	createCollectionApi
