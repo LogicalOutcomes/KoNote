@@ -158,10 +158,10 @@ load = (win) ->
 		_onSearchBoxBlur: (event) ->
 			if @state.queryText is ''
 				@setState {isSmallHeaderSet: false}
-		_onResultSelection: (clientId, event) ->
+		_onResultSelection: (clientFileId, event) ->
 			openWindow {
 				page: 'clientFile'
-				clientId
+				clientFileId
 			}
 
 	# In the future, it might make sense to refactor this into a generic

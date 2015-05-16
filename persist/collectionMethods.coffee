@@ -417,7 +417,7 @@ prepareSchema = (schema, context) ->
 	# The schema can be an array of possible schemas
 	# (see Joi documentation)
 	if Array.isArray schema
-		return (prepareSchema(subschema) for subschema in schema)
+		return (prepareSchema(subschema, context) for subschema in schema)
 
 	# We assume at this point that schema is a Joi.object()
 

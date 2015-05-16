@@ -355,7 +355,7 @@ load = (win) ->
 
 			newTarget = Imm.fromJS {
 				id: targetId
-				clientFileId: @props.clientId
+				clientFileId: @props.clientFileId
 				name: ''
 				notes: ''
 				metricIds: []

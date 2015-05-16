@@ -79,7 +79,7 @@ load = (win) ->
 				)
 			)
 		_openNewProgNote: ->
-			openWindow {page: 'newProgNote', clientId: @props.clientId}
+			openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
 		_toggleQuickNotePopover: ->
 			quickNoteToggle = $(@refs.quickNoteToggle.getDOMNode())
 
@@ -105,7 +105,7 @@ load = (win) ->
 		_createQuickNote: (notes) ->
 			note = Imm.fromJS {
 				type: 'basic'
-				clientId: @props.clientId
+				clientFileId: @props.clientFileId
 				author: 'David'
 				notes
 			}

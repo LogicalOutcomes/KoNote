@@ -1,6 +1,4 @@
 # UI logic for the progress note creation window
-#
-# TODO New plan: create new prognote object/file, trigger update via event bus
 
 _ = require 'underscore'
 Async = require 'async'
@@ -9,7 +7,7 @@ Moment = require 'moment'
 
 Config = require '../config'
 
-load = (win, {clientId}) ->
+load = (win, {clientFileId}) ->
 	# Libraries from browser context
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -52,23 +50,38 @@ load = (win, {clientId}) ->
 			template = myTemplate # TODO
 			planTargetsById = null
 			metricsById = null
+			planTargetHeaders = null
+			progNoteHeaders = null
 
 			Async.series [
 				(cb) =>
-					ActiveSession.persist.clientFiles.readLatestRevisions clientId, 1, (err, revisions) =>
+					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
 						if err
 							cb err
 							return
 
-						clientFile = revisions[0]
+						clientFile = revisions.first()
 						cb null
 				(cb) =>
-					ActiveSession.persist.planTargets.readClientFileTargets clientFile, (err, result) =>
+					ActiveSession.persist.planTargets.list clientFileId, (err, result) =>
 						if err
 							cb err
 							return
 
-						planTargetsById = result
+						planTargetHeaders = result
+						cb null
+				(cb) =>
+					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
+						ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
+					, (err, planTargets) ->
+						if err
+							cb err
+							return
+
+						pairs = planTargets.map (planTarget) ->
+							return [planTarget.getIn([0, 'id']), planTarget]
+						planTargetsById = Imm.Map(pairs)
+
 						cb null
 				(cb) =>
 					# Figure out which metrics we need to load
@@ -82,25 +95,36 @@ load = (win, {clientId}) ->
 							else
 								throw new Error "unknown section type: #{section.get('type')}"
 					.union planTargetsById.valueSeq().flatMap (planTarget) =>
-						return planTarget.get('revisions').last().get('metricIds')
+						return planTarget.last().get('metricIds')
 
 					metricsById = Imm.Map()
 					Async.each requiredMetricIds.toArray(), (metricId, cb) =>
-						ActiveSession.persist.metrics.readLatestRevisions metricId, 1, (err, revisions) =>
+						ActiveSession.persist.metrics.read metricId, (err, result) =>
 							if err
 								cb err
 								return
 
-							metricsById = metricsById.set metricId, revisions[0]
+							metricsById = metricsById.set metricId, result
 							cb null
 					, cb
 				(cb) =>
-					ActiveSession.persist.progNotes.readAll clientId, (err, results) =>
+					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
 						if err
 							cb err
 							return
 
-						progNotes = Imm.fromJS results
+						progNoteHeaders = Imm.fromJS results
+						cb null
+				(cb) =>
+					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
+						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
+					, (err, results) ->
+						if err
+							cb err
+							return
+
+						progNotes = Imm.List(results)
+
 						cb null
 			], (err) =>
 				if err
@@ -118,8 +142,7 @@ load = (win, {clientId}) ->
 		createProgNoteFromTemplate = (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
 				type: 'full'
-				author: 'David' # TODO
-				clientId: clientFile.get('clientId')
+				clientFileId: clientFile.get('id')
 				templateId: template.get('id')
 				sections: template.get('sections').map (section) =>
 					switch section.get('type')
@@ -146,7 +169,7 @@ load = (win, {clientId}) ->
 								targets: clientFile.getIn(['plan', 'sections']).flatMap (section) =>
 									section.get('targetIds').map (targetId) =>
 										target = planTargetsById.get(targetId)
-										lastRev = target.get('revisions').last()
+										lastRev = target.last()
 										return Imm.fromJS {
 											id: target.get 'id'
 											name: lastRev.get 'name'

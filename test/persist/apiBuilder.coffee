@@ -572,6 +572,72 @@ describe 'ApiBuilder', ->
 			it 'does not provide a read method', ->
 				Assert.strictEqual api.people.read, undefined
 
+		describe 'schema arrays', ->
+			personDataModel = {
+				name: 'person'
+				collectionName: 'people'
+				isMutable: true
+				indexes: []
+				schema: [
+					Joi.object().keys({
+						type: 'a'
+						name: Joi.string()
+						age: Joi.number()
+					})
+					Joi.object().keys({
+						type: 'b'
+						name: Joi.string()
+						number: Joi.number()
+					})
+				]
+			}
+			api = buildApi s, [personDataModel]
+
+			beforeEach (cb) ->
+				api.setUpDataDirectory cb
+
+			it 'valid create type a', (cb) ->
+				api.people.create Imm.Map({
+					type: 'a'
+					name: 'Bob'
+					age: 50
+				}), (err, result) ->
+					Assert not err
+					Assert.strictEqual result.get('type'), 'a'
+					Assert.strictEqual result.get('name'), 'Bob'
+					Assert.strictEqual result.get('age'), 50
+					cb()
+
+			it 'valid create type b', (cb) ->
+				api.people.create Imm.Map({
+					type: 'b'
+					name: 'Bob'
+					number: 10
+				}), (err, result) ->
+					Assert not err
+					Assert.strictEqual result.get('type'), 'b'
+					Assert.strictEqual result.get('name'), 'Bob'
+					Assert.strictEqual result.get('number'), 10
+					cb()
+
+			it 'invalid create type a', (cb) ->
+				api.people.create Imm.Map({
+					type: 'a'
+					name: 'Bob'
+					number: 15
+				}), (err, result) ->
+					Assert err
+					cb()
+
+			it 'invalid create type b', (cb) ->
+				api.people.create Imm.Map({
+					type: 'b'
+					name: 'Bob'
+					age: 49
+				}), (err, result) ->
+					Assert err
+					cb()
+
 		describe 'nested data models with event listeners', ->
 			modelDefs = [
 				{

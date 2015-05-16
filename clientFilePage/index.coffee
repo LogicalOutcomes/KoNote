@@ -19,7 +19,7 @@ Moment = require 'moment'
 Config = require '../config'
 Persist = require '../persist'
 
-load = (win, {clientId}) ->
+load = (win, {clientFileId}) ->
 	# Libraries from browser context
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -106,7 +106,7 @@ load = (win, {clientId}) ->
 
 		loadData = ->
 			registerTask 'readClientFile', true
-			ActiveSession.persist.clientFiles.readLatestRevisions clientId, 1, (err, revisions) =>
+			ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
 				if err
 					unregisterTask 'readClientFile', true
 					console.error err
@@ -121,7 +121,7 @@ load = (win, {clientId}) ->
 				planTargetHeaders = null
 				Async.series [
 					(cb) ->
-						ActiveSession.persist.planTargets.list clientId, (err, results) =>
+						ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
 							if err
 								cb err
 								return
@@ -130,7 +130,7 @@ load = (win, {clientId}) ->
 							cb()
 					(cb) ->
 						Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
-							ActiveSession.persist.planTargets.readRevisions clientId, planTargetHeader.get('id'), cb
+							ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
 						, (err, results) ->
 							if err
 								cb err
@@ -159,7 +159,7 @@ load = (win, {clientId}) ->
 			progNoteHeaders = null
 			Async.series [
 				(cb) ->
-					ActiveSession.persist.progNotes.list clientId, (err, results) =>
+					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
 						if err
 							cb err
 							return
@@ -168,7 +168,7 @@ load = (win, {clientId}) ->
 						cb()
 				(cb) ->
 					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
-						ActiveSession.persist.progNotes.read clientId, progNoteHeader.get('id'), cb
+						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
 					, (err, results) ->
 						if err
 							cb err
@@ -247,7 +247,7 @@ load = (win, {clientId}) ->
 				if isClosed
 					return
 
-				unless newRev.get('clientFileId') is clientId
+				unless newRev.get('clientFileId') is clientFileId
 					return
 
 				targetId = newRev.get('id')
@@ -267,7 +267,7 @@ load = (win, {clientId}) ->
 				if isClosed
 					return
 
-				unless newProgNote.get('clientFileId') is clientId
+				unless newProgNote.get('clientFileId') is clientFileId
 					return
 
 				progressNotes = progressNotes.push newProgNote
@@ -367,7 +367,7 @@ load = (win, {clientId}) ->
 				})
 				PlanTab.PlanView({
 					isVisible: activeTabId is 'plan'
-					clientId
+					clientFileId
 					plan: @props.clientFile.get('plan')
 					planTargetsById: @props.planTargetsById
 					metricsById: @props.metricsById
@@ -378,7 +378,7 @@ load = (win, {clientId}) ->
 				})
 				ProgNotesTab.ProgNotesView({
 					isVisible: activeTabId is 'progressNotes'
-					clientId
+					clientFileId
 					progNotes: @props.progressNotes
 					metricsById: @props.metricsById
 					registerTask: @props.registerTask
