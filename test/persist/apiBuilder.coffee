@@ -624,29 +624,27 @@ describe 'ApiBuilder', ->
 				Async.series [
 					(cb) ->
 						api.eventBus.once 'create:immSuper', (newObj) ->
-							Assert.strictEqual newObj.get('id'), supObjId
+							Assert newObj.get('id')
 							Assert.strictEqual newObj.get('a'), 'hey'
 
-							cb()
+							supObjId = newObj.get('id')
 
 						api.immSupers.create Imm.Map({a: 'hey'}), (err, result) ->
 							if err
 								cb err
 								return
 
-							Assert result.get('id')
+							Assert.strictEqual result.get('id'), supObjId
 							Assert.strictEqual result.get('a'), 'hey'
 
-							supObjId = result.get('id')
-
-							# See event listener
+							cb()
 					(cb) ->
 						api.eventBus.once 'create:mutSub', (newObj) ->
-							Assert.strictEqual newObj.get('id'), subObj1Id
+							Assert newObj.get('id')
 							Assert.strictEqual newObj.get('immSuperId'), supObjId
 							Assert.strictEqual newObj.get('b'), 'hiya'
 
-							cb()
+							subObj1Id = newObj.get('id')
 
 						api.mutSubs.create Imm.Map({
 							immSuperId: supObjId
@@ -656,21 +654,19 @@ describe 'ApiBuilder', ->
 								cb err
 								return
 
-							Assert result.get('id')
+							Assert.strictEqual result.get('id'), subObj1Id
 							Assert.notStrictEqual result.get('id'), supObjId
 							Assert.strictEqual result.get('immSuperId'), supObjId
 							Assert.strictEqual result.get('b'), 'hiya'
 
-							subObj1Id = result.get('id')
-
-							# See event listener
+							cb()
 					(cb) ->
 						api.eventBus.once 'create:mutSub', (newObj) ->
-							Assert.strictEqual newObj.get('id'), subObj2Id
+							Assert newObj.get('id')
 							Assert.strictEqual newObj.get('immSuperId'), supObjId
 							Assert.strictEqual newObj.get('b'), 'yo'
 
-							cb()
+							subObj2Id = newObj.get('id')
 
 						api.mutSubs.create Imm.Map({
 							immSuperId: supObjId
@@ -680,15 +676,13 @@ describe 'ApiBuilder', ->
 								cb err
 								return
 
-							Assert result.get('id')
+							Assert.strictEqual result.get('id'), subObj2Id
 							Assert.notStrictEqual result.get('id'), supObjId
 							Assert.notStrictEqual result.get('id'), subObj1Id
 							Assert.strictEqual result.get('immSuperId'), supObjId
 							Assert.strictEqual result.get('b'), 'yo'
 
-							subObj2Id = result.get('id')
-
-							# See event listener
+							cb()
 					(cb) ->
 						api.immSupers.list (err, results) ->
 							if err
@@ -819,11 +813,11 @@ describe 'ApiBuilder', ->
 							cb()
 					(cb) ->
 						api.eventBus.once 'create:immSub', (newObj) ->
-							Assert.strictEqual newObj.get('id'), subObjId
+							Assert newObj.get('id')
 							Assert.strictEqual newObj.get('mutSuperId'), supObjId
 							Assert.strictEqual newObj.get('d'), 'thing2'
 
-							cb()
+							subObjId = newObj.get('id')
 
 						api.immSubs.create Imm.Map({
 							mutSuperId: supObjId
@@ -833,7 +827,7 @@ describe 'ApiBuilder', ->
 								cb err
 								return
 
-							Assert result.get('id')
+							Assert.strictEqual result.get('id'), subObjId
 							Assert.notStrictEqual result.get('id'), supObjId
 							Assert result.get('revisionId')
 							Assert.notStrictEqual result.get('revisionId'), supObjRevId1
@@ -841,17 +835,16 @@ describe 'ApiBuilder', ->
 							Assert not result.has('c')
 							Assert.strictEqual result.get('d'), 'thing2'
 
-							subObjId = result.get('id')
 							subObjRevId = result.get('revisionId')
 
-							# See event listener
+							cb()
 					(cb) ->
 						api.eventBus.once 'createRevision:mutSuper', (newRev) ->
 							Assert.strictEqual newRev.get('id'), supObjId
-							Assert.strictEqual newRev.get('revisionId'), supObjRevId2
+							Assert newRev.get('revisionId')
 							Assert.strictEqual newRev.get('c'), 'thing3'
 
-							cb()
+							supObjRevId2 = newRev.get('revisionId')
 
 						api.mutSupers.createRevision Imm.Map({
 							id: supObjId
@@ -862,15 +855,13 @@ describe 'ApiBuilder', ->
 								return
 
 							Assert.strictEqual result.get('id'), supObjId
-							Assert result.get('revisionId')
+							Assert.strictEqual result.get('revisionId'), supObjRevId2
 							Assert.notStrictEqual result.get('revisionId'), supObjRevId1
 							Assert.notStrictEqual result.get('revisionId'), subObjRevId
 							Assert.strictEqual result.get('c'), 'thing3'
 							Assert not result.has('d')
 
-							supObjRevId2 = result.get('revisionId')
-
-							# See event listener
+							cb()
 					(cb) ->
 						api.mutSupers.list (err, results) ->
 							if err
