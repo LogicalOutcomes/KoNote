@@ -20,12 +20,16 @@ load = (win) ->
 
 	AnalysisView = React.createFactory React.createClass
 		getInitialState: ->
-			return {}
+			return {
+				selectedMetricIds: Imm.Set()
+			}
 		render: ->
 			metricValues = @props.progNotes.flatMap (progNote) ->
 				return extractMetricsFromProgNote progNote
 			.filter (metricValue) -> # remove blank metrics
 				return metricValue.get('value').trim().length > 0
+			.filter (metricValue) => # keep only data for selected metrics
+				return @state.selectedMetricIds.contains metricValue.get('id')
 			.groupBy (metricValue) -> # group by metric
 				return metricValue.get('id')
 			.map (metricValues) -> # for each data series
@@ -40,16 +44,69 @@ load = (win) ->
 			.fromEntrySeq().toMap()
 
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
-				(if @props.isVisible
-					# Force chart to be recreated when tab is opened
-					Chart({data: metricValues, seriesNamesById})
+				R.div({className: 'controlPanel'},
+					R.div({className: 'heading'}, "Metrics")
+					R.div({className: 'metrics'},
+						(@props.metricsById.entrySeq().map ([metricId, metric]) =>
+							R.div({className: 'metric checkbox'},
+								R.label({},
+									R.input({
+										type: 'checkbox'
+										onChange: @_updateMetricSelection.bind null, metricId
+										checked: @state.selectedMetricIds.contains metricId
+									})
+									metric.get('name')
+								)
+							)
+						).toJS()...
+					)
+				)
+				R.div({className: 'chartContainer'},
+					(if @props.isVisible
+						# Force chart to be recreated when tab is opened
+						(if metricValues.size > 0
+							Chart({data: metricValues, seriesNamesById})
+						else
+							R.div({className: 'noData'},
+								"Select items above to see them graphed here."
+							)
+						)
+					)
 				)
 			)
+		_updateMetricSelection: (metricId) ->
+			@setState ({selectedMetricIds}) ->
+				if selectedMetricIds.contains metricId
+					selectedMetricIds = selectedMetricIds.delete metricId
+				else
+					selectedMetricIds = selectedMetricIds.add metricId
+
+				return {selectedMetricIds}
 
 	Chart = React.createFactory React.createClass
 		render: ->
-			return R.div({ref: 'chartDiv'})
+			return R.div({className: 'chart', ref: 'chartDiv'})
 		componentDidMount: ->
+			@_chart = C3.generate {
+				bindto: @refs.chartDiv.getDOMNode()
+				axis: {
+					x: {
+						type: 'timeseries'
+						tick: {
+							fit: false
+							format: '%Y-%m-%d'
+						}
+					}
+				}
+				data: {
+					xFormat: D3TimestampFormat
+					columns: []
+				}
+			}
+			@_refreshData()
+		componentDidUpdate: ->
+			@_refreshData()
+		_refreshData: ->
 			xsMap = @props.data.keySeq()
 			.map (seriesId) ->
 				return ['y-' + seriesId, 'x-' + seriesId]
@@ -69,24 +126,12 @@ load = (win) ->
 				)
 				return Imm.List([xValues, yValues])
 
-			console.log JSON.stringify(dataSeriesNames, null, 4)
-			C3.generate {
-				bindto: @refs.chartDiv.getDOMNode()
-				axis: {
-					x: {
-						type: 'timeseries'
-						tick: {
-							format: '%Y-%m-%d'
-						}
-					}
-				}
-				data: {
-					xFormat: D3TimestampFormat
-					xs: xsMap.toJS()
-					names: dataSeriesNames.toJS()
-					columns: dataSeries.toJS()
-				}
+			@_chart.load {
+				xs: xsMap.toJS()
+				columns: dataSeries.toJS()
+				unload: true
 			}
+			@_chart.data.names dataSeriesNames.toJS()
 
 	extractMetricsFromProgNote = (progNote) ->
 		switch progNote.get('type')
