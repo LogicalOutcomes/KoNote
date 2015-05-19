@@ -324,6 +324,8 @@ load = (win) ->
 									return updatedIds.get(oldTargetId, oldTargetId)
 					currentTargetRevs = @state.currentTargetRevisionsById.mapKeys (oldId) ->
 						return updatedIds.get oldId, oldId
+					currentTargetRevs = currentTargetRevs.map (currentRev, newId) ->
+						return currentRev.set 'id', newId
 
 					@setState {plan: newPlan, currentTargetRevisionsById: currentTargetRevs}, =>
 						# Trigger clientFile save
