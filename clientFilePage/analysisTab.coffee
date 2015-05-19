@@ -47,7 +47,9 @@ load = (win) ->
 				R.div({className: 'controlPanel'},
 					R.div({className: 'heading'}, "Metrics")
 					R.div({className: 'metrics'},
-						(@props.metricsById.entrySeq().map ([metricId, metric]) =>
+						(metricValues.keySeq().map (metricId) =>
+							metric = @props.metricsById.get(metricId)
+
 							R.div({className: 'metric checkbox'},
 								R.label({},
 									R.input({
