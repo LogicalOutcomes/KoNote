@@ -171,7 +171,7 @@ load = (win, {clientFileId}) ->
 										target = planTargetsById.get(targetId)
 										lastRev = target.last()
 										return Imm.fromJS {
-											id: target.get 'id'
+											id: lastRev.get 'id'
 											name: lastRev.get 'name'
 											notes: ''
 											metrics: lastRev.get('metricIds').map (metricId) =>
@@ -318,11 +318,21 @@ load = (win, {clientFileId}) ->
 		_hasChanges: ->
 			# TODO
 		_getSectionIndex: (sectionId) ->
-			return @state.progNote.get('sections').findIndex (s) =>
+			result = @state.progNote.get('sections').findIndex (s) =>
 				return s.get('id') is sectionId
+
+			if result is -1
+				throw new Error "could not find section with ID #{JSON.stringify sectionId}"
+
+			return result
 		_getTargetIndex: (sectionIndex, targetId) ->
-			return @state.progNote.getIn(['sections', sectionIndex, 'targets']).findIndex (t) =>
+			result = @state.progNote.getIn(['sections', sectionIndex, 'targets']).findIndex (t) =>
 				return t.get('id') is targetId
+
+			if result is -1
+				throw new Error "could not find target with ID #{JSON.stringify targetId}"
+
+			return result
 		_selectBasicSection: (section) ->
 			@setState {
 				selectedItem: Imm.fromJS {
