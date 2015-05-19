@@ -24,10 +24,20 @@ load = (win) ->
 				selectedMetricIds: Imm.Set()
 			}
 		render: ->
+			# All non-empty metric values
 			metricValues = @props.progNotes.flatMap (progNote) ->
 				return extractMetricsFromProgNote progNote
 			.filter (metricValue) -> # remove blank metrics
 				return metricValue.get('value').trim().length > 0
+
+			# All metric IDs for which this client file has data
+			metricIdsWithData = metricValues
+			.map((m) -> m.get('id'))
+			.toSet()
+
+			# Create a Map from metric ID to data series,
+			# where each data series is a sequence of [x, y] pairs
+			dataSeries = metricValues
 			.filter (metricValue) => # keep only data for selected metrics
 				return @state.selectedMetricIds.contains metricValue.get('id')
 			.groupBy (metricValue) -> # group by metric
@@ -36,10 +46,8 @@ load = (win) ->
 				return metricValues.map (metricValue) -> # for each data point
 					# [x, y]
 					return [metricValue.get('timestamp'), metricValue.get('value')]
-			# metricValues is now a Map from metric ID to data series,
-			# where each data series is a sequence of [x, y] pairs
 
-			seriesNamesById = metricValues.keySeq().map (metricId) =>
+			seriesNamesById = dataSeries.keySeq().map (metricId) =>
 				return [metricId, @props.metricsById.get(metricId).get('name')]
 			.fromEntrySeq().toMap()
 
@@ -47,7 +55,7 @@ load = (win) ->
 				R.div({className: 'controlPanel'},
 					R.div({className: 'heading'}, "Metrics")
 					R.div({className: 'metrics'},
-						(metricValues.keySeq().map (metricId) =>
+						(metricIdsWithData.map (metricId) =>
 							metric = @props.metricsById.get(metricId)
 
 							R.div({className: 'metric checkbox'},
@@ -66,8 +74,8 @@ load = (win) ->
 				R.div({className: 'chartContainer'},
 					(if @props.isVisible
 						# Force chart to be recreated when tab is opened
-						(if metricValues.size > 0
-							Chart({data: metricValues, seriesNamesById})
+						(if dataSeries.size > 0
+							Chart({data: dataSeries, seriesNamesById})
 						else
 							R.div({className: 'noData'},
 								"Select items above to see them graphed here."
