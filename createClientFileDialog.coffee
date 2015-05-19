@@ -46,7 +46,7 @@ load = (win) ->
 					R.div({className: 'form-group'},
 						R.label({}, "Last name"),
 						R.input({
-							className: 'form-control',
+							className: 'form-control'
 							onChange: @_updateLastName
 							value: @state.lastName
 						})
@@ -57,8 +57,9 @@ load = (win) ->
 							onClick: @_cancel							
 						}, "Cancel")
 						R.button({
-							className: 'btn btn-primary',
+							className: 'btn btn-primary'
 							onClick: @_submit
+							disabled: not @state.firstName or not @state.lastName
 						}, "Create client file")
 					)
 			)
@@ -66,17 +67,11 @@ load = (win) ->
 			@props.onCancel()
 		_updateFirstName: (event) ->
 			@setState {firstName: event.target.value}
+		_updateMiddleName: (event) ->
+			@setState {middleName: event.target.value}
 		_updateLastName: (event) ->
 			@setState {lastName: event.target.value}
 		_submit: ->
-
-			# More elegant way of doing this?
-			if not @state.firstName or not @state.lastName
-				missingNames = []
-				missingNames.push "first" if not @state.firstName
-				missingNames.push "middle" if not @state.middleName
-				missingNames.push "last" if not @state.lastName
-				Bootbox.alert "Client\'s " + missingNames.join(", ") + " name required"
 
 			firstName = @state.firstName
 			middleName = @state.middleName
