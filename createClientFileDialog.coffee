@@ -54,7 +54,7 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Record Number/ID"),
+						R.label({}, "Record ID"),
 						R.input({
 							className: 'form-control'
 							onChange: @_updateRecordId
@@ -102,7 +102,7 @@ load = (win) ->
 			  }
 			}
 			
-			global.ActiveSession.persist.clientFiles.create clientFile, (err, obj) ->
+			global.ActiveSession.persist.clientFiles.create clientFile, (err, obj) =>
 				@setState {isLoading: false}
 
 				if err
@@ -115,7 +115,12 @@ load = (win) ->
 					Bootbox.alert "An error occurred while creating the account"
 					return
 
-			@props.onSuccess()
+				console.log("Client file created:", obj.get('id'))
+
+				Bootbox.alert
+					message: "New client file created for " + first + ' ' + last + '.'
+					callback: =>
+						@props.onSuccess(obj.get('id'))
 
 	return CreateClientFileDialog
 

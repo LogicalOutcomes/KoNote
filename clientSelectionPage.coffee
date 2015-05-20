@@ -214,6 +214,12 @@ load = (win) ->
 					@setState {isOpen: false}
 				onCancel: =>
 					@setState {isOpen: false}
+				onSuccess: (clientFileId) =>
+					@setState {isOpen: false}
+					openWindow {
+						page: 'clientFile'
+						clientFileId
+					}
 			})
 		_open: ->
 			@setState {isOpen: true}
