@@ -4,7 +4,7 @@ module.exports = {
 	logoSubtitleColor: 'hsl(205, 78%, 47%)'
 
 	# TODO: Set these up around the app
-	clientFileRecordNumber: {
+	clientFileRecordId: {
 		isEnabled: true
 		isRequired: true
 		label: "CR #"
