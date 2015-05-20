@@ -145,11 +145,13 @@ load = (win) ->
 			return @props.clientFileList
 			.filter (clientFile) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
+				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
 				lastName = clientFile.getIn(['clientName', 'last']).toLowerCase()
+				recordNumber = clientFile.getIn(['clientName', 'record'])
 
 				return queryParts
 				.every (part) ->
-					return firstName.includes(part) or lastName.includes(part)
+					return firstName.includes(part) or middleName.includes(part) or lastName.includes(part) or recordNumber.includes(part)
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 
@@ -191,7 +193,6 @@ load = (win) ->
 		_open: ->
 			@setState {isOpen: true}
 
-	# Yep, this definitely needs to be a component! Show me how? Or is this to be a 'widget' like the logo? :)
 	OpenNewClientFileButton = React.createFactory React.createClass
 		mixins: [LayeredComponentMixin]
 		getInitialState: ->

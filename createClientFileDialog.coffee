@@ -18,6 +18,7 @@ load = (win) ->
 				firstName: ''
 				middleName: ''
 				lastName: ''
+				recordNumber: ''
 				isOpen: true
 			}
 		render: ->
@@ -51,6 +52,15 @@ load = (win) ->
 							value: @state.lastName
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "Record Number"),
+						R.input({
+							className: 'form-control'
+							onChange: @_updateRecordNumber
+							value: @state.recordNumber
+							placeholder: "(optional)"
+						})
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -60,7 +70,7 @@ load = (win) ->
 							className: 'btn btn-primary'
 							onClick: @_submit
 							disabled: not @state.firstName or not @state.lastName
-						}, "Create client file")
+						}, "Create File")
 					)
 			)
 		_cancel: ->
@@ -71,25 +81,29 @@ load = (win) ->
 			@setState {middleName: event.target.value}
 		_updateLastName: (event) ->
 			@setState {lastName: event.target.value}
+		_updateRecordNumber: (event) ->
+			@setState {recordNumber: event.target.value}
 		_submit: ->
 
 			firstName = @state.firstName
 			middleName = @state.middleName
 			lastName = @state.lastName
+			recordNumber = @state.recordNumber
 
 			@setState {isLoading: true}
-			# Need API for this to work
-			# Persist.clientFile.createFile 'data', firstName, lastName, (err) =>
-			# 	@setState {isLoading: false}
+			
+			Persist.ClientFile.create 'data', firstName, middleName, lastName, recordNumber (err) =>
+				@setState {isLoading: false}
 
-			# 	if err
-			# 		# if err instanceof Persist.Users.UserNameTakenError
-			# 		# 	Bootbox.alert "That user name is already taken."
-			# 		# 	return
+				if err
+					# TODO: Logic to check for pre-existing client file
+					# if err instanceof Persist.Users.UserNameTakenError
+					# 	Bootbox.alert "That user name is already taken."
+					# 	return
 
-			# 		console.error err.stack
-			# 		Bootbox.alert "An error occurred while creating the account"
-			# 		return
+					console.error err.stack
+					Bootbox.alert "An error occurred while creating the account"
+					return
 
 			@props.onSuccess()
 

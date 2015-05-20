@@ -2,6 +2,14 @@ module.exports = {
 	productName: 'KoNote'
 	logoSubtitle: 'DSSS'
 	logoSubtitleColor: 'hsl(205, 78%, 47%)'
+
+	# TODO: Set these up around the app
+	clientFileRecordNumber: {
+		isEnabled: true
+		isRequired: true
+		label: "CR #"
+	}
+
 	#useTemplate: 'initialAssessment'
 	useTemplate: 'clientLog'
 	templates: {
