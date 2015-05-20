@@ -88,7 +88,6 @@ class SymmetricEncryptionKey
 		return [keyTextV1Prefix, @_rawKeyMaterial.toString('hex')].join ':'
 
 	# Encrypt the provided string or Buffer
-	# TODO include a file length to prevent extension attacks
 	encrypt: (msg) ->
 		if typeof msg is 'string'
 			msg = new Buffer(msg, 'utf8')

@@ -44,7 +44,7 @@ load = (win) ->
 				render()
 
 		registerListeners = ->
-			# TODO new client file listener
+			# Nothing to register here yet.
 
 	ClientSelectionPage = React.createFactory React.createClass
 		componentDidMount: ->
@@ -61,7 +61,6 @@ load = (win) ->
 
 			results = null
 			unless @_isLoading()
-				# TODO test perf
 				results = @_getResultsList()
 
 			return R.div({className: 'clientSelectionPage'},
