@@ -1,6 +1,7 @@
 # A dialog for allowing the user to create a new client file
 
 Persist = require './persist'
+Imm = require 'immutable'
 
 load = (win) ->
 	$ = win.jQuery
@@ -85,14 +86,22 @@ load = (win) ->
 			@setState {recordNumber: event.target.value}
 		_submit: ->
 
-			firstName = @state.firstName
-			middleName = @state.middleName
-			lastName = @state.lastName
-			recordNumber = @state.recordNumber
+			first = @state.firstName
+			middle = @state.middleName
+			last = @state.lastName
+			record = @state.recordNumber
 
 			@setState {isLoading: true}
+
+			clientFile = Imm.fromJS {
+			  clientName: {first, middle, last}
+			  record: record
+			  plan: {
+			    sections: []
+			  }
+			}
 			
-			Persist.ClientFile.create 'data', firstName, middleName, lastName, recordNumber (err) =>
+			global.ActiveSession.persist.clientFiles.create clientFile, (err, obj) ->
 				@setState {isLoading: false}
 
 				if err

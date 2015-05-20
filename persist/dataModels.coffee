@@ -8,13 +8,17 @@ dataModelDefinitions = [
 		name: 'clientFile'
 		collectionName: 'clientFiles'
 		isMutable: true
-		indexes: [['clientName', 'first'], ['clientName', 'last']]
+		indexes: [
+			['clientName', 'first'],
+			['clientName', 'middle'],
+			['clientName', 'last']]
 		schema: Joi.object().keys({
 			clientName: Joi.object().keys({
 				first: Joi.string()
 				middle: Joi.string()
 				last: Joi.string()
 			})
+			record: Joi.string()
 			plan: Joi.object().keys({
 				sections: Joi.array().items(
 					Joi.object().keys({
