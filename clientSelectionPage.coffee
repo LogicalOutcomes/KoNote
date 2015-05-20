@@ -125,8 +125,11 @@ load = (win) ->
 							R.div({
 								className: 'result'
 								onClick: @_onResultSelection.bind(null, result.get('id'))
-							},
-								renderName result.get('clientName')
+							}
+								R.span({
+									className: 'recordId'
+								}, if result.has('recordId') and result.get('recordId').length > 0 then "ID# #{result.get('recordId')}"),
+							renderName result.get('clientName')
 							)
 						).toJS()
 					else
@@ -146,11 +149,11 @@ load = (win) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
 				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
 				lastName = clientFile.getIn(['clientName', 'last']).toLowerCase()
-				recordNumber = clientFile.getIn(['clientName', 'record'])
+				recordId = clientFile.getIn(['recordId']).toLowerCase()
 
 				return queryParts
 				.every (part) ->
-					return firstName.includes(part) or middleName.includes(part) or lastName.includes(part) or recordNumber.includes(part)
+					return firstName.includes(part) or middleName.includes(part) or lastName.includes(part) or recordId.includes(part)
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 
