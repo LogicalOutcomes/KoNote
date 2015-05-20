@@ -11,17 +11,16 @@ dataModelDefinitions = [
 		indexes: [
 			['clientName', 'first'], 
 			['clientName', 'middle'], 
-			['clientName', 'last'], 
-			['clientName', 'record']
+			['clientName', 'last'],
+			['recordId']
 		]
 		schema: Joi.object().keys({
 			clientName: Joi.object().keys({
 				first: Joi.string()
 				middle: Joi.string()
 				last: Joi.string()
-				record: Joi.string()
 			})
-			record: Joi.string()
+			recordId: Joi.string()
 			plan: Joi.object().keys({
 				sections: Joi.array().items(
 					Joi.object().keys({

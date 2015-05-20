@@ -19,7 +19,7 @@ load = (win) ->
 				firstName: ''
 				middleName: ''
 				lastName: ''
-				recordNumber: ''
+				recordId: ''
 				isOpen: true
 			}
 		render: ->
@@ -54,10 +54,10 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Record Number"),
+						R.label({}, "Record Number/ID"),
 						R.input({
 							className: 'form-control'
-							onChange: @_updateRecordNumber
+							onChange: @_updateRecordId
 							value: @state.recordNumber
 							placeholder: "(optional)"
 						})
@@ -82,21 +82,21 @@ load = (win) ->
 			@setState {middleName: event.target.value}
 		_updateLastName: (event) ->
 			@setState {lastName: event.target.value}
-		_updateRecordNumber: (event) ->
-			@setState {recordNumber: event.target.value}
+		_updateRecordId: (event) ->
+			@setState {recordId: event.target.value}
 		_submit: ->
 
 
 			first = @state.firstName
 			middle = @state.middleName
 			last = @state.lastName
-			record = @state.recordNumber
+			recordId = @state.recordId
 
 			@setState {isLoading: true}
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
-			  record: record
+			  recordId: recordId
 			  plan: {
 			    sections: []
 			  }
