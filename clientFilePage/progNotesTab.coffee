@@ -106,12 +106,11 @@ load = (win) ->
 			note = Imm.fromJS {
 				type: 'basic'
 				clientFileId: @props.clientFileId
-				author: 'David'
 				notes
 			}
 
 			@props.registerTask 'quickNote-save'
-			ActiveSession.persist.progNotes.create note, (err) =>
+			global.ActiveSession.persist.progNotes.create note, (err) =>
 				if err
 					console.error err.stack
 					Bootbox.alert "An error occurred while saving your quick note."
