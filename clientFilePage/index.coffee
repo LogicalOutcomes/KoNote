@@ -414,7 +414,7 @@ load = (win, {clientFileId}) ->
 					R.span({}, "#{@props.clientName}")
 				)
 				R.div({className: 'recordId'},
-					R.span({}, "ID# #{@props.recordId}")
+					R.span({}, if @props.recordId and @props.recordId.length > 0 then "ID# #{@props.recordId}")
 				),
 				R.div({className: 'tabStrip'},
 					SidebarTab({
