@@ -44,7 +44,28 @@ load = (win) ->
 				render()
 
 		registerListeners = ->
-			# Nothing to register here yet.
+			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) ->
+				targetId = newFile.get('id')
+
+				unless clientFileList.has(targetId)
+					clientFileList = clientFileList.push newFile
+
+				render()
+			
+			global.ActiveSession.persist.eventBus.on 'createRevision:clientFile', (newRev) ->
+				targetId = newRev.get('id')
+
+				# This looks right... but I can't test it
+				unless clientFileList.get(targetId) is newRev
+					return
+
+				# Something to do with updating the revision ID's
+				clientFileList = clientFileList.updateIn [targetId, 'revisions'], (revs) ->
+						return revs.unshift newRev
+
+				# I need to replace the original object's information with newRev's
+
+				render()
 
 	ClientSelectionPage = React.createFactory React.createClass
 		componentDidMount: ->
