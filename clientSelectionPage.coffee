@@ -61,9 +61,14 @@ load = (win) ->
 
 				# Something to do with updating the revision ID's
 				clientFileList = clientFileList.updateIn [targetId, 'revisions'], (revs) ->
-						return revs.unshift newRev
+					return revs.unshift newRev
 
 				# I need to replace the original object's information with newRev's
+				clientFileList = clientFileList.map (clientFile) ->
+					if clientFile.has(targetId)
+						clientFile = newRev
+
+					return clientFile
 
 				render()
 
