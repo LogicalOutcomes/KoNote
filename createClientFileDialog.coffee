@@ -1,6 +1,7 @@
 # A dialog for allowing the user to create a new client file
 
 Persist = require './persist'
+Imm = require 'immutable'
 
 load = (win) ->
 	$ = win.jQuery
@@ -18,6 +19,7 @@ load = (win) ->
 				firstName: ''
 				middleName: ''
 				lastName: ''
+				recordId: ''
 				isOpen: true
 			}
 		render: ->
@@ -51,6 +53,15 @@ load = (win) ->
 							value: @state.lastName
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "Record ID"),
+						R.input({
+							className: 'form-control'
+							onChange: @_updateRecordId
+							value: @state.recordNumber
+							placeholder: "(optional)"
+						})
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -60,7 +71,7 @@ load = (win) ->
 							className: 'btn btn-primary'
 							onClick: @_submit
 							disabled: not @state.firstName or not @state.lastName
-						}, "Create client file")
+						}, "Create File")
 					)
 			)
 		_cancel: ->
@@ -71,27 +82,45 @@ load = (win) ->
 			@setState {middleName: event.target.value}
 		_updateLastName: (event) ->
 			@setState {lastName: event.target.value}
+		_updateRecordId: (event) ->
+			@setState {recordId: event.target.value}
 		_submit: ->
 
-			firstName = @state.firstName
-			middleName = @state.middleName
-			lastName = @state.lastName
+
+			first = @state.firstName
+			middle = @state.middleName
+			last = @state.lastName
+			recordId = @state.recordId
 
 			@setState {isLoading: true}
-			# Need API for this to work
-			# Persist.clientFile.createFile 'data', firstName, lastName, (err) =>
-			# 	@setState {isLoading: false}
 
-			# 	if err
-			# 		# if err instanceof Persist.Users.UserNameTakenError
-			# 		# 	Bootbox.alert "That user name is already taken."
-			# 		# 	return
+			clientFile = Imm.fromJS {
+			  clientName: {first, middle, last}
+			  recordId: recordId
+			  plan: {
+			    sections: []
+			  }
+			}
+			
+			global.ActiveSession.persist.clientFiles.create clientFile, (err, obj) =>
+				@setState {isLoading: false}
 
-			# 		console.error err.stack
-			# 		Bootbox.alert "An error occurred while creating the account"
-			# 		return
+				if err
+					# TODO: Logic to check for pre-existing client file
+					# if err instanceof Persist.Users.UserNameTakenError
+					# 	Bootbox.alert "That user name is already taken."
+					# 	return
 
-			@props.onSuccess()
+					console.error err.stack
+					Bootbox.alert "An error occurred while creating the account"
+					return
+
+				console.log("Client file created:", obj.get('id'))
+
+				Bootbox.alert
+					message: "New client file created for " + first + ' ' + last + '.'
+					callback: =>
+						@props.onSuccess(obj.get('id'))
 
 	return CreateClientFileDialog
 

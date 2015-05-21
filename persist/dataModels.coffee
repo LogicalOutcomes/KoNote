@@ -8,13 +8,19 @@ dataModelDefinitions = [
 		name: 'clientFile'
 		collectionName: 'clientFiles'
 		isMutable: true
-		indexes: [['clientName', 'first'], ['clientName', 'last']]
+		indexes: [
+			['clientName', 'first'], 
+			['clientName', 'middle'], 
+			['clientName', 'last'],
+			['recordId']
+		]
 		schema: Joi.object().keys({
 			clientName: Joi.object().keys({
 				first: Joi.string()
-				middle: Joi.string()
+				middle: Joi.string().allow('')
 				last: Joi.string()
 			})
+			recordId: [Joi.string(), '']
 			plan: Joi.object().keys({
 				sections: Joi.array().items(
 					Joi.object().keys({
@@ -59,13 +65,13 @@ dataModelDefinitions = [
 									id: IdSchema
 									type: 'basic'
 									name: Joi.string()
-									notes: [Joi.string(), '']
+									notes: Joi.string().allow('')
 									metrics: Joi.array().items(
 										Joi.object().keys({
 											id: IdSchema
 											name: Joi.string()
 											definition: Joi.string()
-											value: [Joi.string(), '']
+											value: Joi.string().allow('')
 										})
 									)
 								})
@@ -77,13 +83,13 @@ dataModelDefinitions = [
 										Joi.object().keys({
 											id: IdSchema
 											name: Joi.string()
-											notes: [Joi.string(), '']
+											notes: Joi.string().allow('')
 											metrics: Joi.array().items(
 												Joi.object().keys({
 													id: IdSchema
 													name: Joi.string()
 													definition: Joi.string()
-													value: [Joi.string(), '']
+													value: Joi.string().allow('')
 												})
 											)
 										})

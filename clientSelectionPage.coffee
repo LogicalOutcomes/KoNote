@@ -125,8 +125,11 @@ load = (win) ->
 							R.div({
 								className: 'result'
 								onClick: @_onResultSelection.bind(null, result.get('id'))
-							},
-								renderName result.get('clientName')
+							}
+								R.span({
+									className: 'recordId'
+								}, if result.has('recordId') and result.get('recordId').length > 0 then "ID# #{result.get('recordId')}"),
+							renderName result.get('clientName')
 							)
 						).toJS()
 					else
@@ -144,11 +147,13 @@ load = (win) ->
 			return @props.clientFileList
 			.filter (clientFile) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
+				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
 				lastName = clientFile.getIn(['clientName', 'last']).toLowerCase()
+				recordId = clientFile.getIn(['recordId']).toLowerCase()
 
 				return queryParts
 				.every (part) ->
-					return firstName.includes(part) or lastName.includes(part)
+					return firstName.includes(part) or middleName.includes(part) or lastName.includes(part) or recordId.includes(part)
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 
@@ -190,7 +195,6 @@ load = (win) ->
 		_open: ->
 			@setState {isOpen: true}
 
-	# Yep, this definitely needs to be a component! Show me how? Or is this to be a 'widget' like the logo? :)
 	OpenNewClientFileButton = React.createFactory React.createClass
 		mixins: [LayeredComponentMixin]
 		getInitialState: ->
@@ -213,6 +217,12 @@ load = (win) ->
 					@setState {isOpen: false}
 				onCancel: =>
 					@setState {isOpen: false}
+				onSuccess: (clientFileId) =>
+					@setState {isOpen: false}
+					openWindow {
+						page: 'clientFile'
+						clientFileId
+					}
 			})
 		_open: ->
 			@setState {isOpen: true}

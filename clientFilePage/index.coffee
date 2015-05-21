@@ -357,12 +357,14 @@ load = (win, {clientFileId}) ->
 			activeTabId = @state.activeTabId
 
 			clientName = renderName @props.clientFile.get('clientName')
+			recordId = @props.clientFile.get('recordId')
 			nwWin.title = "#{clientName} - KoNote"
 
 			return R.div({className: 'clientFilePage'},
 				Spinner({isOverlay: true, isVisible: @props.ongoingTasks.size > 0})
 				Sidebar({
 					clientName
+					recordId
 					activeTabId
 					onTabChange: @_changeTab
 				})
@@ -410,6 +412,9 @@ load = (win, {clientFileId}) ->
 				)
 				R.div({className: 'clientName'},
 					R.span({}, "#{@props.clientName}")
+				)
+				R.div({className: 'recordId'},
+					R.span({}, "ID# #{@props.recordId}")
 				),
 				R.div({className: 'tabStrip'},
 					SidebarTab({
