@@ -22,6 +22,12 @@ s = {
 	dataDirectory: dataDir
 }
 
+setUpDataDirectory = (dataModelDefinitions, cb) ->
+	# Set up top-level directories
+	Async.each dataModelDefinitions, (modelDef, cb) ->
+		Mkdirp Path.join(dataDir, modelDef.collectionName), cb
+	, cb
+
 describe 'ApiBuilder', ->
 	describe '.buildApi', ->
 		before (cb) ->
@@ -38,18 +44,17 @@ describe 'ApiBuilder', ->
 			api = buildApi(s, [])
 			Assert.deepEqual api, {
 				eventBus: api.eventBus
-				setUpDataDirectory: api.setUpDataDirectory
 				ObjectNotFoundError: api.ObjectNotFoundError
 			}
 
-		it 'refuses to allow a collection named `setUpDataDirectory`', ->
+		it 'refuses to allow a collection named `eventBus`', ->
 			Assert.throws ->
 				api = buildApi(s, [{
-					name: 'setUp'
-					collectionName: 'setUpDataDirectory'
+					name: 'thing'
+					collectionName: 'eventBus'
 					schema: Joi.object()
 				}])
-			, /setUpDataDirectory/
+			, /eventBus/
 
 		it 'refuses to allow name=""', ->
 			Assert.throws ->
@@ -68,29 +73,6 @@ describe 'ApiBuilder', ->
 					schema: Joi.object()
 				}])
 			, /collection.*""/
-
-		it 'sets up data directory for collections', (cb) ->
-			api = buildApi s, [
-				{
-					name: 'a'
-					collectionName: 'a'
-					schema: Joi.object()
-				}
-				{
-					name: 'b'
-					collectionName: 'b'
-					schema: Joi.object()
-				}
-			]
-			api.setUpDataDirectory (err) ->
-				if err
-					cb err
-					return
-
-				Assert Fs.existsSync Path.join(dataDir, 'a')
-				Assert Fs.existsSync Path.join(dataDir, 'b')
-
-				cb()
 
 		describe 'immutable data models', ->
 			immutablePersonDataModel = {
@@ -115,7 +97,7 @@ describe 'ApiBuilder', ->
 			api = buildApi s, [immutablePersonDataModel]
 
 			beforeEach (cb) ->
-				api.setUpDataDirectory cb
+				setUpDataDirectory [immutablePersonDataModel], cb
 
 			it 'provides a create method', (cb) ->
 				api.people.create Imm.Map({
@@ -266,7 +248,7 @@ describe 'ApiBuilder', ->
 			api = buildApi s, [mutablePersonDataModel]
 
 			beforeEach (cb) ->
-				api.setUpDataDirectory cb
+				setUpDataDirectory [mutablePersonDataModel], cb
 
 			it 'provides a create method', (cb) ->
 				api.people.create Imm.Map({
@@ -594,7 +576,7 @@ describe 'ApiBuilder', ->
 			api = buildApi s, [personDataModel]
 
 			beforeEach (cb) ->
-				api.setUpDataDirectory cb
+				setUpDataDirectory [personDataModel], cb
 
 			it 'valid create type a', (cb) ->
 				api.people.create Imm.Map({
@@ -680,7 +662,7 @@ describe 'ApiBuilder', ->
 			api = buildApi s, modelDefs
 
 			beforeEach (cb) ->
-				api.setUpDataDirectory cb
+				setUpDataDirectory modelDefs, cb
 
 			it 'immutable object with mutable child types', (cb) ->
 				supObjId = null

@@ -4,6 +4,7 @@
 
 Async = require 'async'
 Fs = require 'fs'
+Imm = require 'immutable'
 Path = require 'path'
 
 {
@@ -25,6 +26,23 @@ getUserDir = (dataDir, userName) ->
 		throw new Error "invalid characters in user name"
 
 	return Path.join dataDir, 'users', userName
+
+# Check if there are any user accounts set up
+isAccountSystemSetUp = (dataDir, cb) ->
+	Fs.readdir Path.join(dataDir, 'users'), (err, subdirs) ->
+		if err
+			if err.code is 'ENOENT'
+				cb null, false
+				return
+
+			cb err
+			return
+
+		userNames = Imm.List(subdirs)
+		.filter (dirName) ->
+			return userNameRegex.exec(dirName)
+
+		cb null, (userNames.size > 0)
 
 # Create a new user account
 # User must have full file system access (i.e. be an admin)
@@ -163,6 +181,7 @@ class IncorrectPasswordError extends Error
 		super
 
 module.exports = {
+	isAccountSystemSetUp
 	createAccount
 	readAccount
 	UserNameTakenError
