@@ -91,8 +91,16 @@ createAccount = (dataDir, userName, password, accountType, cb) ->
 		(cb) ->
 			privateKeysPath = Path.join(userDir, 'private-keys')
 
+			if global.ActiveSession?
+				globalEncryptionKey = global.ActiveSession.globalEncryptionKey
+			else
+				console.log """
+					First time set up of new KoNote instance.  Generating encryption key.
+				"""
+				globalEncryptionKey = SymmetricEncryptionKey.generate()
+
 			privateKeys = {
-				globalEncryptionKey: global.ActiveSession.globalEncryptionKey.export()
+				globalEncryptionKey: globalEncryptionKey.export()
 			}
 			encryptedData = userEncryptionKey.encrypt JSON.stringify privateKeys
 

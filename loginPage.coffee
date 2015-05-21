@@ -1,3 +1,4 @@
+Async = require 'async'
 Imm = require 'immutable'
 
 Config = require './config'
@@ -40,31 +41,54 @@ load = (win) ->
 		componentDidMount: ->
 			@refs.userNameField.getDOMNode().focus()
 
-			# TODO data dir
-			Persist.Users.isAccountSystemSetUp 'data', (err, isSetUp) =>
-				@setState {isLoading: false}
+			@_checkSetUp()
+		_checkSetUp: ->
+			adminPassword = null
 
-				if err
-					console.error err
-					console.error err.stack
-					Bootbox.alert "An error occurred during start up.", ->
-						process.exit(1)
-					return
+			Async.series [
+				(cb) =>
+					# TODO data dir
+					Persist.Users.isAccountSystemSetUp 'data', (err, isSetUp) =>
+						@setState {isLoading: false}
 
-				if isSetUp
-					@setState {showForm: true}
-					return
+						if err
+							console.error err
+							console.error err.stack
+							Bootbox.alert "An error occurred during start up.", ->
+								process.exit(1)
+							return
 
-				# Data directory hasn't been set up yet.
-				Bootbox.confirm """
-					KoNote could not find any data.  Unless this is your first
-					time using KoNote, this may indicate a problem.  Would you
-					like to set up KoNote from scratch?
-				""", (result) =>
-					unless result
-						process.exit(0)
-						return
+						if isSetUp
+							# Already set up, no need to continue here
+							@setState {showForm: true}
+							return
 
+						# Data directory hasn't been set up yet.
+						cb()
+				(cb) =>
+					Bootbox.confirm """
+						KoNote could not find any data.  Unless this is your first
+						time using KoNote, this may indicate a problem.  Would you
+						like to set up KoNote from scratch?
+					""", (result) =>
+						unless result
+							process.exit(0)
+							return
+
+						cb()
+				(cb) =>
+					Bootbox.prompt {
+						title: 'Enter password for admin account'
+						inputType: 'password'
+						callback: (result) ->
+							unless result
+								process.exit(0)
+								return
+
+							adminPassword = result
+							cb()
+					}
+				(cb) =>
 					# TODO data dir
 					@setState {isLoading: true}
 					Persist.setUpDataDirectory 'data', (err) =>
@@ -77,7 +101,33 @@ load = (win) ->
 								process.exit(1)
 							return
 
-						@setState {showForm: true}
+						cb()
+				(cb) =>
+					# TODO data dir
+					@setState {isLoading: true}
+					Persist.Users.createAccount 'data', 'admin', adminPassword, 'admin', (err) =>
+						@setState {isLoading: false}
+
+						if err
+							if err instanceof Persist.Users.UserNameTakenError
+								Bootbox.alert "An admin user account already exists."
+								process.exit(1)
+								return
+
+							console.error err.stack
+							Bootbox.alert "An error occurred while creating the account"
+							return
+
+						cb()
+			], (err) =>
+				if err
+					cb err
+					return
+
+				@setState {
+					showForm: true
+					userName: 'admin'
+				}
 		render: ->
 			return R.div({className: 'loginPage'},
 				Spinner({

@@ -148,6 +148,11 @@ setUpDataDirectory = (dataDir, cb) ->
 	# Set up top-level directories
 	Async.each dataModelDefinitions, (modelDef, cb) ->
 		Mkdirp Path.join(dataDir, modelDef.collectionName), cb
-	, cb
+	, (err) ->
+		if err
+			cb err
+			return
+
+		Mkdirp Path.join(dataDir, 'users'), cb
 
 module.exports = {getApi, setUpDataDirectory}

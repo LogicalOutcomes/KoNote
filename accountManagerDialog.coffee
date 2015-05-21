@@ -121,7 +121,6 @@ load = (win) ->
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
 		_updateIsAdmin: (event) ->
-			console.log event.target.checked
 			@setState {isAdmin: event.target.checked}
 		_submit: ->
 			unless @state.userName
