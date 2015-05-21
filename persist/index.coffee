@@ -14,12 +14,14 @@
 
 Imm = require 'immutable'
 
+DataModels = require './dataModels'
 Session = require './session'
 Users = require './users'
 Utils = require './utils'
 
 module.exports = {
 	generateId: Utils.generateId
+	setUpDataDirectory: DataModels.setUpDataDirectory
 	TimestampFormat: Utils.TimestampFormat
 	Session
 	Users

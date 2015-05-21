@@ -32,20 +32,59 @@ load = (win) ->
 	LoginPage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
-				# TODO Remove this before release, lol
-				userName: 'testuser'
-				password: 'pass'
-				isLoading: false
+				showForm: false
+				userName: ''
+				password: ''
+				isLoading: true
 			}
 		componentDidMount: ->
 			@refs.userNameField.getDOMNode().focus()
+
+			# TODO data dir
+			Persist.Users.isAccountSystemSetUp 'data', (err, isSetUp) =>
+				@setState {isLoading: false}
+
+				if err
+					console.error err
+					console.error err.stack
+					Bootbox.alert "An error occurred during start up.", ->
+						process.exit(1)
+					return
+
+				if isSetUp
+					@setState {showForm: true}
+					return
+
+				# Data directory hasn't been set up yet.
+				Bootbox.confirm """
+					KoNote could not find any data.  Unless this is your first
+					time using KoNote, this may indicate a problem.  Would you
+					like to set up KoNote from scratch?
+				""", (result) =>
+					unless result
+						process.exit(0)
+						return
+
+					# TODO data dir
+					@setState {isLoading: true}
+					Persist.setUpDataDirectory 'data', (err) =>
+						@setState {isLoading: false}
+
+						if err
+							console.error err
+							console.error err.stack
+							Bootbox.alert "An error occurred during set up.", ->
+								process.exit(1)
+							return
+
+						@setState {showForm: true}
 		render: ->
 			return R.div({className: 'loginPage'},
 				Spinner({
 					isVisible: @state.isLoading
 					isOverlay: true
 				})
-				R.div({className: 'loginForm'},
+				R.div({className: "loginForm #{showWhen @state.showForm}"},
 					R.div({className: 'form-group'},
 						R.label({}, "User name")
 						R.input({

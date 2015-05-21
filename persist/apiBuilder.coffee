@@ -14,11 +14,6 @@ buildApi = (session, dataModelDefinitions) ->
 	result = processModels(session, eventBus, dataModelDefinitions).toJS()
 
 	result.eventBus = eventBus
-	result.setUpDataDirectory = (cb) ->
-		# Set up top-level directories
-		Async.each dataModelDefinitions, (modelDef, cb) ->
-			Fs.mkdir Path.join(session.dataDirectory, modelDef.collectionName), cb
-		, cb
 	result.ObjectNotFoundError = ObjectNotFoundError
 
 	return result
@@ -51,7 +46,7 @@ processModel = (session, eventBus, modelDef, context=Imm.List()) ->
 			Invalid name: #{JSON.stringify modelDef.name}
 		"""
 
-	invalidCollNames = ['', 'setUpDataDirectory', 'eventBus']
+	invalidCollNames = ['', 'eventBus']
 	if modelDef.collectionName in invalidCollNames or modelDef.collectionName[0] is '_'
 		throw new Error """
 			Invalid collection name: #{JSON.stringify modelDef.collectionName}

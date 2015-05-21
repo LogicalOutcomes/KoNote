@@ -1,4 +1,7 @@
+Async = require 'async'
 Joi = require 'joi'
+Mkdirp = require 'mkdirp'
+Path = require 'path'
 
 ApiBuilder = require './apiBuilder'
 {IdSchema} = require './utils'
@@ -141,4 +144,10 @@ dataModelDefinitions = [
 getApi = (session) ->
 	ApiBuilder.buildApi session, dataModelDefinitions
 
-module.exports = {getApi}
+setUpDataDirectory = (dataDir, cb) ->
+	# Set up top-level directories
+	Async.each dataModelDefinitions, (modelDef, cb) ->
+		Mkdirp Path.join(dataDir, modelDef.collectionName), cb
+	, cb
+
+module.exports = {getApi, setUpDataDirectory}
