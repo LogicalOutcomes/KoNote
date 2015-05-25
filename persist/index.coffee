@@ -15,6 +15,7 @@
 Imm = require 'immutable'
 
 DataModels = require './dataModels'
+Lock = require './lock'
 Session = require './session'
 Users = require './users'
 Utils = require './utils'
@@ -23,6 +24,7 @@ module.exports = {
 	generateId: Utils.generateId
 	setUpDataDirectory: DataModels.setUpDataDirectory
 	TimestampFormat: Utils.TimestampFormat
+	Lock
 	Session
 	Users
 }

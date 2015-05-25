@@ -37,6 +37,7 @@ load = (win, {clientFileId}) ->
 
 	DataStore = do ->
 		clientFile = null
+		clientFileLock = null
 		progressNotes = null
 		planTargetsById = Imm.Map()
 		metricsById = Imm.Map()
@@ -106,59 +107,62 @@ load = (win, {clientFileId}) ->
 			render()
 
 		loadData = ->
-			registerTask 'readClientFile', true
-			ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
-				if err
-					unregisterTask 'readClientFile', true
-					console.error err
-					console.error err.stack
-					Bootbox.alert "Could not load client data."
-					return
-
-				clientFile = stripMetadata revisions.get(0)
-
-				# Load plan targets
-				registerTask "readPlanTargets", true
-				planTargetHeaders = null
-				Async.series [
-					(cb) ->
-						ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
-							if err
-								cb err
-								return
-
-							planTargetHeaders = results
-							cb()
-					(cb) ->
-						Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
-							ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
-						, (err, results) ->
-							if err
-								cb err
-								return
-
-							planTargetsById = Imm.List(results).map (planTargetRevs) ->
-								id = planTargetRevs.getIn([0, 'id'])
-								return [
-									id
-									Imm.Map({id, revisions: planTargetRevs.reverse()})
-								]
-							planTargetsById = Imm.Map(planTargetsById.fromEntrySeq())
-
-							cb()
-				], (err) ->
-					unregisterTask "readPlanTargets", true
-
-					if err
-						console.error err.stack
-						Bootbox.alert "Could not load client data."
-						return
-
-				unregisterTask 'readClientFile', true
-
-			registerTask 'readProgressNotes', true
+			planTargetHeaders = null
 			progNoteHeaders = null
+			metricHeaders = null
+
+			registerTask 'initialDataLoad', true
 			Async.series [
+				(cb) ->
+					# TODO data dir
+					Persist.Lock.acquire 'data', "clientFile-#{clientFileId}", (err, result) ->
+						if err
+							if err instanceof Persist.Lock.LockInUseError
+								Bootbox.alert "This client file is already in use.", ->
+									win.close(true)
+								return
+
+							cb err
+							return
+
+						clientFileLock = result
+						cb()
+				(cb) ->
+					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
+						if err
+							console.error err
+							console.error err.stack
+							Bootbox.alert "Could not load client data."
+							return
+
+						clientFile = stripMetadata revisions.get(0)
+						cb()
+				(cb) ->
+					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						planTargetHeaders = results
+						cb()
+				(cb) ->
+					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
+						ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
+					, (err, results) ->
+						if err
+							cb err
+							return
+
+						planTargetsById = Imm.List(results)
+						.map (planTargetRevs) ->
+							id = planTargetRevs.getIn([0, 'id'])
+							return [
+								id
+								Imm.Map({id, revisions: planTargetRevs.reverse()})
+							]
+						.fromEntrySeq().toMap()
+
+						cb()
 				(cb) ->
 					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
 						if err
@@ -175,29 +179,35 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						progressNotes = Imm.fromJS results
+						progressNotes = Imm.List(results)
+						cb()
+				(cb) ->
+					ActiveSession.persist.metrics.list (err, results) ->
+						if err
+							cb err
+							return
+
+						metricHeaders = results
+						cb()
+				(cb) ->
+					Async.map metricHeaders.toArray(), (metricHeader, cb) ->
+						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
+					, (err, results) ->
+						if err
+							cb err
+							return
+
+						metrics = Imm.List(results)
 						cb()
 			], (err) ->
+				unregisterTask 'initialDataLoad', true
 				if err
-					unregisterTask 'readProgressNotes', true
+					console.error err
 					console.error err.stack
-					Bootbox.alert "Error loading progress notes"
+					Bootbox.alert "An error occurred while loading this client's data."
 					return
 
-				unregisterTask 'readProgressNotes', true
-
-			registerTask 'listMetrics', true
-			ActiveSession.persist.metrics.list (err, results) ->
-				if err
-					unregisterTask 'listMetrics', true
-					console.error err.stack
-					Bootbox.alert "Error listing metrics"
-					return
-
-				results.forEach (metricHeader) ->
-					loadMetric metricHeader.get('id')
-
-				unregisterTask 'listMetrics', true
+				# OK, all done
 
 		loadMetric = (metricId, isStartupTask=false, cb=(->)) ->
 			taskId = "readMetric.#{metricId}"
@@ -285,6 +295,9 @@ load = (win, {clientFileId}) ->
 
 		unregisterListeners = ->
 			isClosed = true
+
+			if clientFileLock
+				clientFileLock.release()
 
 		return {}
 

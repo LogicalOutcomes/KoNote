@@ -25,11 +25,11 @@ getUserDir = (dataDir, userName) ->
 	unless userNameRegex.exec userName
 		throw new Error "invalid characters in user name"
 
-	return Path.join dataDir, 'users', userName
+	return Path.join dataDir, '_users', userName
 
 # Check if there are any user accounts set up
 isAccountSystemSetUp = (dataDir, cb) ->
-	Fs.readdir Path.join(dataDir, 'users'), (err, subdirs) ->
+	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
 		if err
 			if err.code is 'ENOENT'
 				cb null, false

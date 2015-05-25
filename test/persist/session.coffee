@@ -24,7 +24,7 @@ describe 'Session', ->
 
 		# Set up the user account files before each test
 		beforeEach (cb) ->
-			userDir = Path.join(dataDir, 'users', 'testuser')
+			userDir = Path.join(dataDir, '_users', 'testuser')
 			Mkdirp userDir, (err) ->
 				if err
 					cb err

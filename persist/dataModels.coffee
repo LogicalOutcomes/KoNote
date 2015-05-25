@@ -146,13 +146,15 @@ getApi = (session) ->
 
 setUpDataDirectory = (dataDir, cb) ->
 	# Set up top-level directories
-	Async.each dataModelDefinitions, (modelDef, cb) ->
-		Mkdirp Path.join(dataDir, modelDef.collectionName), cb
-	, (err) ->
-		if err
-			cb err
-			return
-
-		Mkdirp Path.join(dataDir, 'users'), cb
+	Async.series [
+		(cb) ->
+			Async.each dataModelDefinitions, (modelDef, cb) ->
+				Mkdirp Path.join(dataDir, modelDef.collectionName), cb
+			, cb
+		(cb) ->
+			Mkdirp Path.join(dataDir, '_users'), cb
+		(cb) ->
+			Mkdirp Path.join(dataDir, '_locks'), cb
+	], cb
 
 module.exports = {getApi, setUpDataDirectory}
