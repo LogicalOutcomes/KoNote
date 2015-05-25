@@ -17,6 +17,9 @@ load = (win, {clientFileId}) ->
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
+	CreateProgEventDialog = require('../createProgEventDialog').load(win)
+	Dialog = require('../dialog').load(win)
+	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
 
@@ -194,8 +197,9 @@ load = (win, {clientFileId}) ->
 				success: false
 			}
 		render: ->
-			return R.div({className: 'newProgNotePage'},
+			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
+					OpenCreateProgEventButton()						
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
 							switch section.get('type')
@@ -395,6 +399,8 @@ load = (win, {clientFileId}) ->
 					newValue
 				)
 			}
+		_updateProgEvents: (progEvent) ->
+			console.log("Prog Event:", progEvent)
 		_save: ->
 			ActiveSession.persist.progNotes.create @state.progNote, (err) =>
 				if err
@@ -406,5 +412,34 @@ load = (win, {clientFileId}) ->
 				# TODO success animation
 				#setTimeout (=> nwWin.close true), 3000
 				nwWin.close true
+
+
+
+	OpenCreateProgEventButton = React.createFactory React.createClass
+		mixins: [LayeredComponentMixin]
+		getInitialState: ->
+			return {
+				isOpen: false
+			}
+		render: ->
+			return R.button({
+				className: 'btn btn-success'
+				onClick: @_open
+			},
+				"Create Event"
+			)
+		renderLayer: ->
+			unless @state.isOpen
+				return R.div()
+
+			return CreateProgEventDialog({
+				onCancel: =>
+					@setState {isOpen: false}		
+				onSuccess: (progEvent) =>							
+					@setState {isOpen: false}
+					@_setProgEvents progEvent
+			})
+		_open: ->
+			@setState {isOpen: true}
 
 module.exports = {load}

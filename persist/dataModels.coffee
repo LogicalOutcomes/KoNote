@@ -139,6 +139,22 @@ dataModelDefinitions = [
 			definition: Joi.string()
 		})
 	}
+	{
+		name: 'progEvent'
+		collectionName: 'progEvents'
+		isMutable: false
+		indexes: [['']]
+		schema: Joi.object().keys({
+			title: Joi.string()
+			description: Joi.string().allow('')
+			category: Joi.string()
+			relatedProgNoteId: IdSchema
+			dateSpan: Joi.object().keys({
+				startDate: Joi.date()
+				endDate: Joi.date().allow('')
+			})
+		})
+	}
 ]
 
 getApi = (session) ->
