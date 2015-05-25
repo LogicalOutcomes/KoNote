@@ -193,13 +193,16 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				progNote: @props.progNote
+				progEvents: Imm.List()
 				selectedItem: null
 				success: false
 			}
 		render: ->
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
-					OpenCreateProgEventButton()						
+					OpenCreateProgEventButton({
+						onNewProgEvent: @_updateProgEvents
+					})
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
 							switch section.get('type')
@@ -400,18 +403,38 @@ load = (win, {clientFileId}) ->
 				)
 			}
 		_updateProgEvents: (progEvent) ->
-			console.log("Prog Event:", progEvent)
+			@setState {
+				progEvents: @state.progEvents.push progEvent
+			}
+			console.log("progEvents updated to:", @state.progEvents)
 		_save: ->
-			ActiveSession.persist.progNotes.create @state.progNote, (err) =>
+
+			ActiveSession.persist.progNotes.create @state.progNote, (err, obj) =>
 				if err
 					console.error err.stack
 					Bootbox.alert "An error occurred while saving your progress note."
 					return
 
-				@setState {success: true}
-				# TODO success animation
-				#setTimeout (=> nwWin.close true), 3000
-				nwWin.close true
+				# Tack on the new progress note ID to all created events					
+
+				modifiedProgEvents = @state.progEvents.map (progEvent) ->
+					return progEvent.set('relatedProgNoteId', obj.get('id'))
+
+				console.log("Modified progEvents:", modifiedProgEvents)
+
+
+				Async.each modifiedProgEvents.toArray(), (progEvent, cb) =>		
+					ActiveSession.persist.progEvents.create progEvent, cb
+				, (err, results) =>
+					if (err)
+						console.error err.stack
+						Bootbox.alert "An error occured while saving the events"
+						return					
+
+					@setState {success: true}
+					# TODO success animation
+					#setTimeout (=> nwWin.close true), 3000
+					nwWin.close true
 
 
 
@@ -426,6 +449,7 @@ load = (win, {clientFileId}) ->
 				className: 'btn btn-success'
 				onClick: @_open
 			},
+				FaIcon 'bell'
 				"Create Event"
 			)
 		renderLayer: ->
@@ -437,7 +461,7 @@ load = (win, {clientFileId}) ->
 					@setState {isOpen: false}		
 				onSuccess: (progEvent) =>							
 					@setState {isOpen: false}
-					@_setProgEvents progEvent
+					@props.onNewProgEvent progEvent
 			})
 		_open: ->
 			@setState {isOpen: true}

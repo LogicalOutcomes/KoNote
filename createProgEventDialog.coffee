@@ -2,6 +2,7 @@
 
 Persist = require './persist'
 Imm = require 'immutable'
+Moment = require 'moment'
 
 load = (win) ->
 	$ = win.jQuery
@@ -11,7 +12,7 @@ load = (win) ->
 
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
-	Spinner = require('./spinner').load(win)
+	Spinner = require('./spinner').load(win)	
 
 	CreateProgEventDialog = React.createFactory React.createClass
 		getInitialState: ->
@@ -116,15 +117,15 @@ load = (win) ->
 			title = @state.title
 			description = @state.description
 			startDate = @state.startDate
-			endDate = if @state.dateSpan then @state.endDate else ''
+			endDate = @state.endDate
 
 			@setState {isLoading: true}
 
 			progEvent = Imm.fromJS {
 			  title: title
 			  description: description
-			  startDate: startDate
-			  endDate: endDate
+			  startDate: Moment(startDate, 'YYYY-MM-DD').format('YYYYMMDD')
+			  endDate: Moment(endDate, 'YYYY-MM-DD').format('YYYYMMDD') if @state.dateSpan
 			}
 
 			Bootbox.alert

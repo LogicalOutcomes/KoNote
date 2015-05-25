@@ -143,17 +143,15 @@ dataModelDefinitions = [
 		name: 'progEvent'
 		collectionName: 'progEvents'
 		isMutable: false
-		indexes: [['']]
+		indexes: []
 		schema: Joi.object().keys({
 			title: Joi.string()
 			description: Joi.string().allow('')
 			# TODO: Event Categories
 			# categoryId: IdSchema
-			relatedProgNoteId: IdSchema
-			dateSpan: Joi.object().keys({
-				startDate: Joi.date()
-				endDate: Joi.date().allow('')
-			})
+			relatedProgNoteId: IdSchema			
+			startDate: Joi.date().format('YYYYMMDD').raw()
+			endDate: Joi.date().format('YYYYMMDD').raw().allow('')
 		})
 	}
 ]
