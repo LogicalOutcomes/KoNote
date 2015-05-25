@@ -27,7 +27,7 @@ load = (win) ->
 				title: "Create New Client File"
 				onClose: @props.onClose
 			},
-				R.div({className: 'createClientFileDialog'}),
+				R.div({className: 'createClientFileDialog'},
 					R.div({className: 'form-group'},
 						R.label({}, "First name"),
 						R.input({
@@ -73,6 +73,7 @@ load = (win) ->
 							disabled: not @state.firstName or not @state.lastName
 						}, "Create File")
 					)
+				)
 			)
 		_cancel: ->
 			@props.onCancel()
