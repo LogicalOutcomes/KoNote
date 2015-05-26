@@ -67,7 +67,6 @@ load = (win, {clientFileId}) ->
 				registerTask
 				unregisterTask
 				loadData
-				loadMetric
 				updateClientFile
 				unregisterListeners
 			}), $('#container')[0]
@@ -208,26 +207,6 @@ load = (win, {clientFileId}) ->
 					return
 
 				# OK, all done
-
-		loadMetric = (metricId, isStartupTask=false, cb=(->)) ->
-			taskId = "readMetric.#{metricId}"
-
-			# If already loaded or being loaded
-			if metricsById.has(metricId) or startupTasks.has(taskId)
-				cb()
-				return
-
-			registerTask taskId, isStartupTask
-			ActiveSession.persist.metrics.read metricId, (err, result) =>
-				if err
-					unregisterTask taskId, isStartupTask
-					console.error err.stack
-					return
-
-				metricsById = metricsById.set metricId, result
-
-				unregisterTask taskId, isStartupTask
-				cb()
 
 		updateClientFile = (context, newValue) ->
 			oldClientFile = clientFile
@@ -390,7 +369,6 @@ load = (win, {clientFileId}) ->
 					registerTask: @props.registerTask
 					unregisterTask: @props.unregisterTask
 					updatePlan: @props.updateClientFile.bind null, ['plan']
-					loadMetric: @props.loadMetric
 				})
 				ProgNotesTab.ProgNotesView({
 					isVisible: activeTabId is 'progressNotes'

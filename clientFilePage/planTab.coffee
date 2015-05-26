@@ -378,18 +378,6 @@ load = (win) ->
 			}
 		_setSelectedTarget: (targetId) ->
 			@setState {selectedTargetId: targetId}
-		_promptToAddMetric: (targetId) ->
-			currentMetricIds = @state.currentTargetRevisionsById.getIn [targetId, 'metricIds']
-
-			Bootbox.prompt "Enter a metric ID", (metricId) =>
-				if metricId and not currentMetricIds.contains(metricId)
-					@props.loadMetric metricId, false, =>
-						@setState {
-							currentTargetRevisionsById: @state.currentTargetRevisionsById
-							.update targetId, (currentRev) ->
-								return currentRev.update 'metricIds', (metricIds) ->
-									return metricIds.push metricId
-						}
 		_addMetricToTarget: (targetId, metricId) ->
 			if @state.currentTargetRevisionsById.getIn([targetId, 'metricIds']).contains metricId
 				Bootbox.alert "This metric has already been added to the selected target."
