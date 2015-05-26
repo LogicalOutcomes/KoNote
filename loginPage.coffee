@@ -60,7 +60,7 @@ load = (win) ->
 						if isSetUp
 							# Already set up, no need to continue here
 							@setState {showForm: true}
-							React.findDOMNode(@refs.userNameField).focus();
+							@refs.userNameField.getDOMNode().focus()
 							return
 
 						# Data directory hasn't been set up yet.
@@ -129,7 +129,7 @@ load = (win) ->
 					userName: 'admin'
 				}
 
-				React.findDOMNode(@refs.passwordField).focus();
+				@refs.passwordField.getDOMNode().focus()
 
 		render: ->
 			return R.div({className: 'loginPage'},
