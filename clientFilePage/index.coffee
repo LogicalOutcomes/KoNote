@@ -196,7 +196,11 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						metrics = Imm.List(results)
+						metricsById = Imm.List(results)
+						.map (metric) ->
+							return [metric.get('id'), metric]
+						.fromEntrySeq().toMap()
+
 						cb()
 			], (err) ->
 				unregisterTask 'initialDataLoad', true
