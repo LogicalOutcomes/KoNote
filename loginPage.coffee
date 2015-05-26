@@ -39,9 +39,8 @@ load = (win) ->
 				isLoading: true
 			}
 		componentDidMount: ->
-			@refs.userNameField.getDOMNode().focus()
-
 			@_checkSetUp()
+
 		_checkSetUp: ->
 			adminPassword = null
 
@@ -61,6 +60,7 @@ load = (win) ->
 						if isSetUp
 							# Already set up, no need to continue here
 							@setState {showForm: true}
+							React.findDOMNode(@refs.userNameField).focus();
 							return
 
 						# Data directory hasn't been set up yet.
@@ -128,13 +128,16 @@ load = (win) ->
 					showForm: true
 					userName: 'admin'
 				}
+
+				React.findDOMNode(@refs.passwordField).focus();
+
 		render: ->
 			return R.div({className: 'loginPage'},
 				Spinner({
 					isVisible: @state.isLoading
 					isOverlay: true
 				})
-				R.div({className: "loginForm #{showWhen @state.showForm}"},
+				R.form({className: "loginForm #{showWhen @state.showForm}"},
 					R.div({className: 'form-group'},
 						R.label({}, "User name")
 						R.input({
@@ -157,6 +160,7 @@ load = (win) ->
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-primary'
+							type: 'submit'
 							disabled: not @state.userName or not @state.password
 							onClick: @_login
 						}, "Sign in")
@@ -169,6 +173,7 @@ load = (win) ->
 			@setState {password: event.target.value}
 		_login: (event) ->
 			# TODO where to get data dir path? config?
+			event.preventDefault()
 			@setState {isLoading: true}
 			Persist.Session.login 'data', @state.userName, @state.password, (err, session) =>
 				@setState {isLoading: false}
