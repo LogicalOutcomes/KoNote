@@ -200,9 +200,9 @@ load = (win, {clientFileId}) ->
 		render: ->
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
-					# OpenCreateProgEventButton({
-					# 	onNewProgEvent: @_updateProgEvents
-					# })
+					OpenCreateProgEventButton({
+						onNewProgEvent: @_updateProgEvents
+					})
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
 							switch section.get('type')
