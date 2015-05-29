@@ -173,7 +173,7 @@ load = (win) ->
 					R.div({id: 'menuContent'}
 						R.div({id: 'avatar'}, FaIcon('user'))
 						# TODO: Get name/username of logged in user
-						R.h3({}, if global.ActiveSession.isAdmin() then "Admin" else "User")
+						R.h3({}, global.ActiveSession.userName)
 						if global.ActiveSession.isAdmin() then @_renderUserMenuList()
 					)
 				)
