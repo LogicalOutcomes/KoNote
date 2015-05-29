@@ -196,6 +196,7 @@ load = (win, {clientFileId}) ->
 				progEvents: Imm.List()
 				selectedItem: null
 				success: false
+				showExitAlert: false
 			}
 		render: ->
 			return R.div({className: 'newProgNotePage'},				
@@ -295,33 +296,31 @@ load = (win, {clientFileId}) ->
 			nwWin.title = "#{clientName}: Progress Note - KoNote"
 
 			nwWin.on 'close', (event) =>
-				# TODO
-				if @_hasChanges()
+				if not @state.showExitAlert
+					@setState {showExitAlert: true}
 					Bootbox.dialog {
-						message: "There are unsaved changes in this client file."
-						buttons: {
-							discard: {
-								label: "Discard changes"
-								className: 'btn-danger'
-								callback: =>
-									nwWin.close true
-							}
+						message: "Are you sure you want to cancel this progress note?"
+						buttons: {						
 							cancel: {
 								label: "Cancel"
 								className: 'btn-default'
 							}
-							save: {
-								label: "Save changes"
+							discard: {
+								label: "Yes"
 								className: 'btn-primary'
 								callback: =>
-									@_save =>
-										process.nextTick =>
-											nwWin.close()
+									nwWin.close true
 							}
+							# save: {
+							# 	label: "Save changes"
+							# 	className: 'btn-primary'
+							# 	callback: =>
+							# 		@_save =>
+							# 			process.nextTick =>
+							# 				nwWin.close()
+							# }
 						}
 					}
-				else
-					nwWin.close(true)
 		_hasChanges: ->
 			# TODO
 		_getSectionIndex: (sectionId) ->
