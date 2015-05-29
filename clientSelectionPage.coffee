@@ -262,12 +262,12 @@ load = (win) ->
 					@setState {isOpen: false}
 				onCancel: =>
 					@setState {isOpen: false}
-				onSuccess: (clientId) =>
-					@setState {isOpen: false}
-					if clientId
+				onSuccess: (clientFileId) =>
+					@setState {isOpen: false}					
+					if clientFileId
 						openWindow {
 							page: 'clientFile'
-							clientId
+							clientFileId
 						}
 			})
 		_open: ->
