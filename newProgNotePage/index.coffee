@@ -428,7 +428,7 @@ load = (win, {clientFileId}) ->
 				, (err, results) =>
 					if (err)
 						console.error err.stack
-						Bootbox.alert "An error occured while saving the events"
+						Bootbox.alert "An error occurred while saving the events"
 						return					
 
 					@setState {success: true}

@@ -53,7 +53,7 @@ load = (win) ->
 								type: 'checkbox'
 								onChange: @_updateDateSpan
 								checked: @state.DateSpan
-							}), "Occured over multiple days"
+							}), "Occurred over multiple days"
 						)						
 					)
 					R.div({className: 'form-group'},
