@@ -51,8 +51,18 @@ load = (win) ->
 				return [metricId, @props.metricsById.get(metricId).get('name')]
 			.fromEntrySeq().toMap()
 
+			# Is there actually enough information to show something?
+			hasData = metricIdsWithData.size > 0
+
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
-				R.div({className: 'controlPanel'},
+				R.div({className: "noData #{showWhen not hasData}"},
+					R.h1({}, "Not enough data.")
+					R.div({},
+						"This tab will become available when this client has
+						one or more progress notes that contain metrics."
+					)
+				)
+				R.div({className: "controlPanel #{showWhen hasData}"},
 					R.div({className: 'heading'}, "Metrics")
 					R.div({className: 'metrics'},
 						(metricIdsWithData.map (metricId) =>
@@ -71,7 +81,7 @@ load = (win) ->
 						).toJS()...
 					)
 				)
-				R.div({className: 'chartContainer'},
+				R.div({className: "chartContainer #{showWhen hasData}"},
 					(if @props.isVisible
 						# Force chart to be recreated when tab is opened
 						(if dataSeries.size > 0
