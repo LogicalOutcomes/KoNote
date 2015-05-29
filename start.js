@@ -18,10 +18,12 @@
 		// Inject the compiled CSS into the page
 		window.document.getElementById('main-css').innerHTML = compiledCss;
 
-		// Register the CoffeeScript compiler
-		require('coffee-script/register');
+		setTimeout(function () {
+			// Register the CoffeeScript compiler
+			require('coffee-script/register');
 
-		// Run the app
-		require('./main').init(window);
+			// Run the app
+			require('./main').init(window);
+		}, 500);
 	});
 })();
