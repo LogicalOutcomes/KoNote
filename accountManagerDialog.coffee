@@ -115,7 +115,10 @@ load = (win) ->
 					Bootbox.alert "An error occurred while creating the account"
 					return
 
-				@props.onSuccess()
+				Bootbox.alert
+					message: "New user account created for \"#{userName}\""
+					callback: =>
+						@props.onSuccess()
 
 	return CreateAccountDialog
 
