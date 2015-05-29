@@ -174,26 +174,29 @@ load = (win) ->
 						R.div({id: 'avatar'}, FaIcon('user'))
 						# TODO: Get name/username of logged in user
 						R.h3({}, global.ActiveSession.userName)
-						if global.ActiveSession.isAdmin() then @_renderUserMenuList()
+						@_renderUserMenuList(global.ActiveSession.isAdmin())
 					)
 				)
 			)
 
 		_renderUserMenuList: (isAdmin) ->
 			itemsList = [{
+				title: "Client Files"
+				dialog: CreateClientFileDialog
+				icon: 'folder-open'}
+			# {
+			# 	title: "Sign Out"
+			# 	# TODO: Call dialog to confirm win.close
+			# 	dialog: null
+			# 	icon: 'times-circle'}
+			]
+
+			if isAdmin
+				itemsList.push {
 					title: "User Accounts"
 					dialog: AccountManagerDialog
-					icon: 'user-plus' }
-				{
-					title: "Client Files"
-					dialog: CreateClientFileDialog
-					icon: 'folder-open'}
-				# {
-				# 	title: "Sign Out"
-				# 	# TODO: Call dialog to confirm win.close
-				# 	dialog: null
-				# 	icon: 'times-circle'}
-				]
+					icon: 'user-plus'
+				}
 
 			menuItems = itemsList.map (item) ->
 				return UserMenuItem({
