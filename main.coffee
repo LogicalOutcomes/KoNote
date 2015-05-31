@@ -10,7 +10,16 @@ init = (win) ->
 	Backbone = require 'backbone'
 	QueryString = require 'querystring'
 
+	CrashHandler = require('./crashHandler').load(win)
 	Gui = win.require 'nw.gui'
+
+	# Handle any uncaught errors.
+	# Generally, errors should be passed directly to CrashHandler instead of
+	# being thrown so that the error brings down only one window.  Errors that
+	# reach this event handler will bring down the entire application, which is
+	# usually less desirable.
+	process.on 'uncaughtException', (err) ->
+		CrashHandler.handle err
 
 	win.jQuery ->
 		# Pull any parameters out of the URL
