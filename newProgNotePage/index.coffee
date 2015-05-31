@@ -13,7 +13,10 @@ load = (win, {clientFileId}) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+
 	Gui = win.require 'nw.gui'
+
+	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
@@ -131,8 +134,7 @@ load = (win, {clientFileId}) ->
 						cb null
 			], (err) =>
 				if err
-					console.error err.stack
-					Bootbox.alert "An error occurred while loading the necessary files."
+					CrashHandler.handle err
 					return
 
 				# Done loading data, we can generate the prognote now
@@ -407,11 +409,9 @@ load = (win, {clientFileId}) ->
 			}
 			console.log("progEvents updated to:", @state.progEvents)
 		_save: ->
-
 			ActiveSession.persist.progNotes.create @state.progNote, (err, obj) =>
 				if err
-					console.error err.stack
-					Bootbox.alert "An error occurred while saving your progress note."
+					CrashHandler.handle err
 					return
 
 				# Tack on the new progress note ID to all created events					
@@ -426,8 +426,7 @@ load = (win, {clientFileId}) ->
 					ActiveSession.persist.progEvents.create progEvent, cb
 				, (err, results) =>
 					if (err)
-						console.error err.stack
-						Bootbox.alert "An error occurred while saving the events"
+						CrashHandler.handle err
 						return					
 
 					@setState {success: true}

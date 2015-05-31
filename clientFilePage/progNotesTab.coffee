@@ -9,6 +9,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
@@ -112,8 +113,7 @@ load = (win) ->
 			@props.registerTask 'quickNote-save'
 			global.ActiveSession.persist.progNotes.create note, (err) =>
 				if err
-					console.error err.stack
-					Bootbox.alert "An error occurred while saving your quick note."
+					CrashHandler.handle err
 					return
 
 				@_toggleQuickNotePopover()

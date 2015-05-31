@@ -16,6 +16,11 @@ load = (win) ->
 	nwWin = Gui.Window.get(win)
 
 	handle = (err) ->
+		# Record where this function was actually called from.
+		# Sometimes this additional info is useful, because async calls often
+		# obscure what caused an error.
+		handlerStackTrace = new Error('handler call stack tracer').stack
+
 		# React freaks out if you call React.render inside a component's render
 		# method.  nextTick works around this.
 		process.nextTick ->
@@ -37,6 +42,7 @@ load = (win) ->
 					timestamp: Moment().format()
 					error: err.toString()
 					errorStackTrace: err.stack
+					errorHandlerStackTrace: handlerStackTrace
 				}
 
 				# Log to localStorage
@@ -61,7 +67,7 @@ load = (win) ->
 		render: ->
 			return R.div({className: 'crashOverlay'},
 				R.div({className: 'crashMessage'},
-					R.h1({}, "Oh no, something went wrong.")
+					R.h1({}, "Oops, something went wrong.")
 					R.div({}, """
 						KoNote encountered an unexpected error.
 						If this happens repeatedly, please contact KoNode support

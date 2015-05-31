@@ -12,6 +12,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricLookupField = require('../metricLookupField').load(win)
 	MetricWidget = require('../metricWidget').load(win)
@@ -311,9 +312,7 @@ load = (win) ->
 							cb()
 				, (err) =>
 					if err
-						console.error err
-						console.error err.stack
-						Bootbox.alert 'An error occurred while saving.'
+						CrashHandler.handle err
 						return
 
 					# Replace transient IDs

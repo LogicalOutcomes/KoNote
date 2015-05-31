@@ -11,6 +11,7 @@ load = (win) ->
 	R = React.DOM
 
 	AccountManagerDialog = require('./accountManagerDialog').load(win)
+	CrashHandler = require('./crashHandler').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
@@ -36,8 +37,7 @@ load = (win) ->
 		loadData = ->
 			ActiveSession.persist.clientFiles.list (err, result) ->
 				if err
-					console.error err.stack
-					Bootbox.alert "Could not load client file information."
+					CrashHandler.handle err
 					return
 
 				clientFileList = result

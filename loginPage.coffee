@@ -10,6 +10,8 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+
+	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
@@ -51,10 +53,7 @@ load = (win) ->
 						@setState {isLoading: false}
 
 						if err
-							console.error err
-							console.error err.stack
-							Bootbox.alert "An error occurred during start up.", ->
-								process.exit(1)
+							cb err
 							return
 
 						if isSetUp
@@ -95,10 +94,7 @@ load = (win) ->
 						@setState {isLoading: false}
 
 						if err
-							console.error err
-							console.error err.stack
-							Bootbox.alert "An error occurred during set up.", ->
-								process.exit(1)
+							cb err
 							return
 
 						cb()
@@ -114,14 +110,13 @@ load = (win) ->
 								process.exit(1)
 								return
 
-							console.error err.stack
-							Bootbox.alert "An error occurred while creating the account"
+							cb err
 							return
 
 						cb()
 			], (err) =>
 				if err
-					cb err
+					CrashHandler.handle err
 					return
 
 				@setState {
@@ -190,8 +185,7 @@ load = (win) ->
 							pwField.focus()
 						return
 
-					console.error err.stack
-					Bootbox.alert "An error occurred while logging in.  Please try again later."
+					CrashHandler.handle err
 					return
 
 				# Store this session for later use

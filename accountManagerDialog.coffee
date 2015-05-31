@@ -8,6 +8,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
@@ -111,8 +112,7 @@ load = (win) ->
 						Bootbox.alert "That user name is already taken."
 						return
 
-					console.error err.stack
-					Bootbox.alert "An error occurred while creating the account"
+					CrashHandler.handle err
 					return
 
 				Bootbox.alert
