@@ -306,6 +306,8 @@ load = (win, {clientFileId}) ->
 							cancel: {
 								label: "Cancel"
 								className: 'btn-default'
+								callback: =>
+									@setState {showExitAlert: false}
 							}
 							discard: {
 								label: "Yes"
