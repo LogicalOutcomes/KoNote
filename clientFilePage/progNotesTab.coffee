@@ -77,14 +77,6 @@ load = (win) ->
 								FaIcon 'file'
 								"New progress note"
 							)
-							R.button({
-								className: 'addQuickNote btn btn-default  btn-lg'
-								ref: 'quickNoteToggle2'
-								onClick: @_toggleQuickNotePopover2
-							},
-								FaIcon 'plus'
-								"Add quick note"
-							)
 						)
 						(@props.progNotes.reverse().map (progNote) =>
 							switch progNote.get('type')
@@ -112,28 +104,6 @@ load = (win) ->
 		_openNewProgNote: ->
 			openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
 		_toggleQuickNotePopover: ->
-			quickNoteToggle = $(@refs.quickNoteToggle.getDOMNode())
-
-			if quickNoteToggle.data('isVisible')
-				quickNoteToggle.popover('hide')
-
-				quickNoteToggle.data('isVisible', false)
-			else
-				global.document = win.document
-				quickNoteToggle.popover('show')
-				quickNoteToggle.data('isVisible', true)
-
-				popover = quickNoteToggle.siblings('.popover')
-				popover.find('.save.btn').on 'click', (event) =>
-					event.preventDefault()
-
-					@_createQuickNote popover.find('textarea').val()
-				popover.find('.cancel.btn').on 'click', (event) =>
-					event.preventDefault()
-
-					@_toggleQuickNotePopover()
-				popover.find('textarea').focus()
-		_toggleQuickNotePopover2: ->
 			quickNoteToggle = $(@refs.quickNoteToggle.getDOMNode())
 
 			if quickNoteToggle.data('isVisible')
