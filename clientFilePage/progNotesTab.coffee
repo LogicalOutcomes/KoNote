@@ -37,7 +37,12 @@ load = (win) ->
 			}
 		render: ->
 			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
-				R.div({className: 'toolbar'},
+				R.div({
+					className: [
+						'toolbar'
+						showWhen @props.progNotes.size > 0
+					].join ' '
+				},
 					R.button({
 						className: 'newProgNote btn btn-primary'
 						onClick: @_openNewProgNote
@@ -56,6 +61,31 @@ load = (win) ->
 				)
 				R.div({className: 'panes'},
 					R.div({className: 'progNotes'},
+						R.div({
+							className: [
+								'empty'
+								showWhen @props.progNotes.size is 0
+							].join ' '
+						},
+							R.div({className: 'message'},
+								"This client does not currently have any progress notes."
+							)
+							R.button({
+								className: 'newProgNote btn btn-primary btn-lg'
+								onClick: @_openNewProgNote
+							},
+								FaIcon 'file'
+								"New progress note"
+							)
+							R.button({
+								className: 'addQuickNote btn btn-default  btn-lg'
+								ref: 'quickNoteToggle'
+								onClick: @_toggleQuickNotePopover
+							},
+								FaIcon 'plus'
+								"Add quick note"
+							)
+						)
 						(@props.progNotes.reverse().map (progNote) =>
 							switch progNote.get('type')
 								when 'basic'

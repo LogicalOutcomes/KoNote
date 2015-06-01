@@ -50,7 +50,7 @@ load = (win) ->
 				R.div({className: 'targetList'},
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
 						R.div({className: 'message'},
-							"This client does not currently have any plan targets. "
+							"This client does not currently have any plan targets."
 						)
 						R.button({
 							className: 'addSection btn btn-success btn-lg'
