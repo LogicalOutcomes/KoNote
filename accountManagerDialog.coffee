@@ -8,54 +8,17 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
 
-	AccountManagerDialog = React.createFactory React.createClass
-		render: ->
-			return Dialog({
-				title: "Account Manager"
-				onClose: @props.onClose
-			},
-				# Upcoming features:
-				# - a user table
-				#   - account type
-				#   - delete account button
-				#   - change password button
-				# - export?
-
-				# For now, just a button
-				R.div({className: 'accountManagerDialog'},
-					OpenCreateAccountDialogButton()
-				)
-			)
-
-	OpenCreateAccountDialogButton = React.createFactory React.createClass
-		mixins: [LayeredComponentMixin]
-		getInitialState: ->
-			return {
-				isOpen: false
-			}
-		render: ->
-			return R.button({
-				className: 'btn btn-primary'
-				onClick: @_open
-			},
-				"Create new account"
-			)
-		renderLayer: ->
-			unless @state.isOpen
-				return R.div()
-
-			return CreateAccountDialog({
-				onCancel: =>
-					@setState {isOpen: false}
-				onSuccess: =>
-					@setState {isOpen: false}
-			})
-		_open: ->
-			@setState {isOpen: true}
+	# Upcoming features:
+	# 			# - a user table
+	# 			#   - account type
+	# 			#   - delete account button
+	# 			#   - change password button
+	# 			# - export?
 
 	CreateAccountDialog = React.createFactory React.createClass
 		getInitialState: ->
@@ -149,12 +112,14 @@ load = (win) ->
 						Bootbox.alert "That user name is already taken."
 						return
 
-					console.error err.stack
-					Bootbox.alert "An error occurred while creating the account"
+					CrashHandler.handle err
 					return
 
-				@props.onSuccess()
+				Bootbox.alert
+					message: "New user account created for \"#{userName}\""
+					callback: =>
+						@props.onSuccess()
 
-	return AccountManagerDialog
+	return CreateAccountDialog
 
 module.exports = {load}

@@ -8,8 +8,9 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
-	ExpandingTextArea = require('./expandingTextArea').load(win)
+	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
+	ExpandingTextArea = require('./expandingTextArea').load(win)
 
 	DefineMetricDialog = React.createFactory React.createClass
 		getInitialState: ->
@@ -72,8 +73,7 @@ load = (win) ->
 
 			ActiveSession.persist.metrics.create newMetric, (err, result) =>
 				if err
-					console.error err.stack
-					Bootbox.alert "Error creating metric definition"
+					CrashHandler.handle err
 					return
 
 				@props.onSuccess result.get('id')

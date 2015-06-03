@@ -11,6 +11,7 @@ load = (win) ->
 	R = React.DOM
 
 	AccountManagerDialog = require('./accountManagerDialog').load(win)
+	CrashHandler = require('./crashHandler').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
@@ -36,8 +37,7 @@ load = (win) ->
 		loadData = ->
 			ActiveSession.persist.clientFiles.list (err, result) ->
 				if err
-					console.error err.stack
-					Bootbox.alert "Could not load client file information."
+					CrashHandler.handle err
 					return
 
 				clientFileList = result
@@ -75,6 +75,7 @@ load = (win) ->
 			return {
 				isSmallHeaderSet: false
 				queryText: ''
+				menuIsOpen: false
 			}
 		_isLoading: ->
 			return @props.clientFileList is null
@@ -85,80 +86,129 @@ load = (win) ->
 			unless @_isLoading()
 				results = @_getResultsList()
 
-			return R.div({className: 'clientSelectionPage'},
-				Spinner({
-					isVisible: @_isLoading()
-					isOverlay: true
-				})
-				(if global.ActiveSession.isAdmin()
-					R.div({},
-						OpenAccountManagerButton()
-						OpenNewClientFileButton()
-					)
+			return R.div({
+					id: 'clientSelectionPage'
+					className: if @state.menuIsOpen then 'openMenu' else ''
+				},
+				R.a({
+					id: 'expandMenuButton'
+					onClick: @_toggleUserMenu
+				}, 
+					FaIcon 'bars'
 				)
 				R.div({
-					className: [
-						'header'
-						if smallHeader then 'small' else ''
-						showWhen not @_isLoading()
-					].join ' '
-				},
-					BrandWidget({
-						reverse: true
-					})
-					R.div({className: 'logoContainer'},
-						R.img({src: 'customer-logo-lg.png'})
+					id: 'mainContainer'
+					onClick: if @state.menuIsOpen then @_toggleUserMenu
+				},					
+					R.div({id: 'main'},
+						Spinner({
+							isVisible: @_isLoading()
+							isOverlay: true
+						})						
+						R.header({
+							className: [
+								if smallHeader then 'small' else ''
+								showWhen not @_isLoading()
+							].join ' '
+						},								
+							R.div({className: 'logoContainer'},
+								R.img({src: 'customer-logo-lg.png'})
+								R.div({
+									className: 'subtitle'
+									style: {color: Config.logoSubtitleColor}
+								},
+									Config.logoSubtitle
+								)
+							)
+							R.div({className: 'searchBoxContainer'},
+								R.input({
+									className: 'searchBox form-control'
+									ref: 'searchBox'
+									type: 'text'
+									onChange: @_updateQueryText
+									onBlur: @_onSearchBoxBlur
+									placeholder: "Search for a client's profile..."
+								})
+							)
+						)
 						R.div({
-							className: 'subtitle'
-							style: {color: Config.logoSubtitleColor}
+							className: [
+								'smallHeaderLogo'
+								if smallHeader then 'show' else 'hidden'
+								showWhen not @_isLoading()
+							].join ' '
 						},
-							Config.logoSubtitle
+							R.img({src: 'customer-logo-lg.png'})
+						)
+						R.div({
+							className: [
+								'results'
+								if smallHeader then 'show' else 'hidden'
+								showWhen not @_isLoading()
+							].join ' '
+						},
+							(if results?
+								(results.map (result) =>
+									R.div({
+										className: 'result'
+										onClick: @_onResultSelection.bind(null, result.get('id'))
+									}
+										R.span({
+											className: 'recordId'
+										}, if result.has('recordId') and result.get('recordId').length > 0 then "ID# #{result.get('recordId')}"),
+									renderName result.get('clientName')
+									)
+								).toJS()
+							else
+								[]
+							)...
 						)
 					)
-					R.div({className: 'searchBoxContainer'},
-						R.input({
-							className: 'searchBox form-control'
-							ref: 'searchBox'
-							type: 'text'
-							onChange: @_updateQueryText
-							onBlur: @_onSearchBoxBlur
-							placeholder: "Search for a client's profile..."
-						})
+				)
+				R.aside({
+					id: 'menuContainer'
+					ref: 'userMenu'
+					className: if @state.menuIsOpen then 'isOpen' else ''
+				}
+					R.div({id: 'menuContent'}
+						R.div({id: 'avatar'}, FaIcon('user'))
+						# TODO: Get name/username of logged in user
+						R.h3({}, global.ActiveSession.userName)
+						@_renderUserMenuList(global.ActiveSession.isAdmin())
 					)
 				)
-				R.div({
-					className: [
-						'smallHeaderLogo'
-						if smallHeader then 'show' else 'hidden'
-						showWhen not @_isLoading()
-					].join ' '
-				},
-					R.img({src: 'customer-logo-lg.png'})
-				)
-				R.div({
-					className: [
-						'results'
-						if smallHeader then 'show' else 'hidden'
-						showWhen not @_isLoading()
-					].join ' '
-				},
-					(if results?
-						(results.map (result) =>
-							R.div({
-								className: 'result'
-								onClick: @_onResultSelection.bind(null, result.get('id'))
-							}
-								R.span({
-									className: 'recordId'
-								}, if result.has('recordId') and result.get('recordId').length > 0 then "ID# #{result.get('recordId')}"),
-							renderName result.get('clientName')
-							)
-						).toJS()
-					else
-						[]
-					)...
-				)
 			)
+
+		_renderUserMenuList: (isAdmin) ->
+			itemsList = [{
+				title: "Client Files"
+				dialog: CreateClientFileDialog
+				icon: 'folder-open'}
+			# {
+			# 	title: "Sign Out"
+			# 	# TODO: Call dialog to confirm win.close
+			# 	dialog: null
+			# 	icon: 'times-circle'}
+			]
+
+			if isAdmin
+				itemsList.push {
+					title: "User Accounts"
+					dialog: AccountManagerDialog
+					icon: 'user-plus'
+				}
+
+			menuItems = itemsList.map (item) ->
+				return UserMenuItem({
+					title: item.title
+					dialog: item.dialog
+					icon: item.icon
+				})
+
+			return R.ul({}, menuItems)
+
+		_toggleUserMenu: ->
+			@setState {menuIsOpen: !@state.menuIsOpen}		
 		_getResultsList: ->
 			if @state.queryText.trim() is ''
 				return Imm.List()
@@ -190,63 +240,43 @@ load = (win) ->
 				clientFileId
 			}
 
-	# In the future, it might make sense to refactor this into a generic
-	# OpenDialogButton component.
-	# See also: OpenCreateAccountDialogButton
-	OpenAccountManagerButton = React.createFactory React.createClass
+
+	UserMenuItem = React.createFactory React.createClass
 		mixins: [LayeredComponentMixin]
 		getInitialState: ->
 			return {
 				isOpen: false
 			}
 		render: ->
-			return R.button({
-				className: 'btn btn-default'
-				onClick: @_open
-			},
-				"Open Account Manager"
+			return R.li({}, 				
+				R.div({
+					onClick: @_open
+				}, 
+					FaIcon(@props.icon)
+					@props.title
+				)
 			)
 		renderLayer: ->
 			unless @state.isOpen
 				return R.div()
 
-			return AccountManagerDialog({
-				onClose: =>
-					@setState {isOpen: false}
-			})
-		_open: ->
-			@setState {isOpen: true}
-
-	OpenNewClientFileButton = React.createFactory React.createClass
-		mixins: [LayeredComponentMixin]
-		getInitialState: ->
-			return {
-				isOpen: false
-			}
-		render: ->
-			return R.button({
-				className: 'btn btn-default'
-				onClick: @_open
-			},
-				"New Client File"
-			)
-		renderLayer: ->
-			unless @state.isOpen
-				return R.div()
-
-			return CreateClientFileDialog({
+			return @props.dialog({
 				onClose: =>
 					@setState {isOpen: false}
 				onCancel: =>
 					@setState {isOpen: false}
 				onSuccess: (clientFileId) =>
-					@setState {isOpen: false}
-					openWindow {
-						page: 'clientFile'
-						clientFileId
-					}
+					@setState {isOpen: false}					
+					if clientFileId
+						openWindow {
+							page: 'clientFile'
+							clientFileId
+						}
 			})
 		_open: ->
 			@setState {isOpen: true}
+		_cancel: ->
+			@setState {isOpen: false}
+
 
 module.exports = {load}

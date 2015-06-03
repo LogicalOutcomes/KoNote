@@ -13,7 +13,10 @@ load = (win, {clientFileId}) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+
 	Gui = win.require 'nw.gui'
+
+	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
@@ -131,8 +134,7 @@ load = (win, {clientFileId}) ->
 						cb null
 			], (err) =>
 				if err
-					console.error err.stack
-					Bootbox.alert "An error occurred while loading the necessary files."
+					CrashHandler.handle err
 					return
 
 				# Done loading data, we can generate the prognote now
@@ -196,6 +198,7 @@ load = (win, {clientFileId}) ->
 				progEvents: Imm.List()
 				selectedItem: null
 				success: false
+				showExitAlert: false
 			}
 		render: ->
 			return R.div({className: 'newProgNotePage'},				
@@ -295,33 +298,33 @@ load = (win, {clientFileId}) ->
 			nwWin.title = "#{clientName}: Progress Note - KoNote"
 
 			nwWin.on 'close', (event) =>
-				# TODO
-				if @_hasChanges()
+				if not @state.showExitAlert
+					@setState {showExitAlert: true}
 					Bootbox.dialog {
-						message: "There are unsaved changes in this client file."
-						buttons: {
-							discard: {
-								label: "Discard changes"
-								className: 'btn-danger'
-								callback: =>
-									nwWin.close true
-							}
+						message: "Are you sure you want to cancel this progress note?"
+						buttons: {						
 							cancel: {
 								label: "Cancel"
 								className: 'btn-default'
+								callback: =>
+									@setState {showExitAlert: false}
 							}
-							save: {
-								label: "Save changes"
+							discard: {
+								label: "Yes"
 								className: 'btn-primary'
 								callback: =>
-									@_save =>
-										process.nextTick =>
-											nwWin.close()
+									nwWin.close true
 							}
+							# save: {
+							# 	label: "Save changes"
+							# 	className: 'btn-primary'
+							# 	callback: =>
+							# 		@_save =>
+							# 			process.nextTick =>
+							# 				nwWin.close()
+							# }
 						}
 					}
-				else
-					nwWin.close(true)
 		_hasChanges: ->
 			# TODO
 		_getSectionIndex: (sectionId) ->
@@ -408,11 +411,9 @@ load = (win, {clientFileId}) ->
 			}
 			console.log("progEvents updated to:", @state.progEvents)
 		_save: ->
-
 			ActiveSession.persist.progNotes.create @state.progNote, (err, obj) =>
 				if err
-					console.error err.stack
-					Bootbox.alert "An error occurred while saving your progress note."
+					CrashHandler.handle err
 					return
 
 				# Tack on the new progress note ID to all created events					
@@ -427,8 +428,7 @@ load = (win, {clientFileId}) ->
 					ActiveSession.persist.progEvents.create progEvent, cb
 				, (err, results) =>
 					if (err)
-						console.error err.stack
-						Bootbox.alert "An error occured while saving the events"
+						CrashHandler.handle err
 						return					
 
 					@setState {success: true}

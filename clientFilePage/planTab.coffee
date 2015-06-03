@@ -12,6 +12,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricLookupField = require('../metricLookupField').load(win)
 	MetricWidget = require('../metricWidget').load(win)
@@ -49,7 +50,7 @@ load = (win) ->
 				R.div({className: 'targetList'},
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
 						R.div({className: 'message'},
-							"This client does not currently have any plan targets. "
+							"This client does not currently have any plan targets."
 						)
 						R.button({
 							className: 'addSection btn btn-success btn-lg'
@@ -311,9 +312,7 @@ load = (win) ->
 							cb()
 				, (err) =>
 					if err
-						console.error err
-						console.error err.stack
-						Bootbox.alert 'An error occurred while saving.'
+						CrashHandler.handle err
 						return
 
 					# Replace transient IDs

@@ -26,6 +26,7 @@ load = (win, {clientFileId}) ->
 	React = win.React
 	R = React.DOM
 	Gui = win.require 'nw.gui'
+	CrashHandler = require('../crashHandler').load(win)
 	Spinner = require('../spinner').load(win)
 	BrandWidget = require('../brandWidget').load(win)
 	PlanTab = require('./planTab').load(win)
@@ -129,9 +130,7 @@ load = (win, {clientFileId}) ->
 				(cb) ->
 					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
 						if err
-							console.error err
-							console.error err.stack
-							Bootbox.alert "Could not load client data."
+							cb err
 							return
 
 						clientFile = stripMetadata revisions.get(0)
@@ -203,14 +202,12 @@ load = (win, {clientFileId}) ->
 
 						cb()
 			], (err) ->
-				unregisterTask 'initialDataLoad', true
 				if err
-					console.error err
-					console.error err.stack
-					Bootbox.alert "An error occurred while loading this client's data."
+					CrashHandler.handle err
 					return
 
 				# OK, all done
+				unregisterTask 'initialDataLoad', true
 
 		updateClientFile = (context, newValue) ->
 			oldClientFile = clientFile
@@ -225,8 +222,7 @@ load = (win, {clientFileId}) ->
 				unregisterTask "updateClientFile"
 
 				if err
-					console.error err.stack
-					Bootbox.alert "An error occurred while updating the client file."
+					CrashHandler.handle err
 					return
 
 				console.log "Client file update successful."

@@ -13,9 +13,10 @@ load = (win) ->
 		render: ->
 			unless @props.item
 				return R.div({className: 'progNoteDetailView'},
-					R.div({className: 'noSelection'},
-						"Select an entry on the left to see more information about it here."
-					)
+					if @props.progNotes.size > 0
+						R.div({className: 'noSelection'},
+							"Select an entry on the left to see more information about it here."
+						)
 				)
 
 			switch @props.item.get('type')

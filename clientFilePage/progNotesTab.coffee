@@ -9,6 +9,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
@@ -36,7 +37,12 @@ load = (win) ->
 			}
 		render: ->
 			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
-				R.div({className: 'toolbar'},
+				R.div({
+					className: [
+						'toolbar'
+						showWhen @props.progNotes.size > 0
+					].join ' '
+				},
 					R.button({
 						className: 'newProgNote btn btn-primary'
 						onClick: @_openNewProgNote
@@ -55,6 +61,23 @@ load = (win) ->
 				)
 				R.div({className: 'panes'},
 					R.div({className: 'progNotes'},
+						R.div({
+							className: [
+								'empty'
+								showWhen @props.progNotes.size is 0
+							].join ' '
+						},
+							R.div({className: 'message'},
+								"This client does not currently have any progress notes."
+							)
+							R.button({
+								className: 'newProgNote btn btn-primary btn-lg'
+								onClick: @_openNewProgNote
+							},
+								FaIcon 'file'
+								"New progress note"
+							)
+						)
 						(@props.progNotes.reverse().map (progNote) =>
 							switch progNote.get('type')
 								when 'basic'
@@ -112,8 +135,7 @@ load = (win) ->
 			@props.registerTask 'quickNote-save'
 			global.ActiveSession.persist.progNotes.create note, (err) =>
 				if err
-					console.error err.stack
-					Bootbox.alert "An error occurred while saving your quick note."
+					CrashHandler.handle err
 					return
 
 				@_toggleQuickNotePopover()
