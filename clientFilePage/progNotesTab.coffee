@@ -21,7 +21,7 @@ load = (win) ->
 				selectedItem: null
 			}
 		componentDidMount: ->
-			quickNoteToggle = $(@refs.quickNoteToggle.getDOMNode())
+			quickNoteToggle = $('.addQuickNote')
 			quickNoteToggle.data 'isVisible', false
 			quickNoteToggle.popover {
 				placement: 'bottom'
@@ -37,12 +37,7 @@ load = (win) ->
 			}
 		render: ->
 			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
-				R.div({
-					className: [
-						'toolbar'
-						showWhen @props.progNotes.size > 0
-					].join ' '
-				},
+				R.div({className: "toolbar #{showWhen @props.progNotes.size > 0}"},
 					R.button({
 						className: 'newProgNote btn btn-primary'
 						onClick: @_openNewProgNote
@@ -51,8 +46,7 @@ load = (win) ->
 						"New progress note"
 					)
 					R.button({
-						className: 'addQuickNote btn btn-default'
-						ref: 'quickNoteToggle'
+						className: "addQuickNote btn btn-default #{showWhen @props.progNotes.size > 0}"						
 						onClick: @_toggleQuickNotePopover
 					},
 						FaIcon 'plus'
@@ -62,11 +56,7 @@ load = (win) ->
 				R.div({className: 'panes'},
 					R.div({className: 'progNotes'},
 						R.div({
-							className: [
-								'empty'
-								showWhen @props.progNotes.size is 0
-							].join ' '
-						},
+							className: "empty #{showWhen @props.progNotes.size is 0}"},
 							R.div({className: 'message'},
 								"This client does not currently have any progress notes."
 							)
@@ -76,6 +66,13 @@ load = (win) ->
 							},
 								FaIcon 'file'
 								"New progress note"
+							)
+							R.button({
+								className: "addQuickNote btn btn-default btn-lg #{showWhen @props.progNotes.size is 0}"								
+								onClick: @_toggleQuickNotePopover
+							},
+								FaIcon 'plus'
+								"Add quick note"
 							)
 						)
 						(@props.progNotes.reverse().map (progNote) =>
@@ -103,12 +100,11 @@ load = (win) ->
 			)
 		_openNewProgNote: ->
 			openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
-		_toggleQuickNotePopover: ->
-			quickNoteToggle = $(@refs.quickNoteToggle.getDOMNode())
+		_toggleQuickNotePopover: ->			
+			quickNoteToggle = $('.addQuickNote:not(.hide)')
 
 			if quickNoteToggle.data('isVisible')
 				quickNoteToggle.popover('hide')
-
 				quickNoteToggle.data('isVisible', false)
 			else
 				global.document = win.document
@@ -118,14 +114,15 @@ load = (win) ->
 				popover = quickNoteToggle.siblings('.popover')
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
+					@_createQuickNote popover.find('textarea').val(), quickNoteToggle
 
-					@_createQuickNote popover.find('textarea').val()
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
+					quickNoteToggle.popover('hide')
+					allQuickNoteToggle.data('isVisible', false)
 
-					@_toggleQuickNotePopover()
 				popover.find('textarea').focus()
-		_createQuickNote: (notes) ->
+		_createQuickNote: (notes, quickNoteToggle) ->
 			note = Imm.fromJS {
 				type: 'basic'
 				clientFileId: @props.clientFileId
@@ -138,8 +135,11 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@_toggleQuickNotePopover()
 				@props.unregisterTask 'quickNote-save'
+
+				quickNoteToggle.popover('hide')
+				quickNoteToggle.data('isVisible', false)
+
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
 
