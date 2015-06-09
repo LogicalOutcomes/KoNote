@@ -62,12 +62,15 @@ load = (win) ->
 					)
 					R.div({className: "toolbar #{showWhen plan.get('sections').size > 0}"},
 						R.button({
-							className: 'save btn btn-success'
+							className: [
+								'save btn'
+								'btn-' + if @_hasChanges() then 'success canSave' else 'warning'
+							].join ' '
 							disabled: not @_hasChanges()
 							onClick: @_save
 						},
 							FaIcon('save')
-							"Save plan"
+							if @_hasChanges() then "Save Plan" else "No Changes to Save"
 						)
 						R.button({
 							className: 'addSection btn btn-default'
