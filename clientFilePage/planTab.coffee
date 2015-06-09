@@ -154,6 +154,7 @@ load = (win) ->
 										onSelection: @_addMetricToTarget.bind(
 											null, selectedTarget.get('id')
 										)
+										placeholder: "Find/Define Metric"
 									})
 								)
 							)

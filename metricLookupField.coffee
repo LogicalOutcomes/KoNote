@@ -56,7 +56,7 @@ load = (win) ->
 			}
 
 			lookupField.on 'typeahead:selected', (event, metric) =>
-				lookupField.typeahead 'val', ''
+				lookupField.typeahead 'val', ''				
 				@props.onSelection metric.id
 
 			# We need to reattach an event listener to the create button, but
@@ -76,11 +76,13 @@ load = (win) ->
 					placeholder: @props.placeholder
 				})
 			)
+
 		renderLayer: ->
 			unless @state.isDefineMetricDialogVisible
 				return R.div()
 
 			return DefineMetricDialog({
+				metricQuery: $(@refs.lookupField.getDOMNode()).val()
 				onCancel: =>
 					@setState {isDefineMetricDialogVisible: false}
 				onSuccess: (newMetricId) =>
