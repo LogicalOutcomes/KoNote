@@ -2,25 +2,32 @@
 	
 	> .twitter-typeahead
 		display block !important
+		text-align center
 		
 		> input
 			opacity .75
 			box-shadow none
-			border-radius 0
-			display block !important
-			font-size 18px
+			border-radius 5px
+			display inline-block !important
+			font-size 16px
 			font-weight 400
-			letter-spacing 1px
-			padding 12px 5px
-			border 0
-			background none
-			text-align center			
-			border-bottom 1px dashed #eee
+			padding 18px 5px
+			border 1px 
+			background #eaf1f5
+			width 50%
+			min-width 200px
+			text-align center
+			border 1px solid #cadbe5
 			transition all .5s ease
 			
 			&:focus
+				background none
+				width 100%
 				outline 0
+				font-size 18px
 				padding 30px 5px
+				border-radius 0px
+				border none
 				border-bottom 1px solid #7ecdfc
 
 	.tt-dropdown-menu
