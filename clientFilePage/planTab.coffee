@@ -64,13 +64,13 @@ load = (win) ->
 						R.button({
 							className: [
 								'save btn'
-								'btn-' + if @_hasChanges() then 'success canSave' else 'warning'
+								'btn-' + if @hasChanges() then 'success canSave' else 'warning'
 							].join ' '
-							disabled: not @_hasChanges()
+							disabled: not @hasChanges()
 							onClick: @_save
 						},
 							FaIcon('save')
-							if @_hasChanges() then "Save Plan" else "No Changes to Save"
+							if @hasChanges() then "Save Plan" else "No Changes to Save"
 						)
 						R.button({
 							className: 'addSection btn btn-default'
@@ -105,6 +105,7 @@ load = (win) ->
 										PlanTarget({
 											currentRevision: @state.currentTargetRevisionsById.get targetId
 											metricsById: @props.metricsById
+											hasTargetChanged: @_hasTargetChanged targetId
 											key: targetId
 											isActive: targetId is @state.selectedTargetId
 											onTargetUpdate: @_updateTarget.bind null, targetId
@@ -196,7 +197,7 @@ load = (win) ->
 					)
 				)
 			)
-		_hasChanges: ->
+		hasChanges: ->
 			# If there is a difference, then there have been changes
 			unless Imm.is @props.plan, @state.plan
 				return true
@@ -330,7 +331,10 @@ load = (win) ->
 					currentTargetRevs = currentTargetRevs.map (currentRev, newId) ->
 						return currentRev.set 'id', newId
 
-					@setState {plan: newPlan, currentTargetRevisionsById: currentTargetRevs}, =>
+					@setState {
+						plan: newPlan
+						currentTargetRevisionsById: currentTargetRevs
+					}, =>
 						# Trigger clientFile save
 						@props.updatePlan @state.plan
 		_addSection: ->
@@ -408,6 +412,7 @@ load = (win) ->
 					'target'
 					"target-#{@props.key}"
 					if @props.isActive then 'active' else ''
+					if @props.hasTargetChanged then 'hasChanges' else ''
 				].join ' '
 				onClick: @_onTargetClick
 			},

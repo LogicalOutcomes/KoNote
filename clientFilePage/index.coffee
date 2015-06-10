@@ -288,58 +288,95 @@ load = (win, {clientFileId}) ->
 		componentWillMount: ->
 			nwWin.maximize()
 			nwWin.on 'close', (event) =>
-				# TODO handle this
-				@props.unregisterListeners()
-				nwWin.close(true)
-				return
+				# # TODO handle this
+				# @props.unregisterListeners()
+				# nwWin.close(true)
+				# return
 
-				# If page still loading
-				# TODO handle this more elegantly
+				# # If page still loading
+				# # TODO handle this more elegantly
 				unless @props.clientFile?
+					@props.unregisterListeners()
 					nwWin.close true
 					return
 
-				# TODO this needs to check if plan tab has changes
-				if @_hasChanges()
+				# # TODO this needs to check if plan tab has changes
+				# if @_hasChanges()
+				# 	Bootbox.dialog {
+				# 		message: "There are unsaved changes in this client file."
+				# 		buttons: {
+				# 			discard: {
+				# 				label: "Discard changes"
+				# 				className: 'btn-danger'
+				# 				callback: =>
+				# 					nwWin.close true
+				# 			}
+				# 			cancel: {
+				# 				label: "Cancel"
+				# 				className: 'btn-default'
+				# 			}
+				# 			save: {
+				# 				label: "Save changes"
+				# 				className: 'btn-primary'
+				# 				callback: =>
+				# 					@_save =>
+				# 						process.nextTick =>
+				# 							nwWin.close()
+				# 			}
+				# 		}
+				# 	}
+				# else if @_hasChanges()
+				# 	Bootbox.confirm "
+				# 		#{Config.productName} is busy saving your work.
+				# 		Are you sure you want to interrupt it?
+				# 	", (confirmed) ->
+				# 		if confirmed
+				# 			nwWin.close true
+				# else if @_isWorking()
+				# 	Bootbox.confirm "
+				# 		#{Config.productName} is busy working right now.
+				# 		Are you sure you want to interrupt it?
+				# 	", (confirmed) ->
+				# 		if confirmed
+				# 			nwWin.close true
+				# else
+				# 	nwWin.close(true)
+				clientName = renderName @props.clientFile.get('clientName')
+
+				if @refs.planTab.hasChanges()
 					Bootbox.dialog {
-						message: "There are unsaved changes in this client file."
+						title: "Unsaved Changes to Plan"
+						message: "You have unsaved changes in this plan for #{clientName}. How would you like to proceed?"
 						buttons: {
-							discard: {
-								label: "Discard changes"
-								className: 'btn-danger'
-								callback: =>
+							default: {
+								label: "Cancel"
+								className: "btn-default"
+								callback: => Bootbox.hideAll()
+							}
+							danger: {
+								label: "Discard Changes"
+								className: "btn-danger"
+								callback: => 
+									@props.unregisterListeners()
 									nwWin.close true
 							}
-							cancel: {
-								label: "Cancel"
-								className: 'btn-default'
-							}
-							save: {
-								label: "Save changes"
-								className: 'btn-primary'
-								callback: =>
-									@_save =>
-										process.nextTick =>
-											nwWin.close()
+							success: {
+								label: "View Plan"
+								className: "btn-success"
+								callback: => 
+									Bootbox.hideAll()
+									@setState {activeTabId: 'plan'}, ->
+										toggleBlink = ->
+											$('.hasChanges').toggleClass('blink')
+										toggleBlink()
+										setTimeout(toggleBlink, 750)
 							}
 						}
 					}
-				else if @_hasChanges()
-					Bootbox.confirm "
-						#{Config.productName} is busy saving your work.
-						Are you sure you want to interrupt it?
-					", (confirmed) ->
-						if confirmed
-							nwWin.close true
-				else if @_isWorking()
-					Bootbox.confirm "
-						#{Config.productName} is busy working right now.
-						Are you sure you want to interrupt it?
-					", (confirmed) ->
-						if confirmed
-							nwWin.close true
 				else
+					@props.unregisterListeners()
 					nwWin.close(true)
+
 		render: ->
 			if @props.startupTasks.size > 0 or not @props.clientFile
 				return R.div({className: 'clientFilePage'},
@@ -361,8 +398,10 @@ load = (win, {clientFileId}) ->
 					onTabChange: @_changeTab
 				})
 				PlanTab.PlanView({
+					ref: 'planTab'
 					isVisible: activeTabId is 'plan'
 					clientFileId
+					hasChanges: @props.hasChanges
 					plan: @props.clientFile.get('plan')
 					planTargetsById: @props.planTargetsById
 					metricsById: @props.metricsById

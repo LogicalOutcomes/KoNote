@@ -75,10 +75,22 @@
 
 						padding 15px 20px
 
-						transition background 0.15s linear
+						transition all 0.15s linear
 
+						&.hasChanges
+							background #EEFFF5
+							border-color #C9FFB2
+							
 						&.active
-							background hsl(202, 35%, 94%)
+							background hsl(202, 35%, 94%)							
+							
+							&.hasChanges
+								background #C9FFB2
+								border-color #A4D291
+								
+						&.blink
+							background #7ecdfc !important
+							border-color #68AAD2 !important
 
 						> .nameContainer, > .notesContainer
 							> div
