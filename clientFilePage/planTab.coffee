@@ -197,6 +197,14 @@ load = (win) ->
 					)
 				)
 			)
+		blinkUnsaved: ->			
+			toggleBlink = -> $('.hasChanges').toggleClass('blink')
+			secondBlink = ->
+				toggleBlink()
+				setTimeout(toggleBlink, 500)
+
+			setTimeout(secondBlink, 750)
+
 		hasChanges: ->
 			# If there is a difference, then there have been changes
 			unless Imm.is @props.plan, @state.plan

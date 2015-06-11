@@ -288,10 +288,6 @@ load = (win, {clientFileId}) ->
 		componentWillMount: ->
 			nwWin.maximize()
 			nwWin.on 'close', (event) =>
-				# # TODO handle this
-				# @props.unregisterListeners()
-				# nwWin.close(true)
-				# return
 
 				# # If page still loading
 				# # TODO handle this more elegantly
@@ -300,47 +296,6 @@ load = (win, {clientFileId}) ->
 					nwWin.close true
 					return
 
-				# # TODO this needs to check if plan tab has changes
-				# if @_hasChanges()
-				# 	Bootbox.dialog {
-				# 		message: "There are unsaved changes in this client file."
-				# 		buttons: {
-				# 			discard: {
-				# 				label: "Discard changes"
-				# 				className: 'btn-danger'
-				# 				callback: =>
-				# 					nwWin.close true
-				# 			}
-				# 			cancel: {
-				# 				label: "Cancel"
-				# 				className: 'btn-default'
-				# 			}
-				# 			save: {
-				# 				label: "Save changes"
-				# 				className: 'btn-primary'
-				# 				callback: =>
-				# 					@_save =>
-				# 						process.nextTick =>
-				# 							nwWin.close()
-				# 			}
-				# 		}
-				# 	}
-				# else if @_hasChanges()
-				# 	Bootbox.confirm "
-				# 		#{Config.productName} is busy saving your work.
-				# 		Are you sure you want to interrupt it?
-				# 	", (confirmed) ->
-				# 		if confirmed
-				# 			nwWin.close true
-				# else if @_isWorking()
-				# 	Bootbox.confirm "
-				# 		#{Config.productName} is busy working right now.
-				# 		Are you sure you want to interrupt it?
-				# 	", (confirmed) ->
-				# 		if confirmed
-				# 			nwWin.close true
-				# else
-				# 	nwWin.close(true)
 				clientName = renderName @props.clientFile.get('clientName')
 
 				if @refs.planTab.hasChanges()
@@ -365,11 +320,7 @@ load = (win, {clientFileId}) ->
 								className: "btn-success"
 								callback: => 
 									Bootbox.hideAll()
-									@setState {activeTabId: 'plan'}, ->
-										toggleBlink = ->
-											$('.hasChanges').toggleClass('blink')
-										toggleBlink()
-										setTimeout(toggleBlink, 750)
+									@setState {activeTabId: 'plan'}, @refs.planTab.blinkUnsaved
 							}
 						}
 					}
@@ -401,7 +352,6 @@ load = (win, {clientFileId}) ->
 					ref: 'planTab'
 					isVisible: activeTabId is 'plan'
 					clientFileId
-					hasChanges: @props.hasChanges
 					plan: @props.clientFile.get('plan')
 					planTargetsById: @props.planTargetsById
 					metricsById: @props.metricsById
