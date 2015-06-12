@@ -10,9 +10,53 @@ module.exports = {
 		label: "CR #"
 	}
 
-	#useTemplate: 'initialAssessment'
+	# useTemplate: 'initialAssessment'
 	useTemplate: 'clientLog'
+
+	# David's demo templates:
+	# useTemplate: 'simpleDemoTemplate'
+	# useTemplate: 'sectionedDemoTemplate'
+
 	templates: {
+
+		# 2 demo templates for David
+		simpleDemoTemplate: {
+			id: 'simpleDemoTemplate'
+			name: 'Simple Demo Template'
+			sections: [
+				{
+					id: 'notes'
+					type: 'basic'
+					name: 'Notes'
+					metricsIds: []
+				}
+			]
+		}
+		sectionedDemoTemplate: {
+			id: 'sectionedDemoTemplate'
+			name: 'Sectioned Demo Template'
+			sections: [
+				{
+					id: 'subjective'
+					type: 'basic'
+					name: 'Subjective'
+					metricIds: []
+				}
+				{
+					id: 'objective'
+					type: 'basic'
+					name: 'Objective'
+					metricIds: []
+				}
+				{
+					id: 'assessment'
+					type: 'basic'
+					name: 'Assessment'
+					metricIds: []
+				}
+			]
+		}
+
 		initialAssessment: {
 			id: 'initAssessGC'
 			name: 'Client Log - Initial Assessment'
