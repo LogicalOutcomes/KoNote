@@ -122,7 +122,7 @@ load = (win, {clientFileId}) ->
 							if err instanceof Persist.Lock.LockInUseError
 								loadErrorType = 'file-in-use'
 								console.log "Client file in use", loadErrorType
-								unregisterTask 'initialDataLoad', true
+								render()
 								return
 
 							cb err
@@ -288,9 +288,11 @@ load = (win, {clientFileId}) ->
 			return {
 				activeTabId: 'plan'
 			}
+
 		componentWillMount: ->
-			nwWin.maximize()
-			nwWin.on 'close', (event) =>
+			nwWin.maximize()			
+
+			nwWin.on 'close', (event) =>				
 
 				# # If page still loading
 				# # TODO handle this more elegantly
@@ -333,13 +335,7 @@ load = (win, {clientFileId}) ->
 
 		render: ->
 			if @props.loadErrorType
-				if @props.loadErrorType is 'file-in-use'
-					msg = "This client file is already in use."
-				else
-					# TODO: More error definitions needed
-					msg = "An unknown error occured"
-				Bootbox.alert msg, -> nwWin.close(true)
-				return false
+				return LoadError {loadErrorType: @props.loadErrorType}
 
 			else if @props.startupTasks.size > 0 or not @props.clientFile
 				return R.div({className: 'clientFilePage'},
@@ -441,5 +437,15 @@ load = (win, {clientFileId}) ->
 				' '
 				@props.name
 			)
+
+	LoadError = React.createFactory React.createClass
+		componentDidMount: ->
+			console.log "loadErrorType:", @props.loadErrorType
+			msg = switch @props.loadErrorType
+				when 'file-in-use' then "This client file is already in use."	
+				else "An unkown error occured (loadErrorType: #{@props.loadErrorType}"				
+			Bootbox.alert msg, -> nwWin.close(true)
+		render: ->
+			return R.div({className: 'clientFilePage'})
 
 module.exports = {load}
