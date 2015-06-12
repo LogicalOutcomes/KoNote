@@ -45,6 +45,7 @@ load = (win, {clientFileId}) ->
 		startupTasks = Imm.Set() # set of task IDs
 		ongoingTasks = Imm.Set() # set of task IDs
 		isClosed = false
+		loadErrorType = null
 
 		init = ->
 			render()
@@ -63,6 +64,7 @@ load = (win, {clientFileId}) ->
 				metricsById
 				startupTasks
 				ongoingTasks
+				loadErrorType
 
 				# Data store methods
 				registerTask
@@ -118,8 +120,9 @@ load = (win, {clientFileId}) ->
 					Persist.Lock.acquire 'data', "clientFile-#{clientFileId}", (err, result) ->
 						if err
 							if err instanceof Persist.Lock.LockInUseError
-								Bootbox.alert "This client file is already in use.", ->
-									win.close(true)
+								loadErrorType = 'file-in-use'
+								console.log "Client file in use", loadErrorType
+								unregisterTask 'initialDataLoad', true
 								return
 
 							cb err
@@ -329,7 +332,16 @@ load = (win, {clientFileId}) ->
 					nwWin.close(true)
 
 		render: ->
-			if @props.startupTasks.size > 0 or not @props.clientFile
+			if @props.loadErrorType
+				if @props.loadErrorType is 'file-in-use'
+					msg = "This client file is already in use."
+				else
+					# TODO: More error definitions needed
+					msg = "An unknown error occured"
+				Bootbox.alert msg, -> nwWin.close(true)
+				return false
+
+			else if @props.startupTasks.size > 0 or not @props.clientFile
 				return R.div({className: 'clientFilePage'},
 					Spinner({isOverlay: true, isVisible: true})
 				)
