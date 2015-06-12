@@ -28,7 +28,7 @@ module.exports = {
 					id: 'notes'
 					type: 'basic'
 					name: 'Notes'
-					metricsIds: []
+					metricIds: []
 				}
 			]
 		}
