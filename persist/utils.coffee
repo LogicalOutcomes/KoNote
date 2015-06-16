@@ -26,6 +26,18 @@ class ObjectNotFoundError extends Error
 	constructor: ->
 		super
 
+class IOError extends Error
+	constructor: (cause) ->
+		super()
+
+		@cause = cause
+		@message = cause.message
+		@stack = cause.stack
+
+		return
+	toString: ->
+		return cause.toString()
+
 module.exports = {
 	IdSchema
 	ObjectNotFoundError

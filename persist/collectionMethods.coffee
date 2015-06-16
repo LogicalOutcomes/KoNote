@@ -5,7 +5,13 @@ Imm = require 'immutable'
 Moment = require 'moment'
 Path = require 'path'
 
-{IdSchema, generateId, ObjectNotFoundError, TimestampFormat} = require './utils'
+{
+	IOError
+	IdSchema
+	ObjectNotFoundError
+	TimestampFormat
+	generateId
+} = require './utils'
 
 # Create an API based on the specified model definition.
 #
@@ -66,12 +72,22 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					)
 					cb()
 			(cb) ->
-				Fs.mkdir objDir, cb
+				Fs.mkdir objDir, (err) ->
+					if err
+						cb new IOError err
+						return
+
+					cb()
 			(cb) ->
 				# Create subdirs for subcollection
 				Async.each modelDef.children, (child, cb) ->
 					childDir = Path.join(objDir, child.collectionName)
-					Fs.mkdir childDir, cb
+					Fs.mkdir childDir, (err) ->
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				, cb
 			(cb) ->
 				revFile = Path.join(objDir, createRevisionFileName(obj))
@@ -109,7 +125,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			(cb) ->
 				Fs.readdir collectionDir, (err, results) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					fileNames = results
@@ -142,7 +158,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 			Fs.readdir objDir, (err, revisionFiles) ->
 				if err
-					cb err
+					cb new IOError err
 					return
 
 				revisionFiles = revisionFiles.filter (fileName) ->
@@ -198,7 +214,12 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				expectedDirPath = Path.join(parentDirPath, expectedDirName)
 
 				objDir = expectedDirPath
-				Fs.rename actualDirPath, expectedDirPath, cb
+				Fs.rename actualDirPath, expectedDirPath, (err) ->
+					if err
+						cb new IOError err
+						return
+
+					cb()
 			(cb) ->
 				revFile = Path.join(objDir, createRevisionFileName(obj))
 				writeObjectFile obj, revFile, cb
@@ -233,7 +254,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			(cb) ->
 				Fs.readdir objDir, (err, fileNames) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					revisions = Imm.List(fileNames)
@@ -362,7 +383,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 		Fs.readFile path, (err, encryptedObj) ->
 			if err
-				cb err
+				cb new IOError err
 				return
 
 			decryptedJson = session.globalEncryptionKey.decrypt encryptedObj
@@ -391,7 +412,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 		Fs.writeFile path, encryptedObj, (err) ->
 			if err
-				cb err
+				cb new IOError err
 				return
 
 			cb null, obj

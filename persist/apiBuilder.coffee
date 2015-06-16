@@ -6,7 +6,7 @@ Path = require 'path'
 
 CollectionMethods = require './collectionMethods'
 
-{ObjectNotFoundError} = require './utils'
+{IOError, ObjectNotFoundError} = require './utils'
 
 buildApi = (session, dataModelDefinitions) ->
 	eventBus = Object.create Backbone.Events
@@ -14,6 +14,7 @@ buildApi = (session, dataModelDefinitions) ->
 	result = processModels(session, eventBus, dataModelDefinitions).toJS()
 
 	result.eventBus = eventBus
+	result.IOError = IOError
 	result.ObjectNotFoundError = ObjectNotFoundError
 
 	return result

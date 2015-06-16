@@ -44,6 +44,7 @@ describe 'ApiBuilder', ->
 			api = buildApi(s, [])
 			Assert.deepEqual api, {
 				eventBus: api.eventBus
+				IOError: api.IOError
 				ObjectNotFoundError: api.ObjectNotFoundError
 			}
 
