@@ -34,6 +34,8 @@ load = (win) ->
 				clientFileList
 			}), $('#container')[0]
 
+			$('.searchBox').focus()
+
 		loadData = ->
 			ActiveSession.persist.clientFiles.list (err, result) ->
 				if err
@@ -69,8 +71,6 @@ load = (win) ->
 				render()
 
 	ClientSelectionPage = React.createFactory React.createClass
-		componentDidMount: ->
-			@refs.searchBox.getDOMNode().focus()
 		getInitialState: ->
 			return {
 				isSmallHeaderSet: false

@@ -62,12 +62,15 @@ load = (win) ->
 					)
 					R.div({className: "toolbar #{showWhen plan.get('sections').size > 0}"},
 						R.button({
-							className: 'save btn btn-success'
-							disabled: not @_hasChanges()
+							className: [
+								'save btn'
+								'btn-' + if @hasChanges() then 'success canSave' else 'warning'
+							].join ' '
+							disabled: not @hasChanges()
 							onClick: @_save
 						},
 							FaIcon('save')
-							"Save plan"
+							if @hasChanges() then "Save Plan" else "No Changes to Save"
 						)
 						R.button({
 							className: 'addSection btn btn-default'
@@ -102,6 +105,7 @@ load = (win) ->
 										PlanTarget({
 											currentRevision: @state.currentTargetRevisionsById.get targetId
 											metricsById: @props.metricsById
+											hasTargetChanged: @_hasTargetChanged targetId
 											key: targetId
 											isActive: targetId is @state.selectedTargetId
 											onTargetUpdate: @_updateTarget.bind null, targetId
@@ -154,6 +158,7 @@ load = (win) ->
 										onSelection: @_addMetricToTarget.bind(
 											null, selectedTarget.get('id')
 										)
+										placeholder: "Find/Define Metric"
 									})
 								)
 							)
@@ -192,7 +197,15 @@ load = (win) ->
 					)
 				)
 			)
-		_hasChanges: ->
+		blinkUnsaved: ->			
+			toggleBlink = -> $('.hasChanges').toggleClass('blink')
+			secondBlink = ->
+				toggleBlink()
+				setTimeout(toggleBlink, 500)
+
+			setTimeout(secondBlink, 750)
+
+		hasChanges: ->
 			# If there is a difference, then there have been changes
 			unless Imm.is @props.plan, @state.plan
 				return true
@@ -326,7 +339,10 @@ load = (win) ->
 					currentTargetRevs = currentTargetRevs.map (currentRev, newId) ->
 						return currentRev.set 'id', newId
 
-					@setState {plan: newPlan, currentTargetRevisionsById: currentTargetRevs}, =>
+					@setState {
+						plan: newPlan
+						currentTargetRevisionsById: currentTargetRevs
+					}, =>
 						# Trigger clientFile save
 						@props.updatePlan @state.plan
 		_addSection: ->
@@ -404,6 +420,7 @@ load = (win) ->
 					'target'
 					"target-#{@props.key}"
 					if @props.isActive then 'active' else ''
+					if @props.hasTargetChanged then 'hasChanges' else ''
 				].join ' '
 				onClick: @_onTargetClick
 			},

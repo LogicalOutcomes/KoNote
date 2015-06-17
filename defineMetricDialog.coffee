@@ -15,7 +15,7 @@ load = (win) ->
 	DefineMetricDialog = React.createFactory React.createClass
 		getInitialState: ->
 			return {
-				name: ''
+				name: @props.metricQuery
 				definition: ''
 			}
 		render: ->

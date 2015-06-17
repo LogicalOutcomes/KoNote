@@ -45,6 +45,7 @@ load = (win, {clientFileId}) ->
 		startupTasks = Imm.Set() # set of task IDs
 		ongoingTasks = Imm.Set() # set of task IDs
 		isClosed = false
+		loadErrorType = null
 
 		init = ->
 			render()
@@ -63,6 +64,7 @@ load = (win, {clientFileId}) ->
 				metricsById
 				startupTasks
 				ongoingTasks
+				loadErrorType
 
 				# Data store methods
 				registerTask
@@ -118,8 +120,9 @@ load = (win, {clientFileId}) ->
 					Persist.Lock.acquire 'data', "clientFile-#{clientFileId}", (err, result) ->
 						if err
 							if err instanceof Persist.Lock.LockInUseError
-								Bootbox.alert "This client file is already in use.", ->
-									win.close(true)
+								loadErrorType = 'file-in-use'
+								console.log "Client file in use", loadErrorType
+								render()
 								return
 
 							cb err
@@ -285,63 +288,56 @@ load = (win, {clientFileId}) ->
 			return {
 				activeTabId: 'plan'
 			}
-		componentWillMount: ->
-			nwWin.maximize()
-			nwWin.on 'close', (event) =>
-				# TODO handle this
-				@props.unregisterListeners()
-				nwWin.close(true)
-				return
 
-				# If page still loading
-				# TODO handle this more elegantly
+		componentWillMount: ->
+			nwWin.maximize()			
+
+			nwWin.on 'close', (event) =>				
+
+				# # If page still loading
+				# # TODO handle this more elegantly
 				unless @props.clientFile?
+					@props.unregisterListeners()
 					nwWin.close true
 					return
 
-				# TODO this needs to check if plan tab has changes
-				if @_hasChanges()
+				clientName = renderName @props.clientFile.get('clientName')
+
+				if @refs.planTab.hasChanges()
 					Bootbox.dialog {
-						message: "There are unsaved changes in this client file."
+						title: "Unsaved Changes to Plan"
+						message: "You have unsaved changes in this plan for #{clientName}. How would you like to proceed?"
 						buttons: {
-							discard: {
-								label: "Discard changes"
-								className: 'btn-danger'
-								callback: =>
+							default: {
+								label: "Cancel"
+								className: "btn-default"
+								callback: => Bootbox.hideAll()
+							}
+							danger: {
+								label: "Discard Changes"
+								className: "btn-danger"
+								callback: => 
+									@props.unregisterListeners()
 									nwWin.close true
 							}
-							cancel: {
-								label: "Cancel"
-								className: 'btn-default'
-							}
-							save: {
-								label: "Save changes"
-								className: 'btn-primary'
-								callback: =>
-									@_save =>
-										process.nextTick =>
-											nwWin.close()
+							success: {
+								label: "View Plan"
+								className: "btn-success"
+								callback: => 
+									Bootbox.hideAll()
+									@setState {activeTabId: 'plan'}, @refs.planTab.blinkUnsaved
 							}
 						}
 					}
-				else if @_hasChanges()
-					Bootbox.confirm "
-						#{Config.productName} is busy saving your work.
-						Are you sure you want to interrupt it?
-					", (confirmed) ->
-						if confirmed
-							nwWin.close true
-				else if @_isWorking()
-					Bootbox.confirm "
-						#{Config.productName} is busy working right now.
-						Are you sure you want to interrupt it?
-					", (confirmed) ->
-						if confirmed
-							nwWin.close true
 				else
+					@props.unregisterListeners()
 					nwWin.close(true)
+
 		render: ->
-			if @props.startupTasks.size > 0 or not @props.clientFile
+			if @props.loadErrorType
+				return LoadError {loadErrorType: @props.loadErrorType}
+
+			else if @props.startupTasks.size > 0 or not @props.clientFile
 				return R.div({className: 'clientFilePage'},
 					Spinner({isOverlay: true, isVisible: true})
 				)
@@ -361,6 +357,7 @@ load = (win, {clientFileId}) ->
 					onTabChange: @_changeTab
 				})
 				PlanTab.PlanView({
+					ref: 'planTab'
 					isVisible: activeTabId is 'plan'
 					clientFileId
 					plan: @props.clientFile.get('plan')
@@ -440,5 +437,15 @@ load = (win, {clientFileId}) ->
 				' '
 				@props.name
 			)
+
+	LoadError = React.createFactory React.createClass
+		componentDidMount: ->
+			console.log "loadErrorType:", @props.loadErrorType
+			msg = switch @props.loadErrorType
+				when 'file-in-use' then "This client file is already in use."	
+				else "An unkown error occured (loadErrorType: #{@props.loadErrorType}"				
+			Bootbox.alert msg, -> nwWin.close(true)
+		render: ->
+			return R.div({className: 'clientFilePage'})
 
 module.exports = {load}
