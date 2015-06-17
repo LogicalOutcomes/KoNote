@@ -393,9 +393,18 @@ load = (win) ->
 			}
 		_setSelectedTarget: (targetId) ->
 			@setState {selectedTargetId: targetId}
-		_addMetricToTarget: (targetId, metricId) ->
+
+		_addMetricToTarget: (targetId, metricId) ->			
+			# Current target already has this metric
 			if @state.currentTargetRevisionsById.getIn([targetId, 'metricIds']).contains metricId
 				Bootbox.alert "This metric has already been added to the selected target."
+				return
+
+			# Metric exists in another target
+			existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
+				return target.get('metricIds').contains(metricId)
+			if existsElsewhere
+				Bootbox.alert "This metric already exists for another plan target"
 				return
 
 			@setState {
@@ -403,6 +412,7 @@ load = (win) ->
 					return currentRev.update 'metricIds', (metricIds) ->
 						return metricIds.push metricId
 			}
+
 		_deleteMetricFromTarget: (targetId, metricId) ->
 			@setState {
 				currentTargetRevisionsById: @state.currentTargetRevisionsById.update targetId, (currentRev) ->
