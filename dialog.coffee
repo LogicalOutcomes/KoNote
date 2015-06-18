@@ -4,6 +4,7 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+	{FaIcon} = require('./utils').load(win)
 
 	Dialog = React.createFactory React.createClass
 		render: ->
@@ -14,6 +15,10 @@ load = (win) ->
 				R.div({className: 'dialog panel panel-primary'},
 					R.div({className: 'panel-heading'},
 						R.h3({className: 'panel-title'}, @props.title)
+						R.span({
+							className: 'panel-quit'
+							onClick: @props.onClose
+						}, FaIcon('times'))
 					)
 					R.div({className: 'panel-body'},
 						@props.children
