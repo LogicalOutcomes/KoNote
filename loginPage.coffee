@@ -169,7 +169,8 @@ load = (win) ->
 		_login: (event) ->
 			# TODO where to get data dir path? config?
 			event.preventDefault()
-			@setState {isLoading: true}
+			@setState {isLoading: true}			
+
 			Persist.Session.login 'data', @state.userName, @state.password, (err, session) =>
 				@setState {isLoading: false}
 				if err
@@ -194,5 +195,8 @@ load = (win) ->
 				# Proceed to clientSelectionPage
 				# TODO this should be abstracted similar to openWindow (see utils)
 				win.location.href = 'main.html?page=clientSelection'
+
+			# Initiate timeout countdown
+			console.log "Countdown?"			
 
 module.exports = {load}

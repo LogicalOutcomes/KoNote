@@ -20,7 +20,7 @@ login = (dataDir, userName, password, cb) ->
 			account.accountType
 			account.globalEncryptionKey
 			dataDir
-		)
+		)		
 
 class Session
 	constructor: (@userName, @accountType, @globalEncryptionKey, @dataDirectory) ->
@@ -33,6 +33,29 @@ class Session
 		@_ended = false
 
 		@persist = DataModels.getApi(@)
+
+		# Set up Timeout countdown variables
+		@timeoutSeconds = 5
+		@_countDown = null
+		@timeout = null	
+
+		@toggleCountDown()
+
+	toggleCountDown: ->
+		if !!@timeout
+			clearInterval(@timeout)
+			@timeout = null
+			@_count = null
+		else
+			@_count = @timeoutSeconds
+			@timeout = setInterval @_tick, 1000
+
+	_tick: ->
+			@_count--
+
+			if @_count is 0
+				throw new Error "Session timed out"
+
 	isAdmin: ->
 		return @accountType is 'admin'
 	logout: ->
@@ -46,4 +69,5 @@ module.exports = {
 	login
 	UnknownUserNameError: Users.UnknownUserNameError
 	IncorrectPasswordError: Users.IncorrectPasswordError
+	toggleCountDown: Session.toggleCountDown
 }
