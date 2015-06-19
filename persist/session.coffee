@@ -34,27 +34,29 @@ class Session
 
 		@persist = DataModels.getApi(@)
 
-		# Set up Timeout countdown variables
-		@timeoutSeconds = 5
-		@_countDown = null
-		@timeout = null	
+		@timeoutMins = 0.25
+		@warningMins = 0.125
 
-		@toggleCountDown()
+		@resetTimeout()
 
-	toggleCountDown: ->
-		if !!@timeout
-			clearInterval(@timeout)
-			@timeout = null
-			@_count = null
-		else
-			@_count = @timeoutSeconds
-			@timeout = setInterval @_tick, 1000
+	resetTimeout: ->
+		# Clear all traces of timeouts
+		if @warning then clearTimeout @warning
+		if @timeout then clearTimeout @timeout
+		@timeout = null
+		@warning = null
 
-	_tick: ->
-			@_count--
+		# Initiate timeouts
+		@warning = setTimeout @timeoutWarning, (@timeoutMins - @warningMins) * 60000
+		@timeout = setTimeout @timedOut, @timeoutMins * 60000
 
-			if @_count is 0
-				throw new Error "Session timed out"
+	timeoutWarning: ->
+		console.log "Warning Msg event fires"
+		global.ActiveSession.persist.eventBus.trigger 'issueTimeoutWarning'
+
+	timedOut: ->
+		console.log "Timed out!!"
+		global.ActiveSession.persist.eventBus.trigger 'timedOut'
 
 	isAdmin: ->
 		return @accountType is 'admin'
@@ -69,5 +71,4 @@ module.exports = {
 	login
 	UnknownUserNameError: Users.UnknownUserNameError
 	IncorrectPasswordError: Users.IncorrectPasswordError
-	toggleCountDown: Session.toggleCountDown
 }

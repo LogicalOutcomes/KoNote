@@ -194,9 +194,6 @@ load = (win) ->
 
 				# Proceed to clientSelectionPage
 				# TODO this should be abstracted similar to openWindow (see utils)
-				win.location.href = 'main.html?page=clientSelection'
-
-			# Initiate timeout countdown
-			console.log "Countdown?"			
+				win.location.href = 'main.html?page=clientSelection'	
 
 module.exports = {load}

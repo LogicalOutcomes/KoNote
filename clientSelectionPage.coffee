@@ -46,6 +46,12 @@ load = (win) ->
 				render()
 
 		registerListeners = ->
+			global.ActiveSession.persist.eventBus.on 'issueTimeoutWarning', ->
+				Bootbox.alert "Timeout Warning"				
+
+			global.ActiveSession.persist.eventBus.on 'timedOut', ->
+				Bootbox.alert "Timed out!"
+
 			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) ->
 				targetId = newFile.get('id')
 
