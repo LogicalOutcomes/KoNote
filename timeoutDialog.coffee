@@ -62,10 +62,7 @@ load = (win) ->
 			containerDiv = win.document.createElement('div')
 			containerDiv.id = 'timeoutContainer'
 			win.document.body.appendChild containerDiv
-			React.render TimeoutWarning({}), containerDiv
-
-		global.ActiveSession.persist.eventBus.on 'resetTimeout', =>
-			global.ActiveSession.resetTimeout()
+			React.render TimeoutWarning({}), containerDiv		
 
 		global.ActiveSession.persist.eventBus.on 'timedOut', ->
 			nwWin.close(true)
