@@ -10,6 +10,13 @@ module.exports = {
 		label: "CR #"
 	}
 
+	# Set total timeout mins,
+	# and how many mins before timeout to show warning
+	timeout: {
+		totalMins: 10/60
+		warningMins: 6/60
+	}
+
 	# useTemplate: 'initialAssessment'
 	useTemplate: 'clientLog'
 

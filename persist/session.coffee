@@ -4,6 +4,7 @@
 Async = require 'async'
 Fs = require 'fs'
 Path = require 'path'
+Config = require '../config'
 
 {SymmetricEncryptionKey} = require './crypto'
 DataModels = require './dataModels'
@@ -34,8 +35,8 @@ class Session
 
 		@persist = DataModels.getApi(@)
 
-		@timeoutMins = 0.25
-		@warningMins = 0.125
+		@timeoutMins = Config.timeout.totalMins
+		@warningMins = Config.timeout.warningMins
 
 		@resetTimeout()
 
@@ -50,13 +51,13 @@ class Session
 		@warning = setTimeout @timeoutWarning, (@timeoutMins - @warningMins) * 60000
 		@timeout = setTimeout @timedOut, @timeoutMins * 60000
 
-	timeoutWarning: ->
+	timeoutWarning: =>
 		console.log "Warning Msg event fires"
-		global.ActiveSession.persist.eventBus.trigger 'issueTimeoutWarning'
+		@persist.eventBus.trigger 'issueTimeoutWarning'
 
-	timedOut: ->
+	timedOut: =>
 		console.log "Timed out!!"
-		global.ActiveSession.persist.eventBus.trigger 'timedOut'
+		@persist.eventBus.trigger 'timedOut'
 
 	isAdmin: ->
 		return @accountType is 'admin'

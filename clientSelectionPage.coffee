@@ -17,6 +17,7 @@ load = (win) ->
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
 	BrandWidget = require('./brandWidget').load(win)
+	{TimeoutListeners} = require('./timeoutDialog').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
 	do ->
@@ -46,11 +47,7 @@ load = (win) ->
 				render()
 
 		registerListeners = ->
-			global.ActiveSession.persist.eventBus.on 'issueTimeoutWarning', ->
-				Bootbox.alert "Timeout Warning"				
-
-			global.ActiveSession.persist.eventBus.on 'timedOut', ->
-				Bootbox.alert "Timed out!"
+			TimeoutListeners()
 
 			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) ->
 				targetId = newFile.get('id')
