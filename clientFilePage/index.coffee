@@ -32,7 +32,7 @@ load = (win, {clientFileId}) ->
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
-	{TimeoutListeners} = require('../timeoutDialog').load(win)
+	{timeoutListeners} = require('../timeoutDialog').load(win)
 	{FaIcon, renderName, showWhen, stripMetadata} = require('../utils').load(win)
 
 	nwWin = Gui.Window.get(win)
@@ -237,7 +237,7 @@ load = (win, {clientFileId}) ->
 				setTimeout unregisterTask.bind(null, slowSaveTaskId), 500
 
 		registerListeners = ->
-			TimeoutListeners()
+			timeoutListeners()
 
 			global.ActiveSession.persist.eventBus.on 'create:planTarget createRevision:planTarget', (newRev) ->
 				if isClosed

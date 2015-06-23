@@ -1,7 +1,6 @@
 # Load in Timeout listeners and trigger warning dialogs
 
-# Must add TimeoutListeners() function to load/init/registerListeners
-# on every page
+# Must add timeoutListeners() function to load/init/registerListeners on every page
 
 load = (win) ->
 	$ = win.jQuery
@@ -17,41 +16,47 @@ load = (win) ->
 
 	TimeoutWarning = React.createFactory React.createClass
 		getInitialState: ->
+			@_expiration = Moment().add(global.ActiveSession.warningMins, 'minutes')
 			return {
 				isOpen: true
-				count: global.ActiveSession.warningMins * 60
+				countSeconds: null
 			}
 
 		componentDidMount: ->
 			clearInterval(@counter)
+			@_recalculateSeconds()
+
 			@counter = setInterval(=> 
-				@setState {count: @state.count - 1}
+				@_recalculateSeconds()
 			, 1000)
 
 			global.ActiveSession.persist.eventBus.on 'resetTimeout', =>
 				clearInterval @counter
 				@setState {isOpen: false}
 
+		_recalculateSeconds: ->
+			@setState {countSeconds: Moment(@_expiration).diff(Moment(), 'seconds')}
+
 		render: ->
 			unless @state.isOpen
 				return R.div({})
 
-			countMoment = Moment.utc(@state.count * 1000)
+			countMoment = Moment.utc(@state.countSeconds * 1000)
 
-			if @state.count is 60
+			if @state.countSeconds is 60
 				new win.Notification "1 Minute Warning!", {
 					body: "#{Config.productName} will shut down in 1 minute due to inactivity"
 				}
 
 			return Dialog({
 				title: "Inactivity Warning"
-				containerClasses: [if @state.count <= 60 then 'warning']
+				containerClasses: [if @state.countSeconds <= 60 then 'warning']
 			},
 				R.div({className: 'timeoutDialog'},
 					R.div({className: 'message'},
 						"Your #{Config.productName} session will shut down in "
 						R.span({className: 'timeRemaining'},
-							if @state.count >= 60
+							if @state.countSeconds >= 60
 								"#{countMoment.format('mm:ss')} minutes"
 							else
 								"#{countMoment.format('ss')} seconds"
@@ -61,7 +66,7 @@ load = (win) ->
 				)
 			)
 
-	TimeoutListeners = ->
+	timeoutListeners = ->
 		global.ActiveSession.persist.eventBus.on 'issueTimeoutWarning', ->
 			# Create and render into div container
 			# TODO: Shouldn't have to re-create this every time
@@ -72,7 +77,7 @@ load = (win) ->
 			# Directs user's attention to app about to time out
 			nwWin.requestAttention(3)
 			new win.Notification "Inactivity Warning", {
-				body: "Your #{Config.productName} session will shut down 
+				body: "Your #{Config.productName} session (and any unsaved work) will shut down 
 				in #{Config.timeout.warningMins} minute#{if Config.timeout.warningMins > 1 then 's'}"
 			}
 
@@ -83,9 +88,9 @@ load = (win) ->
 			nwWin.close(true)
 
 		# Fires 'resetTimeout' event upon any user interaction (move, click, typing, scroll)
-		$('body').bind "mousemove click keypress scroll", ->
+		$('body').bind "mousemove mousedown keypress scroll", ->
 			global.ActiveSession.persist.eventBus.trigger 'resetTimeout'
 
-	return {TimeoutListeners}
+	return {timeoutListeners}
 
 module.exports = {load}

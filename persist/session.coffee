@@ -39,11 +39,11 @@ class Session
 		@warningMins = Config.timeout.warningMins
 
 		@persist.eventBus.on 'resetTimeout', =>
-			@resetTimeout()
+			@_resetTimeout()
 
-		@resetTimeout()
+		@_resetTimeout()
 
-	resetTimeout: ->
+	_resetTimeout: ->
 		# Clear all traces of timeouts
 		if @warning then clearTimeout @warning
 		if @timeout then clearTimeout @timeout
@@ -51,14 +51,14 @@ class Session
 		@warning = null
 
 		# Initiate timeouts
-		@warning = setTimeout @timeoutWarning, (@timeoutMins - @warningMins) * 60000
-		@timeout = setTimeout @timedOut, @timeoutMins * 60000
+		@warning = setTimeout @_timeoutWarning, (@timeoutMins - @warningMins) * 60000
+		@timeout = setTimeout @_timedOut, @timeoutMins * 60000
 
-	timeoutWarning: =>
+	_timeoutWarning: =>
 		console.log "Inactivity Warning Msg event fired!"
 		@persist.eventBus.trigger 'issueTimeoutWarning'
 
-	timedOut: =>
+	_timedOut: =>
 		console.log "Session timed out!"
 		@persist.eventBus.trigger 'timedOut'
 
