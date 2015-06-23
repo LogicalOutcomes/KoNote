@@ -55,11 +55,11 @@ class Session
 		@timeout = setTimeout @timedOut, @timeoutMins * 60000
 
 	timeoutWarning: =>
-		console.log "Warning Msg event fires"
+		console.log "Inactivity Warning Msg event fired!"
 		@persist.eventBus.trigger 'issueTimeoutWarning'
 
 	timedOut: =>
-		console.log "Timed out!!"
+		console.log "Session timed out!"
 		@persist.eventBus.trigger 'timedOut'
 
 	isAdmin: ->

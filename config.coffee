@@ -13,8 +13,8 @@ module.exports = {
 	# Set total timeout mins,
 	# and how many mins before timeout to show warning
 	timeout: {
-		totalMins: 1
-		warningMins: 50/60
+		totalMins: 80/60
+		warningMins: 75/60
 	}
 
 	# useTemplate: 'initialAssessment'
