@@ -17,6 +17,7 @@ load = (win) ->
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
 	BrandWidget = require('./brandWidget').load(win)
+	{timeoutListeners} = require('./timeoutDialog').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
 	do ->
@@ -46,6 +47,8 @@ load = (win) ->
 				render()
 
 		registerListeners = ->
+			timeoutListeners()
+
 			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) ->
 				targetId = newFile.get('id')
 

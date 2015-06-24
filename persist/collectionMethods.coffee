@@ -497,6 +497,7 @@ decodeFileNameComponent = (s) ->
 		return String.fromCharCode parseInt(hex, 16)
 	return s
 
+
 module.exports = {
 	createCollectionApi
 }

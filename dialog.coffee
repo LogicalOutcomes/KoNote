@@ -9,7 +9,10 @@ load = (win) ->
 	Dialog = React.createFactory React.createClass
 		render: ->
 			return R.div({
-				className: 'dialogContainer'
+				className: [
+					'dialogContainer'
+					@props.containerClasses.join(' ')
+				].join(' ')
 				onClick: @_onBackgroundClick
 			},
 				R.div({className: 'dialog panel panel-primary'},
