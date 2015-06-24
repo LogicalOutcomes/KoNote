@@ -24,6 +24,7 @@ load = (win, {clientFileId}) ->
 	Dialog = require('../dialog').load(win)
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
+	{timeoutListeners} = require('../timeoutDialog').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
 
 	nwWin = Gui.Window.get(win)
@@ -38,6 +39,7 @@ load = (win, {clientFileId}) ->
 		init = ->
 			render()
 			loadData()
+			registerListeners()
 
 		process.nextTick init
 
@@ -144,6 +146,9 @@ load = (win, {clientFileId}) ->
 
 				render()
 
+		registerListeners = ->
+			timeoutListeners()
+
 		createProgNoteFromTemplate = (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
 				type: 'full'
@@ -203,9 +208,9 @@ load = (win, {clientFileId}) ->
 		render: ->
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
-					OpenCreateProgEventButton({
-						onNewProgEvent: @_updateProgEvents
-					})
+					# OpenCreateProgEventButton({
+					# 	onNewProgEvent: @_updateProgEvents
+					# })
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
 							switch section.get('type')

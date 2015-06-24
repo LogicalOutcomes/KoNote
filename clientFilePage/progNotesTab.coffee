@@ -119,7 +119,7 @@ load = (win) ->
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
 					quickNoteToggle.popover('hide')
-					allQuickNoteToggle.data('isVisible', false)
+					quickNoteToggle.data('isVisible', false)
 
 				popover.find('textarea').focus()
 		_createQuickNote: (notes, quickNoteToggle) ->

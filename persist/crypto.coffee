@@ -5,6 +5,7 @@
 # code if possible.  Ask Tim McLean <tim@timmclean.net> to review any and all
 # changes, even refactors.
 
+BufferEq = require 'buffer-equal-constant-time'
 Crypto = require 'crypto'
 
 keyTextV1Prefix = 'symmkey-v1'
@@ -120,7 +121,7 @@ class SymmetricEncryptionKey
 			throw new Error "expected encryptedMsg to be a Buffer"
 
 		prefix = encryptedMsg[...cipherTextV1Prefix.length]
-		unless prefix.equals cipherTextV1Prefix
+		unless BufferEq(prefix, cipherTextV1Prefix)
 			throw new Error "unknown encryption version"
 
 		gcmLen = encryptedMsg.readUInt32LE cipherTextV1Prefix.length
