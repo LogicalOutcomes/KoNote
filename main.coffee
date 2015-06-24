@@ -21,6 +21,11 @@ init = (win) ->
 	process.on 'uncaughtException', (err) ->
 		CrashHandler.handle err
 
+	# Polyfill for ES6 String.includes
+	if !String::includes
+	  String::includes = ->
+	    String::indexOf.apply(this, arguments) isnt -1
+
 	win.jQuery ->
 		# Pull any parameters out of the URL
 		urlParams = QueryString.parse win.location.search.substr(1)
