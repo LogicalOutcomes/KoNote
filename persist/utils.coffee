@@ -39,6 +39,7 @@ class IOError extends Error
 		return cause.toString()
 
 module.exports = {
+	IOError
 	IdSchema
 	ObjectNotFoundError
 	TimestampFormat

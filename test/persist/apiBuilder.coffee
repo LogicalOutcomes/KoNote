@@ -10,7 +10,10 @@ Rimraf = require 'rimraf'
 
 {buildApi} = require '../../persist/apiBuilder'
 {SymmetricEncryptionKey} = require '../../persist/crypto'
-{TimestampFormat} = require '../../persist/utils'
+{
+	ObjectNotFoundError
+	TimestampFormat
+} = require '../../persist/utils'
 
 dataDir = Path.join process.cwd(), 'testData'
 
@@ -44,8 +47,6 @@ describe 'ApiBuilder', ->
 			api = buildApi(s, [])
 			Assert.deepEqual api, {
 				eventBus: api.eventBus
-				IOError: api.IOError
-				ObjectNotFoundError: api.ObjectNotFoundError
 			}
 
 		it 'refuses to allow a collection named `eventBus`', ->
@@ -211,7 +212,7 @@ describe 'ApiBuilder', ->
 			it 'read fails with ObjectNotFoundError for an unknown ID', (cb) ->
 				api.people.read 'unknownId', (err, obj) ->
 					Assert err
-					Assert err instanceof api.ObjectNotFoundError
+					Assert err instanceof ObjectNotFoundError
 					Assert not obj
 
 					cb()
@@ -401,7 +402,7 @@ describe 'ApiBuilder', ->
 					age: 35
 				}), (err, result) ->
 					Assert err
-					Assert err instanceof api.ObjectNotFoundError
+					Assert err instanceof ObjectNotFoundError
 					Assert not result
 
 					cb()
@@ -483,7 +484,7 @@ describe 'ApiBuilder', ->
 			it 'readRevisions fails with ObjectNotFoundError when ID unknown', (cb) ->
 				api.people.readRevisions 'unknownId', (err, result) ->
 					Assert err
-					Assert err instanceof api.ObjectNotFoundError
+					Assert err instanceof ObjectNotFoundError
 					Assert not result
 
 					cb()
@@ -547,7 +548,7 @@ describe 'ApiBuilder', ->
 			it 'readLatestRevisions fails with ObjectNotFoundError when ID unknown', (cb) ->
 				api.people.readLatestRevisions 'unknownId', 1, (err, result) ->
 					Assert err
-					Assert err instanceof api.ObjectNotFoundError
+					Assert err instanceof ObjectNotFoundError
 					Assert not result
 
 					cb()

@@ -120,6 +120,11 @@ load = (win, {clientFileId}) ->
 					# TODO data dir
 					Persist.Lock.acquire 'data', "clientFile-#{clientFileId}", (err, result) ->
 						if err
+							if err instanceof Persist.IOError
+								loadErrorType = 'io-error'
+								render()
+								return
+
 							if err instanceof Persist.Lock.LockInUseError
 								loadErrorType = 'file-in-use'
 								render()
@@ -206,7 +211,7 @@ load = (win, {clientFileId}) ->
 						cb()
 			], (err) ->
 				if err
-					if err instanceof IOError
+					if err instanceof Persist.IOError
 						loadErrorType = 'io-error'
 						render()
 						return

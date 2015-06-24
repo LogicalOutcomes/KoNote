@@ -5,7 +5,7 @@ Moment = require 'moment'
 Path = require 'path'
 Rimraf = require 'rimraf'
 
-{TimestampFormat} = require './utils'
+{IOError, TimestampFormat} = require './utils'
 
 leaseTime = 3 * 60 * 1000 # ms
 leaseRenewalInterval = 1 * 60 * 1000 # ms
@@ -35,7 +35,7 @@ class Lock
 					Lock._cleanIfStale dataDir, lockId, cb
 					return
 
-				cb err
+				cb new IOError err
 				return
 
 			# Got the lock, now we need to write an expiry timestamp
@@ -85,7 +85,12 @@ class Lock
 					else
 						cb new LockInUseError()
 			(cb) ->
-				Rimraf lockDir, cb
+				Rimraf lockDir, (err) ->
+					if err
+						cb new IOError err
+						return
+
+					cb()
 			(cb) ->
 				expiryLock.release cb
 		], (err) ->
@@ -165,7 +170,7 @@ class Lock
 
 		Rimraf @_path, (err) ->
 			if err
-				cb err
+				cb new IOError err
 				return
 
 			cb()
@@ -176,7 +181,7 @@ class Lock
 	@_readExpiryTimestamp: (lockDir, cb) ->
 		Fs.readdir lockDir, (err, fileNames) ->
 			if err
-				cb err
+				cb new IOError err
 				return
 
 			expiryTimestamps = Imm.List(fileNames)
@@ -199,7 +204,7 @@ class Lock
 		expiryTimestampFile = Path.join(lockDir, 'expire-' + expiryTimestamp)
 		Fs.writeFile expiryTimestampFile, 'expiry-time', (err) ->
 			if err
-				cb err
+				cb new IOError err
 				return
 
 			cb null, expiryTimestamp
