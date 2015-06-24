@@ -11,7 +11,7 @@ load = (win) ->
 			return R.div({
 				className: [
 					'dialogContainer'
-					@props.containerClasses.join(' ')
+					if @props.containerClasses then @props.containerClasses.join(' ')
 				].join(' ')
 				onClick: @_onBackgroundClick
 			},
