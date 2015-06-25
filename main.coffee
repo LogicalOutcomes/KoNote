@@ -53,6 +53,11 @@ init = (win) ->
 		win.document.addEventListener 'keyup', (event) ->
 			# If Ctrl-R
 			if event.ctrlKey and (not event.shiftKey) and event.which is 82
+				# Clear Node.js module cache
+				for cacheId of require.cache
+					delete require.cache[cacheId]
+
+				# Reload HTML page
 				win.location.reload(true)
 		, false
 
