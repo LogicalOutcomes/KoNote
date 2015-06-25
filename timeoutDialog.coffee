@@ -45,7 +45,7 @@ load = (win) ->
 
 			if @state.countSeconds is 60
 				new win.Notification "1 Minute Warning!", {
-					body: "#{Config.productName} will shut down in 1 minute due to inactivity"
+					body: "#{Config.productName} will shut down in 1 minute due to inactivity. Any unsaved work will be lost!"
 				}
 
 			return Dialog({
@@ -61,7 +61,7 @@ load = (win) ->
 							else
 								"#{countMoment.format('ss')} seconds"
 						)
-						" due to inactivity."
+						" due to inactivity. Any unsaved work will be lost!"
 					)
 				)
 			)
