@@ -6,7 +6,8 @@
   "window": {
     "toolbar": false,
     "width": 1000,
-    "height": 700
+    "height": 700,
+    "position": "center"
   },
   "dependencies": {
     "async": "^0.9.2",
