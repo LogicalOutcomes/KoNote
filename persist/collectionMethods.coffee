@@ -131,6 +131,10 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					fileNames = results
 					cb()
 		], (err) ->
+			if err
+				cb err
+				return
+
 			result = Imm.List(fileNames)
 				.map (fileName) ->
 					[indexValues..., id] = decodeFileName(fileName, modelDef.indexes.length + 1)
