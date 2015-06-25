@@ -122,7 +122,6 @@ load = (win, {clientFileId}) ->
 						if err
 							if err instanceof Persist.Lock.LockInUseError
 								loadErrorType = 'file-in-use'
-								console.log "Client file in use", loadErrorType
 								render()
 								return
 
@@ -149,7 +148,8 @@ load = (win, {clientFileId}) ->
 						cb()
 				(cb) ->
 					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
-						ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
+						targetId = planTargetHeader.get('id')
+						ActiveSession.persist.planTargets.readRevisions clientFileId, targetId, cb
 					, (err, results) ->
 						if err
 							cb err
@@ -207,6 +207,11 @@ load = (win, {clientFileId}) ->
 						cb()
 			], (err) ->
 				if err
+					if err instanceof Persist.IOError
+						loadErrorType = 'io-error'
+						render()
+						return
+
 					CrashHandler.handle err
 					return
 
@@ -226,6 +231,12 @@ load = (win, {clientFileId}) ->
 				unregisterTask "updateClientFile"
 
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
 
@@ -445,8 +456,15 @@ load = (win, {clientFileId}) ->
 		componentDidMount: ->
 			console.log "loadErrorType:", @props.loadErrorType
 			msg = switch @props.loadErrorType
-				when 'file-in-use' then "This client file is already in use."	
-				else "An unkown error occured (loadErrorType: #{@props.loadErrorType}"				
+				when 'file-in-use'
+					"This client file is already in use."
+				when 'io-error'
+					"""
+						An error occurred while loading the client file. 
+						This may be due to a problem with your network connection.
+					"""
+				else
+					"An unknown error occured (loadErrorType: #{@props.loadErrorType}"				
 			Bootbox.alert msg, -> nwWin.close(true)
 		render: ->
 			return R.div({className: 'clientFilePage'})

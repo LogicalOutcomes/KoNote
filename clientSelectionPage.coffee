@@ -2,6 +2,7 @@
 Imm = require 'immutable'
 
 Config = require './config'
+Persist = require './persist'
 
 load = (win) ->
 	# Libraries from browser context
@@ -9,6 +10,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	Gui = win.require 'nw.gui'
 
 	AccountManagerDialog = require('./accountManagerDialog').load(win)
 	CrashHandler = require('./crashHandler').load(win)
@@ -19,6 +21,8 @@ load = (win) ->
 	BrandWidget = require('./brandWidget').load(win)
 	{timeoutListeners} = require('./timeoutDialog').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
+
+	nwWin = Gui.Window.get(win)
 
 	do ->
 		clientFileList = null
@@ -40,6 +44,13 @@ load = (win) ->
 		loadData = ->
 			ActiveSession.persist.clientFiles.list (err, result) ->
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							Please check your network connection and try again.
+						""", =>
+							nwWin.close true
+						return
+
 					CrashHandler.handle err
 					return
 
@@ -50,14 +61,13 @@ load = (win) ->
 			timeoutListeners()
 
 			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) ->
-				targetId = newFile.get('id')
-
-				unless clientFileList.has(targetId)
-					clientFileList = clientFileList.push newFile
+				clientFileList = clientFileList.push newFile
 
 				render()
-			
+
 			global.ActiveSession.persist.eventBus.on 'createRevision:clientFile', (newRev) ->
+				# TODO this code needs some work
+
 				targetId = newRev.get('id')
 
 				# This looks right... but I can't test it
@@ -175,7 +185,6 @@ load = (win) ->
 				}
 					R.div({id: 'menuContent'}
 						R.div({id: 'avatar'}, FaIcon('user'))
-						# TODO: Get name/username of logged in user
 						R.h3({}, global.ActiveSession.userName)
 						@_renderUserMenuList(global.ActiveSession.isAdmin())
 					)

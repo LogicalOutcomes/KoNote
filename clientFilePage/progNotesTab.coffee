@@ -131,11 +131,17 @@ load = (win) ->
 
 			@props.registerTask 'quickNote-save'
 			global.ActiveSession.persist.progNotes.create note, (err) =>
+				@props.unregisterTask 'quickNote-save'
+
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
-
-				@props.unregisterTask 'quickNote-save'
 
 				quickNoteToggle.popover('hide')
 				quickNoteToggle.data('isVisible', false)

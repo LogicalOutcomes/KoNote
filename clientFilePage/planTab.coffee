@@ -325,6 +325,12 @@ load = (win) ->
 							cb()
 				, (err) =>
 					if err
+						if err instanceof Persist.IOError
+							Bootbox.alert """
+								An error occurred.  Please check your network connection and try again.
+							"""
+							return
+
 						CrashHandler.handle err
 						return
 

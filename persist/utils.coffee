@@ -26,7 +26,20 @@ class ObjectNotFoundError extends Error
 	constructor: ->
 		super
 
+class IOError extends Error
+	constructor: (cause) ->
+		super()
+
+		@cause = cause
+		@message = cause.message
+		@stack = cause.stack
+
+		return
+	toString: ->
+		return "IOError: " + (@cause?.toString())
+
 module.exports = {
+	IOError
 	IdSchema
 	ObjectNotFoundError
 	TimestampFormat
