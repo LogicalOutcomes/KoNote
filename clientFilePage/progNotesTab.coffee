@@ -13,6 +13,7 @@ load = (win) ->
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
+	PrintButton = require('../printButton').load(win)
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
@@ -180,6 +181,14 @@ load = (win) ->
 						' by '
 						@props.progNote.get('author')
 					)
+					PrintButton({
+						dataSet: [
+							{
+								format: 'progNote'
+								data: @props.progNote
+							}
+						]
+					})
 				)
 				R.div({className: 'sections'},
 					(@props.progNote.get('sections').map (section) =>
