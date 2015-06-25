@@ -106,15 +106,16 @@ load = (win) ->
 				@setState {isLoading: false}
 
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
 
-				console.log("Client file created:", obj.get('id'))
-
-				Bootbox.alert
-					message: "New client file created for " + first + ' ' + last + '.'
-					callback: =>
-						@props.onSuccess(obj.get('id'))
+				@props.onSuccess(obj.get('id'))
 
 	return CreateClientFileDialog
 

@@ -36,7 +36,7 @@ class IOError extends Error
 
 		return
 	toString: ->
-		return cause.toString()
+		return "IOError: " + (@cause?.toString())
 
 module.exports = {
 	IOError

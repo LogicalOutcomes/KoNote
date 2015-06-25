@@ -2,6 +2,8 @@
 
 Imm = require 'immutable'
 
+Persist = require './persist'
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -73,6 +75,12 @@ load = (win) ->
 
 			ActiveSession.persist.metrics.create newMetric, (err, result) =>
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
 

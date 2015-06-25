@@ -120,11 +120,6 @@ load = (win, {clientFileId}) ->
 					# TODO data dir
 					Persist.Lock.acquire 'data', "clientFile-#{clientFileId}", (err, result) ->
 						if err
-							if err instanceof Persist.IOError
-								loadErrorType = 'io-error'
-								render()
-								return
-
 							if err instanceof Persist.Lock.LockInUseError
 								loadErrorType = 'file-in-use'
 								render()
@@ -153,7 +148,8 @@ load = (win, {clientFileId}) ->
 						cb()
 				(cb) ->
 					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
-						ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
+						targetId = planTargetHeader.get('id')
+						ActiveSession.persist.planTargets.readRevisions clientFileId, targetId, cb
 					, (err, results) ->
 						if err
 							cb err
@@ -235,6 +231,12 @@ load = (win, {clientFileId}) ->
 				unregisterTask "updateClientFile"
 
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
 
