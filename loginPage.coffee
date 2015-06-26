@@ -169,7 +169,7 @@ load = (win) ->
 		_login: (event) ->
 			# TODO where to get data dir path? config?
 			event.preventDefault()
-			@setState {isLoading: true}			
+			@setState {isLoading: true}
 
 			Persist.Session.login 'data', @state.userName, @state.password, (err, session) =>
 				@setState {isLoading: false}
@@ -181,8 +181,9 @@ load = (win) ->
 
 					if err instanceof Persist.Session.IncorrectPasswordError
 						Bootbox.alert "Incorrect password.  Please try again.", =>
+							@setState {password: ''}
+
 							pwField = @refs.passwordField.getDOMNode()
-							pwField.value = ''
 							pwField.focus()
 						return
 
