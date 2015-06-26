@@ -168,7 +168,7 @@ load = (win) ->
 									}
 										R.span({
 											className: 'recordId'
-										}, if result.has('recordId') and result.get('recordId').length > 0 then "ID# #{result.get('recordId')}"),
+										}, if result.has('recordId') and result.get('recordId').length > 0 then Config.clientFileRecordId.label + " #{result.get('recordId')}"),
 									renderName result.get('clientName')
 									)
 								).toJS()
