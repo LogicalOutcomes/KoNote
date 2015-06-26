@@ -2,15 +2,23 @@
 # and matches printing components with the type(s) of data received
 
 Imm = require 'immutable'
+Moment = require 'moment'
+
+Config = require './config'
+Persist = require './persist'
 
 load = (win, {dataSet}) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
 
+	CrashHandler = require('./crashHandler').load(win)
+	MetricWidget = require('./metricWidget').load(win)
+	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
 	{timeoutListeners} = require('./timeoutDialog').load(win)
 
 	do ->
+		console.log "Print Data:", JSON.parse(dataSet)
 		printDataSet = Imm.fromJS JSON.parse(dataSet)
 
 		init = ->
@@ -28,51 +36,176 @@ load = (win, {dataSet}) ->
 			timeoutListeners()
 
 	PrintPreview = React.createFactory React.createClass
-		componentHasMounted: ->
-			win.print()
+		componentDidMount: ->
+			# Without timeout, print() triggers before DOM renders
+			setTimeout ->
+				win.print()
+			, 500
 
 		render: ->
-			return R.div({className: 'printPreview'},
-
+			R.div({className: 'printPreview'},
 				(@props.printDataSet.map (printObj) =>
-					data = printObj.get('data')
+					progNote = printObj.get('data')
+					clientFile = printObj.get('clientFile')
 
 					switch printObj.get('format')
 						when 'progNote'
-							switch data.get('type')								
+							switch progNote.get('type')								
 								when 'basic'
 									BasicProgNoteView({
-										data
-										key: data.get('id')
+										progNote
+										clientFile
+										key: progNote.get('id')
 									})
 								when 'full'
 									FullProgNoteView({
-										data
-										key: data.get('id')
+										progNote
+										clientFile
+										key: progNote.get('id')
 									})
 								else
-									throw new Error "Unknown progNote type: #{data.get('type')}"
-
+									throw new Error "Unknown progNote type: #{progNote.get('type')}"
 						else
-							throw new Error "Unknown data type: #{setType}"
+							throw new Error "Unknown print-data type: #{setType}"
 				)
-				
 			)
 
-	# ProgNote View Components
+
+	ProgNotePrintHeader = React.createFactory React.createClass
+		render: ->
+			R.div({className: 'header row'},
+				R.div({className: 'leftSide'},
+					R.h1({className: 'title'},
+						FaIcon('pencil-square-o')
+						" Progress Note"
+					)
+					R.h3({className: 'clientName'}, 
+						renderName @props.clientFile.get('clientName')
+					)
+					R.span({className: 'clientRecordId'},
+						renderFileId @props.clientFile.get('recordId')
+					)
+				)
+				R.div({className: 'rightSide'},
+					R.img({
+						className: 'logo'
+						src: 'customer-logo-lg.png'
+					})
+					R.ul({},
+						R.li({}, 
+							FaIcon('user')
+							"Authored by: "
+							# TODO: Include user's full name + username ("Andrew Appleby (aappleby)")
+							R.span({className: 'author'}, @props.progNote.get('author'))
+						)
+						R.li({className: 'date'},
+							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							.format 'MMMM D, YYYY [at] HH:mm'
+						)
+					)
+					R.ul({},
+						R.li({},
+							FaIcon('print')
+							"Printed by: "
+							# TODO: Include user's full name + username ("Andrew Appleby (aappleby)")
+							R.span({className: 'author'}, global.ActiveSession.userName)
+						)
+						R.li({className: 'date'},
+							Moment().format 'MMMM D, YYYY [at] HH:mm'
+						)
+					)
+				)
+			)
 
 	BasicProgNoteView = React.createFactory React.createClass
-		render: ->
-			console.log "Basic Note"
-			return R.div({}, 
-				
+		render: ->			
+			R.div({className: 'basic progNote'},
+				ProgNotePrintHeader({
+					progNote: @props.progNote
+					clientFile: @props.clientFile
+				})
+				R.div({className: 'notes'},
+					renderLineBreaks @props.progNote.get('notes')
+				)
 			)
 
 	FullProgNoteView = React.createFactory React.createClass
 		render: ->
-			console.log "Full Note"
-			return R.div({}, 
-				
+			R.div({className: 'full progNote'},
+				ProgNotePrintHeader({
+					progNote: @props.progNote
+					clientFile: @props.clientFile
+				})
+				R.div({className: 'sections'},
+					(@props.progNote.get('sections').map (section) =>
+						switch section.get('type')
+							when 'basic'
+								R.div({className: 'basic section', key: section.get('id')},
+									R.h1({
+										className: 'name'
+									},
+										section.get('name')
+									)
+									R.div({className: "empty #{showWhen section.get('notes').length is 0}"},
+										'(blank)'
+									)
+									R.div({className: 'notes'},
+										renderLineBreaks section.get('notes')
+									)
+									R.div({className: 'metrics'},
+										(section.get('metrics').map (metric) =>
+											MetricWidget({
+												isEditable: false
+												key: metric.get('id')
+												name: metric.get('name')
+												definition: metric.get('definition')
+												value: metric.get('value')
+											})
+										).toJS()...
+									)
+								)
+							when 'plan'
+								R.div({className: 'plan section', key: section.get('id')},
+									R.h1({className: 'name'},
+										section.get('name')
+									)
+									R.div({className: "empty #{showWhen section.get('targets') is ''}"},
+										"This section is empty because the client has no plan targets."
+									)
+									R.div({className: 'targets'},
+										(section.get('targets').map (target) =>
+											R.div({
+												className: 'target'
+												key: target.get('id')
+											},
+												R.h2({
+													className: 'name'
+												},
+													target.get('name')
+												)
+												R.div({className: "empty #{showWhen target.get('notes') is ''}"},
+													'(blank)'
+												)
+												R.div({className: 'notes'},
+													renderLineBreaks target.get('notes')
+												)
+												R.div({className: 'metrics'},
+													(target.get('metrics').map (metric) =>
+														MetricWidget({
+															isEditable: false
+															key: metric.get('id')
+															name: metric.get('name')
+															definition: metric.get('definition')
+															value: metric.get('value')
+														})
+													).toJS()...
+												)
+											)
+										).toJS()...
+									)
+								)
+					).toJS()...
+				)
 			)
 
 module.exports = {load}

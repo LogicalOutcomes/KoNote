@@ -12,11 +12,11 @@ load = (win) ->
 	PrintButton = React.createFactory React.createClass
 		render: ->
 			return R.button({
-				className: 'btn btn-info'
+				className: 'printButton btn btn-default'
 				onClick: @_printDiv
 				ref: 'printButton'
 			},
-				if @props.title then @props.title else "Print"
+				R.span({}, "Print")
 				FaIcon('print')
 			)
 		_printDiv: ->

@@ -81,11 +81,13 @@ load = (win) ->
 								when 'basic'
 									BasicProgNoteView({
 										progNote
+										clientFile: @props.clientFile
 										key: progNote.get('id')
 									})
 								when 'full'
 									FullProgNoteView({
 										progNote
+										clientFile: @props.clientFile
 										key: progNote.get('id')
 										setSelectedItem: @_setSelectedItem
 									})
@@ -162,9 +164,18 @@ load = (win) ->
 					R.div({className: 'author'},
 						' by '
 						@props.progNote.get('author')
-					)
+					)					
 				)
 				R.div({className: 'notes'},
+					PrintButton({
+						dataSet: [
+							{
+								format: 'progNote'
+								data: @props.progNote
+								clientFile: @props.clientFile
+							}
+						]
+					})
 					renderLineBreaks @props.progNote.get('notes')
 				)
 			)
@@ -181,16 +192,17 @@ load = (win) ->
 						' by '
 						@props.progNote.get('author')
 					)
+				)
+				R.div({className: 'sections'},
 					PrintButton({
 						dataSet: [
 							{
 								format: 'progNote'
 								data: @props.progNote
+								clientFile: @props.clientFile
 							}
 						]
 					})
-				)
-				R.div({className: 'sections'},
 					(@props.progNote.get('sections').map (section) =>
 						switch section.get('type')
 							when 'basic'

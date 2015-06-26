@@ -384,6 +384,7 @@ load = (win, {clientFileId}) ->
 				ProgNotesTab.ProgNotesView({
 					isVisible: activeTabId is 'progressNotes'
 					clientFileId
+					clientFile: @props.clientFile
 					progNotes: @props.progressNotes
 					metricsById: @props.metricsById
 					registerTask: @props.registerTask
