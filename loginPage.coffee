@@ -175,16 +175,12 @@ load = (win) ->
 				@setState {isLoading: false}
 				if err
 					if err instanceof Persist.Session.UnknownUserNameError
-						Bootbox.alert "Unknown user name.  Please try again.", =>
-							@refs.userNameField.getDOMNode().select()
+						Bootbox.alert "Unknown user name.  Please try again."
 						return
 
 					if err instanceof Persist.Session.IncorrectPasswordError
 						Bootbox.alert "Incorrect password.  Please try again.", =>
 							@setState {password: ''}
-
-							pwField = @refs.passwordField.getDOMNode()
-							pwField.focus()
 						return
 
 					CrashHandler.handle err
