@@ -2,6 +2,7 @@
 
 Persist = require './persist'
 Imm = require 'immutable'
+Config = require './config'
 
 load = (win) ->
 	$ = win.jQuery
@@ -54,15 +55,16 @@ load = (win) ->
 							value: @state.lastName
 						})
 					)
-					R.div({className: 'form-group'},
-						R.label({}, "Record ID"),
-						R.input({
-							className: 'form-control'
-							onChange: @_updateRecordId
-							value: @state.recordNumber
-							placeholder: "(optional)"
-						})
-					)
+					if Config.clientFileRecordId.isEnabled
+						R.div({className: 'form-group'},
+							R.label({}, Config.clientFileRecordId.label),
+							R.input({
+								className: 'form-control'
+								onChange: @_updateRecordId
+								value: @state.recordNumber
+								placeholder: "(optional)"
+							})
+						)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'

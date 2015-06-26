@@ -3,10 +3,8 @@ module.exports = {
 	logoSubtitle: 'DSSS'
 	logoSubtitleColor: 'hsl(205, 78%, 47%)'
 
-	# TODO: Set these up around the app
 	clientFileRecordId: {
 		isEnabled: true
-		isRequired: true
 		label: "CR #"
 	}
 
