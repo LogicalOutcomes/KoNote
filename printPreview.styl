@@ -1,7 +1,7 @@
 .printPreview
-	padding 25px
-
-	> .progNote
+	
+	.printObj
+		padding 25px
 
 		> .header
 			display flex
@@ -58,80 +58,83 @@
 							text-decoration underline
 			
 
-		&.basic
-			> .notes
-				padding 20px 0
 
-				> br
-					display block
+		> .progNote
+			
+			&.basic
+				> .notes
+					padding 20px 0
 
-		&.full
-			> .sections
-				
-				> .section
-					padding-bottom 15px
-					border-bottom 1px solid #C9C9C9
+					> br
+						display block
+
+			&.full
+				> .sections
 					
-					> .name
-						font-size 22px
-						font-weight 400
-
-					&.basic
+					> .section
+						padding-bottom 15px
+						border-bottom 1px solid #C9C9C9
+						
 						> .name
-							cursor pointer
+							font-size 22px
+							font-weight 400
 
-						> .empty
-							padding 0 2px
+						&.basic
+							> .name
+								cursor pointer
 
-							color #888
+							> .empty
+								padding 0 2px
 
-						> .metrics
-							padding-top 5px
+								color #888
 
-					&.plan
-						> .empty
-							padding 0 2px
+							> .metrics
+								padding-top 5px
 
-							color #888
+						&.plan
+							> .empty
+								padding 0 2px
 
-						> .targets
-							
-							> .target
-								display inline-block
-								width 50%
-								vertical-align top
-								padding 0 15px
+								color #888
+
+							> .targets
 								
-								> .name
-									margin 15px 0 5px
+								> .target
+									display inline-block
+									width 50%
+									vertical-align top
+									padding 0 15px
+									
+									> .name
+										margin 15px 0 5px
 
-									color #666
-									cursor pointer
-									font-size 16px
-									font-weight 600
+										color #666
+										cursor pointer
+										font-size 16px
+										font-weight 600
 
-								> .empty
-									padding 0 2px
+									> .empty
+										padding 0 2px
 
-									color #888
+										color #888
 
-								> .metrics
-									display flex
-									flex-wrap wrap
+									> .metrics
+										display flex
+										flex-wrap wrap
 
-									margin -5px
+										margin -5px
 
-									padding-top 5px
+										padding-top 5px
 
-									> .metricWidget
-										margin 5px
-										background none
-										border 1px solid #999999
-										
-										> .name
-											color black
-										
-										> .value
-											color black
+										> .metricWidget
+											margin 5px
 											background none
-											border 1px solid #707070
+											border 1px solid #999999
+											
+											> .name
+												color black
+											
+											> .value
+												color black
+												background none
+												border 1px solid #707070

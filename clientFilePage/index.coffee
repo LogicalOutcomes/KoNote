@@ -374,6 +374,7 @@ load = (win, {clientFileId}) ->
 					ref: 'planTab'
 					isVisible: activeTabId is 'plan'
 					clientFileId
+					clientFile: @props.clientFile
 					plan: @props.clientFile.get('plan')
 					planTargetsById: @props.planTargetsById
 					metricsById: @props.metricsById

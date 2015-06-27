@@ -43,41 +43,55 @@ load = (win, {dataSet}) ->
 			, 500
 
 		render: ->
-			R.div({className: 'printPreview'},
-				(@props.printDataSet.map (printObj) =>
-					progNote = printObj.get('data')
+			R.div({className: 'printPreview'},				
+				(@props.printDataSet.map (printObj) =>					
 					clientFile = printObj.get('clientFile')
+					data = printObj.get('data')
+					title = null
 
-					switch printObj.get('format')
-						when 'progNote'
-							switch progNote.get('type')								
-								when 'basic'
-									BasicProgNoteView({
-										progNote
-										clientFile
-										key: progNote.get('id')
-									})
-								when 'full'
-									FullProgNoteView({
-										progNote
-										clientFile
-										key: progNote.get('id')
-									})
-								else
-									throw new Error "Unknown progNote type: #{progNote.get('type')}"
-						else
-							throw new Error "Unknown print-data type: #{setType}"
-				)
+					R.div({className: 'printObj'},
+						PrintHeader({
+							data
+							format: printObj.get('format')
+							clientFile: clientFile
+						})
+						switch printObj.get('format')
+							when 'progNote'
+								switch data.get('type')
+									when 'basic'
+										BasicProgNoteView({
+											progNote: data
+											clientFile
+										})
+									when 'full'
+										FullProgNoteView({
+											progNote: data
+											clientFile
+										})
+									else
+										throw new Error "Unknown progNote type: #{progNote.get('type')}"
+							when 'plan'
+								SinglePlanView({
+									title: "Care Plan"
+									plan: data
+									clientFile
+								})
+							else
+								throw new Error "Unknown print-data type: #{setType}"
+					)
+				).toJS()...
 			)
 
 
-	ProgNotePrintHeader = React.createFactory React.createClass
+	PrintHeader = React.createFactory React.createClass
 		render: ->
-			R.div({className: 'header row'},
+			R.div({className: 'header'},
 				R.div({className: 'leftSide'},
-					R.h1({className: 'title'},
+					R.h1({className: 'title'},						
 						FaIcon('pencil-square-o')
-						" Progress Note"
+						switch @props.format
+							when 'progNote' then "Progress Note"
+							when 'plan' then "Care Plan"
 					)
 					R.h3({className: 'clientName'}, 
 						renderName @props.clientFile.get('clientName')
@@ -96,10 +110,10 @@ load = (win, {dataSet}) ->
 							FaIcon('user')
 							"Authored by: "
 							# TODO: Include user's full name + username ("Andrew Appleby (aappleby)")
-							R.span({className: 'author'}, @props.progNote.get('author'))
+							R.span({className: 'author'}, @props.data.get('author'))
 						)
 						R.li({className: 'date'},
-							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							Moment(@props.data.get('timestamp'), Persist.TimestampFormat)
 							.format 'MMMM D, YYYY [at] HH:mm'
 						)
 					)
@@ -119,11 +133,7 @@ load = (win, {dataSet}) ->
 
 	BasicProgNoteView = React.createFactory React.createClass
 		render: ->			
-			R.div({className: 'basic progNote'},
-				ProgNotePrintHeader({
-					progNote: @props.progNote
-					clientFile: @props.clientFile
-				})
+			R.div({className: 'basic progNote'},				
 				R.div({className: 'notes'},
 					renderLineBreaks @props.progNote.get('notes')
 				)
@@ -132,10 +142,6 @@ load = (win, {dataSet}) ->
 	FullProgNoteView = React.createFactory React.createClass
 		render: ->
 			R.div({className: 'full progNote'},
-				ProgNotePrintHeader({
-					progNote: @props.progNote
-					clientFile: @props.clientFile
-				})
 				R.div({className: 'sections'},
 					(@props.progNote.get('sections').map (section) =>
 						switch section.get('type')
