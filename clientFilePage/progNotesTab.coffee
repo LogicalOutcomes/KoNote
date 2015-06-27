@@ -175,6 +175,7 @@ load = (win) ->
 								clientFile: @props.clientFile
 							}
 						]
+						isVisible: true
 					})
 					renderLineBreaks @props.progNote.get('notes')
 				)

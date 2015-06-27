@@ -73,7 +73,7 @@ load = (win, {dataSet}) ->
 							when 'plan'
 								SinglePlanView({
 									title: "Care Plan"
-									plan: data
+									data
 									clientFile
 								})
 							else
@@ -184,11 +184,7 @@ load = (win, {dataSet}) ->
 												className: 'target'
 												key: target.get('id')
 											},
-												R.h2({
-													className: 'name'
-												},
-													target.get('name')
-												)
+												R.h2({className: 'name'},target.get('name'))
 												R.div({className: "empty #{showWhen target.get('notes') is ''}"},
 													'(blank)'
 												)
@@ -210,6 +206,45 @@ load = (win, {dataSet}) ->
 										).toJS()...
 									)
 								)
+					).toJS()...
+				)
+			)
+
+	SinglePlanView = React.createFactory React.createClass
+		render: ->
+			R.div({className: 'plan'},
+				R.div({className: 'sections'},
+					(@props.data.get('sections').map (section) =>
+						R.div({className: 'section planTargets', key: section.get('id')},
+							R.h2({className: 'name'}, section.get('name'))
+							(if section.get('targetIds').size is 0
+								R.div({className: 'noTargets'},
+									"This section is empty."
+								)
+							)
+							R.div({className: 'targets'},
+								(section.get('targetIds').map (targetId) =>
+									targets = @props.data.get('targets')
+									thisTarget = targets.get(targetId)
+
+									R.div({className: 'target'},
+										R.h3({className: 'name'}, thisTarget.get('name'))
+										R.div({className: 'notes'}, thisTarget.get('notes'))
+										R.div({className: 'metrics'},
+											(thisTarget.get('metricIds').map (metricId) =>
+												metric = @props.data.get('metrics').get(metricId)
+												MetricWidget({
+													name: metric.get('name')
+													definition: metric.get('definition')
+													value: metric.get('value')
+													key: metricId
+												})
+											).toJS()...
+										)
+									)
+								).toJS()...
+							)
+						)
 					).toJS()...
 				)
 			)
