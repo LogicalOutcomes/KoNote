@@ -1,3 +1,5 @@
+Config = require './config'
+
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
@@ -25,6 +27,20 @@ load = (win) ->
 			result.push name.get('middle')
 
 		result.push name.get('last')
+
+		return result.join ' '
+
+	# Returns the clientFileId with label
+	# Setting 2nd param as true returns nothing if id is empty/nonexistent
+	renderFileId = (id, hidden) ->
+		result = []
+		result.push Config.clientFileRecordId.label
+
+		if not id or id.length is 0
+			if hidden then return null
+			result.push "(n/a)"
+		else
+			result.push id
 
 		return result.join ' '
 
@@ -76,6 +92,7 @@ load = (win) ->
 		openWindow
 		renderLineBreaks
 		renderName
+		renderFileId
 		showWhen
 		stripMetadata
 		truncateText

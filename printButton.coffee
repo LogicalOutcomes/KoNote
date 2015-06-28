@@ -7,16 +7,20 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
-	{FaIcon, openWindow} = require('./utils').load(win)
+	{FaIcon, openWindow, showWhen} = require('./utils').load(win)
 
 	PrintButton = React.createFactory React.createClass
 		render: ->
 			return R.button({
-				className: 'btn btn-info'
+				className: [
+					'printButton'
+					'btn btn-default'
+					showWhen @props.isVisible
+				].join ' '
 				onClick: @_printDiv
 				ref: 'printButton'
 			},
-				if @props.title then @props.title else "Print"
+				R.span({}, "Print")
 				FaIcon('print')
 			)
 		_printDiv: ->

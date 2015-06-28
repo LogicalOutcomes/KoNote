@@ -25,7 +25,7 @@ load = (win, {clientFileId}) ->
 	Dialog = require('../dialog').load(win)
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
-	{timeoutListeners} = require('../timeoutDialog').load(win)
+	{timeoutListeners, unregisterTimeoutListeners} = require('../timeoutDialog').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
 
 	nwWin = Gui.Window.get(win)
@@ -229,6 +229,7 @@ load = (win, {clientFileId}) ->
 								label: "Yes"
 								className: 'btn-primary'
 								callback: =>
+									unregisterTimeoutListeners()
 									nwWin.close true
 							}
 						}

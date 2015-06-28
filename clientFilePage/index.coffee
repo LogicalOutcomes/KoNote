@@ -32,8 +32,8 @@ load = (win, {clientFileId}) ->
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
-	{timeoutListeners} = require('../timeoutDialog').load(win)
-	{FaIcon, renderName, showWhen, stripMetadata} = require('../utils').load(win)
+	{timeoutListeners, unregisterTimeoutListeners} = require('../timeoutDialog').load(win)
+	{FaIcon, renderName, renderFileId, showWhen, stripMetadata} = require('../utils').load(win)
 
 	nwWin = Gui.Window.get(win)
 
@@ -290,6 +290,8 @@ load = (win, {clientFileId}) ->
 				render()
 
 		unregisterListeners = ->
+			unregisterTimeoutListeners()
+			
 			isClosed = true
 
 			if clientFileLock
@@ -374,6 +376,7 @@ load = (win, {clientFileId}) ->
 					ref: 'planTab'
 					isVisible: activeTabId is 'plan'
 					clientFileId
+					clientFile: @props.clientFile
 					plan: @props.clientFile.get('plan')
 					planTargetsById: @props.planTargetsById
 					metricsById: @props.metricsById
@@ -384,6 +387,7 @@ load = (win, {clientFileId}) ->
 				ProgNotesTab.ProgNotesView({
 					isVisible: activeTabId is 'progressNotes'
 					clientFileId
+					clientFile: @props.clientFile
 					progNotes: @props.progressNotes
 					metricsById: @props.metricsById
 					registerTask: @props.registerTask
@@ -416,8 +420,8 @@ load = (win, {clientFileId}) ->
 					R.span({}, "#{@props.clientName}")
 				)
 				R.div({className: 'recordId'},
-					R.span({}, if @props.recordId and @props.recordId.length > 0 then Config.clientFileRecordId.label + " #{@props.recordId}")
-				),
+					R.span({}, renderFileId @props.recordId, true)
+				)
 				R.div({className: 'tabStrip'},
 					SidebarTab({
 						name: "Plan"

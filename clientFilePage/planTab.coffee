@@ -16,6 +16,7 @@ load = (win) ->
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricLookupField = require('../metricLookupField').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	PrintButton = require('../printButton').load(win)
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
 
 	PlanView = React.createFactory React.createClass
@@ -51,7 +52,7 @@ load = (win) ->
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
 						R.div({className: 'message'},
 							"This client does not currently have any plan targets."
-						)
+						)						
 						R.button({
 							className: 'addSection btn btn-success btn-lg'
 							onClick: @_addSection
@@ -72,13 +73,29 @@ load = (win) ->
 							FaIcon('save')
 							if @hasChanges() then "Save Plan" else "No Changes to Save"
 						)
-						R.button({
-							className: 'addSection btn btn-default'
-							onClick: @_addSection
-						},
-							FaIcon('plus')
-							"Add section"
-						)
+						R.div({className: 'rightMenu'},
+							PrintButton({
+								dataSet: [
+									{
+										format: 'plan'
+										data: {
+											sections: plan.get('sections')
+											targets: @state.currentTargetRevisionsById
+											metrics: @props.metricsById
+										}
+										clientFile: @props.clientFile
+									}
+								]
+								isVisible: not @hasChanges()
+							})
+							R.button({
+								className: 'addSection btn btn-default'
+								onClick: @_addSection
+							},
+								FaIcon('plus')
+								"Add section"
+							)
+						)						
 					)
 					R.div({className: 'sections'},
 						(plan.get('sections').map (section) =>
@@ -151,6 +168,10 @@ load = (win) ->
 											definition: metricDef.get('definition')
 										})
 									).toJS()...
+									R.button({
+										className: 'btn btn-link addMetricButton'
+										onClick: @_focusMetricLookupField
+									}, FaIcon('plus'))
 								)
 								R.div({},
 									MetricLookupField({
@@ -158,7 +179,7 @@ load = (win) ->
 										onSelection: @_addMetricToTarget.bind(
 											null, selectedTarget.get('id')
 										)
-										placeholder: "Find/Define Metric"
+										placeholder: "Find / Define a Metric"
 									})
 								)
 							)
@@ -197,6 +218,8 @@ load = (win) ->
 					)
 				)
 			)
+		
+		_focusMetricLookupField: -> $('.lookupField').focus()
 		blinkUnsaved: ->			
 			toggleBlink = -> $('.hasChanges').toggleClass('blink')
 			secondBlink = ->
