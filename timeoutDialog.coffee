@@ -12,7 +12,9 @@ load = (win) ->
 
 	Dialog = require('./dialog').load(win)
 	Moment = require('moment')
-	Bootbox = require('bootbox')	
+	Bootbox = require('bootbox')
+
+	isClosed = null
 
 	TimeoutWarning = React.createFactory React.createClass
 		getInitialState: ->
@@ -44,9 +46,7 @@ load = (win) ->
 			countMoment = Moment.utc(@state.countSeconds * 1000)
 
 			if @state.countSeconds is 60
-				new win.Notification "1 Minute Warning!", {
-					body: "#{Config.productName} will shut down in 1 minute due to inactivity. Any unsaved work will be lost!"
-				}
+				global.ActiveSession.persist.eventBus.trigger 'issueMinuteWarning'
 
 			return Dialog({
 				title: "Inactivity Warning"
@@ -61,36 +61,60 @@ load = (win) ->
 							else
 								"#{countMoment.format('ss')} seconds"
 						)
-						" due to inactivity. Any unsaved work will be lost!"
+						"due to inactivity"
+						R.br({})
+						R.br({})
+						"Any unsaved work will be lost!"
 					)
 				)
 			)
 
+	notificationListeners = ->
+		# These listeners should only be called from the main window
+		# in order to prevent multiple/stacked notifications
+
+		global.ActiveSession.persist.eventBus.on 'issueTimeoutWarning', ->
+			unless isClosed
+				# Directs user's attention to app about to time out
+				nwWin.requestAttention(3)
+				new win.Notification "Inactivity Warning", {
+					body: "Your #{Config.productName} session (and any unsaved work) will shut down 
+					in #{Config.timeout.warningMins} minute#{if Config.timeout.warningMins > 1 then 's'}"
+				}
+
+		global.ActiveSession.persist.eventBus.on 'issueMinuteWarning', ->
+			unless isClosed
+				new win.Notification "1 Minute Warning!", {
+					body: "#{Config.productName} will shut down in 1 minute due to inactivity. Any unsaved work will be lost!"
+				}
+
 	timeoutListeners = ->
 		global.ActiveSession.persist.eventBus.on 'issueTimeoutWarning', ->
-			# Create and render into div container
-			# TODO: Shouldn't have to re-create this every time
-			containerDiv = win.document.createElement('div')
-			win.document.body.appendChild containerDiv
-			React.render TimeoutWarning({}), containerDiv		
-
-			# Directs user's attention to app about to time out
-			nwWin.requestAttention(3)
-			new win.Notification "Inactivity Warning", {
-				body: "Your #{Config.productName} session (and any unsaved work) will shut down 
-				in #{Config.timeout.warningMins} minute#{if Config.timeout.warningMins > 1 then 's'}"
-			}
+			unless isClosed
+				# Create and render into div container
+				# TODO: Shouldn't have to re-create this every time
+				containerDiv = win.document.createElement('div')
+				win.document.body.appendChild containerDiv
+				React.render TimeoutWarning({}), containerDiv						
 
 		# Force-close all windows when timed out
 		global.ActiveSession.persist.eventBus.on 'timedOut', ->
-			# TODO: Needs to re-lock all client files that were open
-			# Maybe this should be a logout instead of a force-close?
-			nwWin.close(true)
+			unless isClosed
+				# TODO: Needs to re-lock all client files that were open
+				# Maybe this should be a logout instead of a force-close?
+				nwWin.close(true)
 
 		# Fires 'resetTimeout' event upon any user interaction (move, click, typing, scroll)
 		$('body').bind "mousemove mousedown keypress scroll", ->
-			global.ActiveSession.persist.eventBus.trigger 'resetTimeout'
+			unless isClosed
+				global.ActiveSession.persist.eventBus.trigger 'resetTimeout'
 
-	return {timeoutListeners}
+	unregisterTimeoutListeners = -> isClosed = true
+
+	return {
+		timeoutListeners
+		unregisterTimeoutListeners
+		notificationListeners
+	}
 
 module.exports = {load}

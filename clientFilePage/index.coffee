@@ -32,7 +32,7 @@ load = (win, {clientFileId}) ->
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
-	{timeoutListeners} = require('../timeoutDialog').load(win)
+	{timeoutListeners, unregisterTimeoutListeners} = require('../timeoutDialog').load(win)
 	{FaIcon, renderName, renderFileId, showWhen, stripMetadata} = require('../utils').load(win)
 
 	nwWin = Gui.Window.get(win)
@@ -290,6 +290,8 @@ load = (win, {clientFileId}) ->
 				render()
 
 		unregisterListeners = ->
+			unregisterTimeoutListeners()
+			
 			isClosed = true
 
 			if clientFileLock

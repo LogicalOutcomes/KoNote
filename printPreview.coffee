@@ -11,11 +11,14 @@ load = (win, {dataSet}) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+	Gui = win.require 'nw.gui'
 
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
-	{timeoutListeners} = require('./timeoutDialog').load(win)
+	{timeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)
+
+	nwWin = Gui.Window.get(win)
 
 	do ->
 		console.log "Print Data:", JSON.parse(dataSet)
@@ -36,6 +39,11 @@ load = (win, {dataSet}) ->
 			timeoutListeners()
 
 	PrintPreview = React.createFactory React.createClass
+		componentWillMount: ->
+			nwWin.on 'close', (event) -> 
+				unregisterTimeoutListeners()
+				nwWin.close true
+
 		componentDidMount: ->
 			# Without timeout, print() triggers before DOM renders
 			setTimeout ->
@@ -105,7 +113,7 @@ load = (win, {dataSet}) ->
 						className: 'logo'
 						src: 'customer-logo-lg.png'
 					})
-					(if @props.format isnt plan
+					(if @props.format isnt 'plan'
 						R.ul({},
 							R.li({}, 
 								FaIcon('user')
