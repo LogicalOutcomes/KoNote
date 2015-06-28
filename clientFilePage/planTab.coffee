@@ -168,6 +168,10 @@ load = (win) ->
 											definition: metricDef.get('definition')
 										})
 									).toJS()...
+									R.button({
+										className: 'btn btn-link addMetricButton'
+										onClick: @_focusMetricLookupField
+									}, FaIcon('plus'))
 								)
 								R.div({},
 									MetricLookupField({
@@ -175,7 +179,7 @@ load = (win) ->
 										onSelection: @_addMetricToTarget.bind(
 											null, selectedTarget.get('id')
 										)
-										placeholder: "Find/Define Metric"
+										placeholder: "Find / Define a Metric"
 									})
 								)
 							)
@@ -214,6 +218,8 @@ load = (win) ->
 					)
 				)
 			)
+		
+		_focusMetricLookupField: -> $('.lookupField').focus()
 		blinkUnsaved: ->			
 			toggleBlink = -> $('.hasChanges').toggleClass('blink')
 			secondBlink = ->
