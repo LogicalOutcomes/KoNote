@@ -203,6 +203,7 @@ load = (win) ->
 								clientFile: @props.clientFile
 							}
 						]
+						isVisible: true
 					})
 					(@props.progNote.get('sections').map (section) =>
 						switch section.get('type')
