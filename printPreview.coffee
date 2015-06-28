@@ -105,16 +105,18 @@ load = (win, {dataSet}) ->
 						className: 'logo'
 						src: 'customer-logo-lg.png'
 					})
-					R.ul({},
-						R.li({}, 
-							FaIcon('user')
-							"Authored by: "
-							# TODO: Include user's full name + username ("Andrew Appleby (aappleby)")
-							R.span({className: 'author'}, @props.data.get('author'))
-						)
-						R.li({className: 'date'},
-							Moment(@props.data.get('timestamp'), Persist.TimestampFormat)
-							.format 'MMMM D, YYYY [at] HH:mm'
+					(if @props.format isnt plan
+						R.ul({},
+							R.li({}, 
+								FaIcon('user')
+								"Authored by: "
+								# TODO: Include user's full name + username ("Andrew Appleby (aappleby)")
+								R.span({className: 'author'}, @props.data.get('author'))
+							)
+							R.li({className: 'date'},
+								Moment(@props.data.get('timestamp'), Persist.TimestampFormat)
+								.format 'MMMM D, YYYY [at] HH:mm'
+							)
 						)
 					)
 					R.ul({},
