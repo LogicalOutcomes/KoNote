@@ -9,6 +9,8 @@
 init = (win) ->
 	Backbone = require 'backbone'
 	QueryString = require 'querystring'
+	
+	Config = require('./config')
 
 	CrashHandler = require('./crashHandler').load(win)
 	Gui = win.require 'nw.gui'
@@ -16,7 +18,7 @@ init = (win) ->
 	# application menu bar required for osx copy-paste functionality
 	if process.platform == 'darwin'
 		mb = new Gui.Menu({type: 'menubar'})
-		mb.createMacBuiltin('KoNote')
+		mb.createMacBuiltin(Config.productName)
 		Gui.Window.get().menu = mb
 
 	# Handle any uncaught errors.
