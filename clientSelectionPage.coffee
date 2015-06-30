@@ -19,7 +19,7 @@ load = (win) ->
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
 	BrandWidget = require('./brandWidget').load(win)
-	{timeoutListeners, notificationListeners} = require('./timeoutDialog').load(win)
+	{timeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
 	nwWin = Gui.Window.get(win)
@@ -59,7 +59,6 @@ load = (win) ->
 
 		registerListeners = ->
 			timeoutListeners()
-			notificationListeners()
 
 			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) ->
 				clientFileList = clientFileList.push newFile
@@ -91,6 +90,11 @@ load = (win) ->
 				queryText: ''
 				menuIsOpen: false
 			}
+		componentDidMount: ->
+			nwWin.on 'close', (event) ->
+				unregisterTimeoutListeners()
+				nwWin.close true
+
 		_isLoading: ->
 			return @props.clientFileList is null
 		render: ->
