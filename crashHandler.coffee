@@ -49,8 +49,8 @@ load = (win) ->
 				# Log to localStorage
 				crashLog = JSON.parse(win.localStorage.crashLog or '[]')
 				crashLog.push crash
-				if crashLog.length > 1000
-					crashLog = crashLog.slice(-1000)
+				if crashLog.length > 100
+					crashLog = crashLog.slice(-100)
 				win.localStorage.crashLog = JSON.stringify(crashLog)
 
 				# Show crash screen to user
