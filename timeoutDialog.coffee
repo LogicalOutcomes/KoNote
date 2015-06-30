@@ -16,6 +16,7 @@ load = (win) ->
 
 	isClosed = null
 
+
 	TimeoutWarning = React.createFactory React.createClass
 		getInitialState: ->
 			@_expiration = Moment().add(global.ActiveSession.warningMins, 'minutes')
@@ -69,25 +70,6 @@ load = (win) ->
 				)
 			)
 
-	notificationListeners = ->
-		# These listeners should only be called from the main window
-		# in order to prevent multiple/stacked notifications
-
-		global.ActiveSession.persist.eventBus.on 'issueTimeoutWarning', ->
-			unless isClosed
-				# Directs user's attention to app about to time out
-				nwWin.requestAttention(3)
-				new win.Notification "Inactivity Warning", {
-					body: "Your #{Config.productName} session (and any unsaved work) will shut down 
-					in #{Config.timeout.warningMins} minute#{if Config.timeout.warningMins > 1 then 's'}"
-				}
-
-		global.ActiveSession.persist.eventBus.on 'issueMinuteWarning', ->
-			unless isClosed
-				new win.Notification "1 Minute Warning!", {
-					body: "#{Config.productName} will shut down in 1 minute due to inactivity. Any unsaved work will be lost!"
-				}
-
 	timeoutListeners = ->
 		global.ActiveSession.persist.eventBus.on 'issueTimeoutWarning', ->
 			unless isClosed
@@ -95,26 +77,43 @@ load = (win) ->
 				# TODO: Shouldn't have to re-create this every time
 				containerDiv = win.document.createElement('div')
 				win.document.body.appendChild containerDiv
-				React.render TimeoutWarning({}), containerDiv						
+				React.render TimeoutWarning({}), containerDiv
+
+				unless global.ActiveSession.firstWarningDelivered
+					console.log ">> First Warning issued"					
+					nwWin.requestAttention(1)
+					global.ActiveSession.firstWarningDelivered = new win.Notification "Inactivity Warning", {
+						body: "Your #{Config.productName} session (and any unsaved work) will shut down 
+						in #{Config.timeout.warningMins} minute#{if Config.timeout.warningMins > 1 then 's'}"
+					}
+
+		global.ActiveSession.persist.eventBus.on 'issueMinuteWarning', ->
+			unless isClosed or global.ActiveSession.minWarningDelivered				
+				console.log ">> 1 Minute Warning issued"
+				console.log nwWin
+				nwWin.requestAttention(3)
+				global.ActiveSession.minWarningDelivered = new win.Notification "1 Minute Warning!", {
+					body: "#{Config.productName} will shut down in 1 minute due to inactivity. Any unsaved work will be lost!"
+				}
 
 		# Force-close all windows when timed out
 		global.ActiveSession.persist.eventBus.on 'timedOut', ->
 			unless isClosed
+				console.log ">> Timed out, closing window"
 				# TODO: Needs to re-lock all client files that were open
 				# Maybe this should be a logout instead of a force-close?
 				nwWin.close(true)
 
 		# Fires 'resetTimeout' event upon any user interaction (move, click, typing, scroll)
 		$('body').bind "mousemove mousedown keypress scroll", ->
-			unless isClosed
-				global.ActiveSession.persist.eventBus.trigger 'resetTimeout'
+			global.ActiveSession.persist.eventBus.trigger 'resetTimeout'
 
-	unregisterTimeoutListeners = -> isClosed = true
+	unregisterTimeoutListeners = ->
+		isClosed = true
 
 	return {
 		timeoutListeners
 		unregisterTimeoutListeners
-		notificationListeners
 	}
 
 module.exports = {load}

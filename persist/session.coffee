@@ -50,17 +50,17 @@ class Session
 		@timeout = null
 		@warning = null
 
+		# Keeping track of notification delivery to prevent duplicates
+		@firstWarningDelivered = null
+		@minWarningDelivered = null
+
 		# Initiate timeouts
 		@warning = setTimeout @_timeoutWarning, (@timeoutMins - @warningMins) * 60000
 		@timeout = setTimeout @_timedOut, @timeoutMins * 60000
 
-	_timeoutWarning: =>
-		console.log "Inactivity Warning Msg event fired!"
-		@persist.eventBus.trigger 'issueTimeoutWarning'
+	_timeoutWarning: => @persist.eventBus.trigger 'issueTimeoutWarning'
 
-	_timedOut: =>
-		console.log "Session timed out!"
-		@persist.eventBus.trigger 'timedOut'
+	_timedOut: => @persist.eventBus.trigger 'timedOut'
 
 	isAdmin: ->
 		return @accountType is 'admin'
