@@ -12,6 +12,8 @@ Path = require 'path'
 	SymmetricEncryptionKey
 } = require './crypto'
 
+{CustomError} = require './utils'
+
 userNameRegex = /^[a-zA-Z0-9_-]+$/
 
 # TODO
@@ -176,17 +178,9 @@ readAccount = (dataDir, userName, password, cb) ->
 		globalEncryptionKey = SymmetricEncryptionKey.import privKeyFile.globalEncryptionKey
 		cb null, {userName, accountType, globalEncryptionKey}
 
-class UserNameTakenError extends Error
-	constructor: ->
-		super
-
-class UnknownUserNameError extends Error
-	constructor: ->
-		super
-
-class IncorrectPasswordError extends Error
-	constructor: ->
-		super
+class UserNameTakenError extends CustomError
+class UnknownUserNameError extends CustomError
+class IncorrectPasswordError extends CustomError
 
 module.exports = {
 	isAccountSystemSetUp

@@ -5,7 +5,7 @@ Moment = require 'moment'
 Path = require 'path'
 Rimraf = require 'rimraf'
 
-{IOError, TimestampFormat} = require './utils'
+{CustomError, IOError, TimestampFormat} = require './utils'
 
 leaseTime = 3 * 60 * 1000 # ms
 leaseRenewalInterval = 1 * 60 * 1000 # ms
@@ -209,10 +209,7 @@ class Lock
 
 			cb null, expiryTimestamp
 
-class LockInUseError extends Error
-	constructor: ->
-		super
-
+class LockInUseError extends CustomError
 Lock.LockInUseError = LockInUseError
 
 module.exports = Lock

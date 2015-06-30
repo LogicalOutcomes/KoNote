@@ -122,5 +122,5 @@ load = (win) ->
 
 module.exports = {
 	load
-	_CustomError: CustomError # for test suite
+	CustomError # for modules that can't provide a window object
 }
