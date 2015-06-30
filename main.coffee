@@ -12,6 +12,12 @@ init = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Gui = win.require 'nw.gui'
+	
+	# application menu bar required for osx copy-paste functionality
+	if process.platform == 'darwin'
+		mb = new Gui.Menu({type: 'menubar'})
+		mb.createMacBuiltin('KoNote')
+		Gui.Window.get().menu = mb
 
 	# Handle any uncaught errors.
 	# Generally, errors should be passed directly to CrashHandler instead of
