@@ -90,7 +90,6 @@ load = (win) ->
 		global.ActiveSession.persist.eventBus.on 'issueMinuteWarning', ->
 			unless isClosed or global.ActiveSession.minWarningDelivered				
 				console.log ">> 1 Minute Warning issued"
-				console.log nwWin
 				nwWin.requestAttention(3)
 				global.ActiveSession.minWarningDelivered = new win.Notification "1 Minute Warning!", {
 					body: "#{Config.productName} will shut down in 1 minute due to inactivity. Any unsaved work will be lost!"
