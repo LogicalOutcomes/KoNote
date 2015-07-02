@@ -16,7 +16,7 @@ load = (win, {dataSet}) ->
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
-	{timeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)
+	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)
 
 	nwWin = Gui.Window.get(win)
 
@@ -36,7 +36,7 @@ load = (win, {dataSet}) ->
 			}), $('#container')[0]
 
 		registerListeners = ->
-			timeoutListeners()
+			registerTimeoutListeners()
 
 	PrintPreview = React.createFactory React.createClass
 		componentWillMount: ->

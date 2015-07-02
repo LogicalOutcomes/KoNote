@@ -1,6 +1,6 @@
 # Load in Timeout listeners and trigger warning dialogs
 
-# Must add timeoutListeners() function to load/init/registerListeners on every page
+# Must add registerTimeoutListeners() function to load/init/registerListeners on every page
 
 load = (win) ->
 	$ = win.jQuery
@@ -70,7 +70,7 @@ load = (win) ->
 				)
 			)
 
-	timeoutListeners = ->
+	registerTimeoutListeners = ->
 		global.ActiveSession.persist.eventBus.on 'issueTimeoutWarning', ->
 			unless isClosed
 				# Create and render into div container
@@ -90,7 +90,6 @@ load = (win) ->
 		global.ActiveSession.persist.eventBus.on 'issueMinuteWarning', ->
 			unless isClosed or global.ActiveSession.minWarningDelivered				
 				console.log ">> 1 Minute Warning issued"
-				console.log nwWin
 				nwWin.requestAttention(3)
 				global.ActiveSession.minWarningDelivered = new win.Notification "1 Minute Warning!", {
 					body: "#{Config.productName} will shut down in 1 minute due to inactivity. Any unsaved work will be lost!"
@@ -112,7 +111,7 @@ load = (win) ->
 		isClosed = true
 
 	return {
-		timeoutListeners
+		registerTimeoutListeners
 		unregisterTimeoutListeners
 	}
 
