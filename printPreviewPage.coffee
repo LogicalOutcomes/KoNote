@@ -39,6 +39,7 @@ load = (win, {dataSet}) ->
 			registerTimeoutListeners()
 
 	PrintPreviewPage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		componentWillMount: ->
 			nwWin.on 'close', (event) -> 
 				unregisterTimeoutListeners()
@@ -92,6 +93,7 @@ load = (win, {dataSet}) ->
 
 
 	PrintHeader = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'header'},
 				R.div({className: 'leftSide'},
@@ -142,6 +144,7 @@ load = (win, {dataSet}) ->
 			)
 
 	BasicProgNoteView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->			
 			R.div({className: 'basic progNote'},				
 				R.div({className: 'notes'},
@@ -150,6 +153,7 @@ load = (win, {dataSet}) ->
 			)
 
 	FullProgNoteView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'full progNote'},
 				R.div({className: 'sections'},
@@ -221,6 +225,7 @@ load = (win, {dataSet}) ->
 			)
 
 	SinglePlanView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'plan'},
 				R.div({className: 'sections'},

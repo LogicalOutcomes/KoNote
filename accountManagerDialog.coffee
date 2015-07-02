@@ -21,6 +21,7 @@ load = (win) ->
 	# 			# - export?
 
 	CreateAccountDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				userName: ''

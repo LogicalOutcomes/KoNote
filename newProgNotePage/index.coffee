@@ -203,6 +203,7 @@ load = (win, {clientFileId}) ->
 			}
 
 	NewProgNotePage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				progNote: @props.progNote
@@ -487,7 +488,7 @@ load = (win, {clientFileId}) ->
 				nwWin.close true
 
 	OpenCreateProgEventButton = React.createFactory React.createClass
-		mixins: [LayeredComponentMixin]
+		mixins: [LayeredComponentMixin, React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				isOpen: false

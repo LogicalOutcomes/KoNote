@@ -65,6 +65,7 @@ load = (win) ->
 					# Nothing we can do...
 
 	CrashOverlay = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({className: 'crashOverlay'},
 				R.div({className: 'crashMessage'},

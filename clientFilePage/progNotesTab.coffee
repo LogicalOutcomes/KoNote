@@ -17,10 +17,13 @@ load = (win) ->
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				selectedItem: null
 			}
+
 		componentDidMount: ->
 			quickNoteToggle = $('.addQuickNote')
 			quickNoteToggle.data 'isVisible', false
@@ -36,6 +39,7 @@ load = (win) ->
 					</div>
 				'''
 			}
+
 		render: ->
 			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
 				R.div({className: "toolbar #{showWhen @props.progNotes.size > 0}"},
@@ -154,6 +158,8 @@ load = (win) ->
 
 	# These are called 'quick notes' in the UI
 	BasicProgNoteView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			R.div({className: 'basic progNote'},
 				R.div({className: 'header'},
@@ -182,6 +188,8 @@ load = (win) ->
 			)
 
 	FullProgNoteView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			R.div({className: 'full progNote'},
 				R.div({className: 'header'},

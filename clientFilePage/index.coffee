@@ -6,9 +6,6 @@
 # currently selected.  The function `toSavedFormat` is used to remove these
 # transient fields before saving, while `fromSavedFormat` initialize them with
 # some default values.
-#
-# The client file is automatically saved to disk every time a non-transient
-# field is changed in ClientPage.state.clientFile.
 
 # Libraries from Node.js context
 _ = require 'underscore'
@@ -300,6 +297,8 @@ load = (win, {clientFileId}) ->
 		return {}
 
 	ClientPage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				activeTabId: 'plan'
@@ -408,6 +407,7 @@ load = (win, {clientFileId}) ->
 			}
 
 	Sidebar = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			activeTabId = @props.activeTabId
 
@@ -446,6 +446,7 @@ load = (win, {clientFileId}) ->
 			)
 
 	SidebarTab = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({
 				className: "tab #{if @props.isActive then 'active' else ''}"
@@ -457,6 +458,7 @@ load = (win, {clientFileId}) ->
 			)
 
 	LoadError = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		componentDidMount: ->
 			console.log "loadErrorType:", @props.loadErrorType
 			msg = switch @props.loadErrorType

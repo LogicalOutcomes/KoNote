@@ -20,6 +20,8 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
 
 	PlanView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			currentTargetRevisionsById = @props.planTargetsById.mapEntries ([targetId, target]) =>
 				latestRev = stripMetadata target.get('revisions').first()
@@ -457,6 +459,8 @@ load = (win) ->
 			}
 
 	PlanTarget = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			currentRevision = @props.currentRevision
 

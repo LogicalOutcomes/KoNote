@@ -15,6 +15,7 @@ load = (win) ->
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 
 	DefineMetricDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				name: @props.metricQuery

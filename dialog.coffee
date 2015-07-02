@@ -7,6 +7,7 @@ load = (win) ->
 	{FaIcon} = require('./utils').load(win)
 
 	Dialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({
 				className: [

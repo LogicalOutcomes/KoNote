@@ -84,6 +84,7 @@ load = (win) ->
 				render()
 
 	ClientSelectionPage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				isSmallHeaderSet: false

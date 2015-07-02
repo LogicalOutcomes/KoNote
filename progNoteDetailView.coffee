@@ -10,6 +10,8 @@ load = (win) ->
 	{FaIcon, showWhen} = require('./utils').load(win)
 
 	ProgNoteDetailView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			unless @props.item
 				return R.div({className: 'progNoteDetailView'},

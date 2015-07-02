@@ -33,6 +33,7 @@ load = (win) ->
 			# TODO listen for a change?
 
 	LoginPage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				showForm: false
