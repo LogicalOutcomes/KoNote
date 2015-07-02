@@ -1,6 +1,6 @@
 # Load in Timeout listeners and trigger warning dialogs
 
-# Must add timeoutListeners() function to load/init/registerListeners on every page
+# Must add registerTimeoutListeners() function to load/init/registerListeners on every page
 
 load = (win) ->
 	$ = win.jQuery
@@ -70,7 +70,7 @@ load = (win) ->
 				)
 			)
 
-	timeoutListeners = ->
+	registerTimeoutListeners = ->
 		global.ActiveSession.persist.eventBus.on 'issueTimeoutWarning', ->
 			unless isClosed
 				# Create and render into div container
@@ -111,7 +111,7 @@ load = (win) ->
 		isClosed = true
 
 	return {
-		timeoutListeners
+		registerTimeoutListeners
 		unregisterTimeoutListeners
 	}
 
