@@ -152,8 +152,12 @@ load = (win) ->
 								)
 								(if metricDefs.size is 0
 									R.div({className: 'noMetrics'},
-										"This target has no metrics attached."
-									)
+										"This target has no metrics attached. "
+										R.button({
+											className: 'btn btn-link addMetricButton'
+											onClick: @_focusMetricLookupField
+										}, FaIcon('plus'))
+									)									
 								)
 								R.div({className: 'metrics'},
 									(metricDefs.map (metricDef) =>
@@ -168,10 +172,12 @@ load = (win) ->
 											definition: metricDef.get('definition')
 										})
 									).toJS()...
-									R.button({
-										className: 'btn btn-link addMetricButton'
-										onClick: @_focusMetricLookupField
-									}, FaIcon('plus'))
+									(if metricDefs.size > 0
+										R.button({
+											className: 'btn btn-link addMetricButton'
+											onClick: @_focusMetricLookupField
+										}, FaIcon('plus'))
+									)
 								)
 								R.div({},
 									MetricLookupField({
