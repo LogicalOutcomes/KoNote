@@ -24,7 +24,7 @@ load = (win) ->
 		process.nextTick init
 
 		render = ->
-			React.render new LoginPage(), $('#container')[0]
+			React.render new LoginPageUi(), $('#container')[0]
 
 		loadData = ->
 			# TODO load teh datas?
@@ -32,7 +32,7 @@ load = (win) ->
 		registerListeners = ->
 			# TODO listen for a change?
 
-	LoginPage = React.createFactory React.createClass
+	LoginPageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {

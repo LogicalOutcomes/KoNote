@@ -35,7 +35,7 @@ load = (win) ->
 		process.nextTick init
 
 		render = ->
-			React.render new ClientSelectionPage({
+			React.render new ClientSelectionPageUi({
 				clientFileList
 			}), $('#container')[0]
 
@@ -83,7 +83,7 @@ load = (win) ->
 
 				render()
 
-	ClientSelectionPage = React.createFactory React.createClass
+	ClientSelectionPageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {

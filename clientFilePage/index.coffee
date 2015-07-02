@@ -54,7 +54,7 @@ load = (win, {clientFileId}) ->
 
 		# Render (or re-render) the page
 		render = ->
-			React.render new ClientPage({
+			React.render new ClientPageUi({
 				# Data stores
 				clientFile
 				progressNotes
@@ -296,7 +296,7 @@ load = (win, {clientFileId}) ->
 
 		return {}
 
-	ClientPage = React.createFactory React.createClass
+	ClientPageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->

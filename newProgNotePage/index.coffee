@@ -47,7 +47,7 @@ load = (win, {clientFileId}) ->
 		process.nextTick init
 
 		render = ->
-			React.render new NewProgNotePage({
+			React.render new NewProgNotePageUi({
 				isLoading
 				loadErrorType
 				progNote
@@ -202,7 +202,7 @@ load = (win, {clientFileId}) ->
 							}
 			}
 
-	NewProgNotePage = React.createFactory React.createClass
+	NewProgNotePageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
