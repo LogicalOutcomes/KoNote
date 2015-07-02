@@ -31,14 +31,14 @@ load = (win, {dataSet}) ->
 		process.nextTick init
 
 		render = ->
-			React.render new PrintPreview({
+			React.render new PrintPreviewPage({
 				printDataSet
 			}), $('#container')[0]
 
 		registerListeners = ->
 			registerTimeoutListeners()
 
-	PrintPreview = React.createFactory React.createClass
+	PrintPreviewPage = React.createFactory React.createClass
 		componentWillMount: ->
 			nwWin.on 'close', (event) -> 
 				unregisterTimeoutListeners()

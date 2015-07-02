@@ -51,7 +51,7 @@ init = (win) ->
 			when 'newProgNote'
 				require('./newProgNotePage').load(win, urlParams)
 			when 'printPreview'
-				require('./printPreview').load(win, urlParams)
+				require('./printPreviewPage').load(win, urlParams)
 			else
 				require('./loginPage').load(win, urlParams)
 
