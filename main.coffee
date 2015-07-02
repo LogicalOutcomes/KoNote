@@ -6,6 +6,12 @@
 # It seems that only code that was included via a <script> tag can rely on
 # `window` being set correctly.
 
+# ES6 polyfills
+# These can be removed once we're back to NW.js 0.12+
+require 'string.prototype.endswith'
+require 'string.prototype.includes'
+require 'string.prototype.startswith'
+
 init = (win) ->
 	Backbone = require 'backbone'
 	QueryString = require 'querystring'
@@ -20,11 +26,6 @@ init = (win) ->
 	# usually less desirable.
 	process.on 'uncaughtException', (err) ->
 		CrashHandler.handle err
-
-	# Polyfill for ES6 String.includes
-	if !String::includes
-	  String::includes = ->
-	    String::indexOf.apply(this, arguments) isnt -1
 
 	win.jQuery ->
 		# Pull any parameters out of the URL
