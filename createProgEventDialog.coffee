@@ -139,6 +139,7 @@ load = (win) ->
 			# 	@setState {isLoading: false}
 
 			# 	if err
+			# 		# TODO check for IOError
 			#		CrashHandler.handle err
 			# 		return
 

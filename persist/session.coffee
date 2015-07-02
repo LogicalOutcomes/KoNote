@@ -4,6 +4,7 @@
 Async = require 'async'
 Fs = require 'fs'
 Path = require 'path'
+Config = require '../config'
 
 {SymmetricEncryptionKey} = require './crypto'
 DataModels = require './dataModels'
@@ -20,7 +21,7 @@ login = (dataDir, userName, password, cb) ->
 			account.accountType
 			account.globalEncryptionKey
 			dataDir
-		)
+		)		
 
 class Session
 	constructor: (@userName, @accountType, @globalEncryptionKey, @dataDirectory) ->
@@ -33,6 +34,34 @@ class Session
 		@_ended = false
 
 		@persist = DataModels.getApi(@)
+
+		@timeoutMins = Config.timeout.totalMins
+		@warningMins = Config.timeout.warningMins
+
+		@persist.eventBus.on 'resetTimeout', =>
+			@_resetTimeout()
+
+		@_resetTimeout()
+
+	_resetTimeout: ->
+		# Clear all traces of timeouts
+		if @warning then clearTimeout @warning
+		if @timeout then clearTimeout @timeout
+		@timeout = null
+		@warning = null
+
+		# Keeping track of notification delivery to prevent duplicates
+		@firstWarningDelivered = null
+		@minWarningDelivered = null
+
+		# Initiate timeouts
+		@warning = setTimeout @_timeoutWarning, (@timeoutMins - @warningMins) * 60000
+		@timeout = setTimeout @_timedOut, @timeoutMins * 60000
+
+	_timeoutWarning: => @persist.eventBus.trigger 'issueTimeoutWarning'
+
+	_timedOut: => @persist.eventBus.trigger 'timedOut'
+
 	isAdmin: ->
 		return @accountType is 'admin'
 	logout: ->

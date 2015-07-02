@@ -2,6 +2,7 @@
 
 Persist = require './persist'
 Imm = require 'immutable'
+Config = require './config'
 
 load = (win) ->
 	$ = win.jQuery
@@ -54,15 +55,16 @@ load = (win) ->
 							value: @state.lastName
 						})
 					)
-					R.div({className: 'form-group'},
-						R.label({}, "Record ID"),
-						R.input({
-							className: 'form-control'
-							onChange: @_updateRecordId
-							value: @state.recordNumber
-							placeholder: "(optional)"
-						})
-					)
+					if Config.clientFileRecordId.isEnabled
+						R.div({className: 'form-group'},
+							R.label({}, Config.clientFileRecordId.label),
+							R.input({
+								className: 'form-control'
+								onChange: @_updateRecordId
+								value: @state.recordNumber
+								placeholder: "(optional)"
+							})
+						)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -106,15 +108,16 @@ load = (win) ->
 				@setState {isLoading: false}
 
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
 
-				console.log("Client file created:", obj.get('id'))
-
-				Bootbox.alert
-					message: "New client file created for " + first + ' ' + last + '.'
-					callback: =>
-						@props.onSuccess(obj.get('id'))
+				@props.onSuccess(obj.get('id'))
 
 	return CreateClientFileDialog
 

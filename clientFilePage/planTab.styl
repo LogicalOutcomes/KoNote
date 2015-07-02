@@ -22,11 +22,11 @@
 		> .toolbar
 			width 100%
 
-			> .addSection
+			> .rightMenu
 				float right
 
-			> .btn > .fa
-				padding-right 8px
+			.btn > .fa
+				margin-right 8px
 			
 			> .save
 				transition all 0.5s ease
@@ -137,6 +137,17 @@
 		> .targetDetailContainer
 			> .metricsSection
 				padding 20px 0
+				
+				.addMetricButton
+					color #939393
+					transition color .15s ease
+					
+					&:hover
+						color #87FF18
+					
+					&:focus
+						background none
+						outline none
 
 				> .header
 					> .text

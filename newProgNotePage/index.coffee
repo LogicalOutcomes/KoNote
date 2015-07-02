@@ -6,6 +6,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Persist = require '../persist'
 
 load = (win, {clientFileId}) ->
 	# Libraries from browser context
@@ -24,6 +25,7 @@ load = (win, {clientFileId}) ->
 	Dialog = require('../dialog').load(win)
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
+	{registerTimeoutListeners, unregisterTimeoutListeners} = require('../timeoutDialog').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
 
 	nwWin = Gui.Window.get(win)
@@ -31,6 +33,8 @@ load = (win, {clientFileId}) ->
 	myTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
 	do ->
+		isLoading = true
+		loadErrorType = null
 		progNote = null
 		clientFile = null
 		progNotes = null
@@ -38,15 +42,14 @@ load = (win, {clientFileId}) ->
 		init = ->
 			render()
 			loadData()
+			registerListeners()
 
 		process.nextTick init
 
 		render = ->
-			unless progNote?
-				React.render Spinner({isOverlay: true}), $('#container')[0]
-				return
-
 			React.render new NewProgNotePage({
+				isLoading
+				loadErrorType
 				progNote
 				clientFile
 				progNotes
@@ -130,19 +133,27 @@ load = (win, {clientFileId}) ->
 							return
 
 						progNotes = Imm.List(results)
-
 						cb null
 			], (err) =>
 				if err
+					if err instanceof Persist.IOError
+						isLoading = false
+						loadErrorType = 'io-error'
+						render()
+						return
+
 					CrashHandler.handle err
 					return
 
 				# Done loading data, we can generate the prognote now
+				isLoading = false
 				progNote = createProgNoteFromTemplate(
 					template, clientFile, planTargetsById, metricsById
 				)
 
 				render()
+
+		registerListeners = -> registerTimeoutListeners()
 
 		createProgNoteFromTemplate = (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
@@ -200,8 +211,67 @@ load = (win, {clientFileId}) ->
 				success: false
 				showExitAlert: false
 			}
+		componentDidMount: ->
+			nwWin.on 'close', (event) =>
+				if not @state.showExitAlert
+					@setState {showExitAlert: true}
+					Bootbox.dialog {
+						message: "Are you sure you want to cancel this progress note?"
+						buttons: {						
+							cancel: {
+								label: "Cancel"
+								className: 'btn-default'
+								callback: =>
+									@setState {showExitAlert: false}
+							}
+							discard: {
+								label: "Yes"
+								className: 'btn-primary'
+								callback: =>
+									unregisterTimeoutListeners()
+									nwWin.close true
+							}
+						}
+					}
+		componentWillReceiveProps: (newProps) ->
+			unless Imm.is(newProps.progNote, @props.progNote)
+				@setState {progNote: newProps.progNote}
 		render: ->
-			return R.div({className: 'newProgNotePage'},				
+			if @props.isLoading
+				return R.div({className: 'newProgNotePage'},
+					Spinner({
+						isOverlay: true
+					})
+				)
+
+			if @props.loadErrorType?
+				return R.div({className: 'newProgNotePage'},
+					R.div({className: 'loadError'},
+						(switch @props.loadErrorType
+							when 'io-error'
+								"""
+									An error occurred while loading this client's information.
+									Please check your network connection and try again.
+								"""
+							else
+								throw new Error """
+									Unknown loadErrorType: #{JSON.stringify @props.loadErrorType}
+								"""
+						)
+						R.div({},
+							R.button({
+								className: 'btn btn-danger'
+								onClick: =>
+									nwWin.close true
+							}, "Close")
+						)
+					)
+				)
+
+			clientName = renderName @props.clientFile.get('clientName')
+			nwWin.title = "#{clientName}: Progress Note - KoNote"
+
+			return R.div({className: 'newProgNotePage'},
 				R.div({className: 'progNote'},
 					# OpenCreateProgEventButton({
 					# 	onNewProgEvent: @_updateProgEvents
@@ -293,40 +363,6 @@ load = (win, {clientFileId}) ->
 					progNotes: @props.progNotes
 				})
 			)
-		componentDidMount: ->
-			clientName = renderName @props.clientFile.get('clientName')
-			nwWin.title = "#{clientName}: Progress Note - KoNote"
-
-			nwWin.on 'close', (event) =>
-				if not @state.showExitAlert
-					@setState {showExitAlert: true}
-					Bootbox.dialog {
-						message: "Are you sure you want to cancel this progress note?"
-						buttons: {						
-							cancel: {
-								label: "Cancel"
-								className: 'btn-default'
-								callback: =>
-									@setState {showExitAlert: false}
-							}
-							discard: {
-								label: "Yes"
-								className: 'btn-primary'
-								callback: =>
-									nwWin.close true
-							}
-							# save: {
-							# 	label: "Save changes"
-							# 	className: 'btn-primary'
-							# 	callback: =>
-							# 		@_save =>
-							# 			process.nextTick =>
-							# 				nwWin.close()
-							# }
-						}
-					}
-		_hasChanges: ->
-			# TODO
 		_getSectionIndex: (sectionId) ->
 			result = @state.progNote.get('sections').findIndex (s) =>
 				return s.get('id') is sectionId
@@ -411,32 +447,44 @@ load = (win, {clientFileId}) ->
 			}
 			console.log("progEvents updated to:", @state.progEvents)
 		_save: ->
-			ActiveSession.persist.progNotes.create @state.progNote, (err, obj) =>
+			progNoteId = null
+
+			Async.series [
+				(cb) =>
+					ActiveSession.persist.progNotes.create @state.progNote, (err, obj) =>
+						if err
+							cb err
+							return
+
+						progNoteId = obj.get('id')
+						cb()
+				(cb) =>
+					Async.each @state.progEvents.toArray(), (progEvent, cb) =>		
+						# Tack on the new progress note ID to all created events					
+						progEvent = progEvent.set('relatedProgNoteId', obj.get('id'))
+
+						ActiveSession.persist.progEvents.create progEvent, cb
+					, (err) =>
+						if (err)
+							cb err
+							return					
+
+						cb()
+			], (err) =>
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred while saving your work.  
+							Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
 
-				# Tack on the new progress note ID to all created events					
-
-				modifiedProgEvents = @state.progEvents.map (progEvent) ->
-					return progEvent.set('relatedProgNoteId', obj.get('id'))
-
-				console.log("Modified progEvents:", modifiedProgEvents)
-
-
-				Async.each modifiedProgEvents.toArray(), (progEvent, cb) =>		
-					ActiveSession.persist.progEvents.create progEvent, cb
-				, (err, results) =>
-					if (err)
-						CrashHandler.handle err
-						return					
-
-					@setState {success: true}
-					# TODO success animation
-					#setTimeout (=> nwWin.close true), 3000
-					nwWin.close true
-
-
+				# TODO success animation
+				@setState {success: true}
+				nwWin.close true
 
 	OpenCreateProgEventButton = React.createFactory React.createClass
 		mixins: [LayeredComponentMixin]

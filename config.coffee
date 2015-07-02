@@ -3,11 +3,16 @@ module.exports = {
 	logoSubtitle: 'DSSS'
 	logoSubtitleColor: 'hsl(205, 78%, 47%)'
 
-	# TODO: Set these up around the app
 	clientFileRecordId: {
 		isEnabled: true
-		isRequired: true
 		label: "CR #"
+	}
+
+	# Set total timeout mins,
+	# and how many mins before timeout to show warning
+	timeout: {
+		totalMins: 20
+		warningMins: 15
 	}
 
 	# useTemplate: 'initialAssessment'

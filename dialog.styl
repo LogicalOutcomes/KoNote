@@ -10,6 +10,7 @@
 	bottom 0
 	z-index 100
 
+	transition background 0.5s ease
 	background hsla(0, 0%, 30%, 0.5)
 
 	> .dialog
@@ -18,3 +19,26 @@
 		max-height 98%
 
 		box-shadow 0px 5px 15px rgba(0, 0, 0, 0.5)
+		
+		// All other panel-* stuff is from Bootstrap
+		>.panel-heading
+			position relative
+			
+			>.panel-quit
+				position absolute
+				top 0px
+				right 0px
+				padding 5px 10px
+				color #27578C
+				font-size 1.25em
+				transition color .25s ease
+				
+				&:hover
+					color white
+					cursor pointer
+					
+				&:active
+					color #A0A0A0
+					
+			
+			

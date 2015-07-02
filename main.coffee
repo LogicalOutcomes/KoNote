@@ -6,6 +6,12 @@
 # It seems that only code that was included via a <script> tag can rely on
 # `window` being set correctly.
 
+# ES6 polyfills
+# These can be removed once we're back to NW.js 0.12+
+require 'string.prototype.endswith'
+require 'string.prototype.includes'
+require 'string.prototype.startswith'
+
 init = (win) ->
 	Backbone = require 'backbone'
 	QueryString = require 'querystring'
@@ -36,6 +42,8 @@ init = (win) ->
 				require('./clientFilePage').load(win, urlParams)
 			when 'newProgNote'
 				require('./newProgNotePage').load(win, urlParams)
+			when 'printPreview'
+				require('./printPreview').load(win, urlParams)
 			else
 				require('./loginPage').load(win, urlParams)
 
@@ -48,6 +56,11 @@ init = (win) ->
 		win.document.addEventListener 'keyup', (event) ->
 			# If Ctrl-R
 			if event.ctrlKey and (not event.shiftKey) and event.which is 82
+				# Clear Node.js module cache
+				for cacheId of require.cache
+					delete require.cache[cacheId]
+
+				# Reload HTML page
 				win.location.reload(true)
 		, false
 

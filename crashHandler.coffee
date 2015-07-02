@@ -14,6 +14,7 @@ load = (win) ->
 
 	Gui = win.require 'nw.gui'
 	nwWin = Gui.Window.get(win)
+	{FaIcon} = require('./utils').load(win)
 
 	handle = (err) ->
 		# Record where this function was actually called from.
@@ -48,8 +49,8 @@ load = (win) ->
 				# Log to localStorage
 				crashLog = JSON.parse(win.localStorage.crashLog or '[]')
 				crashLog.push crash
-				if crashLog.length > 1000
-					crashLog = crashLog.slice(-1000)
+				if crashLog.length > 100
+					crashLog = crashLog.slice(-100)
 				win.localStorage.crashLog = JSON.stringify(crashLog)
 
 				# Show crash screen to user
@@ -70,8 +71,9 @@ load = (win) ->
 					R.h1({}, "Oops, something went wrong.")
 					R.div({}, """
 						KoNote encountered an unexpected error.
-						If this happens repeatedly, please contact KoNode support
-						and provide the following information:
+						If this happens repeatedly, please copy the error message below
+						and send to KoNode support with details on how you encountered it.
+						Thank you!
 					""")
 					R.textarea({
 						className: 'debugInfo'
@@ -85,12 +87,21 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-default'
 							onClick: @_close
-						},
-							"Close"
+						}, "Close")
+						R.button({
+							className: 'btn btn-default'
+							onClick: @_copyCrashTrace
+						}, 
+							"Copy "
+							FaIcon('copy')
 						)
 					)
 				)
 			)
+		_copyCrashTrace: ->
+			clipboard = Gui.Clipboard.get();
+			clipboard.set JSON.stringify @props.crash
+
 		_selectDebugInfo: ->
 			React.findDOMNode(@refs.debugInfo).select()
 		_close: ->

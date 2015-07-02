@@ -90,6 +90,7 @@ load = (win) ->
 
 					lookupField = $(@refs.lookupField.getDOMNode())
 					lookupField.typeahead 'val', ''
+					lookupField.focus()
 
 					@props.onSelection newMetricId
 			})

@@ -13,6 +13,7 @@ load = (win) ->
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
+	PrintButton = require('../printButton').load(win)
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
@@ -80,11 +81,13 @@ load = (win) ->
 								when 'basic'
 									BasicProgNoteView({
 										progNote
+										clientFile: @props.clientFile
 										key: progNote.get('id')
 									})
 								when 'full'
 									FullProgNoteView({
 										progNote
+										clientFile: @props.clientFile
 										key: progNote.get('id')
 										setSelectedItem: @_setSelectedItem
 									})
@@ -131,11 +134,17 @@ load = (win) ->
 
 			@props.registerTask 'quickNote-save'
 			global.ActiveSession.persist.progNotes.create note, (err) =>
+				@props.unregisterTask 'quickNote-save'
+
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
-
-				@props.unregisterTask 'quickNote-save'
 
 				quickNoteToggle.popover('hide')
 				quickNoteToggle.data('isVisible', false)
@@ -155,9 +164,19 @@ load = (win) ->
 					R.div({className: 'author'},
 						' by '
 						@props.progNote.get('author')
-					)
+					)					
 				)
 				R.div({className: 'notes'},
+					PrintButton({
+						dataSet: [
+							{
+								format: 'progNote'
+								data: @props.progNote
+								clientFile: @props.clientFile
+							}
+						]
+						isVisible: true
+					})
 					renderLineBreaks @props.progNote.get('notes')
 				)
 			)
@@ -176,6 +195,16 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'sections'},
+					PrintButton({
+						dataSet: [
+							{
+								format: 'progNote'
+								data: @props.progNote
+								clientFile: @props.clientFile
+							}
+						]
+						isVisible: true
+					})
 					(@props.progNote.get('sections').map (section) =>
 						switch section.get('type')
 							when 'basic'

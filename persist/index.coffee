@@ -23,6 +23,8 @@ Utils = require './utils'
 module.exports = {
 	generateId: Utils.generateId
 	setUpDataDirectory: DataModels.setUpDataDirectory
+	IOError: Utils.IOError
+	ObjectNotFoundError: Utils.ObjectNotFoundError
 	TimestampFormat: Utils.TimestampFormat
 	Lock
 	Session

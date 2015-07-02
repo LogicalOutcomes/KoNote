@@ -32,7 +32,8 @@ load = (win, {clientFileId}) ->
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
-	{FaIcon, renderName, showWhen, stripMetadata} = require('../utils').load(win)
+	{registerTimeoutListeners, unregisterTimeoutListeners} = require('../timeoutDialog').load(win)
+	{FaIcon, renderName, renderFileId, showWhen, stripMetadata} = require('../utils').load(win)
 
 	nwWin = Gui.Window.get(win)
 
@@ -121,7 +122,6 @@ load = (win, {clientFileId}) ->
 						if err
 							if err instanceof Persist.Lock.LockInUseError
 								loadErrorType = 'file-in-use'
-								console.log "Client file in use", loadErrorType
 								render()
 								return
 
@@ -148,7 +148,8 @@ load = (win, {clientFileId}) ->
 						cb()
 				(cb) ->
 					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
-						ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
+						targetId = planTargetHeader.get('id')
+						ActiveSession.persist.planTargets.readRevisions clientFileId, targetId, cb
 					, (err, results) ->
 						if err
 							cb err
@@ -206,6 +207,11 @@ load = (win, {clientFileId}) ->
 						cb()
 			], (err) ->
 				if err
+					if err instanceof Persist.IOError
+						loadErrorType = 'io-error'
+						render()
+						return
+
 					CrashHandler.handle err
 					return
 
@@ -225,6 +231,12 @@ load = (win, {clientFileId}) ->
 				unregisterTask "updateClientFile"
 
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
 
@@ -236,6 +248,8 @@ load = (win, {clientFileId}) ->
 				setTimeout unregisterTask.bind(null, slowSaveTaskId), 500
 
 		registerListeners = ->
+			registerTimeoutListeners()
+
 			global.ActiveSession.persist.eventBus.on 'create:planTarget createRevision:planTarget', (newRev) ->
 				if isClosed
 					return
@@ -276,6 +290,8 @@ load = (win, {clientFileId}) ->
 				render()
 
 		unregisterListeners = ->
+			unregisterTimeoutListeners()
+			
 			isClosed = true
 
 			if clientFileLock
@@ -360,6 +376,7 @@ load = (win, {clientFileId}) ->
 					ref: 'planTab'
 					isVisible: activeTabId is 'plan'
 					clientFileId
+					clientFile: @props.clientFile
 					plan: @props.clientFile.get('plan')
 					planTargetsById: @props.planTargetsById
 					metricsById: @props.metricsById
@@ -370,6 +387,7 @@ load = (win, {clientFileId}) ->
 				ProgNotesTab.ProgNotesView({
 					isVisible: activeTabId is 'progressNotes'
 					clientFileId
+					clientFile: @props.clientFile
 					progNotes: @props.progressNotes
 					metricsById: @props.metricsById
 					registerTask: @props.registerTask
@@ -402,8 +420,8 @@ load = (win, {clientFileId}) ->
 					R.span({}, "#{@props.clientName}")
 				)
 				R.div({className: 'recordId'},
-					R.span({}, if @props.recordId and @props.recordId.length > 0 then "ID# #{@props.recordId}")
-				),
+					R.span({}, renderFileId @props.recordId, true)
+				)
 				R.div({className: 'tabStrip'},
 					SidebarTab({
 						name: "Plan"
@@ -442,8 +460,15 @@ load = (win, {clientFileId}) ->
 		componentDidMount: ->
 			console.log "loadErrorType:", @props.loadErrorType
 			msg = switch @props.loadErrorType
-				when 'file-in-use' then "This client file is already in use."	
-				else "An unkown error occured (loadErrorType: #{@props.loadErrorType}"				
+				when 'file-in-use'
+					"This client file is already in use."
+				when 'io-error'
+					"""
+						An error occurred while loading the client file. 
+						This may be due to a problem with your network connection.
+					"""
+				else
+					"An unknown error occured (loadErrorType: #{@props.loadErrorType}"				
 			Bootbox.alert msg, -> nwWin.close(true)
 		render: ->
 			return R.div({className: 'clientFilePage'})
