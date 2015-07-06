@@ -9,6 +9,7 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+	Bootbox = win.bootbox
 
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	DefineMetricDialog = require('./defineMetricDialog').load(win)
@@ -66,8 +67,20 @@ load = (win) ->
 			lookupField.parent().on 'click', (event) =>
 				target = event.target
 				if target.classList.contains('btn') and target.classList.contains('createMetric')
-					lookupField.typeahead 'close'
-					@_createMetric()
+					#check if metric exists before creating
+					match = @props.metrics.toJS().filter (match) -> match.name == lookupField.typeahead 'val'
+					if match[0]
+						Bootbox.alert "<strong>Metric already exists!</strong>
+						<br><br>Please select an existing metric from the search field
+						or use a unique name to create a new metric.", ->
+							# TODO
+							# how can we refocus the lookup field?
+							lookupField.typeahead 'val', ''
+							lookupField.focus()
+							return
+					else
+						lookupField.typeahead 'close'
+						@_createMetric()
 		render: ->
 			return R.div({className: 'metricLookupField'},
 				R.input({
