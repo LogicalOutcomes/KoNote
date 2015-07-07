@@ -12,13 +12,13 @@ catch err
 
 		clientFileRecordId: {
 			isEnabled: true
-			label: "CR #"
+			label: "CR#"
 		}
 
 		# Set total timeout mins,
 		# and how many mins before timeout to show warning
 		timeout: {
-			totalMins: 20
+			totalMins: 25
 			warningMins: 15
 		}
 
