@@ -143,17 +143,6 @@ load = (win) ->
 
 				popover.find('textarea').focus()
 
-		_createQuickNote: (notes, quickNoteToggle) ->
-			note = Imm.fromJS {
-				type: 'basic'
-				clientFileId
-				notes
-			}
-
-			@props.registerTask 'quickNote-save'
-			global.ActiveSession.persist.progNotes.create note, (err) =>
-				@props.unregisterTask 'quickNote-save'
-
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
 
