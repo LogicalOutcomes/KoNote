@@ -70,6 +70,7 @@ load = (win, {clientFileId}) ->
 
 				# Data store methods
 				updatePlan: @_updatePlan
+				createQuickNote: @_createQuickNote
 
 				# TODO make these unnecessary:
 				registerTask: @_registerTask
@@ -280,6 +281,23 @@ load = (win, {clientFileId}) ->
 				# Persist operations will automatically trigger event listeners
 				# that update the UI.
 
+		_createQuickNote: (notes, cb) ->
+			note = Imm.fromJS {
+				type: 'basic'
+				clientFileId
+				notes
+			}
+
+			@_registerTask 'quickNote-save'
+			global.ActiveSession.persist.progNotes.create note, (err) =>
+				@_unregisterTask 'quickNote-save'
+
+				if err
+					cb err
+					return
+
+				cb()
+
 		_registerListeners: ->
 			registerTimeoutListeners()
 
@@ -437,6 +455,7 @@ load = (win, {clientFileId}) ->
 					metricsById: @props.metricsById
 					registerTask: @props.registerTask
 					unregisterTask: @props.unregisterTask
+					createQuickNote: @props.createQuickNote
 				})
 				AnalysisTab.AnalysisView({
 					isVisible: activeTabId is 'analysis'

@@ -121,7 +121,20 @@ load = (win) ->
 				popover = quickNoteToggle.siblings('.popover')
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
-					@_createQuickNote popover.find('textarea').val(), quickNoteToggle
+
+					@props.createQuickNote popover.find('textarea').val(), (err) =>
+						if err
+							if err instanceof Persist.IOError
+								Bootbox.alert """
+									An error occurred.  Please check your network connection and try again.
+								"""
+								return
+
+							CrashHandler.handle err
+							return
+
+						quickNoteToggle.popover('hide')
+						quickNoteToggle.data('isVisible', false)
 
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
@@ -129,29 +142,17 @@ load = (win) ->
 					quickNoteToggle.data('isVisible', false)
 
 				popover.find('textarea').focus()
+
 		_createQuickNote: (notes, quickNoteToggle) ->
 			note = Imm.fromJS {
 				type: 'basic'
-				clientFileId: @props.clientFileId
+				clientFileId
 				notes
 			}
 
 			@props.registerTask 'quickNote-save'
 			global.ActiveSession.persist.progNotes.create note, (err) =>
 				@props.unregisterTask 'quickNote-save'
-
-				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert """
-							An error occurred.  Please check your network connection and try again.
-						"""
-						return
-
-					CrashHandler.handle err
-					return
-
-				quickNoteToggle.popover('hide')
-				quickNoteToggle.data('isVisible', false)
 
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
