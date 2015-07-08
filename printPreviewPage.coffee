@@ -30,7 +30,7 @@ load = (win, {dataSet}) ->
 			}
 
 		render: ->
-			React.render new PrintPreviewPageUi {
+			new PrintPreviewPageUi {
 				printDataSet: @state.printDataSet
 			}
 
