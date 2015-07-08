@@ -24,9 +24,6 @@ load = (win) ->
 
 	nwWin = Gui.Window.get(win)
 
-	process.nextTick ->
-		React.render ClientSelectionPage(), $('#container')[0]
-
 	ClientSelectionPage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
@@ -290,5 +287,6 @@ load = (win) ->
 		_cancel: ->
 			@setState {isOpen: false}
 
+	return ClientSelectionPage
 
 module.exports = {load}

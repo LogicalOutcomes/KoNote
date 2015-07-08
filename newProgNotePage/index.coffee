@@ -32,9 +32,6 @@ load = (win, {clientFileId}) ->
 
 	myTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
-	process.nextTick ->
-		React.render NewProgNotePage(), $('#container')[0]
-
 	NewProgNotePage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
@@ -528,5 +525,7 @@ load = (win, {clientFileId}) ->
 			})
 		_open: ->
 			@setState {isOpen: true}
+
+	return NewProgNotePage
 
 module.exports = {load}

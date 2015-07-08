@@ -12,6 +12,15 @@ require 'string.prototype.endswith'
 require 'string.prototype.includes'
 require 'string.prototype.startswith'
 
+defaultPageId = 'login'
+pageModulePathsById = {
+	login: './loginPage'
+	clientSelection: './clientSelectionPage'
+	clientFile: './clientFilePage'
+	newProgNote: './newProgNotePage'
+	printPreview: './printPreviewPage'
+}
+
 init = (win) ->
 	Backbone = require 'backbone'
 	QueryString = require 'querystring'
@@ -36,31 +45,12 @@ init = (win) ->
 		CrashHandler.handle err
 
 	win.jQuery ->
-		# Pull any parameters out of the URL
-		urlParams = QueryString.parse win.location.search.substr(1)
-
-		# Decide what to render based on the page parameter
-		# URL would look something like `.../main.html?page=client`
-		switch urlParams.page
-			when 'login'
-				require('./loginPage').load(win, urlParams)
-			when 'clientSelection'
-				require('./clientSelectionPage').load(win, urlParams)
-			when 'clientFile'
-				require('./clientFilePage').load(win, urlParams)
-			when 'newProgNote'
-				require('./newProgNotePage').load(win, urlParams)
-			when 'printPreview'
-				require('./printPreviewPage').load(win, urlParams)
-			else
-				require('./loginPage').load(win, urlParams)
-
+		# Set up keyboard shortcuts
 		win.document.addEventListener 'keyup', (event) ->
 			# If Ctrl-Shift-J
 			if event.ctrlKey and event.shiftKey and event.which is 74
 				Gui.Window.get(win).showDevTools()
 		, false
-
 		win.document.addEventListener 'keyup', (event) ->
 			# If Ctrl-R
 			if event.ctrlKey and (not event.shiftKey) and event.which is 82
@@ -71,11 +61,23 @@ init = (win) ->
 				# Reload HTML page
 				win.location.reload(true)
 		, false
-
 		win.document.addEventListener 'keyup', (event) ->
 			# If Ctrl-W
 			if event.ctrlKey and (not event.shiftKey) and event.which is 87
 				Gui.Window.get(win).close()
 		, false
+
+		# Pull any parameters out of the URL
+		urlParams = QueryString.parse win.location.search.substr(1)
+
+		# Decide what page to render based on the page parameter
+		# URL would look something like `.../main.html?page=client`
+		pageModulePath = pageModulePathsById[urlParams.page or defaultPageId]
+
+		# Load the page module
+		pageComponent = require(pageModulePath).load(win, urlParams)
+
+		# Render page in window
+		win.React.render pageComponent(), win.document.getElementById('container')
 
 module.exports = {init}

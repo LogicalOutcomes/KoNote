@@ -19,9 +19,6 @@ load = (win, {dataSet}) ->
 	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
 	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)	
 
-	process.nextTick ->
-		React.render PrintPreviewPage(), $('#container')[0]
-
 	PrintPreviewPage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
@@ -261,5 +258,7 @@ load = (win, {dataSet}) ->
 					).toJS()...
 				)
 			)
+
+	return PrintPreviewPage
 
 module.exports = {load}

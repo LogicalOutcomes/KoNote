@@ -34,9 +34,6 @@ load = (win, {clientFileId}) ->
 
 	nwWin = Gui.Window.get(win)
 
-	process.nextTick =>
-		React.render new ClientFilePage(), $('#container')[0]
-
 	ClientFilePage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
@@ -539,5 +536,7 @@ load = (win, {clientFileId}) ->
 			Bootbox.alert msg, -> nwWin.close(true)
 		render: ->
 			return R.div({className: 'clientFilePage'})
+
+	return ClientFilePage
 
 module.exports = {load}

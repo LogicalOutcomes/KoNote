@@ -15,9 +15,6 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
-	process.nextTick ->
-		React.render LoginPage(), $('#container')[0]
-
 	LoginPage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
@@ -209,5 +206,7 @@ load = (win) ->
 			@setState {userName: event.target.value}
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
+
+	return LoginPage
 
 module.exports = {load}
