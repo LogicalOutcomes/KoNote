@@ -12,35 +12,33 @@ load = (win, {dataSet}) ->
 	React = win.React
 	R = React.DOM
 	Gui = win.require 'nw.gui'
+	nwWin = Gui.Window.get(win)
 
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
-	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)
+	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)	
 
-	nwWin = Gui.Window.get(win)
-
-	do ->
-		console.log "Print Data:", JSON.parse(dataSet)
-		printDataSet = Imm.fromJS JSON.parse(dataSet)
-
-		init = ->
-			render()
-			registerListeners()
-
-		process.nextTick init
-
-		render = ->
-			React.render new PrintPreviewPage({
-				printDataSet
-			}), $('#container')[0]
-
-		registerListeners = ->
-			registerTimeoutListeners()
+	process.nextTick ->
+		React.render PrintPreviewPage(), $('#container')[0]
 
 	PrintPreviewPage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				printDataSet: Imm.fromJS JSON.parse(dataSet)
+			}
+
+		render: ->
+			React.render new PrintPreviewPageUi {
+				printDataSet: @state.printDataSet
+			}
+
+	PrintPreviewPageUi = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		componentWillMount: ->
+			registerTimeoutListeners()
+
 			nwWin.on 'close', (event) -> 
 				unregisterTimeoutListeners()
 				nwWin.close true
