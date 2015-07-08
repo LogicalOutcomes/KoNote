@@ -32,30 +32,36 @@ load = (win, {clientFileId}) ->
 
 	myTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
-	do ->
-		isLoading = true
-		loadErrorType = null
-		progNote = null
-		clientFile = null
-		progNotes = null
+	process.nextTick ->
+		React.render NewProgNotePage(), $('#container')[0]
 
-		init = ->
-			render()
-			loadData()
-			registerListeners()
+	NewProgNotePage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				isLoading: true
+				loadErrorType: null
+				progNote: null
+				clientFile: null
+				progNotes: null
+			}
 
-		process.nextTick init
+		render: ->
+			new NewProgNotePageUi({
+				isLoading: @state.isLoading
+				loadErrorType: @state.loadErrorType
+				progNote: @state.progNote
+				clientFile: @state.clientFile
+				progNotes: @state.progNotes
+			})
 
-		render = ->
-			React.render new NewProgNotePageUi({
-				isLoading
-				loadErrorType
-				progNote
-				clientFile
-				progNotes
-			}), $('#container')[0]
+		componentDidMount: ->
+			@_loadData()
+			@_registerListeners()
 
-		loadData = ->
+		_registerListeners: -> registerTimeoutListeners()
+
+		_loadData: ->
 			template = myTemplate # TODO
 			planTargetsById = null
 			metricsById = null
@@ -69,7 +75,9 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						clientFile = revisions.first()
+						@setState (state) =>
+							return {clientFile: revisions.first()}
+
 						cb null
 				(cb) =>
 					ActiveSession.persist.planTargets.list clientFileId, (err, result) =>
@@ -80,14 +88,14 @@ load = (win, {clientFileId}) ->
 						planTargetHeaders = result
 						cb null
 				(cb) =>
-					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
+					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
 						ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
 					, (err, planTargets) ->
 						if err
 							cb err
 							return
 
-						pairs = planTargets.map (planTarget) ->
+						pairs = planTargets.map (planTarget) =>
 							return [planTarget.getIn([0, 'id']), planTarget]
 						planTargetsById = Imm.Map(pairs)
 
@@ -125,20 +133,25 @@ load = (win, {clientFileId}) ->
 						progNoteHeaders = Imm.fromJS results
 						cb null
 				(cb) =>
-					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
+					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
 						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
-					, (err, results) ->
+					, (err, results) =>
 						if err
 							cb err
 							return
 
-						progNotes = Imm.List(results)
+						@setState (state) =>
+							return {progNotes: Imm.List(results)}
+
 						cb null
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
-						isLoading = false
-						loadErrorType = 'io-error'
+						@setState =>
+							return {
+								isLoading: false
+								loadErrorType: 'io-error'
+							}
 						render()
 						return
 
@@ -146,16 +159,17 @@ load = (win, {clientFileId}) ->
 					return
 
 				# Done loading data, we can generate the prognote now
-				isLoading = false
-				progNote = createProgNoteFromTemplate(
-					template, clientFile, planTargetsById, metricsById
-				)
+				@setState (state) =>
+					return {						
+						isLoading: false
+						progNote: @_createProgNoteFromTemplate(
+							template, state.clientFile, planTargetsById, metricsById
+						)
+					}
 
-				render()
+				@render()		
 
-		registerListeners = -> registerTimeoutListeners()
-
-		createProgNoteFromTemplate = (template, clientFile, planTargetsById, metricsById) ->
+		_createProgNoteFromTemplate: (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
 				type: 'full'
 				clientFileId: clientFile.get('id')
