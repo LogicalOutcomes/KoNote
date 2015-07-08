@@ -34,108 +34,114 @@ load = (win, {clientFileId}) ->
 
 	nwWin = Gui.Window.get(win)
 
-	DataStore = do ->
-		clientFile = null
-		clientFileLock = null
-		progressNotes = null
-		planTargetsById = Imm.Map()
-		metricsById = Imm.Map()
-		startupTasks = Imm.Set() # set of task IDs
-		ongoingTasks = Imm.Set() # set of task IDs
-		isClosed = false
-		loadErrorType = null
+	process.nextTick =>
+		React.render new ClientFilePage(), $('#container')[0]
 
-		init = ->
-			render()
-			loadData()
-			registerListeners()
+	ClientFilePage = React.createFactory React.createClass
+		getInitialState: ->
+			return {
+				clientFile: null
+				clientFileLock: null
+				progressNotes: null
+				planTargetsById: Imm.Map()
+				metricsById: Imm.Map()
+				loadErrorType: null
 
-		process.nextTick init
+				# TODO make these unnecessary:
+				isClosed: false
+				startupTasks: Imm.Set() # set of task IDs
+				ongoingTasks: Imm.Set() # set of task IDs
+			}
 
-		# Render (or re-render) the page
-		render = ->
-			React.render new ClientFilePageUi({
+		componentDidMount: ->
+			@_loadData()
+			@_registerListeners()
+
+		render: ->
+			return new ClientFilePageUi({
 				# Data stores
-				clientFile
-				progressNotes
-				planTargetsById
-				metricsById
-				startupTasks
-				ongoingTasks
-				loadErrorType
+				clientFile: @state.clientFile
+				progressNotes: @state.progressNotes
+				planTargetsById: @state.planTargetsById
+				metricsById: @state.metricsById
+				startupTasks: @state.startupTasks
+				ongoingTasks: @state.ongoingTasks
+				loadErrorType: @state.loadErrorType
 
 				# Data store methods
-				registerTask
-				unregisterTask
-				loadData
-				updateClientFile
-				unregisterListeners
-			}), $('#container')[0]
+				updateClientFile: @_updateClientFile
 
-		registerTask = (taskId, isStartupTask) ->
-			if ongoingTasks.contains taskId
-				throw new Error "duplicate task with ID #{JSON.stringify taskId}"
+				# TODO make these unnecessary:
+				registerTask: @_registerTask
+				unregisterTask: @_unregisterTask
+				unregisterListeners: @_unregisterListeners
+			})
 
-			if startupTasks.contains taskId
-				throw new Error "duplicate task with ID #{JSON.stringify taskId}"
+		_registerTask: (taskId, isStartupTask) ->
+			@setState (state) =>
+				if state.ongoingTasks.contains taskId
+					throw new Error "duplicate task with ID #{JSON.stringify taskId}"
 
-			ongoingTasks = ongoingTasks.add(taskId)
+				if state.startupTasks.contains taskId
+					throw new Error "duplicate task with ID #{JSON.stringify taskId}"
 
-			if isStartupTask
-				startupTasks = startupTasks.add(taskId) 
-				console.log "Started #{taskId} (startup)"
-			else
-				console.log "Started #{taskId}"
+				return {
+					ongoingTasks: state.ongoingTasks.add(taskId)
+					startupTasks: (if isStartupTask
+						state.startupTasks.add(taskId)
+					else
+						state.startupTasks
+					)
+				}
 
-			render()
+		_unregisterTask: (taskId, isStartupTask) ->
+			@setState (state) =>
+				unless state.ongoingTasks.contains taskId
+					throw new Error "unknown task ID #{JSON.stringify taskId}"
 
-		unregisterTask = (taskId, isStartupTask) ->
-			unless ongoingTasks.contains taskId
-				throw new Error "unknown task ID #{JSON.stringify taskId}"
+				if isStartupTask and not state.startupTasks.contains taskId
+					throw new Error "unknown startup task ID #{JSON.stringify taskId}"
 
-			if isStartupTask and not startupTasks.contains taskId
-				throw new Error "unknown startup task ID #{JSON.stringify taskId}"
+				return {
+					ongoingTasks: state.ongoingTasks.delete(taskId)
+					startupTasks: (if isStartupTask
+						state.startupTasks.delete(taskId)
+					else
+						state.startupTasks
+					)
+				}
 
-			ongoingTasks = ongoingTasks.delete(taskId)
-
-			if isStartupTask
-				startupTasks = startupTasks.delete(taskId)
-				console.log "Finished #{taskId} (startup)"
-			else
-				console.log "Finished #{taskId}"
-
-			render()
-
-		loadData = ->
+		_loadData: ->
 			planTargetHeaders = null
 			progNoteHeaders = null
 			metricHeaders = null
 
-			registerTask 'initialDataLoad', true
+			@_registerTask 'initialDataLoad', true
 			Async.series [
-				(cb) ->
+				(cb) =>
 					# TODO data dir
-					Persist.Lock.acquire 'data', "clientFile-#{clientFileId}", (err, result) ->
+					Persist.Lock.acquire 'data', "clientFile-#{clientFileId}", (err, result) =>
 						if err
 							if err instanceof Persist.Lock.LockInUseError
-								loadErrorType = 'file-in-use'
-								render()
+								@setState {loadErrorType: 'file-in-use'}
 								return
 
 							cb err
 							return
 
-						clientFileLock = result
-						cb()
-				(cb) ->
+						@setState {
+							clientFileLock: result
+						}, cb
+				(cb) =>
 					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
 						if err
 							cb err
 							return
 
-						clientFile = stripMetadata revisions.get(0)
-						cb()
-				(cb) ->
+						@setState {
+							clientFile: stripMetadata revisions.get(0)
+						}, cb
+				(cb) =>
 					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
 						if err
 							cb err
@@ -143,26 +149,26 @@ load = (win, {clientFileId}) ->
 
 						planTargetHeaders = results
 						cb()
-				(cb) ->
-					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
+				(cb) =>
+					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
 						targetId = planTargetHeader.get('id')
 						ActiveSession.persist.planTargets.readRevisions clientFileId, targetId, cb
-					, (err, results) ->
+					, (err, results) =>
 						if err
 							cb err
 							return
 
-						planTargetsById = Imm.List(results)
-						.map (planTargetRevs) ->
-							id = planTargetRevs.getIn([0, 'id'])
-							return [
-								id
-								Imm.Map({id, revisions: planTargetRevs.reverse()})
-							]
-						.fromEntrySeq().toMap()
-
-						cb()
-				(cb) ->
+						@setState {
+							planTargetsById: Imm.List(results)
+							.map (planTargetRevs) =>
+								id = planTargetRevs.getIn([0, 'id'])
+								return [
+									id
+									Imm.Map({id, revisions: planTargetRevs.reverse()})
+								]
+							.fromEntrySeq().toMap()
+						}, cb
+				(cb) =>
 					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
 						if err
 							cb err
@@ -170,62 +176,63 @@ load = (win, {clientFileId}) ->
 
 						progNoteHeaders = results
 						cb()
-				(cb) ->
-					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
+				(cb) =>
+					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
 						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
-					, (err, results) ->
+					, (err, results) =>
 						if err
 							cb err
 							return
 
-						progressNotes = Imm.List(results)
-						cb()
-				(cb) ->
-					ActiveSession.persist.metrics.list (err, results) ->
+						@setState {
+							progressNotes: Imm.List(results)
+						}, cb
+				(cb) =>
+					ActiveSession.persist.metrics.list (err, results) =>
 						if err
 							cb err
 							return
 
 						metricHeaders = results
 						cb()
-				(cb) ->
-					Async.map metricHeaders.toArray(), (metricHeader, cb) ->
+				(cb) =>
+					Async.map metricHeaders.toArray(), (metricHeader, cb) =>
 						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
-					, (err, results) ->
+					, (err, results) =>
 						if err
 							cb err
 							return
 
-						metricsById = Imm.List(results)
-						.map (metric) ->
-							return [metric.get('id'), metric]
-						.fromEntrySeq().toMap()
 
-						cb()
-			], (err) ->
+						@setState {
+							metricsById: Imm.List(results)
+							.map (metric) =>
+								return [metric.get('id'), metric]
+							.fromEntrySeq().toMap()
+						}, cb
+			], (err) =>
 				if err
 					if err instanceof Persist.IOError
-						loadErrorType = 'io-error'
-						render()
+						@setState {loadErrorType: 'io-error'}
 						return
 
 					CrashHandler.handle err
 					return
 
 				# OK, all done
-				unregisterTask 'initialDataLoad', true
+				@_unregisterTask 'initialDataLoad', true
 
-		updateClientFile = (context, newValue) ->
-			oldClientFile = clientFile
-			clientFile = clientFile.setIn context, newValue
+		_updateClientFile: (context, newValue) ->
+			oldClientFile = @state.clientFile
+			clientFile = oldClientFile.setIn context, newValue
 
 			# If there were no changes
 			if Imm.is(clientFile, oldClientFile)
 				return
 
-			registerTask "updateClientFile"
+			@_registerTask "updateClientFile"
 			ActiveSession.persist.clientFiles.createRevision clientFile, (err) =>
-				unregisterTask "updateClientFile"
+				@_unregisterTask "updateClientFile"
 
 				if err
 					if err instanceof Persist.IOError
@@ -237,64 +244,65 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
-				console.log "Client file update successful."
+				@setState {clientFile}
 
 				# Add a delay so that the user knows it saved
 				slowSaveTaskId = "slow-save-#{Persist.generateId()}"
-				registerTask slowSaveTaskId
-				setTimeout unregisterTask.bind(null, slowSaveTaskId), 500
+				@_registerTask slowSaveTaskId
+				setTimeout @_unregisterTask.bind(null, slowSaveTaskId), 500
 
-		registerListeners = ->
+		_registerListeners: ->
 			registerTimeoutListeners()
 
-			global.ActiveSession.persist.eventBus.on 'create:planTarget createRevision:planTarget', (newRev) ->
-				if isClosed
+			global.ActiveSession.persist.eventBus.on 'create:planTarget createRevision:planTarget', (newRev) =>
+				if @state.isClosed
 					return
 
 				unless newRev.get('clientFileId') is clientFileId
 					return
 
-				targetId = newRev.get('id')
+				@setState (state) =>
+					targetId = newRev.get('id')
 
-				if planTargetsById.has targetId
-					planTargetsById = planTargetsById.updateIn [targetId, 'revisions'], (revs) ->
-						return revs.unshift newRev
-				else
-					planTargetsById = planTargetsById.set targetId, Imm.fromJS {
-						id: targetId
-						revisions: [newRev]
-					}
+					if state.planTargetsById.has targetId
+						planTargetsById = state.planTargetsById.updateIn [targetId, 'revisions'], (revs) =>
+							return revs.unshift newRev
+					else
+						planTargetsById = state.planTargetsById.set targetId, Imm.fromJS {
+							id: targetId
+							revisions: [newRev]
+						}
 
-				render()
+					return {planTargetsById}
 
-			global.ActiveSession.persist.eventBus.on 'create:progNote', (newProgNote) ->
-				if isClosed
+			global.ActiveSession.persist.eventBus.on 'create:progNote', (newProgNote) =>
+				if @state.isClosed
 					return
 
 				unless newProgNote.get('clientFileId') is clientFileId
 					return
 
-				progressNotes = progressNotes.push newProgNote
+				@setState (state) =>
+					return {
+						progressNotes: state.progressNotes.push newProgNote
+					}
 
-				render()
-
-			global.ActiveSession.persist.eventBus.on 'create:metric', (newMetric) ->
-				if isClosed
+			global.ActiveSession.persist.eventBus.on 'create:metric', (newMetric) =>
+				if @state.isClosed
 					return
 
-				metricsById = metricsById.set newMetric.get('id'), newMetric
+				@setState (state) =>
+					return {
+						metricsById: state.metricsById.set newMetric.get('id'), newMetric
+					}
 
-				render()
-
-		unregisterListeners = ->
+		_unregisterListeners: ->
 			unregisterTimeoutListeners()
-			
-			isClosed = true
 
-			if clientFileLock
-				clientFileLock.release()
+			@setState {isClosed: true}
 
-		return {}
+			if @state.clientFileLock
+				@state.clientFileLock.release()
 
 	ClientFilePageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -352,7 +360,7 @@ load = (win, {clientFileId}) ->
 			if @props.loadErrorType
 				return LoadError {loadErrorType: @props.loadErrorType}
 
-			else if @props.startupTasks.size > 0 or not @props.clientFile
+			if @props.startupTasks.size > 0 or not @props.clientFile
 				return R.div({className: 'clientFilePage'},
 					Spinner({isOverlay: true, isVisible: true})
 				)
