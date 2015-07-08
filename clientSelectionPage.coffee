@@ -66,10 +66,10 @@ load = (win) ->
 		_registerListeners: ->
 			registerTimeoutListeners()
 
-			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) ->
-				@setState (state) ->
+			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) =>
+				@setState (state) =>
 					return {
-						clientFileList: clientFileList.push newFile
+						clientFileList: state.clientFileList.push newFile
 					}
 
 	ClientSelectionPageUi = React.createFactory React.createClass
