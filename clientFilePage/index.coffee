@@ -69,7 +69,7 @@ load = (win, {clientFileId}) ->
 				loadErrorType: @state.loadErrorType
 
 				# Data store methods
-				updateClientFile: @_updateClientFile
+				updatePlan: @_updatePlan
 
 				# TODO make these unnecessary:
 				registerTask: @_registerTask
@@ -203,7 +203,6 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-
 						@setState {
 							metricsById: Imm.List(results)
 							.map (metric) =>
@@ -222,17 +221,50 @@ load = (win, {clientFileId}) ->
 				# OK, all done
 				@_unregisterTask 'initialDataLoad', true
 
-		_updateClientFile: (context, newValue) ->
-			oldClientFile = @state.clientFile
-			clientFile = oldClientFile.setIn context, newValue
+		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
+			@_registerTask 'updatePlan'
 
-			# If there were no changes
-			if Imm.is(clientFile, oldClientFile)
-				return
+			idMap = Imm.Map()
 
-			@_registerTask "updateClientFile"
-			ActiveSession.persist.clientFiles.createRevision clientFile, (err) =>
-				@_unregisterTask "updateClientFile"
+			Async.series [
+				(cb) =>
+					Async.each newPlanTargets.toArray(), (newPlanTarget, cb) =>
+						transientId = newPlanTarget.get('id')
+						newPlanTarget = newPlanTarget.delete('id')
+
+						ActiveSession.persist.planTargets.create newPlanTarget, (err, result) =>
+							if err
+								cb err
+								return
+
+							persistentId = result.get('id')
+							idMap = idMap.set(transientId, persistentId)
+							cb()
+					, cb
+				(cb) =>
+					Async.each updatedPlanTargets.toArray(), (updatedPlanTarget, cb) =>
+						ActiveSession.persist.planTargets.createRevision updatedPlanTarget, cb
+					, cb
+				(cb) =>
+					# Replace transient IDs with newly created persistent IDs
+					newPlan = plan.update 'sections', (sections) =>
+						return sections.map (section) =>
+							return section.update 'targetIds', (targetIds) =>
+								return targetIds.map (targetId) =>
+									return idMap.get(targetId, targetId)
+					newClientFile = @state.clientFile.set 'plan', newPlan
+
+					# If no changes, skip this step
+					if Imm.is(newClientFile, @state.clientFile)
+						cb()
+						return
+
+					ActiveSession.persist.clientFiles.createRevision newClientFile, cb
+				(cb) =>
+					# Add a noticeable delay so that the user knows the save happened.
+					setTimeout cb, 400
+			], (err) =>
+				@_unregisterTask 'updatePlan'
 
 				if err
 					if err instanceof Persist.IOError
@@ -244,15 +276,21 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
-				@setState {clientFile}
-
-				# Add a delay so that the user knows it saved
-				slowSaveTaskId = "slow-save-#{Persist.generateId()}"
-				@_registerTask slowSaveTaskId
-				setTimeout @_unregisterTask.bind(null, slowSaveTaskId), 500
+				# Nothing else to do.
+				# Persist operations will automatically trigger event listeners
+				# that update the UI.
 
 		_registerListeners: ->
 			registerTimeoutListeners()
+
+			global.ActiveSession.persist.eventBus.on 'createRevision:clientFile', (newRev) =>
+				if @state.isClosed
+					return
+
+				unless newRev.get('id') is clientFileId
+					return
+
+				@setState {clientFile: newRev}
 
 			global.ActiveSession.persist.eventBus.on 'create:planTarget createRevision:planTarget', (newRev) =>
 				if @state.isClosed
@@ -389,7 +427,7 @@ load = (win, {clientFileId}) ->
 					metricsById: @props.metricsById
 					registerTask: @props.registerTask
 					unregisterTask: @props.unregisterTask
-					updatePlan: @props.updateClientFile.bind null, ['plan']
+					updatePlan: @props.updatePlan
 				})
 				ProgNotesTab.ProgNotesView({
 					isVisible: activeTabId is 'progressNotes'

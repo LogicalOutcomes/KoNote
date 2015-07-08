@@ -23,15 +23,25 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
-			currentTargetRevisionsById = @props.planTargetsById.mapEntries ([targetId, target]) =>
-				latestRev = stripMetadata target.get('revisions').first()
-				return [targetId, latestRev]
-
 			return {
 				plan: @props.plan
 				selectedTargetId: null
-				currentTargetRevisionsById
+				currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
 			}
+
+		componentWillReceiveProps: (newProps) ->
+			# Regenerate transient data when plan is updated
+			unless Imm.is(newProps.plan, @props.plan)
+				@setState {
+					plan: newProps.plan
+					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+				}
+
+		_generateCurrentTargetRevisionsById: (planTargetsById) ->
+			return planTargetsById.mapEntries ([targetId, target]) =>
+				latestRev = stripMetadata target.get('revisions').first()
+				return [targetId, latestRev]
+
 		render: ->
 			plan = @state.plan
 
@@ -226,8 +236,9 @@ load = (win) ->
 					)
 				)
 			)
-		
+
 		_focusMetricLookupField: -> $('.lookupField').focus()
+
 		blinkUnsaved: ->			
 			toggleBlink = -> $('.hasChanges').toggleClass('blink')
 			secondBlink = ->
@@ -247,7 +258,7 @@ load = (win) ->
 
 			return false
 		_hasTargetChanged: (targetId) ->
-			currentRev = @_normalizeTargetFields @state.currentTargetRevisionsById.get(targetId)
+			currentRev = @_normalizeTarget @state.currentTargetRevisionsById.get(targetId)
 
 			# If this is a new target
 			target = @props.planTargetsById.get(targetId, null)
@@ -270,118 +281,88 @@ load = (win) ->
 				return true
 
 			return false
-		_normalizeTargetFields: (targetRev) ->
-			trim = (s) -> s.trim()
 
-			return targetRev
-			.update('name', trim)
-			.update('notes', trim)
 		_save: ->
-			# Validate and clean up targets
-			valid = true
-			newPlan = @state.plan
-			newCurrentRevs = @state.currentTargetRevisionsById
-			@state.plan.get('sections').forEach (section, sectionIndex) =>
-				newTargetIds = []
+			@_normalizeTargets()
+			@_removeUnusedTargets()
 
-				section.get('targetIds').forEach (targetId) =>
-					trim = (s) -> s.trim()
+			# Wait for state changes to be applied
+			@forceUpdate =>
+				valid = @_validateTargets()
 
-					# Trim whitespace from fields
-					currentRev = @_normalizeTargetFields newCurrentRevs.get(targetId)
-					newCurrentRevs = newCurrentRevs.set targetId, currentRev
-
-					# Remove unused targets
-					emptyName = currentRev.get('name') is ''
-					emptyNotes = currentRev.get('notes') is ''
-					noMetrics = currentRev.get('metricIds').size is 0
-					noHistory = @props.planTargetsById.get(targetId, null) is null
-					if emptyName and emptyNotes and noMetrics and noHistory
-						newCurrentRevs = newCurrentRevs.delete targetId
-						return
-
-					# Can't allow this to be saved
-					if emptyName or emptyNotes
-						valid = false
-
-					newTargetIds.push targetId
-
-				newPlan = newPlan.setIn(
-					['sections', sectionIndex, 'targetIds'], Imm.fromJS(newTargetIds)
-				)
-
-			@setState {
-				plan: newPlan
-				currentTargetRevisionsById: newCurrentRevs
-			}, =>
 				unless valid
 					Bootbox.alert 'Cannot save plan: there are empty target fields.'
 					return
 
-				updatedIds = Imm.Map()
+				newPlanTargets = @state.currentTargetRevisionsById.valueSeq()
+				.filter (target) =>
+					# Only include targets that have not been saved yet
+					return not @props.planTargetsById.has(target.get('id'))
+				.map(@_normalizeTarget)
 
-				# Create new revisions for any plan targets that have changed
-				targetIds = @state.currentTargetRevisionsById.keySeq().toJS()
-				Async.each targetIds, (targetId, cb) =>
-					unless @_hasTargetChanged targetId
-						cb null
-						return
+				updatedPlanTargets = @state.currentTargetRevisionsById.valueSeq()
+				.filter (target) =>
+					# Ignore new targets
+					unless @props.planTargetsById.has(target.get('id'))
+						return false
 
-					currentRev = @_normalizeTargetFields @state.currentTargetRevisionsById.get(targetId)
+					# Only include targets that have actually changed
+					return @_hasTargetChanged target.get('id')
+				.map(@_normalizeTarget)
 
-					# If this target has been saved to persistent storage before
-					if @props.planTargetsById.has(targetId)
-						@props.registerTask "updateTarget-#{targetId}"
-						ActiveSession.persist.planTargets.createRevision currentRev, (err) =>
-							@props.unregisterTask "updateTarget-#{targetId}"
+				@props.updatePlan @state.plan, newPlanTargets, updatedPlanTargets
 
-							if err
-								cb err
-								return
+		_normalizeTargets: ->
+			@setState (state) =>
+				return {
+					currentTargetRevisionsById: state.currentTargetRevisionsById
+					.map (targetRev, targetId) =>
+						return @_normalizeTarget targetRev
+				}
 
-							cb()
-					else # this is a new target
-						newObj = currentRev.delete('id')
+		_normalizeTarget: (targetRev) ->
+			trim = (s) -> s.trim()
 
-						@props.registerTask "createTarget-#{targetId}"
-						ActiveSession.persist.planTargets.create newObj, (err, result) =>
-							@props.unregisterTask "createTarget-#{targetId}"
+			# Trim whitespace from fields
+			return targetRev
+			.update('name', trim)
+			.update('notes', trim)
 
-							if err
-								cb err
-								return
+		_removeUnusedTargets: ->
+			@setState (state) =>
+				unusedTargetIds = state.plan.get('sections').flatMap (section) =>
+					return section.get('targetIds').filter (targetId) =>
+						currentRev = state.currentTargetRevisionsById.get(targetId)
 
-							updatedIds = updatedIds.set targetId, result.get('id')
+						emptyName = currentRev.get('name') is ''
+						emptyNotes = currentRev.get('notes') is ''
+						noMetrics = currentRev.get('metricIds').size is 0
+						noHistory = @props.planTargetsById.get(targetId, null) is null
 
-							cb()
-				, (err) =>
-					if err
-						if err instanceof Persist.IOError
-							Bootbox.alert """
-								An error occurred.  Please check your network connection and try again.
-							"""
-							return
+						return emptyName and emptyNotes and noMetrics and noHistory
 
-						CrashHandler.handle err
-						return
+				return {
+					plan: state.plan.update 'sections', (sections) =>
+						return sections.map (section) =>
+							return section.update 'targetIds', (targetIds) =>
+								return targetIds.filter (targetId) =>
+									return not unusedTargetIds.contains(targetId)
 
-					# Replace transient IDs
-					newPlan = @state.plan.updateIn ['sections'], (sections) ->
-						return sections.map (section) ->
-							return section.update 'targetIds', (targetIds) ->
-								return targetIds.map (oldTargetId) ->
-									return updatedIds.get(oldTargetId, oldTargetId)
-					currentTargetRevs = @state.currentTargetRevisionsById.mapKeys (oldId) ->
-						return updatedIds.get oldId, oldId
-					currentTargetRevs = currentTargetRevs.map (currentRev, newId) ->
-						return currentRev.set 'id', newId
+					currentTargetRevisionsById: state.currentTargetRevisionsById
+					.filter (rev, targetId) =>
+						return not unusedTargetIds.contains(targetId)
+				}
 
-					@setState {
-						plan: newPlan
-						currentTargetRevisionsById: currentTargetRevs
-					}, =>
-						# Trigger clientFile save
-						@props.updatePlan @state.plan
+		_validateTargets: -> # returns true iff all valid
+			return @state.plan.get('sections').every (section) =>
+				return section.get('targetIds').every (targetId) =>
+					currentRev = @state.currentTargetRevisionsById.get(targetId)
+
+					emptyName = currentRev.get('name') is ''
+					emptyNotes = currentRev.get('notes') is ''
+
+					return not emptyName and not emptyNotes
+
 		_addSection: ->
 			sectionId = Persist.generateId()
 
