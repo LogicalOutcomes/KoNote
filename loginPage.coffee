@@ -117,8 +117,6 @@ load = (win) ->
 				@setState {isSetUp: true}
 
 		_login: (userName, password) ->
-			console.log "userName", userName
-			console.log "password", password
 			# TODO where to get data dir path? config?			
 			@setState {isLoading: true}
 
