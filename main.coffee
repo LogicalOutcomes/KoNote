@@ -20,12 +20,6 @@ init = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Gui = win.require 'nw.gui'
-	
-	# application menu bar required for osx copy-paste functionality
-	if process.platform == 'darwin'
-		mb = new Gui.Menu({type: 'menubar'})
-		mb.createMacBuiltin(Config.productName)
-		Gui.Window.get().menu = mb
 
 	# Handle any uncaught errors.
 	# Generally, errors should be passed directly to CrashHandler instead of
@@ -34,6 +28,12 @@ init = (win) ->
 	# usually less desirable.
 	process.on 'uncaughtException', (err) ->
 		CrashHandler.handle err
+
+	# application menu bar required for osx copy-paste functionality
+	if process.platform == 'darwin'
+		mb = new Gui.Menu({type: 'menubar'})
+		mb.createMacBuiltin(Config.productName)
+		Gui.Window.get().menu = mb
 
 	win.jQuery ->
 		# Pull any parameters out of the URL
