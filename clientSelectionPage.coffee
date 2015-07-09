@@ -22,14 +22,19 @@ load = (win) ->
 	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
-	nwWin = Gui.Window.get(win)
-
 	ClientSelectionPage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
 				isLoading: true
 				clientFileList: null
 			}
+
+		suggestClose: ->
+			unregisterTimeoutListeners()
+			@close()
+
+		close: ->
+			@props.closeWindow()
 
 		componentDidMount: ->
 			@_loadData()
@@ -48,7 +53,7 @@ load = (win) ->
 						Bootbox.alert """
 							Please check your network connection and try again.
 						""", =>
-							nwWin.close true
+							@props.closeWindow()
 						return
 
 					CrashHandler.handle err
@@ -78,11 +83,6 @@ load = (win) ->
 				queryText: ''
 				menuIsOpen: false
 			}
-
-		componentDidMount: ->
-			nwWin.on 'close', (event) ->
-				unregisterTimeoutListeners()
-				nwWin.close true
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# If loading just finished

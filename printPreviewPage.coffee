@@ -12,7 +12,6 @@ load = (win, {dataSet}) ->
 	React = win.React
 	R = React.DOM
 	Gui = win.require 'nw.gui'
-	nwWin = Gui.Window.get(win)
 
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
@@ -21,10 +20,24 @@ load = (win, {dataSet}) ->
 
 	PrintPreviewPage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				printDataSet: Imm.fromJS JSON.parse(dataSet)
 			}
+
+		suggestClose: ->
+			@close()
+
+		close: ->
+			@_unregisterListeners()
+			@props.closeWindow()
+
+		_registerListeners: ->
+			registerTimeoutListeners()
+
+		_unregisterListeners: ->
+			unregisterTimeoutListeners()
 
 		render: ->
 			new PrintPreviewPageUi {
@@ -33,12 +46,6 @@ load = (win, {dataSet}) ->
 
 	PrintPreviewPageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
-		componentWillMount: ->
-			registerTimeoutListeners()
-
-			nwWin.on 'close', (event) -> 
-				unregisterTimeoutListeners()
-				nwWin.close true
 
 		componentDidMount: ->
 			# Without timeout, print() triggers before DOM renders

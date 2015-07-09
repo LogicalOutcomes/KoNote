@@ -32,8 +32,6 @@ load = (win, {clientFileId}) ->
 	{registerTimeoutListeners, unregisterTimeoutListeners} = require('../timeoutDialog').load(win)
 	{FaIcon, renderName, renderFileId, showWhen, stripMetadata} = require('../utils').load(win)
 
-	nwWin = Gui.Window.get(win)
-
 	ClientFilePage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
@@ -50,13 +48,21 @@ load = (win, {clientFileId}) ->
 				ongoingTasks: Imm.Set() # set of task IDs
 			}
 
+		suggestClose: ->
+			@refs.ui.suggestClose()
+
+		close: ->
+			@_unregisterListeners()
+			@props.closeWindow()
+
 		componentDidMount: ->
 			@_loadData()
 			@_registerListeners()
 
 		render: ->
-			return new ClientFilePageUi({
-				# Data stores
+			return ClientFilePageUi({
+				ref: 'ui'
+
 				clientFile: @state.clientFile
 				progressNotes: @state.progressNotes
 				planTargetsById: @state.planTargetsById
@@ -65,14 +71,15 @@ load = (win, {clientFileId}) ->
 				ongoingTasks: @state.ongoingTasks
 				loadErrorType: @state.loadErrorType
 
-				# Data store methods
+				close: @close
+				maximizeWindow: @props.maximizeWindow
+				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
 				createQuickNote: @_createQuickNote
 
 				# TODO make these unnecessary:
 				registerTask: @_registerTask
 				unregisterTask: @_unregisterTask
-				unregisterListeners: @_unregisterListeners
 			})
 
 		_registerTask: (taskId, isStartupTask) ->
@@ -366,52 +373,54 @@ load = (win, {clientFileId}) ->
 			}
 
 		componentWillMount: ->
-			nwWin.maximize()			
+			@props.maximizeWindow()
 
-			nwWin.on 'close', (event) =>				
+		suggestClose: ->
+			# If page still loading
+			# TODO handle this more elegantly
+			unless @props.clientFile?
+				@props.close()
+				return
 
-				# # If page still loading
-				# # TODO handle this more elegantly
-				unless @props.clientFile?
-					@props.unregisterListeners()
-					nwWin.close true
-					return
+			clientName = renderName @props.clientFile.get('clientName')
 
-				clientName = renderName @props.clientFile.get('clientName')
-
-				if @refs.planTab.hasChanges()
-					Bootbox.dialog {
-						title: "Unsaved Changes to Plan"
-						message: "You have unsaved changes in this plan for #{clientName}. How would you like to proceed?"
-						buttons: {
-							default: {
-								label: "Cancel"
-								className: "btn-default"
-								callback: => Bootbox.hideAll()
-							}
-							danger: {
-								label: "Discard Changes"
-								className: "btn-danger"
-								callback: => 
-									@props.unregisterListeners()
-									nwWin.close true
-							}
-							success: {
-								label: "View Plan"
-								className: "btn-success"
-								callback: => 
-									Bootbox.hideAll()
-									@setState {activeTabId: 'plan'}, @refs.planTab.blinkUnsaved
-							}
+			if @refs.planTab.hasChanges()
+				Bootbox.dialog {
+					title: "Unsaved Changes to Plan"
+					message: """
+						You have unsaved changes in this plan for #{clientName}. 
+						How would you like to proceed?
+					"""
+					buttons: {
+						default: {
+							label: "Cancel"
+							className: "btn-default"
+							callback: => Bootbox.hideAll()
+						}
+						danger: {
+							label: "Discard Changes"
+							className: "btn-danger"
+							callback: => 
+								@props.close()
+						}
+						success: {
+							label: "View Plan"
+							className: "btn-success"
+							callback: => 
+								Bootbox.hideAll()
+								@setState {activeTabId: 'plan'}, @refs.planTab.blinkUnsaved
 						}
 					}
-				else
-					@props.unregisterListeners()
-					nwWin.close(true)
+				}
+			else
+				@props.close()
 
 		render: ->
 			if @props.loadErrorType
-				return LoadError {loadErrorType: @props.loadErrorType}
+				return LoadError({
+					loadErrorType: @props.loadErrorType
+					close: @props.close
+				})
 
 			if @props.startupTasks.size > 0 or not @props.clientFile
 				return R.div({className: 'clientFilePage'},
@@ -422,7 +431,7 @@ load = (win, {clientFileId}) ->
 
 			clientName = renderName @props.clientFile.get('clientName')
 			recordId = @props.clientFile.get('recordId')
-			nwWin.title = "#{clientName} - KoNote"
+			@props.setWindowTitle "#{clientName} - KoNote"
 
 			return R.div({className: 'clientFilePage'},
 				Spinner({isOverlay: true, isVisible: @props.ongoingTasks.size > 0})
@@ -533,7 +542,8 @@ load = (win, {clientFileId}) ->
 					"""
 				else
 					"An unknown error occured (loadErrorType: #{@props.loadErrorType}"				
-			Bootbox.alert msg, -> nwWin.close(true)
+			Bootbox.alert msg, =>
+				@props.close()
 		render: ->
 			return R.div({className: 'clientFilePage'})
 

@@ -22,6 +22,7 @@ pageModulePathsById = {
 }
 
 init = (win) ->
+	Assert = require 'assert'
 	Backbone = require 'backbone'
 	QueryString = require 'querystring'
 	
@@ -29,12 +30,14 @@ init = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Gui = win.require 'nw.gui'
-	
+
+	nwWin = Gui.Window.get(win)
+
 	# application menu bar required for osx copy-paste functionality
 	if process.platform == 'darwin'
 		mb = new Gui.Menu({type: 'menubar'})
 		mb.createMacBuiltin(Config.productName)
-		Gui.Window.get().menu = mb
+		nwWin.menu = mb
 
 	# Handle any uncaught errors.
 	# Generally, errors should be passed directly to CrashHandler instead of
@@ -61,11 +64,6 @@ init = (win) ->
 				# Reload HTML page
 				win.location.reload(true)
 		, false
-		win.document.addEventListener 'keyup', (event) ->
-			# If Ctrl-W
-			if event.ctrlKey and (not event.shiftKey) and event.which is 87
-				Gui.Window.get(win).close()
-		, false
 
 		# Pull any parameters out of the URL
 		urlParams = QueryString.parse win.location.search.substr(1)
@@ -75,9 +73,25 @@ init = (win) ->
 		pageModulePath = pageModulePathsById[urlParams.page or defaultPageId]
 
 		# Load the page module
-		pageComponent = require(pageModulePath).load(win, urlParams)
+		pageComponentClass = require(pageModulePath).load(win, urlParams)
 
 		# Render page in window
-		win.React.render pageComponent(), win.document.getElementById('container')
+		pageComponent = win.React.render pageComponentClass({
+			closeWindow: =>
+				nwWin.close true
+			maximizeWindow: =>
+				nwWin.maximize()
+			setWindowTitle: (newTitle) =>
+				nwWin.title = newTitle
+		}), win.document.getElementById('container')
+
+		# Make sure up front that this page has the required methods
+		Assert pageComponent.suggestClose, "mising page.suggestClose"
+		Assert pageComponent.close, "missing page.close"
+
+		# Listen for close button or Alt-F4
+		nwWin.on 'close', =>
+			pageComponent.suggestClose()
+			return
 
 module.exports = {init}

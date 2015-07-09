@@ -17,17 +17,25 @@ load = (win) ->
 
 	LoginPage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				isLoading: true
 				isSetUp: false
 			}
+
+		suggestClose: ->
+			@close()
+
+		close: ->
+			@props.closeWindow()
+
 		render: ->
 			return new LoginPageUi({
-				isLoading: @state.isLoading
-				login: @_login
-				isSetUp: @state.isSetUp
 				ref: 'ui'
+				isLoading: @state.isLoading
+				isSetUp: @state.isSetUp
+				login: @_login
 			})
 
 		componentDidMount: -> @_checkSetUp()

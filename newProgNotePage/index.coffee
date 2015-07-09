@@ -28,12 +28,11 @@ load = (win, {clientFileId}) ->
 	{registerTimeoutListeners, unregisterTimeoutListeners} = require('../timeoutDialog').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
 
-	nwWin = Gui.Window.get(win)
-
 	myTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
 	NewProgNotePage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				isLoading: true
@@ -43,20 +42,33 @@ load = (win, {clientFileId}) ->
 				progNotes: null
 			}
 
-		render: ->
-			new NewProgNotePageUi({
-				isLoading: @state.isLoading
-				loadErrorType: @state.loadErrorType
-				progNote: @state.progNote
-				clientFile: @state.clientFile
-				progNotes: @state.progNotes
-			})
+		suggestClose: ->
+			@refs.ui.suggestClose()
+
+		close: ->
+			@_unregisterListeners()
+			@props.closeWindow()
 
 		componentDidMount: ->
 			@_loadData()
 			@_registerListeners()
 
+		render: ->
+			new NewProgNotePageUi({
+				ref: 'ui'
+
+				isLoading: @state.isLoading
+				loadErrorType: @state.loadErrorType
+				progNote: @state.progNote
+				clientFile: @state.clientFile
+				progNotes: @state.progNotes
+
+				close: @close
+				setWindowTitle: @props.setWindowTitle
+			})
+
 		_registerListeners: -> registerTimeoutListeners()
+		_unregisterListeners: -> unregisterTimeoutListeners()
 
 		_loadData: ->
 			template = myTemplate # TODO
@@ -215,6 +227,7 @@ load = (win, {clientFileId}) ->
 
 	NewProgNotePageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				progNote: @props.progNote
@@ -223,31 +236,32 @@ load = (win, {clientFileId}) ->
 				success: false
 				showExitAlert: false
 			}
-		componentDidMount: ->
-			nwWin.on 'close', (event) =>
-				if not @state.showExitAlert
-					@setState {showExitAlert: true}
-					Bootbox.dialog {
-						message: "Are you sure you want to cancel this progress note?"
-						buttons: {						
-							cancel: {
-								label: "Cancel"
-								className: 'btn-default'
-								callback: =>
-									@setState {showExitAlert: false}
-							}
-							discard: {
-								label: "Yes"
-								className: 'btn-primary'
-								callback: =>
-									unregisterTimeoutListeners()
-									nwWin.close true
-							}
+
+		suggestClose: ->
+			if not @state.showExitAlert
+				@setState {showExitAlert: true}
+				Bootbox.dialog {
+					message: "Are you sure you want to cancel this progress note?"
+					buttons: {						
+						cancel: {
+							label: "Cancel"
+							className: 'btn-default'
+							callback: =>
+								@setState {showExitAlert: false}
+						}
+						discard: {
+							label: "Yes"
+							className: 'btn-primary'
+							callback: =>
+								@props.close()
 						}
 					}
+				}
+
 		componentWillReceiveProps: (newProps) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
 				@setState {progNote: newProps.progNote}
+
 		render: ->
 			if @props.isLoading
 				return R.div({className: 'newProgNotePage'},
@@ -274,14 +288,14 @@ load = (win, {clientFileId}) ->
 							R.button({
 								className: 'btn btn-danger'
 								onClick: =>
-									nwWin.close true
+									@props.close()
 							}, "Close")
 						)
 					)
 				)
 
 			clientName = renderName @props.clientFile.get('clientName')
-			nwWin.title = "#{clientName}: Progress Note - KoNote"
+			@props.setWindowTitle "#{clientName}: Progress Note - KoNote"
 
 			return R.div({className: 'newProgNotePage'},
 				R.div({className: 'progNote'},
@@ -494,9 +508,7 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
-				# TODO success animation
-				@setState {success: true}
-				nwWin.close true
+				@props.close()
 
 	OpenCreateProgEventButton = React.createFactory React.createClass
 		mixins: [LayeredComponentMixin, React.addons.PureRenderMixin]
