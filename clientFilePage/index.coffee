@@ -9,6 +9,7 @@
 
 # Libraries from Node.js context
 _ = require 'underscore'
+Assert = require 'assert'
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -35,6 +36,9 @@ load = (win, {clientFileId}) ->
 	ClientFilePage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
+				status: 'init' # either init or ready
+				isLoading: true
+
 				clientFile: null
 				clientFileLock: null
 				progressNotes: null
@@ -44,8 +48,6 @@ load = (win, {clientFileId}) ->
 
 				# TODO make these unnecessary:
 				isClosed: false
-				startupTasks: Imm.Set() # set of task IDs
-				ongoingTasks: Imm.Set() # set of task IDs
 			}
 
 		suggestClose: ->
@@ -63,65 +65,27 @@ load = (win, {clientFileId}) ->
 			return ClientFilePageUi({
 				ref: 'ui'
 
+				status: @state.status
+				isLoading: @state.isLoading
+				loadErrorType: @state.loadErrorType
 				clientFile: @state.clientFile
 				progressNotes: @state.progressNotes
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
-				startupTasks: @state.startupTasks
-				ongoingTasks: @state.ongoingTasks
-				loadErrorType: @state.loadErrorType
 
 				close: @close
 				maximizeWindow: @props.maximizeWindow
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
 				createQuickNote: @_createQuickNote
-
-				# TODO make these unnecessary:
-				registerTask: @_registerTask
-				unregisterTask: @_unregisterTask
 			})
-
-		_registerTask: (taskId, isStartupTask) ->
-			@setState (state) =>
-				if state.ongoingTasks.contains taskId
-					throw new Error "duplicate task with ID #{JSON.stringify taskId}"
-
-				if state.startupTasks.contains taskId
-					throw new Error "duplicate task with ID #{JSON.stringify taskId}"
-
-				return {
-					ongoingTasks: state.ongoingTasks.add(taskId)
-					startupTasks: (if isStartupTask
-						state.startupTasks.add(taskId)
-					else
-						state.startupTasks
-					)
-				}
-
-		_unregisterTask: (taskId, isStartupTask) ->
-			@setState (state) =>
-				unless state.ongoingTasks.contains taskId
-					throw new Error "unknown task ID #{JSON.stringify taskId}"
-
-				if isStartupTask and not state.startupTasks.contains taskId
-					throw new Error "unknown startup task ID #{JSON.stringify taskId}"
-
-				return {
-					ongoingTasks: state.ongoingTasks.delete(taskId)
-					startupTasks: (if isStartupTask
-						state.startupTasks.delete(taskId)
-					else
-						state.startupTasks
-					)
-				}
 
 		_loadData: ->
 			planTargetHeaders = null
 			progNoteHeaders = null
 			metricHeaders = null
 
-			@_registerTask 'initialDataLoad', true
+			@setState (state) => {isLoading: true}
 			Async.series [
 				(cb) =>
 					# TODO data dir
@@ -224,10 +188,10 @@ load = (win, {clientFileId}) ->
 					return
 
 				# OK, all done
-				@_unregisterTask 'initialDataLoad', true
+				@setState (state) => {status: 'ready', isLoading: false}
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
-			@_registerTask 'updatePlan'
+			@setState (state) => {isLoading: true}
 
 			idMap = Imm.Map()
 
@@ -269,7 +233,7 @@ load = (win, {clientFileId}) ->
 					# Add a noticeable delay so that the user knows the save happened.
 					setTimeout cb, 400
 			], (err) =>
-				@_unregisterTask 'updatePlan'
+				@setState (state) => {isLoading: false}
 
 				if err
 					if err instanceof Persist.IOError
@@ -292,9 +256,9 @@ load = (win, {clientFileId}) ->
 				notes
 			}
 
-			@_registerTask 'quickNote-save'
+			@setState (state) => {isLoading: true}
 			global.ActiveSession.persist.progNotes.create note, (err) =>
-				@_unregisterTask 'quickNote-save'
+				@setState (state) => {isLoading: false}
 
 				if err
 					cb err
@@ -422,10 +386,12 @@ load = (win, {clientFileId}) ->
 					close: @props.close
 				})
 
-			if @props.startupTasks.size > 0 or not @props.clientFile
+			if @props.status is 'init'
 				return R.div({className: 'clientFilePage'},
 					Spinner({isOverlay: true, isVisible: true})
 				)
+
+			Assert @props.status is 'ready'
 
 			activeTabId = @state.activeTabId
 
@@ -434,7 +400,7 @@ load = (win, {clientFileId}) ->
 			@props.setWindowTitle "#{clientName} - KoNote"
 
 			return R.div({className: 'clientFilePage'},
-				Spinner({isOverlay: true, isVisible: @props.ongoingTasks.size > 0})
+				Spinner({isOverlay: true, isVisible: @props.isLoading})
 				Sidebar({
 					clientName
 					recordId
@@ -449,8 +415,7 @@ load = (win, {clientFileId}) ->
 					plan: @props.clientFile.get('plan')
 					planTargetsById: @props.planTargetsById
 					metricsById: @props.metricsById
-					registerTask: @props.registerTask
-					unregisterTask: @props.unregisterTask
+
 					updatePlan: @props.updatePlan
 				})
 				ProgNotesTab.ProgNotesView({
@@ -459,8 +424,7 @@ load = (win, {clientFileId}) ->
 					clientFile: @props.clientFile
 					progNotes: @props.progressNotes
 					metricsById: @props.metricsById
-					registerTask: @props.registerTask
-					unregisterTask: @props.unregisterTask
+
 					createQuickNote: @props.createQuickNote
 				})
 				AnalysisTab.AnalysisView({
@@ -468,8 +432,6 @@ load = (win, {clientFileId}) ->
 					clientFileId
 					progNotes: @props.progressNotes
 					metricsById: @props.metricsById
-					registerTask: @props.registerTask
-					unregisterTask: @props.unregisterTask
 				})
 			)
 		_changeTab: (newTabId) ->
