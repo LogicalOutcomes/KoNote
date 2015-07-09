@@ -138,6 +138,7 @@ load = (win) ->
 									onChange: @_updateQueryText
 									onBlur: @_onSearchBoxBlur
 									placeholder: "Search for a client's profile..."
+									value: @state.queryText
 								})
 							)
 						)
