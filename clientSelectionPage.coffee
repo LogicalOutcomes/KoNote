@@ -29,16 +29,20 @@ load = (win) ->
 				clientFileList: null
 			}
 
-		suggestClose: ->
-			unregisterTimeoutListeners()
-			@close()
-
-		close: ->
-			@props.closeWindow()
-
 		componentDidMount: ->
-			@_loadData()
 			@_registerListeners()
+
+		componentWillUnmount: ->
+			@_unregisterListeners()
+
+		init: ->
+			@_loadData()
+
+		deinit: ->
+			# Nothing need be done
+
+		suggestClose: ->
+			@props.closeWindow()
 
 		render: ->
 			return new ClientSelectionPageUi({
@@ -73,6 +77,9 @@ load = (win) ->
 					return {
 						clientFileList: state.clientFileList.push newFile
 					}
+
+		_unregisterListeners: ->
+			unregisterTimeoutListeners()
 
 	ClientSelectionPageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]

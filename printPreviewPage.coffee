@@ -26,11 +26,16 @@ load = (win, {dataSet}) ->
 				printDataSet: Imm.fromJS JSON.parse(dataSet)
 			}
 
-		suggestClose: ->
-			@close()
+		componentDidMount: ->
+			@_registerListeners()
 
-		close: ->
+		componentWillUnmount: ->
 			@_unregisterListeners()
+
+		init: -> # Do nothing
+		deinit: -> # Do nothing
+
+		suggestClose: ->
 			@props.closeWindow()
 
 		_registerListeners: ->

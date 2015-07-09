@@ -28,7 +28,11 @@ init = (win) ->
 	
 	Config = require('./config')
 
+	document = win.document
+	React = win.React
+
 	CrashHandler = require('./crashHandler').load(win)
+	ReactHacks = require('./reactHacks').load(win)
 	Gui = win.require 'nw.gui'
 
 	nwWin = Gui.Window.get(win)
@@ -47,24 +51,14 @@ init = (win) ->
 	process.on 'uncaughtException', (err) ->
 		CrashHandler.handle err
 
-	win.jQuery ->
-		# Set up keyboard shortcuts
-		win.document.addEventListener 'keyup', (event) ->
-			# If Ctrl-Shift-J
-			if event.ctrlKey and event.shiftKey and event.which is 74
-				Gui.Window.get(win).showDevTools()
-		, false
-		win.document.addEventListener 'keyup', (event) ->
-			# If Ctrl-R
-			if event.ctrlKey and (not event.shiftKey) and event.which is 82
-				# Clear Node.js module cache
-				for cacheId of require.cache
-					delete require.cache[cacheId]
+	containerElem = document.getElementById('container')
+	pageComponent = null
 
-				# Reload HTML page
-				win.location.reload(true)
-		, false
+	process.nextTick =>
+		renderPage()
+		initPage()
 
+	renderPage = =>
 		# Pull any parameters out of the URL
 		urlParams = QueryString.parse win.location.search.substr(1)
 
@@ -76,22 +70,69 @@ init = (win) ->
 		pageComponentClass = require(pageModulePath).load(win, urlParams)
 
 		# Render page in window
-		pageComponent = win.React.render pageComponentClass({
+		pageComponent = React.render pageComponentClass({
 			closeWindow: =>
+				pageComponent.deinit()
+				React.unmountComponentAtNode containerElem
+
 				nwWin.close true
+
 			maximizeWindow: =>
 				nwWin.maximize()
+
 			setWindowTitle: (newTitle) =>
 				nwWin.title = newTitle
-		}), win.document.getElementById('container')
+		}), containerElem
 
-		# Make sure up front that this page has the required methods
+	initPage = =>
+		# Make sure up this page has the required methods
+		Assert pageComponent.init, "mising page.init"
 		Assert pageComponent.suggestClose, "mising page.suggestClose"
-		Assert pageComponent.close, "missing page.close"
+		Assert pageComponent.deinit, "mising page.deinit"
+
+		# Are we in the middle of a hot code replace?
+		if global.HCRSavedState?
+			# Inject state from prior to reload
+			ReactHacks.injectState pageComponent._reactInternalInstance, global.HCRSavedState
+			global.HCRSavedState = null
+		else
+			# No HCR, so just a normal init
+			pageComponent.init()
 
 		# Listen for close button or Alt-F4
-		nwWin.on 'close', =>
-			pageComponent.suggestClose()
-			return
+		nwWin.on 'close', onWindowCloseEvent
+
+		# Set up keyboard shortcuts
+		win.document.addEventListener 'keyup', (event) ->
+			# If Ctrl-Shift-J
+			if event.ctrlKey and event.shiftKey and event.which is 74
+				Gui.Window.get(win).showDevTools()
+		, false
+		win.document.addEventListener 'keyup', (event) ->
+			# If Ctrl-R
+			if event.ctrlKey and (not event.shiftKey) and event.which is 82
+				doHotCodeReplace()
+		, false
+
+	# Define the listener here so that it can be removed later
+	onWindowCloseEvent = =>
+		pageComponent.suggestClose()
+
+	doHotCodeReplace = =>
+		# Save the entire page state into a global var
+		global.HCRSavedState = ReactHacks.extractState pageComponent._reactInternalInstance
+
+		# Unmount components normally, but with no deinit
+		React.unmountComponentAtNode containerElem
+
+		# Remove window listener (a new one will be added after the reload)
+		nwWin.removeListener 'close', onWindowCloseEvent
+
+		# Clear Node.js module cache
+		for cacheId of require.cache
+			delete require.cache[cacheId]
+
+		# Reload HTML page
+		win.location.reload(true)
 
 module.exports = {init}

@@ -50,16 +50,21 @@ load = (win, {clientFileId}) ->
 				isClosed: false
 			}
 
+		componentDidMount: ->
+			@_registerListeners()
+
+		componentWillUnmount: ->
+			@_unregisterListeners()
+
+		init: ->
+			@_loadData()
+
+		deinit: ->
+			if @state.clientFileLock
+				@state.clientFileLock.release()
+
 		suggestClose: ->
 			@refs.ui.suggestClose()
-
-		close: ->
-			@_unregisterListeners()
-			@props.closeWindow()
-
-		componentDidMount: ->
-			@_loadData()
-			@_registerListeners()
 
 		render: ->
 			return ClientFilePageUi({
@@ -73,7 +78,7 @@ load = (win, {clientFileId}) ->
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
 
-				close: @close
+				closeWindow: @props.closeWindow
 				maximizeWindow: @props.maximizeWindow
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
@@ -325,9 +330,6 @@ load = (win, {clientFileId}) ->
 
 			@setState {isClosed: true}
 
-			if @state.clientFileLock
-				@state.clientFileLock.release()
-
 	ClientFilePageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
@@ -343,7 +345,7 @@ load = (win, {clientFileId}) ->
 			# If page still loading
 			# TODO handle this more elegantly
 			unless @props.clientFile?
-				@props.close()
+				@props.closeWindow()
 				return
 
 			clientName = renderName @props.clientFile.get('clientName')
@@ -365,7 +367,7 @@ load = (win, {clientFileId}) ->
 							label: "Discard Changes"
 							className: "btn-danger"
 							callback: => 
-								@props.close()
+								@props.closeWindow()
 						}
 						success: {
 							label: "View Plan"
@@ -377,13 +379,13 @@ load = (win, {clientFileId}) ->
 					}
 				}
 			else
-				@props.close()
+				@props.closeWindow()
 
 		render: ->
 			if @props.loadErrorType
 				return LoadError({
 					loadErrorType: @props.loadErrorType
-					close: @props.close
+					closeWindow: @props.closeWindow
 				})
 
 			if @props.status is 'init'
@@ -505,7 +507,7 @@ load = (win, {clientFileId}) ->
 				else
 					"An unknown error occured (loadErrorType: #{@props.loadErrorType}"				
 			Bootbox.alert msg, =>
-				@props.close()
+				@props.closeWindow()
 		render: ->
 			return R.div({className: 'clientFilePage'})
 

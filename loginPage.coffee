@@ -24,10 +24,12 @@ load = (win) ->
 				isSetUp: false
 			}
 
-		suggestClose: ->
-			@close()
+		init: ->
+			@_checkSetUp()
 
-		close: ->
+		deinit: -> # Do nothing
+
+		suggestClose: ->
 			@props.closeWindow()
 
 		render: ->
@@ -37,8 +39,6 @@ load = (win) ->
 				isSetUp: @state.isSetUp
 				login: @_login
 			})
-
-		componentDidMount: -> @_checkSetUp()
 
 		_checkSetUp: ->
 			adminPassword = null

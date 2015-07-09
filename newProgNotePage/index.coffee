@@ -42,16 +42,20 @@ load = (win, {clientFileId}) ->
 				progNotes: null
 			}
 
+		componentDidMount: ->
+			@_registerListeners()
+
+		componentWillUnmount: ->
+			@_unregisterListeners()
+
+		init: ->
+			@_loadData()
+
+		deinit: ->
+			@_loadData()
+
 		suggestClose: ->
 			@refs.ui.suggestClose()
-
-		close: ->
-			@_unregisterListeners()
-			@props.closeWindow()
-
-		componentDidMount: ->
-			@_loadData()
-			@_registerListeners()
 
 		render: ->
 			new NewProgNotePageUi({
@@ -63,7 +67,7 @@ load = (win, {clientFileId}) ->
 				clientFile: @state.clientFile
 				progNotes: @state.progNotes
 
-				close: @close
+				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 			})
 
@@ -253,7 +257,7 @@ load = (win, {clientFileId}) ->
 							label: "Yes"
 							className: 'btn-primary'
 							callback: =>
-								@props.close()
+								@props.closeWindow()
 						}
 					}
 				}
@@ -288,7 +292,7 @@ load = (win, {clientFileId}) ->
 							R.button({
 								className: 'btn btn-danger'
 								onClick: =>
-									@props.close()
+									@props.closeWindow()
 							}, "Close")
 						)
 					)
@@ -508,7 +512,7 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
-				@props.close()
+				@props.closeWindow()
 
 	OpenCreateProgEventButton = React.createFactory React.createClass
 		mixins: [LayeredComponentMixin, React.addons.PureRenderMixin]
