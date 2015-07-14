@@ -62,18 +62,27 @@ load = (win) ->
 						)
 					)
 					R.div({className: "toolbar #{showWhen plan.get('sections').size > 0}"},
-						R.button({
-							className: [
-								'save btn'
-								'btn-' + if @hasChanges() then 'success canSave' else 'warning'
-							].join ' '
-							disabled: not @hasChanges()
-							onClick: @_save
-						},
-							FaIcon('save')
-							if @hasChanges() then "Save Plan" else "No Changes to Save"
+						R.span({className: 'leftMenu'},
+							R.button({
+								className: [
+									'save btn'
+									'btn-' + if @hasChanges() then 'success canSave' else 'warning'
+								].join ' '
+								disabled: not @hasChanges()
+								onClick: @_save
+							},
+								FaIcon('save')
+								if @hasChanges() then "Save Plan" else "No Changes to Save"
+							)	
 						)
-						R.div({className: 'rightMenu'},
+						R.span({className: 'rightMenu'},							
+							R.button({
+								className: 'addSection btn btn-default'
+								onClick: @_addSection
+							},
+								FaIcon('plus')
+								"Add section"
+							)
 							PrintButton({
 								dataSet: [
 									{
@@ -87,15 +96,9 @@ load = (win) ->
 									}
 								]
 								isVisible: not @hasChanges()
-							})
-							R.button({
-								className: 'addSection btn btn-default'
-								onClick: @_addSection
-							},
-								FaIcon('plus')
-								"Add section"
-							)
-						)						
+								iconOnly: true
+							})					
+						)
 					)
 					R.div({className: 'sections'},
 						(plan.get('sections').map (section) =>

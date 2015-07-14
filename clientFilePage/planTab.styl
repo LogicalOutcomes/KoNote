@@ -22,19 +22,56 @@
 		> .toolbar
 			padding 30px
 			border-bottom 1px solid sidebar-borders
-
-			> .rightMenu
-				float right
-
-			.btn > .fa
-				margin-right 8px
+			display flex
+			flex-wrap wrap
 			
-			> .save
-				transition all 0.5s ease
-				width 180px
+			> span
+				flex 1
 				
-			> .canSave
-				width 120px
+				&.leftMenu
+					padding-right 5px
+				
+				&.rightMenu
+					text-align right
+			
+				> .btn
+					
+					> .fa
+						margin-right 8px
+				
+				.save
+					width 100%
+					transition all 0.5s ease
+					
+				.canSave
+					width 60%
+					
+			// @media (max-width: 1150px)
+			// 	.btn
+			// 		font-size .95em !important
+					
+			@media (max-width: 1150px)
+				display block
+				
+				
+				> span
+					display block
+					flex none
+					width 100%
+					
+					> .canSave
+						width 100%
+					
+					&.rightMenu
+						margin-top 10px
+						display flex
+						
+						> .btn
+							flex 3
+							
+						> .printButton
+							flex 1
+						
 
 		> .sections
 			overflow auto

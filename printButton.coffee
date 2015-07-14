@@ -20,7 +20,7 @@ load = (win) ->
 				onClick: @_printDiv
 				ref: 'printButton'
 			},
-				R.span({}, "Print")
+				R.span({}, if not @props.iconOnly then "Print")
 				FaIcon('print')
 			)
 		_printDiv: ->
