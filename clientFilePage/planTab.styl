@@ -3,9 +3,9 @@
 
 	> .targetList
 		flex 1
-		overflow auto
-
-		padding 30px 30px
+		overflow inherit
+		display flex
+		flex-direction column		
 
 		> .empty
 			text-align center
@@ -20,7 +20,8 @@
 				padding-right 10px
 
 		> .toolbar
-			width 100%
+			padding 30px
+			border-bottom 1px solid sidebar-borders
 
 			> .rightMenu
 				float right
@@ -36,6 +37,9 @@
 				width 120px
 
 		> .sections
+			overflow auto
+			padding 0 30px 30px 30px
+			
 			> .section
 				padding-top 15px
 
