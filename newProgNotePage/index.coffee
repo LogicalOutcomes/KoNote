@@ -1,6 +1,5 @@
 # UI logic for the progress note creation window
 
-_ = require 'underscore'
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -47,7 +46,7 @@ load = (win, {clientFileId}) ->
 		deinit: ->
 			@_loadData()
 
-		getPageListeners: -> return {}
+		getPageListeners: -> {}
 
 		suggestClose: ->
 			@refs.ui.suggestClose()

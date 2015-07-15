@@ -25,7 +25,7 @@ init = (win) ->
 	Assert = require 'assert'
 	Backbone = require 'backbone'
 	QueryString = require 'querystring'
-	_ = require 'underscore'
+	Imm = require 'immutable'
 	
 	Config = require('./config')
 
@@ -77,7 +77,7 @@ init = (win) ->
 				pageComponent.deinit()
 				React.unmountComponentAtNode containerElem
 
-				unregisterListeners()
+				unregisterListeners() if global.ActiveSession
 
 				nwWin.close true
 
@@ -125,22 +125,20 @@ init = (win) ->
 				doHotCodeReplace()
 		, false
 
-		registerListeners()
+		registerListeners() if global.ActiveSession
 
 	registerListeners = =>
 		# Register listeners from internal page component
-		if global.ActiveSession
-			@pageListeners = pageComponent.getPageListeners()
-			_.extend @pageListeners, getTimeoutListeners() # Add timeout listeners
+		@pageListeners = Imm.fromJS pageComponent.getPageListeners()
+		.mergeDeep getTimeoutListeners() # and merge in timeout listeners
 
-			for name, action of @pageListeners
-				global.ActiveSession.persist.eventBus.on name, action
+		@pageListeners.map (action, name) =>
+			global.ActiveSession.persist.eventBus.on name, action
 
 	unregisterListeners = =>
 		# Unregister page listeners
-		if global.ActiveSession
-			for name, action of @pageListeners				
-				global.ActiveSession.persist.eventBus.stopListening name
+		@pageListeners.map (action, name) =>
+			global.ActiveSession.persist.eventBus.stopListening name, action
 
 	# Define the listener here so that it can be removed later
 	onWindowCloseEvent = =>
