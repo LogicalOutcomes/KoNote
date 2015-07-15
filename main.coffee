@@ -55,12 +55,14 @@ init = (win) ->
 
 	containerElem = document.getElementById('container')
 	pageComponent = null
+	listeners = null
+	pageListeners = null
 
 	process.nextTick =>
 		renderPage()
 		initPage()
 
-	renderPage = =>
+	renderPage = =>		
 		# Pull any parameters out of the URL
 		urlParams = QueryString.parse win.location.search.substr(1)
 
@@ -69,15 +71,15 @@ init = (win) ->
 		pageModulePath = pageModulePathsById[urlParams.page or defaultPageId]
 
 		# Load the page module
-		pageComponentClass = require(pageModulePath).load(win, urlParams)
+		pageComponentClass = require(pageModulePath).load(win, urlParams)			
 
 		# Render page in window
-		pageComponent = React.render pageComponentClass({
+		pageComponent = React.render pageComponentClass({			
 			closeWindow: =>
 				pageComponent.deinit()
 				React.unmountComponentAtNode containerElem
 
-				unregisterListeners() if global.ActiveSession
+				listeners.unregister() if global.ActiveSession
 
 				nwWin.close true
 
@@ -125,20 +127,25 @@ init = (win) ->
 				doHotCodeReplace()
 		, false
 
-		registerListeners() if global.ActiveSession
+		# Register all listeners if logged in
+		listeners.register() if global.ActiveSession
 
-	registerListeners = =>
-		# Register listeners from internal page component
-		@pageListeners = Imm.fromJS pageComponent.getPageListeners()
-		.mergeDeep getTimeoutListeners() # and merge in timeout listeners
+	listeners = {
+		register: =>
+			# Register listeners from internal page component
+			pageListeners = Imm.fromJS pageComponent.getPageListeners()
+			.mergeDeep getTimeoutListeners() # and merge in timeout listeners
 
-		@pageListeners.map (action, name) =>
-			global.ActiveSession.persist.eventBus.on name, action
+			pageListeners.map (action, name) =>
+				console.log "registered event", name, action
+				global.ActiveSession.persist.eventBus.on name, action
 
-	unregisterListeners = =>
-		# Unregister page listeners
-		@pageListeners.map (action, name) =>
-			global.ActiveSession.persist.eventBus.stopListening name, action
+		unregister: =>
+			# Unregister page listeners
+			pageListeners.map (action, name) =>
+				console.log "unregistered event", name, action
+				global.ActiveSession.persist.eventBus.stopListening name, action
+	}
 
 	# Define the listener here so that it can be removed later
 	onWindowCloseEvent = =>
