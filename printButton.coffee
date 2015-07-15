@@ -16,14 +16,24 @@ load = (win) ->
 				className: [
 					'printButton'
 					'btn btn-default'
-					showWhen @props.isVisible
+					'disabled' if @props.disabled
 				].join ' '
-				onClick: @_printDiv
+				onClick: @_printDiv if not @props.tooltip or not @props.tooltip.show
 				ref: 'printButton'
 			},
 				R.span({}, if not @props.iconOnly then "Print")
 				FaIcon('print')
 			)
+		componentDidUpdate: ->
+			if @props.tooltip
+				if @props.tooltip.show
+					$(@getDOMNode()).tooltip {
+						html: true
+						placement: @props.tooltip.placement
+						title: @props.tooltip.title
+					}
+				else
+					$(@getDOMNode()).tooltip 'destroy'
 		_printDiv: ->
 			openWindow {
 				page: 'printPreview'

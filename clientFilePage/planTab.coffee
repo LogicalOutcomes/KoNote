@@ -79,8 +79,7 @@ load = (win) ->
 								className: [
 									'save btn'
 									'btn-' + if @hasChanges() then 'success canSave' else 'warning'
-								].join ' '
-								disabled: not @hasChanges()
+								].join ' '								
 								onClick: @_save
 							},
 								FaIcon('save')
@@ -107,8 +106,13 @@ load = (win) ->
 										clientFile: @props.clientFile
 									}
 								]
-								isVisible: not @hasChanges()
 								iconOnly: true
+								disabled: @hasChanges()
+								tooltip: {
+									show: @hasChanges()
+									placement: 'bottom'
+									title: "Please save the changes to client's plan before printing"
+								}
 							})					
 						)
 					)
