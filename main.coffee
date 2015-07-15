@@ -32,7 +32,7 @@ init = (win) ->
 	React = win.React
 
 	CrashHandler = require('./crashHandler').load(win)
-	ReactHacks = require('./reactHacks').load(win)
+	HotCodeReplace = require('./hotCodeReplace').load(win)
 	Gui = win.require 'nw.gui'
 
 	nwWin = Gui.Window.get(win)
@@ -92,8 +92,13 @@ init = (win) ->
 
 		# Are we in the middle of a hot code replace?
 		if global.HCRSavedState?
-			# Inject state from prior to reload
-			ReactHacks.injectState pageComponent._reactInternalInstance, global.HCRSavedState
+			try
+				# Inject state from prior to reload
+				HotCodeReplace.restoreSnapshot pageComponent, global.HCRSavedState
+			catch err
+				# HCR is risky, so hope that it wasn't too bad
+				console.error "HCR: #{err.toString()}"
+
 			global.HCRSavedState = null
 		else
 			# No HCR, so just a normal init
@@ -120,7 +125,7 @@ init = (win) ->
 
 	doHotCodeReplace = =>
 		# Save the entire page state into a global var
-		global.HCRSavedState = ReactHacks.extractState pageComponent._reactInternalInstance
+		global.HCRSavedState = HotCodeReplace.takeSnapshot pageComponent
 
 		# Unmount components normally, but with no deinit
 		React.unmountComponentAtNode containerElem
