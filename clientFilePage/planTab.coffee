@@ -79,7 +79,8 @@ load = (win) ->
 								className: [
 									'save btn'
 									'btn-' + if @hasChanges() then 'success canSave' else 'warning'
-								].join ' '								
+								].join ' '
+								disabled: not @hasChanges()
 								onClick: @_save
 							},
 								FaIcon('save')
