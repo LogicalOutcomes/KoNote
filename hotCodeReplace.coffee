@@ -1,3 +1,22 @@
+# Tools for implementing hot code replace.
+#
+# This module provides methods for snapshotting a React render tree.
+#
+# Note: this module depends on the following internal React v0.13.3 properties:
+#
+#  - ReactComponent._reactInternalInstance
+#    either a ReactCompositeComponentWrapper or a ReactDOMComponent
+#
+#  - ReactCompositeComponentWrapper.getPublicInstance()
+#    returns a ReactComponent
+#
+#  - ReactCompositeComponentWrapper._renderedComponent
+#    either a ReactCompositeComponentWrapper or a ReactDOMComponent
+#
+#  - ReactDOMComponent._renderedChildren
+#    either null or an object mapping child keys to children.
+#    each child is either a ReactCompositeComponentWrapper or a ReactDOMComponent
+
 Assert = require 'assert'
 Async = require 'async'
 Imm = require 'immutable'
