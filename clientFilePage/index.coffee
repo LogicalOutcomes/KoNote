@@ -30,7 +30,6 @@ load = (win, {clientFileId}) ->
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
-	{registerTimeoutListeners, unregisterTimeoutListeners} = require('../timeoutDialog').load(win)
 	{FaIcon, renderName, renderFileId, showWhen, stripMetadata} = require('../utils').load(win)
 
 	ClientFilePage = React.createFactory React.createClass
@@ -262,7 +261,7 @@ load = (win, {clientFileId}) ->
 
 				cb()
 
-		registerListeners: ->
+		getPageListeners: ->
 			return {
 				'createRevision:clientFile': (newRev) =>
 					unless newRev.get('id') is clientFileId then return

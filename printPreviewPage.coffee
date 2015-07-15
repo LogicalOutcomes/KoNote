@@ -31,7 +31,7 @@ load = (win, {dataSet}) ->
 		suggestClose: ->
 			@props.closeWindow()
 
-		registerListeners: -> return {}
+		getPageListeners: -> return {}
 
 		render: ->
 			new PrintPreviewPageUi {

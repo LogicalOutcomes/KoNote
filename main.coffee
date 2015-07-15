@@ -35,7 +35,7 @@ init = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	HotCodeReplace = require('./hotCodeReplace').load(win)
 	Gui = win.require 'nw.gui'
-	{timeoutListeners} = require('./timeoutDialog').load(win)
+	{getTimeoutListeners} = require('./timeoutDialog').load(win)
 
 	nwWin = Gui.Window.get(win)
 
@@ -77,7 +77,7 @@ init = (win) ->
 				pageComponent.deinit()
 				React.unmountComponentAtNode containerElem
 
-				unregisterPageListeners()
+				unregisterListeners()
 
 				nwWin.close true
 
@@ -93,7 +93,8 @@ init = (win) ->
 		Assert pageComponent.init, "missing page.init"
 		Assert pageComponent.suggestClose, "missing page.suggestClose"
 		Assert pageComponent.deinit, "missing page.deinit"
-		Assert pageComponent.registerListeners, "missing page.registerListeners"
+		if global.ActiveSession
+			Assert pageComponent.getPageListeners, "missing page.getPageListeners"
 
 		# Are we in the middle of a hot code replace?
 		if global.HCRSavedState?
@@ -124,19 +125,20 @@ init = (win) ->
 				doHotCodeReplace()
 		, false
 
-		registerPageListeners()
+		registerListeners()
 
-	registerPageListeners = =>
+	registerListeners = =>
 		# Register listeners from internal page component
-		@pageListeners = pageComponent.registerListeners()
-		if @pageListeners
-				_.extend @pageListeners, timeoutListeners() # Add timeout listeners
+		if global.ActiveSession
+			@pageListeners = pageComponent.getPageListeners()
+			_.extend @pageListeners, getTimeoutListeners() # Add timeout listeners
+
 			for name, action of @pageListeners
 				global.ActiveSession.persist.eventBus.on name, action
 
-	unregisterPageListeners = =>
+	unregisterListeners = =>
 		# Unregister page listeners
-		if @pageListeners
+		if global.ActiveSession
 			for name, action of @pageListeners				
 				global.ActiveSession.persist.eventBus.stopListening name
 

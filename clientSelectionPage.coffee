@@ -62,7 +62,7 @@ load = (win) ->
 						clientFileList: result
 					}
 
-		registerListeners: ->
+		getPageListeners: ->
 			return {
 				'create:clientFile': (newFile) =>
 					@setState (state) => clientFileList: state.clientFileList.push newFile

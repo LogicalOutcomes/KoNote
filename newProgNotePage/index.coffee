@@ -47,7 +47,7 @@ load = (win, {clientFileId}) ->
 		deinit: ->
 			@_loadData()
 
-		registerListeners: -> return {}
+		getPageListeners: -> return {}
 
 		suggestClose: ->
 			@refs.ui.suggestClose()

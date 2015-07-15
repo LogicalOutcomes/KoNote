@@ -65,7 +65,7 @@ load = (win) ->
 				)
 			)
 
-	timeoutListeners = ->		
+	getTimeoutListeners = ->		
 		# Fires 'resetTimeout' event upon any user interaction (move, click, typing, scroll)
 		$('body').bind "mousemove mousedown keypress scroll", ->
 			global.ActiveSession.persist.eventBus.trigger 'resetTimeout'
@@ -102,6 +102,6 @@ load = (win) ->
 				nwWin.close(true)
 		}		
 
-	return {timeoutListeners}
+	return {getTimeoutListeners}
 
 module.exports = {load}
