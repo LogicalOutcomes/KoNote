@@ -19,6 +19,7 @@ load = (win) ->
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 
 	AnalysisView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				selectedMetricIds: Imm.Set()
@@ -104,6 +105,7 @@ load = (win) ->
 				return {selectedMetricIds}
 
 	Chart = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({className: 'chart', ref: 'chartDiv'})
 		componentDidMount: ->

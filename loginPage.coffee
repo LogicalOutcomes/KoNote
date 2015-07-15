@@ -15,33 +15,30 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
-	do ->
-		init = ->
-			render()
-			loadData()
-			registerListeners()
-
-		process.nextTick init
-
-		render = ->
-			React.render new LoginPage(), $('#container')[0]
-
-		loadData = ->
-			# TODO load teh datas?
-
-		registerListeners = ->
-			# TODO listen for a change?
-
 	LoginPage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
-				showForm: false
-				userName: ''
-				password: ''
 				isLoading: true
+				isSetUp: false
 			}
-		componentDidMount: ->
+
+		init: ->
 			@_checkSetUp()
+
+		deinit: -> # Do nothing
+
+		suggestClose: ->
+			@props.closeWindow()
+
+		render: ->
+			return new LoginPageUi({
+				ref: 'ui'
+				isLoading: @state.isLoading
+				isSetUp: @state.isSetUp
+				login: @_login
+			})
 
 		_checkSetUp: ->
 			adminPassword = null
@@ -58,13 +55,14 @@ load = (win) ->
 
 						if isSetUp
 							# Already set up, no need to continue here
-							@setState {showForm: true}
-							@refs.userNameField.getDOMNode().focus()
+							@setState {isSetUp: true}, =>
+								@refs.ui.isSetUp()
 							return
 
 						# Data directory hasn't been set up yet.
 						cb()
 				(cb) =>
+					# TODO: Move to ui
 					Bootbox.confirm """
 						KoNote could not find any data.  Unless this is your first
 						time using KoNote, this may indicate a problem.  Would you
@@ -76,6 +74,7 @@ load = (win) ->
 
 						cb()
 				(cb) =>
+					# TODO: Move to ui
 					Bootbox.prompt {
 						title: 'Enter password for admin account'
 						inputType: 'password'
@@ -119,20 +118,66 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@setState {
-					showForm: true
-					userName: 'admin'
-				}
+				@refs.ui.prepareForAdmin()
+				@setState {isSetUp: true}
 
-				@refs.passwordField.getDOMNode().focus()
+		_login: (userName, password) ->
+			# TODO where to get data dir path? config?			
+			@setState {isLoading: true}
+
+			Persist.Session.login 'data', userName, password, (err, session) =>
+				@setState {isLoading: false}
+				if err
+					if err instanceof Persist.Session.UnknownUserNameError
+						@refs.ui.onLoginError('UnknownUserNameError')
+						return
+
+					if err instanceof Persist.Session.IncorrectPasswordError
+						@refs.ui.onLoginError('IncorrectPasswordError')
+						return
+
+					CrashHandler.handle err
+					return
+
+				# Store this session for later use
+				global.ActiveSession = session
+
+				# Proceed to clientSelectionPage
+				# TODO this should be abstracted similar to openWindow (see utils)
+				win.location.href = 'main.html?page=clientSelection'	
+
+	LoginPageUi = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				userName: ''
+				password: ''
+			}
+
+		prepareForAdmin: ->
+			@setState {userName: 'admin'}
+			@refs.passwordField.getDOMNode().focus()
+
+		isSetUp: ->
+			@refs.userNameField.getDOMNode().focus()
+
+		onLoginError: (type) ->
+			switch type
+				when 'UnknownUserNameError'
+					Bootbox.alert "Unknown user name.  Please try again."
+				when 'IncorrectPasswordError'
+					Bootbox.alert "Incorrect password.  Please try again."
+					@setState {password: ''}
+				else
+					throw new Error "Invalid Login Error"
 
 		render: ->
 			return R.div({className: 'loginPage'},
 				Spinner({
-					isVisible: @state.isLoading
+					isVisible: @props.isLoading
 					isOverlay: true
 				})
-				R.form({className: "loginForm #{showWhen @state.showForm}"},
+				R.form({className: "loginForm #{showWhen @props.isSetUp}"},
 					R.div({className: 'form-group'},
 						R.label({}, "User name")
 						R.input({
@@ -162,35 +207,14 @@ load = (win) ->
 					)
 				)
 			)
+		_login: (event) ->
+			event.preventDefault()
+			@props.login(@state.userName, @state.password)
 		_updateUserName: (event) ->
 			@setState {userName: event.target.value}
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
-		_login: (event) ->
-			# TODO where to get data dir path? config?
-			event.preventDefault()
-			@setState {isLoading: true}
 
-			Persist.Session.login 'data', @state.userName, @state.password, (err, session) =>
-				@setState {isLoading: false}
-				if err
-					if err instanceof Persist.Session.UnknownUserNameError
-						Bootbox.alert "Unknown user name.  Please try again."
-						return
-
-					if err instanceof Persist.Session.IncorrectPasswordError
-						Bootbox.alert "Incorrect password.  Please try again.", =>
-							@setState {password: ''}
-						return
-
-					CrashHandler.handle err
-					return
-
-				# Store this session for later use
-				global.ActiveSession = session
-
-				# Proceed to clientSelectionPage
-				# TODO this should be abstracted similar to openWindow (see utils)
-				win.location.href = 'main.html?page=clientSelection'	
+	return LoginPage
 
 module.exports = {load}

@@ -16,6 +16,7 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)	
 
 	CreateProgEventDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				title: ''

@@ -22,86 +22,85 @@ load = (win) ->
 	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
-	nwWin = Gui.Window.get(win)
+	ClientSelectionPage = React.createFactory React.createClass
+		getInitialState: ->
+			return {
+				isLoading: true
+				clientFileList: null
+			}
 
-	do ->
-		clientFileList = null
+		componentDidMount: ->
+			@_registerListeners()
 
-		init = ->
-			render()
-			loadData()
-			registerListeners()
+		componentWillUnmount: ->
+			@_unregisterListeners()
 
-		process.nextTick init
+		init: ->
+			@_loadData()
 
-		render = ->
-			React.render new ClientSelectionPage({
-				clientFileList
-			}), $('#container')[0]
+		deinit: ->
+			# Nothing need be done
 
-			$('.searchBox').focus()
+		suggestClose: ->
+			@props.closeWindow()
 
-		loadData = ->
-			ActiveSession.persist.clientFiles.list (err, result) ->
+		render: ->
+			return new ClientSelectionPageUi({
+				isLoading: @state.isLoading
+				clientFileList: @state.clientFileList
+			})
+
+		_loadData: ->
+			ActiveSession.persist.clientFiles.list (err, result) =>
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """
 							Please check your network connection and try again.
 						""", =>
-							nwWin.close true
+							@props.closeWindow()
 						return
 
 					CrashHandler.handle err
 					return
 
-				clientFileList = result
-				render()
+				@setState (state) =>
+					return {
+						isLoading: false
+						clientFileList: result
+					}
 
-		registerListeners = ->
+		_registerListeners: ->
 			registerTimeoutListeners()
 
-			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) ->
-				clientFileList = clientFileList.push newFile
+			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) =>
+				@setState (state) =>
+					return {
+						clientFileList: state.clientFileList.push newFile
+					}
 
-				render()
+		_unregisterListeners: ->
+			unregisterTimeoutListeners()
 
-			global.ActiveSession.persist.eventBus.on 'createRevision:clientFile', (newRev) ->
-				# TODO this code needs some work
+	ClientSelectionPageUi = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 
-				targetId = newRev.get('id')
-
-				# This looks right... but I can't test it
-				unless clientFileList.get(targetId) is newRev
-					return
-
-				# I need to replace the original object's information with newRev's
-				clientFileList = clientFileList.map (clientFile) ->
-					if clientFile.has(targetId)
-						clientFile = newRev
-
-					return clientFile
-
-				render()
-
-	ClientSelectionPage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
 				isSmallHeaderSet: false
 				queryText: ''
 				menuIsOpen: false
 			}
-		componentDidMount: ->
-			nwWin.on 'close', (event) ->
-				unregisterTimeoutListeners()
-				nwWin.close true
 
-		_isLoading: ->
-			return @props.clientFileList is null
+		componentDidUpdate: (oldProps, oldState) ->
+			# If loading just finished
+			if oldProps.isLoading and (not @props.isLoading)
+				@refs.searchBox.getDOMNode().focus()
+
 		render: ->
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
 
 			results = null
-			unless @_isLoading()
+			unless @props.isLoading
 				results = @_getResultsList()
 
 			return R.div({
@@ -120,13 +119,13 @@ load = (win) ->
 				},					
 					R.div({id: 'main'},
 						Spinner({
-							isVisible: @_isLoading()
+							isVisible: @props.isLoading
 							isOverlay: true
 						})						
 						R.header({
 							className: [
 								if smallHeader then 'small' else ''
-								showWhen not @_isLoading()
+								showWhen not @props.isLoading
 							].join ' '
 						},								
 							R.div({className: 'logoContainer'},
@@ -146,6 +145,7 @@ load = (win) ->
 									onChange: @_updateQueryText
 									onBlur: @_onSearchBoxBlur
 									placeholder: "Search for a client's profile..."
+									value: @state.queryText
 								})
 							)
 						)
@@ -153,7 +153,7 @@ load = (win) ->
 							className: [
 								'smallHeaderLogo'
 								if smallHeader then 'show' else 'hidden'
-								showWhen not @_isLoading()
+								showWhen not @props.isLoading
 							].join ' '
 						},
 							R.img({src: 'customer-logo-lg.png'})
@@ -162,7 +162,7 @@ load = (win) ->
 							className: [
 								'results'
 								if smallHeader then 'show' else 'hidden'
-								showWhen not @_isLoading()
+								showWhen not @props.isLoading
 							].join ' '
 						},
 							(if results?
@@ -295,5 +295,6 @@ load = (win) ->
 		_cancel: ->
 			@setState {isOpen: false}
 
+	return ClientSelectionPage
 
 module.exports = {load}

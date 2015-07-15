@@ -10,6 +10,7 @@ load = (win) ->
 	{FaIcon, openWindow, showWhen} = require('./utils').load(win)
 
 	PrintButton = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.button({
 				className: [

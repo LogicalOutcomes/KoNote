@@ -16,33 +16,41 @@ load = (win, {dataSet}) ->
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
-	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)
-
-	nwWin = Gui.Window.get(win)
-
-	do ->
-		console.log "Print Data:", JSON.parse(dataSet)
-		printDataSet = Imm.fromJS JSON.parse(dataSet)
-
-		init = ->
-			render()
-			registerListeners()
-
-		process.nextTick init
-
-		render = ->
-			React.render new PrintPreviewPage({
-				printDataSet
-			}), $('#container')[0]
-
-		registerListeners = ->
-			registerTimeoutListeners()
+	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)	
 
 	PrintPreviewPage = React.createFactory React.createClass
-		componentWillMount: ->
-			nwWin.on 'close', (event) -> 
-				unregisterTimeoutListeners()
-				nwWin.close true
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			return {
+				printDataSet: Imm.fromJS JSON.parse(dataSet)
+			}
+
+		componentDidMount: ->
+			@_registerListeners()
+
+		componentWillUnmount: ->
+			@_unregisterListeners()
+
+		init: -> # Do nothing
+		deinit: -> # Do nothing
+
+		suggestClose: ->
+			@props.closeWindow()
+
+		_registerListeners: ->
+			registerTimeoutListeners()
+
+		_unregisterListeners: ->
+			unregisterTimeoutListeners()
+
+		render: ->
+			new PrintPreviewPageUi {
+				printDataSet: @state.printDataSet
+			}
+
+	PrintPreviewPageUi = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
 			# Without timeout, print() triggers before DOM renders
@@ -92,6 +100,7 @@ load = (win, {dataSet}) ->
 
 
 	PrintHeader = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'header'},
 				R.div({className: 'leftSide'},
@@ -142,6 +151,7 @@ load = (win, {dataSet}) ->
 			)
 
 	BasicProgNoteView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->			
 			R.div({className: 'basic progNote'},				
 				R.div({className: 'notes'},
@@ -150,6 +160,7 @@ load = (win, {dataSet}) ->
 			)
 
 	FullProgNoteView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'full progNote'},
 				R.div({className: 'sections'},
@@ -221,6 +232,7 @@ load = (win, {dataSet}) ->
 			)
 
 	SinglePlanView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'plan'},
 				R.div({className: 'sections'},
@@ -258,5 +270,7 @@ load = (win, {dataSet}) ->
 					).toJS()...
 				)
 			)
+
+	return PrintPreviewPage
 
 module.exports = {load}
