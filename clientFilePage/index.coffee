@@ -45,16 +45,7 @@ load = (win, {clientFileId}) ->
 				planTargetsById: Imm.Map()
 				metricsById: Imm.Map()
 				loadErrorType: null
-
-				# TODO make these unnecessary:
-				isClosed: false
 			}
-
-		componentDidMount: ->
-			@_registerListeners()
-
-		componentWillUnmount: ->
-			@_unregisterListeners()
 
 		init: ->
 			@_loadData()
@@ -271,64 +262,33 @@ load = (win, {clientFileId}) ->
 
 				cb()
 
-		_registerListeners: ->
-			registerTimeoutListeners()
+		registerListeners: ->
+			return {
+				'createRevision:clientFile': (newRev) =>
+					unless newRev.get('id') is clientFileId then return
+					@setState {clientFile: newRev}
 
-			global.ActiveSession.persist.eventBus.on 'createRevision:clientFile', (newRev) =>
-				if @state.isClosed
-					return
+				'create:planTarget createRevision:planTarget': (newRev) =>
+					unless newRev.get('clientFileId') is clientFileId then return
+					@setState (state) =>
+						targetId = newRev.get('id')
+						if state.planTargetsById.has targetId
+							planTargetsById = state.planTargetsById.updateIn [targetId, 'revisions'], (revs) =>
+								return revs.unshift newRev
+						else
+							planTargetsById = state.planTargetsById.set targetId, Imm.fromJS {
+								id: targetId
+								revisions: [newRev]
+							}
+						return {planTargetsById}
 
-				unless newRev.get('id') is clientFileId
-					return
+				'create:progNote': (newProgNote) =>
+					unless newProgNote.get('clientFileId') is clientFileId then return
+					@setState (state) => progressNotes: state.progressNotes.push newProgNote
 
-				@setState {clientFile: newRev}
-
-			global.ActiveSession.persist.eventBus.on 'create:planTarget createRevision:planTarget', (newRev) =>
-				if @state.isClosed
-					return
-
-				unless newRev.get('clientFileId') is clientFileId
-					return
-
-				@setState (state) =>
-					targetId = newRev.get('id')
-
-					if state.planTargetsById.has targetId
-						planTargetsById = state.planTargetsById.updateIn [targetId, 'revisions'], (revs) =>
-							return revs.unshift newRev
-					else
-						planTargetsById = state.planTargetsById.set targetId, Imm.fromJS {
-							id: targetId
-							revisions: [newRev]
-						}
-
-					return {planTargetsById}
-
-			global.ActiveSession.persist.eventBus.on 'create:progNote', (newProgNote) =>
-				if @state.isClosed
-					return
-
-				unless newProgNote.get('clientFileId') is clientFileId
-					return
-
-				@setState (state) =>
-					return {
-						progressNotes: state.progressNotes.push newProgNote
-					}
-
-			global.ActiveSession.persist.eventBus.on 'create:metric', (newMetric) =>
-				if @state.isClosed
-					return
-
-				@setState (state) =>
-					return {
-						metricsById: state.metricsById.set newMetric.get('id'), newMetric
-					}
-
-		_unregisterListeners: ->
-			unregisterTimeoutListeners()
-
-			@setState {isClosed: true}
+				'create:metric': (newMetric) =>
+					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
+			}
 
 	ClientFilePageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]

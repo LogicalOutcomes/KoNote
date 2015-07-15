@@ -25,6 +25,7 @@ init = (win) ->
 	Assert = require 'assert'
 	Backbone = require 'backbone'
 	QueryString = require 'querystring'
+	_ = require 'underscore'
 	
 	Config = require('./config')
 
@@ -34,6 +35,7 @@ init = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	HotCodeReplace = require('./hotCodeReplace').load(win)
 	Gui = win.require 'nw.gui'
+	{timeoutListeners} = require('./timeoutDialog').load(win)
 
 	nwWin = Gui.Window.get(win)
 
@@ -75,6 +77,8 @@ init = (win) ->
 				pageComponent.deinit()
 				React.unmountComponentAtNode containerElem
 
+				unregisterPageListeners()
+
 				nwWin.close true
 
 			maximizeWindow: =>
@@ -86,9 +90,10 @@ init = (win) ->
 
 	initPage = =>
 		# Make sure up this page has the required methods
-		Assert pageComponent.init, "mising page.init"
-		Assert pageComponent.suggestClose, "mising page.suggestClose"
-		Assert pageComponent.deinit, "mising page.deinit"
+		Assert pageComponent.init, "missing page.init"
+		Assert pageComponent.suggestClose, "missing page.suggestClose"
+		Assert pageComponent.deinit, "missing page.deinit"
+		Assert pageComponent.registerListeners, "missing page.registerListeners"
 
 		# Are we in the middle of a hot code replace?
 		if global.HCRSavedState?
@@ -118,6 +123,22 @@ init = (win) ->
 			if event.ctrlKey and (not event.shiftKey) and event.which is 82
 				doHotCodeReplace()
 		, false
+
+		registerPageListeners()
+
+	registerPageListeners = =>
+		# Register listeners from internal page component
+		@pageListeners = pageComponent.registerListeners()
+		if @pageListeners
+				_.extend @pageListeners, timeoutListeners() # Add timeout listeners
+			for name, action of @pageListeners
+				global.ActiveSession.persist.eventBus.on name, action
+
+	unregisterPageListeners = =>
+		# Unregister page listeners
+		if @pageListeners
+			for name, action of @pageListeners				
+				global.ActiveSession.persist.eventBus.stopListening name
 
 	# Define the listener here so that it can be removed later
 	onWindowCloseEvent = =>

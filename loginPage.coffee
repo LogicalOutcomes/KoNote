@@ -27,6 +27,8 @@ load = (win) ->
 		init: ->
 			@_checkSetUp()
 
+		registerListeners: -> return false # Absolutely no listeners
+
 		deinit: -> # Do nothing
 
 		suggestClose: ->
