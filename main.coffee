@@ -55,7 +55,6 @@ init = (win) ->
 
 	containerElem = document.getElementById('container')
 	pageComponent = null
-	listeners = null
 	pageListeners = null
 
 	process.nextTick =>
@@ -137,13 +136,11 @@ init = (win) ->
 			.mergeDeep getTimeoutListeners() # and merge in timeout listeners
 
 			pageListeners.map (action, name) =>
-				console.log "registered event", name, action
 				global.ActiveSession.persist.eventBus.on name, action
 
 		unregister: =>
 			# Unregister page listeners
 			pageListeners.map (action, name) =>
-				console.log "unregistered event", name, action
 				global.ActiveSession.persist.eventBus.stopListening name, action
 	}
 
