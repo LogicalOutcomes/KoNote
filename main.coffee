@@ -135,13 +135,13 @@ init = (win) ->
 		.mergeDeep getTimeoutListeners() # and merge in timeout listeners
 
 		pageListeners.map (action, name) =>
-			console.log "Registered Listener:", name
+			# console.log "Registered listener:", name
 			global.ActiveSession.persist.eventBus.on name, action
 
 	unregisterListeners = =>
 		# Unregister page listeners
 		pageListeners.map (action, name) =>
-			console.log "Unregistered Listener:", name
+			# console.log "Unregistered listener:", name
 			global.ActiveSession.persist.eventBus.stopListening name, action
 
 	# Define the listener here so that it can be removed later
