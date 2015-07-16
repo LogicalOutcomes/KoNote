@@ -76,9 +76,8 @@ init = (win) ->
 		pageComponent = React.render pageComponentClass({			
 			closeWindow: =>
 				pageComponent.deinit()
-				React.unmountComponentAtNode containerElem
-		
 				unregisterListeners() if global.ActiveSession and pageListeners
+				React.unmountComponentAtNode containerElem
 
 				nwWin.close true
 
@@ -114,6 +113,9 @@ init = (win) ->
 		# Listen for close button or Alt-F4
 		nwWin.on 'close', onWindowCloseEvent
 
+		# Register all listeners if logged in
+		registerListeners() if global.ActiveSession
+
 		# Set up keyboard shortcuts
 		win.document.addEventListener 'keyup', (event) ->
 			# If Ctrl-Shift-J
@@ -126,8 +128,22 @@ init = (win) ->
 				doHotCodeReplace()
 		, false
 
-		# Register all listeners if logged in
-		registerListeners() if global.ActiveSession
+	doHotCodeReplace = =>
+		# Save the entire page state into a global var
+		global.HCRSavedState = HotCodeReplace.takeSnapshot pageComponent
+
+		# Unmount components normally, but with no deinit
+		React.unmountComponentAtNode containerElem
+
+		# Remove window listener (a new one will be added after the reload)
+		nwWin.removeListener 'close', onWindowCloseEvent
+
+		# Clear Node.js module cache
+		for cacheId of require.cache
+			delete require.cache[cacheId]
+
+		# Reload HTML page
+		win.location.reload(true)
 
 	registerListeners = =>
 		# Register listeners from internal page component
@@ -147,22 +163,5 @@ init = (win) ->
 	# Define the listener here so that it can be removed later
 	onWindowCloseEvent = =>
 		pageComponent.suggestClose()
-
-	doHotCodeReplace = =>
-		# Save the entire page state into a global var
-		global.HCRSavedState = HotCodeReplace.takeSnapshot pageComponent
-
-		# Unmount components normally, but with no deinit
-		React.unmountComponentAtNode containerElem
-
-		# Remove window listener (a new one will be added after the reload)
-		nwWin.removeListener 'close', onWindowCloseEvent
-
-		# Clear Node.js module cache
-		for cacheId of require.cache
-			delete require.cache[cacheId]
-
-		# Reload HTML page
-		win.location.reload(true)
 
 module.exports = {init}
