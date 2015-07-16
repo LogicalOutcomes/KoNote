@@ -18,8 +18,7 @@ load = (win) ->
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
-	BrandWidget = require('./brandWidget').load(win)
-	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)
+	BrandWidget = require('./brandWidget').load(win)	
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
 	ClientSelectionPage = React.createFactory React.createClass
@@ -28,12 +27,6 @@ load = (win) ->
 				isLoading: true
 				clientFileList: null
 			}
-
-		componentDidMount: ->
-			@_registerListeners()
-
-		componentWillUnmount: ->
-			@_unregisterListeners()
 
 		init: ->
 			@_loadData()
@@ -69,17 +62,11 @@ load = (win) ->
 						clientFileList: result
 					}
 
-		_registerListeners: ->
-			registerTimeoutListeners()
-
-			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) =>
-				@setState (state) =>
-					return {
-						clientFileList: state.clientFileList.push newFile
-					}
-
-		_unregisterListeners: ->
-			unregisterTimeoutListeners()
+		getPageListeners: ->
+			return {
+				'create:clientFile': (newFile) =>
+					@setState (state) => clientFileList: state.clientFileList.push newFile
+			}
 
 	ClientSelectionPageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]

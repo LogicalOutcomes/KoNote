@@ -1,6 +1,5 @@
 # UI logic for the progress note creation window
 
-_ = require 'underscore'
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -25,7 +24,6 @@ load = (win, {clientFileId}) ->
 	Dialog = require('../dialog').load(win)
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
-	{registerTimeoutListeners, unregisterTimeoutListeners} = require('../timeoutDialog').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
 
 	myTemplate = Imm.fromJS Config.templates[Config.useTemplate]
@@ -42,17 +40,13 @@ load = (win, {clientFileId}) ->
 				progNotes: null
 			}
 
-		componentDidMount: ->
-			@_registerListeners()
-
-		componentWillUnmount: ->
-			@_unregisterListeners()
-
 		init: ->
 			@_loadData()
 
 		deinit: ->
 			@_loadData()
+
+		getPageListeners: -> {}
 
 		suggestClose: ->
 			@refs.ui.suggestClose()
@@ -70,9 +64,6 @@ load = (win, {clientFileId}) ->
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 			})
-
-		_registerListeners: -> registerTimeoutListeners()
-		_unregisterListeners: -> unregisterTimeoutListeners()
 
 		_loadData: ->
 			template = myTemplate # TODO

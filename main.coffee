@@ -25,6 +25,7 @@ init = (win) ->
 	Assert = require 'assert'
 	Backbone = require 'backbone'
 	QueryString = require 'querystring'
+	Imm = require 'immutable'
 	
 	Config = require('./config')
 
@@ -33,8 +34,9 @@ init = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	HotCodeReplace = require('./hotCodeReplace').load(win)
+	{getTimeoutListeners} = require('./timeoutDialog').load(win)
 
-	Gui = win.require 'nw.gui'
+	Gui = win.require 'nw.gui'	
 	nwWin = Gui.Window.get(win)
 
 	# Handle any uncaught errors.
@@ -53,12 +55,13 @@ init = (win) ->
 
 	containerElem = document.getElementById('container')
 	pageComponent = null
+	pageListeners = null
 
 	process.nextTick =>
 		renderPage()
 		initPage()
 
-	renderPage = =>
+	renderPage = =>		
 		# Pull any parameters out of the URL
 		urlParams = QueryString.parse win.location.search.substr(1)
 
@@ -67,13 +70,15 @@ init = (win) ->
 		pageModulePath = pageModulePathsById[urlParams.page or defaultPageId]
 
 		# Load the page module
-		pageComponentClass = require(pageModulePath).load(win, urlParams)
+		pageComponentClass = require(pageModulePath).load(win, urlParams)			
 
 		# Render page in window
-		pageComponent = React.render pageComponentClass({
+		pageComponent = React.render pageComponentClass({			
 			closeWindow: =>
 				pageComponent.deinit()
 				React.unmountComponentAtNode containerElem
+		
+				unregisterListeners() if global.ActiveSession and pageListeners
 
 				nwWin.close true
 
@@ -86,9 +91,11 @@ init = (win) ->
 
 	initPage = =>
 		# Make sure up this page has the required methods
-		Assert pageComponent.init, "mising page.init"
-		Assert pageComponent.suggestClose, "mising page.suggestClose"
-		Assert pageComponent.deinit, "mising page.deinit"
+		Assert pageComponent.init, "missing page.init"
+		Assert pageComponent.suggestClose, "missing page.suggestClose"
+		Assert pageComponent.deinit, "missing page.deinit"
+		if global.ActiveSession
+			Assert pageComponent.getPageListeners, "missing page.getPageListeners"
 
 		# Are we in the middle of a hot code replace?
 		if global.HCRSavedState?
@@ -118,6 +125,24 @@ init = (win) ->
 			if event.ctrlKey and (not event.shiftKey) and event.which is 82
 				doHotCodeReplace()
 		, false
+
+		# Register all listeners if logged in
+		registerListeners() if global.ActiveSession
+
+	registerListeners = =>
+		# Register listeners from internal page component
+		pageListeners = Imm.fromJS pageComponent.getPageListeners()
+		.mergeDeep getTimeoutListeners() # and merge in timeout listeners
+
+		pageListeners.map (action, name) =>
+			console.log "Registered Listener:", name
+			global.ActiveSession.persist.eventBus.on name, action
+
+	unregisterListeners = =>
+		# Unregister page listeners
+		pageListeners.map (action, name) =>
+			console.log "Unregistered Listener:", name
+			global.ActiveSession.persist.eventBus.stopListening name, action
 
 	# Define the listener here so that it can be removed later
 	onWindowCloseEvent = =>

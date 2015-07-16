@@ -16,7 +16,6 @@ load = (win, {dataSet}) ->
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
-	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)	
 
 	PrintPreviewPage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -26,23 +25,13 @@ load = (win, {dataSet}) ->
 				printDataSet: Imm.fromJS JSON.parse(dataSet)
 			}
 
-		componentDidMount: ->
-			@_registerListeners()
-
-		componentWillUnmount: ->
-			@_unregisterListeners()
-
 		init: -> # Do nothing
 		deinit: -> # Do nothing
 
 		suggestClose: ->
 			@props.closeWindow()
 
-		_registerListeners: ->
-			registerTimeoutListeners()
-
-		_unregisterListeners: ->
-			unregisterTimeoutListeners()
+		getPageListeners: -> {}
 
 		render: ->
 			new PrintPreviewPageUi {

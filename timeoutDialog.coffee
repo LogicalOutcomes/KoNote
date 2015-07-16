@@ -1,7 +1,5 @@
 # Load in Timeout listeners and trigger warning dialogs
 
-# Must add registerTimeoutListeners() function to load/init/registerListeners on every page
-
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
@@ -13,9 +11,6 @@ load = (win) ->
 	Dialog = require('./dialog').load(win)
 	Moment = require('moment')
 	Bootbox = require('bootbox')
-
-	isClosed = null
-
 
 	TimeoutWarning = React.createFactory React.createClass
 		getInitialState: ->
@@ -70,9 +65,13 @@ load = (win) ->
 				)
 			)
 
-	registerTimeoutListeners = ->
-		global.ActiveSession.persist.eventBus.on 'issueTimeoutWarning', ->
-			unless isClosed
+	getTimeoutListeners = ->		
+		# Fires 'resetTimeout' event upon any user interaction (move, click, typing, scroll)
+		$('body').bind "mousemove mousedown keypress scroll", ->
+			global.ActiveSession.persist.eventBus.trigger 'resetTimeout'
+
+		return {
+			'issueTimeoutWarning': =>
 				# Create and render into div container
 				# TODO: Shouldn't have to re-create this every time
 				containerDiv = win.document.createElement('div')
@@ -87,32 +86,22 @@ load = (win) ->
 						in #{Config.timeout.warningMins} minute#{if Config.timeout.warningMins > 1 then 's'}"
 					}
 
-		global.ActiveSession.persist.eventBus.on 'issueMinuteWarning', ->
-			unless isClosed or global.ActiveSession.minWarningDelivered				
-				console.log ">> 1 Minute Warning issued"
-				nwWin.requestAttention(3)
-				global.ActiveSession.minWarningDelivered = new win.Notification "1 Minute Warning!", {
-					body: "#{Config.productName} will shut down in 1 minute due to inactivity. Any unsaved work will be lost!"
-				}
-
-		# Force-close all windows when timed out
-		global.ActiveSession.persist.eventBus.on 'timedOut', ->
-			unless isClosed
+			'issueMinuteWarning': =>
+				unless global.ActiveSession.minWarningDelivered				
+					console.log ">> 1 Minute Warning issued"
+					nwWin.requestAttention(3)
+					global.ActiveSession.minWarningDelivered = new win.Notification "1 Minute Warning!", {
+						body: "#{Config.productName} will shut down in 1 minute due to inactivity. Any unsaved work will be lost!"
+					}
+			
+			'timedOut': =>
+				# Force-close all windows when timed out
 				console.log ">> Timed out, closing window"
 				# TODO: Needs to re-lock all client files that were open
 				# Maybe this should be a logout instead of a force-close?
 				nwWin.close(true)
+		}		
 
-		# Fires 'resetTimeout' event upon any user interaction (move, click, typing, scroll)
-		$('body').bind "mousemove mousedown keypress scroll", ->
-			global.ActiveSession.persist.eventBus.trigger 'resetTimeout'
-
-	unregisterTimeoutListeners = ->
-		isClosed = true
-
-	return {
-		registerTimeoutListeners
-		unregisterTimeoutListeners
-	}
+	return {getTimeoutListeners}
 
 module.exports = {load}
