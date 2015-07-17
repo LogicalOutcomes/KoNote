@@ -14,6 +14,7 @@ load = (win) ->
 	Gui = win.require 'nw.gui'
 
 	AccountManagerDialog = require('./accountManagerDialog').load(win)
+	ResetPasswordDialog = require('./resetPasswordDialog').load(win)
 	CrashHandler = require('./crashHandler').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	Dialog = require('./dialog').load(win)
@@ -201,6 +202,11 @@ load = (win) ->
 					title: "#{Term 'User'} #{Term 'Accounts'}"
 					dialog: AccountManagerDialog
 					icon: 'user-plus'
+				},
+				{
+					title: "Reset Password"
+					dialog: ResetPasswordDialog
+					icon: 'key'
 				}
 
 			menuItems = itemsList.map (item) ->

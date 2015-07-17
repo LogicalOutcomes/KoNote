@@ -1,0 +1,102 @@
+# A dialog for resetting a user password (admin only)
+
+Persist = require './persist'
+
+load = (win) ->
+	$ = win.jQuery
+	Bootbox = win.bootbox
+	React = win.React
+	R = React.DOM
+
+	Term = require('./term')
+	CrashHandler = require('./crashHandler').load(win)
+	Dialog = require('./dialog').load(win)
+	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
+	Spinner = require('./spinner').load(win)	
+
+	ResetPasswordDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				userName: ''
+				password: ''
+				isLoading: false
+			}
+		render: ->
+			Dialog({
+				title: "Reset user password"
+				onClose: @_cancel
+			},
+				R.div({className: 'ResetPasswordDialog'},
+					Spinner({
+						isVisible: @state.isLoading
+						isOverlay: true
+					})
+					R.div({className: 'form-group'},
+						R.label({}, "User name"),
+						R.input({
+							className: 'form-control'
+							onChange: @_updateUserName
+							value: @state.userName
+						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "New password"),
+						R.input({
+							className: 'form-control'
+							type: 'password'
+							onChange: @_updatePassword
+							value: @state.password
+						})
+					)
+					R.div({className: 'btn-toolbar'},
+						R.button({
+							className: 'btn btn-default'
+							onClick: @_cancel
+						}, "Cancel"),
+						R.button({
+							className: 'btn btn-primary'
+							onClick: @_submit
+						}, "Reset Password")
+					)
+				)
+			)
+		_cancel: ->
+			@props.onCancel()
+		_updateUserName: (event) ->
+			@setState {userName: event.target.value}
+		_updatePassword: (event) ->
+			@setState {password: event.target.value}
+		_submit: ->
+			unless @state.userName
+				Bootbox.alert "User name is required"
+				return
+
+			unless /^[a-zA-Z0-9_-]+$/.exec @state.userName
+				Bootbox.alert "User name must contain only letters, numbers, underscores, and dashes."
+				return
+
+			unless @state.password
+				Bootbox.alert "Password is required"
+				return
+
+			userName = @state.userName
+			password = @state.password
+
+			# TODO where to get data dir?
+			@setState {isLoading: true}
+			Persist.Users.resetAccountPassword 'data', userName, password, (err) =>
+				@setState {isLoading: false}
+
+				if err
+					CrashHandler.handle err
+					return
+
+				Bootbox.alert
+					message: "Password reset for \"#{userName}\""
+					callback: =>
+						@props.onSuccess()
+
+	return ResetPasswordDialog
+
+module.exports = {load}
