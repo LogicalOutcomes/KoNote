@@ -204,7 +204,7 @@ load = (win) ->
 					icon: 'user-plus'
 				},
 				{
-					title: "Reset Password"
+					title: "Reset Passwords"
 					dialog: ResetPasswordDialog
 					icon: 'key'
 				}

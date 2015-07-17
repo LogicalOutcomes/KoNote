@@ -20,6 +20,7 @@ load = (win) ->
 			return {
 				userName: ''
 				password: ''
+				confirmPassword: ''
 				isLoading: false
 			}
 		render: ->
@@ -49,6 +50,15 @@ load = (win) ->
 							value: @state.password
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "Confirm password"),
+						R.input({
+							className: 'form-control'
+							type: 'password'
+							onChange: @_updateConfirmPassword
+							value: @state.confirmPassword
+						})
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -65,8 +75,11 @@ load = (win) ->
 			@props.onCancel()
 		_updateUserName: (event) ->
 			@setState {userName: event.target.value}
+			# new syntax: @setState => userName: event.target.value
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
+		_updateConfirmPassword: (event) ->
+			@setState {confirmPassword: event.target.value}
 		_submit: ->
 			unless @state.userName
 				Bootbox.alert "User name is required"
@@ -78,6 +91,10 @@ load = (win) ->
 
 			unless @state.password
 				Bootbox.alert "Password is required"
+				return
+			
+			unless @state.password is @state.confirmPassword
+				Bootbox.alert "Passwords do not match!"
 				return
 
 			userName = @state.userName
