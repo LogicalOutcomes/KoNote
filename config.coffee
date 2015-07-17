@@ -286,10 +286,10 @@ module.exports = {
 }
 
 # merge with dev-config; overrides defaults
-$ = window.jQuery
+_ = require 'underscore'
 try
 	configDev = require './config-dev'
-	$.extend(true, module.exports, configDev)
+	_.extend(module.exports, configDev)
 catch err
 	# ignore if dev-config doesn't exist
 	if err.code is 'MODULE_NOT_FOUND'
