@@ -36,7 +36,7 @@ New features are stable and ready for release, all parties have signed off on te
 We merge our feature branch on to master, tag it, and delete the feature branch. When all is done, we merge master back into develop.
 
 #### Git Flow
-- 'git pull --rebase' / `g plr`
+- `git pull --rebase` / `g plr`
 - `git checkout master` / `g co master`
 - `git merge --no-ff release-vX.X.X` / `g m`
 - `git tag -m vX.X.X "Release vX.X.X"`
