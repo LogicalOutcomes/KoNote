@@ -56,6 +56,7 @@ init = (win) ->
 	containerElem = document.getElementById('container')
 	pageComponent = null
 	pageListeners = null
+	isLoggedIn = null
 
 	process.nextTick =>
 		renderPage()
@@ -76,7 +77,7 @@ init = (win) ->
 		pageComponent = React.render pageComponentClass({			
 			closeWindow: =>
 				pageComponent.deinit()
-				unregisterListeners() if global.ActiveSession and pageListeners
+				unregisterPageListeners() if isLoggedIn
 				React.unmountComponentAtNode containerElem
 
 				nwWin.close true
@@ -114,7 +115,9 @@ init = (win) ->
 		nwWin.on 'close', onWindowCloseEvent
 
 		# Register all listeners if logged in
-		registerListeners() if global.ActiveSession
+		if global.ActiveSession
+			isLoggedIn = true
+			registerPageListeners()
 
 		# Set up keyboard shortcuts
 		win.document.addEventListener 'keyup', (event) ->
@@ -132,6 +135,9 @@ init = (win) ->
 		# Save the entire page state into a global var
 		global.HCRSavedState = HotCodeReplace.takeSnapshot pageComponent
 
+		# Unregister page listeners
+		unregisterPageListeners() if isLoggedIn
+
 		# Unmount components normally, but with no deinit
 		React.unmountComponentAtNode containerElem
 
@@ -145,19 +151,18 @@ init = (win) ->
 		# Reload HTML page
 		win.location.reload(true)
 
-	registerListeners = =>
+	registerPageListeners = =>		
 		# Register listeners from internal page component
 		pageListeners = Imm.fromJS pageComponent.getPageListeners()
 		.mergeDeep getTimeoutListeners() # and merge in timeout listeners
 
 		pageListeners.forEach (action, name) =>
-			# console.log "Registered listener:", name
+			console.log "Registered listener:", name
 			global.ActiveSession.persist.eventBus.on name, action
 
-	unregisterListeners = =>
-		# Unregister page listeners
+	unregisterPageListeners = =>		
 		pageListeners.forEach (action, name) =>
-			# console.log "Unregistered listener:", name
+			console.log "Unregistered listener:", name
 			global.ActiveSession.persist.eventBus.stopListening name, action
 
 	# Define the listener here so that it can be removed later
