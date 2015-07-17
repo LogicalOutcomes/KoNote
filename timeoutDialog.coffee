@@ -83,7 +83,7 @@ load = (win) ->
 					nwWin.requestAttention(1)
 					global.ActiveSession.firstWarningDelivered = new win.Notification "Inactivity Warning", {
 						body: "Your #{Config.productName} session (and any unsaved work) will shut down 
-						in #{Config.timeout.warningMins} minute#{if Config.timeout.warningMins > 1 then 's'}"
+						in #{Config.timeout.warningMins} minute#{if Config.timeout.warningMins > 1 then 's' else ''}"
 					}
 
 			'issueMinuteWarning': =>
