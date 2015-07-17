@@ -24,7 +24,7 @@ _.each Config.terminology, (value, name) ->
 	generatedTerms[Pluralize(name)] = Pluralize(value)
 	generatedTerms[Pluralize(capName)] = Pluralize(capValue)	
 
-console.log "configTerms", generatedTerms
+# console.log "configTerms", generatedTerms
 
 fetchTerm = (term) ->
 	# TODO: Logic to switch out "a", "an", etc	
