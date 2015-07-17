@@ -424,9 +424,36 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		objJson = JSON.stringify validation.value
 		encryptedObj = session.globalEncryptionKey.encrypt objJson
 
-		Fs.writeFile path, encryptedObj, (err) ->
+		objFd = null
+		writeOp = null
+
+		Async.series [
+			(cb) ->
+				Atomic.writeFile path, tmpDirPath, (err, fd, op) ->
+					if err
+						cb new IOError err
+						return
+
+					objFd = fd
+					writeOp = op
+					cb()
+			(cb) ->
+				Fs.write objFd, encryptedObj, 0, encryptedObj.length, (err) ->
+					if err
+						cb new IOError err
+						return
+
+					cb()
+			(cb) ->
+				writeOp.commit (err) ->
+					if err
+						cb new IOError err
+						return
+
+					cb()
+		], (err) ->
 			if err
-				cb new IOError err
+				cb err
 				return
 
 			cb null, obj
