@@ -150,13 +150,13 @@ init = (win) ->
 		pageListeners = Imm.fromJS pageComponent.getPageListeners()
 		.mergeDeep getTimeoutListeners() # and merge in timeout listeners
 
-		pageListeners.map (action, name) =>
+		pageListeners.forEach (action, name) =>
 			# console.log "Registered listener:", name
 			global.ActiveSession.persist.eventBus.on name, action
 
 	unregisterListeners = =>
 		# Unregister page listeners
-		pageListeners.map (action, name) =>
+		pageListeners.forEach (action, name) =>
 			# console.log "Unregistered listener:", name
 			global.ActiveSession.persist.eventBus.stopListening name, action
 
