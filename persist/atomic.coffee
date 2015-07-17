@@ -9,6 +9,7 @@
 # Most operations require a `tmpDirPath`.  This directory is used as a
 # temporary workspace during the operation.
 
+Assert = require 'assert'
 Async = require 'async'
 Fs = require 'fs'
 Path = require 'path'
@@ -44,6 +45,32 @@ writeFile = (path, tmpDirPath, cb) =>
 			], cb
 
 		cb null, fd, new AtomicOperation(commit)
+
+# Atomically write a buffer to a file at the specified path.
+#
+# This is a convenience method that wraps around `writeFile`.
+# It simplifies cases where the entire file contents are known in advance.
+writeBufferToFile = (path, tmpDirPath, dataBuf, cb) =>
+	Assert Buffer.isBuffer dataBuf, "dataBuf must be a Buffer"
+
+	fileHandle = null
+	fileOp = null
+
+	Async.series [
+		(cb) =>
+			writeFile path, tmpDirPath, (err, fd, op) =>
+				if err
+					cb err
+					return
+
+				fileHandle = fd
+				fileOp = op
+				cb()
+		(cb) =>
+			Fs.write fileHandle, dataBuf, 0, dataBuf.length, cb
+		(cb) =>
+			fileOp.commit cb
+	], cb
 
 # Atomically create a directory tree at the specified path.
 #
@@ -109,4 +136,9 @@ class AtomicOperation
 
 		@_doCommit cb
 
-module.exports = {writeFile, writeDirectory, deleteDirectory}
+module.exports = {
+	writeFile
+	writeBufferToFile
+	writeDirectory
+	deleteDirectory
+}

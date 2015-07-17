@@ -115,6 +115,57 @@ describe 'Atomic', ->
 						cb()
 			], cb
 
+	describe 'writeBufferToFile', ->
+		it 'should work and leave tmp empty', (cb) ->
+			Async.series [
+				(cb) ->
+					path = Path.join(dataDir, 'a')
+					data = new Buffer('abc', 'utf8')
+					Atomic.writeBufferToFile path, tmpDir, data, cb
+				(cb) ->
+					Fs.readdir dataDir, (err, files) ->
+						if err
+							cb err
+							return
+
+						Assert.deepEqual files, ['a']
+						cb()
+				(cb) ->
+					Fs.readFile Path.join(dataDir, 'a'), 'utf8', (err, data) ->
+						if err
+							cb err
+							return
+
+						Assert.equal data, 'abc'
+						cb()
+				(cb) ->
+					Fs.readdir tmpDir, (err, files) ->
+						if err
+							cb err
+							return
+
+						Assert.deepEqual files, []
+						cb()
+			], cb
+
+		it 'should overwrite other files', (cb) ->
+			path = Path.join(dataDir, 'a')
+
+			Async.series [
+				(cb) ->
+					Fs.writeFile path, 'hey', cb
+				(cb) ->
+					data = new Buffer('abc', 'utf8')
+
+					Atomic.writeBufferToFile path, tmpDir, data, cb
+				(cb) ->
+					Fs.readFile path, 'utf8', (err, data) ->
+						Assert not err
+
+						Assert.equal data, 'abc'
+						cb()
+			], cb
+
 	describe 'writeDirectory', ->
 		it 'should work and leave tmp empty', (cb) ->
 			dest = Path.join(dataDir, 'd')

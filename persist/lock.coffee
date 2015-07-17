@@ -218,38 +218,11 @@ class Lock
 		expiryTimestamp = Moment().add(leaseTime, 'ms').format(TimestampFormat)
 		expiryTimestampFile = Path.join(lockDir, 'expire-' + expiryTimestamp)
 
-		expFd = null
-		expFileOp = null
+		fileData = new Buffer('expiry-time', 'utf8') # some filler data
 
-		Async.series [
-			(cb) ->
-				Atomic.writeFile expiryTimestampFile, tmpDirPath, (err, fd, op) ->
-					if err
-						cb new IOError err
-						return
-
-					expFd = fd
-					expFileOp = op
-					cb()
-			(cb) ->
-				fileData = new Buffer('expiry-time', 'utf8') # some filler data
-
-				Fs.write expFd, fileData, 0, fileData.length, (err) ->
-					if err
-						cb new IOError err
-						return
-
-					cb()
-			(cb) ->
-				expFileOp.commit (err) ->
-					if err
-						cb new IOError err
-						return
-
-					cb()
-		], (err) ->
+		Atomic.writeBufferToFile expiryTimestampFile, tmpDirPath, fileData, (err) ->
 			if err
-				cb err
+				cb new IOError err
 				return
 
 			cb null, expiryTimestamp
