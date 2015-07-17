@@ -12,10 +12,16 @@ Lock = require '../../persist/lock'
 
 dataDir = Path.join process.cwd(), 'testData'
 locksDir = Path.join dataDir, '_locks'
+tmpDir = Path.join dataDir, '_tmp'
 
 describe 'Lock', ->
 	beforeEach (cb) ->
-		Mkdirp locksDir, cb
+		Async.series [
+			(cb) ->
+				Mkdirp locksDir, cb
+			(cb) ->
+				Mkdirp tmpDir, cb
+		], cb
 
 	afterEach (cb) ->
 		Rimraf dataDir, cb
