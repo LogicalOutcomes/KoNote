@@ -56,8 +56,15 @@ writeFile = (path, tmpDirPath, cb) =>
 # Calling `op.commit` will atomically move the file tree at `dirPath` to
 # `path`.
 #
-# Note: any existing directory at `path` will be overwritten if and only if it
-# is empty.
+# If a directory already exists at `path`, the behaviour is platform-dependent:
+#
+#  - On Windows, the directory will not be overwritten, and the resulting error
+#    will have its code set to 'EPERM'.
+#
+#  - On Mac and Linux, the directory will be overwritten if and only if it is
+#    empty.  Otherwise, the resulting error will have its code set to
+#    'ENOTEMPTY'.
+#
 writeDirectory = (path, tmpDirPath, cb) =>
 	tmpPath = Path.join tmpDirPath, generateId()
 

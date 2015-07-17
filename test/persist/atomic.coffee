@@ -167,7 +167,11 @@ describe 'Atomic', ->
 						cb()
 			], cb
 
-		it 'should overwrite empty dirs', (cb) ->
+		it 'should overwrite empty dirs or fail with EPERM', (cb) ->
+			# Unfortunately, the outcome is platform-dependent.
+			# On Windows, we expect EPERM.
+			# On Mac and Linux, we expect it to overwrite the empty dir.
+
 			dest = Path.join(dataDir, 'd')
 			tmpDest = null
 			op = null
@@ -189,15 +193,28 @@ describe 'Atomic', ->
 				(cb) ->
 					Fs.writeFile Path.join(tmpDest, 'n'), 'stuff', cb
 				(cb) ->
-					op.commit cb
-				(cb) ->
-					Fs.readdir dest, (err, files) ->
-						if err
-							cb err
+					op.commit (err) ->
+						if process.platform is 'win32'
+							Assert err
+							Assert err.code is 'EPERM'
+
+							cb()
 							return
 
-						Assert.deepEqual files, ['m', 'n']
-						cb()
+						if process.platform in ['darwin', 'linux']
+							Assert not err
+
+							Fs.readdir dest, (err, files) ->
+								if err
+									cb err
+									return
+
+								Assert.deepEqual files, ['m', 'n']
+								cb()
+
+							return
+
+						throw new Error "unknown platform #{process.platform}"
 			], cb
 
 		it 'should fail to overwrite dirs containing a file', (cb) ->
@@ -226,7 +243,17 @@ describe 'Atomic', ->
 				(cb) ->
 					op.commit (err) ->
 						Assert err
-						Assert.equal err.code, 'ENOTEMPTY'
+
+						switch process.platform
+							when 'win32'
+								Assert.equal err.code, 'EPERM'
+							when 'darwin'
+								Assert.equal err.code, 'ENOTEMPTY'
+							when 'linux'
+								Assert.equal err.code, 'ENOTEMPTY'
+							else
+								throw new Error "unknown platform #{process.platform}"
+
 						cb()
 			], cb
 
