@@ -214,6 +214,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					objDir = result
 					cb()
 			(cb) ->
+				revFile = Path.join(objDir, createRevisionFileName(obj))
+				writeObjectFile obj, revFile, cb
+			(cb) ->
 				# When an indexed property changes, we need to rename the dir
 				expectedDirName = createObjectFileName(obj, modelDef.indexes)
 				actualDirName = Path.basename objDir
@@ -234,9 +237,6 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 						return
 
 					cb()
-			(cb) ->
-				revFile = Path.join(objDir, createRevisionFileName(obj))
-				writeObjectFile obj, revFile, cb
 		], (err) ->
 			if err
 				cb err

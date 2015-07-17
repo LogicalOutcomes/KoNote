@@ -27,9 +27,14 @@ s = {
 
 setUpDataDirectory = (dataModelDefinitions, cb) ->
 	# Set up top-level directories
-	Async.each dataModelDefinitions, (modelDef, cb) ->
-		Mkdirp Path.join(dataDir, modelDef.collectionName), cb
-	, cb
+	Async.series [
+		(cb) ->
+			Async.each dataModelDefinitions, (modelDef, cb) ->
+				Mkdirp Path.join(dataDir, modelDef.collectionName), cb
+			, cb
+		(cb) ->
+			Fs.mkdir Path.join(dataDir, '_tmp'), cb
+	], cb
 
 describe 'ApiBuilder', ->
 	describe '.buildApi', ->
