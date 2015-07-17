@@ -7,18 +7,17 @@ Config = require './config'
 Pluralize = require 'pluralize'
 _ = require 'underscore'
 
-# String polyfill for capitalization of all words
-String::capitalize = ->
-  @replace /(?:^|\s)\S/g, (a) ->
+capitalize = (word) ->
+  word.replace /(?:^|\s)\S/g, (a) ->
     a.toUpperCase()
 
 generatedTerms = {}
 
 _.each Config.terminology, (value, name) ->	
-	capName = name.toString().capitalize()
-	capValue = value.capitalize()
+	capName = capitalize name.toString()
+	capValue = capitalize value
 
-	# TODO: Combination of 1 capitalized word and 1 lowercase word ("Progress note")
+	# TODO: Combo of 1 capitalized word and 1 lowercase word ("Progress note")
 	generatedTerms[name] = value
 	generatedTerms[capName] = capValue
 	generatedTerms[Pluralize(name)] = Pluralize(value)
@@ -26,13 +25,10 @@ _.each Config.terminology, (value, name) ->
 
 # console.log "configTerms", generatedTerms
 
-fetchTerm = (term) ->
+module.exports = (term) ->
 	# TODO: Logic to switch out "a", "an", etc	
 	if generatedTerms[term]
 		return generatedTerms[term]
 	else
 		throw new Error "'#{term}'' does not exist in Terms(), or is not a valid 
 		plural of the root word."
-
-
-module.exports = fetchTerm
