@@ -289,7 +289,7 @@ module.exports = {
 $ = window.jQuery
 try
 	configDev = require './config-dev'
-	$.extend(true, module.exports, configdev)
+	$.extend(true, module.exports, configDev)
 catch err
 	# ignore if dev-config doesn't exist
 	if err.code is 'MODULE_NOT_FOUND'
