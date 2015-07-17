@@ -288,11 +288,10 @@ module.exports = {
 # merge with dev-config; overrides defaults
 $ = window.jQuery
 try
-	configdev = require './config-dev'
-	$.extend( true, module.exports, configdev )
+	configDev = require './config-dev'
+	$.extend(true, module.exports, configdev)
 catch err
 	# ignore if dev-config doesn't exist
-	if err.code == 'MODULE_NOT_FOUND'
+	if err.code is 'MODULE_NOT_FOUND'
 		return
-	else
-		throw err
+	throw err
