@@ -5,6 +5,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Term = require '../term'
 Persist = require '../persist'
 
 load = (win) ->
@@ -63,14 +64,14 @@ load = (win) ->
 				R.div({className: 'targetList'},
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
 						R.div({className: 'message'},
-							"This client does not currently have any plan targets."
+							"This #{Term 'client'} does not currently have any #{Term 'plan targets'}."
 						)						
 						R.button({
 							className: 'addSection btn btn-success btn-lg'
 							onClick: @_addSection
 						},
 							FaIcon('plus')
-							"Add section"
+							"Add #{Term 'section'}"
 						)
 					)
 					R.div({className: "toolbar #{showWhen plan.get('sections').size > 0}"},
@@ -84,7 +85,7 @@ load = (win) ->
 								onClick: @_save
 							},
 								FaIcon('save')
-								if @hasChanges() then "Save Plan" else "No Changes to Save"
+								if @hasChanges() then "Save #{Term 'Plan'}" else "No Changes to Save"
 							)	
 						)
 						R.span({className: 'rightMenu'},							
@@ -93,7 +94,7 @@ load = (win) ->
 								onClick: @_addSection
 							},
 								FaIcon('plus')
-								"Add section"
+								"Add #{Term 'section'}"
 							)
 							PrintButton({
 								dataSet: [
@@ -112,7 +113,7 @@ load = (win) ->
 								tooltip: {
 									show: @hasChanges()
 									placement: 'bottom'
-									title: "Please save the changes to client's plan before printing"
+									title: "Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
 								}
 							})					
 						)
@@ -129,12 +130,12 @@ load = (win) ->
 										onClick: @_addTargetToSection.bind null, section.get('id')
 									},
 										FaIcon('plus')
-										'Add target'
+										"Add #{Term 'target'}"
 									)
 								)
 								(if section.get('targetIds').size is 0
 									R.div({className: 'noTargets'},
-										"This section is empty."
+										"This #{Term 'section'} is empty."
 									)
 								)
 								R.div({className: 'targets'},
@@ -158,7 +159,7 @@ load = (win) ->
 					(if selectedTarget is null
 						R.div({className: "noSelection #{showWhen plan.get('sections').size > 0}"},
 							"More information will appear here when you select ",
-							"a target on the left."
+							"a #{Term 'target'} on the left."
 						)
 					else
 						currentRev = @state.currentTargetRevisionsById.get(selectedTarget.get('id'))
@@ -172,7 +173,7 @@ load = (win) ->
 								)
 								(if metricDefs.size is 0
 									R.div({className: 'noMetrics'},
-										"This target has no metrics attached. "
+										"This #{Term 'target'} has no metrics attached. "
 										R.button({
 											className: 'btn btn-link addMetricButton'
 											onClick: @_focusMetricLookupField
@@ -205,7 +206,7 @@ load = (win) ->
 										onSelection: @_addMetricToTarget.bind(
 											null, selectedTarget.get('id')
 										)
-										placeholder: "Find / Define a Metric"
+										placeholder: "Find / Define a #{Term 'Metric'}"
 									})
 								)
 							)
@@ -215,8 +216,8 @@ load = (win) ->
 								)
 								(if selectedTarget.get('revisions').size is 0
 									R.div({className: 'noRevisions'},
-										"This target is new.  ",
-										"It won't have any history until the client file is saved."
+										"This #{Term 'target'} is new.  ",
+										"It won't have any history until the #{Term 'client file'} is saved."
 									)
 								)
 								R.div({className: 'revisions'},
@@ -299,7 +300,7 @@ load = (win) ->
 				valid = @_validateTargets()
 
 				unless valid
-					Bootbox.alert 'Cannot save plan: there are empty target fields.'
+					Bootbox.alert "Cannot save #{Term 'plan'}: there are empty #{Term 'target'} fields."
 					return
 
 				newPlanTargets = @state.currentTargetRevisionsById.valueSeq()
@@ -374,7 +375,7 @@ load = (win) ->
 		_addSection: ->
 			sectionId = Persist.generateId()
 
-			Bootbox.prompt 'Enter a name for the new section:', (sectionName) =>
+			Bootbox.prompt "Enter a name for the new #{Term 'section'}:", (sectionName) =>
 				sectionName = sectionName?.trim()
 
 				unless sectionName
@@ -423,14 +424,14 @@ load = (win) ->
 		_addMetricToTarget: (targetId, metricId) ->			
 			# Current target already has this metric
 			if @state.currentTargetRevisionsById.getIn([targetId, 'metricIds']).contains metricId
-				Bootbox.alert "This metric has already been added to the selected target."
+				Bootbox.alert "This #{Term 'metric'} has already been added to the selected #{Term 'target'}."
 				return
 
 			# Metric exists in another target
 			existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
 				return target.get('metricIds').contains(metricId)
 			if existsElsewhere
-				Bootbox.alert "This metric already exists for another plan target"
+				Bootbox.alert "This #{Term 'metric'} already exists for another #{Term 'plan target'}"
 				return
 
 			@setState {

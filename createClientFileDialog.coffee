@@ -3,6 +3,7 @@
 Persist = require './persist'
 Imm = require 'immutable'
 Config = require './config'
+Term = require './term'
 
 load = (win) ->
 	$ = win.jQuery
@@ -27,7 +28,7 @@ load = (win) ->
 			}
 		render: ->
 			Dialog({
-				title: "Create New Client File"
+				title: "Create New #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
 				R.div({className: 'createClientFileDialog'},
@@ -75,7 +76,7 @@ load = (win) ->
 							className: 'btn btn-primary'
 							onClick: @_submit
 							disabled: not @state.firstName or not @state.lastName
-						}, "Create File")
+						}, "Create #{Term 'File'}")
 					)
 				)
 			)

@@ -2,6 +2,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Term = require '../term'
 Persist = require '../persist'
 
 load = (win) ->
@@ -48,14 +49,14 @@ load = (win) ->
 						onClick: @_openNewProgNote
 					},
 						FaIcon 'file'
-						"New progress note"
+						"New #{Term 'progress note'}"
 					)
 					R.button({
 						className: "addQuickNote btn btn-default #{showWhen @props.progNotes.size > 0}"						
 						onClick: @_toggleQuickNotePopover
 					},
 						FaIcon 'plus'
-						"Add quick note"
+						"Add #{Term 'quick note'}"
 					)
 				)
 				R.div({className: 'panes'},
@@ -63,21 +64,21 @@ load = (win) ->
 						R.div({
 							className: "empty #{showWhen @props.progNotes.size is 0}"},
 							R.div({className: 'message'},
-								"This client does not currently have any progress notes."
+								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
 							)
 							R.button({
 								className: 'newProgNote btn btn-primary btn-lg'
 								onClick: @_openNewProgNote
 							},
 								FaIcon 'file'
-								"New progress note"
+								"New #{Term 'progress note'}"
 							)
 							R.button({
 								className: "addQuickNote btn btn-default btn-lg #{showWhen @props.progNotes.size is 0}"								
 								onClick: @_toggleQuickNotePopover
 							},
 								FaIcon 'plus'
-								"Add quick note"
+								"Add #{Term 'quick note'}"
 							)
 						)
 						(@props.progNotes.reverse().map (progNote) =>
@@ -237,7 +238,7 @@ load = (win) ->
 										section.get('name')
 									)
 									R.div({className: "empty #{showWhen section.get('targets') is ''}"},
-										"This section is empty because the client has no plan targets."
+										"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
 									)
 									R.div({className: 'targets'},
 										(section.get('targets').map (target) =>

@@ -5,6 +5,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Term = require '../term'
 Persist = require '../persist'
 
 load = (win, {clientFileId}) ->
@@ -236,7 +237,7 @@ load = (win, {clientFileId}) ->
 			if not @state.showExitAlert
 				@setState {showExitAlert: true}
 				Bootbox.dialog {
-					message: "Are you sure you want to cancel this progress note?"
+					message: "Are you sure you want to cancel this #{Term('progress note')}?"
 					buttons: {						
 						cancel: {
 							label: "Cancel"
@@ -290,7 +291,7 @@ load = (win, {clientFileId}) ->
 				)
 
 			clientName = renderName @props.clientFile.get('clientName')
-			@props.setWindowTitle "#{clientName}: Progress Note - KoNote"
+			@props.setWindowTitle "#{clientName}: #{Term 'Progress Note'} - KoNote"
 
 			return R.div({className: 'newProgNotePage'},
 				R.div({className: 'progNote'},
@@ -329,7 +330,7 @@ load = (win, {clientFileId}) ->
 											section.get('name')
 										)
 										R.div({className: "empty #{showWhen section.get('targets').size is 0}"},
-											"This section is empty because the client has no plan targets."
+											"This #{Term 'section'} is empty because the client has no #{Term 'plan'} #{Term 'targets'}."
 										)
 										R.div({className: 'targets'},
 											(section.get('targets').map (target) =>
@@ -517,7 +518,7 @@ load = (win, {clientFileId}) ->
 				onClick: @_open
 			},
 				FaIcon 'bell'
-				"Create Event"
+				"Create #{Term.Event}"
 			)
 		renderLayer: ->
 			unless @state.isOpen

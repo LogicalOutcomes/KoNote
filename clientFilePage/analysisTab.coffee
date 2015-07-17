@@ -6,6 +6,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Term = require '../term'
 Persist = require '../persist'
 
 load = (win) ->
@@ -59,12 +60,12 @@ load = (win) ->
 				R.div({className: "noData #{showWhen not hasData}"},
 					R.h1({}, "Not enough data.")
 					R.div({},
-						"This tab will become available when this client has
-						one or more progress notes that contain metrics."
+						"This tab will become available when this #{Term 'client'} has
+						one or more #{Term 'progress notes'} that contain #{Term 'metrics'}."
 					)
 				)
 				R.div({className: "controlPanel #{showWhen hasData}"},
-					R.div({className: 'heading'}, "Metrics")
+					R.div({className: 'heading'}, Term 'Metrics')
 					R.div({className: 'metrics'},
 						(metricIdsWithData.map (metricId) =>
 							metric = @props.metricsById.get(metricId)

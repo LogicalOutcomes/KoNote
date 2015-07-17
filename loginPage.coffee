@@ -2,6 +2,7 @@ Async = require 'async'
 Imm = require 'immutable'
 
 Config = require './config'
+Term = require './term'
 Persist = require './persist'
 
 load = (win) ->
@@ -64,9 +65,9 @@ load = (win) ->
 				(cb) =>
 					# TODO: Move to ui
 					Bootbox.confirm """
-						KoNote could not find any data.  Unless this is your first
-						time using KoNote, this may indicate a problem.  Would you
-						like to set up KoNote from scratch?
+						#{Config.productName} could not find any data.  Unless this is your first
+						time using #{Config.productName}, this may indicate a problem.  Would you
+						like to set up #{Config.productName} from scratch?
 					""", (result) =>
 						unless result
 							process.exit(0)
@@ -76,7 +77,7 @@ load = (win) ->
 				(cb) =>
 					# TODO: Move to ui
 					Bootbox.prompt {
-						title: 'Enter password for admin account'
+						title: "Enter password for admin #{Term 'account'}"
 						inputType: 'password'
 						callback: (result) ->
 							unless result
@@ -105,7 +106,7 @@ load = (win) ->
 
 						if err
 							if err instanceof Persist.Users.UserNameTakenError
-								Bootbox.alert "An admin user account already exists."
+								Bootbox.alert "An admin #{Term 'user account'} already exists."
 								process.exit(1)
 								return
 

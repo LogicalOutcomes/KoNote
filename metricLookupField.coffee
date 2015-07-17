@@ -13,6 +13,8 @@ load = (win) ->
 
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	DefineMetricDialog = require('./defineMetricDialog').load(win)
+	Config = require('./config')
+	Term = require('./term')
 
 	{
 		FaIcon
@@ -39,20 +41,20 @@ load = (win) ->
 				source: @_lookupMetric
 				displayKey: 'name'
 				templates: {
-					empty: '''
+					empty: """
 						<div class="empty">
-							No metrics found under that name.
+							No #{Term 'metric'} found under that name.
 						</div>
-					'''
+					"""
 					suggestion: (metric) =>
 						suggestionComponent = Suggestion({metric})
 						return React.renderToString(suggestionComponent)
 					footer: (query, isEmpty) ->
-						return '''
+						return """
 							<div class="createMetricContainer">
-								<button class="createMetric btn btn-success">Define a new metric</button>
+								<button class="createMetric btn btn-success">Define a new #{Term 'metric'}</button>
 							</div>
-						'''
+						"""
 				}
 			}
 
@@ -70,9 +72,9 @@ load = (win) ->
 					#check if metric exists before creating
 					match = @props.metrics.toJS().filter (match) -> match.name == lookupField.typeahead 'val'
 					if match[0]
-						Bootbox.alert "<strong>Metric already exists!</strong>
-						<br><br>Please select an existing metric from the search field
-						or use a unique name to create a new metric.", ->
+						Bootbox.alert "<strong>#{Term 'Metric'} already exists!</strong>
+						<br><br>Please select an existing #{Term 'metric'} from the search field
+						or use a unique name to create a new #{Term 'metric'}.", ->
 							# TODO
 							# how can we refocus the lookup field?
 							lookupField.typeahead 'val', ''

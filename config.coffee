@@ -22,6 +22,32 @@ catch err
 			warningMins: 15
 		}
 
+		# Set terminology to be used around the app, lowercase only
+		# * Only modify the values in double-quotes
+		# * Terms are auto pluralized & capitalized in term.coffee
+		terminology: {
+			'user': "user"
+			'account': "account"
+			'user account': "user account"
+
+			'client': "client"
+			'file': "file"
+			'client file': "client file"
+
+			'section': "section"
+			'plan': "plan"
+			'target': "goal"
+			'plan target': "plan goal"
+
+			'progress note': "progress note"
+			'quick note': "quick note"
+			
+			'metric': "indicator"
+			'event': "event"
+
+			'analysis': "analysis"
+		}		
+
 		# useTemplate: 'initialAssessment'
 		useTemplate: 'clientLog'
 

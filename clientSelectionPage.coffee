@@ -2,6 +2,7 @@
 Imm = require 'immutable'
 
 Config = require './config'
+Term = require './term'
 Persist = require './persist'
 
 load = (win) ->
@@ -131,7 +132,7 @@ load = (win) ->
 									type: 'text'
 									onChange: @_updateQueryText
 									onBlur: @_onSearchBoxBlur
-									placeholder: "Search for a client's profile..."
+									placeholder: "Search for a #{Term 'client'}'s profile..."
 									value: @state.queryText
 								})
 							)
@@ -185,7 +186,7 @@ load = (win) ->
 
 		_renderUserMenuList: (isAdmin) ->
 			itemsList = [{
-				title: "Client Files"
+				title: "#{Term 'Client Files'}"
 				dialog: CreateClientFileDialog
 				icon: 'folder-open'}
 			# {
@@ -197,7 +198,7 @@ load = (win) ->
 
 			if isAdmin
 				itemsList.push {
-					title: "User Accounts"
+					title: "#{Term 'User'} #{Term 'Accounts'}"
 					dialog: AccountManagerDialog
 					icon: 'user-plus'
 				}

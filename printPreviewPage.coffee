@@ -5,6 +5,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require './config'
+Term = require './term'
 Persist = require './persist'
 
 load = (win, {dataSet}) ->
@@ -186,7 +187,7 @@ load = (win, {dataSet}) ->
 										section.get('name')
 									)
 									R.div({className: "empty #{showWhen section.get('targets') is ''}"},
-										"This section is empty because the client has no plan targets."
+										"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
 									)
 									R.div({className: 'targets'},
 										(section.get('targets').map (target) =>
@@ -230,7 +231,7 @@ load = (win, {dataSet}) ->
 							R.h2({className: 'name'}, section.get('name'))
 							(if section.get('targetIds').size is 0
 								R.div({className: 'noTargets'},
-									"This section is empty."
+									"This #{Term 'section'} is empty."
 								)
 							)
 							R.div({className: 'targets'},

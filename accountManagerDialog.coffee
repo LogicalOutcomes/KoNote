@@ -8,10 +8,11 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
-	Spinner = require('./spinner').load(win)
+	Spinner = require('./spinner').load(win)	
 
 	# Upcoming features:
 	# 			# - a user table
@@ -31,7 +32,7 @@ load = (win) ->
 			}
 		render: ->
 			Dialog({
-				title: "Create new account"
+				title: "Create new #{Term 'account'}"
 				onClose: @_cancel
 			},
 				R.div({className: 'createAccountDialog'},
@@ -74,7 +75,7 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-						}, "Create account")
+						}, "Create #{Term 'Account'}")
 					)
 				)
 			)
@@ -117,7 +118,7 @@ load = (win) ->
 					return
 
 				Bootbox.alert
-					message: "New user account created for \"#{userName}\""
+					message: "New #{Term 'user'} #{Term 'account'} created for \"#{userName}\""
 					callback: =>
 						@props.onSuccess()
 

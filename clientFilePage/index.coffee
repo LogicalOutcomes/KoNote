@@ -15,6 +15,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Term = require '../term'
 Persist = require '../persist'
 
 load = (win, {clientFileId}) ->
@@ -311,9 +312,9 @@ load = (win, {clientFileId}) ->
 
 			if @refs.planTab.hasChanges()
 				Bootbox.dialog {
-					title: "Unsaved Changes to Plan"
+					title: "Unsaved Changes to #{Term 'Plan'}"
 					message: """
-						You have unsaved changes in this plan for #{clientName}. 
+						You have unsaved changes in this #{Term 'plan'} for #{clientName}. 
 						How would you like to proceed?
 					"""
 					buttons: {
@@ -329,7 +330,7 @@ load = (win, {clientFileId}) ->
 								@props.closeWindow()
 						}
 						success: {
-							label: "View Plan"
+							label: "View #{Term 'Plan'}"
 							className: "btn-success"
 							callback: => 
 								Bootbox.hideAll()
@@ -418,19 +419,19 @@ load = (win, {clientFileId}) ->
 				)
 				R.div({className: 'tabStrip'},
 					SidebarTab({
-						name: "Plan"
+						name: Term('Plan')
 						icon: 'sitemap'
 						isActive: activeTabId is 'plan'
 						onClick: @props.onTabChange.bind null, 'plan'
 					})
 					SidebarTab({
-						name: "Progress Notes"
+						name: Term('Progress Notes')
 						icon: 'pencil-square-o'
 						isActive: activeTabId is 'progressNotes'
 						onClick: @props.onTabChange.bind null, 'progressNotes'
 					})
 					SidebarTab({
-						name: "Analysis"
+						name: Term('Analysis')
 						icon: 'line-chart'
 						isActive: activeTabId is 'analysis'
 						onClick: @props.onTabChange.bind null, 'analysis'
@@ -457,10 +458,10 @@ load = (win, {clientFileId}) ->
 			console.log "loadErrorType:", @props.loadErrorType
 			msg = switch @props.loadErrorType
 				when 'file-in-use'
-					"This client file is already in use."
+					"This #{Term 'client file'} is already in use."
 				when 'io-error'
 					"""
-						An error occurred while loading the client file. 
+						An error occurred while loading the #{Term 'client file'}. 
 						This may be due to a problem with your network connection.
 					"""
 				else
