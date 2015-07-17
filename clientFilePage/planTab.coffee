@@ -178,28 +178,29 @@ load = (win) ->
 											className: 'btn btn-link addMetricButton'
 											onClick: @_focusMetricLookupField
 										}, FaIcon('plus'))
-									)									
-								)
-								R.div({className: 'metrics'},
-									(metricDefs.map (metricDef) =>
-										MetricWidget({
-											isEditable: false
-											allowDeleting: true
-											onDelete: @_deleteMetricFromTarget.bind(
-												null, selectedTarget.get('id'), metricDef.get('id')
-											)
-											key: metricDef.get('id')
-											name: metricDef.get('name')
-											definition: metricDef.get('definition')
-										})
-									).toJS()...
-									(if metricDefs.size > 0
-										R.button({
-											className: 'btn btn-link addMetricButton'
-											onClick: @_focusMetricLookupField
-										}, FaIcon('plus'))
 									)
-								)
+								else
+									R.div({className: 'metrics'},
+										(metricDefs.map (metricDef) =>
+											MetricWidget({
+												isEditable: false
+												allowDeleting: true
+												onDelete: @_deleteMetricFromTarget.bind(
+													null, selectedTarget.get('id'), metricDef.get('id')
+												)
+												key: metricDef.get('id')
+												name: metricDef.get('name')
+												definition: metricDef.get('definition')
+											})
+										).toJS()...
+										(if metricDefs.size > 0
+											R.button({
+												className: 'btn btn-link addMetricButton'
+												onClick: @_focusMetricLookupField
+											}, FaIcon('plus'))
+										)
+									)
+								)								
 								R.div({},
 									MetricLookupField({
 										metrics: @props.metricsById.valueSeq()
