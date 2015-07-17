@@ -5,6 +5,8 @@ Imm = require 'immutable'
 Moment = require 'moment'
 Path = require 'path'
 
+Atomic = require './atomic'
+
 {
 	IOError
 	IdSchema
@@ -31,6 +33,8 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 	childCollectionNames = Imm.List(modelDef.children).map (childDef) ->
 		return childDef.collectionName
 
+	tmpDirPath = Path.join(session.dataDirectory, '_tmp')
+
 	create = (obj, cb) ->
 		if obj.has('id')
 			cb new Error "new objects cannot already have an ID"
@@ -56,7 +60,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		.set 'author', session.userName
 		.set 'timestamp', Moment().format(TimestampFormat)
 
+		destObjDir = null
 		objDir = null
+		objDirOp = null
 
 		Async.series [
 			(cb) ->
@@ -65,18 +71,22 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 						cb err
 						return
 
-					objDir = Path.join(
+					destObjDir = Path.join(
 						parentDir
 						modelDef.collectionName
 						createObjectFileName(obj, modelDef.indexes)
 					)
 					cb()
 			(cb) ->
-				Fs.mkdir objDir, (err) ->
+				# In order to make the operation atomic, we write to a
+				# temporary object directory first, then commit it later.
+				Atomic.writeDirectory destObjDir, tmpDirPath, (err, tmpObjDir, op) ->
 					if err
 						cb new IOError err
 						return
 
+					objDir = tmpObjDir
+					objDirOp = op
 					cb()
 			(cb) ->
 				# Create subdirs for subcollection
@@ -92,6 +102,8 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			(cb) ->
 				revFile = Path.join(objDir, createRevisionFileName(obj))
 				writeObjectFile obj, revFile, cb
+			(cb) ->
+				objDirOp.commit cb
 		], (err) ->
 			if err
 				cb err

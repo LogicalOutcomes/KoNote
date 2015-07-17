@@ -167,6 +167,8 @@ setUpDataDirectory = (dataDir, cb) ->
 				Mkdirp Path.join(dataDir, modelDef.collectionName), cb
 			, cb
 		(cb) ->
+			Mkdirp Path.join(dataDir, '_tmp'), cb
+		(cb) ->
 			Mkdirp Path.join(dataDir, '_users'), cb
 		(cb) ->
 			Mkdirp Path.join(dataDir, '_locks'), cb
