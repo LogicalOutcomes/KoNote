@@ -38,7 +38,7 @@ class Session
 		@timeoutMins = Config.timeout.totalMins
 		@warningMins = Config.timeout.warningMins
 
-		@persist.eventBus.on 'resetTimeout', =>
+		@persist.eventBus.on 'timeout:reset', =>
 			@_resetTimeout()
 
 		@_resetTimeout()
@@ -58,9 +58,9 @@ class Session
 		@warning = setTimeout @_timeoutWarning, (@timeoutMins - @warningMins) * 60000
 		@timeout = setTimeout @_timedOut, @timeoutMins * 60000
 
-	_timeoutWarning: => @persist.eventBus.trigger 'issueTimeoutWarning'
+	_timeoutWarning: => @persist.eventBus.trigger 'timeout:initialWarning'
 
-	_timedOut: => @persist.eventBus.trigger 'timedOut'
+	_timedOut: => @persist.eventBus.trigger 'timeout:timedOut'
 
 	isAdmin: ->
 		return @accountType is 'admin'

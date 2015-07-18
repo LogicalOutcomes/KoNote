@@ -14,26 +14,29 @@ load = (win) ->
 
 	TimeoutWarning = React.createFactory React.createClass
 		getInitialState: ->
-			@_expiration = Moment().add(global.ActiveSession.warningMins, 'minutes')
 			return {
-				isOpen: true
 				countSeconds: null
+				expiration: null
+				isOpen: false
 			}
 
-		componentDidMount: ->
-			clearInterval(@counter)
+		_recalculateSeconds: ->
+			@setState => countSeconds: Moment(@state.expiration).diff(Moment(), 'seconds')
+
+		show: ->
+			@setState =>
+				isOpen: true
+				expiration: Moment().add(global.ActiveSession.warningMins, 'minutes')
+
 			@_recalculateSeconds()
 
 			@counter = setInterval(=> 
 				@_recalculateSeconds()
 			, 1000)
 
-			global.ActiveSession.persist.eventBus.on 'resetTimeout', =>
-				clearInterval @counter
-				@setState {isOpen: false}
-
-		_recalculateSeconds: ->
-			@setState {countSeconds: Moment(@_expiration).diff(Moment(), 'seconds')}
+		reset: ->
+			@setState => isOpen: false
+			clearInterval @counter
 
 		render: ->
 			unless @state.isOpen
@@ -42,7 +45,7 @@ load = (win) ->
 			countMoment = Moment.utc(@state.countSeconds * 1000)
 
 			if @state.countSeconds is 60
-				global.ActiveSession.persist.eventBus.trigger 'issueMinuteWarning'
+				global.ActiveSession.persist.eventBus.trigger 'timeout:minuteWarning'
 
 			return Dialog({
 				title: "Inactivity Warning"
@@ -68,37 +71,46 @@ load = (win) ->
 	getTimeoutListeners = ->		
 		# Fires 'resetTimeout' event upon any user interaction (move, click, typing, scroll)
 		$('body').bind "mousemove mousedown keypress scroll", ->
-			global.ActiveSession.persist.eventBus.trigger 'resetTimeout'
+			global.ActiveSession.persist.eventBus.trigger 'timeout:reset'	
+
+		timeoutContainer = win.document.createElement('div')
+		timeoutContainer.id = 'timeoutContainer'
+		win.document.body.appendChild timeoutContainer
+
+		timeoutComponent = React.render TimeoutWarning({}), timeoutContainer	
 
 		return {
-			'issueTimeoutWarning': =>
-				# Create and render into div container
-				# TODO: Shouldn't have to re-create this every time
-				containerDiv = win.document.createElement('div')
-				win.document.body.appendChild containerDiv
-				React.render TimeoutWarning({}), containerDiv
+			'timeout:initialWarning': =>
+				timeoutComponent.show()
 
-				unless global.ActiveSession.firstWarningDelivered
-					console.log ">> First Warning issued"					
-					nwWin.requestAttention(1)
-					global.ActiveSession.firstWarningDelivered = new win.Notification "Inactivity Warning", {
+				unless global.ActiveSession.initialWarningDelivered
+					console.log "TIMEOUT: Initial Warning issued"
+
+					global.ActiveSession.initialWarningDelivered = new win.Notification "Inactivity Warning", {
 						body: "Your #{Config.productName} session (and any unsaved work) will shut down 
 						in #{Config.timeout.warningMins} minute#{if Config.timeout.warningMins > 1 then 's' else ''}"
-					}
+					}					
+					nwWin.requestAttention(1)
 
-			'issueMinuteWarning': =>
-				unless global.ActiveSession.minWarningDelivered				
-					console.log ">> 1 Minute Warning issued"
-					nwWin.requestAttention(3)
-					global.ActiveSession.minWarningDelivered = new win.Notification "1 Minute Warning!", {
+			'timeout:minuteWarning': =>
+				unless global.ActiveSession.minuteWarningDelivered
+					console.log "TIMEOUT: 1 Minute Warning issued"
+
+					global.ActiveSession.minuteWarningDelivered = new win.Notification "1 Minute Warning!", {
 						body: "#{Config.productName} will shut down in 1 minute due to inactivity. Any unsaved work will be lost!"
-					}
+					}					
+					nwWin.requestAttention(3)
+
+			'timeout:reset': =>
+				timeoutComponent.reset()
+
+				# Reset knowledge of warnings been delivered
+				global.ActiveSession.initialWarningDelivered = null
+				global.ActiveSession.minuteWarningDelivered = null
 			
-			'timedOut': =>
+			'timeout:timedOut': =>
 				# Force-close all windows when timed out
-				console.log ">> Timed out, closing window"
-				# TODO: Needs to re-lock all client files that were open
-				# Maybe this should be a logout instead of a force-close?
+				console.log "TIMEOUT: Timed out, closing window"
 				nwWin.close(true)
 		}		
 
