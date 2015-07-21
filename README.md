@@ -14,10 +14,11 @@
 All features (and their corresponding issues) in progress are locked in around 1 week before release; no new features may be added after this point. This gives us a period to finish, test, and fine-tune the new feature branch.
 
 #### Git Flow
-1. `git pull --rebase` / `g plr`
-2. `git branch release-vX.X.X` / `g b release-vX.X.X`
-3. `git checkout release-vX.X.X` / `g co release-vX.X.X`
-4. `git push -u origin release-vX.X.X` (pushes new branch to remote)
+1. `git checkout develop` / `g dv`
+2. `git pull --rebase` / `g plr`
+3. `git branch release-vX.X.X` / `g b release-vX.X.X`
+4. `git checkout release-vX.X.X` / `g co release-vX.X.X`
+5. `git push -u origin release-vX.X.X` (pushes new branch to remote)
 
 > Development for release continues on this release branch.
 > If you accidentally commit release code to develop branch, cherry-pick it over to release-x-x-x
@@ -32,19 +33,20 @@ Feature development halts, all hands on deck to run final thorough testing
 
 New features are stable and ready for release, all parties have signed off on testing.
 
-We merge our feature branch on to master, tag it, and delete the feature branch. When all is done, we merge master back into develop.
+We merge our release branch to master, tag it, and delete the release branch. When all is done, we merge master back into develop.
 
 #### Git Flow
-1. `git pull --rebase` / `g plr`
-2. `git checkout master` / `g co master`
-3. `git merge --no-ff release-vX.X.X` / `g m`
-4. `git tag -m vX.X.X "Release vX.X.X"`
-5. `git push origin --tags` (pushes all tags to remote)
+1. `git checkout master` / `g co master`
+2. `git pull --rebase` / `g plr`
+3. `git merge --no-ff release-vX.X.X` / `g m release-vX.X.X`
+4. `npm version X.X.X` (updates package.json version, commits and tags)
+5. `git push --tags` (pushes all tags to remote)
 6. `git branch -d release-vX.X.X` / `g b -d release-vX.X.X`
 7. `git push origin :release-vX.X.X` (deletes branch from remote)
 8. `git checkout develop` / `g dv`
 9. `git merge --no-ff master` / `g m master`
-10. Celebrate!
+10. `git push` (push everything else)
+11. Celebrate!
 
 ## Packaging for Distribution
 
@@ -59,7 +61,7 @@ It might be wise to wait a couple of days before packaging to ensure the given r
 6. Delete this README.md: `rm README.md`
 
 #### Package Raw Version (no specific nwjs OS)
-7. Zip up the repo dir, name as: "**KoNote vX.X.X (Raw)***"
+7. Zip up the repo dir, name as: "**KoNote vX.X.X (Raw)**"
 8. Upload zip file to Google Docs: /KoNode Team/KoNote/
 
 ### Package OS Version (do for each OS)
