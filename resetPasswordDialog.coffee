@@ -104,6 +104,10 @@ load = (win) ->
 			@setState {isLoading: true}
 			Persist.Users.resetAccountPassword 'data', userName, password, (err) =>
 				@setState {isLoading: false}
+				
+				if err instanceof Persist.Users.UnknownUserNameError
+					Bootbox.alert "Unknown user! Please check user name and try again"
+					return
 
 				if err
 					CrashHandler.handle err
