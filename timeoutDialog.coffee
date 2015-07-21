@@ -88,7 +88,8 @@ load = (win) ->
 
 					global.ActiveSession.initialWarningDelivered = new win.Notification "Inactivity Warning", {
 						body: "Your #{Config.productName} session (and any unsaved work) will shut down 
-						in #{Config.timeout.warningMins} minute#{if Config.timeout.warningMins > 1 then 's' else ''}"
+						in #{Config.timeout.warningMins} 
+						minute#{if Config.timeout.warningMins > 1 then 's' else ''}"
 					}					
 					nwWin.requestAttention(1)
 
@@ -97,7 +98,8 @@ load = (win) ->
 					console.log "TIMEOUT: 1 Minute Warning issued"
 
 					global.ActiveSession.minuteWarningDelivered = new win.Notification "1 Minute Warning!", {
-						body: "#{Config.productName} will shut down in 1 minute due to inactivity. Any unsaved work will be lost!"
+						body: "#{Config.productName} will shut down in 1 minute due to inactivity. " +
+							"Any unsaved work will be lost!"
 					}					
 					nwWin.requestAttention(3)
 
