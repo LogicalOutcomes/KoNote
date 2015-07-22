@@ -157,13 +157,11 @@ init = (win) ->
 		.mergeDeep getTimeoutListeners() # and merge in timeout listeners
 
 		pageListeners.forEach (action, name) =>
-			# console.log "Registered listener:", name
 			global.ActiveSession.persist.eventBus.on name, action
 
 	unregisterPageListeners = =>		
 		pageListeners.forEach (action, name) =>
-			# console.log "Unregistered listener:", name
-			global.ActiveSession.persist.eventBus.stopListening name, action
+			global.ActiveSession.persist.eventBus.off name, action
 
 	# Define the listener here so that it can be removed later
 	onWindowCloseEvent = =>
