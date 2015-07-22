@@ -104,7 +104,9 @@ load = (win) ->
 					nwWin.requestAttention(3)
 
 			'timeout:reset': =>
+				# Reset both timeout component and session
 				timeoutComponent.reset()
+				global.ActiveSession.resetTimeout()
 
 				# Reset knowledge of warnings been delivered
 				global.ActiveSession.initialWarningDelivered = null

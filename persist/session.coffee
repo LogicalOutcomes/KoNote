@@ -38,12 +38,9 @@ class Session
 		@timeoutMins = Config.timeout.totalMins
 		@warningMins = Config.timeout.warningMins
 
-		@persist.eventBus.on 'timeout:reset', =>
-			@_resetTimeout()
+		@resetTimeout()
 
-		@_resetTimeout()
-
-	_resetTimeout: ->
+	resetTimeout: ->
 		# Clear all traces of timeouts
 		if @warning then clearTimeout @warning
 		if @timeout then clearTimeout @timeout
