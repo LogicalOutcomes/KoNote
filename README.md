@@ -64,7 +64,7 @@ It might be wise to wait a couple of days before packaging to ensure the given r
 7. Zip up the repo dir, name as: "**KoNote vX.X.X (Raw)**"
 8. Upload zip file to Google Docs: /KoNode Team/KoNote/
 
-### Package OS Version (do for each OS)
+#### Package OS Version (do for each OS)
 9. Download and unzip a copy of NW.js into the repo directory for the appropriate platform (Win/Mac/Linux, 32-/64-bit)
 	- Recent Versions: https://github.com/nwjs/nw.js
 	- Old Versions: https://github.com/nwjs/nw.js/wiki/Downloads-of-old-versions
