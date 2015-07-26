@@ -1,19 +1,19 @@
 # KoNote
 
-## Install & Run via CLI:
+# Install & Run via CLI:
 
 -	`cd` to the repo directory
 -	run `npm install` (this will download the right version of NW.js automatically)
 -	run `npm start` (this will start the application)
 
 
-## Release Workflow
+### Release Workflow
 
-### Feature Freeze (Release - ~1w)
+#### Feature Freeze (Release - ~1w)
 
 All features (and their corresponding issues) in progress are locked in around 1 week before release; no new features may be added after this point. This gives us a period to finish, test, and fine-tune the new feature branch.
 
-#### Git Flow
+##### Git Flow
 1. `git checkout develop` / `g dv`
 2. `git pull --rebase` / `g plr`
 3. `git branch release-vX.X.X` / `g b release-vX.X.X`
@@ -23,13 +23,13 @@ All features (and their corresponding issues) in progress are locked in around 1
 > Development for release continues on this release branch.
 > If you accidentally commit release code to develop branch, cherry-pick it over to release-x-x-x
 
-### Code Freeze (Release - ~2d)
+#### Code Freeze (Release - ~2d)
 
 Feature development halts, all hands on deck to run final thorough testing
 
 *(TODO: Testing protocols) and implement fixes.*
 
-### Version Release
+#### Version Release
 
 New features are stable and ready for release, all parties have signed off on testing.
 
@@ -48,11 +48,21 @@ We merge our release branch to master, tag it, and delete the release branch. Wh
 10. `git push` (push everything else)
 11. Celebrate!
 
-## Packaging for Distribution
+### Packaging for Distribution
 
 It might be wise to wait a couple of days before packaging to ensure the given release is stable.
 
-#### Prepare & Clean Repository
+#### by GUI
+
+See: https://github.com/jyapayne/Web2Executable
+
+#### by CLI
+
+See: https://github.com/nwjs/nw.js/wiki/how-to-package-and-distribute-your-apps#step-1-make-a-package
+
+#### or `The Manual Way`
+
+##### Prepare & Clean Repository
 1. Clone repo: `git clone git@github.com:konode001/konote.git`
 2. Open repo: `cd konote`
 3. Delete `.git` folder inside repo: `rm -rf .git`
@@ -60,11 +70,11 @@ It might be wise to wait a couple of days before packaging to ensure the given r
 5. Delete `node_modules/nw` or `node_modules/node-webkit`: `rm -rf node_modules/X`
 6. Delete this README.md: `rm README.md`
 
-#### Package Raw Version (no specific nwjs OS)
+##### Package Raw Version (no specific nwjs OS)
 7. Zip up the repo dir, name as: "**KoNote vX.X.X (Raw)**"
 8. Upload zip file to Google Docs: /KoNode Team/KoNote/
 
-#### Package OS Version (do for each OS)
+##### Package OS Version (do for each OS)
 9. Download and unzip a copy of NW.js into the repo directory for the appropriate platform (Win/Mac/Linux, 32-/64-bit)
 	- Recent Versions: https://github.com/nwjs/nw.js
 	- Old Versions: https://github.com/nwjs/nw.js/wiki/Downloads-of-old-versions
