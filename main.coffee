@@ -62,19 +62,32 @@ init = (win) ->
 		renderPage()
 		initPage()
 
-	renderPage = =>		
+	renderPage = (requestedPage) =>
 		# Pull any parameters out of the URL
 		urlParams = QueryString.parse win.location.search.substr(1)
 
+		# Override requestedPage with urlParams if nonexistant
+		unless requestedPage
+			requestedPage = urlParams
+
 		# Decide what page to render based on the page parameter
 		# URL would look something like `.../main.html?page=client`
-		pageModulePath = pageModulePathsById[urlParams.page or defaultPageId]
+		pageModulePath = pageModulePathsById[requestedPage.page or defaultPageId]
 
+		# if urlParams.clientFileId then console.log "urlParams.clientFileId", urlParams.clientFileId
 		# Load the page module
-		pageComponentClass = require(pageModulePath).load(win, urlParams)			
+		pageComponentClass = require(pageModulePath).load(win, requestedPage)
 
 		# Render page in window
-		pageComponent = React.render pageComponentClass({			
+		pageComponent = React.render pageComponentClass({		
+			navigateTo: (requestedPage) =>
+				pageComponent.deinit()
+				unregisterPageListeners() if isLoggedIn
+				React.unmountComponentAtNode containerElem
+
+				renderPage requestedPage
+				initPage()
+
 			closeWindow: =>
 				pageComponent.deinit()
 				unregisterPageListeners() if isLoggedIn

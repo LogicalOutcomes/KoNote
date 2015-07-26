@@ -28,7 +28,8 @@ load = (win) ->
 		init: ->
 			@_checkSetUp()
 
-		deinit: -> # Do nothing
+		deinit: ->
+			@setState {isLoading: false}
 
 		suggestClose: ->
 			@props.closeWindow()
@@ -144,8 +145,10 @@ load = (win) ->
 				global.ActiveSession = session
 
 				# Proceed to clientSelectionPage
-				# TODO this should be abstracted similar to openWindow (see utils)
-				win.location.href = 'main.html?page=clientSelection'	
+				@props.navigateTo {
+					page: 'clientSelection'
+				}
+
 
 	LoginPageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
