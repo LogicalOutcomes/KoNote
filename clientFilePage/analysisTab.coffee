@@ -143,6 +143,8 @@ load = (win) ->
 				return ['y-' + seriesId, @props.seriesNamesById.get(seriesId)]
 			.fromEntrySeq().toMap()
 
+			console.log "@props.data.entrySeq()", @props.data.entrySeq().toJS()
+
 			dataSeries = @props.data.entrySeq().flatMap ([seriesId, dataPoints]) ->
 				xValues = Imm.List(['x-' + seriesId]).concat(
 					dataPoints.map ([x, y]) -> x
@@ -152,15 +154,29 @@ load = (win) ->
 				)
 				return Imm.List([xValues, yValues])
 
-			ticks = dataSeries.forEach (metric) ->
-				console.log metric.toJS()
-				return metric
+
+			timeStamps = Imm.List()
+			# Grab all unique timestamps (timestamp format is 23ch long)
+			dataSeries.forEach (metric) ->
+				metric.forEach (dataPoint) ->
+					if not timeStamps.contains(dataPoint) and dataPoint.length is 23
+						timeStamps = timeStamps.push dataPoint
+
+			timeMoments = timeStamps.map (stamp) ->
+				return new Moment(stamp, Persist.TimestampFormat).startOf('day')
+			
+			# Figure out min and max timeMoments
+			earliestTime = Moment.min(timeMoments.toJS())
+			latestTime = Moment.max(timeMoments.toJS())
+
+			console.log "DIFF:", latestTime.diff(earliestTime, 'days')
 
 			scaledDataSeries = dataSeries.map (metric) ->
 				# Filter out id's to figure out min & max
 				values = metric.flatten().filterNot (y) -> isNaN(y)
-				.map((val) -> return Number(val))
+				.map (val) -> return Number(val)
 
+				# Figure out min and max metric values
 				min = values.min()
 				max = values.max()
 
