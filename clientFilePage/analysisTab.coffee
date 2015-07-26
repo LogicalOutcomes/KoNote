@@ -152,11 +152,15 @@ load = (win) ->
 				)
 				return Imm.List([xValues, yValues])
 
+			ticks = dataSeries.forEach (metric) ->
+				console.log metric.toJS()
+				return metric
+
 			scaledDataSeries = dataSeries.map (metric) ->
 				# Filter out id's to figure out min & max
 				values = metric.flatten().filterNot (y) -> isNaN(y)
 				.map((val) -> return Number(val))
-				# values.map (value) -> return Number(value)
+
 				min = values.min()
 				max = values.max()
 
@@ -178,7 +182,7 @@ load = (win) ->
 			# Hijack the tooltip, while getting called, to use original dataSeries value
 			@_chart.internal.getTooltipContent = (data, defaultTitleFormat, defaultValueFormat, color) ->
 				originalValues = data.map (dataPoint, i) ->
-					if scaleFactorSet[i] and dataPoint
+					if dataPoint
 						# Pick the array from original data with matching ID
 						thisPointArray = dataSeries.filter((metric) -> if metric.contains dataPoint.id then return metric).flatten()
 						return {
