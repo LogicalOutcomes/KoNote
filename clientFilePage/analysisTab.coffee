@@ -120,6 +120,9 @@ load = (win) ->
 							format: '%Y-%m-%d'
 						}
 					}
+					y: {
+						show: false
+					}
 				}
 				data: {
 					xFormat: D3TimestampFormat
@@ -149,9 +152,50 @@ load = (win) ->
 				)
 				return Imm.List([xValues, yValues])
 
+			scaledDataSeries = dataSeries.map (metric) ->
+				# Filter out id's to figure out min & max
+				values = metric.flatten().filterNot (y) -> isNaN(y)
+				.map((val) -> return Number(val))
+				# values.map (value) -> return Number(value)
+				min = values.min()
+				max = values.max()
+
+				# Center the line vertically if constant value
+				if min is max
+					min -= 1
+					max += 1
+
+				scaleFactor = max - min			
+
+				# Map scaleFactor on to numerical values
+				return metric.map (dataPoint) ->
+					return dataPoint if isNaN(dataPoint)
+					(dataPoint - min) / scaleFactor
+
+
+			originalGetTooltipContent = @_chart.internal.getTooltipContent
+
+			# Hijack the tooltip, while getting called, to use original dataSeries value
+			@_chart.internal.getTooltipContent = (data, defaultTitleFormat, defaultValueFormat, color) ->
+				originalValues = data.map (dataPoint, i) ->
+					if scaleFactorSet[i] and dataPoint
+						# Pick the array from original data with matching ID
+						thisPointArray = dataSeries.filter((metric) -> if metric.contains dataPoint.id then return metric).flatten()
+						return {
+							id: dataPoint.id
+							index: dataPoint.index
+							name: dataPoint.name
+							value: thisPointArray.get(dataPoint.index + 1)
+							x: dataPoint.x
+						}
+					else
+						return dataPoint
+				# Call the hijacked tooltip display function
+				return originalGetTooltipContent.call(this, originalValues, defaultTitleFormat, defaultValueFormat, color)
+
 			@_chart.load {
 				xs: xsMap.toJS()
-				columns: dataSeries.toJS()
+				columns: scaledDataSeries.toJS()
 				unload: true
 			}
 			@_chart.data.names dataSeriesNames.toJS()
