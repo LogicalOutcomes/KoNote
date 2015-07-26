@@ -14,7 +14,7 @@ load = (win) ->
 					'dialogContainer'
 					if @props.containerClasses then @props.containerClasses.join(' ')
 				].join(' ')
-				onClick: @_onBackgroundClick
+				onClick: if not @props.disableBackgroundClick then @_onBackgroundClick
 			},
 				R.div({className: 'dialog panel panel-primary'},
 					R.div({className: 'panel-heading'},

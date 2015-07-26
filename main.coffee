@@ -172,6 +172,9 @@ init = (win) ->
 		pageListeners.forEach (action, name) =>
 			global.ActiveSession.persist.eventBus.on name, action
 
+		# Make sure everything is reset
+		global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
+
 	unregisterPageListeners = =>		
 		pageListeners.forEach (action, name) =>
 			global.ActiveSession.persist.eventBus.off name, action

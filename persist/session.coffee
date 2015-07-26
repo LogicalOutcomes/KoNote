@@ -21,7 +21,15 @@ login = (dataDir, userName, password, cb) ->
 			account.accountType
 			account.globalEncryptionKey
 			dataDir
-		)		
+		)
+
+confirmPassword = (dataDir, userName, password, cb) ->
+	Users.readAccount dataDir, userName, password, (err, account) ->
+		if err
+			cb err
+			return false
+
+		cb()
 
 class Session
 	constructor: (@userName, @accountType, @globalEncryptionKey, @dataDirectory) ->
@@ -70,6 +78,7 @@ class Session
 
 module.exports = {
 	login
+	confirmPassword
 	UnknownUserNameError: Users.UnknownUserNameError
 	IncorrectPasswordError: Users.IncorrectPasswordError
 }

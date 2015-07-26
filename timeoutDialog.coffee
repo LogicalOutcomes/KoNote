@@ -9,6 +9,8 @@ load = (win) ->
 	Config = require('./config')
 
 	Dialog = require('./dialog').load(win)
+	Spinner = require('./spinner').load(win)
+	Persist = require './persist'
 	Moment = require('moment')
 	Bootbox = require('bootbox')
 
@@ -18,6 +20,9 @@ load = (win) ->
 				countSeconds: null
 				expiration: null
 				isOpen: false
+				isTimedOut: false
+				password: null
+				isLoading: false
 			}
 
 		_recalculateSeconds: ->
@@ -25,6 +30,7 @@ load = (win) ->
 
 		show: ->
 			@setState =>
+				password: null
 				isOpen: true
 				expiration: Moment().add(global.ActiveSession.warningMins, 'minutes')
 
@@ -38,6 +44,24 @@ load = (win) ->
 			@setState => isOpen: false
 			clearInterval @counter
 
+		showTimeoutMessage: ->
+			@setState => isTimedOut: true
+
+		_confirmPassword: ->
+			@setState => isLoading: true
+
+			Persist.Session.login 'data', global.ActiveSession.userName, @state.password, (err, result) =>
+				@setState => isLoading: false
+
+				if result
+					global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
+				else
+					if err instanceof Persist.Session.IncorrectPasswordError
+						win.alert "Incorrect password"
+
+		_updatePassword: (event) ->
+			@setState {password: event.target.value}
+
 		render: ->
 			unless @state.isOpen
 				return R.div({})
@@ -49,29 +73,57 @@ load = (win) ->
 
 			return Dialog({
 				title: "Inactivity Warning"
-				containerClasses: [if @state.countSeconds <= 60 then 'warning']
+				disableBackgroundClick: true
+				containerClasses: [
+					if @state.countSeconds <= 60 then 'warning'
+					if @state.isTimedOut then 'timedOut'
+				]				
 			},
 				R.div({className: 'timeoutDialog'},
-					R.div({className: 'message'},
-						"Your #{Config.productName} session will shut down in "
-						R.span({className: 'timeRemaining'},
-							if @state.countSeconds >= 60
-								"#{countMoment.format('mm:ss')} minutes"
-							else
-								"#{countMoment.format('ss')} seconds"
+					Spinner({
+						isVisible: @state.isLoading
+						isOverlay: true
+					})
+					(if @state.isTimedOut						
+						R.div({className: 'message'},
+							"Your session has timed out. Please confirm your password for username \"#{global.ActiveSession.userName}\"to reactivate all windows."
+							R.div({className: 'form-group'},
+								R.input({
+									value: @state.password
+									onChange: @_updatePassword
+									placeholder: "Confirm password"
+									type: 'password'
+								})
+								R.div({className: 'btn-toolbar'},
+									R.button({
+										className: 'btn btn-primary'
+										disabled: not @state.password
+										type: 'submit'
+										onClick: @_confirmPassword
+									}, "Confirm Password")
+								)
+							)
 						)
-						"due to inactivity"
-						R.br({})
-						R.br({})
-						"Any unsaved work will be lost!"
+					else
+						R.div({className: 'message'},
+							"Your #{Config.productName} session will shut down in "
+							R.span({className: 'timeRemaining'},
+								if @state.countSeconds >= 60
+									"#{countMoment.format('mm:ss')} minutes"
+								else
+									"#{countMoment.format('ss')} seconds"
+							)
+							"due to inactivity"
+							R.br({})
+							R.br({})
+							"Any unsaved work will be lost!"
+						)
 					)
 				)
 			)
 
 	getTimeoutListeners = ->		
 		# Fires 'resetTimeout' event upon any user interaction (move, click, typing, scroll)
-		$('body').bind "mousemove mousedown keypress scroll", ->
-			global.ActiveSession.persist.eventBus.trigger 'timeout:reset'	
 
 		timeoutContainer = win.document.createElement('div')
 		timeoutContainer.id = 'timeoutContainer'
@@ -104,6 +156,9 @@ load = (win) ->
 					nwWin.requestAttention(3)
 
 			'timeout:reset': =>
+				$('body').bind "mousemove mousedown keypress scroll", ->
+					global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
+
 				# Reset both timeout component and session
 				timeoutComponent.reset()
 				global.ActiveSession.resetTimeout()
@@ -113,9 +168,12 @@ load = (win) ->
 				global.ActiveSession.minuteWarningDelivered = null
 			
 			'timeout:timedOut': =>
+				$('body').unbind "mousemove mousedown keypress scroll"
 				# Force-close all windows when timed out
 				console.log "TIMEOUT: Timed out, closing window"
-				nwWin.close(true)
+				# nwWin.close(true)
+				timeoutComponent.showTimeoutMessage()				
+
 		}		
 
 	return {getTimeoutListeners}
