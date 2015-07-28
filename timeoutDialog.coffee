@@ -48,7 +48,9 @@ load = (win) ->
 			clearInterval @counter
 
 		_focusPasswordField: ->
-			@refs.passwordField.getDOMNode().focus()
+			setTimeout(=>
+				@refs.passwordField.getDOMNode().focus()
+			, 50)
 
 		showTimeoutMessage: ->
 			@setState => 
@@ -68,10 +70,11 @@ load = (win) ->
 					if err instanceof Persist.Session.IncorrectPasswordError
 						Bootbox.alert "Incorrect password for user \'#{global.ActiveSession.userName}\', please try again.", =>							
 							@setState => password: null
-							@refs.passwordField.getDOMNode().focus()
+							@_focusPasswordField()
 						return
 					if err instanceof Persist.IOError
-						Bootbox.alert "An error occurred. Please check your network connection and try again."	
+						Bootbox.alert "An error occurred. Please check your network connection and try again.", =>
+							@_focusPasswordField()
 						return
 
 					CrashHandler.handle err
@@ -203,7 +206,7 @@ load = (win) ->
 				console.log "TIMEOUT: Timed out, disabling windows"
 
 				$('body').unbind "mousemove mousedown keypress scroll"
-				# Force-close all windows when timed out				
+
 				timeoutComponent.showTimeoutMessage()				
 
 		}		
