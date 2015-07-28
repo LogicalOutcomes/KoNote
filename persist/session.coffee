@@ -23,14 +23,6 @@ login = (dataDir, userName, password, cb) ->
 			dataDir
 		)
 
-confirmPassword = (dataDir, userName, password, cb) ->
-	Users.readAccount dataDir, userName, password, (err, account) ->
-		if err
-			cb err
-			return false
-
-		cb()
-
 class Session
 	constructor: (@userName, @accountType, @globalEncryptionKey, @dataDirectory) ->
 		unless @globalEncryptionKey instanceof SymmetricEncryptionKey
@@ -69,6 +61,15 @@ class Session
 
 	isAdmin: ->
 		return @accountType is 'admin'
+
+	confirmPassword: (password, cb) ->
+		Users.readAccount @dataDirectory, @userName, password, (err, account) ->
+			if err
+				cb err
+				return false
+
+			cb()
+
 	logout: ->
 		if @_ended
 			throw new Error "session has already ended"
@@ -78,7 +79,6 @@ class Session
 
 module.exports = {
 	login
-	confirmPassword
 	UnknownUserNameError: Users.UnknownUserNameError
 	IncorrectPasswordError: Users.IncorrectPasswordError
 }

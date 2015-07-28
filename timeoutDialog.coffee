@@ -63,7 +63,7 @@ load = (win) ->
 
 			@setState => isLoading: true
 
-			Persist.Session.confirmPassword 'data', global.ActiveSession.userName, @state.password, (err, result) =>
+			global.ActiveSession.confirmPassword @state.password, (err, result) =>
 				@setState => isLoading: false
 
 				if err
