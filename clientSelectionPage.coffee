@@ -83,7 +83,9 @@ load = (win) ->
 		componentDidUpdate: (oldProps, oldState) ->
 			# If loading just finished
 			if oldProps.isLoading and (not @props.isLoading)
-				@refs.searchBox.getDOMNode().focus()
+				setTimeout(=>
+					@refs.searchBox.getDOMNode().focus()
+				, 100)
 
 		render: ->
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet

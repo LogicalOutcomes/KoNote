@@ -163,7 +163,9 @@ load = (win) ->
 			@refs.passwordField.getDOMNode().focus()
 
 		isSetUp: ->
-			@refs.userNameField.getDOMNode().focus()
+			setTimeout(=>
+				@refs.userNameField.getDOMNode().focus()
+			, 100)
 
 		onLoginError: (type) ->
 			switch type
@@ -189,6 +191,7 @@ load = (win) ->
 							ref: 'userNameField'
 							onChange: @_updateUserName
 							value: @state.userName
+							type: 'text'
 						})
 					)
 					R.div({className: 'form-group'},

@@ -4,15 +4,15 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+	Bootbox = win.bootbox
 	Gui = win.require 'nw.gui'
 	nwWin = Gui.Window.get(win)
 	Config = require('./config')
 
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
-	Persist = require './persist'
-	Moment = require('moment')
-	Bootbox = require('bootbox')
+	Persist = require('./persist')	
+	Moment = require('moment')	
 
 	TimeoutWarning = React.createFactory React.createClass
 		getInitialState: ->
@@ -41,25 +41,48 @@ load = (win) ->
 			, 1000)
 
 		reset: ->
-			@setState => isOpen: false
+			@setState => 
+				isOpen: false
+				isTimedOut: false
+
 			clearInterval @counter
 
-		showTimeoutMessage: ->
-			@setState => isTimedOut: true
+		_focusPasswordField: ->
+			setTimeout(=>
+				@refs.passwordField.getDOMNode().focus()
+			, 50)
 
-		_confirmPassword: ->
+		showTimeoutMessage: ->
+			@setState => 
+				isTimedOut: true
+				password: null	
+			@_focusPasswordField()		
+
+		_confirmPassword: (event) ->
+			event.preventDefault()
+
 			@setState => isLoading: true
 
-			Persist.Session.login 'data', global.ActiveSession.userName, @state.password, (err, result) =>
+			global.ActiveSession.confirmPassword @state.password, (err, result) =>
 				@setState => isLoading: false
 
-				if result
-					global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
-				else
+				if err
 					if err instanceof Persist.Session.IncorrectPasswordError
-						win.alert "Incorrect password"
+						Bootbox.alert "Incorrect password for user \'#{global.ActiveSession.userName}\', please try again.", =>							
+							@setState => password: null
+							@_focusPasswordField()
+						return
+					if err instanceof Persist.IOError
+						Bootbox.alert "An error occurred. Please check your network connection and try again.", =>
+							@_focusPasswordField()
+						return
 
-		_updatePassword: (event) ->
+					CrashHandler.handle err
+					return
+
+				global.ActiveSession.persist.eventBus.trigger 'timeout:reactivateWindows'				
+
+		_updatePassword: (event) ->			
 			@setState {password: event.target.value}
 
 		render: ->
@@ -72,7 +95,7 @@ load = (win) ->
 				global.ActiveSession.persist.eventBus.trigger 'timeout:minuteWarning'
 
 			return Dialog({
-				title: "Inactivity Warning"
+				title: if @state.isTimedOut then "Your Session Has Timed Out" else "Inactivity Warning"
 				disableBackgroundClick: true
 				containerClasses: [
 					if @state.countSeconds <= 60 then 'warning'
@@ -85,21 +108,23 @@ load = (win) ->
 						isOverlay: true
 					})
 					(if @state.isTimedOut						
-						R.div({className: 'message'},
-							"Your session has timed out. Please confirm your password for username \"#{global.ActiveSession.userName}\"to reactivate all windows."
-							R.div({className: 'form-group'},
+						R.div({className: 'message'},							
+							"Please confirm your password for user \"#{global.ActiveSession.userName}\"
+							to restore all windows."
+							R.form({className: 'form-group'},
 								R.input({
 									value: @state.password
 									onChange: @_updatePassword
-									placeholder: "Confirm password"
+									placeholder: "● ● ● ● ●"
 									type: 'password'
+									ref: 'passwordField'
 								})
 								R.div({className: 'btn-toolbar'},
 									R.button({
-										className: 'btn btn-primary'
+										className: 'btn btn-primary btn-lg btn-block'
 										disabled: not @state.password
 										type: 'submit'
-										onClick: @_confirmPassword
+										onClick: @_confirmPassword										
 									}, "Confirm Password")
 								)
 							)
@@ -129,10 +154,15 @@ load = (win) ->
 		timeoutContainer.id = 'timeoutContainer'
 		win.document.body.appendChild timeoutContainer
 
-		timeoutComponent = React.render TimeoutWarning({}), timeoutContainer	
+		timeoutComponent = React.render TimeoutWarning({}), timeoutContainer
+
+		$('body').bind "mousemove mousedown keypress scroll", ->
+			global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 
 		return {
 			'timeout:initialWarning': =>
+				console.log "TIMEOUT: Initial Warning issued"
+
 				timeoutComponent.show()
 
 				unless global.ActiveSession.initialWarningDelivered
@@ -156,9 +186,6 @@ load = (win) ->
 					nwWin.requestAttention(3)
 
 			'timeout:reset': =>
-				$('body').bind "mousemove mousedown keypress scroll", ->
-					global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
-
 				# Reset both timeout component and session
 				timeoutComponent.reset()
 				global.ActiveSession.resetTimeout()
@@ -166,12 +193,20 @@ load = (win) ->
 				# Reset knowledge of warnings been delivered
 				global.ActiveSession.initialWarningDelivered = null
 				global.ActiveSession.minuteWarningDelivered = null
+
+			'timeout:reactivateWindows': =>
+				console.log "TIMEOUT: Confirmed password, reactivating windows"
+
+				global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
+
+				$('body').bind "mousemove mousedown keypress scroll", ->
+					global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 			
 			'timeout:timedOut': =>
+				console.log "TIMEOUT: Timed out, disabling windows"
+
 				$('body').unbind "mousemove mousedown keypress scroll"
-				# Force-close all windows when timed out
-				console.log "TIMEOUT: Timed out, closing window"
-				# nwWin.close(true)
+
 				timeoutComponent.showTimeoutMessage()				
 
 		}		

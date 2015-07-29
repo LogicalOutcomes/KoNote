@@ -128,10 +128,57 @@ load = (win) ->
 					xFormat: D3TimestampFormat
 					columns: []
 				}
+				tooltip: {
+					format: {}
+					contents: (d, defaultTitleFormat, defaultValueFormat, color) ->
+						# Translated from original funct @ https://github.com/masayuki0812/c3/blob/master/c3.js#L3807
+						config = @config
+						titleFormat = config.tooltip_format_title or defaultTitleFormat
+						nameFormat = config.tooltip_format_name or (name) ->
+							name
+
+						valueFormat = config.tooltip_format_value or defaultValueFormat
+						i = 0
+
+						while i < d.length
+							
+							if not (d[i] and (d[i].value or d[i].value is 0))
+							  i++
+							  continue
+
+							if not text
+							  title = if titleFormat then titleFormat(d[i].x) else d[i].x
+
+							  text = '<table class=\'' + @CLASS.tooltip + '\'>' + 
+							  (if title or title is 0 then '<tr><th colspan=\'2\'>' + title + '</th></tr>' else '')
+
+							name = nameFormat(d[i].name)
+
+							# Filter out dataset from dataSeries with matching id, grab from index (skipping the id)
+							value = Chart.dataSeries.filter((metric) ->
+								if metric.contains d[i].id then return metric
+							).flatten().get(d[i].index + 1)
+
+							# Original code for value:
+							# value = valueFormat(d[i].value, d[i].ratio, d[i].id, d[i].index);
+
+							bgcolor = if @levelColor then @levelColor(d[i].value) else color(d[i].id)
+
+							# TODO: Clean this up
+							text += '<tr class=\'' + @CLASS.tooltipName + '-' + d[i].id + '\'>'
+							text += '<td class=\'name\'><span style=\'background-color:' + bgcolor + '\'></span>' + name + '</td>'
+							text += '<td class=\'value\'>' + value + '</td>'
+							text += '</tr>'
+							i++						
+
+						return text + '</table>'
+				}
 			}
 			@_refreshData()
-		componentDidUpdate: ->
+
+		componentDidUpdate: ->			
 			@_refreshData()
+
 		_refreshData: ->
 			xsMap = @props.data.keySeq()
 			.map (seriesId) ->
@@ -145,7 +192,8 @@ load = (win) ->
 
 			console.log "@props.data.entrySeq()", @props.data.entrySeq().toJS()
 
-			dataSeries = @props.data.entrySeq().flatMap ([seriesId, dataPoints]) ->
+			# Explicitly attaching this to Chart lets us access this in tooltip content ftn
+			Chart.dataSeries = @props.data.entrySeq().flatMap ([seriesId, dataPoints]) ->
 				xValues = Imm.List(['x-' + seriesId]).concat(
 					dataPoints.map ([x, y]) -> x
 				)
@@ -157,7 +205,7 @@ load = (win) ->
 
 			timeStamps = Imm.List()
 			# Grab all unique timestamps (timestamp format is 23ch long)
-			dataSeries.forEach (metric) ->
+			Chart.dataSeries.forEach (metric) ->
 				metric.forEach (dataPoint) ->
 					if not timeStamps.contains(dataPoint) and dataPoint.length is 23
 						timeStamps = timeStamps.push dataPoint
@@ -171,7 +219,7 @@ load = (win) ->
 
 			console.log "DIFF:", latestTime.diff(earliestTime, 'days')
 
-			scaledDataSeries = dataSeries.map (metric) ->
+			scaledDataSeries = Chart.dataSeries.map (metric) ->
 				# Filter out id's to figure out min & max
 				values = metric.flatten().filterNot (y) -> isNaN(y)
 				.map (val) -> return Number(val)
@@ -191,27 +239,6 @@ load = (win) ->
 				return metric.map (dataPoint) ->
 					return dataPoint if isNaN(dataPoint)
 					(dataPoint - min) / scaleFactor
-
-
-			originalGetTooltipContent = @_chart.internal.getTooltipContent
-
-			# Hijack the tooltip, while getting called, to use original dataSeries value
-			@_chart.internal.getTooltipContent = (data, defaultTitleFormat, defaultValueFormat, color) ->
-				originalValues = data.map (dataPoint, i) ->
-					if dataPoint
-						# Pick the array from original data with matching ID
-						thisPointArray = dataSeries.filter((metric) -> if metric.contains dataPoint.id then return metric).flatten()
-						return {
-							id: dataPoint.id
-							index: dataPoint.index
-							name: dataPoint.name
-							value: thisPointArray.get(dataPoint.index + 1)
-							x: dataPoint.x
-						}
-					else
-						return dataPoint
-				# Call the hijacked tooltip display function
-				return originalGetTooltipContent.call(this, originalValues, defaultTitleFormat, defaultValueFormat, color)
 
 			@_chart.load {
 				xs: xsMap.toJS()

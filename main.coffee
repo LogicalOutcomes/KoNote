@@ -54,39 +54,31 @@ init = (win) ->
 		Gui.Window.get().menu = mb
 
 	containerElem = document.getElementById('container')
+
 	pageComponent = null
 	pageListeners = null
 	isLoggedIn = null
 
 	process.nextTick =>
-		renderPage()
+		renderPage QueryString.parse(win.location.search.substr(1))
 		initPage()
 
 	renderPage = (requestedPage) =>
-		# Pull any parameters out of the URL
-		urlParams = QueryString.parse win.location.search.substr(1)
-
-		# Override requestedPage with urlParams if nonexistant
-		unless requestedPage
-			requestedPage = urlParams
-
 		# Decide what page to render based on the page parameter
 		# URL would look something like `.../main.html?page=client`
 		pageModulePath = pageModulePathsById[requestedPage.page or defaultPageId]
 
-		# if urlParams.clientFileId then console.log "urlParams.clientFileId", urlParams.clientFileId
 		# Load the page module
 		pageComponentClass = require(pageModulePath).load(win, requestedPage)
 
 		# Render page in window
 		pageComponent = React.render pageComponentClass({		
-			navigateTo: (requestedPage) =>
+			navigateTo: (pageParams) =>
 				pageComponent.deinit()
 				unregisterPageListeners() if isLoggedIn
 				React.unmountComponentAtNode containerElem
 
-				renderPage requestedPage
-				initPage()
+				win.location.href = "main.html?" + QueryString.stringify(pageParams)
 
 			closeWindow: =>
 				pageComponent.deinit()
