@@ -26,7 +26,6 @@ load = (win) ->
 				selectedMetricIds: Imm.Set()
 			}
 		render: ->
-
 			# All non-empty metric values
 			metricValues = @props.progNotes.flatMap (progNote) ->
 				return extractMetricsFromProgNote progNote
@@ -59,7 +58,7 @@ load = (win) ->
 								R.label({},
 									R.input({
 										type: 'checkbox'
-										onChange: @_updateMetricSelection.bind null, metricId
+										onChange: @_updateSelectedMetrics.bind null, metricId
 										checked: @state.selectedMetricIds.contains metricId
 									})
 									metric.get('name')
@@ -72,6 +71,7 @@ load = (win) ->
 					if @props.isVisible
 						# Force chart to be recreated when tab is opened
 						Chart({
+							ref: 'mainChart'
 							progNotes: @props.progNotes
 							metricsById: @props.metricsById
 							metricValues
@@ -80,35 +80,37 @@ load = (win) ->
 				)
 			)
 
-		componentDidMount: ->
-			console.log "@state.selectedMetricIds", @state.selectedMetricIds.toJS()
-			# Show anything that is selected in the view layer
-			# TODO: Make this work. Plz?
-			@state.selectedMetricIds.forEach (metricId) =>
-				console.log "metricId", metricId
-				Chart.chart.show("y" + metricId)
-
-		_updateMetricSelection: (metricId) ->
+		_updateSelectedMetrics: (metricId) ->
 			@setState ({selectedMetricIds}) ->
 				if selectedMetricIds.contains metricId
 					selectedMetricIds = selectedMetricIds.delete metricId
-					Chart.chart.hide ("y-" + metricId)
 				else
 					selectedMetricIds = selectedMetricIds.add metricId
-					Chart.chart.show ("y-" + metricId)
 
-				return {selectedMetricIds}			
+				return {selectedMetricIds}
+
 
 	Chart = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({className: 'chart', ref: 'chartDiv'})
+
+		componentDidUpdate: (oldProps, oldState) ->
+			# Show anything that is selected in the view layer
+			unless Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
+				@_refreshSelectedMetrics()
+
+		_refreshSelectedMetrics: ->
+			@_chart.hide()
+
+			@props.selectedMetricIds.forEach (metricId) =>
+				@_chart.show("y-" + metricId)
 				
 		componentDidMount: ->
 			@_generateChart()
+			@_refreshSelectedMetrics()
 
-		_generateChart: ->		
-
+		_generateChart: ->
 			# Create a Map from metric ID to data series,
 			# where each data series is a sequence of [x, y] pairs
 			dataSeries = @props.metricValues
@@ -188,7 +190,7 @@ load = (win) ->
 					return dataPoint if isNaN(dataPoint)
 					(dataPoint - min) / scaleFactor
 
-			Chart.chart = C3.generate {
+			@_chart = C3.generate {
 				bindto: @refs.chartDiv.getDOMNode()
 				axis: {
 					x: {
@@ -214,7 +216,7 @@ load = (win) ->
 						value: (value, ratio, id, index) ->
 							# Filter out dataset from dataSeries with matching id, grab from index
 							return dataSeries.filter((metric) ->
-								if metric.contains id then return metric
+								return metric.contains id
 							).flatten().get(index + 1)
 					}						
 				}
@@ -224,7 +226,7 @@ load = (win) ->
 							return false
 					}
 				}
-			}			
+			}
 
 	extractMetricsFromProgNote = (progNote) ->
 		switch progNote.get('type')
