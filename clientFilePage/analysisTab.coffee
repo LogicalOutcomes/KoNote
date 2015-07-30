@@ -99,16 +99,16 @@ load = (win) ->
 			# Show anything that is selected in the view layer
 			unless Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 				@_refreshSelectedMetrics()
+				
+		componentDidMount: ->
+			@_generateChart()
+			@_refreshSelectedMetrics()
 
 		_refreshSelectedMetrics: ->
 			@_chart.hide()
 
 			@props.selectedMetricIds.forEach (metricId) =>
 				@_chart.show("y-" + metricId)
-				
-		componentDidMount: ->
-			@_generateChart()
-			@_refreshSelectedMetrics()
 
 		_generateChart: ->
 			# Create a Map from metric ID to data series,
@@ -147,28 +147,6 @@ load = (win) ->
 				)
 				return Imm.List([xValues, yValues])
 
-
-
-
-			timeStamps = Imm.List()
-			# Grab all unique timestamps (timestamp format is 23ch long)
-			dataSeries.forEach (metric) ->
-				metric.forEach (dataPoint) ->
-					if not timeStamps.contains(dataPoint) and dataPoint.length is 23
-						timeStamps = timeStamps.push dataPoint
-
-			timeMoments = timeStamps.map (stamp) ->
-				return new Moment(stamp, Persist.TimestampFormat).startOf('day')
-			
-			# Figure out min and max timeMoments
-			earliestTime = Moment.min(timeMoments.toJS())
-			latestTime = Moment.max(timeMoments.toJS())
-
-			# console.log "DIFF:", latestTime.diff(earliestTime, 'days')
-
-
-
-
 			scaledDataSeries = dataSeries.map (metric) ->
 				# Filter out id's to figure out min & max
 				values = metric.flatten().filterNot (y) -> isNaN(y)
@@ -190,6 +168,8 @@ load = (win) ->
 					return dataPoint if isNaN(dataPoint)
 					(dataPoint - min) / scaleFactor
 
+			xTicks = @_generateXTicks()
+
 			@_chart = C3.generate {
 				bindto: @refs.chartDiv.getDOMNode()
 				axis: {
@@ -197,8 +177,12 @@ load = (win) ->
 						type: 'timeseries'
 						tick: {
 							fit: false
-							format: '%Y-%m-%d'
+							rotate: 90
+							format: '%b %d %Y'
+							values: xTicks.map((tick) -> tick.format Persist.TimestampFormat).toJS()
 						}
+						min: xTicks.first().clone().format Persist.TimestampFormat
+						max: xTicks.last().clone().format Persist.TimestampFormat
 					}
 					y: {
 						show: false
@@ -218,7 +202,9 @@ load = (win) ->
 							return dataSeries.filter((metric) ->
 								return metric.contains id
 							).flatten().get(index + 1)
-					}						
+						title: (timestamp) ->
+							return Moment(timestamp).format('MMMM D [at] HH:mm')
+					}
 				}
 				legend: {
 					item: {
@@ -226,7 +212,37 @@ load = (win) ->
 							return false
 					}
 				}
+				padding: {
+					left: 10
+					right: 10
+				}
 			}
+
+		_generateXTicks: ->
+			# Builds list of ALL the timestamps
+			timestamps = @props.metricValues.map (metricValue) ->
+				return Moment metricValue.get('timestamp'), Persist.TimestampFormat
+
+			# Builds ordered set of unique timestamps (each as unix ms)
+			middayTimeStamps = timestamps.map (timestamp) ->
+				return timestamp.startOf('day').valueOf()
+			.toOrderedSet().sort()
+
+			# Figure out number of days with data
+			daysOfData = middayTimeStamps.size
+
+			if daysOfData < 3
+				console.log "Shouldn't graph, only #{daysOfData} days of data!"
+
+			firstDay = Moment middayTimeStamps.first()
+			lastDay = Moment middayTimeStamps.last()
+
+			dayRange = lastDay.diff(firstDay, 'days') + 1
+
+			# Return a list of full range of timestamps starting from 
+			return Imm.List([0..dayRange]).map (n) ->
+				firstDay.clone().add(n, 'days')
+
 
 	extractMetricsFromProgNote = (progNote) ->
 		switch progNote.get('type')
