@@ -169,7 +169,6 @@ load = (win) ->
 					(dataPoint - min) / scaleFactor
 
 			xTicks = @_generateXTicks()
-			xTicks = xTicks.push Moment().add(1, 'year')
 
 			newYears = Imm.List()
 			newYearLines = Imm.List()			
