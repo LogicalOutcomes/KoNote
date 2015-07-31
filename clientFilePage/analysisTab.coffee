@@ -169,17 +169,34 @@ load = (win) ->
 					(dataPoint - min) / scaleFactor
 
 			xTicks = @_generateXTicks()
+			xTicks = xTicks.push Moment().add(1, 'year')
+
+			newYears = Imm.List()
+			newYearLines = Imm.List()			
+
+			xTicks.forEach (tick) ->
+				unless newYears.contains tick.year()
+					newYears = newYears.push tick.year()
+					newYearLines = newYearLines.push {
+						value: if tick.isSame xTicks.first() then tick else tick.startOf('year')
+						text: tick.year()
+						position: 'middle'
+						class: 'yearLine'
+					}
 
 			@_chart = C3.generate {
 				bindto: @refs.chartDiv.getDOMNode()
+				grid: {
+					x: {
+						lines: newYearLines.toJS()
+					}
+				}
 				axis: {
 					x: {
 						type: 'timeseries'
 						tick: {
 							fit: false
-							rotate: 90
-							format: '%b %d %Y'
-							values: xTicks.map((tick) -> tick.format Persist.TimestampFormat).toJS()
+							format: '%b %d'
 						}
 						min: xTicks.first().clone().format Persist.TimestampFormat
 						max: xTicks.last().clone().format Persist.TimestampFormat
@@ -187,7 +204,7 @@ load = (win) ->
 					y: {
 						show: false
 					}
-				}
+				}				
 				data: {
 					hide: true
 					xFormat: D3TimestampFormat
@@ -213,8 +230,11 @@ load = (win) ->
 					}
 				}
 				padding: {
-					left: 10
-					right: 10
+					left: 50
+					right: 50
+				}
+				zoom: {
+					enabled: true
 				}
 			}
 
