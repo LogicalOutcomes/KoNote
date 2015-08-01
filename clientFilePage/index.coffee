@@ -407,7 +407,7 @@ load = (win, {clientFileId}) ->
 			activeTabId = @props.activeTabId
 
 			return R.div({className: 'sidebar'},
-				R.img({src: 'customer-logo-sm.png'}),
+				R.img({src: Config.customerLogoLg}),
 				R.div({className: 'logoSubtitle'},
 					Config.logoSubtitle
 				)

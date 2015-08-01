@@ -1,5 +1,7 @@
 module.exports = {
 	productName: 'KoNote'
+	customerLogoLg: 'customer-logo-lg_GRIFFIN.png'
+	customerLogoSm: 'customer-logo-sm_GRIFFIN.png'
 	logoSubtitle: 'DSSS'
 	logoSubtitleColor: 'hsl(205, 78%, 47%)'
 
