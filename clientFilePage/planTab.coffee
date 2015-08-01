@@ -469,6 +469,7 @@ load = (win) ->
 						type: 'text'
 						className: 'name field form-control'
 						ref: 'nameField'
+						placeholder: "Name of #{Term 'target'}"
 						value: currentRevision.get('name')
 						onChange: @_updateField.bind null, 'name'
 						onFocus: @props.onTargetSelection
@@ -478,6 +479,7 @@ load = (win) ->
 					ExpandingTextArea({
 						className: 'notes field'
 						ref: 'notesField'
+						placeholder: "Describe the #{Term 'target'} in detail . . ."
 						value: currentRevision.get('notes')
 						onChange: @_updateField.bind null, 'notes'
 						onFocus: @props.onTargetSelection

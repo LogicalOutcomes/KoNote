@@ -120,7 +120,7 @@ load = (win) ->
 							].join ' '
 						},								
 							R.div({className: 'logoContainer'},
-								R.img({src: 'customer-logo-lg.png'})
+								R.img({src: Config.customerLogoLg})
 								R.div({
 									className: 'subtitle'
 									style: {color: Config.logoSubtitleColor}
@@ -147,7 +147,7 @@ load = (win) ->
 								showWhen not @props.isLoading
 							].join ' '
 						},
-							R.img({src: 'customer-logo-lg.png'})
+							R.img({src: Config.customerLogoLg})
 						)
 						R.div({
 							className: [

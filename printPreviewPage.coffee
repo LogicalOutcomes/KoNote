@@ -110,7 +110,7 @@ load = (win, {dataSet}) ->
 				R.div({className: 'rightSide'},
 					R.img({
 						className: 'logo'
-						src: 'customer-logo-lg.png'
+						src: Config.customerLogoLg
 					})
 					(if @props.format isnt 'plan'
 						R.ul({},
