@@ -1,4 +1,4 @@
-# A dialog for allowing the user to define (i.e. create) a new metric
+# A dialog for resetting a user password (admin only)
 
 Persist = require './persist'
 
@@ -14,28 +14,21 @@ load = (win) ->
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)	
 
-	# Upcoming features:
-	# 			# - a user table
-	# 			#   - account type
-	# 			#   - delete account button
-	# 			#   - change password button
-	# 			# - export?
-
-	CreateAccountDialog = React.createFactory React.createClass
+	ResetPasswordDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				userName: ''
 				password: ''
-				isAdmin: false
+				confirmPassword: ''
 				isLoading: false
 			}
 		render: ->
 			Dialog({
-				title: "Create new #{Term 'account'}"
+				title: "Reset user password"
 				onClose: @_cancel
 			},
-				R.div({className: 'createAccountDialog'},
+				R.div({className: 'ResetPasswordDialog'},
 					Spinner({
 						isVisible: @state.isLoading
 						isOverlay: true
@@ -49,7 +42,7 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Password"),
+						R.label({}, "New password"),
 						R.input({
 							className: 'form-control'
 							type: 'password'
@@ -57,15 +50,14 @@ load = (win) ->
 							value: @state.password
 						})
 					)
-					R.div({className: 'checkbox'},
-						R.label({},
-							R.input({
-								type: 'checkbox'
-								onChange: @_updateIsAdmin
-								checked: @state.isAdmin
-							}),
-							"Give this user administrative powers"
-						)
+					R.div({className: 'form-group'},
+						R.label({}, "Confirm password"),
+						R.input({
+							className: 'form-control'
+							type: 'password'
+							onChange: @_updateConfirmPassword
+							value: @state.confirmPassword
+						})
 					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
@@ -75,7 +67,7 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-						}, "Create #{Term 'Account'}")
+						}, "Reset Password")
 					)
 				)
 			)
@@ -83,10 +75,11 @@ load = (win) ->
 			@props.onCancel()
 		_updateUserName: (event) ->
 			@setState {userName: event.target.value}
+			# new syntax: @setState => userName: event.target.value
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
-		_updateIsAdmin: (event) ->
-			@setState {isAdmin: event.target.checked}
+		_updateConfirmPassword: (event) ->
+			@setState {confirmPassword: event.target.value}
 		_submit: ->
 			unless @state.userName
 				Bootbox.alert "User name is required"
@@ -99,29 +92,32 @@ load = (win) ->
 			unless @state.password
 				Bootbox.alert "Password is required"
 				return
+			
+			unless @state.password is @state.confirmPassword
+				Bootbox.alert "Passwords do not match!"
+				return
 
 			userName = @state.userName
 			password = @state.password
-			accountType = if @state.isAdmin then 'admin' else 'normal'
 
 			# TODO where to get data dir?
 			@setState {isLoading: true}
-			Persist.Users.createAccount 'data', userName, password, accountType, (err) =>
+			Persist.Users.resetAccountPassword 'data', userName, password, (err) =>
 				@setState {isLoading: false}
-
+				
 				if err
-					if err instanceof Persist.Users.UserNameTakenError
-						Bootbox.alert "That user name is already taken."
+					if err instanceof Persist.Users.UnknownUserNameError
+						Bootbox.alert "Unknown user! Please check user name and try again"
 						return
 
 					CrashHandler.handle err
 					return
 
 				Bootbox.alert
-					message: "New #{Term 'user'} #{Term 'account'} created for \"#{userName}\""
+					message: "Password reset for \"#{userName}\""
 					callback: =>
 						@props.onSuccess()
 
-	return CreateAccountDialog
+	return ResetPasswordDialog
 
 module.exports = {load}

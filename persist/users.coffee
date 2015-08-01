@@ -1,6 +1,9 @@
 # This module handles all logic related user accounts.
 #
 # See also: persist/session
+#
+# TODO Make operations atomic
+# TODO Find a better way of getting data dir location
 
 Async = require 'async'
 Fs = require 'fs'
@@ -16,10 +19,14 @@ Path = require 'path'
 
 userNameRegex = /^[a-zA-Z0-9_-]+$/
 
+generateUserAuthParams = ->
+	return {
+		salt: generateSalt()
+		iterationCount: 600000 # higher is more secure, but slower
+	}
+
 # TODO
-# - readAccount: requires creds
-# - createAccount: requires admin priv
-# - changeAccountPassword: requires admin priv and password (maybe add recovery feature?)
+# - changeAccountPassword: requires current password
 # - changeAccountType: requires admin priv
 # - deleteAccount: requires admin priv
 
@@ -56,10 +63,7 @@ createAccount = (dataDir, userName, password, accountType, cb) ->
 	userName = userName.toLowerCase()
 
 	userDir = getUserDir dataDir, userName
-	authParams = {
-		salt: generateSalt()
-		iterationCount: 600000 # higher is more secure, but slower
-	}
+	authParams = generateUserAuthParams()
 	userEncryptionKey = null
 
 	Async.series [
@@ -178,6 +182,46 @@ readAccount = (dataDir, userName, password, cb) ->
 		globalEncryptionKey = SymmetricEncryptionKey.import privKeyFile.globalEncryptionKey
 		cb null, {userName, accountType, globalEncryptionKey}
 
+resetAccountPassword = (dataDir, userName, newPassword, cb) ->
+	userName = userName.toLowerCase()
+
+	userDir = getUserDir dataDir, userName
+	authParams = generateUserAuthParams()
+	userEncryptionKey = null
+
+	Async.series [
+		(cb) ->
+			authParamsPath = Path.join(userDir, 'auth-params')
+
+			Fs.writeFile authParamsPath, JSON.stringify(authParams), (err, buf) ->
+				if err
+					if err.code is 'ENOENT'
+						cb new UnknownUserNameError()
+						return
+
+					cb err
+					return
+
+				cb()
+		(cb) ->
+			SymmetricEncryptionKey.derive newPassword, authParams, (err, result) ->
+				if err
+					cb err
+					return
+
+				userEncryptionKey = result
+				cb()
+		(cb) ->
+			privateKeysPath = Path.join(userDir, 'private-keys')
+
+			privateKeys = {
+				globalEncryptionKey: global.ActiveSession.globalEncryptionKey.export()
+			}
+			encryptedData = userEncryptionKey.encrypt JSON.stringify privateKeys
+
+			Fs.writeFile privateKeysPath, encryptedData, cb
+	], cb
+
 class UserNameTakenError extends CustomError
 class UnknownUserNameError extends CustomError
 class IncorrectPasswordError extends CustomError
@@ -186,6 +230,7 @@ module.exports = {
 	isAccountSystemSetUp
 	createAccount
 	readAccount
+	resetAccountPassword
 	UserNameTakenError
 	UnknownUserNameError
 	IncorrectPasswordError

@@ -3,9 +3,9 @@
 
 	> .targetList
 		flex 1
-		overflow auto
-
-		padding 30px 30px
+		overflow inherit
+		display flex
+		flex-direction column		
 
 		> .empty
 			text-align center
@@ -20,22 +20,65 @@
 				padding-right 10px
 
 		> .toolbar
-			width 100%
-
-			> .rightMenu
-				float right
-
-			.btn > .fa
-				margin-right 8px
+			padding 30px
+			border-bottom 1px solid sidebar-borders
+			display flex
+			flex-wrap wrap
 			
-			> .save
-				transition all 0.5s ease
-				width 180px
+			> span
+				flex 1
 				
-			> .canSave
-				width 120px
+				&.leftMenu
+					padding-right 5px
+				
+				&.rightMenu
+					text-align right
+			
+				> .btn
+					
+					> .fa
+						margin-right 8px
+				
+				.save
+					width 100%
+					transition all 0.5s ease
+					
+				.canSave
+					width 60%
+					
+			// @media (max-width: 1150px)
+			// 	.btn
+			// 		font-size .95em !important
+					
+			@media (max-width: 1150px)
+				display block
+				
+				
+				> span
+					display block
+					flex none
+					width 100%
+					
+					> .canSave
+						width 100%
+					
+					&.rightMenu
+						margin-top 10px
+						display flex
+						
+						> .btn
+							flex 3
+							
+						> .printButton
+							flex 1
+						
 
 		> .sections
+			overflow-y auto
+			overflow-x hidden
+			flex 1
+			padding 0 30px 10px 30px
+			
 			> .section
 				padding-top 15px
 
@@ -52,6 +95,7 @@
 					border-width 3px
 
 					> .sectionName
+						flex 1
 						padding 5px 0
 
 						font-size 24px
@@ -121,7 +165,8 @@
 								margin 5px
 
 	> .targetDetail
-		overflow auto
+		overflow-y auto
+		overflow-x hidden
 		flex 1
 
 		border-left 2px solid sidebar-borders
@@ -201,4 +246,5 @@
 								font-weight 700
 
 							> .tag
+								font-weight 600
 								color #888

@@ -8,6 +8,7 @@ load = (win) ->
 	{showWhen} = require('./utils').load(win)
 
 	Spinner = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			isVisible = @props.isVisible isnt false
 

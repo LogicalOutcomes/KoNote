@@ -13,9 +13,11 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
-	Spinner = require('./spinner').load(win)	
+	Spinner = require('./spinner').load(win)
+	Term = require('./term')	
 
 	CreateProgEventDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				title: ''
@@ -27,7 +29,7 @@ load = (win) ->
 			}
 		render: ->
 			Dialog({
-				title: "Create Event"
+				title: "Create #{Term 'Event'}"
 				onClose: @props.onClose
 			},
 				R.div({className: 'createEventDialog'},
@@ -40,7 +42,7 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Describe the event"),
+						R.label({}, "Describe the #{Term 'event'}"),
 						R.input({
 							className: 'form-control'
 							onChange: @_updateDescription
@@ -97,7 +99,7 @@ load = (win) ->
 							className: 'btn btn-primary'
 							onClick: @_submit
 							disabled: not @state.title or not @state.startDate or (@state.dateSpan and not @state.endDate)
-						}, "Create Event")
+						}, "Create #{Term 'Event'}")
 					)
 				)
 			)
@@ -131,7 +133,7 @@ load = (win) ->
 
 			Bootbox.alert
 				title: "Success!"
-				message: "New event created!"
+				message: "New #{Term 'event'} created!"
 				callback: =>
 					@props.onSuccess(progEvent)
 			

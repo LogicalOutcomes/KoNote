@@ -1,4 +1,19 @@
 @require "fonts.css"
+@require pageTransitions
+
+@-webkit-keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+ 
+.fade-in
+	opacity:0;
+	-webkit-animation:fadeIn ease-in 1;
+	animation:fadeIn ease-in 1;
+
+	-webkit-animation-fill-mode:forwards;
+	animation-fill-mode:forwards;
+
+	-webkit-animation-duration:0.25s;
+	animation-duration:0.25s;
 
 html, body
 	// Force viewport to scroll if smaller than 900x500
@@ -8,6 +23,7 @@ html, body
 
 #container
 	position relative
+	display block !important
 
 	height 100%
 
@@ -28,7 +44,6 @@ textarea
 @require spinner
 @require brandWidget
 @require timeoutDialog
-@require printPreview
 @require printButton
 
 @require loginPage
@@ -37,3 +52,4 @@ textarea
 @require clientFilePage
 @require createClientFileDialog
 @require newProgNotePage
+@require printPreviewPage
