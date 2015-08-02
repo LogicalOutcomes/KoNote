@@ -4,6 +4,7 @@
   "version": "1.2.0",
   "main": "main.html",
   "window": {
+	"icon": "icon.png",
     "toolbar": false,
     "width": 1000,
     "height": 700,
