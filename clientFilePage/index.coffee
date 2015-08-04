@@ -6,17 +6,16 @@
 # currently selected.  The function `toSavedFormat` is used to remove these
 # transient fields before saving, while `fromSavedFormat` initialize them with
 # some default values.
-#
-# The client file is automatically saved to disk every time a non-transient
-# field is changed in ClientPage.state.clientFile.
 
 # Libraries from Node.js context
 _ = require 'underscore'
+Assert = require 'assert'
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Term = require '../term'
 Persist = require '../persist'
 
 load = (win, {clientFileId}) ->
@@ -32,113 +31,82 @@ load = (win, {clientFileId}) ->
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
-	{registerTimeoutListeners, unregisterTimeoutListeners} = require('../timeoutDialog').load(win)
 	{FaIcon, renderName, renderFileId, showWhen, stripMetadata} = require('../utils').load(win)
 
-	nwWin = Gui.Window.get(win)
+	ClientFilePage = React.createFactory React.createClass
+		getInitialState: ->
+			return {
+				status: 'init' # either init or ready
+				isLoading: true
 
-	DataStore = do ->
-		clientFile = null
-		clientFileLock = null
-		progressNotes = null
-		planTargetsById = Imm.Map()
-		metricsById = Imm.Map()
-		startupTasks = Imm.Set() # set of task IDs
-		ongoingTasks = Imm.Set() # set of task IDs
-		isClosed = false
-		loadErrorType = null
+				clientFile: null
+				clientFileLock: null
+				progressNotes: null
+				planTargetsById: Imm.Map()
+				metricsById: Imm.Map()
+				loadErrorType: null
+			}
 
-		init = ->
-			render()
-			loadData()
-			registerListeners()
+		init: ->
+			@_loadData()
 
-		process.nextTick init
+		deinit: ->
+			if @state.clientFileLock
+				@state.clientFileLock.release()
 
-		# Render (or re-render) the page
-		render = ->
-			React.render new ClientPage({
-				# Data stores
-				clientFile
-				progressNotes
-				planTargetsById
-				metricsById
-				startupTasks
-				ongoingTasks
-				loadErrorType
+		suggestClose: ->
+			@refs.ui.suggestClose()
 
-				# Data store methods
-				registerTask
-				unregisterTask
-				loadData
-				updateClientFile
-				unregisterListeners
-			}), $('#container')[0]
+		render: ->
+			return ClientFilePageUi({
+				ref: 'ui'
 
-		registerTask = (taskId, isStartupTask) ->
-			if ongoingTasks.contains taskId
-				throw new Error "duplicate task with ID #{JSON.stringify taskId}"
+				status: @state.status
+				isLoading: @state.isLoading
+				loadErrorType: @state.loadErrorType
+				clientFile: @state.clientFile
+				progressNotes: @state.progressNotes
+				planTargetsById: @state.planTargetsById
+				metricsById: @state.metricsById
 
-			if startupTasks.contains taskId
-				throw new Error "duplicate task with ID #{JSON.stringify taskId}"
+				closeWindow: @props.closeWindow
+				maximizeWindow: @props.maximizeWindow
+				setWindowTitle: @props.setWindowTitle
+				updatePlan: @_updatePlan
+				createQuickNote: @_createQuickNote
+			})
 
-			ongoingTasks = ongoingTasks.add(taskId)
-
-			if isStartupTask
-				startupTasks = startupTasks.add(taskId) 
-				console.log "Started #{taskId} (startup)"
-			else
-				console.log "Started #{taskId}"
-
-			render()
-
-		unregisterTask = (taskId, isStartupTask) ->
-			unless ongoingTasks.contains taskId
-				throw new Error "unknown task ID #{JSON.stringify taskId}"
-
-			if isStartupTask and not startupTasks.contains taskId
-				throw new Error "unknown startup task ID #{JSON.stringify taskId}"
-
-			ongoingTasks = ongoingTasks.delete(taskId)
-
-			if isStartupTask
-				startupTasks = startupTasks.delete(taskId)
-				console.log "Finished #{taskId} (startup)"
-			else
-				console.log "Finished #{taskId}"
-
-			render()
-
-		loadData = ->
+		_loadData: ->
 			planTargetHeaders = null
 			progNoteHeaders = null
 			metricHeaders = null
 
-			registerTask 'initialDataLoad', true
+			@setState (state) => {isLoading: true}
 			Async.series [
-				(cb) ->
+				(cb) =>
 					# TODO data dir
-					Persist.Lock.acquire 'data', "clientFile-#{clientFileId}", (err, result) ->
+					Persist.Lock.acquire 'data', "clientFile-#{clientFileId}", (err, result) =>
 						if err
 							if err instanceof Persist.Lock.LockInUseError
-								loadErrorType = 'file-in-use'
-								render()
+								@setState {loadErrorType: 'file-in-use'}
 								return
 
 							cb err
 							return
 
-						clientFileLock = result
-						cb()
-				(cb) ->
+						@setState {
+							clientFileLock: result
+						}, cb
+				(cb) =>
 					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
 						if err
 							cb err
 							return
 
-						clientFile = stripMetadata revisions.get(0)
-						cb()
-				(cb) ->
+						@setState {
+							clientFile: stripMetadata revisions.get(0)
+						}, cb
+				(cb) =>
 					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
 						if err
 							cb err
@@ -146,26 +114,26 @@ load = (win, {clientFileId}) ->
 
 						planTargetHeaders = results
 						cb()
-				(cb) ->
-					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
+				(cb) =>
+					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
 						targetId = planTargetHeader.get('id')
 						ActiveSession.persist.planTargets.readRevisions clientFileId, targetId, cb
-					, (err, results) ->
+					, (err, results) =>
 						if err
 							cb err
 							return
 
-						planTargetsById = Imm.List(results)
-						.map (planTargetRevs) ->
-							id = planTargetRevs.getIn([0, 'id'])
-							return [
-								id
-								Imm.Map({id, revisions: planTargetRevs.reverse()})
-							]
-						.fromEntrySeq().toMap()
-
-						cb()
-				(cb) ->
+						@setState {
+							planTargetsById: Imm.List(results)
+							.map (planTargetRevs) =>
+								id = planTargetRevs.getIn([0, 'id'])
+								return [
+									id
+									Imm.Map({id, revisions: planTargetRevs.reverse()})
+								]
+							.fromEntrySeq().toMap()
+						}, cb
+				(cb) =>
 					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
 						if err
 							cb err
@@ -173,62 +141,95 @@ load = (win, {clientFileId}) ->
 
 						progNoteHeaders = results
 						cb()
-				(cb) ->
-					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
+				(cb) =>
+					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
 						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
-					, (err, results) ->
+					, (err, results) =>
 						if err
 							cb err
 							return
 
-						progressNotes = Imm.List(results)
-						cb()
-				(cb) ->
-					ActiveSession.persist.metrics.list (err, results) ->
+						@setState {
+							progressNotes: Imm.List(results)
+						}, cb
+				(cb) =>
+					ActiveSession.persist.metrics.list (err, results) =>
 						if err
 							cb err
 							return
 
 						metricHeaders = results
 						cb()
-				(cb) ->
-					Async.map metricHeaders.toArray(), (metricHeader, cb) ->
+				(cb) =>
+					Async.map metricHeaders.toArray(), (metricHeader, cb) =>
 						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
-					, (err, results) ->
+					, (err, results) =>
 						if err
 							cb err
 							return
 
-						metricsById = Imm.List(results)
-						.map (metric) ->
-							return [metric.get('id'), metric]
-						.fromEntrySeq().toMap()
-
-						cb()
-			], (err) ->
+						@setState {
+							metricsById: Imm.List(results)
+							.map (metric) =>
+								return [metric.get('id'), metric]
+							.fromEntrySeq().toMap()
+						}, cb
+			], (err) =>
 				if err
 					if err instanceof Persist.IOError
-						loadErrorType = 'io-error'
-						render()
+						@setState {loadErrorType: 'io-error'}
 						return
 
 					CrashHandler.handle err
 					return
 
 				# OK, all done
-				unregisterTask 'initialDataLoad', true
+				@setState (state) => {status: 'ready', isLoading: false}
 
-		updateClientFile = (context, newValue) ->
-			oldClientFile = clientFile
-			clientFile = clientFile.setIn context, newValue
+		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
+			@setState (state) => {isLoading: true}
 
-			# If there were no changes
-			if Imm.is(clientFile, oldClientFile)
-				return
+			idMap = Imm.Map()
 
-			registerTask "updateClientFile"
-			ActiveSession.persist.clientFiles.createRevision clientFile, (err) =>
-				unregisterTask "updateClientFile"
+			Async.series [
+				(cb) =>
+					Async.each newPlanTargets.toArray(), (newPlanTarget, cb) =>
+						transientId = newPlanTarget.get('id')
+						newPlanTarget = newPlanTarget.delete('id')
+
+						ActiveSession.persist.planTargets.create newPlanTarget, (err, result) =>
+							if err
+								cb err
+								return
+
+							persistentId = result.get('id')
+							idMap = idMap.set(transientId, persistentId)
+							cb()
+					, cb
+				(cb) =>
+					Async.each updatedPlanTargets.toArray(), (updatedPlanTarget, cb) =>
+						ActiveSession.persist.planTargets.createRevision updatedPlanTarget, cb
+					, cb
+				(cb) =>
+					# Replace transient IDs with newly created persistent IDs
+					newPlan = plan.update 'sections', (sections) =>
+						return sections.map (section) =>
+							return section.update 'targetIds', (targetIds) =>
+								return targetIds.map (targetId) =>
+									return idMap.get(targetId, targetId)
+					newClientFile = @state.clientFile.set 'plan', newPlan
+
+					# If no changes, skip this step
+					if Imm.is(newClientFile, @state.clientFile)
+						cb()
+						return
+
+					ActiveSession.persist.clientFiles.createRevision newClientFile, cb
+				(cb) =>
+					# Add a noticeable delay so that the user knows the save happened.
+					setTimeout cb, 400
+			], (err) =>
+				@setState (state) => {isLoading: false}
 
 				if err
 					if err instanceof Persist.IOError
@@ -240,132 +241,128 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
-				console.log "Client file update successful."
+				# Nothing else to do.
+				# Persist operations will automatically trigger event listeners
+				# that update the UI.
 
-				# Add a delay so that the user knows it saved
-				slowSaveTaskId = "slow-save-#{Persist.generateId()}"
-				registerTask slowSaveTaskId
-				setTimeout unregisterTask.bind(null, slowSaveTaskId), 500
+		_createQuickNote: (notes, cb) ->
+			note = Imm.fromJS {
+				type: 'basic'
+				clientFileId
+				notes
+			}
 
-		registerListeners = ->
-			registerTimeoutListeners()
+			@setState (state) => {isLoading: true}
+			global.ActiveSession.persist.progNotes.create note, (err) =>
+				@setState (state) => {isLoading: false}
 
-			global.ActiveSession.persist.eventBus.on 'create:planTarget createRevision:planTarget', (newRev) ->
-				if isClosed
+				if err
+					cb err
 					return
 
-				unless newRev.get('clientFileId') is clientFileId
-					return
+				cb()
 
-				targetId = newRev.get('id')
+		getPageListeners: ->
+			return {
+				'createRevision:clientFile': (newRev) =>
+					unless newRev.get('id') is clientFileId then return
+					@setState {clientFile: newRev}
 
-				if planTargetsById.has targetId
-					planTargetsById = planTargetsById.updateIn [targetId, 'revisions'], (revs) ->
-						return revs.unshift newRev
-				else
-					planTargetsById = planTargetsById.set targetId, Imm.fromJS {
-						id: targetId
-						revisions: [newRev]
-					}
+				'create:planTarget createRevision:planTarget': (newRev) =>
+					unless newRev.get('clientFileId') is clientFileId then return
+					@setState (state) =>
+						targetId = newRev.get('id')
+						if state.planTargetsById.has targetId
+							planTargetsById = state.planTargetsById.updateIn [targetId, 'revisions'], (revs) =>
+								return revs.unshift newRev
+						else
+							planTargetsById = state.planTargetsById.set targetId, Imm.fromJS {
+								id: targetId
+								revisions: [newRev]
+							}
+						return {planTargetsById}
 
-				render()
+				'create:progNote': (newProgNote) =>
+					unless newProgNote.get('clientFileId') is clientFileId then return
+					@setState (state) => progressNotes: state.progressNotes.push newProgNote
 
-			global.ActiveSession.persist.eventBus.on 'create:progNote', (newProgNote) ->
-				if isClosed
-					return
+				'create:metric': (newMetric) =>
+					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
+			}
 
-				unless newProgNote.get('clientFileId') is clientFileId
-					return
+	ClientFilePageUi = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 
-				progressNotes = progressNotes.push newProgNote
-
-				render()
-
-			global.ActiveSession.persist.eventBus.on 'create:metric', (newMetric) ->
-				if isClosed
-					return
-
-				metricsById = metricsById.set newMetric.get('id'), newMetric
-
-				render()
-
-		unregisterListeners = ->
-			unregisterTimeoutListeners()
-			
-			isClosed = true
-
-			if clientFileLock
-				clientFileLock.release()
-
-		return {}
-
-	ClientPage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
 				activeTabId: 'plan'
 			}
 
 		componentWillMount: ->
-			nwWin.maximize()			
+			@props.maximizeWindow()
 
-			nwWin.on 'close', (event) =>				
+		suggestClose: ->
+			# If page still loading
+			# TODO handle this more elegantly
+			unless @props.clientFile?
+				@props.closeWindow()
+				return
 
-				# # If page still loading
-				# # TODO handle this more elegantly
-				unless @props.clientFile?
-					@props.unregisterListeners()
-					nwWin.close true
-					return
+			clientName = renderName @props.clientFile.get('clientName')
 
-				clientName = renderName @props.clientFile.get('clientName')
-
-				if @refs.planTab.hasChanges()
-					Bootbox.dialog {
-						title: "Unsaved Changes to Plan"
-						message: "You have unsaved changes in this plan for #{clientName}. How would you like to proceed?"
-						buttons: {
-							default: {
-								label: "Cancel"
-								className: "btn-default"
-								callback: => Bootbox.hideAll()
-							}
-							danger: {
-								label: "Discard Changes"
-								className: "btn-danger"
-								callback: => 
-									@props.unregisterListeners()
-									nwWin.close true
-							}
-							success: {
-								label: "View Plan"
-								className: "btn-success"
-								callback: => 
-									Bootbox.hideAll()
-									@setState {activeTabId: 'plan'}, @refs.planTab.blinkUnsaved
-							}
+			if @refs.planTab.hasChanges()
+				Bootbox.dialog {
+					title: "Unsaved Changes to #{Term 'Plan'}"
+					message: """
+						You have unsaved changes in this #{Term 'plan'} for #{clientName}. 
+						How would you like to proceed?
+					"""
+					buttons: {
+						default: {
+							label: "Cancel"
+							className: "btn-default"
+							callback: => Bootbox.hideAll()
+						}
+						danger: {
+							label: "Discard Changes"
+							className: "btn-danger"
+							callback: => 
+								@props.closeWindow()
+						}
+						success: {
+							label: "View #{Term 'Plan'}"
+							className: "btn-success"
+							callback: => 
+								Bootbox.hideAll()
+								@setState {activeTabId: 'plan'}, @refs.planTab.blinkUnsaved
 						}
 					}
-				else
-					@props.unregisterListeners()
-					nwWin.close(true)
+				}
+			else
+				@props.closeWindow()
 
 		render: ->
 			if @props.loadErrorType
-				return LoadError {loadErrorType: @props.loadErrorType}
+				return LoadError({
+					loadErrorType: @props.loadErrorType
+					closeWindow: @props.closeWindow
+				})
 
-			else if @props.startupTasks.size > 0 or not @props.clientFile
+			if @props.status is 'init'
 				return R.div({className: 'clientFilePage'},
 					Spinner({isOverlay: true, isVisible: true})
 				)
+
+			Assert @props.status is 'ready'
 
 			activeTabId = @state.activeTabId
 
 			clientName = renderName @props.clientFile.get('clientName')
 			recordId = @props.clientFile.get('recordId')
-			nwWin.title = "#{clientName} - KoNote"
+			@props.setWindowTitle "#{clientName} - KoNote"
 
 			return R.div({className: 'clientFilePage'},
-				Spinner({isOverlay: true, isVisible: @props.ongoingTasks.size > 0})
+				Spinner({isOverlay: true, isVisible: @props.isLoading})
 				Sidebar({
 					clientName
 					recordId
@@ -380,9 +377,8 @@ load = (win, {clientFileId}) ->
 					plan: @props.clientFile.get('plan')
 					planTargetsById: @props.planTargetsById
 					metricsById: @props.metricsById
-					registerTask: @props.registerTask
-					unregisterTask: @props.unregisterTask
-					updatePlan: @props.updateClientFile.bind null, ['plan']
+
+					updatePlan: @props.updatePlan
 				})
 				ProgNotesTab.ProgNotesView({
 					isVisible: activeTabId is 'progressNotes'
@@ -390,16 +386,14 @@ load = (win, {clientFileId}) ->
 					clientFile: @props.clientFile
 					progNotes: @props.progressNotes
 					metricsById: @props.metricsById
-					registerTask: @props.registerTask
-					unregisterTask: @props.unregisterTask
+
+					createQuickNote: @props.createQuickNote
 				})
 				AnalysisTab.AnalysisView({
 					isVisible: activeTabId is 'analysis'
 					clientFileId
 					progNotes: @props.progressNotes
 					metricsById: @props.metricsById
-					registerTask: @props.registerTask
-					unregisterTask: @props.unregisterTask
 				})
 			)
 		_changeTab: (newTabId) ->
@@ -408,11 +402,12 @@ load = (win, {clientFileId}) ->
 			}
 
 	Sidebar = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			activeTabId = @props.activeTabId
 
 			return R.div({className: 'sidebar'},
-				R.img({src: 'customer-logo-sm.png'}),
+				R.img({src: Config.customerLogoLg}),
 				R.div({className: 'logoSubtitle'},
 					Config.logoSubtitle
 				)
@@ -424,19 +419,19 @@ load = (win, {clientFileId}) ->
 				)
 				R.div({className: 'tabStrip'},
 					SidebarTab({
-						name: "Plan"
+						name: Term('Plan')
 						icon: 'sitemap'
 						isActive: activeTabId is 'plan'
 						onClick: @props.onTabChange.bind null, 'plan'
 					})
 					SidebarTab({
-						name: "Progress Notes"
+						name: Term('Progress Notes')
 						icon: 'pencil-square-o'
 						isActive: activeTabId is 'progressNotes'
 						onClick: @props.onTabChange.bind null, 'progressNotes'
 					})
 					SidebarTab({
-						name: "Analysis"
+						name: Term('Analysis')
 						icon: 'line-chart'
 						isActive: activeTabId is 'analysis'
 						onClick: @props.onTabChange.bind null, 'analysis'
@@ -446,6 +441,7 @@ load = (win, {clientFileId}) ->
 			)
 
 	SidebarTab = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({
 				className: "tab #{if @props.isActive then 'active' else ''}"
@@ -457,20 +453,24 @@ load = (win, {clientFileId}) ->
 			)
 
 	LoadError = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		componentDidMount: ->
 			console.log "loadErrorType:", @props.loadErrorType
 			msg = switch @props.loadErrorType
 				when 'file-in-use'
-					"This client file is already in use."
+					"This #{Term 'client file'} is already in use."
 				when 'io-error'
 					"""
-						An error occurred while loading the client file. 
+						An error occurred while loading the #{Term 'client file'}. 
 						This may be due to a problem with your network connection.
 					"""
 				else
 					"An unknown error occured (loadErrorType: #{@props.loadErrorType}"				
-			Bootbox.alert msg, -> nwWin.close(true)
+			Bootbox.alert msg, =>
+				@props.closeWindow()
 		render: ->
 			return R.div({className: 'clientFilePage'})
+
+	return ClientFilePage
 
 module.exports = {load}

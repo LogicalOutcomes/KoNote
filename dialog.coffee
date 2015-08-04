@@ -7,13 +7,14 @@ load = (win) ->
 	{FaIcon} = require('./utils').load(win)
 
 	Dialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({
 				className: [
 					'dialogContainer'
 					if @props.containerClasses then @props.containerClasses.join(' ')
 				].join(' ')
-				onClick: @_onBackgroundClick
+				onClick: if not @props.disableBackgroundClick then @_onBackgroundClick
 			},
 				R.div({className: 'dialog panel panel-primary'},
 					R.div({className: 'panel-heading'},

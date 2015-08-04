@@ -159,6 +159,7 @@ dataModelDefinitions = [
 getApi = (session) ->
 	ApiBuilder.buildApi session, dataModelDefinitions
 
+# TODO This shouldn't be here, since it's derived from the data model, not part of it
 setUpDataDirectory = (dataDir, cb) ->
 	# Set up top-level directories
 	Async.series [
@@ -166,6 +167,8 @@ setUpDataDirectory = (dataDir, cb) ->
 			Async.each dataModelDefinitions, (modelDef, cb) ->
 				Mkdirp Path.join(dataDir, modelDef.collectionName), cb
 			, cb
+		(cb) ->
+			Mkdirp Path.join(dataDir, '_tmp'), cb
 		(cb) ->
 			Mkdirp Path.join(dataDir, '_users'), cb
 		(cb) ->

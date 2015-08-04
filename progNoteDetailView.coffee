@@ -10,6 +10,8 @@ load = (win) ->
 	{FaIcon, showWhen} = require('./utils').load(win)
 
 	ProgNoteDetailView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			unless @props.item
 				return R.div({className: 'progNoteDetailView'},
@@ -82,16 +84,17 @@ load = (win) ->
 				R.div({className: 'history'},
 					(entries.map (entry) =>
 						R.div({className: 'entry'},
-							# TODO author!!
-							R.div({className: 'timestamp'},
-								Moment(entry.get('timestamp'), Persist.TimestampFormat)
-								.format('MMMM D, YYYY [at] HH:mm')
-								' by '
-								entry.get('author')
+							R.div({className: 'header'}								
+								R.div({className: 'timestamp'},
+									Moment(entry.get('timestamp'), Persist.TimestampFormat)
+									.format('MMMM D, YYYY [at] HH:mm')
+								)
+								R.div({className: 'author'},
+									FaIcon('user')
+									entry.get('author')
+								)
 							)
-							R.div({className: 'notes'},
-								entry.get('notes')
-							)
+							R.div({className: 'notes'}, entry.get('notes'))
 						)
 					).toJS()...
 				)

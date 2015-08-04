@@ -3,7 +3,8 @@ Fs = require 'fs'
 Imm = require 'immutable'
 Moment = require 'moment'
 Path = require 'path'
-Rimraf = require 'rimraf'
+
+Atomic = require './atomic'
 
 {CustomError, IOError, TimestampFormat} = require './utils'
 
@@ -11,7 +12,7 @@ leaseTime = 3 * 60 * 1000 # ms
 leaseRenewalInterval = 1 * 60 * 1000 # ms
 
 class Lock
-	constructor: (@_path, @_nextExpiryTimestamp, code) ->
+	constructor: (@_path, @_tmpDirPath, @_nextExpiryTimestamp, code) ->
 		if code isnt 'privateaccess'
 			# See Lock.acquire instead
 			throw new Error "Lock constructor should only be used internally"
@@ -26,27 +27,52 @@ class Lock
 		, leaseRenewalInterval
 
 	@acquire: (dataDir, lockId, cb) ->
-		lockDir = Path.join(dataDir, '_locks', lockId)
+		tmpDirPath = Path.join(dataDir, '_tmp')
+		lockDirDest = Path.join(dataDir, '_locks', lockId)
 
-		Fs.mkdir lockDir, (err) =>
+		lockDir = null
+		lockDirOp = null
+		expiryTimestamp = null
+
+		Async.series [
+			(cb) ->
+				Atomic.writeDirectory lockDirDest, tmpDirPath, (err, tmpLockDir, op) ->
+					if err
+						cb new IOError err
+						return
+
+					lockDir = tmpLockDir
+					lockDirOp = op
+					cb()
+			(cb) ->
+				Lock._writeExpiryTimestamp lockDir, tmpDirPath, (err, ts) ->
+					if err
+						cb err
+						return
+
+					expiryTimestamp = ts
+					cb()
+			(cb) ->
+				lockDirOp.commit (err) ->
+					if err
+						# If lock is already taken
+						if err.code in ['EPERM', 'ENOTEMPTY']
+							Lock._cleanIfStale dataDir, lockId, cb
+							return
+
+						cb new IOError err
+						return
+
+					cb()
+		], (err) ->
 			if err
-				# If lock is already taken
-				if err.code is 'EEXIST'
-					Lock._cleanIfStale dataDir, lockId, cb
-					return
-
-				cb new IOError err
+				cb err
 				return
 
-			# Got the lock, now we need to write an expiry timestamp
-			Lock._writeExpiryTimestamp lockDir, (err, expiryTimestamp) ->
-				if err
-					cb err
-					return
-
-				cb null, new Lock(lockDir, expiryTimestamp, 'privateaccess')
+			cb null, new Lock(lockDirDest, tmpDirPath, expiryTimestamp, 'privateaccess')
 
 	@_cleanIfStale: (dataDir, lockId, cb) ->
+		tmpDirPath = Path.join(dataDir, '_tmp')
 		lockDir = Path.join(dataDir, '_locks', lockId)
 
 		expiryLock = null
@@ -85,7 +111,7 @@ class Lock
 					else
 						cb new LockInUseError()
 			(cb) ->
-				Rimraf lockDir, (err) ->
+				Atomic.deleteDirectory lockDir, tmpDirPath, (err) ->
 					if err
 						cb new IOError err
 						return
@@ -113,28 +139,17 @@ class Lock
 				cb null, isStale
 				return
 
-			# There were no expiry timestamps in the directory.
-			# This might be because we read the directory while another
-			# instance was acquiring or releasing the lock.
-			# Or, it's because the other instance died mid-operation.
+			# OK, there weren't any expiry timestamps in the directory.
+			# That should be impossible, and also kinda sucks.
+			console.error "Detected lock dir with no expiry timestamp: #{JSON.stringify lockDir}"
+			console.error "This shouldn't ever happen."
 
-			# Wait 5 seconds and try again, just to be sure
-			setTimeout ->
-				Lock._readExpiryTimestamp lockDir, (err, ts) ->
-					if err
-						cb err
-						return
+			# But we don't want to lock the user out of this object forever.
+			# So we'll just delete the lock and continue on.
+			console.error "Continuing on assumption that lock is stale."
 
-					if ts?
-						# There was a timestamp this time, so it's probably not
-						# safe to do anything.
-						cb null, false
-						return
-
-					# Still nothing.  Probably an error case.
-					# Let's proceed as if it's a stale lock.
-					cb null, true
-			, 5000
+			# isStale = true
+			cb null, true
 
 	_renew: (cb) ->
 		if @_hasLeaseExpired()
@@ -144,7 +159,7 @@ class Lock
 			cb new Error "cannot renew, lease already expired"
 			return
 
-		Lock._writeExpiryTimestamp @_path, (err, expiryTimestamp) =>
+		Lock._writeExpiryTimestamp @_path, @_tmpDirPath, (err, expiryTimestamp) =>
 			if err
 				cb err
 				return
@@ -168,7 +183,7 @@ class Lock
 		@_renewInterval = null
 		@_released = true
 
-		Rimraf @_path, (err) ->
+		Atomic.deleteDirectory @_path, @_tmpDirPath, (err) ->
 			if err
 				cb new IOError err
 				return
@@ -199,10 +214,13 @@ class Lock
 
 			cb null, result
 
-	@_writeExpiryTimestamp: (lockDir, cb) ->
+	@_writeExpiryTimestamp: (lockDir, tmpDirPath, cb) ->
 		expiryTimestamp = Moment().add(leaseTime, 'ms').format(TimestampFormat)
 		expiryTimestampFile = Path.join(lockDir, 'expire-' + expiryTimestamp)
-		Fs.writeFile expiryTimestampFile, 'expiry-time', (err) ->
+
+		fileData = new Buffer('expiry-time', 'utf8') # some filler data
+
+		Atomic.writeBufferToFile expiryTimestampFile, tmpDirPath, fileData, (err) ->
 			if err
 				cb new IOError err
 				return

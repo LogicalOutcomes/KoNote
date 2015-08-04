@@ -10,11 +10,14 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	Config = require('./config')
+	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 
 	DefineMetricDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				name: @props.metricQuery
@@ -22,7 +25,7 @@ load = (win) ->
 			}
 		render: ->
 			Dialog({
-				title: "Define a new metric"
+				title: "Define a new #{Term 'metric'}"
 				onClose: @_cancel
 			},
 				R.div({className: 'defineMetricDialog'},
@@ -49,7 +52,7 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-						}, "Create metric")
+						}, "Create #{Term 'metric'}")
 					)
 				)
 			)
@@ -61,11 +64,11 @@ load = (win) ->
 			@setState {definition: event.target.value}
 		_submit: ->
 			unless @state.name.trim()
-				Bootbox.alert "Metric name is required"
+				Bootbox.alert "#{Term 'Metric'} name is required"
 				return
 
 			unless @state.definition.trim()
-				Bootbox.alert "Metric definition is required"
+				Bootbox.alert "#{Term 'Metric'} definition is required"
 				return
 
 			newMetric = Imm.fromJS {

@@ -5,6 +5,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Term = require '../term'
 Persist = require '../persist'
 
 load = (win) ->
@@ -20,16 +21,28 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
 
 	PlanView = React.createFactory React.createClass
-		getInitialState: ->
-			currentTargetRevisionsById = @props.planTargetsById.mapEntries ([targetId, target]) =>
-				latestRev = stripMetadata target.get('revisions').first()
-				return [targetId, latestRev]
+		mixins: [React.addons.PureRenderMixin]
 
+		getInitialState: ->
 			return {
 				plan: @props.plan
 				selectedTargetId: null
-				currentTargetRevisionsById
+				currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
 			}
+
+		componentWillReceiveProps: (newProps) ->
+			# Regenerate transient data when plan is updated
+			unless Imm.is(newProps.plan, @props.plan)
+				@setState {
+					plan: newProps.plan
+					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+				}
+
+		_generateCurrentTargetRevisionsById: (planTargetsById) ->
+			return planTargetsById.mapEntries ([targetId, target]) =>
+				latestRev = stripMetadata target.get('revisions').first()
+				return [targetId, latestRev]
+
 		render: ->
 			plan = @state.plan
 
@@ -51,29 +64,38 @@ load = (win) ->
 				R.div({className: 'targetList'},
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
 						R.div({className: 'message'},
-							"This client does not currently have any plan targets."
+							"This #{Term 'client'} does not currently have any #{Term 'plan targets'}."
 						)						
 						R.button({
 							className: 'addSection btn btn-success btn-lg'
 							onClick: @_addSection
 						},
 							FaIcon('plus')
-							"Add section"
+							"Add #{Term 'section'}"
 						)
 					)
 					R.div({className: "toolbar #{showWhen plan.get('sections').size > 0}"},
-						R.button({
-							className: [
-								'save btn'
-								'btn-' + if @hasChanges() then 'success canSave' else 'warning'
-							].join ' '
-							disabled: not @hasChanges()
-							onClick: @_save
-						},
-							FaIcon('save')
-							if @hasChanges() then "Save Plan" else "No Changes to Save"
+						R.span({className: 'leftMenu'},
+							R.button({
+								className: [
+									'save btn'
+									'btn-' + if @hasChanges() then 'success canSave' else 'warning'
+								].join ' '
+								disabled: not @hasChanges()
+								onClick: @_save
+							},
+								FaIcon('save')
+								if @hasChanges() then "Save #{Term 'Plan'}" else "No Changes to Save"
+							)	
 						)
-						R.div({className: 'rightMenu'},
+						R.span({className: 'rightMenu'},							
+							R.button({
+								className: 'addSection btn btn-default'
+								onClick: @_addSection
+							},
+								FaIcon('plus')
+								"Add #{Term 'section'}"
+							)
 							PrintButton({
 								dataSet: [
 									{
@@ -86,16 +108,15 @@ load = (win) ->
 										clientFile: @props.clientFile
 									}
 								]
-								isVisible: not @hasChanges()
-							})
-							R.button({
-								className: 'addSection btn btn-default'
-								onClick: @_addSection
-							},
-								FaIcon('plus')
-								"Add section"
-							)
-						)						
+								iconOnly: true
+								disabled: @hasChanges()
+								tooltip: {
+									show: @hasChanges()
+									placement: 'bottom'
+									title: "Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
+								}
+							})					
+						)
 					)
 					R.div({className: 'sections'},
 						(plan.get('sections').map (section) =>
@@ -109,12 +130,12 @@ load = (win) ->
 										onClick: @_addTargetToSection.bind null, section.get('id')
 									},
 										FaIcon('plus')
-										'Add target'
+										"Add #{Term 'target'}"
 									)
 								)
 								(if section.get('targetIds').size is 0
 									R.div({className: 'noTargets'},
-										"This section is empty."
+										"This #{Term 'section'} is empty."
 									)
 								)
 								R.div({className: 'targets'},
@@ -138,7 +159,7 @@ load = (win) ->
 					(if selectedTarget is null
 						R.div({className: "noSelection #{showWhen plan.get('sections').size > 0}"},
 							"More information will appear here when you select ",
-							"a target on the left."
+							"a #{Term 'target'} on the left."
 						)
 					else
 						currentRev = @state.currentTargetRevisionsById.get(selectedTarget.get('id'))
@@ -152,40 +173,41 @@ load = (win) ->
 								)
 								(if metricDefs.size is 0
 									R.div({className: 'noMetrics'},
-										"This target has no metrics attached. "
-										R.button({
-											className: 'btn btn-link addMetricButton'
-											onClick: @_focusMetricLookupField
-										}, FaIcon('plus'))
-									)									
-								)
-								R.div({className: 'metrics'},
-									(metricDefs.map (metricDef) =>
-										MetricWidget({
-											isEditable: false
-											allowDeleting: true
-											onDelete: @_deleteMetricFromTarget.bind(
-												null, selectedTarget.get('id'), metricDef.get('id')
-											)
-											key: metricDef.get('id')
-											name: metricDef.get('name')
-											definition: metricDef.get('definition')
-										})
-									).toJS()...
-									(if metricDefs.size > 0
+										"This #{Term 'target'} has no metrics attached. "
 										R.button({
 											className: 'btn btn-link addMetricButton'
 											onClick: @_focusMetricLookupField
 										}, FaIcon('plus'))
 									)
-								)
+								else
+									R.div({className: 'metrics'},
+										(metricDefs.map (metricDef) =>
+											MetricWidget({
+												isEditable: false
+												allowDeleting: true
+												onDelete: @_deleteMetricFromTarget.bind(
+													null, selectedTarget.get('id'), metricDef.get('id')
+												)
+												key: metricDef.get('id')
+												name: metricDef.get('name')
+												definition: metricDef.get('definition')
+											})
+										).toJS()...
+										(if metricDefs.size > 0
+											R.button({
+												className: 'btn btn-link addMetricButton'
+												onClick: @_focusMetricLookupField
+											}, FaIcon('plus'))
+										)
+									)
+								)								
 								R.div({},
 									MetricLookupField({
 										metrics: @props.metricsById.valueSeq()
 										onSelection: @_addMetricToTarget.bind(
 											null, selectedTarget.get('id')
 										)
-										placeholder: "Find / Define a Metric"
+										placeholder: "Find / Define a #{Term 'Metric'}"
 									})
 								)
 							)
@@ -195,8 +217,8 @@ load = (win) ->
 								)
 								(if selectedTarget.get('revisions').size is 0
 									R.div({className: 'noRevisions'},
-										"This target is new.  ",
-										"It won't have any history until the client file is saved."
+										"This #{Term 'target'} is new.  ",
+										"It won't have any history until the #{Term 'client file'} is saved."
 									)
 								)
 								R.div({className: 'revisions'},
@@ -224,8 +246,9 @@ load = (win) ->
 					)
 				)
 			)
-		
+
 		_focusMetricLookupField: -> $('.lookupField').focus()
+
 		blinkUnsaved: ->			
 			toggleBlink = -> $('.hasChanges').toggleClass('blink')
 			secondBlink = ->
@@ -245,7 +268,7 @@ load = (win) ->
 
 			return false
 		_hasTargetChanged: (targetId) ->
-			currentRev = @_normalizeTargetFields @state.currentTargetRevisionsById.get(targetId)
+			currentRev = @_normalizeTarget @state.currentTargetRevisionsById.get(targetId)
 
 			# If this is a new target
 			target = @props.planTargetsById.get(targetId, null)
@@ -268,122 +291,92 @@ load = (win) ->
 				return true
 
 			return false
-		_normalizeTargetFields: (targetRev) ->
+
+		_save: ->
+			@_normalizeTargets()
+			@_removeUnusedTargets()
+
+			# Wait for state changes to be applied
+			@forceUpdate =>
+				valid = @_validateTargets()
+
+				unless valid
+					Bootbox.alert "Cannot save #{Term 'plan'}: there are empty #{Term 'target'} fields."
+					return
+
+				newPlanTargets = @state.currentTargetRevisionsById.valueSeq()
+				.filter (target) =>
+					# Only include targets that have not been saved yet
+					return not @props.planTargetsById.has(target.get('id'))
+				.map(@_normalizeTarget)
+
+				updatedPlanTargets = @state.currentTargetRevisionsById.valueSeq()
+				.filter (target) =>
+					# Ignore new targets
+					unless @props.planTargetsById.has(target.get('id'))
+						return false
+
+					# Only include targets that have actually changed
+					return @_hasTargetChanged target.get('id')
+				.map(@_normalizeTarget)
+
+				@props.updatePlan @state.plan, newPlanTargets, updatedPlanTargets
+
+		_normalizeTargets: ->
+			@setState (state) =>
+				return {
+					currentTargetRevisionsById: state.currentTargetRevisionsById
+					.map (targetRev, targetId) =>
+						return @_normalizeTarget targetRev
+				}
+
+		_normalizeTarget: (targetRev) ->
 			trim = (s) -> s.trim()
 
+			# Trim whitespace from fields
 			return targetRev
 			.update('name', trim)
 			.update('notes', trim)
-		_save: ->
-			# Validate and clean up targets
-			valid = true
-			newPlan = @state.plan
-			newCurrentRevs = @state.currentTargetRevisionsById
-			@state.plan.get('sections').forEach (section, sectionIndex) =>
-				newTargetIds = []
 
-				section.get('targetIds').forEach (targetId) =>
-					trim = (s) -> s.trim()
+		_removeUnusedTargets: ->
+			@setState (state) =>
+				unusedTargetIds = state.plan.get('sections').flatMap (section) =>
+					return section.get('targetIds').filter (targetId) =>
+						currentRev = state.currentTargetRevisionsById.get(targetId)
 
-					# Trim whitespace from fields
-					currentRev = @_normalizeTargetFields newCurrentRevs.get(targetId)
-					newCurrentRevs = newCurrentRevs.set targetId, currentRev
+						emptyName = currentRev.get('name') is ''
+						emptyNotes = currentRev.get('notes') is ''
+						noMetrics = currentRev.get('metricIds').size is 0
+						noHistory = @props.planTargetsById.get(targetId, null) is null
 
-					# Remove unused targets
+						return emptyName and emptyNotes and noMetrics and noHistory
+
+				return {
+					plan: state.plan.update 'sections', (sections) =>
+						return sections.map (section) =>
+							return section.update 'targetIds', (targetIds) =>
+								return targetIds.filter (targetId) =>
+									return not unusedTargetIds.contains(targetId)
+
+					currentTargetRevisionsById: state.currentTargetRevisionsById
+					.filter (rev, targetId) =>
+						return not unusedTargetIds.contains(targetId)
+				}
+
+		_validateTargets: -> # returns true iff all valid
+			return @state.plan.get('sections').every (section) =>
+				return section.get('targetIds').every (targetId) =>
+					currentRev = @state.currentTargetRevisionsById.get(targetId)
+
 					emptyName = currentRev.get('name') is ''
 					emptyNotes = currentRev.get('notes') is ''
-					noMetrics = currentRev.get('metricIds').size is 0
-					noHistory = @props.planTargetsById.get(targetId, null) is null
-					if emptyName and emptyNotes and noMetrics and noHistory
-						newCurrentRevs = newCurrentRevs.delete targetId
-						return
 
-					# Can't allow this to be saved
-					if emptyName or emptyNotes
-						valid = false
+					return not emptyName and not emptyNotes
 
-					newTargetIds.push targetId
-
-				newPlan = newPlan.setIn(
-					['sections', sectionIndex, 'targetIds'], Imm.fromJS(newTargetIds)
-				)
-
-			@setState {
-				plan: newPlan
-				currentTargetRevisionsById: newCurrentRevs
-			}, =>
-				unless valid
-					Bootbox.alert 'Cannot save plan: there are empty target fields.'
-					return
-
-				updatedIds = Imm.Map()
-
-				# Create new revisions for any plan targets that have changed
-				targetIds = @state.currentTargetRevisionsById.keySeq().toJS()
-				Async.each targetIds, (targetId, cb) =>
-					unless @_hasTargetChanged targetId
-						cb null
-						return
-
-					currentRev = @_normalizeTargetFields @state.currentTargetRevisionsById.get(targetId)
-
-					# If this target has been saved to persistent storage before
-					if @props.planTargetsById.has(targetId)
-						@props.registerTask "updateTarget-#{targetId}"
-						ActiveSession.persist.planTargets.createRevision currentRev, (err) =>
-							@props.unregisterTask "updateTarget-#{targetId}"
-
-							if err
-								cb err
-								return
-
-							cb()
-					else # this is a new target
-						newObj = currentRev.delete('id')
-
-						@props.registerTask "createTarget-#{targetId}"
-						ActiveSession.persist.planTargets.create newObj, (err, result) =>
-							@props.unregisterTask "createTarget-#{targetId}"
-
-							if err
-								cb err
-								return
-
-							updatedIds = updatedIds.set targetId, result.get('id')
-
-							cb()
-				, (err) =>
-					if err
-						if err instanceof Persist.IOError
-							Bootbox.alert """
-								An error occurred.  Please check your network connection and try again.
-							"""
-							return
-
-						CrashHandler.handle err
-						return
-
-					# Replace transient IDs
-					newPlan = @state.plan.updateIn ['sections'], (sections) ->
-						return sections.map (section) ->
-							return section.update 'targetIds', (targetIds) ->
-								return targetIds.map (oldTargetId) ->
-									return updatedIds.get(oldTargetId, oldTargetId)
-					currentTargetRevs = @state.currentTargetRevisionsById.mapKeys (oldId) ->
-						return updatedIds.get oldId, oldId
-					currentTargetRevs = currentTargetRevs.map (currentRev, newId) ->
-						return currentRev.set 'id', newId
-
-					@setState {
-						plan: newPlan
-						currentTargetRevisionsById: currentTargetRevs
-					}, =>
-						# Trigger clientFile save
-						@props.updatePlan @state.plan
 		_addSection: ->
 			sectionId = Persist.generateId()
 
-			Bootbox.prompt 'Enter a name for the new section:', (sectionName) =>
+			Bootbox.prompt "Enter a name for the new #{Term 'section'}:", (sectionName) =>
 				sectionName = sectionName?.trim()
 
 				unless sectionName
@@ -432,14 +425,14 @@ load = (win) ->
 		_addMetricToTarget: (targetId, metricId) ->			
 			# Current target already has this metric
 			if @state.currentTargetRevisionsById.getIn([targetId, 'metricIds']).contains metricId
-				Bootbox.alert "This metric has already been added to the selected target."
+				Bootbox.alert "This #{Term 'metric'} has already been added to the selected #{Term 'target'}."
 				return
 
 			# Metric exists in another target
 			existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
 				return target.get('metricIds').contains(metricId)
 			if existsElsewhere
-				Bootbox.alert "This metric already exists for another plan target"
+				Bootbox.alert "This #{Term 'metric'} already exists for another #{Term 'plan target'}"
 				return
 
 			@setState {
@@ -457,6 +450,8 @@ load = (win) ->
 			}
 
 	PlanTarget = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			currentRevision = @props.currentRevision
 
@@ -474,6 +469,7 @@ load = (win) ->
 						type: 'text'
 						className: 'name field form-control'
 						ref: 'nameField'
+						placeholder: "Name of #{Term 'target'}"
 						value: currentRevision.get('name')
 						onChange: @_updateField.bind null, 'name'
 						onFocus: @props.onTargetSelection
@@ -483,6 +479,7 @@ load = (win) ->
 					ExpandingTextArea({
 						className: 'notes field'
 						ref: 'notesField'
+						placeholder: "Describe the #{Term 'target'} in detail . . ."
 						value: currentRevision.get('notes')
 						onChange: @_updateField.bind null, 'notes'
 						onFocus: @props.onTargetSelection

@@ -21,7 +21,7 @@ login = (dataDir, userName, password, cb) ->
 			account.accountType
 			account.globalEncryptionKey
 			dataDir
-		)		
+		)
 
 class Session
 	constructor: (@userName, @accountType, @globalEncryptionKey, @dataDirectory) ->
@@ -38,12 +38,9 @@ class Session
 		@timeoutMins = Config.timeout.totalMins
 		@warningMins = Config.timeout.warningMins
 
-		@persist.eventBus.on 'resetTimeout', =>
-			@_resetTimeout()
+		@resetTimeout()
 
-		@_resetTimeout()
-
-	_resetTimeout: ->
+	resetTimeout: ->
 		# Clear all traces of timeouts
 		if @warning then clearTimeout @warning
 		if @timeout then clearTimeout @timeout
@@ -58,12 +55,21 @@ class Session
 		@warning = setTimeout @_timeoutWarning, (@timeoutMins - @warningMins) * 60000
 		@timeout = setTimeout @_timedOut, @timeoutMins * 60000
 
-	_timeoutWarning: => @persist.eventBus.trigger 'issueTimeoutWarning'
+	_timeoutWarning: => @persist.eventBus.trigger 'timeout:initialWarning'
 
-	_timedOut: => @persist.eventBus.trigger 'timedOut'
+	_timedOut: => @persist.eventBus.trigger 'timeout:timedOut'
 
 	isAdmin: ->
 		return @accountType is 'admin'
+
+	confirmPassword: (password, cb) ->
+		Users.readAccount @dataDirectory, @userName, password, (err, account) ->
+			if err
+				cb err
+				return false
+
+			cb()
+
 	logout: ->
 		if @_ended
 			throw new Error "session has already ended"

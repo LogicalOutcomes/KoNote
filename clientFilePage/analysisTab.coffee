@@ -6,6 +6,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Term = require '../term'
 Persist = require '../persist'
 
 load = (win) ->
@@ -19,6 +20,7 @@ load = (win) ->
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 
 	AnalysisView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				selectedMetricIds: Imm.Set()
@@ -33,13 +35,85 @@ load = (win) ->
 			# All metric IDs for which this client file has data
 			metricIdsWithData = metricValues
 			.map((m) -> m.get('id'))
-			.toSet()
+			.toSet()			
 
+			# Is there actually enough information to show something?
+			hasData = metricIdsWithData.size > 0
+
+			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
+				R.div({className: "noData #{showWhen not hasData}"},
+					R.h1({}, "Not enough data.")
+					R.div({},
+						"This tab will become available when this #{Term 'client'} has
+						one or more #{Term 'progress notes'} that contain #{Term 'metrics'}."
+					)
+				)
+				R.div({className: "controlPanel #{showWhen hasData}"},
+					R.div({className: 'heading'}, Term 'Metrics')
+					R.div({className: 'metrics'},
+						(metricIdsWithData.map (metricId) =>
+							metric = @props.metricsById.get(metricId)
+
+							R.div({className: 'metric checkbox'},
+								R.label({},
+									R.input({
+										type: 'checkbox'
+										onChange: @_updateSelectedMetrics.bind null, metricId
+										checked: @state.selectedMetricIds.contains metricId
+									})
+									metric.get('name')
+								)
+							)
+						).toJS()...
+					)
+				)
+				R.div({className: "chartContainer #{showWhen hasData}"},
+					if @props.isVisible
+						# Force chart to be recreated when tab is opened
+						Chart({
+							ref: 'mainChart'
+							progNotes: @props.progNotes
+							metricsById: @props.metricsById
+							metricValues
+							selectedMetricIds: @state.selectedMetricIds
+						})
+				)
+			)
+
+		_updateSelectedMetrics: (metricId) ->
+			@setState ({selectedMetricIds}) ->
+				if selectedMetricIds.contains metricId
+					selectedMetricIds = selectedMetricIds.delete metricId
+				else
+					selectedMetricIds = selectedMetricIds.add metricId
+
+				return {selectedMetricIds}
+
+
+	Chart = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		render: ->
+			return R.div({className: 'chart', ref: 'chartDiv'})
+
+		componentDidUpdate: (oldProps, oldState) ->
+			# Show anything that is selected in the view layer
+			unless Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
+				@_refreshSelectedMetrics()
+				
+		componentDidMount: ->
+			@_generateChart()
+			@_refreshSelectedMetrics()
+
+		_refreshSelectedMetrics: ->
+			@_chart.hide()
+
+			@props.selectedMetricIds.forEach (metricId) =>
+				@_chart.show("y-" + metricId)
+
+		_generateChart: ->
 			# Create a Map from metric ID to data series,
 			# where each data series is a sequence of [x, y] pairs
-			dataSeries = metricValues
-			.filter (metricValue) => # keep only data for selected metrics
-				return @state.selectedMetricIds.contains metricValue.get('id')
+			dataSeries = @props.metricValues
 			.groupBy (metricValue) -> # group by metric
 				return metricValue.get('id')
 			.map (metricValues) -> # for each data series
@@ -51,93 +125,20 @@ load = (win) ->
 				return [metricId, @props.metricsById.get(metricId).get('name')]
 			.fromEntrySeq().toMap()
 
-			# Is there actually enough information to show something?
-			hasData = metricIdsWithData.size > 0
-
-			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
-				R.div({className: "noData #{showWhen not hasData}"},
-					R.h1({}, "Not enough data.")
-					R.div({},
-						"This tab will become available when this client has
-						one or more progress notes that contain metrics."
-					)
-				)
-				R.div({className: "controlPanel #{showWhen hasData}"},
-					R.div({className: 'heading'}, "Metrics")
-					R.div({className: 'metrics'},
-						(metricIdsWithData.map (metricId) =>
-							metric = @props.metricsById.get(metricId)
-
-							R.div({className: 'metric checkbox'},
-								R.label({},
-									R.input({
-										type: 'checkbox'
-										onChange: @_updateMetricSelection.bind null, metricId
-										checked: @state.selectedMetricIds.contains metricId
-									})
-									metric.get('name')
-								)
-							)
-						).toJS()...
-					)
-				)
-				R.div({className: "chartContainer #{showWhen hasData}"},
-					(if @props.isVisible
-						# Force chart to be recreated when tab is opened
-						(if dataSeries.size > 0
-							Chart({data: dataSeries, seriesNamesById})
-						else
-							R.div({className: 'noData'},
-								"Select items above to see them graphed here."
-							)
-						)
-					)
-				)
-			)
-		_updateMetricSelection: (metricId) ->
-			@setState ({selectedMetricIds}) ->
-				if selectedMetricIds.contains metricId
-					selectedMetricIds = selectedMetricIds.delete metricId
-				else
-					selectedMetricIds = selectedMetricIds.add metricId
-
-				return {selectedMetricIds}
-
-	Chart = React.createFactory React.createClass
-		render: ->
-			return R.div({className: 'chart', ref: 'chartDiv'})
-		componentDidMount: ->
-			@_chart = C3.generate {
-				bindto: @refs.chartDiv.getDOMNode()
-				axis: {
-					x: {
-						type: 'timeseries'
-						tick: {
-							fit: false
-							format: '%Y-%m-%d'
-						}
-					}
-				}
-				data: {
-					xFormat: D3TimestampFormat
-					columns: []
-				}
-			}
-			@_refreshData()
-		componentDidUpdate: ->
-			@_refreshData()
-		_refreshData: ->
-			xsMap = @props.data.keySeq()
+			# Create set to show which x maps to which y
+			xsMap = dataSeries.keySeq()
 			.map (seriesId) ->
 				return ['y-' + seriesId, 'x-' + seriesId]
 			.fromEntrySeq().toMap()
 
-			dataSeriesNames = @props.data.keySeq()
-			.map (seriesId) =>
-				return ['y-' + seriesId, @props.seriesNamesById.get(seriesId)]
-			.fromEntrySeq().toMap()
 
-			dataSeries = @props.data.entrySeq().flatMap ([seriesId, dataPoints]) ->
+			dataSeriesNames = dataSeries.keySeq()
+			.map (seriesId) =>
+				return ['y-' + seriesId, seriesNamesById.get(seriesId)]
+			.fromEntrySeq().toMap()
+			
+
+			dataSeries = dataSeries.entrySeq().flatMap ([seriesId, dataPoints]) ->
 				xValues = Imm.List(['x-' + seriesId]).concat(
 					dataPoints.map ([x, y]) -> x
 				)
@@ -146,12 +147,121 @@ load = (win) ->
 				)
 				return Imm.List([xValues, yValues])
 
-			@_chart.load {
-				xs: xsMap.toJS()
-				columns: dataSeries.toJS()
-				unload: true
+			scaledDataSeries = dataSeries.map (metric) ->
+				# Filter out id's to figure out min & max
+				values = metric.flatten().filterNot (y) -> isNaN(y)
+				.map (val) -> return Number(val)
+
+				# Figure out min and max metric values
+				min = values.min()
+				max = values.max()
+
+				# Center the line vertically if constant value
+				if min is max
+					min -= 1
+					max += 1
+
+				scaleFactor = max - min			
+
+				# Map scaleFactor on to numerical values
+				return metric.map (dataPoint) ->
+					return dataPoint if isNaN(dataPoint)
+					(dataPoint - min) / scaleFactor
+
+			xTicks = @_generateXTicks()
+
+			newYears = Imm.List()
+			newYearLines = Imm.List()			
+
+			xTicks.forEach (tick) ->
+				unless newYears.contains tick.year()
+					newYears = newYears.push tick.year()
+					newYearLines = newYearLines.push {
+						value: if tick.isSame xTicks.first() then tick else tick.startOf('year')
+						text: tick.year()
+						position: 'middle'
+						class: 'yearLine'
+					}
+
+			@_chart = C3.generate {
+				bindto: @refs.chartDiv.getDOMNode()
+				grid: {
+					x: {
+						lines: newYearLines.toJS()
+					}
+				}
+				axis: {
+					x: {
+						type: 'timeseries'
+						tick: {
+							fit: false
+							format: '%b %d'
+						}
+						min: xTicks.first().clone().format Persist.TimestampFormat
+						max: xTicks.last().clone().format Persist.TimestampFormat
+					}
+					y: {
+						show: false
+					}
+				}				
+				data: {
+					hide: true
+					xFormat: D3TimestampFormat
+					columns: scaledDataSeries.toJS()
+					xs: xsMap.toJS()
+					names: dataSeriesNames.toJS()
+				}
+				tooltip: {
+					format: {
+						value: (value, ratio, id, index) ->
+							# Filter out dataset from dataSeries with matching id, grab from index
+							return dataSeries.filter((metric) ->
+								return metric.contains id
+							).flatten().get(index + 1)
+						title: (timestamp) ->
+							return Moment(timestamp).format('MMMM D [at] HH:mm')
+					}
+				}
+				legend: {
+					item: {
+						onclick: (id) ->
+							return false
+					}
+				}
+				padding: {
+					left: 50
+					right: 50
+				}
+				zoom: {
+					enabled: true
+				}
 			}
-			@_chart.data.names dataSeriesNames.toJS()
+
+		_generateXTicks: ->
+			# Builds list of ALL the timestamps
+			timestamps = @props.metricValues.map (metricValue) ->
+				return Moment metricValue.get('timestamp'), Persist.TimestampFormat
+
+			# Builds ordered set of unique timestamps (each as unix ms)
+			middayTimeStamps = timestamps.map (timestamp) ->
+				return timestamp.startOf('day').valueOf()
+			.toOrderedSet().sort()
+
+			# Figure out number of days with data
+			daysOfData = middayTimeStamps.size
+
+			if daysOfData < 3
+				console.log "Shouldn't graph, only #{daysOfData} days of data!"
+
+			firstDay = Moment middayTimeStamps.first()
+			lastDay = Moment middayTimeStamps.last()
+
+			dayRange = lastDay.diff(firstDay, 'days') + 1
+
+			# Return a list of full range of timestamps starting from 
+			return Imm.List([0..dayRange]).map (n) ->
+				firstDay.clone().add(n, 'days')
+
 
 	extractMetricsFromProgNote = (progNote) ->
 		switch progNote.get('type')

@@ -2,6 +2,7 @@
 Imm = require 'immutable'
 
 Config = require './config'
+Term = require './term'
 Persist = require './persist'
 
 load = (win) ->
@@ -13,95 +14,84 @@ load = (win) ->
 	Gui = win.require 'nw.gui'
 
 	AccountManagerDialog = require('./accountManagerDialog').load(win)
+	ResetPasswordDialog = require('./resetPasswordDialog').load(win)
 	CrashHandler = require('./crashHandler').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
-	BrandWidget = require('./brandWidget').load(win)
-	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)
+	BrandWidget = require('./brandWidget').load(win)	
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
-	nwWin = Gui.Window.get(win)
+	ClientSelectionPage = React.createFactory React.createClass
+		getInitialState: ->
+			return {
+				isLoading: true
+				clientFileList: null
+			}
 
-	do ->
-		clientFileList = null
+		init: ->
+			@_loadData()
 
-		init = ->
-			render()
-			loadData()
-			registerListeners()
+		deinit: ->
+			# Nothing need be done
 
-		process.nextTick init
+		suggestClose: ->
+			@props.closeWindow()
 
-		render = ->
-			React.render new ClientSelectionPage({
-				clientFileList
-			}), $('#container')[0]
+		render: ->
+			return new ClientSelectionPageUi({
+				isLoading: @state.isLoading
+				clientFileList: @state.clientFileList
+			})
 
-			$('.searchBox').focus()
-
-		loadData = ->
-			ActiveSession.persist.clientFiles.list (err, result) ->
+		_loadData: ->
+			ActiveSession.persist.clientFiles.list (err, result) =>
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """
 							Please check your network connection and try again.
 						""", =>
-							nwWin.close true
+							@props.closeWindow()
 						return
 
 					CrashHandler.handle err
 					return
 
-				clientFileList = result
-				render()
+				@setState (state) =>
+					return {
+						isLoading: false
+						clientFileList: result
+					}
 
-		registerListeners = ->
-			registerTimeoutListeners()
+		getPageListeners: ->
+			return {
+				'create:clientFile': (newFile) =>
+					@setState (state) => clientFileList: state.clientFileList.push newFile
+			}
 
-			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) ->
-				clientFileList = clientFileList.push newFile
+	ClientSelectionPageUi = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 
-				render()
-
-			global.ActiveSession.persist.eventBus.on 'createRevision:clientFile', (newRev) ->
-				# TODO this code needs some work
-
-				targetId = newRev.get('id')
-
-				# This looks right... but I can't test it
-				unless clientFileList.get(targetId) is newRev
-					return
-
-				# I need to replace the original object's information with newRev's
-				clientFileList = clientFileList.map (clientFile) ->
-					if clientFile.has(targetId)
-						clientFile = newRev
-
-					return clientFile
-
-				render()
-
-	ClientSelectionPage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
 				isSmallHeaderSet: false
 				queryText: ''
 				menuIsOpen: false
 			}
-		componentDidMount: ->
-			nwWin.on 'close', (event) ->
-				unregisterTimeoutListeners()
-				nwWin.close true
 
-		_isLoading: ->
-			return @props.clientFileList is null
+		componentDidUpdate: (oldProps, oldState) ->
+			# If loading just finished
+			if oldProps.isLoading and (not @props.isLoading)
+				setTimeout(=>
+					@refs.searchBox.getDOMNode().focus()
+				, 100)
+
 		render: ->
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
 
 			results = null
-			unless @_isLoading()
+			unless @props.isLoading
 				results = @_getResultsList()
 
 			return R.div({
@@ -120,17 +110,17 @@ load = (win) ->
 				},					
 					R.div({id: 'main'},
 						Spinner({
-							isVisible: @_isLoading()
+							isVisible: @props.isLoading
 							isOverlay: true
 						})						
 						R.header({
 							className: [
 								if smallHeader then 'small' else ''
-								showWhen not @_isLoading()
+								showWhen not @props.isLoading
 							].join ' '
 						},								
 							R.div({className: 'logoContainer'},
-								R.img({src: 'customer-logo-lg.png'})
+								R.img({src: Config.customerLogoLg})
 								R.div({
 									className: 'subtitle'
 									style: {color: Config.logoSubtitleColor}
@@ -145,7 +135,8 @@ load = (win) ->
 									type: 'text'
 									onChange: @_updateQueryText
 									onBlur: @_onSearchBoxBlur
-									placeholder: "Search for a client's profile..."
+									placeholder: "Search for a #{Term 'client'}'s profile..."
+									value: @state.queryText
 								})
 							)
 						)
@@ -153,16 +144,16 @@ load = (win) ->
 							className: [
 								'smallHeaderLogo'
 								if smallHeader then 'show' else 'hidden'
-								showWhen not @_isLoading()
+								showWhen not @props.isLoading
 							].join ' '
 						},
-							R.img({src: 'customer-logo-lg.png'})
+							R.img({src: Config.customerLogoLg})
 						)
 						R.div({
 							className: [
 								'results'
 								if smallHeader then 'show' else 'hidden'
-								showWhen not @_isLoading()
+								showWhen not @props.isLoading
 							].join ' '
 						},
 							(if results?
@@ -198,7 +189,7 @@ load = (win) ->
 
 		_renderUserMenuList: (isAdmin) ->
 			itemsList = [{
-				title: "Client Files"
+				title: "#{Term 'Client Files'}"
 				dialog: CreateClientFileDialog
 				icon: 'folder-open'}
 			# {
@@ -210,9 +201,14 @@ load = (win) ->
 
 			if isAdmin
 				itemsList.push {
-					title: "User Accounts"
+					title: "#{Term 'User'} #{Term 'Accounts'}"
 					dialog: AccountManagerDialog
 					icon: 'user-plus'
+				},
+				{
+					title: "Reset Passwords"
+					dialog: ResetPasswordDialog
+					icon: 'key'
 				}
 
 			menuItems = itemsList.map (item) ->
@@ -295,5 +291,6 @@ load = (win) ->
 		_cancel: ->
 			@setState {isOpen: false}
 
+	return ClientSelectionPage
 
 module.exports = {load}

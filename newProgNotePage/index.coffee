@@ -1,11 +1,11 @@
 # UI logic for the progress note creation window
 
-_ = require 'underscore'
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Term = require '../term'
 Persist = require '../persist'
 
 load = (win, {clientFileId}) ->
@@ -25,37 +25,48 @@ load = (win, {clientFileId}) ->
 	Dialog = require('../dialog').load(win)
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
-	{registerTimeoutListeners, unregisterTimeoutListeners} = require('../timeoutDialog').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
-
-	nwWin = Gui.Window.get(win)
 
 	myTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
-	do ->
-		isLoading = true
-		loadErrorType = null
-		progNote = null
-		clientFile = null
-		progNotes = null
+	NewProgNotePage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 
-		init = ->
-			render()
-			loadData()
-			registerListeners()
+		getInitialState: ->
+			return {
+				isLoading: true
+				loadErrorType: null
+				progNote: null
+				clientFile: null
+				progNotes: null
+			}
 
-		process.nextTick init
+		init: ->
+			@_loadData()
 
-		render = ->
-			React.render new NewProgNotePage({
-				isLoading
-				loadErrorType
-				progNote
-				clientFile
-				progNotes
-			}), $('#container')[0]
+		deinit: ->
+			@_loadData()
 
-		loadData = ->
+		getPageListeners: -> {}
+
+		suggestClose: ->
+			@refs.ui.suggestClose()
+
+		render: ->
+			new NewProgNotePageUi({
+				ref: 'ui'
+
+				isLoading: @state.isLoading
+				loadErrorType: @state.loadErrorType
+				progNote: @state.progNote
+				clientFile: @state.clientFile
+				progNotes: @state.progNotes
+
+				closeWindow: @props.closeWindow
+				setWindowTitle: @props.setWindowTitle
+			})
+
+		_loadData: ->
 			template = myTemplate # TODO
 			planTargetsById = null
 			metricsById = null
@@ -69,7 +80,9 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						clientFile = revisions.first()
+						@setState (state) =>
+							return {clientFile: revisions.first()}
+
 						cb null
 				(cb) =>
 					ActiveSession.persist.planTargets.list clientFileId, (err, result) =>
@@ -80,14 +93,14 @@ load = (win, {clientFileId}) ->
 						planTargetHeaders = result
 						cb null
 				(cb) =>
-					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) ->
+					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
 						ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
 					, (err, planTargets) ->
 						if err
 							cb err
 							return
 
-						pairs = planTargets.map (planTarget) ->
+						pairs = planTargets.map (planTarget) =>
 							return [planTarget.getIn([0, 'id']), planTarget]
 						planTargetsById = Imm.Map(pairs)
 
@@ -125,20 +138,25 @@ load = (win, {clientFileId}) ->
 						progNoteHeaders = Imm.fromJS results
 						cb null
 				(cb) =>
-					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
+					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
 						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
-					, (err, results) ->
+					, (err, results) =>
 						if err
 							cb err
 							return
 
-						progNotes = Imm.List(results)
+						@setState (state) =>
+							return {progNotes: Imm.List(results)}
+
 						cb null
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
-						isLoading = false
-						loadErrorType = 'io-error'
+						@setState =>
+							return {
+								isLoading: false
+								loadErrorType: 'io-error'
+							}
 						render()
 						return
 
@@ -146,16 +164,17 @@ load = (win, {clientFileId}) ->
 					return
 
 				# Done loading data, we can generate the prognote now
-				isLoading = false
-				progNote = createProgNoteFromTemplate(
-					template, clientFile, planTargetsById, metricsById
-				)
+				@setState (state) =>
+					return {						
+						isLoading: false
+						progNote: @_createProgNoteFromTemplate(
+							template, state.clientFile, planTargetsById, metricsById
+						)
+					}
 
-				render()
+				@render()		
 
-		registerListeners = -> registerTimeoutListeners()
-
-		createProgNoteFromTemplate = (template, clientFile, planTargetsById, metricsById) ->
+		_createProgNoteFromTemplate: (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
 				type: 'full'
 				clientFileId: clientFile.get('id')
@@ -202,7 +221,9 @@ load = (win, {clientFileId}) ->
 							}
 			}
 
-	NewProgNotePage = React.createFactory React.createClass
+	NewProgNotePageUi = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				progNote: @props.progNote
@@ -211,31 +232,32 @@ load = (win, {clientFileId}) ->
 				success: false
 				showExitAlert: false
 			}
-		componentDidMount: ->
-			nwWin.on 'close', (event) =>
-				if not @state.showExitAlert
-					@setState {showExitAlert: true}
-					Bootbox.dialog {
-						message: "Are you sure you want to cancel this progress note?"
-						buttons: {						
-							cancel: {
-								label: "Cancel"
-								className: 'btn-default'
-								callback: =>
-									@setState {showExitAlert: false}
-							}
-							discard: {
-								label: "Yes"
-								className: 'btn-primary'
-								callback: =>
-									unregisterTimeoutListeners()
-									nwWin.close true
-							}
+
+		suggestClose: ->
+			if not @state.showExitAlert
+				@setState {showExitAlert: true}
+				Bootbox.dialog {
+					message: "Are you sure you want to cancel this #{Term('progress note')}?"
+					buttons: {						
+						cancel: {
+							label: "Cancel"
+							className: 'btn-default'
+							callback: =>
+								@setState {showExitAlert: false}
+						}
+						discard: {
+							label: "Yes"
+							className: 'btn-primary'
+							callback: =>
+								@props.closeWindow()
 						}
 					}
+				}
+
 		componentWillReceiveProps: (newProps) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
 				@setState {progNote: newProps.progNote}
+
 		render: ->
 			if @props.isLoading
 				return R.div({className: 'newProgNotePage'},
@@ -262,14 +284,14 @@ load = (win, {clientFileId}) ->
 							R.button({
 								className: 'btn btn-danger'
 								onClick: =>
-									nwWin.close true
+									@props.closeWindow()
 							}, "Close")
 						)
 					)
 				)
 
 			clientName = renderName @props.clientFile.get('clientName')
-			nwWin.title = "#{clientName}: Progress Note - KoNote"
+			@props.setWindowTitle "#{clientName}: #{Term 'Progress Note'} - KoNote"
 
 			return R.div({className: 'newProgNotePage'},
 				R.div({className: 'progNote'},
@@ -308,7 +330,7 @@ load = (win, {clientFileId}) ->
 											section.get('name')
 										)
 										R.div({className: "empty #{showWhen section.get('targets').size is 0}"},
-											"This section is empty because the client has no plan targets."
+											"This #{Term 'section'} is empty because the client has no #{Term 'plan'} #{Term 'targets'}."
 										)
 										R.div({className: 'targets'},
 											(section.get('targets').map (target) =>
@@ -482,12 +504,10 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
-				# TODO success animation
-				@setState {success: true}
-				nwWin.close true
+				@props.closeWindow()
 
 	OpenCreateProgEventButton = React.createFactory React.createClass
-		mixins: [LayeredComponentMixin]
+		mixins: [LayeredComponentMixin, React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				isOpen: false
@@ -498,7 +518,7 @@ load = (win, {clientFileId}) ->
 				onClick: @_open
 			},
 				FaIcon 'bell'
-				"Create Event"
+				"Create #{Term.Event}"
 			)
 		renderLayer: ->
 			unless @state.isOpen
@@ -513,5 +533,7 @@ load = (win, {clientFileId}) ->
 			})
 		_open: ->
 			@setState {isOpen: true}
+
+	return NewProgNotePage
 
 module.exports = {load}

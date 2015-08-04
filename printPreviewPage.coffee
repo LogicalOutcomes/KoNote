@@ -5,6 +5,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require './config'
+Term = require './term'
 Persist = require './persist'
 
 load = (win, {dataSet}) ->
@@ -16,33 +17,30 @@ load = (win, {dataSet}) ->
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
-	{registerTimeoutListeners, unregisterTimeoutListeners} = require('./timeoutDialog').load(win)
 
-	nwWin = Gui.Window.get(win)
+	PrintPreviewPage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 
-	do ->
-		console.log "Print Data:", JSON.parse(dataSet)
-		printDataSet = Imm.fromJS JSON.parse(dataSet)
+		getInitialState: ->
+			return {
+				printDataSet: Imm.fromJS JSON.parse(dataSet)
+			}
 
-		init = ->
-			render()
-			registerListeners()
+		init: -> # Do nothing
+		deinit: -> # Do nothing
 
-		process.nextTick init
+		suggestClose: ->
+			@props.closeWindow()
 
-		render = ->
-			React.render new PrintPreview({
-				printDataSet
-			}), $('#container')[0]
+		getPageListeners: -> {}
 
-		registerListeners = ->
-			registerTimeoutListeners()
+		render: ->
+			new PrintPreviewPageUi {
+				printDataSet: @state.printDataSet
+			}
 
-	PrintPreview = React.createFactory React.createClass
-		componentWillMount: ->
-			nwWin.on 'close', (event) -> 
-				unregisterTimeoutListeners()
-				nwWin.close true
+	PrintPreviewPageUi = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
 			# Without timeout, print() triggers before DOM renders
@@ -92,6 +90,7 @@ load = (win, {dataSet}) ->
 
 
 	PrintHeader = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'header'},
 				R.div({className: 'leftSide'},
@@ -111,7 +110,7 @@ load = (win, {dataSet}) ->
 				R.div({className: 'rightSide'},
 					R.img({
 						className: 'logo'
-						src: 'customer-logo-lg.png'
+						src: Config.customerLogoLg
 					})
 					(if @props.format isnt 'plan'
 						R.ul({},
@@ -142,6 +141,7 @@ load = (win, {dataSet}) ->
 			)
 
 	BasicProgNoteView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->			
 			R.div({className: 'basic progNote'},				
 				R.div({className: 'notes'},
@@ -150,6 +150,7 @@ load = (win, {dataSet}) ->
 			)
 
 	FullProgNoteView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'full progNote'},
 				R.div({className: 'sections'},
@@ -186,7 +187,7 @@ load = (win, {dataSet}) ->
 										section.get('name')
 									)
 									R.div({className: "empty #{showWhen section.get('targets') is ''}"},
-										"This section is empty because the client has no plan targets."
+										"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
 									)
 									R.div({className: 'targets'},
 										(section.get('targets').map (target) =>
@@ -221,6 +222,7 @@ load = (win, {dataSet}) ->
 			)
 
 	SinglePlanView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'plan'},
 				R.div({className: 'sections'},
@@ -229,7 +231,7 @@ load = (win, {dataSet}) ->
 							R.h2({className: 'name'}, section.get('name'))
 							(if section.get('targetIds').size is 0
 								R.div({className: 'noTargets'},
-									"This section is empty."
+									"This #{Term 'section'} is empty."
 								)
 							)
 							R.div({className: 'targets'},
@@ -258,5 +260,7 @@ load = (win, {dataSet}) ->
 					).toJS()...
 				)
 			)
+
+	return PrintPreviewPage
 
 module.exports = {load}
