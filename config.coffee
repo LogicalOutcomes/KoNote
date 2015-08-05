@@ -10,6 +10,9 @@ module.exports = {
 		label: "CR#"
 	}
 
+	# Specify data directory
+	dataDirectory: 'data'
+
 	# Set total timeout mins,
 	# and how many mins before timeout to show warning
 	timeout: {

@@ -84,8 +84,7 @@ load = (win, {clientFileId}) ->
 			@setState (state) => {isLoading: true}
 			Async.series [
 				(cb) =>
-					# TODO data dir
-					Persist.Lock.acquire 'data', "clientFile-#{clientFileId}", (err, result) =>
+					Persist.Lock.acquire Config.dataDirectory, "clientFile-#{clientFileId}", (err, result) =>
 						if err
 							if err instanceof Persist.Lock.LockInUseError
 								@setState {loadErrorType: 'file-in-use'}

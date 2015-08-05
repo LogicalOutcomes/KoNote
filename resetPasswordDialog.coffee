@@ -8,6 +8,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	Config = require('./config')
 	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -100,9 +101,8 @@ load = (win) ->
 			userName = @state.userName
 			password = @state.password
 
-			# TODO where to get data dir?
 			@setState {isLoading: true}
-			Persist.Users.resetAccountPassword 'data', userName, password, (err) =>
+			Persist.Users.resetAccountPassword Config.dataDirectory, userName, password, (err) =>
 				@setState {isLoading: false}
 				
 				if err

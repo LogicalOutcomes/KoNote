@@ -8,6 +8,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	Config = require './config'
 	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -104,9 +105,8 @@ load = (win) ->
 			password = @state.password
 			accountType = if @state.isAdmin then 'admin' else 'normal'
 
-			# TODO where to get data dir?
 			@setState {isLoading: true}
-			Persist.Users.createAccount 'data', userName, password, accountType, (err) =>
+			Persist.Users.createAccount Config.dataDirectory, userName, password, accountType, (err) =>
 				@setState {isLoading: false}
 
 				if err
