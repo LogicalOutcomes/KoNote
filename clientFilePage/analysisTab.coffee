@@ -42,7 +42,7 @@ load = (win) ->
 
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
 				R.div({className: "noData #{showWhen not hasData}"},
-					R.h1({}, "Not enough data.")
+					R.h1({}, "No data to #{Term 'analyze'}")
 					R.div({},
 						"This tab will become available when this #{Term 'client'} has
 						one or more #{Term 'progress notes'} that contain #{Term 'metrics'}."
@@ -81,7 +81,7 @@ load = (win) ->
 			)
 
 		_updateSelectedMetrics: (metricId) ->
-			@setState ({selectedMetricIds}) ->
+			@setState ({selectedMetricIds}) =>
 				if selectedMetricIds.contains metricId
 					selectedMetricIds = selectedMetricIds.delete metricId
 				else
@@ -92,12 +92,28 @@ load = (win) ->
 
 	Chart = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				isDisabled: null
+			}
+
 		render: ->
-			return R.div({className: 'chart', ref: 'chartDiv'})
+				return R.div({className: 'chartInner'},
+					R.div({
+						className: "chart disabledChart #{showWhen !!@state.isDisabled}"
+					}, 
+						R.span({}, if @state.isDisabled then @state.isDisabled.message)
+					)
+					R.div({
+						className: "chart disabledChart #{showWhen not @state.isDisabled}"
+						ref: 'chartDiv'
+					})
+				)
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Show anything that is selected in the view layer
-			unless Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
+			sameProps = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
+			unless sameProps or !!@state.isDisabled
 				@_refreshSelectedMetrics()
 				
 		componentDidMount: ->
@@ -170,6 +186,8 @@ load = (win) ->
 
 			xTicks = @_generateXTicks()
 
+			# Here we build a array of years and timestamps to match
+			# TODO: This could be refined into a single mapped collection
 			newYears = Imm.List()
 			newYearLines = Imm.List()			
 
@@ -183,59 +201,60 @@ load = (win) ->
 						class: 'yearLine'
 					}
 
+			# Generate and bind the chart
 			@_chart = C3.generate {
-				bindto: @refs.chartDiv.getDOMNode()
-				grid: {
-					x: {
-						lines: newYearLines.toJS()
-					}
-				}
-				axis: {
-					x: {
-						type: 'timeseries'
-						tick: {
-							fit: false
-							format: '%b %d'
+					bindto: @refs.chartDiv.getDOMNode()
+					grid: {
+						x: {
+							lines: newYearLines.toJS()
 						}
-						min: xTicks.first().clone().format Persist.TimestampFormat
-						max: xTicks.last().clone().format Persist.TimestampFormat
 					}
-					y: {
-						show: false
+					axis: {
+						x: {
+							type: 'timeseries'
+							tick: {
+								fit: false
+								format: '%b %d'
+							}
+							min: xTicks.first().clone().format Persist.TimestampFormat
+							max: xTicks.last().clone().format Persist.TimestampFormat
+						}
+						y: {
+							show: false
+						}
+					}				
+					data: {
+						hide: true
+						xFormat: D3TimestampFormat
+						columns: scaledDataSeries.toJS()
+						xs: xsMap.toJS()
+						names: dataSeriesNames.toJS()
 					}
-				}				
-				data: {
-					hide: true
-					xFormat: D3TimestampFormat
-					columns: scaledDataSeries.toJS()
-					xs: xsMap.toJS()
-					names: dataSeriesNames.toJS()
-				}
-				tooltip: {
-					format: {
-						value: (value, ratio, id, index) ->
-							# Filter out dataset from dataSeries with matching id, grab from index
-							return dataSeries.filter((metric) ->
-								return metric.contains id
-							).flatten().get(index + 1)
-						title: (timestamp) ->
-							return Moment(timestamp).format('MMMM D [at] HH:mm')
+					tooltip: {
+						format: {
+							value: (value, ratio, id, index) ->
+								# Filter out dataset from dataSeries with matching id, grab from index
+								return dataSeries.filter((metric) ->
+									return metric.contains id
+								).flatten().get(index + 1)
+							title: (timestamp) ->
+								return Moment(timestamp).format('MMMM D [at] HH:mm')
+						}
+					}
+					legend: {
+						item: {
+							onclick: (id) ->
+								return false
+						}
+					}
+					padding: {
+						left: 50
+						right: 50
+					}
+					zoom: {
+						enabled: true
 					}
 				}
-				legend: {
-					item: {
-						onclick: (id) ->
-							return false
-					}
-				}
-				padding: {
-					left: 50
-					right: 50
-				}
-				zoom: {
-					enabled: true
-				}
-			}
 
 		_generateXTicks: ->
 			# Builds list of ALL the timestamps
@@ -250,8 +269,11 @@ load = (win) ->
 			# Figure out number of days with data
 			daysOfData = middayTimeStamps.size
 
+			# Disable chart view if less than 3 days of data
 			if daysOfData < 3
-				console.log "Shouldn't graph, only #{daysOfData} days of data!"
+				@setState => isDisabled: {message: "Sorry, 
+				#{3 - daysOfData} more days of #{Term 'progress notes'} are required
+				before I can chart anything meaningful here."}
 
 			firstDay = Moment middayTimeStamps.first()
 			lastDay = Moment middayTimeStamps.last()
@@ -261,6 +283,7 @@ load = (win) ->
 			# Return a list of full range of timestamps starting from 
 			return Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
+
 
 
 	extractMetricsFromProgNote = (progNote) ->

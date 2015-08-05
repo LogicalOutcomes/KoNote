@@ -44,6 +44,7 @@ module.exports = {
 		'event': "event"
 
 		'analysis': "analysis"
+		'analyze': "analyze"
 	}		
 
 	# useTemplate: 'initialAssessment'
