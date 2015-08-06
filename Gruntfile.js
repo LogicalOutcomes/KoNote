@@ -5,10 +5,10 @@ grunt.initConfig({
         options: {
 			appName: '<%= pkg.displayName %>',
 			//macCredits: 'path-to-file',
-			macIcns: './img/konode-icon-osx.icns',
+			macIcns: './icon.icns',
 			//winIco: './img/konode-icon-win.ico', // causes problems when run from osx
             version: '<%= pkg.dependencies.nodewebkit %>', //nwjs version to download
-			platforms: ['osx64','win64'],
+			platforms: ['osx64'],
 			buildType: 'versioned',
             buildDir: '../konote-builds',
 			cacheDir: '../konote-builds/cache',
