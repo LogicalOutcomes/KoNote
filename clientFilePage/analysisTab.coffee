@@ -105,7 +105,7 @@ load = (win) ->
 						R.span({}, if @state.isDisabled then @state.isDisabled.message)
 					)
 					R.div({
-						className: "chart disabledChart #{showWhen not @state.isDisabled}"
+						className: "chart #{showWhen not @state.isDisabled}"
 						ref: 'chartDiv'
 					})
 				)
