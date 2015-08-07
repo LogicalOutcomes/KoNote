@@ -180,8 +180,7 @@ load = (win) ->
 					console.log "TIMEOUT: 1 Minute Warning issued"
 
 					global.ActiveSession.minuteWarningDelivered = new win.Notification "1 Minute Warning!", {
-						body: "#{Config.productName} will shut down in 1 minute due to inactivity. " +
-							"Any unsaved work will be lost!"
+						body: "#{Config.productName} will disable all windows in 1 minute due to inactivity."
 					}					
 					nwWin.requestAttention(3)
 
