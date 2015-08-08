@@ -45,6 +45,12 @@ class Lock
 					lockDirOp = op
 					cb()
 			(cb) ->
+				Lock._writeMetadata lockDir, tmpDirPath, (err) ->
+					if err
+						cb new IOError err
+						return
+					cb()
+			(cb) ->
 				Lock._writeExpiryTimestamp lockDir, tmpDirPath, (err, ts) ->
 					if err
 						cb err
@@ -226,6 +232,20 @@ class Lock
 				return
 
 			cb null, expiryTimestamp
+
+	@_writeMetadata: (lockDir, tmpDirPath, cb) ->
+		metadataFile = Path.join(lockDir, 'metadata')
+
+		metadata = new Buffer(JSON.stringify {
+			userName: global.ActiveSession.userName
+		}, 'utf8')
+
+		Atomic.writeBufferToFile metadataFile, tmpDirPath, metadata, (err) ->
+			if err
+				cb new IOError err
+				return
+
+			cb null
 
 class LockInUseError extends CustomError
 Lock.LockInUseError = LockInUseError
