@@ -157,7 +157,7 @@ load = (win, {clientFileId}) ->
 								isLoading: false
 								loadErrorType: 'io-error'
 							}
-						render()
+						@render()
 						return
 
 					CrashHandler.handle err
@@ -425,6 +425,8 @@ load = (win, {clientFileId}) ->
 				progNote: @state.progNote.setIn ['sections', sectionIndex, 'notes'], event.target.value
 			}
 		_updateBasicSectionMetric: (sectionId, metricId, newValue) ->
+			return @render() if @_invalidMetricFormat(newValue)
+
 			sectionIndex = @_getSectionIndex sectionId
 
 			metricIndex = @state.progNote.getIn(['sections', sectionIndex, 'metrics']).findIndex (m) =>
@@ -449,13 +451,15 @@ load = (win, {clientFileId}) ->
 				)
 			}
 		_updatePlanSectionMetric: (sectionId, targetId, metricId, newValue) ->
+			return @render() if @_invalidMetricFormat(newValue)
+
 			sectionIndex = @_getSectionIndex sectionId
 			targetIndex = @_getTargetIndex sectionIndex, targetId
 
 			metricIndex = @state.progNote.getIn(
 				['sections', sectionIndex, 'targets', targetIndex, 'metrics']
 			).findIndex (m) =>
-				return m.get('id') is metricId
+				return m.get('id') is metricId			
 
 			@setState {
 				progNote: @state.progNote.setIn(
@@ -468,6 +472,7 @@ load = (win, {clientFileId}) ->
 				progEvents: @state.progEvents.push progEvent
 			}
 			console.log("progEvents updated to:", @state.progEvents)
+		_invalidMetricFormat: (value) -> not value.match /^-?\d*\.?\d*$/
 		_save: ->
 			progNoteId = null
 
