@@ -45,6 +45,7 @@ load = (win, {clientFileId}) ->
 				planTargetsById: Imm.Map()
 				metricsById: Imm.Map()
 				loadErrorType: null
+				loadErrorData: null
 			}
 
 		init: ->
@@ -64,6 +65,7 @@ load = (win, {clientFileId}) ->
 				status: @state.status
 				isLoading: @state.isLoading
 				loadErrorType: @state.loadErrorType
+				loadErrorData: @state.loadErrorData
 				clientFile: @state.clientFile
 				progressNotes: @state.progressNotes
 				planTargetsById: @state.planTargetsById
@@ -87,7 +89,7 @@ load = (win, {clientFileId}) ->
 					Persist.Lock.acquire Config.dataDirectory, "clientFile-#{clientFileId}", (err, result) =>
 						if err
 							if err instanceof Persist.Lock.LockInUseError
-								@setState {loadErrorType: 'file-in-use'}
+								@setState => loadErrorType: 'file-in-use', loadErrorData: err.message
 								return
 
 							cb err
@@ -344,6 +346,7 @@ load = (win, {clientFileId}) ->
 			if @props.loadErrorType
 				return LoadError({
 					loadErrorType: @props.loadErrorType
+					loadErrorData: @props.loadErrorData
 					closeWindow: @props.closeWindow
 				})
 
@@ -457,7 +460,14 @@ load = (win, {clientFileId}) ->
 			console.log "loadErrorType:", @props.loadErrorType
 			msg = switch @props.loadErrorType
 				when 'file-in-use'
-					"This #{Term 'client file'} is already in use."
+					lockUserName = @props.loadErrorData.userName
+					unless lockUserName is global.ActiveSession.userName
+						# TODO: Use user's full name + username
+						"This #{Term 'client file'} is already in use 
+						by username: \"#{@props.loadErrorData.userName}\"."
+					else
+						# TODO: Focus() the already-open file
+						"You already have this #{Term 'client file'} open."
 				when 'io-error'
 					"""
 						An error occurred while loading the #{Term 'client file'}. 

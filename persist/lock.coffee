@@ -82,9 +82,10 @@ class Lock
 		lockDir = Path.join(dataDir, '_locks', lockId)
 
 		expiryLock = null
+
 		Async.series [
 			(cb) ->
-				Lock._isStale lockDir, (err, isStale) ->
+				Lock._isStale lockDir, (err, isStale, metadata) ->
 					if err
 						cb err
 						return
@@ -93,7 +94,7 @@ class Lock
 						# Proceed
 						cb()
 					else
-						cb new LockInUseError()
+						cb new LockInUseError(metadata)
 			(cb) ->
 				# The lock has expired, so we need to safely reclaim it while
 				# preventing others from doing the same.
@@ -106,7 +107,7 @@ class Lock
 					expiryLock = result
 					cb()
 			(cb) ->
-				Lock._isStale lockDir, (err, isStale) ->
+				Lock._isStale lockDir, (err, isStale, metadata) ->
 					if err
 						cb err
 						return
@@ -115,7 +116,7 @@ class Lock
 						# Proceed
 						cb()
 					else
-						cb new LockInUseError()
+						cb new LockInUseError(metadata)
 			(cb) ->
 				Atomic.deleteDirectory lockDir, tmpDirPath, (err) ->
 					if err
@@ -133,7 +134,7 @@ class Lock
 			Lock.acquire dataDir, lockId, cb
 
 	@_isStale: (lockDir, cb) ->
-		Lock._readExpiryTimestamp lockDir, (err, ts) ->
+		Lock._readExpiryTimestamp lockDir, (err, ts, metadata) ->
 			if err
 				cb err
 				return
@@ -142,7 +143,7 @@ class Lock
 				now = Moment()
 				isStale = Moment(ts, TimestampFormat).isBefore now
 
-				cb null, isStale
+				cb null, isStale, metadata
 				return
 
 			# OK, there weren't any expiry timestamps in the directory.
@@ -155,7 +156,7 @@ class Lock
 			console.error "Continuing on assumption that lock is stale."
 
 			# isStale = true
-			cb null, true
+			cb null, true, null
 
 	_renew: (cb) ->
 		if @_hasLeaseExpired()
@@ -218,7 +219,16 @@ class Lock
 
 			result = expiryTimestamps.last().format(TimestampFormat)
 
-			cb null, result
+			# Read metadata and return
+			Fs.readFile lockDir+"/metadata", (err, data) ->
+				if err
+					cb new IOError
+					return
+
+				# Return parsed metadata object
+				metadata = JSON.parse(data)
+
+				cb null, result, metadata
 
 	@_writeExpiryTimestamp: (lockDir, tmpDirPath, cb) ->
 		expiryTimestamp = Moment().add(leaseTime, 'ms').format(TimestampFormat)
