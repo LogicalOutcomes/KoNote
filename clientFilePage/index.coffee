@@ -90,19 +90,20 @@ load = (win, {clientFileId}) ->
 						if err
 							if err instanceof Persist.Lock.LockInUseError
 								@setState => loadErrorType: 'file-in-use', loadErrorData: err.message
+							else
+								cb err
 								return
-
-							cb err
-							return
-
-						@setState {
-							clientFileLock: result
-						}, cb
+						else
+							@setState {
+								clientFileLock: result
+							}, cb
 				(cb) =>
 					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
 						if err
 							cb err
 							return
+
+						console.log "Found Revisions"
 
 						@setState {
 							clientFile: stripMetadata revisions.get(0)
@@ -180,6 +181,8 @@ load = (win, {clientFileId}) ->
 					if err instanceof Persist.IOError
 						@setState {loadErrorType: 'io-error'}
 						return
+
+					console.log "Yeh, nope!"
 
 					CrashHandler.handle err
 					return
@@ -289,6 +292,18 @@ load = (win, {clientFileId}) ->
 
 				'create:metric': (newMetric) =>
 					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
+
+				'clientFile:lockAcquired': (lockResult) =>
+					console.log "lockResult", lockResult
+					@setState => 
+						clientFileLock: lockResult
+						loadErrorType: null
+						loadErrorData: null
+						status: 'ready'
+						isLoading: false
+
+					@render()
+					Bootbox.hideAll()
 			}
 
 	ClientFilePageUi = React.createFactory React.createClass

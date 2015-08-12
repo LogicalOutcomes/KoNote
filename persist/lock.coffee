@@ -18,6 +18,8 @@ class Lock
 			throw new Error "Lock constructor should only be used internally"
 
 		@_released = false
+		@_isCheckingForLock = false
+
 		@_renewInterval = setInterval =>
 			@_renew (err) =>
 				if err
@@ -26,7 +28,7 @@ class Lock
 					return
 		, leaseRenewalInterval
 
-	@acquire: (dataDir, lockId, cb) ->
+	@acquire: (dataDir, lockId, cb, isCheckingForLock = false) ->
 		tmpDirPath = Path.join(dataDir, '_tmp')
 		lockDirDest = Path.join(dataDir, '_locks', lockId)
 
@@ -64,6 +66,8 @@ class Lock
 						# If lock is already taken
 						if err.code in ['EPERM', 'ENOTEMPTY']
 							Lock._cleanIfStale dataDir, lockId, cb
+							unless isCheckingForLock
+								Lock._acquireWhenFree dataDir, lockId
 							return
 
 						cb new IOError err
@@ -76,6 +80,23 @@ class Lock
 				return
 
 			cb null, new Lock(lockDirDest, tmpDirPath, expiryTimestamp, 'privateaccess')
+
+	@_acquireWhenFree: (dataDir, lockId) ->
+		console.log "Starting checkLockInterval..."
+
+		checkLockInterval = setInterval(=>
+			# Calls @acquire() with a truthy argument for isCheckingForLock
+			# TODO: Self-contained & compact version of @acquire()
+			@acquire(dataDir, lockId, (err, result) ->
+				if err
+					console.log "Still locked... :("
+					return
+
+				console.log "Lock has disappeared, acquired you a lock!"
+				clearInterval(checkLockInterval)
+				global.ActiveSession.persist.eventBus.trigger 'clientFile:lockAcquired', result
+			, true)
+		, 1000)
 
 	@_cleanIfStale: (dataDir, lockId, cb) ->
 		tmpDirPath = Path.join(dataDir, '_tmp')
