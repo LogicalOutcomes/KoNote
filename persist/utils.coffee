@@ -14,15 +14,6 @@ generateId = ->
 # All object IDs match this pattern
 IdSchema = Joi.string().regex(/^[a-zA-Z0-9_-]+$/)
 
-validate = (value, schema, cb) ->
-	results = Joi.validate value, schema
-
-	if results.error?
-		cb results.error
-		return
-
-	cb null, results.value
-
 TimestampFormat = 'YYYYMMDDTHHmmssSSSZZ'
 
 class ObjectNotFoundError extends CustomError
@@ -48,5 +39,4 @@ module.exports = {
 	ObjectNotFoundError
 	TimestampFormat
 	generateId
-	validate
 }
