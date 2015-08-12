@@ -13,9 +13,12 @@
 	// Grabs nw version from package, removes things like ^> etc.
 	var nwPackage = pkg.dependencies[nwName].replace(/[^0-9.]/g, "")
 	var nwRunning = process.versions['node-webkit']	
-	
+
 	if (nwPackage !== nwRunning) {
-		throw "Unmatched NW Versions: [package.json: "+ nwPackage + "] [installed: " + nwRunning + "]"
+		var errMsg = "Unmatched NW Versions: [package.json: "+ nwPackage + "] [installed: " + nwRunning + "]";
+		console.error(errMsg);
+		alert(errMsg);
+		return;
 	}
 
 	// In order to avoid the need for Grunt or a similar build system,
