@@ -15,6 +15,15 @@ Atomic = require './atomic'
 	generateId
 } = require './utils'
 
+joiValidationOptions = Object.freeze {
+	# I would like to set this to false, but Joi doesn't seem to support date
+	# string validation without convert: true
+	convert: true
+
+	# Any properties that are not required must be explicitly marked optional.
+	presence: 'required'
+}
+
 # Create an API based on the specified model definition.
 #
 # session: a Session object
@@ -403,7 +412,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			decryptedJson = session.globalEncryptionKey.decrypt encryptedObj
 			obj = JSON.parse decryptedJson
 
-			validation = Joi.validate obj, schema
+			validation = Joi.validate obj, schema, joiValidationOptions
 
 			if validation.error?
 				cb validation.error
@@ -414,7 +423,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 	writeObjectFile = (obj, path, cb) ->
 		schema = prepareSchema modelDef.schema, context
 
-		validation = Joi.validate obj.toJS(), schema
+		validation = Joi.validate obj.toJS(), schema, joiValidationOptions
 
 		if validation.error?
 			process.nextTick ->
