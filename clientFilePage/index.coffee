@@ -38,6 +38,7 @@ load = (win, {clientFileId}) ->
 			return {
 				status: 'init' # either init or ready
 				isLoading: true
+				isReadOnly: null
 
 				clientFile: null
 				clientFileLock: null
@@ -53,7 +54,7 @@ load = (win, {clientFileId}) ->
 
 		deinit: ->
 			if @state.clientFileLock
-				@state.clientFileLock.release()
+				@state.clientFileLock.reset()
 
 		suggestClose: ->
 			@refs.ui.suggestClose()
@@ -64,8 +65,8 @@ load = (win, {clientFileId}) ->
 
 				status: @state.status
 				isLoading: @state.isLoading
+				isReadOnly: @state.isReadOnly
 				loadErrorType: @state.loadErrorType
-				loadErrorData: @state.loadErrorData
 				clientFile: @state.clientFile
 				progressNotes: @state.progressNotes
 				planTargetsById: @state.planTargetsById
@@ -86,15 +87,20 @@ load = (win, {clientFileId}) ->
 			@setState (state) => {isLoading: true}
 			Async.series [
 				(cb) =>
-					Persist.Lock.acquire Config.dataDirectory, "clientFile-#{clientFileId}", (err, result) =>
+					Persist.Lock.acquire global.ActiveSession, "clientFile-#{clientFileId}", (err, result) =>
+						console.log "acquire:", err, result
 						if err
 							if err instanceof Persist.Lock.LockInUseError
-								@setState => loadErrorType: 'file-in-use', loadErrorData: err.message
+								console.log "Err", err
+								@setState => isReadOnly: err.metadata
+								cb()
 							else
 								cb err
 								return
 						else
-							@setState {
+							console.log "Set clientFileLock as:", result
+							# TODO: Set alternate state if setInterval returned?
+							@setState {								
 								clientFileLock: result
 							}, cb
 				(cb) =>
@@ -102,8 +108,6 @@ load = (win, {clientFileId}) ->
 						if err
 							cb err
 							return
-
-						console.log "Found Revisions"
 
 						@setState {
 							clientFile: stripMetadata revisions.get(0)
@@ -181,8 +185,6 @@ load = (win, {clientFileId}) ->
 					if err instanceof Persist.IOError
 						@setState {loadErrorType: 'io-error'}
 						return
-
-					console.log "Yeh, nope!"
 
 					CrashHandler.handle err
 					return
@@ -294,16 +296,9 @@ load = (win, {clientFileId}) ->
 					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
 
 				'clientFile:lockAcquired': (lockResult) =>
-					console.log "lockResult", lockResult
 					@setState => 
 						clientFileLock: lockResult
-						loadErrorType: null
-						loadErrorData: null
-						status: 'ready'
-						isLoading: false
-
-					@render()
-					Bootbox.hideAll()
+						isReadOnly: false
 			}
 
 	ClientFilePageUi = React.createFactory React.createClass
@@ -361,7 +356,6 @@ load = (win, {clientFileId}) ->
 			if @props.loadErrorType
 				return LoadError({
 					loadErrorType: @props.loadErrorType
-					loadErrorData: @props.loadErrorData
 					closeWindow: @props.closeWindow
 				})
 
@@ -380,6 +374,11 @@ load = (win, {clientFileId}) ->
 
 			return R.div({className: 'clientFilePage'},
 				Spinner({isOverlay: true, isVisible: @props.isLoading})
+				(if @props.isReadOnly
+					ReadOnlyNotice({
+						isReadOnly: @props.isReadOnly
+					})
+				)
 				Sidebar({
 					clientName
 					recordId
@@ -474,15 +473,6 @@ load = (win, {clientFileId}) ->
 		componentDidMount: ->
 			console.log "loadErrorType:", @props.loadErrorType
 			msg = switch @props.loadErrorType
-				when 'file-in-use'
-					lockUserName = @props.loadErrorData.userName
-					unless lockUserName is global.ActiveSession.userName
-						# TODO: Use user's full name + username
-						"This #{Term 'client file'} is already in use 
-						by username: \"#{@props.loadErrorData.userName}\"."
-					else
-						# TODO: Focus() the already-open file
-						"You already have this #{Term 'client file'} open."
 				when 'io-error'
 					"""
 						An error occurred while loading the #{Term 'client file'}. 
@@ -494,6 +484,13 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 		render: ->
 			return R.div({className: 'clientFilePage'})
+
+	ReadOnlyNotice = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		render: ->
+			return R.div({
+				className: 'readOnlyNotice'
+			}, "Owned by " + @props.isReadOnly.userName)
 
 	return ClientFilePage
 
