@@ -188,40 +188,29 @@ load = (win) ->
 			)
 
 		_renderUserMenuList: (isAdmin) ->
-			itemsList = [{
-				title: "New #{Term 'Client File'}"
-				dialog: CreateClientFileDialog
-				icon: 'folder-open'}
-			# {
-			# 	title: "Sign Out"
-			# 	# TODO: Call dialog to confirm win.close
-			# 	dialog: null
-			# 	icon: 'times-circle'}
-			]
-
-			if isAdmin
-				itemsList.push {
+			return R.ul({},
+				UserMenuItem({
+					title: "New #{Term 'Client File'}"
+					dialog: CreateClientFileDialog
+					icon: 'folder-open'
+				})
+				UserMenuItem({
+					isVisible: isAdmin
 					title: "New #{Term 'User'} #{Term 'Account'}"
 					dialog: AccountManagerDialog
 					icon: 'user-plus'
-				},
-				{
+				})
+				UserMenuItem({
+					isVisible: isAdmin
 					title: "Reset Password"
 					dialog: ResetPasswordDialog
 					icon: 'key'
-				}
-
-			menuItems = itemsList.map (item) ->
-				return UserMenuItem({
-					title: item.title
-					dialog: item.dialog
-					icon: item.icon
 				})
-
-			return R.ul({}, menuItems)
+			)
 
 		_toggleUserMenu: ->
 			@setState {menuIsOpen: !@state.menuIsOpen}		
+
 		_getResultsList: ->
 			if @state.queryText.trim() is ''
 				return Imm.List()
@@ -238,7 +227,10 @@ load = (win) ->
 
 				return queryParts
 				.every (part) ->
-					return firstName.includes(part) or middleName.includes(part) or lastName.includes(part) or recordId.includes(part)
+					return firstName.includes(part) or
+						middleName.includes(part) or
+						lastName.includes(part) or
+						recordId.includes(part)
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 
@@ -256,12 +248,16 @@ load = (win) ->
 
 	UserMenuItem = React.createFactory React.createClass
 		mixins: [LayeredComponentMixin]
+		getDefaultProps: ->
+			return {
+				isVisible: true
+			}
 		getInitialState: ->
 			return {
 				isOpen: false
 			}
 		render: ->
-			return R.li({}, 				
+			return R.li({className: showWhen(@props.isVisible)},
 				R.div({
 					onClick: @_open
 				}, 

@@ -1,5 +1,3 @@
-# A dialog for allowing the user to define (i.e. create) a new metric
-
 Persist = require './persist'
 
 load = (win) ->
@@ -14,13 +12,6 @@ load = (win) ->
 	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)	
-
-	# Upcoming features:
-	# 			# - a user table
-	# 			#   - account type
-	# 			#   - delete account button
-	# 			#   - change password button
-	# 			# - export?
 
 	CreateAccountDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
