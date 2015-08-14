@@ -189,7 +189,7 @@ load = (win) ->
 
 		_renderUserMenuList: (isAdmin) ->
 			itemsList = [{
-				title: "#{Term 'Client Files'}"
+				title: "New #{Term 'Client File'}"
 				dialog: CreateClientFileDialog
 				icon: 'folder-open'}
 			# {
@@ -201,12 +201,12 @@ load = (win) ->
 
 			if isAdmin
 				itemsList.push {
-					title: "#{Term 'User'} #{Term 'Accounts'}"
+					title: "New #{Term 'User'} #{Term 'Account'}"
 					dialog: AccountManagerDialog
 					icon: 'user-plus'
 				},
 				{
-					title: "Reset Passwords"
+					title: "Reset Password"
 					dialog: ResetPasswordDialog
 					icon: 'key'
 				}
