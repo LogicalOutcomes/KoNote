@@ -25,11 +25,6 @@ generateUserAuthParams = ->
 		iterationCount: 600000 # higher is more secure, but slower
 	}
 
-# TODO
-# - changeAccountPassword: requires current password
-# - changeAccountType: requires admin priv
-# - deleteAccount: requires admin priv
-
 getUserDir = (dataDir, userName) ->
 	unless userNameRegex.exec userName
 		throw new Error "invalid characters in user name"
@@ -140,6 +135,11 @@ readAccount = (dataDir, userName, password, cb) ->
 					return
 
 				authParams = JSON.parse buf
+
+				if authParams.isDeactivated
+					cb new AccountDeactivatedError()
+					return
+
 				cb()
 		(cb) ->
 			SymmetricEncryptionKey.derive password, authParams, (err, result) ->
@@ -186,14 +186,31 @@ resetAccountPassword = (dataDir, userName, newPassword, cb) ->
 	userName = userName.toLowerCase()
 
 	userDir = getUserDir dataDir, userName
-	authParams = generateUserAuthParams()
+	authParamsPath = Path.join(userDir, 'auth-params')
+
+	newAuthParams = generateUserAuthParams()
 	userEncryptionKey = null
 
 	Async.series [
 		(cb) ->
-			authParamsPath = Path.join(userDir, 'auth-params')
+			Fs.readFile authParamsPath, (err, buf) ->
+				if err
+					if err.code is 'ENOENT'
+						cb new UnknownUserNameError()
+						return
 
-			Fs.writeFile authParamsPath, JSON.stringify(authParams), (err, buf) ->
+					cb err
+					return
+
+				oldAuthParams = JSON.parse buf
+
+				if oldAuthParams.isDeactivated
+					cb new AccountDeactivatedError()
+					return
+
+				cb()
+		(cb) ->
+			Fs.writeFile authParamsPath, JSON.stringify(newAuthParams), (err, buf) ->
 				if err
 					if err.code is 'ENOENT'
 						cb new UnknownUserNameError()
@@ -204,7 +221,7 @@ resetAccountPassword = (dataDir, userName, newPassword, cb) ->
 
 				cb()
 		(cb) ->
-			SymmetricEncryptionKey.derive newPassword, authParams, (err, result) ->
+			SymmetricEncryptionKey.derive newPassword, newAuthParams, (err, result) ->
 				if err
 					cb err
 					return
@@ -222,9 +239,36 @@ resetAccountPassword = (dataDir, userName, newPassword, cb) ->
 			Fs.writeFile privateKeysPath, encryptedData, cb
 	], cb
 
+deactivateAccount = (dataDir, userName, cb) ->
+	userName = userName.toLowerCase()
+
+	userDir = getUserDir dataDir, userName
+	authParams = {isDeactivated: true}
+
+	Async.series [
+		(cb) ->
+			authParamsPath = Path.join(userDir, 'auth-params')
+
+			Fs.writeFile authParamsPath, JSON.stringify(authParams), (err, buf) ->
+				if err
+					if err.code is 'ENOENT'
+						cb new UnknownUserNameError()
+						return
+
+					cb err
+					return
+
+				cb()
+		(cb) ->
+			privateKeysPath = Path.join(userDir, 'private-keys')
+
+			Fs.unlink privateKeysPath, cb
+	], cb
+
 class UserNameTakenError extends CustomError
 class UnknownUserNameError extends CustomError
 class IncorrectPasswordError extends CustomError
+class AccountDeactivatedError extends CustomError
 
 module.exports = {
 	isAccountSystemSetUp
@@ -234,4 +278,5 @@ module.exports = {
 	UserNameTakenError
 	UnknownUserNameError
 	IncorrectPasswordError
+	AccountDeactivatedError
 }

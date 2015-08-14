@@ -104,10 +104,14 @@ load = (win) ->
 			@setState {isLoading: true}
 			Persist.Users.resetAccountPassword Config.dataDirectory, userName, password, (err) =>
 				@setState {isLoading: false}
-				
+
 				if err
 					if err instanceof Persist.Users.UnknownUserNameError
 						Bootbox.alert "Unknown user! Please check user name and try again"
+						return
+
+					if err instanceof Persist.Users.AccountDeactivatedError
+						Bootbox.alert "The specified user account has been permanently deactivated."
 						return
 
 					CrashHandler.handle err

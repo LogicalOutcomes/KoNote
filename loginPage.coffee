@@ -134,6 +134,10 @@ load = (win) ->
 						@refs.ui.onLoginError('IncorrectPasswordError')
 						return
 
+					if err instanceof Persist.Session.DeactivatedAccountError
+						@refs.ui.onLoginError('DeactivatedAccountError')
+						return
+
 					CrashHandler.handle err
 					return
 
@@ -170,6 +174,8 @@ load = (win) ->
 				when 'IncorrectPasswordError'
 					Bootbox.alert "Incorrect password.  Please try again."
 					@setState {password: ''}
+				when 'DeactivatedAccountError'
+					Bootbox.alert "This user account has been permanently deactivated."
 				else
 					throw new Error "Invalid Login Error"
 

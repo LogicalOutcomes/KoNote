@@ -66,7 +66,7 @@ class Session
 		Users.readAccount @dataDirectory, @userName, password, (err, account) ->
 			if err
 				cb err
-				return false
+				return
 
 			cb()
 
