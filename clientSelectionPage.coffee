@@ -14,7 +14,6 @@ load = (win) ->
 	Gui = win.require 'nw.gui'
 
 	AccountManagerDialog = require('./accountManagerDialog').load(win)
-	ResetPasswordDialog = require('./resetPasswordDialog').load(win)
 	CrashHandler = require('./crashHandler').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	Dialog = require('./dialog').load(win)
@@ -196,15 +195,9 @@ load = (win) ->
 				})
 				UserMenuItem({
 					isVisible: isAdmin
-					title: "New #{Term 'User'} #{Term 'Account'}"
+					title: "#{Term 'Account'} Manager"
 					dialog: AccountManagerDialog
-					icon: 'user-plus'
-				})
-				UserMenuItem({
-					isVisible: isAdmin
-					title: "Reset Password"
-					dialog: ResetPasswordDialog
-					icon: 'key'
+					icon: 'users'
 				})
 			)
 
@@ -284,8 +277,6 @@ load = (win) ->
 			})
 		_open: ->
 			@setState {isOpen: true}
-		_cancel: ->
-			@setState {isOpen: false}
 
 	return ClientSelectionPage
 

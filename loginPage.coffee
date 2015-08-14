@@ -175,7 +175,7 @@ load = (win) ->
 					Bootbox.alert "Incorrect password.  Please try again."
 					@setState {password: ''}
 				when 'DeactivatedAccountError'
-					Bootbox.alert "This user account has been permanently deactivated."
+					Bootbox.alert "This user account has been deactivated."
 				else
 					throw new Error "Invalid Login Error"
 

@@ -81,4 +81,5 @@ module.exports = {
 	login
 	UnknownUserNameError: Users.UnknownUserNameError
 	IncorrectPasswordError: Users.IncorrectPasswordError
+	DeactivatedAccountError: Users.DeactivatedAccountError
 }
