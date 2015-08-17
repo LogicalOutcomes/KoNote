@@ -84,42 +84,21 @@ class Lock
 	@acquireWhenFree: (session, lockId, interval, cb) ->
 		# Aggressively check lock existance every specified interval
 		newLock = null
-		Async.until(=>
-			@acquire(session, lockId, (err, lock) ->
+		Async.until(->
+			return newLock
+		(callback) =>
+			console.log "Still locked"
+			@acquire session, lockId, (err, lock) ->
 				console.log "Checking for lock..."
-				if !!lock
+				if lock
 					console.log "Lock has disappeared, acquired you a lock:", lock
 					newLock = lock
-					return false
-
-				return err
-			)
-			return false
-		(callback) ->
-			console.log "Still locked"
-			setTimeout(callback, interval)
+					callback()
+				else
+					setTimeout callback, interval
 		(err) ->
-			if err
-				cb err			
-			console.log "FINISHED, here's the lock:", newLock
 			cb null, newLock
-		)
-
-		# Async.during((callback) =>
-			# @acquire session, lockId, (err, lock) ->
-			# 	console.log "Just checked for lock..."
-			# 	# console.log "err", err, "lock", lock
-			# 	callback(null, lock)
-		# ,
-		# (callback) ->
-		# 	console.log "Still locked"
-		# 	setTimeout(callback, interval)
-		# ,
-		# (lock) ->
-		# 	console.log "Lock has disappeared, acquired you a lock!"
-		# 	cb null, lock
-		# )
-		
+		)	
 
 	@_cleanIfStale: (session, lockId, cb) ->
 		dataDir = session.dataDirectory

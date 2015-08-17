@@ -86,30 +86,7 @@ load = (win, {clientFileId}) ->
 
 			@setState (state) => {isLoading: true}
 			Async.series [
-				(cb) =>
-					Persist.Lock.acquire global.ActiveSession, "clientFile-#{clientFileId}", (err, result) =>
-						if err
-							if err instanceof Persist.Lock.LockInUseError
-								# Provide metadata to isReadOnly state, shows ReadOnlyNotice
-								@setState => isReadOnly: err.metadata
-
-								# Keep checking for lock availability, returns new lock when true
-								Persist.Lock.acquireWhenFree global.ActiveSession, "clientFile-#{clientFileId}", 1000, (err, lock) =>
-									if err
-										console.log 'err', err
-									if lock
-										console.log 'lock', lock
-
-								cb()
-							else
-								cb err
-								return
-						else
-							console.log "Set clientFileLock as:", result
-							# TODO: Set alternate state if setInterval returned?
-							@setState {								
-								clientFileLock: result
-							}, cb
+				(cb) => @_acquireLock(cb)
 				(cb) =>
 					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
 						if err
@@ -198,6 +175,37 @@ load = (win, {clientFileId}) ->
 
 				# OK, all done
 				@setState (state) => {status: 'ready', isLoading: false}
+
+		_acquireLock: (cb=(->)) ->
+			lockFormat = "clientFile-#{clientFileId}"
+			
+			Persist.Lock.acquire global.ActiveSession, lockFormat, (err, lock) =>
+				if err
+					if err instanceof Persist.Lock.LockInUseError
+						# Provide metadata to isReadOnly state, shows ReadOnlyNotice
+						@setState => {isReadOnly: err.metadata}
+
+						# Keep checking for lock availability, returns new lock when true
+						Persist.Lock.acquireWhenFree global.ActiveSession, lockFormat, 1000, (err, newLock) =>
+							if err
+								cb err
+								return
+
+							@setState => {
+								clientFileLock: newLock
+								isReadOnly: false
+							}
+
+						cb()
+					else
+						cb err
+						return
+				else
+					@setState => {
+						clientFileLock: lock
+						isReadOnly: false
+					}
+					cb()
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
 			@setState (state) => {isLoading: true}
@@ -303,9 +311,16 @@ load = (win, {clientFileId}) ->
 					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
 
 				'clientFile:lockAcquired': (lockResult) =>
-					@setState => 
+					@setState => {
 						clientFileLock: lockResult
 						isReadOnly: false
+					}
+
+				'timeout:timedOut': =>
+					@state.clientFileLock.release()
+
+				'timeout:reactivateWindows': =>					
+					@_acquireLock()
 			}
 
 	ClientFilePageUi = React.createFactory React.createClass

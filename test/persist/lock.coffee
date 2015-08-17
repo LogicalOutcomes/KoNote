@@ -142,7 +142,7 @@ describe 'Lock', ->
 			, 800)
 
 			# Aggressively check for lock
-			Lock.acquireWhenFree session, 'lock1', 200, (err, newLock) ->
+			Lock.acquireWhenFree session, 'lock1', 400, (err, newLock) ->
 				if err
 					cb err
 					return
