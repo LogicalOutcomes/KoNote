@@ -13,6 +13,10 @@ Lock = require '../../persist/lock'
 dataDir = Path.join process.cwd(), 'testData'
 locksDir = Path.join dataDir, '_locks'
 tmpDir = Path.join dataDir, '_tmp'
+session = {
+	userName: 'user1'
+	dataDirectory: dataDir
+}
 
 describe 'Lock', ->
 	beforeEach (cb) ->
@@ -27,7 +31,7 @@ describe 'Lock', ->
 		Rimraf dataDir, cb
 
 	it 'acquire and release', (cb) ->
-		Lock.acquire dataDir, 'lock1', (err, lock1) ->
+		Lock.acquire session, 'lock1', (err, lock1) ->
 			if err
 				cb err
 				return
@@ -41,17 +45,17 @@ describe 'Lock', ->
 					return
 
 				Assert not Fs.existsSync Path.join(locksDir, 'lock1')
-				cb()
+				cb()	
 
 	it 'lock twice, then release', (cb) ->
-		Lock.acquire dataDir, 'lock1', (err, lock1) ->
+		Lock.acquire session, 'lock1', (err, lock1) ->
 			if err
 				cb err
 				return
 
 			Assert lock1
 
-			Lock.acquire dataDir, 'lock1', (err, result) ->
+			Lock.acquire session, 'lock1', (err, result) ->
 				Assert err instanceof Lock.LockInUseError
 				Assert not result
 
@@ -63,11 +67,28 @@ describe 'Lock', ->
 					Assert not Fs.existsSync Path.join(locksDir, 'lock1')
 					cb()
 
+	it 'return LockInUseError metadata/username when locked', (cb) ->
+		Lock.acquire session, 'lock1', (err, lock1) ->
+			if err
+				cb err
+				return
+
+			Assert lock1
+
+			Lock.acquire session, 'lock1', (err, result) ->
+				Assert err instanceof Lock.LockInUseError
+				Assert err.metadata
+				Assert err.metadata.userName
+				Assert not result
+
+				cb()
+
+
 	# Takes 10s to run
 	it.skip 'replace incomplete lock', (cb) ->
 		Fs.mkdirSync Path.join(locksDir, 'lock1')
 
-		Lock.acquire dataDir, 'lock1', (err, lock1) ->
+		Lock.acquire session, 'lock1', (err, lock1) ->
 			if err
 				cb err
 				return
@@ -88,7 +109,7 @@ describe 'Lock', ->
 		ts = Moment().subtract(10, 'seconds').format(TimestampFormat)
 		Fs.writeFileSync Path.join(locksDir, 'lock1', "expire-#{ts}"), 'test'
 
-		Lock.acquire dataDir, 'lock1', (err, lock1) ->
+		Lock.acquire session, 'lock1', (err, lock1) ->
 			if err
 				cb err
 				return
@@ -102,3 +123,33 @@ describe 'Lock', ->
 
 				Assert not Fs.existsSync Path.join(locksDir, 'lock1')
 				cb()
+
+	it 'acquire lock when free (make available after 800ms)', (cb) ->
+		Lock.acquire session, 'lock1', (err, lock1) ->
+			if err
+				cb err
+				return
+
+			Assert lock1
+
+			# Release original lock after 1s
+			setTimeout(->
+				lock1.release (err) ->
+					if err
+						cb err
+						return
+					console.log "Released lock1"
+			, 800)
+
+			# Aggressively check for lock
+			Lock.acquireWhenFree session, 'lock1', 200, (err, newLock) ->
+				if err
+					cb err
+					return
+
+				Assert newLock
+				console.log newLock
+				cb()
+
+
+

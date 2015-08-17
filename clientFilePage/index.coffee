@@ -54,7 +54,7 @@ load = (win, {clientFileId}) ->
 
 		deinit: ->
 			if @state.clientFileLock
-				@state.clientFileLock.reset()
+				@state.clientFileLock.release()
 
 		suggestClose: ->
 			@refs.ui.suggestClose()
@@ -88,11 +88,18 @@ load = (win, {clientFileId}) ->
 			Async.series [
 				(cb) =>
 					Persist.Lock.acquire global.ActiveSession, "clientFile-#{clientFileId}", (err, result) =>
-						console.log "acquire:", err, result
 						if err
 							if err instanceof Persist.Lock.LockInUseError
-								console.log "Err", err
+								# Provide metadata to isReadOnly state, shows ReadOnlyNotice
 								@setState => isReadOnly: err.metadata
+
+								# Keep checking for lock availability, returns new lock when true
+								Persist.Lock.acquireWhenFree global.ActiveSession, "clientFile-#{clientFileId}", 1000, (err, lock) =>
+									if err
+										console.log 'err', err
+									if lock
+										console.log 'lock', lock
+
 								cb()
 							else
 								cb err

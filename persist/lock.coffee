@@ -19,7 +19,7 @@ class Lock
 
 		@_released = false
 		@_isCheckingForLock = false
-		
+
 		@_renewInterval = setInterval =>
 			@_renew (err) =>
 				if err
@@ -28,16 +28,15 @@ class Lock
 					return
 		, leaseRenewalInterval
 
-	@acquire: (session, lockId, cb, isCheckingForLock = false) ->
+	@acquire: (session, lockId, cb) ->
 		dataDir = session.dataDirectory
 
 		tmpDirPath = Path.join(dataDir, '_tmp')
 		lockDirDest = Path.join(dataDir, '_locks', lockId)
-		
+
 		lockDir = null
 		lockDirOp = null
 		expiryTimestamp = null
-		checkLockInterval = null
 
 		Async.series [
 			(cb) ->
@@ -53,6 +52,7 @@ class Lock
 				Lock._writeMetadata session, lockDir, tmpDirPath, (err) ->
 					if err
 						cb err
+						return
 					cb()
 			(cb) ->
 				Lock._writeExpiryTimestamp lockDir, tmpDirPath, (err, ts) ->
@@ -67,11 +67,7 @@ class Lock
 					if err
 						# If lock is already taken
 						if err.code in ['EPERM', 'ENOTEMPTY']
-							Lock._cleanIfStale dataDir, lockId, cb
-
-							unless isCheckingForLock
-								console.log "Getting Lock Interval..."
-								checkLockInterval = Lock._acquireWhenFree session, lockId
+							Lock._cleanIfStale session, lockId, cb
 							return
 
 						cb new IOError err
@@ -80,33 +76,55 @@ class Lock
 					cb()
 		], (err) ->
 			if err
-				if !!checkLockInterval
-					cb null, checkLockInterval
-				else
-					cb err
-				return			
+				cb err
+				return
 
 			cb null, new Lock(lockDirDest, tmpDirPath, expiryTimestamp, 'privateaccess')
 
-	@_acquireWhenFree: (session, lockId) ->
-		console.log "Starting checkLockInterval..."
-		console.log "session:", session
+	@acquireWhenFree: (session, lockId, interval, cb) ->
+		# Aggressively check lock existance every specified interval
+		newLock = null
+		Async.until(=>
+			@acquire(session, lockId, (err, lock) ->
+				console.log "Checking for lock..."
+				if !!lock
+					console.log "Lock has disappeared, acquired you a lock:", lock
+					newLock = lock
+					return false
 
-		checkLockInterval = setInterval(=>
-			# Calls @acquire() with a truthy argument for isCheckingForLock
-			@acquire(session, lockId, (err, result) =>
-				if err
-					console.log "Still locked... :("
-					return
+				return err
+			)
+			return false
+		(callback) ->
+			console.log "Still locked"
+			setTimeout(callback, interval)
+		(err) ->
+			if err
+				cb err			
+			console.log "FINISHED, here's the lock:", newLock
+			cb null, newLock
+		)
 
-				console.log "Lock has disappeared, acquired you a lock!"
-				session.persist.eventBus.trigger 'clientFile:lockAcquired', result
-			, true)
-		, 1000)
+		# Async.during(=>
+		# 	(callback) ->
+		# 		@acquire session, lockId, (err, lock) ->
+		# 			console.log "Just checked for lock..."
+		# 			# console.log "err", err, "lock", lock
+		# 			callback(null, lock)
+		# ,
+		# (callback) ->
+		# 	console.log "Still locked"
+		# 	setTimeout(callback, interval)
+		# ,
+		# (lock) ->
+		# 	console.log "Lock has disappeared, acquired you a lock!"
+		# 	cb null, lock
+		# )
+		
 
-		return checkLockInterval
+	@_cleanIfStale: (session, lockId, cb) ->
+		dataDir = session.dataDirectory
 
-	@_cleanIfStale: (dataDir, lockId, cb) ->
 		tmpDirPath = Path.join(dataDir, '_tmp')
 		lockDir = Path.join(dataDir, '_locks', lockId)
 
@@ -123,14 +141,14 @@ class Lock
 						# Proceed
 						cb()
 					else
-						# Lock is in use, deliver metadata
-						Lock._readMetadata lockDir, cb
+						# Lock is in use, deliver error with metadata
+						Lock._readMetadata(lockDir, cb)
 						return
 			(cb) ->
 				# The lock has expired, so we need to safely reclaim it while
 				# preventing others from doing the same.
 
-				Lock.acquire dataDir, lockId + '.expiry', (err, result) ->
+				Lock.acquire session, lockId + '.expiry', (err, result) ->
 					if err
 						cb err
 						return
@@ -147,8 +165,8 @@ class Lock
 						# Proceed
 						cb()
 					else
-						# Lock is in use, deliver metadata
-						Lock._readMetadata lockDir, cb
+						# Lock is in use, deliver error with metadata
+						Lock._readMetadata(lockDir, cb)
 						return
 			(cb) ->
 				Atomic.deleteDirectory lockDir, tmpDirPath, (err) ->
@@ -164,7 +182,7 @@ class Lock
 				cb err
 				return
 
-			Lock.acquire dataDir, lockId, cb
+			Lock.acquire session, lockId, cb
 
 	@_isStale: (lockDir, cb) ->
 		Lock._readExpiryTimestamp lockDir, (err, ts) ->
@@ -255,18 +273,11 @@ class Lock
 			cb null, result
 
 	@_readMetadata: (lockDir, cb) ->
-		# Return metadata object
-		metadata = null
-
 		Fs.readFile lockDir+"/metadata", (err, data) ->
 			if err
-				cb new IOError err
-				return
+				return new IOError err
 
-			metadata = JSON.parse(data)
-
-			# Return parsed metadata object
-		cb new LockInUseError metadata
+			cb new LockInUseError null, JSON.parse(data)
 
 	@_writeExpiryTimestamp: (lockDir, tmpDirPath, cb) ->
 		expiryTimestamp = Moment().add(leaseTime, 'ms').format(TimestampFormat)
@@ -296,6 +307,10 @@ class Lock
 			cb()
 
 class LockInUseError extends CustomError
+	constructor: (message, metadata) ->
+		super "Lock is in use by another user"
+		@metadata = metadata
+
 Lock.LockInUseError = LockInUseError
 
 module.exports = Lock
