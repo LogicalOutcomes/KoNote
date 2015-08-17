@@ -105,12 +105,11 @@ class Lock
 			cb null, newLock
 		)
 
-		# Async.during(=>
-		# 	(callback) ->
-		# 		@acquire session, lockId, (err, lock) ->
-		# 			console.log "Just checked for lock..."
-		# 			# console.log "err", err, "lock", lock
-		# 			callback(null, lock)
+		# Async.during((callback) =>
+			# @acquire session, lockId, (err, lock) ->
+			# 	console.log "Just checked for lock..."
+			# 	# console.log "err", err, "lock", lock
+			# 	callback(null, lock)
 		# ,
 		# (callback) ->
 		# 	console.log "Still locked"
