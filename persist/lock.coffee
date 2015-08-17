@@ -81,11 +81,15 @@ class Lock
 
 			cb null, new Lock(lockDirDest, tmpDirPath, expiryTimestamp, 'privateaccess')
 
-	@acquireWhenFree: (session, lockId, interval, cb) ->
+	@acquireWhenFree: (session, lockId, forceStopEvent, interval, cb) ->
 		# Aggressively check lock existance every specified interval
 		newLock = null
-		Async.until(->
-			return newLock
+		forceStop = null
+
+		session.persist.eventBus.on forceStopEvent, => forceStop = true
+
+		Async.until(->			
+			return forceStop or newLock
 		(callback) =>
 			console.log "Still locked"
 			@acquire session, lockId, (err, lock) ->
@@ -97,7 +101,11 @@ class Lock
 				else
 					setTimeout callback, interval
 		(err) ->
-			cb null, newLock
+			if forceStop
+				console.log "Force-stopping lock acquisition checker"
+				cb null
+			else
+				cb null, newLock
 		)	
 
 	@_cleanIfStale: (session, lockId, cb) ->

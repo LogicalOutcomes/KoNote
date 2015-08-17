@@ -178,7 +178,9 @@ load = (win, {clientFileId}) ->
 
 		_acquireLock: (cb=(->)) ->
 			lockFormat = "clientFile-#{clientFileId}"
-			
+
+			console.log "Starting acquisition process..."
+
 			Persist.Lock.acquire global.ActiveSession, lockFormat, (err, lock) =>
 				if err
 					if err instanceof Persist.Lock.LockInUseError
@@ -186,10 +188,15 @@ load = (win, {clientFileId}) ->
 						@setState => {isReadOnly: err.metadata}
 
 						# Keep checking for lock availability, returns new lock when true
-						Persist.Lock.acquireWhenFree global.ActiveSession, lockFormat, 1000, (err, newLock) =>
+						Persist.Lock.acquireWhenFree global.ActiveSession, lockFormat, 
+						'timeout:timedOut', 1000, (err, newLock) =>
 							if err
 								cb err
 								return
+
+							if not newLock
+								console.log "No lock received, must have been force-stopped"
+								cb()
 
 							@setState => {
 								clientFileLock: newLock
@@ -317,9 +324,14 @@ load = (win, {clientFileId}) ->
 					}
 
 				'timeout:timedOut': =>
+					console.log "Releasing clientFile lock since it's timed out..."
 					@state.clientFileLock.release()
+					@setState => {
+						clientFileLock: null
+					}
 
-				'timeout:reactivateWindows': =>					
+				'timeout:reactivateWindows': =>
+					console.log "Restoring clientFile lock..."
 					@_acquireLock()
 			}
 
