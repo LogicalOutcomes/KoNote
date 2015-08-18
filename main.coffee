@@ -55,9 +55,11 @@ init = (win) ->
 
 	containerElem = document.getElementById('container')
 
-	pageComponent = null
-	pageListeners = null
+	pageComponent = null	
 	isLoggedIn = null
+	
+	pageListeners = null
+	timeoutListeners = null
 
 	process.nextTick =>
 		renderPage QueryString.parse(win.location.search.substr(1))
