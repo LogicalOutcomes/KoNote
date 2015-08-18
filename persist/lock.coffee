@@ -81,13 +81,13 @@ class Lock
 
 			cb null, new Lock(lockDirDest, tmpDirPath, expiryTimestamp, 'privateaccess')
 
-	@acquireWhenFree: (session, lockId, forceStopEvent, interval, cb) ->
-		# Aggressively check lock existance every specified interval
+	@acquireWhenFree: (session, lockId, forceStopEvent, interval, cb) ->		
 		newLock = null
 		forceStop = null
 
 		session.persist.eventBus.on forceStopEvent, => forceStop = true
 
+		# Aggressively check lock existance every specified interval(ms)
 		Async.until(->			
 			return forceStop or newLock
 		(callback) =>

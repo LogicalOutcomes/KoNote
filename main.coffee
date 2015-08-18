@@ -156,20 +156,27 @@ init = (win) ->
 		# Reload HTML page
 		win.location.reload(true)
 
-	registerPageListeners = =>		
-		# Register listeners from internal page component
+	registerPageListeners = =>
 		pageListeners = Imm.fromJS pageComponent.getPageListeners()
-		.mergeDeep getTimeoutListeners() # and merge in timeout listeners
+		timeoutListeners = Imm.fromJS getTimeoutListeners()
 
+		# Register page listeners
 		pageListeners.forEach (action, name) =>
+			global.ActiveSession.persist.eventBus.on name, action
+
+		# Register timeout listeners separately
+		timeoutListeners.forEach (action, name) =>
 			global.ActiveSession.persist.eventBus.on name, action
 
 		# Make sure everything is reset
 		global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 
-	unregisterPageListeners = =>		
+	unregisterPageListeners = =>
 		pageListeners.forEach (action, name) =>
 			global.ActiveSession.persist.eventBus.off name, action
+
+		timeoutListeners.forEach (action, name) =>
+			global.ActiveSession.persist.eventBus.on name, action
 
 	# Define the listener here so that it can be removed later
 	onWindowCloseEvent = =>

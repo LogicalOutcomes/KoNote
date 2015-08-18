@@ -177,7 +177,7 @@ load = (win, {clientFileId}) ->
 				@setState (state) => {status: 'ready', isLoading: false}
 
 		_acquireLock: (cb=(->)) ->
-			lockFormat = "clientFile-#{clientFileId}"
+			lockFormat = "clientFile-#{clientFileId}"			
 
 			console.log "Starting acquisition process..."
 
@@ -325,10 +325,12 @@ load = (win, {clientFileId}) ->
 
 				'timeout:timedOut': =>
 					console.log "Releasing clientFile lock since it's timed out..."
-					@state.clientFileLock.release()
-					@setState => {
-						clientFileLock: null
-					}
+					if @state.clientFileLock
+						@state.clientFileLock.release(=>
+							@setState => {
+								clientFileLock: null
+							}
+						)
 
 				'timeout:reactivateWindows': =>
 					console.log "Restoring clientFile lock..."

@@ -16,6 +16,11 @@ tmpDir = Path.join dataDir, '_tmp'
 session = {
 	userName: 'user1'
 	dataDirectory: dataDir
+	persist: {
+		eventBus: {
+			on: (a, b) ->
+		}
+	}
 }
 
 describe 'Lock', ->
@@ -142,13 +147,13 @@ describe 'Lock', ->
 			, 800)
 
 			# Aggressively check for lock
-			Lock.acquireWhenFree session, 'lock1', 400, (err, newLock) ->
+			Lock.acquireWhenFree session, 'lock1', (->), 400, (err, newLock) ->
 				if err
 					cb err
 					return
 
 				Assert newLock
-				console.log newLock
+				console.log "Acquired lock1"
 				cb()
 
 
