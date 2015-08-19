@@ -122,6 +122,10 @@ load = (win) ->
 			}
 
 		_deactivateAccount: (userName) ->
+			if userName is global.ActiveSession.userName
+				Bootbox.alert "Accounts cannot deactivate themselves.  Try logging in using a different account."
+				return
+
 			Bootbox.confirm "Permanently deactivate #{userName}?", (result) =>
 				unless result is true
 					return
