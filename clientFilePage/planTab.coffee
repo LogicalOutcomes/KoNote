@@ -69,6 +69,7 @@ load = (win) ->
 						R.button({
 							className: 'addSection btn btn-success btn-lg'
 							onClick: @_addSection
+							disabled: @props.isReadOnly
 						},
 							FaIcon('plus')
 							"Add #{Term 'section'}"
@@ -81,7 +82,7 @@ load = (win) ->
 									'save btn'
 									'btn-' + if @hasChanges() then 'success canSave' else 'warning'
 								].join ' '
-								disabled: not @hasChanges()
+								disabled: not @hasChanges() or @props.isReadOnly
 								onClick: @_save
 							},
 								FaIcon('save')
@@ -92,6 +93,7 @@ load = (win) ->
 							R.button({
 								className: 'addSection btn btn-default'
 								onClick: @_addSection
+								disabled: @props.isReadOnly
 							},
 								FaIcon('plus')
 								"Add #{Term 'section'}"
@@ -128,6 +130,7 @@ load = (win) ->
 									R.button({
 										className: 'addTarget btn btn-sm btn-primary'
 										onClick: @_addTargetToSection.bind null, section.get('id')
+										disabled: @props.isReadOnly
 									},
 										FaIcon('plus')
 										"Add #{Term 'target'}"
@@ -174,17 +177,19 @@ load = (win) ->
 								(if metricDefs.size is 0
 									R.div({className: 'noMetrics'},
 										"This #{Term 'target'} has no metrics attached. "
-										R.button({
-											className: 'btn btn-link addMetricButton'
-											onClick: @_focusMetricLookupField
-										}, FaIcon('plus'))
-									)
+										(unless @props.isReadOnly
+											R.button({
+												className: 'btn btn-link addMetricButton'
+												onClick: @_focusMetricLookupField
+											}, FaIcon('plus'))
+										)
+									)									
 								else
 									R.div({className: 'metrics'},
 										(metricDefs.map (metricDef) =>
 											MetricWidget({
 												isEditable: false
-												allowDeleting: true
+												allowDeleting: not @props.isReadOnly
 												onDelete: @_deleteMetricFromTarget.bind(
 													null, selectedTarget.get('id'), metricDef.get('id')
 												)
@@ -193,22 +198,25 @@ load = (win) ->
 												definition: metricDef.get('definition')
 											})
 										).toJS()...
-										(if metricDefs.size > 0
+										(unless @props.isReadOnly
 											R.button({
 												className: 'btn btn-link addMetricButton'
 												onClick: @_focusMetricLookupField
 											}, FaIcon('plus'))
 										)
 									)
-								)								
-								R.div({},
-									MetricLookupField({
-										metrics: @props.metricsById.valueSeq()
-										onSelection: @_addMetricToTarget.bind(
-											null, selectedTarget.get('id')
-										)
-										placeholder: "Find / Define a #{Term 'Metric'}"
-									})
+								)
+								(unless @props.isReadOnly
+									R.div({},
+										MetricLookupField({
+											metrics: @props.metricsById.valueSeq()
+											onSelection: @_addMetricToTarget.bind(
+												null, selectedTarget.get('id')
+											)
+											placeholder: "Find / Define a #{Term 'Metric'}"
+											isReadOnly: @props.isReadOnly
+										})
+									)
 								)
 							)
 							R.div({className: 'history'},

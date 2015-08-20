@@ -42,7 +42,7 @@ load = (win) ->
 				R.div({className: 'name', ref: 'name'},
 					@props.name
 				)
-				(if allowDeleting
+				(if allowDeleting and not @props.isReadOnly
 					R.div({className: 'delete', onClick: @props.onDelete},
 						FaIcon 'times'
 					)

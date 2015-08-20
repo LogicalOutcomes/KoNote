@@ -47,6 +47,7 @@ load = (win) ->
 					R.button({
 						className: 'newProgNote btn btn-primary'
 						onClick: @_openNewProgNote
+						disabled: @props.isReadOnly
 					},
 						FaIcon 'file'
 						"New #{Term 'progress note'}"
@@ -54,6 +55,7 @@ load = (win) ->
 					R.button({
 						className: "addQuickNote btn btn-default #{showWhen @props.progNotes.size > 0}"						
 						onClick: @_toggleQuickNotePopover
+						disabled: @props.isReadOnly
 					},
 						FaIcon 'plus'
 						"Add #{Term 'quick note'}"
@@ -69,6 +71,7 @@ load = (win) ->
 							R.button({
 								className: 'newProgNote btn btn-primary btn-lg'
 								onClick: @_openNewProgNote
+								disabled: @props.isReadOnly
 							},
 								FaIcon 'file'
 								"New #{Term 'progress note'}"
@@ -76,6 +79,7 @@ load = (win) ->
 							R.button({
 								className: "addQuickNote btn btn-default btn-lg #{showWhen @props.progNotes.size is 0}"								
 								onClick: @_toggleQuickNotePopover
+								disabled: @props.isReadOnly
 							},
 								FaIcon 'plus'
 								"Add #{Term 'quick note'}"

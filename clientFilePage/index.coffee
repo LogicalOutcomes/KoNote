@@ -191,21 +191,20 @@ load = (win, {clientFileId}) ->
 									cb err
 									return
 
-								if not newLock
-									console.log "No lock received, must have been force-stopped"
+								if newLock
+									# Alert user about lock acquisition
+									clientName = renderName @state.clientFile.get('clientName')
+									new win.Notification "#{clientName} file unlocked", {
+										body: "You now have the read/write permissions for this #{Term 'client file'}"
+									}
+								else
+									# Lock acquisition must've been cancelled
 									cb()
 
 								@setState => {
 									clientFileLock: newLock
 									isReadOnly: false
-								}
-
-								# Alert user about lock acquisition
-								clientName = renderName @state.clientFile.get('clientName')
-								console.log "clientName", clientName
-								new win.Notification "#{clientName} File Unlocked", {
-									body: "You now have read/write permissions for this file"
-								}
+								}								
 
 							, 1000)
 						}
@@ -422,11 +421,12 @@ load = (win, {clientFileId}) ->
 					})
 				)
 				R.div({className: 'wrapper'},
-					Sidebar({
+					Sidebar({						
 						clientName
 						recordId
 						activeTabId
 						onTabChange: @_changeTab
+						isReadOnly: @props.isReadOnly
 					})
 					PlanTab.PlanView({
 						ref: 'planTab'
@@ -436,6 +436,7 @@ load = (win, {clientFileId}) ->
 						plan: @props.clientFile.get('plan')
 						planTargetsById: @props.planTargetsById
 						metricsById: @props.metricsById
+						isReadOnly: @props.isReadOnly
 
 						updatePlan: @props.updatePlan
 					})
@@ -445,6 +446,7 @@ load = (win, {clientFileId}) ->
 						clientFile: @props.clientFile
 						progNotes: @props.progressNotes
 						metricsById: @props.metricsById
+						isReadOnly: @props.isReadOnly
 
 						createQuickNote: @props.createQuickNote
 					})
@@ -453,6 +455,7 @@ load = (win, {clientFileId}) ->
 						clientFileId
 						progNotes: @props.progressNotes
 						metricsById: @props.metricsById
+						isReadOnly: @props.isReadOnly
 					})
 				)				
 			)
