@@ -45,7 +45,7 @@ load = (win) ->
 		result = []
 		result.push name.get('first')
 
-		if name.has('middle')
+		if name.has('middle') and name.get('middle').size
 			result.push name.get('middle')
 
 		result.push name.get('last')

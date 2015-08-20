@@ -38,10 +38,12 @@ load = (win, {clientFileId}) ->
 			return {
 				status: 'init' # either init or ready
 				isLoading: true
-				isReadOnly: null
-
+				
 				clientFile: null
 				clientFileLock: null
+				isReadOnly: null
+				lockOperation: null
+
 				progressNotes: null
 				planTargetsById: Imm.Map()
 				metricsById: Imm.Map()
@@ -53,8 +55,7 @@ load = (win, {clientFileId}) ->
 			@_loadData()
 
 		deinit: ->
-			if @state.clientFileLock
-				@state.clientFileLock.release()
+			@_killLocks()		
 
 		suggestClose: ->
 			@refs.ui.suggestClose()
@@ -177,31 +178,37 @@ load = (win, {clientFileId}) ->
 				@setState (state) => {status: 'ready', isLoading: false}
 
 		_acquireLock: (cb=(->)) ->
-			lockFormat = "clientFile-#{clientFileId}"			
-
-			console.log "Starting acquisition process..."
+			lockFormat = "clientFile-#{clientFileId}"
 
 			Persist.Lock.acquire global.ActiveSession, lockFormat, (err, lock) =>
 				if err
 					if err instanceof Persist.Lock.LockInUseError
-						# Provide metadata to isReadOnly state, shows ReadOnlyNotice
-						@setState => {isReadOnly: err.metadata}
-
 						# Keep checking for lock availability, returns new lock when true
-						Persist.Lock.acquireWhenFree global.ActiveSession, lockFormat, 
-						'timeout:timedOut', 1000, (err, newLock) =>
-							if err
-								cb err
-								return
+						@setState => {
+							isReadOnly: err.metadata
+							lockOperation: Persist.Lock.acquireWhenFree(global.ActiveSession, lockFormat, (err, newLock) =>
+								if err
+									cb err
+									return
 
-							if not newLock
-								console.log "No lock received, must have been force-stopped"
-								cb()
+								if not newLock
+									console.log "No lock received, must have been force-stopped"
+									cb()
 
-							@setState => {
-								clientFileLock: newLock
-								isReadOnly: false
-							}
+								@setState => {
+									clientFileLock: newLock
+									isReadOnly: false
+								}
+
+								# Alert user about lock acquisition
+								clientName = renderName @state.clientFile.get('clientName')
+								console.log "clientName", clientName
+								new win.Notification "#{clientName} File Unlocked", {
+									body: "You now have read/write permissions for this file"
+								}
+
+							, 1000)
+						}
 
 						cb()
 					else
@@ -211,8 +218,19 @@ load = (win, {clientFileId}) ->
 					@setState => {
 						clientFileLock: lock
 						isReadOnly: false
+						lockOperation: null
 					}
 					cb()
+
+		_killLocks: ->
+			if @state.clientFileLock
+				@state.clientFileLock.release(=>
+					@setState => {
+						clientFileLock: null
+					}
+				)
+			if @state.lockOperation
+				@state.lockOperation.cancel()
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
 			@setState (state) => {isLoading: true}
@@ -317,20 +335,8 @@ load = (win, {clientFileId}) ->
 				'create:metric': (newMetric) =>
 					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
 
-				'clientFile:lockAcquired': (lockResult) =>
-					@setState => {
-						clientFileLock: lockResult
-						isReadOnly: false
-					}
-
 				'timeout:timedOut': =>
-					console.log "Releasing clientFile lock since it's timed out..."
-					if @state.clientFileLock
-						@state.clientFileLock.release(=>
-							@setState => {
-								clientFileLock: null
-							}
-						)
+					@_killLocks()
 
 				'timeout:reactivateWindows': =>
 					console.log "Restoring clientFile lock..."
@@ -415,38 +421,40 @@ load = (win, {clientFileId}) ->
 						isReadOnly: @props.isReadOnly
 					})
 				)
-				Sidebar({
-					clientName
-					recordId
-					activeTabId
-					onTabChange: @_changeTab
-				})
-				PlanTab.PlanView({
-					ref: 'planTab'
-					isVisible: activeTabId is 'plan'
-					clientFileId
-					clientFile: @props.clientFile
-					plan: @props.clientFile.get('plan')
-					planTargetsById: @props.planTargetsById
-					metricsById: @props.metricsById
+				R.div({className: 'wrapper'},
+					Sidebar({
+						clientName
+						recordId
+						activeTabId
+						onTabChange: @_changeTab
+					})
+					PlanTab.PlanView({
+						ref: 'planTab'
+						isVisible: activeTabId is 'plan'
+						clientFileId
+						clientFile: @props.clientFile
+						plan: @props.clientFile.get('plan')
+						planTargetsById: @props.planTargetsById
+						metricsById: @props.metricsById
 
-					updatePlan: @props.updatePlan
-				})
-				ProgNotesTab.ProgNotesView({
-					isVisible: activeTabId is 'progressNotes'
-					clientFileId
-					clientFile: @props.clientFile
-					progNotes: @props.progressNotes
-					metricsById: @props.metricsById
+						updatePlan: @props.updatePlan
+					})
+					ProgNotesTab.ProgNotesView({
+						isVisible: activeTabId is 'progressNotes'
+						clientFileId
+						clientFile: @props.clientFile
+						progNotes: @props.progressNotes
+						metricsById: @props.metricsById
 
-					createQuickNote: @props.createQuickNote
-				})
-				AnalysisTab.AnalysisView({
-					isVisible: activeTabId is 'analysis'
-					clientFileId
-					progNotes: @props.progressNotes
-					metricsById: @props.metricsById
-				})
+						createQuickNote: @props.createQuickNote
+					})
+					AnalysisTab.AnalysisView({
+						isVisible: activeTabId is 'analysis'
+						clientFileId
+						progNotes: @props.progressNotes
+						metricsById: @props.metricsById
+					})
+				)				
 			)
 		_changeTab: (newTabId) ->
 			@setState {
@@ -524,9 +532,21 @@ load = (win, {clientFileId}) ->
 	ReadOnlyNotice = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
+			lockOwner = @props.isReadOnly.userName
+
 			return R.div({
 				className: 'readOnlyNotice'
-			}, "Owned by " + @props.isReadOnly.userName)
+			}, 
+				R.div({className: 'notice'},
+					(if lockOwner is global.ActiveSession.userName
+						"You already have this file open in another window"
+					else
+						"File currently in use by username: "
+						R.span({className: 'lockOwner'}, lockOwner)
+					)
+				)
+				R.div({className: 'mode'}, "Read-Only Mode")
+			)
 
 	return ClientFilePage
 

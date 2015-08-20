@@ -143,18 +143,20 @@ describe 'Lock', ->
 					if err
 						cb err
 						return
-					console.log "Released lock1"
-			, 800)
+						
+			, 500)
 
 			# Aggressively check for lock
-			Lock.acquireWhenFree session, 'lock1', (->), 400, (err, newLock) ->
+			Lock.acquireWhenFree(session, 'lock1', (err, newLock) ->
 				if err
 					cb err
 					return
 
 				Assert newLock
-				console.log "Acquired lock1"
 				cb()
+
+			, 100)
+
 
 
 
