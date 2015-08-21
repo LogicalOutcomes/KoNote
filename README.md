@@ -58,7 +58,7 @@ It might be wise to wait a couple of days before packaging to ensure the given r
 2. Open repo: `cd konote`
 3. Run `npm install`
 4. Run `grunt build`
-5. 'Konote-builds' folder is created beside the repo directory: tasty goodness inside!
+5. *Konote-builds* folder is created beside the repo directory: tasty goodness inside!
 
 - On OSX: Mount DMG and drag KoNote to Applications
 - On Windows: Unzip and run KoNote.exe
