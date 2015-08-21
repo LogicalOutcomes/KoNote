@@ -52,6 +52,17 @@ We merge our release branch to master, tag it, and delete the release branch. Wh
 
 It might be wise to wait a couple of days before packaging to ensure the given release is stable.
 
+#### the grunt way:
+
+1. Clone repo: `git clone git@github.com:konode001/konote.git`
+2. Open repo: `cd konote`
+3. Run `npm install`
+4. Run `grunt build`
+5. 'Konote-builds' folder is created beside the repo directory with tasy goodness inside!
+
+On OSX: Mount DMG and drag KoNote to Applications
+On Windows: Unzip and run KoNote.exe
+
 #### by GUI
 
 See: https://github.com/jyapayne/Web2Executable
