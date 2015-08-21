@@ -291,6 +291,10 @@ module.exports = {
 	}
 }
 
+# move data folder alongside the .app folder on osx
+if process.platform == 'darwin'
+	module.exports.dataDirectory = '../../../../data'
+
 # merge with dev-config; overrides defaults
 _ = require 'underscore'
 try

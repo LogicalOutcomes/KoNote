@@ -5,6 +5,7 @@
   "main": "main.html",
   "window": {
     "icon": "icon.png",
+    "title": "KoNote",
     "toolbar": false,
     "width": 1000,
     "height": 700,
@@ -13,6 +14,7 @@
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-appdmg": "^0.3.1",
+    "grunt-exec": "^0.4.6",
     "grunt-nw-builder": "^2.0.0"
   },
   "dependencies": {
@@ -24,7 +26,7 @@
     "bootstrap": "^3.3.5",
     "buffer-equal-constant-time": "^1.0.1",
     "c3": "https://github.com/timmclean/c3",
-	"d3": "3.5.0",
+    "d3": "3.5.0",
     "chai": "^2.3.0",
     "clone": "^1.0.2",
     "coffee-script": "^1.9.3",
