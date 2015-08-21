@@ -138,6 +138,13 @@ load = (win) ->
 									value: @state.queryText
 								})
 							)
+							R.div({
+								className: 'showAllClients'
+								style: {color: 'grey'}
+								onClick: @_showAll
+							},
+								'[ show all ]'
+							)
 						)
 						R.div({
 							className: [
@@ -206,7 +213,7 @@ load = (win) ->
 
 		_getResultsList: ->
 			if @state.queryText.trim() is ''
-				return Imm.List()
+				return @props.clientFileList
 
 			queryParts = Imm.fromJS(@state.queryText.split(' '))
 			.map (p) -> p.toLowerCase()
@@ -229,6 +236,9 @@ load = (win) ->
 
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
+		_showAll: ->
+			@setState {isSmallHeaderSet: true}
+			$('.showAllClients').hide()
 		_onSearchBoxBlur: (event) ->
 			if @state.queryText is ''
 				@setState {isSmallHeaderSet: false}
