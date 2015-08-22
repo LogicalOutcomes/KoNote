@@ -34,7 +34,7 @@ module.exports = function(grunt) {
 				forceDownload: true
 			},
 			// TODO: see if we can simpify these globs -- seems package.json is explicitly required
-			src: ['./package.json', './**/*', '!./node_modules/nodewebkit/**/*', '!./node_modules/nw/**/*', '!./node_modules/grunt*/**/*', '!./README.md', '!./.git/**/*']
+			src: ['./package.json', './**/*', '!./node_modules/nodewebkit/**/*', '!./node_modules/nw/**/*', '!./node_modules/grunt*/**/*', '!./README.md', '!./.git/**/*', '!./data/**/*']
     	},
 		// format the osx folder icon for the dmg, zip windows build, cleanup tmp files
 		exec: {
