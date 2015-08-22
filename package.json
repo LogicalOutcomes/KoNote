@@ -11,12 +11,9 @@
     "height": 700,
     "position": "center"
   },
-  "licenses": [
-	{
-	 "type": "MPLv2",
-	 "url": "https://www.mozilla.org/MPL/2.0/",
-    }
-  ],
+  "license": {
+	"type": "MPL-2.0"
+  },
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-appdmg": "^0.3.1",
