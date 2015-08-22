@@ -66,6 +66,11 @@ module.exports = {
 			name: 'Simple Demo Template'
 			sections: [
 				{
+					id: 'goals'
+					type: 'plan'
+					name: 'Client Goals'
+				}
+				{
 					id: 'notes'
 					type: 'basic'
 					name: 'Notes'
