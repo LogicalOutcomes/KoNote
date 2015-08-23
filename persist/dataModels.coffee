@@ -147,11 +147,9 @@ dataModelDefinitions = [
 		schema: Joi.object().keys({
 			title: Joi.string()
 			description: Joi.string().allow('')
-			# TODO: Event Categories
-			# categoryId: IdSchema
 			relatedProgNoteId: IdSchema			
-			startDate: Joi.date().format('YYYYMMDD').raw()
-			endDate: Joi.date().format('YYYYMMDD').raw().allow('')
+			startTimestamp: Joi.date().format('YYYYMMDD').raw()
+			endTimestamp: Joi.date().format('YYYYMMDD').raw().allow('')
 		})
 	}
 ]

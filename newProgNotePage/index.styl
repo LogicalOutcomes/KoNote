@@ -74,3 +74,56 @@
 
 	> .progNoteDetailView
 		flex 1
+		
+	> .eventsPanel		
+		
+		> .eventsList
+			max-height 100%
+			
+			&.editMode .icon
+				opacity 0.5
+			
+			> .eventTab
+				position relative
+				background white
+				
+				> .icon
+					width 50px
+					height 50px
+					background green
+					border-radius 25px
+					
+					color white
+					
+				&.isEditing .icon					
+					background white
+					color black
+				
+				> .info
+					display none
+					position absolute
+					top 0px
+					left -250px
+					width 250px
+										
+					color black
+					background white
+					
+					input
+						position relative
+						
+					// Shifts datetimepicker to left
+					.bootstrap-datetimepicker-widget.dropdown-menu
+						right 50% !important
+					
+				&:hover, &.isEditing
+					
+					> .info
+						display block						
+						
+				&:hover > .info
+					z-index 9999
+					
+				
+					
+				

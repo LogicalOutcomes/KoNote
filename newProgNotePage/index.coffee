@@ -3,6 +3,7 @@
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
+_ = require 'underscore'
 
 Config = require '../config'
 Term = require '../term'
@@ -17,11 +18,11 @@ load = (win, {clientFileId}) ->
 
 	Gui = win.require 'nw.gui'
 
+	EventTabView = require('./eventView').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
-	ProgNoteDetailView = require('../progNoteDetailView').load(win)
-	CreateProgEventDialog = require('../createProgEventDialog').load(win)
+	ProgNoteDetailView = require('../progNoteDetailView').load(win)	
 	Dialog = require('../dialog').load(win)
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
@@ -227,8 +228,10 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				progNote: @props.progNote
+
 				progEvents: Imm.List()
-				selectedItem: null
+				editingWhichEvent: null
+
 				success: false
 				showExitAlert: false
 			}
@@ -293,11 +296,8 @@ load = (win, {clientFileId}) ->
 			clientName = renderName @props.clientFile.get('clientName')
 			@props.setWindowTitle "#{clientName}: #{Term 'Progress Note'} - KoNote"
 
-			return R.div({className: 'newProgNotePage'},
+			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
-					# OpenCreateProgEventButton({
-					# 	onNewProgEvent: @_updateProgEvents
-					# })
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
 							switch section.get('type')
@@ -384,7 +384,67 @@ load = (win, {clientFileId}) ->
 					item: @state.selectedItem
 					progNotes: @props.progNotes
 				})
+				R.div({className: 'eventsPanel'},
+					R.span({}, "Events")
+					R.div({
+						className: [
+							'eventsList'
+							'editMode' if @state.editingWhichEvent?
+						].join ' '
+					},						
+						(@state.progEvents.map (thisEvent, index) =>
+							isBeingEdited = @state.editingWhichEvent is index
+
+							R.div({								
+								className: [
+										'eventTab'
+										'isEditing' if isBeingEdited
+								].join ' '
+								key: index
+							}, 
+								R.div({
+									className: 'icon'
+									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
+								}, "E")
+								EventTabView({
+									data: thisEvent
+									atIndex: index
+									save: @_saveEventData
+									cancel: @_cancelEditing
+									editMode: @state.editingWhichEvent?
+									isBeingEdited
+								})
+							)
+						)
+						R.button({
+							className: "btn btn-success"
+							onClick: @_newEventTab
+							disabled: @state.editingWhichEvent?
+						}, FaIcon('plus'))
+					)
+				)
 			)
+		_newEventTab: ->
+			# Add in the new event, select last one
+			@setState {progEvents: @state.progEvents.push {}}, => 
+				@setState {editingWhichEvent: @state.progEvents.size - 1}
+
+		_editEventTab: (index) ->
+			@setState {editingWhichEvent: index}
+
+		_saveEventData: (data, index) ->
+			newProgEvents = @state.progEvents.set index, data
+			@setState {progEvents: newProgEvents}, @_cancelEditing
+			
+		_cancelEditing: (index) ->
+			# Delete if new event
+			if _.isEmpty @state.progEvents.get(index)
+				@setState {progEvents: @state.progEvents.delete(index)}
+
+			@setState {editingWhichEvent: null}
+
+
+			
 		_getSectionIndex: (sectionId) ->
 			result = @state.progNote.get('sections').findIndex (s) =>
 				return s.get('id') is sectionId
@@ -467,11 +527,6 @@ load = (win, {clientFileId}) ->
 					newValue
 				)
 			}
-		_updateProgEvents: (progEvent) ->
-			@setState {
-				progEvents: @state.progEvents.push progEvent
-			}
-			console.log("progEvents updated to:", @state.progEvents)
 		_invalidMetricFormat: (value) -> not value.match /^-?\d*\.?\d*$/
 		_save: ->
 			progNoteId = null
@@ -510,6 +565,7 @@ load = (win, {clientFileId}) ->
 					return
 
 				@props.closeWindow()
+
 
 	OpenCreateProgEventButton = React.createFactory React.createClass
 		mixins: [LayeredComponentMixin, React.addons.PureRenderMixin]
