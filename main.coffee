@@ -58,8 +58,7 @@ init = (win) ->
 	pageComponent = null	
 	isLoggedIn = null
 	
-	pageListeners = null
-	timeoutListeners = null
+	allListeners = null
 
 	process.nextTick =>
 		renderPage QueryString.parse(win.location.search.substr(1))
@@ -162,22 +161,18 @@ init = (win) ->
 		pageListeners = Imm.fromJS pageComponent.getPageListeners()
 		timeoutListeners = Imm.fromJS getTimeoutListeners()
 
-		# Register page listeners
-		pageListeners.forEach (action, name) =>
-			global.ActiveSession.persist.eventBus.on name, action
+		# EntrySeq list of all listeners combined
+		allListeners = pageListeners.concat(timeoutListeners).entrySeq()
 
-		# Register timeout listeners separately
-		timeoutListeners.forEach (action, name) =>
+		# Register all listeners
+		allListeners.forEach ([name, action]) =>
 			global.ActiveSession.persist.eventBus.on name, action
 
 		# Make sure everything is reset
 		global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 
 	unregisterPageListeners = =>
-		pageListeners.forEach (action, name) =>
-			global.ActiveSession.persist.eventBus.off name, action
-
-		timeoutListeners.forEach (action, name) =>
+		allListeners.forEach ([name, action]) =>
 			global.ActiveSession.persist.eventBus.off name, action
 
 	# Define the listener here so that it can be removed later
