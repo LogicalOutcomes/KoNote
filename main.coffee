@@ -178,7 +178,7 @@ init = (win) ->
 			global.ActiveSession.persist.eventBus.off name, action
 
 		timeoutListeners.forEach (action, name) =>
-			global.ActiveSession.persist.eventBus.on name, action
+			global.ActiveSession.persist.eventBus.off name, action
 
 	# Define the listener here so that it can be removed later
 	onWindowCloseEvent = =>
