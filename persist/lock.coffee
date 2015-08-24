@@ -81,7 +81,15 @@ class Lock
 
 			cb null, new Lock(lockDirDest, tmpDirPath, expiryTimestamp, 'privateaccess')
 
-	@acquireWhenFree: (session, lockId, cb, interval = 1000) ->		
+	@acquireWhenFree: (session, lockId, intervalMins, cb) ->	
+		# Makes intervalMinutes optional, keeping cb last
+		unless cb
+			cb = intervalMins
+			intervalMins = 0.5
+		else
+			# Convert mins to ms
+			intervalMs = intervalMins * 60000
+
 		newLock = null
 		isCancelled = null
 
@@ -94,7 +102,7 @@ class Lock
 					newLock = lock
 					callback()
 				else
-					setTimeout callback, interval
+					setTimeout callback, intervalMs
 		(err) ->
 			if isCancelled
 				cb null

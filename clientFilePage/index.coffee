@@ -182,11 +182,14 @@ load = (win, {clientFileId}) ->
 
 			Persist.Lock.acquire global.ActiveSession, lockFormat, (err, lock) =>
 				if err
-					if err instanceof Persist.Lock.LockInUseError
-						# Keep checking for lock availability, returns new lock when true
+					if err instanceof Persist.Lock.LockInUseError						
+						pingInterval = Config.clientFilePing.acquireLock
+
 						@setState => {
+							# Deliver read-only status & metadata
 							isReadOnly: err.metadata
-							lockOperation: Persist.Lock.acquireWhenFree(global.ActiveSession, lockFormat, (err, newLock) =>
+							# Keep checking for lock availability, returns new lock when true
+							lockOperation: Persist.Lock.acquireWhenFree global.ActiveSession, lockFormat, pingInterval, (err, newLock) =>
 								if err
 									cb err
 									return
@@ -204,9 +207,7 @@ load = (win, {clientFileId}) ->
 								@setState => {
 									clientFileLock: newLock
 									isReadOnly: false
-								}								
-
-							, 1000)
+								}
 						}
 
 						cb()

@@ -129,7 +129,7 @@ describe 'Lock', ->
 				Assert not Fs.existsSync Path.join(locksDir, 'lock1')
 				cb()
 
-	it 'acquire lock when free (make available after 800ms)', (cb) ->
+	it 'acquire lock when free (make available after 500ms)', (cb) ->
 		Lock.acquire session, 'lock1', (err, lock1) ->
 			if err
 				cb err
@@ -146,16 +146,16 @@ describe 'Lock', ->
 						
 			, 500)
 
+			intervalMinutes = 0.1/60 # (100ms)
+
 			# Aggressively check for lock
-			Lock.acquireWhenFree(session, 'lock1', (err, newLock) ->
+			Lock.acquireWhenFree session, 'lock1', intervalMinutes, (err, newLock) ->
 				if err
 					cb err
 					return
 
 				Assert newLock
 				cb()
-
-			, 100)
 
 
 

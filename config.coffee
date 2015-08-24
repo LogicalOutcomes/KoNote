@@ -13,11 +13,16 @@ module.exports = {
 	# Specify data directory
 	dataDirectory: 'data'
 
-	# Set total timeout mins,
+	# Set total timeout in (minutes),
 	# and how many mins before timeout to show warning
 	timeout: {
 		totalMins: 25
 		warningMins: 15
+	}
+
+	# Set ping time for client file in (minutes)
+	clientFilePing: {
+		acquireLock: 0.5
 	}
 
 	# Set terminology to be used around the app, lowercase only
