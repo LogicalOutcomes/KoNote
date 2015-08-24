@@ -143,7 +143,10 @@ load = (win) ->
 								})
 							)
 							R.div({
-								className: 'showAllClients'
+								className: [
+									if smallHeader then 'hidden' else 'show'
+									showWhen not @props.isLoading
+								].join ' '
 								style: {color: 'grey'}
 								onClick: @_showAll
 							},
@@ -242,7 +245,7 @@ load = (win) ->
 				@setState {isSmallHeaderSet: true}
 		_showAll: ->
 			@setState {isSmallHeaderSet: true}
-			$('.showAllClients').hide()
+			@setState {queryText: ''}
 		_onSearchBoxBlur: (event) ->
 			if @state.queryText is ''
 				@setState {isSmallHeaderSet: false}
