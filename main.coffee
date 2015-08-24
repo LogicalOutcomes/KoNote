@@ -139,6 +139,11 @@ init = (win) ->
 			if event.ctrlKey and (not event.shiftKey) and event.which is 82
 				doHotCodeReplace()
 		, false
+		win.document.addEventListener 'keydown', (event) ->
+			# prevent backspace navigation
+			if event.which is 8 and event.target.tagName is 'BODY'
+				event.preventDefault()
+		, false
 
 	doHotCodeReplace = =>
 		# Save the entire page state into a global var
