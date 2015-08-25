@@ -49,7 +49,9 @@ load = (win, {clientFileId}) ->
 		init: ->
 			@_loadData()
 
-		deinit: -> return
+		deinit: ->
+			console.log "Deiniting"
+			# Nothing need be done
 
 		getPageListeners: -> {}
 
@@ -532,6 +534,7 @@ load = (win, {clientFileId}) ->
 			}
 		_invalidMetricFormat: (value) -> not value.match /^-?\d*\.?\d*$/
 		_save: ->
+			console.log "Saving"
 			progNoteId = null
 
 			Async.series [
@@ -546,15 +549,14 @@ load = (win, {clientFileId}) ->
 				(cb) =>
 					Async.each @state.progEvents.toArray(), (progEvent, cb) =>		
 						# Tack on the new progress note ID to all created events					
-						progEvent = progEvent.set('relatedProgNoteId', obj.get('id'))
+						progEvent = Imm.fromJS(progEvent).set('relatedProgNoteId', progNoteId)
+						ActiveSession.persist.progEvents.create progEvent, (err) =>
+							console.log "Saved"
+							if err
+								cb err
+								return
 
-						ActiveSession.persist.progEvents.create progEvent, cb
-					, (err) =>
-						if (err)
-							cb err
-							return					
-
-						cb()
+							cb()
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -567,36 +569,10 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
+				console.log "Closing"
+
 				@props.closeWindow()
 
-
-	OpenCreateProgEventButton = React.createFactory React.createClass
-		mixins: [LayeredComponentMixin, React.addons.PureRenderMixin]
-		getInitialState: ->
-			return {
-				isOpen: false
-			}
-		render: ->
-			return R.button({
-				className: 'btn btn-success'
-				onClick: @_open
-			},
-				FaIcon 'bell'
-				"Create #{Term.Event}"
-			)
-		renderLayer: ->
-			unless @state.isOpen
-				return R.div()
-
-			return CreateProgEventDialog({
-				onCancel: =>
-					@setState {isOpen: false}		
-				onSuccess: (progEvent) =>							
-					@setState {isOpen: false}
-					@props.onNewProgEvent progEvent
-			})
-		_open: ->
-			@setState {isOpen: true}
 
 	return NewProgNotePage
 
