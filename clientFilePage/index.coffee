@@ -227,13 +227,13 @@ load = (win, {clientFileId}) ->
 					cb()
 
 		_killLocks: ->
-			if @state.clientFileLock
+			if @state.clientFileLock?
 				@state.clientFileLock.release(=>
 					@setState => {
 						clientFileLock: null
 					}
 				)
-			if @state.lockOperation
+			if @state.lockOperation?
 				@state.lockOperation.cancel()
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
