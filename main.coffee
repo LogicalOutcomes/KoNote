@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # Here, we kick off the appropriate page rendering code based on what page ID
 # is specified in the URL.
 #
@@ -134,6 +138,11 @@ init = (win) ->
 			# If Ctrl-R
 			if event.ctrlKey and (not event.shiftKey) and event.which is 82
 				doHotCodeReplace()
+		, false
+		win.document.addEventListener 'keydown', (event) ->
+			# prevent backspace navigation
+			if event.which is 8 and event.target.tagName is 'BODY'
+				event.preventDefault()
 		, false
 
 	doHotCodeReplace = =>

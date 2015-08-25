@@ -11,9 +11,11 @@
     "height": 700,
     "position": "center"
   },
+  "license": {
+	"type": "MPL-2.0"
+  },
   "devDependencies": {
     "grunt": "^0.4.5",
-    "grunt-appdmg": "^0.3.1",
     "grunt-exec": "^0.4.6",
     "grunt-nw-builder": "^2.0.0"
   },
@@ -25,7 +27,8 @@
     "bootbox": "^4.4.0",
     "bootstrap": "^3.3.5",
     "buffer-equal-constant-time": "^1.0.1",
-    "c3": "https://github.com/timmclean/c3",
+    "c3": "https://github.com/konode001/c3#0.4.10-fixes",
+    "d3": "^3.5.0",
     "chai": "^2.3.0",
     "clone": "^1.0.2",
     "coffee-script": "^1.9.3",

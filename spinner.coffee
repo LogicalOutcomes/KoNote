@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # A good-looking loading animation.
 # Also provides an overlay mode that blocks the user from accessing the UI
 # while the animation is visible.

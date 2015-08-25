@@ -1,4 +1,8 @@
 /*
+Copyright (c) Konode. All rights reserved.
+This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 grunt task for release builds of konote
 
 creates a 'konote-builds' folder beside the project directory containing a mac .dmg and windows .zip
@@ -30,7 +34,7 @@ module.exports = function(grunt) {
 				forceDownload: true
 			},
 			// TODO: see if we can simpify these globs -- seems package.json is explicitly required
-			src: ['./package.json', './**/*', '!./node_modules/nodewebkit/**/*', '!./node_modules/nw/**/*', '!./node_modules/grunt*/**/*', '!./README.md', '!./.git/**/*']
+			src: ['./package.json', './**/*', '!./node_modules/nodewebkit/**/*', '!./node_modules/nw/**/*', '!./node_modules/grunt*/**/*', '!./README.md', '!./.git/**/*', '!./data/**/*']
     	},
 		// format the osx folder icon for the dmg, zip windows build, cleanup tmp files
 		exec: {

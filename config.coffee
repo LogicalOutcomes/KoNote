@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 module.exports = {
 	productName: 'KoNote'
 	customerLogoLg: 'customer-logo-lg_GRIFFIN.png'
@@ -13,11 +17,13 @@ module.exports = {
 	# Specify data directory
 	dataDirectory: 'data'
 
-	# Set total timeout mins,
-	# and how many mins before timeout to show warning
+	# Set duration of timeout and warnings
 	timeout: {
-		totalMins: 25
-		warningMins: 15
+		duration: 25
+		warnings: {
+			initial: 10
+			final: 1
+		}
 	}
 
 	# Set terminology to be used around the app, lowercase only
@@ -61,6 +67,11 @@ module.exports = {
 			id: 'simpleDemoTemplate'
 			name: 'Simple Demo Template'
 			sections: [
+				{
+					id: 'goals'
+					type: 'plan'
+					name: 'Client Goals'
+				}
 				{
 					id: 'notes'
 					type: 'basic'

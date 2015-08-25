@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # Libraries from Node.js context
 Imm = require 'immutable'
 
@@ -138,6 +142,13 @@ load = (win) ->
 									value: @state.queryText
 								})
 							)
+							R.div({
+								className: showWhen !smallHeader
+								style: {color: 'grey', cursor: 'pointer'}
+								onClick: @_showAll
+							},
+								'[ show all ]'
+							)
 						)
 						R.div({
 							className: [
@@ -206,7 +217,7 @@ load = (win) ->
 
 		_getResultsList: ->
 			if @state.queryText.trim() is ''
-				return Imm.List()
+				return @props.clientFileList
 
 			queryParts = Imm.fromJS(@state.queryText.split(' '))
 			.map (p) -> p.toLowerCase()
@@ -229,6 +240,8 @@ load = (win) ->
 
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
+		_showAll: ->
+			@setState {isSmallHeaderSet: true, queryText: ''}
 		_onSearchBoxBlur: (event) ->
 			if @state.queryText is ''
 				@setState {isSmallHeaderSet: false}
