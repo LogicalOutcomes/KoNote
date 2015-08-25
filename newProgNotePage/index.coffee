@@ -48,8 +48,7 @@ load = (win, {clientFileId}) ->
 		init: ->
 			@_loadData()
 
-		deinit: ->
-			@_loadData()
+		deinit: -> return
 
 		getPageListeners: -> {}
 
