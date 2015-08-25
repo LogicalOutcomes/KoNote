@@ -147,7 +147,7 @@ dataModelDefinitions = [
 		name: 'progEvent'
 		collectionName: 'progEvents'
 		isMutable: false
-		indexes: []
+		indexes: [['relatedProgNoteId']]
 		schema: Joi.object().keys({
 			title: Joi.string()
 			description: Joi.string().allow('')
