@@ -1,3 +1,9 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
+# Read/Write event information view contained within eventTab
+
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
@@ -15,7 +21,13 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			# Grab data props if exists
-			return if not _.isEmpty(@props.data) then @props.data else {}
+			return {
+				title: ''
+				description: ''
+				startTimestamp: ''
+				endTimestamp: ''
+				hasDateSpan: false
+			}
 
 		componentDidUpdate: ->
 			# Initialize datepickers, update @state when value changes
@@ -32,11 +44,11 @@ load = (win) ->
 					horizontal: 'right'
 				}
 			}).on 'dp.change', (thisInput) =>
-				@setState {endTimestamp: thisInput.date.format(TimestampFormat)}
+				@setState {endTimestamp: thisInput.date.format(TimestampFormat)}					
 
 		render: ->
 			return R.div({
-				className: "info #{showWhen @props.isBeingEdited or not @props.editMode}"
+				className: "eventView #{showWhen @props.isBeingEdited or not @props.editMode}"
 			},
 				R.form({className: showWhen @props.isBeingEdited},
 					R.button({
@@ -46,7 +58,9 @@ load = (win) ->
 					R.button({
 						className: 'btn btn-warning'
 						onClick: @_toggleHasDateSpan
-					}, "Date Span")
+					}, 
+						if @state.hasDateSpan then "Single Date" else "Date Span"
+					)
 					R.div({className: 'form-group'},
 						R.label({}, "Title")
 						R.input({
@@ -61,16 +75,23 @@ load = (win) ->
 							onChange: @_updateDescription
 						})
 					)
-					R.input({
-						type: 'text'
-						ref: 'startTimestamp'
-						className: 'form-control'
-					})
-					R.input({
-						type: 'text'
-						ref: 'endTimestamp'
-						className: "form-control #{showWhen not @state.hasDateSpan}"
-					})
+					R.div({className: 'form-group'},
+						R.label({}, "Start Date")
+						R.input({
+							type: 'text'
+							ref: 'startTimestamp'
+							className: 'form-control'
+						})
+					)
+					R.div({className: "form-group #{showWhen @state.hasDateSpan}"},
+						R.label({}, "End Date")
+						R.input({
+							className: showWhen @state.hasDateSpan
+							type: 'text'
+							ref: 'endTimestamp'
+							className: "form-control"
+						})
+					)
 					R.button({
 						className: 'btn btn-success'
 						onClick: @_saveEventData
@@ -80,18 +101,23 @@ load = (win) ->
 						FaIcon('check')
 					)
 				)
-				(unless @props.isBeingEdited
-					R.div({className: "details"},
-						startTimestamp = Moment(@props.data.startTimestamp, TimestampFormat).format('YYYY-MM-DD')
-						endTimestamp = Moment(@props.data.endTimestamp, TimestampFormat).format('YYYY-MM-DD')
 
-						"title: #{@props.data.title}\n"
-						"description: #{@props.data.description}\n"
-						"startTimestamp: #{startTimestamp}\n"
-						"endTimestamp: #{endTimestamp}\n"						
-					)
+				R.div({className: "details #{showWhen not @props.isBeingEdited}"},
+					"title: #{@props.data.title}\n"
+					"description: #{@props.data.description}\n"
+					"startTimestamp: #{@_showTimestamp @props.data.startTimestamp}\n"
+					if @props.data.endTimestamp
+						"endTimestamp: #{@_showTimestamp @props.data.endTimestamp}\n"
 				)				
-			)
+		)
+
+		_showTimestamp: (timestamp) ->
+			moment = Moment(timestamp, TimestampFormat)
+
+			if moment.isValid
+				return Moment(moment, TimestampFormat).format('YYYY-MM-DD HH:mm')
+			else
+				return "Invalid Moment"
 
 		_toggleHasDateSpan: (event) ->
 			event.preventDefault()
@@ -120,7 +146,7 @@ load = (win) ->
 			return {
 				title: @state.title
 				startTimestamp: @state.startTimestamp
-				endTimestamp: if @state.isSpanned then @state.endTimestamp else ''
+				endTimestamp: if @state.hasDateSpan then @state.endTimestamp else ''
 				description: @state.description
 			}				
 

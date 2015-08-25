@@ -550,13 +550,15 @@ load = (win, {clientFileId}) ->
 					Async.each @state.progEvents.toArray(), (progEvent, cb) =>		
 						# Tack on the new progress note ID to all created events					
 						progEvent = Imm.fromJS(progEvent).set('relatedProgNoteId', progNoteId)
-						ActiveSession.persist.progEvents.create progEvent, (err) =>
-							console.log "Saved"
-							if err
-								cb err
-								return
 
-							cb()
+						ActiveSession.persist.progEvents.create progEvent, cb
+
+					, (err) =>
+						if err
+							cb err
+							return
+
+						cb()
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
