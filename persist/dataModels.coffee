@@ -8,7 +8,7 @@ Mkdirp = require 'mkdirp'
 Path = require 'path'
 
 ApiBuilder = require './apiBuilder'
-{IdSchema} = require './utils'
+{IdSchema, TimestampFormat} = require './utils'
 
 dataModelDefinitions = [
 	{
@@ -151,9 +151,9 @@ dataModelDefinitions = [
 		schema: Joi.object().keys({
 			title: Joi.string()
 			description: Joi.string().allow('')
-			relatedProgNoteId: IdSchema			
-			startTimestamp: Joi.date().format('YYYYMMDD').raw()
-			endTimestamp: Joi.date().format('YYYYMMDD').raw().allow('')
+			relatedProgNoteId: IdSchema
+			startTimestamp: Joi.date().format(TimestampFormat).raw()
+			endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 		})
 	}
 ]
