@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # Load in Timeout listeners and trigger warning dialogs
 
 load = (win) ->
@@ -67,11 +71,16 @@ load = (win) ->
 				@setState => isLoading: false
 
 				if err
+					if err instanceof Persist.Session.DeactivatedAccountError
+						Bootbox.alert "This user account has been deactivated."
+						return
+
 					if err instanceof Persist.Session.IncorrectPasswordError
-						Bootbox.alert "Incorrect password for user \'#{global.ActiveSession.userName}\', please try again.", =>							
+						Bootbox.alert "Incorrect password for user \'#{global.ActiveSession.userName}\', please try again.", =>
 							@setState => password: null
 							@_focusPasswordField()
 						return
+
 					if err instanceof Persist.IOError
 						Bootbox.alert "An error occurred. Please check your network connection and try again.", =>
 							@_focusPasswordField()

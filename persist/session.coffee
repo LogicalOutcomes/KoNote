@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # This module handles all logic related to login sessions, including logging
 # in, logging out, and managing encryption keys.
 
@@ -66,7 +70,7 @@ class Session
 		Users.readAccount @dataDirectory, @userName, password, (err, account) ->
 			if err
 				cb err
-				return false
+				return
 
 			cb()
 
@@ -81,4 +85,5 @@ module.exports = {
 	login
 	UnknownUserNameError: Users.UnknownUserNameError
 	IncorrectPasswordError: Users.IncorrectPasswordError
+	DeactivatedAccountError: Users.DeactivatedAccountError
 }

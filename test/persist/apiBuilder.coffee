@@ -103,6 +103,13 @@ describe 'ApiBuilder', ->
 			}
 			api = buildApi s, [immutablePersonDataModel]
 
+			defaultNestedValue = Imm.Map({
+				a: Imm.Map({
+					b: 'default'
+					c: 'default'
+				})
+			})
+
 			beforeEach (cb) ->
 				setUpDataDirectory [immutablePersonDataModel], cb
 
@@ -110,6 +117,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -117,7 +125,7 @@ describe 'ApiBuilder', ->
 
 					now = Moment()
 
-					Assert.strictEqual result.keySeq().size, 6
+					Assert.strictEqual result.keySeq().size, 7
 
 					Assert.strictEqual typeof result.get('id'), 'string'
 					Assert.strictEqual typeof result.get('revisionId'), 'string'
@@ -127,6 +135,7 @@ describe 'ApiBuilder', ->
 
 					Assert.strictEqual result.get('name'), 'John Smith'
 					Assert.strictEqual result.get('age'), 30
+					Assert Imm.is(result.get('nested'), defaultNestedValue)
 
 					cb()
 
@@ -135,6 +144,7 @@ describe 'ApiBuilder', ->
 					id: 'badid'
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					Assert err
 					Assert not result
@@ -198,6 +208,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -254,6 +265,13 @@ describe 'ApiBuilder', ->
 			}
 			api = buildApi s, [mutablePersonDataModel]
 
+			defaultNestedValue = Imm.Map({
+				a: Imm.Map({
+					b: 'default'
+					c: 'default'
+				})
+			})
+
 			beforeEach (cb) ->
 				setUpDataDirectory [mutablePersonDataModel], cb
 
@@ -261,6 +279,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -268,7 +287,7 @@ describe 'ApiBuilder', ->
 
 					now = Moment()
 
-					Assert.strictEqual result.keySeq().size, 6
+					Assert.strictEqual result.keySeq().size, 7
 
 					Assert.strictEqual typeof result.get('id'), 'string'
 					Assert.strictEqual typeof result.get('revisionId'), 'string'
@@ -278,6 +297,7 @@ describe 'ApiBuilder', ->
 
 					Assert.strictEqual result.get('name'), 'John Smith'
 					Assert.strictEqual result.get('age'), 30
+					Assert Imm.is(result.get('nested'), defaultNestedValue)
 
 					cb()
 
@@ -331,6 +351,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -342,6 +363,7 @@ describe 'ApiBuilder', ->
 						id: johnSmithId
 						name: 'John Wells'
 						age: 30
+						nested: defaultNestedValue
 					}), (err, result) ->
 						if err
 							cb err
@@ -357,10 +379,12 @@ describe 'ApiBuilder', ->
 							Assert.strictEqual results.getIn([0, 'name']), 'John Wells'
 
 							cb()
+
 			it 'provides a createRevision method', (cb) ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -373,6 +397,7 @@ describe 'ApiBuilder', ->
 						id: johnSmithId
 						name: 'John Smith'
 						age: 31
+						nested: defaultNestedValue
 					}), (err, result) ->
 						if err
 							cb err
@@ -416,6 +441,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -426,6 +452,7 @@ describe 'ApiBuilder', ->
 					api.people.createRevision Imm.Map({
 						id: johnSmithId
 						name: 'John Smith'
+						nested: defaultNestedValue
 						xxx: 31
 					}), (err, result) ->
 						Assert err
@@ -438,6 +465,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -450,6 +478,7 @@ describe 'ApiBuilder', ->
 						id: johnSmithId
 						name: 'John Smith'
 						age: 31
+						nested: defaultNestedValue
 					}), (err, result) ->
 						if err
 							cb err
@@ -498,11 +527,13 @@ describe 'ApiBuilder', ->
 				johnSmithId = null
 				firstRevisionId = null
 				secondRevisionId = null
+
 				Async.series [
 					(cb) ->
 						api.people.create Imm.Map({
 							name: 'John Smith'
 							age: 30
+							nested: defaultNestedValue
 						}), (err, result) ->
 							if err
 								cb err
@@ -522,6 +553,7 @@ describe 'ApiBuilder', ->
 							id: johnSmithId
 							name: 'John Smith'
 							age: 31
+							nested: defaultNestedValue
 						}), (err, result) ->
 							if err
 								cb err

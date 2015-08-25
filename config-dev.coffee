@@ -4,9 +4,9 @@
 
 module.exports = {
 	productName: 'KoNote'
-	customerLogoLg: 'customer-logo-lg_GRIFFIN.png'
-	customerLogoSm: 'customer-logo-sm_GRIFFIN.png'
-	logoSubtitle: 'DSSS'
+	#customerLogoLg: 'customer-logo-lg.png'
+	#customerLogoSm: 'customer-logo-sm.png'
+	#logoSubtitle: ''
 	logoSubtitleColor: 'hsl(205, 78%, 47%)'
 
 	clientFileRecordId: {
@@ -17,44 +17,12 @@ module.exports = {
 	# Specify data directory
 	dataDirectory: 'data'
 
-	# Set total timeout in (minutes),
+	# Set total timeout mins,
 	# and how many mins before timeout to show warning
 	timeout: {
-		totalMins: 25
-		warningMins: 15
+		totalMins: 10#10/60
+		warningMins: 5#5/60
 	}
-
-	# Set ping time for client file in (minutes)
-	clientFilePing: {
-		acquireLock: 0.5
-	}
-
-	# Set terminology to be used around the app, lowercase only
-	# * Only modify the values in double-quotes
-	# * Terms are auto pluralized & capitalized in term.coffee
-	terminology: {
-		'user': "user"
-		'account': "account"
-		'user account': "user account"
-
-		'client': "client"
-		'file': "file"
-		'client file': "client file"
-
-		'section': "section"
-		'plan': "plan"
-		'target': "goal"
-		'plan target': "plan goal"
-
-		'progress note': "progress note"
-		'quick note': "quick note"
-
-		'metric': "indicator"
-		'event': "event"
-
-		'analysis': "analysis"
-		'analyze': "analyze"
-	}		
 
 	# useTemplate: 'initialAssessment'
 	useTemplate: 'clientLog'
@@ -70,11 +38,6 @@ module.exports = {
 			id: 'simpleDemoTemplate'
 			name: 'Simple Demo Template'
 			sections: [
-				{
-					id: 'goals'
-					type: 'plan'
-					name: 'Client Goals'
-				}
 				{
 					id: 'notes'
 					type: 'basic'
@@ -304,18 +267,3 @@ module.exports = {
 		}
 	}
 }
-
-# move data folder alongside the .app folder on osx
-if process.platform == 'darwin'
-	module.exports.dataDirectory = '../../../../data'
-
-# merge with dev-config; overrides defaults
-_ = require 'underscore'
-try
-	configDev = require './config-dev'
-	_.extend(module.exports, configDev)
-catch err
-	# ignore if dev-config doesn't exist
-	if err.code is 'MODULE_NOT_FOUND'
-		return
-	throw err

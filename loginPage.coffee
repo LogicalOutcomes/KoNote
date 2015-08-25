@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Async = require 'async'
 Imm = require 'immutable'
 
@@ -134,6 +138,10 @@ load = (win) ->
 						@refs.ui.onLoginError('IncorrectPasswordError')
 						return
 
+					if err instanceof Persist.Session.DeactivatedAccountError
+						@refs.ui.onLoginError('DeactivatedAccountError')
+						return
+
 					CrashHandler.handle err
 					return
 
@@ -170,6 +178,8 @@ load = (win) ->
 				when 'IncorrectPasswordError'
 					Bootbox.alert "Incorrect password.  Please try again."
 					@setState {password: ''}
+				when 'DeactivatedAccountError'
+					Bootbox.alert "This user account has been deactivated."
 				else
 					throw new Error "Invalid Login Error"
 
