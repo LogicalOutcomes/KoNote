@@ -17,11 +17,13 @@ module.exports = {
 	# Specify data directory
 	dataDirectory: 'data'
 
-	# Set total timeout mins,
-	# and how many mins before timeout to show warning
+	# Set duration of timeout and warnings
 	timeout: {
-		totalMins: 25
-		warningMins: 15
+		duration: 25
+		warnings: {
+			initial: 10
+			final: 1
+		}
 	}
 
 	# Set terminology to be used around the app, lowercase only
