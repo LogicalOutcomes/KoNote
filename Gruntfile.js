@@ -68,10 +68,15 @@ module.exports = function(grunt) {
 	
 	// load the plugins
 	grunt.loadNpmTasks('grunt-nw-builder');
-	grunt.loadNpmTasks('grunt-appdmg');
 	grunt.loadNpmTasks('grunt-exec');
+	
+	if (process.platform == 'darwin') {
+		grunt.loadNpmTasks('grunt-appdmg');
+	}
 	
 	// wooo
 	grunt.registerTask('build', ['nwjs', 'exec:prep', 'exec:append', 'exec:set', 'exec:hide', 'appdmg', 'exec:zip', 'exec:clean']);
+	
+	grunt.registerTask('build-win', ['nwjs', 'exec:prep', 'exec:append', 'exec:set', 'exec:hide', 'exec:zip', 'exec:clean']);
 
 };
