@@ -131,7 +131,7 @@ load = (win) ->
 									Config.logoSubtitle
 								)
 							)
-							R.div({className: 'searchBoxContainer'},
+							R.div({className: 'searchBoxContainer input-group'},
 								R.input({
 									className: 'searchBox form-control'
 									ref: 'searchBox'
@@ -140,14 +140,18 @@ load = (win) ->
 									onBlur: @_onSearchBoxBlur
 									placeholder: "Search for a #{Term 'client'}'s profile..."
 									value: @state.queryText
-								})
-							)
-							R.div({
-								className: showWhen !smallHeader
-								style: {color: 'grey', cursor: 'pointer'}
-								onClick: @_showAll
-							},
-								'[ show all ]'
+								}
+									R.span({
+										className: 'input-group-btn'
+									},
+										R.button({
+											className: "btn btn-default"
+											onClick: @_showAll
+										},
+											'Show All'
+										)
+									)
+								)
 							)
 						)
 						R.div({
@@ -243,8 +247,12 @@ load = (win) ->
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
 		_onSearchBoxBlur: (event) ->
+			###
+			# this was annoying on the results page when user selected 'show all'
+			# might be better to reset the header state by clicking on the logo?
 			if @state.queryText is ''
 				@setState {isSmallHeaderSet: false}
+			###
 		_onResultSelection: (clientFileId, event) ->
 			openWindow {
 				page: 'clientFile'
