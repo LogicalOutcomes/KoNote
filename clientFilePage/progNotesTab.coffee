@@ -86,6 +86,10 @@ load = (win) ->
 							)
 						)
 						(@props.progNotes.reverse().map (progNote) =>
+							# Filter out only events for this progNote
+							progEvents = @props.progEvents.filter (progEvent) =>
+								return progEvent.get('relatedProgNoteId') is progNote.get('id')
+
 							switch progNote.get('type')
 								when 'basic'
 									BasicProgNoteView({
@@ -96,6 +100,7 @@ load = (win) ->
 								when 'full'
 									FullProgNoteView({
 										progNote
+										progEvents
 										clientFile: @props.clientFile
 										key: progNote.get('id')
 										setSelectedItem: @_setSelectedItem
@@ -107,6 +112,7 @@ load = (win) ->
 					ProgNoteDetailView({
 						item: @state.selectedItem
 						progNotes: @props.progNotes
+						progEvents: @props.progEvents
 					})
 				)
 			)
@@ -274,9 +280,14 @@ load = (win) ->
 												)
 											)
 										).toJS()...
-									)
+									)									
 								)
 					).toJS()...
+					R.div({className: 'events'}
+						(@props.progEvents.map (progEvent) =>
+							R.div({}, "Prog Event: #{progEvent.get('title')}")
+						).toJS()...
+					)
 				)
 			)
 		_selectBasicSection: (section) ->

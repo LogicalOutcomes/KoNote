@@ -74,3 +74,39 @@
 
 	> .progNoteDetailView
 		flex 1
+		
+	> .eventsPanel		
+		
+		> .eventsList
+			max-height 100%
+			
+			&.editMode .icon
+				opacity 0.5
+			
+			> .eventTab
+				position relative
+				background white
+				
+				> .icon
+					width 50px
+					height 50px
+					background green
+					border-radius 25px
+					
+					color white
+					
+				&.isEditing .icon					
+					background white
+					color black
+					
+				&:hover, &.isEditing
+					
+					> .eventView
+						display block						
+						
+				&:hover > .eventView
+					z-index 9999
+					
+				
+					
+				

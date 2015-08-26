@@ -8,7 +8,7 @@ Mkdirp = require 'mkdirp'
 Path = require 'path'
 
 ApiBuilder = require './apiBuilder'
-{IdSchema} = require './utils'
+{IdSchema, TimestampFormat} = require './utils'
 
 dataModelDefinitions = [
 	{
@@ -41,6 +41,19 @@ dataModelDefinitions = [
 			})
 		})
 		children: [
+			{
+				name: 'progEvent'
+				collectionName: 'progEvents'
+				isMutable: false
+				indexes: [['relatedProgNoteId']]
+				schema: Joi.object().keys({
+					relatedProgNoteId: IdSchema
+					title: Joi.string()
+					description: Joi.string().allow('')			
+					startTimestamp: Joi.date().format(TimestampFormat).raw()
+					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+				})
+			}
 			{
 				name: 'planTarget'
 				collectionName: 'planTargets'
@@ -142,22 +155,7 @@ dataModelDefinitions = [
 			name: Joi.string()
 			definition: Joi.string()
 		})
-	}
-	{
-		name: 'progEvent'
-		collectionName: 'progEvents'
-		isMutable: false
-		indexes: []
-		schema: Joi.object().keys({
-			title: Joi.string()
-			description: Joi.string().allow('')
-			# TODO: Event Categories
-			# categoryId: IdSchema
-			relatedProgNoteId: IdSchema			
-			startDate: Joi.date().format('YYYYMMDD').raw()
-			endDate: Joi.date().format('YYYYMMDD').raw().allow('')
-		})
-	}
+	}	
 ]
 
 getApi = (session) ->
