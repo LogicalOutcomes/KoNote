@@ -70,6 +70,7 @@ load = (win, {clientFileId}) ->
 				loadErrorType: @state.loadErrorType
 				clientFile: @state.clientFile
 				progressNotes: @state.progressNotes
+				progressEvents: @state.progressEvents
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
 
@@ -83,7 +84,8 @@ load = (win, {clientFileId}) ->
 		_loadData: ->
 			planTargetHeaders = null
 			progNoteHeaders = null
-			metricHeaders = null
+			progEventHeaders = null
+			metricHeaders = null			
 
 			@setState (state) => {isLoading: true}
 			Async.series [
@@ -156,6 +158,26 @@ load = (win, {clientFileId}) ->
 							progressNotes: Imm.List(results)
 						}, cb
 				(cb) =>
+					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						progEventHeaders = results
+
+						cb()
+				(cb) =>
+					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
+						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						@setState {
+							progressEvents: Imm.List(results)
+						}, cb
+				(cb) =>
 					ActiveSession.persist.metrics.list (err, results) =>
 						if err
 							cb err
@@ -176,7 +198,7 @@ load = (win, {clientFileId}) ->
 							.map (metric) =>
 								return [metric.get('id'), metric]
 							.fromEntrySeq().toMap()
-						}, cb
+						}, cb				
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -388,6 +410,7 @@ load = (win, {clientFileId}) ->
 					clientFileId
 					clientFile: @props.clientFile
 					progNotes: @props.progressNotes
+					progEvents: @props.progressEvents
 					metricsById: @props.metricsById
 
 					createQuickNote: @props.createQuickNote
@@ -396,6 +419,7 @@ load = (win, {clientFileId}) ->
 					isVisible: activeTabId is 'analysis'
 					clientFileId
 					progNotes: @props.progressNotes
+					progEvents: @props.progressEvents
 					metricsById: @props.metricsById
 				})
 			)

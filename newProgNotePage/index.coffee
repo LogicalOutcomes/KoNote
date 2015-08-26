@@ -67,6 +67,7 @@ load = (win, {clientFileId}) ->
 				progNote: @state.progNote
 				clientFile: @state.clientFile
 				progNotes: @state.progNotes
+				progEvents: @state.progEvents
 
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
@@ -78,6 +79,7 @@ load = (win, {clientFileId}) ->
 			metricsById = null
 			planTargetHeaders = null
 			progNoteHeaders = null
+			progEventHeaders = null
 
 			Async.series [
 				(cb) =>
@@ -155,6 +157,26 @@ load = (win, {clientFileId}) ->
 							return {progNotes: Imm.List(results)}
 
 						cb null
+				(cb) =>
+					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						progEventHeaders = results
+
+						cb()
+				(cb) =>
+					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
+						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						@setState {
+							progEvents: Imm.List(results)
+						}, cb
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -388,6 +410,7 @@ load = (win, {clientFileId}) ->
 				ProgNoteDetailView({
 					item: @state.selectedItem
 					progNotes: @props.progNotes
+					progEvents: @props.progEvents
 				})
 				R.div({className: 'eventsPanel'},
 					R.span({}, "Events")
@@ -549,7 +572,9 @@ load = (win, {clientFileId}) ->
 				(cb) =>
 					Async.each @state.progEvents.toArray(), (progEvent, cb) =>		
 						# Tack on the new progress note ID to all created events					
-						progEvent = Imm.fromJS(progEvent).set('relatedProgNoteId', progNoteId)
+						progEvent = Imm.fromJS(progEvent)
+						.set('relatedProgNoteId', progNoteId)
+						.set('clientFileId', clientFileId)
 
 						ActiveSession.persist.progEvents.create progEvent, cb
 
