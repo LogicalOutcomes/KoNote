@@ -121,6 +121,24 @@
 					font-size 18px
 					font-weight 600	
 					
+				.chart
+					flex 1
+					
+					.c3-chart
+						z-index 0
+						
+					.c3-regions
+						margin-top -100px
+						z-index 9999
+						
+						.c3-region > rect
+							// 10% of original height
+							transform scaleY(0.1) !important
+							
+							&:hover
+								fill red !important
+						
+
 		.selectionPanel
 			flex 1
 

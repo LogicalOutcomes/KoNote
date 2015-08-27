@@ -20,6 +20,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
+	{TimestampFormat} = require('../persist/utils')
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 
@@ -39,7 +40,7 @@ load = (win) ->
 			# All metric IDs for which this client file has data
 			metricIdsWithData = metricValues
 			.map((m) -> m.get('id'))
-			.toSet()			
+			.toSet()
 
 			# Is there actually enough information to show something?
 			hasData = metricIdsWithData.size > 0
@@ -78,6 +79,7 @@ load = (win) ->
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
+								progEvents: @props.progEvents
 								metricsById: @props.metricsById
 								metricValues
 								selectedMetricIds: @state.selectedMetricIds
@@ -145,17 +147,17 @@ load = (win) ->
 			}
 
 		render: ->
-				return R.div({className: 'chartInner'},
-					R.div({
-						className: "chart disabledChart #{showWhen !!@state.isDisabled}"
-					}, 
-						R.span({}, if @state.isDisabled then @state.isDisabled.message)
-					)
-					R.div({
-						className: "chart #{showWhen not @state.isDisabled}"
-						ref: 'chartDiv'
-					})
+			return R.div({className: 'chartInner'},
+				R.div({
+					className: "chart disabledChart #{showWhen !!@state.isDisabled}"
+				}, 
+					R.span({}, if @state.isDisabled then @state.isDisabled.message)
 				)
+				R.div({
+					className: "chart #{showWhen not @state.isDisabled}"
+					ref: 'chartDiv'
+				})
+			)
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Show anything that is selected in the view layer
@@ -163,17 +165,47 @@ load = (win) ->
 			unless sameProps or !!@state.isDisabled
 				@_refreshSelectedMetrics()
 				
-		componentDidMount: ->
+		componentDidMount: ->			
 			@_generateChart()
 			@_refreshSelectedMetrics()
+			@_attachKeyBindings()
 
 		_refreshSelectedMetrics: ->
+			# $('.c3-regions').insertBefore('.c3-chart')
+
 			@_chart.hide()
 
 			@props.selectedMetricIds.forEach (metricId) =>
 				@_chart.show("y-" + metricId)
 
-		_generateChart: ->
+		_attachKeyBindings: ->
+			region = $('.c3-regions').clone()
+			region.insertAfter('.c3-chart')
+
+			# Copy regions group to top layer (above main chart)
+			# Simply moving group screws up c3
+			# regions = $('.c3-regions').clone()
+			# $('.c3-regions').empty()
+			# regions.insertAfter('.c3-chart')
+
+			# regions = $('.c3-regions').parseXML()
+
+			# console.log "Regions", regions
+
+			# $('.c3-regions').insertAfter('.c3-chart')
+
+			# $('slider').click(=>)
+
+			# @props.progEvents.forEach (progEvent) =>
+				# console.log "Binding click to #{progEvent.get('id')}"
+				# console.log $(".#{progEvent.get('id')} rect")[0]
+
+				# $(".#{progEvent.get('id')} rect")[0].click ->
+				# 	console.log "Clicked!"
+
+				# $('.' + progEvent.get('id')).click(=> console.log "You clicked the event!")
+
+		_generateChart: ->			
 			# Create a Map from metric ID to data series,
 			# where each data series is a sequence of [x, y] pairs
 			dataSeries = @props.metricValues
@@ -233,7 +265,8 @@ load = (win) ->
 
 			xTicks = @_generateXTicks()
 
-			# Here we build a array of years and timestamps to match
+			# YEAR LINES
+			# Build Imm.List of years and timestamps to match
 			# TODO: This could be refined into a single mapped collection
 			newYears = Imm.List()
 			newYearLines = Imm.List()			
@@ -248,8 +281,23 @@ load = (win) ->
 						class: 'yearLine'
 					}
 
+			# PROG EVENT REGIONS
+			# Build Imm.List of region objects
+			progEventRegions = @props.progEvents.map (progEvent) =>
+				eventRegion = {
+					start: @_convertTimestamp progEvent.get('startTimestamp')
+					class: "progEventRange #{progEvent.get('id')}"
+				}
+				if Moment(progEvent.get('endTimestamp'), TimestampFormat).isValid()
+					eventRegion.end = @_convertTimestamp progEvent.get('endTimestamp')				
+
+				return eventRegion
+
+			console.log "ProgEvent Regions", progEventRegions.toJS()
+
+
 			# Generate and bind the chart
-			@_chart = C3.generate {
+			@_chart = C3.generate {						
 					bindto: @refs.chartDiv.getDOMNode()
 					grid: {
 						x: {
@@ -268,6 +316,7 @@ load = (win) ->
 						}
 						y: {
 							show: false
+							max: 1.5
 						}
 					}				
 					data: {
@@ -277,6 +326,7 @@ load = (win) ->
 						xs: xsMap.toJS()
 						names: dataSeriesNames.toJS()
 					}
+					regions: progEventRegions.toJS()
 					tooltip: {
 						format: {
 							value: (value, ratio, id, index) ->
@@ -299,9 +349,13 @@ load = (win) ->
 						right: 50
 					}
 					zoom: {
-						enabled: true
+						# enabled: true
 					}
 				}
+
+		_convertTimestamp: (timestamp) ->
+			# Converts to unix ms
+			return Moment(timestamp, TimestampFormat).valueOf()
 
 		_generateXTicks: ->
 			# Builds list of ALL the timestamps
