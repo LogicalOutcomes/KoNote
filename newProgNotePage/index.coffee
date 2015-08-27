@@ -50,7 +50,6 @@ load = (win, {clientFileId}) ->
 			@_loadData()
 
 		deinit: ->
-			console.log "Deiniting"
 			# Nothing need be done
 
 		getPageListeners: -> {}
