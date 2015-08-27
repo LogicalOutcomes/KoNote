@@ -137,7 +137,6 @@ load = (win) ->
 									ref: 'searchBox'
 									type: 'text'
 									onChange: @_updateQueryText
-									onBlur: @_onSearchBoxBlur
 									placeholder: "Search for a #{Term 'client'}'s profile..."
 									value: @state.queryText
 								}
@@ -161,7 +160,10 @@ load = (win) ->
 								showWhen not @props.isLoading
 							].join ' '
 						},
-							R.img({src: Config.customerLogoLg})
+							R.img({
+								src: Config.customerLogoLg
+								onClick: @_home
+							})
 						)
 						R.div({
 							className: [
@@ -246,13 +248,8 @@ load = (win) ->
 				@setState {isSmallHeaderSet: true}
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
-		_onSearchBoxBlur: (event) ->
-			###
-			# this was annoying on the results page when user selected 'show all'
-			# might be better to reset the header state by clicking on the logo?
-			if @state.queryText is ''
-				@setState {isSmallHeaderSet: false}
-			###
+		_home: ->
+			@setState {isSmallHeaderSet: false, queryText: ''}
 		_onResultSelection: (clientFileId, event) ->
 			openWindow {
 				page: 'clientFile'
