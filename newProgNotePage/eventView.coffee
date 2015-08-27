@@ -8,10 +8,11 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
-	Bootbox = win.bootbox
+	Bootbox = win.bootbox	
 
 	Moment = require 'moment'
-	_ = require 'underscore'	
+	_ = require 'underscore'
+	Term = require '../term'
 
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
@@ -20,52 +21,76 @@ load = (win) ->
 	EventTabView = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
-			# Grab data props if exists
 			return {
 				title: ''
 				description: ''
-				startTimestamp: ''
-				endTimestamp: ''
-				hasDateSpan: false
+
+				startDate: ''
+				startTime: ''
+				endDate: ''
+				endTime: ''
+
+				isDateSpan: false
+				usesTimeOfDay: false
 			}
 
 		componentDidUpdate: ->
 			# Initialize datepickers, update @state when value changes
 
-			$(@refs.startTimestamp.getDOMNode()).datetimepicker({
+			$(@refs.startDate.getDOMNode()).datetimepicker({
+				useCurrent: false
+				format: 'Do MMM, \'YY'
 				widgetPositioning: {
 					horizontal: 'right'
 				}
 			}).on 'dp.change', (thisInput) =>
-				@setState {startTimestamp: thisInput.date.format(TimestampFormat)}
+				@setState {startDate: thisInput.date}
 
-			$(@refs.endTimestamp.getDOMNode()).datetimepicker({
-				widgetPositioning: {
+			$(@refs.startTime.getDOMNode()).datetimepicker({
+				useCurrent: false
+				format: 'hh:mm a'
+				widgetPositioning: {					
 					horizontal: 'right'
 				}
 			}).on 'dp.change', (thisInput) =>
-				@setState {endTimestamp: thisInput.date.format(TimestampFormat)}					
+				@setState {startTime: thisInput.date}
+
+
+			$(@refs.endDate.getDOMNode()).datetimepicker({
+				useCurrent: false
+				format: 'Do MMM, \'YY'
+				widgetPositioning: {					
+					horizontal: 'right'
+				}
+			}).on 'dp.change', (thisInput) =>
+				@setState {endDate: thisInput.date}
+
+			$(@refs.endTime.getDOMNode()).datetimepicker({
+				useCurrent: false
+				format: 'hh:mm a'
+				widgetPositioning: {					
+					horizontal: 'right'
+				}
+			}).on 'dp.change', (thisInput) =>
+				@setState {endTime: thisInput.date}	
 
 		render: ->
 			return R.div({
 				className: "eventView #{showWhen @props.isBeingEdited or not @props.editMode}"
 			},
 				R.form({className: showWhen @props.isBeingEdited},
-					R.button({
+					R.span({
 						className: 'btn btn-danger'
 						onClick: @_closeForm
-					}, FaIcon('times'))
-					R.button({
-						className: 'btn btn-warning'
-						onClick: @_toggleHasDateSpan
 					}, 
-						if @state.hasDateSpan then "Single Date" else "Date Span"
+						FaIcon('times')
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Title")
+						R.label({}, "Name")
 						R.input({
 							value: @state.title
 							onChange: @_updateTitle
+							placeholder: "Name of #{Term 'event'}"
 						})
 					)
 					R.div({className: 'form-group'},
@@ -73,29 +98,93 @@ load = (win) ->
 						ExpandingTextArea({
 							value: @state.description
 							onChange: @_updateDescription
+							placeholder: "Explain details of #{Term 'event'}"
 						})
 					)
-					R.div({className: 'form-group'},
-						R.label({}, "Start Date")
-						R.input({
-							type: 'text'
-							ref: 'startTimestamp'
-							className: 'form-control'
-						})
+					R.div({className: "dateGroup"},
+						R.div({className: 'form-group date'},
+							R.label({}, if @state.isDateSpan then "Start Date" else "Date")
+							R.input({
+								ref: 'startDate'
+								className: 'form-control'
+								type: 'text'
+								placeholder: "Select date"
+							})
+						)
+						R.div({className: "form-group timeOfDay #{showWhen @state.usesTimeOfDay}"},
+							R.label({},
+								R.span({onClick: @_toggleUsesTimeOfDay},
+									FaIcon('clock-o')
+									FaIcon('times')
+								)
+							)
+							R.input({
+								ref: 'startTime'
+								className: 'form-control'
+								type: 'text'
+								placeholder: "00:00 --"
+							})						
+						)
+						R.div({className: "form-group useTimeOfDay #{showWhen not @state.usesTimeOfDay}"}
+							R.button({
+								className: 'btn btn-default'									
+								onClick: @_toggleUsesTimeOfDay
+							}, FaIcon('clock-o'))
+						)
+					)					
+					R.div({className: "dateGroup #{showWhen @state.isDateSpan}"},
+						R.div({
+							className: 'form-group removeDateSpan'							
+						}
+							R.span({onClick: @_toggleIsDateSpan},
+								FaIcon('arrow-right')
+								FaIcon('times')
+							)							
+						)
+						R.div({className: 'form-group date'},
+							R.label({}, "End Date")
+							R.input({
+								ref: 'endDate'
+								className: 'form-control'
+								type: 'text'
+								placeholder: "Select date"
+							})
+						)
+						R.div({className: "form-group timeOfDay #{showWhen @state.usesTimeOfDay}"},
+							R.label({},
+								R.span({onClick: @_toggleUsesTimeOfDay},
+									FaIcon('clock-o')
+									FaIcon('times')
+								)
+							)
+							R.input({
+								ref: 'endTime'
+								className: 'form-control'
+								type: 'text'
+								placeholder: "00:00 --"
+							})						
+						)
+						R.div({className: "form-group useTimeOfDay #{showWhen not @state.usesTimeOfDay}"}
+							R.button({
+								className: 'btn btn-default'
+								onClick: @_toggleUsesTimeOfDay
+							}, FaIcon('clock-o'))
+						)
 					)
-					R.div({className: "form-group #{showWhen @state.hasDateSpan}"},
-						R.label({}, "End Date")
-						R.input({
-							className: showWhen @state.hasDateSpan
-							type: 'text'
-							ref: 'endTimestamp'
-							className: "form-control"
-						})
+					R.button({
+						className: "btn btn-default"
+						onClick: @_toggleIsDateSpan
+					}, 
+						unless @state.isDateSpan
+							"Insert End Date"
+						else
+							"Remove End Date"
 					)
 					R.button({
 						className: 'btn btn-success'
+						type: 'submit'
 						onClick: @_saveEventData
-						disabled: not @state.title or not @state.startTimestamp or (@state.hasDateSpan and not @state.endTimestamp)
+						disabled: not @state.title or not @state.startDate or (@state.isDateSpan and not @state.endDate) or (@state.usesTimeOfDay and not @state.startTime) or (@state.usesTimeOfDay and not @state.endTime)
 					}, 
 						"Save"
 						FaIcon('check')
@@ -111,6 +200,13 @@ load = (win) ->
 				)				
 		)
 
+		_toggleUsesTimeOfDay: (event) ->
+			event.preventDefault()
+			@setState {usesTimeOfDay: not @state.usesTimeOfDay}, =>
+				# Focus timeInput if enabling
+				# if @state.usesTimeOfDay
+				# 	@refs[timeInput].getDOMNode().focus()
+
 		_showTimestamp: (timestamp) ->
 			moment = Moment(timestamp, TimestampFormat)
 
@@ -119,9 +215,12 @@ load = (win) ->
 			else
 				return "Invalid Moment"
 
-		_toggleHasDateSpan: (event) ->
+		_toggleIsDateSpan: (event) ->
 			event.preventDefault()
-			@setState {hasDateSpan: not @state.hasDateSpan}
+			@setState {isDateSpan: not @state.isDateSpan}, =>
+				# Focus endDate if enabling
+				if @state.isDateSpan
+					@refs.endDate.getDOMNode().focus()
 
 		_updateTitle: (event) ->
 			@setState {title: event.target.value}
@@ -133,7 +232,7 @@ load = (win) ->
 			event.preventDefault()
 
 			if (@state.startDate or @state.endDate or @state.description)
-				Bootbox.confirm "Cancel event editing?", (result) =>
+				Bootbox.confirm "Cancel #{Term 'event'} editing?", (result) =>
 					if result
 						# Make sure all states are reset, then cancel
 						@replaceState @props.data, =>
@@ -143,11 +242,19 @@ load = (win) ->
 					@props.cancel @props.atIndex
 
 		_compiledFormData: ->
+			# Days to start and end of day
+			startTimestamp = @state.startDate.startOf('day')
+			endTimestamp = @state.endDate.endOf('day')
+
+			if @state.usesTimeOfDay
+				startTimestamp = startTimestamp.set('hour', @state.startTime.hour()).set('minute', @state.startTime.minute())
+				endTimestamp = startTimestamp.set('hour', @state.endTime.hour()).set('minute', @state.endTime.minute())
+
 			return {
 				title: @state.title
-				startTimestamp: @state.startTimestamp
-				endTimestamp: if @state.hasDateSpan then @state.endTimestamp else ''
 				description: @state.description
+				startTimestamp: startTimestamp.format(TimestampFormat)
+				endTimestamp: if @state.isDateSpan then endTimestamp.format(TimestampFormat) else ''
 			}				
 
 		_saveEventData: (event) ->
