@@ -11,9 +11,7 @@
     "height": 700,
     "position": "center"
   },
-  "license": {
-    "type": "MPL-2.0"
-  },
+  "license": "MPL-2.0",
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-exec": "^0.4.6",
