@@ -184,7 +184,7 @@ load = (win) ->
 						className: 'btn btn-success'
 						type: 'submit'
 						onClick: @_saveEventData
-						disabled: not @state.title or not @state.startDate or (@state.isDateSpan and not @state.endDate) or (@state.usesTimeOfDay and not @state.startTime) or (@state.usesTimeOfDay and not @state.endTime)
+						disabled: not @state.title or not @state.startDate or (@state.isDateSpan and not @state.endDate) or (@state.usesTimeOfDay and not @state.startTime) or (@state.usesTimeOfDay and @state.isDateSpan and not @state.endTime)
 					}, 
 						"Save"
 						FaIcon('check')
@@ -242,19 +242,34 @@ load = (win) ->
 					@props.cancel @props.atIndex
 
 		_compiledFormData: ->
-			# Days to start and end of day
-			startTimestamp = @state.startDate.startOf('day')
-			endTimestamp = @state.endDate.endOf('day')
+			isOneFullDay = null
 
+			# Start with dates
+			startTimestamp = @state.startDate
+			endTimestamp = @state.endDate
+
+			# Extract time from start/endTime
 			if @state.usesTimeOfDay
 				startTimestamp = startTimestamp.set('hour', @state.startTime.hour()).set('minute', @state.startTime.minute())
-				endTimestamp = startTimestamp.set('hour', @state.endTime.hour()).set('minute', @state.endTime.minute())
+
+				if @state.isDateSpan
+					endTimestamp = startTimestamp.set('hour', @state.endTime.hour()).set('minute', @state.endTime.minute())
+			# Default to start/end of day for dates
+			else
+				startTimestamp = startTimestamp.startOf('day')
+
+				if @state.isDateSpan					
+					endTimestamp = endTimestamp.endOf('day')
+				else
+					# If only a single date was provided, assume it's an all-day event
+					isOneFullDay = true
+					endTimestamp = Moment(startTimestamp).endOf('day')
 
 			return {
 				title: @state.title
 				description: @state.description
 				startTimestamp: startTimestamp.format(TimestampFormat)
-				endTimestamp: if @state.isDateSpan then endTimestamp.format(TimestampFormat) else ''
+				endTimestamp: if @state.isDateSpan or isOneFullDay then endTimestamp.format(TimestampFormat) else ''
 			}				
 
 		_saveEventData: (event) ->
