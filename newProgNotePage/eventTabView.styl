@@ -1,0 +1,83 @@
+.eventView
+	display none
+	position absolute
+	top 0px
+	left -250px
+	width 250px
+						
+	color black
+	background white
+		
+	> form
+		
+		.dateGroup
+			
+			display flex
+			
+			.removeDateSpan				
+				flex 0.75
+				display flex
+				align-items flex-end
+				
+				span
+					display block
+					
+					.fa
+						margin-bottom 12px
+						
+						&:last-child
+							display none
+					
+					&:hover
+						color red
+						cursor pointer
+						
+						.fa:first-child
+							display none
+						.fa:last-child
+							display inline-block
+			
+			.form-group
+				position relative
+				
+				label
+					display block
+				
+			.date
+				flex 4
+				
+			.timeOfDay
+				flex 3
+				padding-left 15px
+				
+				label
+					text-align center
+					
+					span
+						.fa:last-child
+							display none
+							
+						&:hover
+							color red
+							cursor pointer
+							
+							.fa:first-child
+								display none
+							.fa:last-child
+								display inline-block
+				
+			.useTimeOfDay
+				flex 1
+				display flex
+				align-items flex-end
+				justify-content center
+				
+				button
+					border none
+					color green
+					
+					
+				// Shifts datetimepicker to left
+				.bootstrap-datetimepicker-widget.dropdown-menu
+					right 50% !important
+			

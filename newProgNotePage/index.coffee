@@ -7,6 +7,7 @@
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
+_ = require 'underscore'
 
 Config = require '../config'
 Term = require '../term'
@@ -21,11 +22,11 @@ load = (win, {clientFileId}) ->
 
 	Gui = win.require 'nw.gui'
 
+	EventTabView = require('./eventTabView').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
-	ProgNoteDetailView = require('../progNoteDetailView').load(win)
-	CreateProgEventDialog = require('../createProgEventDialog').load(win)
+	ProgNoteDetailView = require('../progNoteDetailView').load(win)	
 	Dialog = require('../dialog').load(win)
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
@@ -48,7 +49,8 @@ load = (win, {clientFileId}) ->
 		init: ->
 			@_loadData()
 
-		deinit: -> return
+		deinit: ->
+			# Nothing need be done
 
 		getPageListeners: -> {}
 
@@ -64,6 +66,7 @@ load = (win, {clientFileId}) ->
 				progNote: @state.progNote
 				clientFile: @state.clientFile
 				progNotes: @state.progNotes
+				progEvents: @state.progEvents
 
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
@@ -75,6 +78,7 @@ load = (win, {clientFileId}) ->
 			metricsById = null
 			planTargetHeaders = null
 			progNoteHeaders = null
+			progEventHeaders = null
 
 			Async.series [
 				(cb) =>
@@ -152,6 +156,26 @@ load = (win, {clientFileId}) ->
 							return {progNotes: Imm.List(results)}
 
 						cb null
+				(cb) =>
+					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						progEventHeaders = results
+
+						cb()
+				(cb) =>
+					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
+						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						@setState {
+							progEvents: Imm.List(results)
+						}, cb
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -230,8 +254,10 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				progNote: @props.progNote
+
 				progEvents: Imm.List()
-				selectedItem: null
+				editingWhichEvent: null
+
 				success: false
 				showExitAlert: false
 			}
@@ -296,11 +322,8 @@ load = (win, {clientFileId}) ->
 			clientName = renderName @props.clientFile.get('clientName')
 			@props.setWindowTitle "#{clientName}: #{Term 'Progress Note'} - KoNote"
 
-			return R.div({className: 'newProgNotePage'},
+			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
-					# OpenCreateProgEventButton({
-					# 	onNewProgEvent: @_updateProgEvents
-					# })
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
 							switch section.get('type')
@@ -386,8 +409,69 @@ load = (win, {clientFileId}) ->
 				ProgNoteDetailView({
 					item: @state.selectedItem
 					progNotes: @props.progNotes
+					progEvents: @props.progEvents
 				})
+				R.div({className: 'eventsPanel'},
+					R.span({}, "Events")
+					R.div({
+						className: [
+							'eventsList'
+							'editMode' if @state.editingWhichEvent?
+						].join ' '
+					},						
+						(@state.progEvents.map (thisEvent, index) =>
+							isBeingEdited = @state.editingWhichEvent is index
+
+							R.div({								
+								className: [
+										'eventTab'
+										'isEditing' if isBeingEdited
+								].join ' '
+								key: index
+							}, 
+								R.div({
+									className: 'icon'
+									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
+								}, "E")
+								EventTabView({
+									data: thisEvent
+									atIndex: index
+									save: @_saveEventData
+									cancel: @_cancelEditing
+									editMode: @state.editingWhichEvent?
+									isBeingEdited
+								})
+							)
+						)
+						R.button({
+							className: "btn btn-success"
+							onClick: @_newEventTab
+							disabled: @state.editingWhichEvent?
+						}, FaIcon('plus'))
+					)
+				)
 			)
+		_newEventTab: ->
+			# Add in the new event, select last one
+			@setState {progEvents: @state.progEvents.push {}}, => 
+				@setState {editingWhichEvent: @state.progEvents.size - 1}
+
+		_editEventTab: (index) ->
+			@setState {editingWhichEvent: index}
+
+		_saveEventData: (data, index) ->
+			newProgEvents = @state.progEvents.set index, data
+			@setState {progEvents: newProgEvents}, @_cancelEditing
+			
+		_cancelEditing: (index) ->
+			# Delete if new event
+			if _.isEmpty @state.progEvents.get(index)
+				@setState {progEvents: @state.progEvents.delete(index)}
+
+			@setState {editingWhichEvent: null}
+
+
+			
 		_getSectionIndex: (sectionId) ->
 			result = @state.progNote.get('sections').findIndex (s) =>
 				return s.get('id') is sectionId
@@ -470,13 +554,9 @@ load = (win, {clientFileId}) ->
 					newValue
 				)
 			}
-		_updateProgEvents: (progEvent) ->
-			@setState {
-				progEvents: @state.progEvents.push progEvent
-			}
-			console.log("progEvents updated to:", @state.progEvents)
 		_invalidMetricFormat: (value) -> not value.match /^-?\d*\.?\d*$/
 		_save: ->
+			console.log "Saving"
 			progNoteId = null
 
 			Async.series [
@@ -491,13 +571,16 @@ load = (win, {clientFileId}) ->
 				(cb) =>
 					Async.each @state.progEvents.toArray(), (progEvent, cb) =>		
 						# Tack on the new progress note ID to all created events					
-						progEvent = progEvent.set('relatedProgNoteId', obj.get('id'))
+						progEvent = Imm.fromJS(progEvent)
+						.set('relatedProgNoteId', progNoteId)
+						.set('clientFileId', clientFileId)
 
 						ActiveSession.persist.progEvents.create progEvent, cb
+
 					, (err) =>
-						if (err)
+						if err
 							cb err
-							return					
+							return
 
 						cb()
 			], (err) =>
@@ -512,35 +595,10 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
+				console.log "Closing"
+
 				@props.closeWindow()
 
-	OpenCreateProgEventButton = React.createFactory React.createClass
-		mixins: [LayeredComponentMixin, React.addons.PureRenderMixin]
-		getInitialState: ->
-			return {
-				isOpen: false
-			}
-		render: ->
-			return R.button({
-				className: 'btn btn-success'
-				onClick: @_open
-			},
-				FaIcon 'bell'
-				"Create #{Term.Event}"
-			)
-		renderLayer: ->
-			unless @state.isOpen
-				return R.div()
-
-			return CreateProgEventDialog({
-				onCancel: =>
-					@setState {isOpen: false}		
-				onSuccess: (progEvent) =>							
-					@setState {isOpen: false}
-					@props.onNewProgEvent progEvent
-			})
-		_open: ->
-			@setState {isOpen: true}
 
 	return NewProgNotePage
 

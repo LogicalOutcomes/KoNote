@@ -51,6 +51,7 @@ load = (win) ->
 					R.button({
 						className: 'newProgNote btn btn-primary'
 						onClick: @_openNewProgNote
+						disabled: @props.isReadOnly
 					},
 						FaIcon 'file'
 						"New #{Term 'progress note'}"
@@ -58,6 +59,7 @@ load = (win) ->
 					R.button({
 						className: "addQuickNote btn btn-default #{showWhen @props.progNotes.size > 0}"						
 						onClick: @_toggleQuickNotePopover
+						disabled: @props.isReadOnly
 					},
 						FaIcon 'plus'
 						"Add #{Term 'quick note'}"
@@ -73,6 +75,7 @@ load = (win) ->
 							R.button({
 								className: 'newProgNote btn btn-primary btn-lg'
 								onClick: @_openNewProgNote
+								disabled: @props.isReadOnly
 							},
 								FaIcon 'file'
 								"New #{Term 'progress note'}"
@@ -80,12 +83,17 @@ load = (win) ->
 							R.button({
 								className: "addQuickNote btn btn-default btn-lg #{showWhen @props.progNotes.size is 0}"								
 								onClick: @_toggleQuickNotePopover
+								disabled: @props.isReadOnly
 							},
 								FaIcon 'plus'
 								"Add #{Term 'quick note'}"
 							)
 						)
 						(@props.progNotes.reverse().map (progNote) =>
+							# Filter out only events for this progNote
+							progEvents = @props.progEvents.filter (progEvent) =>
+								return progEvent.get('relatedProgNoteId') is progNote.get('id')
+
 							switch progNote.get('type')
 								when 'basic'
 									BasicProgNoteView({
@@ -96,6 +104,7 @@ load = (win) ->
 								when 'full'
 									FullProgNoteView({
 										progNote
+										progEvents
 										clientFile: @props.clientFile
 										key: progNote.get('id')
 										setSelectedItem: @_setSelectedItem
@@ -107,6 +116,7 @@ load = (win) ->
 					ProgNoteDetailView({
 						item: @state.selectedItem
 						progNotes: @props.progNotes
+						progEvents: @props.progEvents
 					})
 				)
 			)
@@ -274,9 +284,14 @@ load = (win) ->
 												)
 											)
 										).toJS()...
-									)
+									)									
 								)
 					).toJS()...
+					R.div({className: 'events'}
+						(@props.progEvents.map (progEvent) =>
+							R.div({}, "Prog Event: #{progEvent.get('title')}")
+						).toJS()...
+					)
 				)
 			)
 		_selectBasicSection: (section) ->
