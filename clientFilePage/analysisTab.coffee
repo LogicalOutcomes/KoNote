@@ -52,36 +52,57 @@ load = (win) ->
 						one or more #{Term 'progress notes'} that contain #{Term 'metrics'}."
 					)
 				)
-				R.div({className: "controlPanel #{showWhen hasData}"},
-					R.div({className: 'heading'}, Term 'Metrics')
-					R.div({className: 'metrics'},
-						(metricIdsWithData.map (metricId) =>
-							metric = @props.metricsById.get(metricId)
-
-							R.div({className: 'metric checkbox'},
-								R.label({},
-									R.input({
-										type: 'checkbox'
-										onChange: @_updateSelectedMetrics.bind null, metricId
-										checked: @state.selectedMetricIds.contains metricId
-									})
-									metric.get('name')
-								)
-							)
-						).toJS()...
+				R.div({className: "timeScaleToolbar #{showWhen hasData}"},
+					R.div({id: 'timeSpanContainer'},
+						RangeSlider({
+							ref: 'timeSpanSlider'
+							isRange: true
+							defaultValue: [1,7]
+							minValue: 0
+							maxValue: 10
+						})
+					)
+					R.div({id: 'granularContainer'},
+						RangeSlider({
+							ref: 'granularSlider'
+							defaultValue: 0
+							minValue: 0
+							maxValue: 10
+						})
 					)
 				)
-				R.div({className: "chartContainer #{showWhen hasData}"},
-					if @props.isVisible
-						# Force chart to be recreated when tab is opened
-						Chart({
-							ref: 'mainChart'
-							progNotes: @props.progNotes
-							metricsById: @props.metricsById
-							metricValues
-							selectedMetricIds: @state.selectedMetricIds
-						})
-				)
+				R.div({className: "mainWrapper #{showWhen hasData}"},
+					R.div({className: "chartContainer"},
+						if @props.isVisible
+							# Force chart to be recreated when tab is opened
+							Chart({
+								ref: 'mainChart'
+								progNotes: @props.progNotes
+								metricsById: @props.metricsById
+								metricValues
+								selectedMetricIds: @state.selectedMetricIds
+							})
+					)
+					R.div({className: "selectionPanel #{showWhen hasData}"},
+						R.div({className: 'heading'}, Term 'Metrics')
+						R.div({className: 'metrics'},
+							(metricIdsWithData.map (metricId) =>
+								metric = @props.metricsById.get(metricId)
+
+								R.div({className: 'metric checkbox'},
+									R.label({},
+										R.input({
+											type: 'checkbox'
+											onChange: @_updateSelectedMetrics.bind null, metricId
+											checked: @state.selectedMetricIds.contains metricId
+										})
+										metric.get('name')
+									)
+								)
+							).toJS()...
+						)
+					)
+				)				
 			)
 
 		_updateSelectedMetrics: (metricId) ->
@@ -92,6 +113,28 @@ load = (win) ->
 					selectedMetricIds = selectedMetricIds.add metricId
 
 				return {selectedMetricIds}
+
+
+	RangeSlider = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				minDate: null
+				maxDate: null
+			}
+
+		componentDidMount: ->
+			$(@refs.slider.getDOMNode()).slider({
+				range: @props.isRange
+				tooltip: 'always'
+
+				value: @props.defaultValue
+				min: @props.minValue
+				max: @props.maxValue
+			})
+
+		render: ->			
+			return R.input({ref: 'slider'})
 
 
 	Chart = React.createFactory React.createClass
@@ -321,6 +364,10 @@ load = (win) ->
 			else
 				throw new Error "unknown prognote section type: #{JSON.stringify section.get('type')}"
 
+
 	return {AnalysisView}
+
+
+
 
 module.exports = {load}

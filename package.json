@@ -26,6 +26,7 @@
     "binary-search": "^1.2.0",
     "bootbox": "^4.4.0",
     "bootstrap": "^3.3.5",
+    "bootstrap-slider": "^5.0.12",
     "buffer-equal-constant-time": "^1.0.1",
     "c3": "https://github.com/konode001/c3#0.4.10-fixes",
     "d3": "^3.5.0",

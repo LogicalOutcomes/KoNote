@@ -34,7 +34,7 @@ load = (win) ->
 				usesTimeOfDay: false
 			}
 
-		componentDidUpdate: ->
+		componentDidMount: ->
 			# Initialize datepickers, update @state when value changes
 
 			$(@refs.startDate.getDOMNode()).datetimepicker({

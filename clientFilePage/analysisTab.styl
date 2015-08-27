@@ -1,71 +1,132 @@
 .analysisView
+	// height 100%
 	display flex
 	flex-direction column
-
-	> .noData
-		flex 1
-
-		padding 100px 30px
-
-		color hsl(hue(sidebar-bg), 15%, 35%)
-		text-align center
-
-		> h1
-			margin-bottom 20px
-
-	> .controlPanel
-		height 300px
-
-		border-bottom 2px solid sidebar-borders
-
-		padding 20px 30px
-
-		> .heading
-			font-size 24px
-			font-weight 300
-
-	> .chartContainer
-		flex 1
-
+	
+	.timeScaleToolbar
+		flex none
+		flex-basis 85px
 		display flex
-
-		padding 20px 30px
-
-		> .noData
-			flex 1
-
-			display flex
-			align-items center
-			justify-content center
-
-			padding 50px
-
-			color #AAA
-			font-size 24px
-			font-weight 700
-
-		> .chartInner			
-			flex 1
+		padding-bottom 25px
+		border-bottom 2px solid sidebar-borders
+		
+		.slider				
+			width 100%
 			
-			display flex
-			align-items center
-			justify-content center
+			.slider-track
+				border-radius 15px
+				height 16px
 			
-			.yearLine
-				font-weight bold
-				
-				text
-					// Moves year value to right side of yearLine
-					transform rotate(-90deg) translateY(17px)
+				.slider-track-low, .slider-track-high
+					border-radius 15px
+					background #e4eff5
 					
-			.disabledChart
+				.slider-selection					
+					border-radius 0px
+					box-shadow none
+					background #c8dae4
+				
+				.slider-handle
+					transition background 0.2s ease
+					background #607886
+					margin-top -3px
+					border 3px solid white
+					
+					&:hover
+						background #3b4e59
+		
+		> #timeSpanContainer
+			flex 5
+			display flex
+			align-items flex-end
+			padding 0px 30px
+			
+		> #granularContainer
+			flex 1
+			display flex
+			align-items flex-end			
+			padding 0px 30px
+			
+			.slider-track-low, .slider-track-high
+				background #e4f5e4
+				
+			.slider-selection
+				background #bfe0bf
+				
+			.slider-handle
+				background #557b55
+				
+				&:hover
+					background #374e37
+	
+	.mainWrapper
+		flex 1
+		display flex
+		flex-direction row
+		align-items stetch
+
+		.noData
+			flex 1
+
+			padding 100px 30px
+
+			color hsl(hue(sidebar-bg), 15%, 35%)
+			text-align center
+
+			> h1
+				margin-bottom 20px		
+
+		.chartContainer
+			flex 5
+			display flex
+
+			padding 20px 30px
+
+			> .noData
+				flex 1
+
+				display flex
+				align-items center
+				justify-content center
+
+				padding 50px
+
+				color #AAA
+				font-size 24px
+				font-weight 700
+
+			> .chartInner			
 				flex 1
 				
 				display flex
 				align-items center
 				justify-content center
-			
-				color #AAA
-				padding 20px
-				font-size 18px
-				font-weight 600			
+				
+				.yearLine
+					font-weight bold
+					
+					text
+						// Moves year value to right side of yearLine
+						transform rotate(-90deg) translateY(17px)
+						
+				.disabledChart
+					flex 1
+					
+					display flex
+					align-items center
+					justify-content center
+				
+					color #AAA
+					padding 20px
+					font-size 18px
+					font-weight 600	
+					
+		.selectionPanel
+			flex 1
+
+			padding 20px 30px
+			border-left 2px solid sidebar-borders
+
+			> .heading
+				font-size 24px
+				font-weight 300		

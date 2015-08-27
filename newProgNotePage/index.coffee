@@ -22,7 +22,7 @@ load = (win, {clientFileId}) ->
 
 	Gui = win.require 'nw.gui'
 
-	EventTabView = require('./eventView').load(win)
+	EventTabView = require('./eventTabView').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
