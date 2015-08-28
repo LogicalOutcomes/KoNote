@@ -34,6 +34,7 @@ load = (win) ->
 				onFocus: @props.onFocus
 				onChange: @_onChange
 				value: @props.value
+				disabled: @props.disabled
 			})
 		_onChange: (event) ->
 			@_resize()
