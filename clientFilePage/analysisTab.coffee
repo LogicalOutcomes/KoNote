@@ -31,8 +31,7 @@ load = (win) ->
 				metricValues: null
 				selectedMetricIds: Imm.Set()
 				xTicks: Imm.List()
-				timeSpanMin: null
-				timeSpanMax: null
+				timeSpan: Imm.List()
 			}
 		componentWillMount: ->
 			# All non-empty metric values
@@ -93,10 +92,10 @@ load = (win) ->
 						RangeSlider({
 							ref: 'timeSpanSlider'
 							isRange: true
-							defaultValue: [1,7]
 							minValue: 0
-							maxValue: 10
+							ticks: @state.xTicks
 							onChange: @_updateTimeSpan
+							defaultValue: [0, @state.xTicks.size]
 						})
 					)
 					R.div({id: 'granularContainer'},
@@ -104,7 +103,7 @@ load = (win) ->
 							ref: 'granularSlider'
 							defaultValue: 0
 							minValue: 0
-							maxValue: 10
+							ticks: null
 							onChange: @_updateGranularity
 						})
 					)
@@ -121,8 +120,7 @@ load = (win) ->
 								metricValues: @state.metricValues
 								xTicks: @state.xTicks
 								selectedMetricIds: @state.selectedMetricIds								
-								timeSpanMin: @state.timeSpanMin
-								timeSpanMax: @state.timeSpanMax
+								timeSpan: @state.timeSpan
 							})
 					)
 					R.div({className: "selectionPanel #{showWhen hasData}"},
@@ -154,26 +152,35 @@ load = (win) ->
 				else
 					selectedMetricIds = selectedMetricIds.add metricId
 
-				return {selectedMetricIds}			
+				return {selectedMetricIds}
+
+		_updateTimeSpan: (event) ->
+			timeIndexes = event.target.value.split(",")
+
+			timeSpan = Imm.List(timeIndexes).map (timeIndex) =>
+				return @state.xTicks.get(timeIndex)
+
+			console.log "New value", timeSpan.toJS()
+			@setState {timeSpan}
+			# Nothing yet
+
+		_updateGranularity: (event) ->
+			# Nothing yet
 
 
 	RangeSlider = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
-		getInitialState: ->
-			return {
-				minDate: null
-				maxDate: null
-			}
 
 		componentDidMount: ->
-			$(@refs.slider.getDOMNode()).slider({
+			slider = $(@refs.slider.getDOMNode()).slider({
 				range: @props.isRange
 				tooltip: 'always'
-
+				min: 0
+				max: if @props.ticks then @props.ticks.size else 1
 				value: @props.defaultValue
-				min: @props.minValue
-				max: @props.maxValue
 			})
+			
+			slider.on('slideStop', (event) => @props.onChange event)
 
 		render: ->			
 			return R.input({ref: 'slider'})
@@ -208,7 +215,14 @@ load = (win) ->
 			unless sameMetrics
 				@_refreshSelectedMetrics()
 
-			# sameTimeSpan = Imm.is 
+			console.log @props.timeSpanMin, oldProps.timeSpanMin
+
+			sameTimeSpan = Imm.is @props.timeSpan, oldProps.timeSpan
+			unless sameTimeSpan
+				console.log "Updating minDate"
+				@_chart.axis.min {x: @props.timeSpan.get(0)}
+				@_chart.axis.max {x: @props.timeSpan.get(1)}
+				# console.log @_chart
 				
 		componentDidMount: ->			
 			@_generateChart()
@@ -307,8 +321,7 @@ load = (win) ->
 				return metric.map (dataPoint) ->
 					return dataPoint if isNaN(dataPoint)
 					(dataPoint - min) / scaleFactor
-
-			# xTicks = @_generateXTicks()
+					
 
 			# YEAR LINES
 			# Build Imm.List of years and timestamps to match
