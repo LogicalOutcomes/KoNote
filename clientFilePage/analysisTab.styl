@@ -102,6 +102,27 @@
 				align-items center
 				justify-content center
 				
+				> .eventInfo
+					display none
+					z-index 9999
+					position absolute
+					padding 10px
+					width 100px
+					margin-left -(@width / 2)
+					
+					background #fff
+					border 1px solid #eee
+					border-radius 10px
+					
+					&.show
+					
+					> .title
+						font-weight bold
+						font-size 14px
+						
+					> .description
+						margin 5px 0px
+				
 				.yearLine
 					font-weight bold
 					
@@ -127,16 +148,25 @@
 					.c3-chart
 						z-index 0
 						
+					.c3-regions:first-child
+						display none
+						
 					.c3-regions
-						margin-top -100px
-						z-index 9999
+						// margin-top -100px
 						
 						.c3-region > rect
 							// 10% of original height
-							transform scaleY(0.1) !important
+							transform scaleY(0.1) !important						
 							
 							&:hover
 								fill red !important
+								
+								&:before
+									content attr(class)
+									display block
+									position absolute
+									top 100px
+									color black
 						
 
 		.selectionPanel

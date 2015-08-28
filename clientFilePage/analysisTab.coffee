@@ -93,7 +93,7 @@ load = (win) ->
 							ref: 'timeSpanSlider'
 							isRange: true
 							minValue: 0
-							ticks: @state.xTicks
+							ticks: @state.xTicks.pop()
 							onChange: @_updateTimeSpan
 							defaultValue: [0, @state.xTicks.size]
 						})
@@ -160,9 +160,7 @@ load = (win) ->
 			timeSpan = Imm.List(timeIndexes).map (timeIndex) =>
 				return @state.xTicks.get(timeIndex)
 
-			console.log "New value", timeSpan.toJS()
 			@setState {timeSpan}
-			# Nothing yet
 
 		_updateGranularity: (event) ->
 			# Nothing yet
@@ -182,7 +180,7 @@ load = (win) ->
 			
 			slider.on('slideStop', (event) => @props.onChange event)
 
-		render: ->			
+		render: ->
 			return R.input({ref: 'slider'})
 
 
@@ -195,6 +193,13 @@ load = (win) ->
 
 		render: ->
 			return R.div({className: 'chartInner'},
+				R.div({
+					className: 'eventInfo'
+					ref: 'eventInfo'
+				},
+					R.span({className: 'title'})
+					R.p({className: 'description'})
+				)
 				R.div({
 					className: "chart disabledChart #{showWhen !!@state.isDisabled}"
 				}, 
@@ -238,31 +243,29 @@ load = (win) ->
 				@_chart.show("y-" + metricId)
 
 		_attachKeyBindings: ->
-			region = $('.c3-regions').clone()
-			region.insertAfter('.c3-chart')
+			# Clone regions to put in forefront
+			$('.c3-regions').clone().insertAfter('.c3-chart')
 
-			# Copy regions group to top layer (above main chart)
-			# Simply moving group screws up c3
-			# regions = $('.c3-regions').clone()
-			# $('.c3-regions').empty()
-			# regions.insertAfter('.c3-chart')
+			# Find our hidden eventInfo box
+			eventInfo = $(@refs.eventInfo.getDOMNode())
 
-			# regions = $('.c3-regions').parseXML()
+			@props.progEvents.forEach (progEvent) =>
+				# Attach hover binding to progEvent region
+				$('.' + progEvent.get('id')).hover((event) =>
+					eventInfo.addClass('show')
+					eventInfo.find('.title').text progEvent.get('title')
+					eventInfo.find('.description').text progEvent.get('description')
 
-			# console.log "Regions", regions
-
-			# $('.c3-regions').insertAfter('.c3-chart')
-
-			# $('slider').click(=>)
-
-			# @props.progEvents.forEach (progEvent) =>
-				# console.log "Binding click to #{progEvent.get('id')}"
-				# console.log $(".#{progEvent.get('id')} rect")[0]
-
-				# $(".#{progEvent.get('id')} rect")[0].click ->
-				# 	console.log "Clicked!"
-
-				# $('.' + progEvent.get('id')).click(=> console.log "You clicked the event!")
+					# Make eventInfo follow the mouse
+					$(win.document).on('mousemove', (event) ->
+						eventInfo.css('top', event.clientY - eventInfo.outerHeight())
+						eventInfo.css('left', event.clientX)
+					)
+				, =>
+					# Hide and unbind!
+					eventInfo.removeClass('show')
+					$(win.document).off('mousemove')
+				)
 
 		_generateChart: ->			
 			# Create a Map from metric ID to data series,
@@ -339,6 +342,8 @@ load = (win) ->
 						class: 'yearLine'
 					}
 
+			console.log "ProgEvent RAW", @props.progEvents.toJS()
+
 			# PROG EVENT REGIONS
 			# Build Imm.List of region objects
 			progEventRegions = @props.progEvents.map (progEvent) =>
@@ -350,9 +355,6 @@ load = (win) ->
 					eventRegion.end = @_convertTimestamp progEvent.get('endTimestamp')				
 
 				return eventRegion
-
-			console.log "ProgEvent Regions", progEventRegions.toJS()
-
 
 			# Generate and bind the chart
 			@_chart = C3.generate {						
@@ -403,11 +405,8 @@ load = (win) ->
 						}
 					}
 					padding: {
-						left: 50
-						right: 50
-					}
-					zoom: {
-						# enabled: true
+						left: 25
+						right: 25
 					}
 				}
 
