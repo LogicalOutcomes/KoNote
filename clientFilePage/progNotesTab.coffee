@@ -17,6 +17,7 @@ load = (win) ->
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	ProgEventWidget = require('../progEventWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	PrintButton = require('../printButton').load(win)
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
@@ -288,8 +289,15 @@ load = (win) ->
 								)
 					).toJS()...
 					R.div({className: 'events'}
+						R.h1({},
+							"Events"
+						)
 						(@props.progEvents.map (progEvent) =>
-							R.div({}, "Prog Event: #{progEvent.get('title')}")
+							ProgEventWidget({
+								title: progEvent.get('title')
+								start: progEvent.get('startTimestamp')
+								end: progEvent.get('endTimestamp')
+							})
 						).toJS()...
 					)
 				)
