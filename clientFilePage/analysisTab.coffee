@@ -28,9 +28,13 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
+				metricValues: null
 				selectedMetricIds: Imm.Set()
+				xTicks: Imm.List()
+				timeSpanMin: null
+				timeSpanMax: null
 			}
-		render: ->
+		componentWillMount: ->
 			# All non-empty metric values
 			metricValues = @props.progNotes.flatMap (progNote) ->
 				return extractMetricsFromProgNote progNote
@@ -42,8 +46,39 @@ load = (win) ->
 			.map((m) -> m.get('id'))
 			.toSet()
 
+
+			# Builds list of ALL the timestamps
+			timestamps = metricValues.map (metricValue) ->
+				return Moment metricValue.get('timestamp'), Persist.TimestampFormat
+
+			# Builds ordered set of unique timestamps (each as unix ms)
+			middayTimeStamps = timestamps.map (timestamp) ->
+				return timestamp.startOf('day').valueOf()
+			.toOrderedSet().sort()
+
+			# Figure out number of days with data
+			daysOfData = middayTimeStamps.size
+
+			# Disable chart view if less than 3 days of data
+			if daysOfData < 3
+				@setState => isDisabled: {message: "Sorry, 
+				#{3 - daysOfData} more days of #{Term 'progress notes'} are required
+				before I can chart anything meaningful here."}
+
+			firstDay = Moment middayTimeStamps.first()
+			lastDay = Moment middayTimeStamps.last()
+
+			dayRange = lastDay.diff(firstDay, 'days') + 1
+
+			# Return a list of full range of timestamps starting from 
+			xTicks = Imm.List([0..dayRange]).map (n) ->
+				firstDay.clone().add(n, 'days')
+
+			@setState => {xTicks, metricIdsWithData, metricValues}
+
+		render: ->			
 			# Is there actually enough information to show something?
-			hasData = metricIdsWithData.size > 0
+			hasData = @state.metricIdsWithData.size > 0
 
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
 				R.div({className: "noData #{showWhen not hasData}"},
@@ -61,6 +96,7 @@ load = (win) ->
 							defaultValue: [1,7]
 							minValue: 0
 							maxValue: 10
+							onChange: @_updateTimeSpan
 						})
 					)
 					R.div({id: 'granularContainer'},
@@ -69,6 +105,7 @@ load = (win) ->
 							defaultValue: 0
 							minValue: 0
 							maxValue: 10
+							onChange: @_updateGranularity
 						})
 					)
 				)
@@ -81,14 +118,17 @@ load = (win) ->
 								progNotes: @props.progNotes
 								progEvents: @props.progEvents
 								metricsById: @props.metricsById
-								metricValues
-								selectedMetricIds: @state.selectedMetricIds
+								metricValues: @state.metricValues
+								xTicks: @state.xTicks
+								selectedMetricIds: @state.selectedMetricIds								
+								timeSpanMin: @state.timeSpanMin
+								timeSpanMax: @state.timeSpanMax
 							})
 					)
 					R.div({className: "selectionPanel #{showWhen hasData}"},
 						R.div({className: 'heading'}, Term 'Metrics')
 						R.div({className: 'metrics'},
-							(metricIdsWithData.map (metricId) =>
+							(@state.metricIdsWithData.map (metricId) =>
 								metric = @props.metricsById.get(metricId)
 
 								R.div({className: 'metric checkbox'},
@@ -114,7 +154,7 @@ load = (win) ->
 				else
 					selectedMetricIds = selectedMetricIds.add metricId
 
-				return {selectedMetricIds}
+				return {selectedMetricIds}			
 
 
 	RangeSlider = React.createFactory React.createClass
@@ -161,9 +201,14 @@ load = (win) ->
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Show anything that is selected in the view layer
-			sameProps = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
-			unless sameProps or !!@state.isDisabled
+			if @state.isDisabled
+				return
+
+			sameMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
+			unless sameMetrics
 				@_refreshSelectedMetrics()
+
+			# sameTimeSpan = Imm.is 
 				
 		componentDidMount: ->			
 			@_generateChart()
@@ -263,7 +308,7 @@ load = (win) ->
 					return dataPoint if isNaN(dataPoint)
 					(dataPoint - min) / scaleFactor
 
-			xTicks = @_generateXTicks()
+			# xTicks = @_generateXTicks()
 
 			# YEAR LINES
 			# Build Imm.List of years and timestamps to match
@@ -271,11 +316,11 @@ load = (win) ->
 			newYears = Imm.List()
 			newYearLines = Imm.List()			
 
-			xTicks.forEach (tick) ->
+			@props.xTicks.forEach (tick) =>
 				unless newYears.contains tick.year()
 					newYears = newYears.push tick.year()
 					newYearLines = newYearLines.push {
-						value: if tick.isSame xTicks.first() then tick else tick.startOf('year')
+						value: if tick.isSame @props.xTicks.first() then tick else tick.startOf('year')
 						text: tick.year()
 						position: 'middle'
 						class: 'yearLine'
@@ -311,8 +356,8 @@ load = (win) ->
 								fit: false
 								format: '%b %d'
 							}
-							min: xTicks.first().clone().format Persist.TimestampFormat
-							max: xTicks.last().clone().format Persist.TimestampFormat
+							min: @props.xTicks.first().clone().format Persist.TimestampFormat
+							max: @props.xTicks.last().clone().format Persist.TimestampFormat
 						}
 						y: {
 							show: false
@@ -355,35 +400,7 @@ load = (win) ->
 
 		_convertTimestamp: (timestamp) ->
 			# Converts to unix ms
-			return Moment(timestamp, TimestampFormat).valueOf()
-
-		_generateXTicks: ->
-			# Builds list of ALL the timestamps
-			timestamps = @props.metricValues.map (metricValue) ->
-				return Moment metricValue.get('timestamp'), Persist.TimestampFormat
-
-			# Builds ordered set of unique timestamps (each as unix ms)
-			middayTimeStamps = timestamps.map (timestamp) ->
-				return timestamp.startOf('day').valueOf()
-			.toOrderedSet().sort()
-
-			# Figure out number of days with data
-			daysOfData = middayTimeStamps.size
-
-			# Disable chart view if less than 3 days of data
-			if daysOfData < 3
-				@setState => isDisabled: {message: "Sorry, 
-				#{3 - daysOfData} more days of #{Term 'progress notes'} are required
-				before I can chart anything meaningful here."}
-
-			firstDay = Moment middayTimeStamps.first()
-			lastDay = Moment middayTimeStamps.last()
-
-			dayRange = lastDay.diff(firstDay, 'days') + 1
-
-			# Return a list of full range of timestamps starting from 
-			return Imm.List([0..dayRange]).map (n) ->
-				firstDay.clone().add(n, 'days')
+			return Moment(timestamp, TimestampFormat).valueOf()		
 
 
 
