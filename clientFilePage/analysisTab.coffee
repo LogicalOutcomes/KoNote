@@ -342,19 +342,79 @@ load = (win) ->
 						class: 'yearLine'
 					}
 
-			console.log "ProgEvent RAW", @props.progEvents.toJS()
+			# console.log "ProgEvent RAW", @props.progEvents.toJS()
 
 			# PROG EVENT REGIONS
 			# Build Imm.List of region objects
 			progEventRegions = @props.progEvents.map (progEvent) =>
 				eventRegion = {
-					start: @_convertTimestamp progEvent.get('startTimestamp')
+					start: @_toUnixMs progEvent.get('startTimestamp')
 					class: "progEventRange #{progEvent.get('id')}"
 				}
 				if Moment(progEvent.get('endTimestamp'), TimestampFormat).isValid()
-					eventRegion.end = @_convertTimestamp progEvent.get('endTimestamp')				
+					eventRegion.end = @_toUnixMs progEvent.get('endTimestamp')
+
+				# TODO: Classify singular event
 
 				return eventRegion
+			
+
+
+			sortedEvents = progEventRegions.sortBy (event) => event['start']
+
+			remainingEvents = sortedEvents
+
+			eventRows = Imm.List()
+			rowIndex = 0
+
+			while rowIndex is 0
+				console.log "remainingEvents size:", JSON.stringify(remainingEvents.toJS())
+				# Add new eventRow
+				eventRows = eventRows.push []
+
+				console.log "Init Row", eventRows.get(0)
+
+				# Loop through events, pluck any with non-conflicting dates
+				remainingEvents.forEach (progEvent, index) =>
+					console.log "Loop ##{index}"
+
+					console.log "This progEvent", progEvent
+
+					console.log "This Row:", eventRows.get(rowIndex)
+
+					if eventRows.get(rowIndex).length is 0
+						console.log "Pushing first event"
+						# console.log "EventRows:", eventRows.toJS()
+						# console.log "eventRows.get(rowIndex)", eventRows.get(rowIndex)
+
+						# eventRows.get(rowIndex).push progEvent
+						eventRows = eventRows.set(rowIndex, eventRows.setIn(rowIndex).push(progEvent))
+						# eventRows = eventRows.
+						console.log "eventRows", eventRows.toJS()
+
+						# eventRows = eventRows.update rowIndex, (row) -> row.push(progEvent)
+						remainingEvents = remainingEvents.shift()
+					else
+						console.log "Row:", rowIndex, "Index:", index
+						console.log eventRows.get(rowIndex).length, progEvent.start
+
+						eventRows.set(rowIndex, eventRows.get(rowIndex).push(progEvent))
+
+						console.log "eventRows", eventRows.toJS()
+
+						# if eventRows.get(rowIndex)[index].end? and progEvent.start >= eventRows.get(rowIndex)[-1].end
+						# # console.log "#{progEvent.get('start')} >= #{remainingEvents.getIn([index - 1, 'end'])}"
+						# 	eventRows = eventRows.update rowIndex, (row) -> row.push(progEvent)
+						# 	remainingEvents = remainingEvents.shift()
+
+
+				rowIndex = rowIndex + 1
+
+				# console.log "Row Generated:", eventRows.get(rowIndex)
+				console.log "remainingEvents size:", remainingEvents.size
+
+				# return
+
 
 			# Generate and bind the chart
 			@_chart = C3.generate {						
@@ -410,7 +470,7 @@ load = (win) ->
 					}
 				}
 
-		_convertTimestamp: (timestamp) ->
+		_toUnixMs: (timestamp) ->
 			# Converts to unix ms
 			return Moment(timestamp, TimestampFormat).valueOf()		
 
