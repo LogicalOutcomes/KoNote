@@ -31,7 +31,8 @@ load = (win) ->
 				metricValues: null
 				selectedMetricIds: Imm.Set()
 				xTicks: Imm.List()
-				timeSpan: Imm.List()
+				timeSpan: null
+				timeGranulatiry: 'day'
 			}
 		componentWillMount: ->
 			# All non-empty metric values
@@ -89,24 +90,27 @@ load = (win) ->
 				)
 				R.div({className: "timeScaleToolbar #{showWhen hasData}"},
 					R.div({id: 'timeSpanContainer'},
-						RangeSlider({
+						Slider({
 							ref: 'timeSpanSlider'
 							isRange: true
-							minValue: 0
-							ticks: @state.xTicks.pop()
-							onChange: @_updateTimeSpan
 							defaultValue: [0, @state.xTicks.size]
+							ticks: @state.xTicks.pop().toJS()
+							onChange: @_updateTimeSpan
+							formatter: ([start, end]) =>
+								return [
+									Moment(@state.xTicks.get(start)).format('YYYY-MM-DD')
+									Moment(@state.xTicks.get(end)).format('YYYY-MM-DD')
+								]
 						})
 					)
-					R.div({id: 'granularContainer'},
-						RangeSlider({
-							ref: 'granularSlider'
-							defaultValue: 0
-							minValue: 0
-							ticks: null
-							onChange: @_updateGranularity
-						})
-					)
+					# R.div({id: 'granularContainer'},
+					# 	Slider({
+					# 		ref: 'granularSlider'
+					# 		defaultValue: 3
+					# 		ticks: ['year', 'month', 'week', 'day']
+					# 		onChange: @_updateGranularity
+					# 	})
+					# )
 				)
 				R.div({className: "mainWrapper #{showWhen hasData}"},
 					R.div({className: "chartContainer"},
@@ -155,27 +159,24 @@ load = (win) ->
 				return {selectedMetricIds}
 
 		_updateTimeSpan: (event) ->
-			timeIndexes = event.target.value.split(",")
-
-			timeSpan = Imm.List(timeIndexes).map (timeIndex) =>
-				return @state.xTicks.get(timeIndex)
-
+			timeSpan = event.target.value.split(",")
 			@setState {timeSpan}
 
 		_updateGranularity: (event) ->
 			# Nothing yet
 
 
-	RangeSlider = React.createFactory React.createClass
+	Slider = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
 			slider = $(@refs.slider.getDOMNode()).slider({
-				range: @props.isRange
+				range: @props.isRange or false
 				tooltip: 'always'
-				min: 0
-				max: if @props.ticks then @props.ticks.size else 1
-				value: @props.defaultValue
+				min: @props.minValue or 0
+				max: @props.maxValue or @props.ticks.length
+				value: @props.value or @props.defaultValue
+				formatter: @props.formatter or (->)
 			})
 			
 			slider.on('slideStop', (event) => @props.onChange event)
@@ -216,18 +217,17 @@ load = (win) ->
 			if @state.isDisabled
 				return
 
+			# Update metrics?
 			sameMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 			unless sameMetrics
 				@_refreshSelectedMetrics()
 
-			console.log @props.timeSpanMin, oldProps.timeSpanMin
-
-			sameTimeSpan = Imm.is @props.timeSpan, oldProps.timeSpan
+			# Update timeSpan?
+			sameTimeSpan = @props.timeSpan is oldProps.timeSpan
 			unless sameTimeSpan
-				console.log "Updating minDate"
-				@_chart.axis.min {x: @props.timeSpan.get(0)}
-				@_chart.axis.max {x: @props.timeSpan.get(1)}
-				# console.log @_chart
+				console.log "Updating timeSpan", @props.timeSpan, "from", oldProps.timeSpan
+				@_chart.axis.min {x: @props.xTicks.get(@props.timeSpan[0])}
+				@_chart.axis.max {x: @props.xTicks.get(@props.timeSpan[1])}	
 				
 		componentDidMount: ->			
 			@_generateChart()
@@ -243,9 +243,6 @@ load = (win) ->
 				@_chart.show("y-" + metricId)
 
 		_attachKeyBindings: ->
-			# Clone regions to put in forefront
-			$('.c3-regions').clone().insertAfter('.c3-chart')
-
 			# Find our hidden eventInfo box
 			eventInfo = $(@refs.eventInfo.getDOMNode())
 
@@ -357,63 +354,50 @@ load = (win) ->
 				# TODO: Classify singular event
 
 				return eventRegion
-			
+
+			# Sort regions in order of start timestamp
+			sortedEvents = progEventRegions.sortBy (event) => event['start']						
 
 
-			sortedEvents = progEventRegions.sortBy (event) => event['start']
-
+			# Setting up vars for row sorting
 			remainingEvents = sortedEvents
-
 			eventRows = Imm.List()
+			progEvents = Imm.List()
 			rowIndex = 0
 
-			while rowIndex is 0
-				console.log "remainingEvents size:", JSON.stringify(remainingEvents.toJS())
-				# Add new eventRow
-				eventRows = eventRows.push []
+			_pluckProgEvent = (thisEvent, index) ->
+				# Append class with row number
+				originalProgEvent = Imm.fromJS(thisEvent)
+				newClass = originalProgEvent.get('class') + " row#{rowIndex}"
+				progEvent = originalProgEvent.set('class', newClass)
 
-				console.log "Init Row", eventRows.get(0)
+				# Update eventRows, remove from remainingEvents
+				updatedRow = eventRows.get(rowIndex).push progEvent
+				eventRows = eventRows.set rowIndex, updatedRow
+				remainingEvents = remainingEvents.delete(index)
+
+				return
+
+			while remainingEvents.size > 0
+				# Init new eventRow
+				eventRows = eventRows.push Imm.List()
 
 				# Loop through events, pluck any with non-conflicting dates
-				remainingEvents.forEach (progEvent, index) =>
-					console.log "Loop ##{index}"
+				remainingEvents.forEach (thisEvent) =>
 
-					console.log "This progEvent", progEvent
+					thisRow = eventRows.get(rowIndex)
+					# Can't rely on forEach index, because .delete() offsets it
+					liveIndex = remainingEvents.indexOf(thisEvent)
 
-					console.log "This Row:", eventRows.get(rowIndex)
+					_pluckProgEvent(thisEvent, liveIndex) if thisRow.size is 0 or (
+						thisRow.last().get('end')? and 
+						thisEvent.start >= thisRow.last().get('end')
+					)
 
-					if eventRows.get(rowIndex).length is 0
-						console.log "Pushing first event"
-						# console.log "EventRows:", eventRows.toJS()
-						# console.log "eventRows.get(rowIndex)", eventRows.get(rowIndex)
+				# Cancat to final (flat) output for c3
+				progEvents = progEvents.concat eventRows.get(rowIndex)
 
-						# eventRows.get(rowIndex).push progEvent
-						eventRows = eventRows.set(rowIndex, eventRows.setIn(rowIndex).push(progEvent))
-						# eventRows = eventRows.
-						console.log "eventRows", eventRows.toJS()
-
-						# eventRows = eventRows.update rowIndex, (row) -> row.push(progEvent)
-						remainingEvents = remainingEvents.shift()
-					else
-						console.log "Row:", rowIndex, "Index:", index
-						console.log eventRows.get(rowIndex).length, progEvent.start
-
-						eventRows.set(rowIndex, eventRows.get(rowIndex).push(progEvent))
-
-						console.log "eventRows", eventRows.toJS()
-
-						# if eventRows.get(rowIndex)[index].end? and progEvent.start >= eventRows.get(rowIndex)[-1].end
-						# # console.log "#{progEvent.get('start')} >= #{remainingEvents.getIn([index - 1, 'end'])}"
-						# 	eventRows = eventRows.update rowIndex, (row) -> row.push(progEvent)
-						# 	remainingEvents = remainingEvents.shift()
-
-
-				rowIndex = rowIndex + 1
-
-				# console.log "Row Generated:", eventRows.get(rowIndex)
-				console.log "remainingEvents size:", remainingEvents.size
-
-				# return
+				rowIndex++
 
 
 			# Generate and bind the chart
@@ -446,7 +430,7 @@ load = (win) ->
 						xs: xsMap.toJS()
 						names: dataSeriesNames.toJS()
 					}
-					regions: progEventRegions.toJS()
+					regions: progEvents.toJS()
 					tooltip: {
 						format: {
 							value: (value, ratio, id, index) ->
@@ -468,6 +452,7 @@ load = (win) ->
 						left: 25
 						right: 25
 					}
+					onrendered: @_attachKeyBindings
 				}
 
 		_toUnixMs: (timestamp) ->

@@ -148,27 +148,22 @@
 					flex 1
 					
 					.c3-chart
-						z-index 0
-						
-					.c3-regions:first-child
-						display none
+						z-index 0						
 						
 					.c3-regions
-						// margin-top -100px
 						
-						.c3-region > rect
-							// 10% of original height
-							transform scaleY(0.1) !important						
+						.c3-region 
 							
-							&:hover
-								fill red !important
+							> rect
+								// 10% of original height
+								transform scaleY(0.1) !important
 								
-								&:before
-									content attr(class)
-									display block
-									position absolute
-									top 100px
-									color black
+								&:hover
+									fill red !important
+										
+							&.row1 > rect
+								transform scaleY(0.1) translateY(350px) !important
+								
 						
 
 		.selectionPanel
