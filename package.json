@@ -29,7 +29,7 @@
     "bootstrap": "^3.3.5",
     "bootstrap-slider": "^5.0.12",
     "buffer-equal-constant-time": "^1.0.1",
-    "c3": "https://github.com/konode001/c3#0.4.10-fixes",
+    "c3": "https://github.com/konode001/c3#0.4.10-fixes-regions",
     "d3": "^3.5.0",
     "chai": "^2.3.0",
     "clone": "^1.0.2",
