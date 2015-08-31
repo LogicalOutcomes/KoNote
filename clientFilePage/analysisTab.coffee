@@ -459,7 +459,7 @@ load = (win) ->
 						x: {
 							type: 'timeseries'
 							tick: {
-								fit: true
+								fit: false
 								format: '%b %d'
 							}
 							min: @props.xTicks.first().clone().format Persist.TimestampFormat
