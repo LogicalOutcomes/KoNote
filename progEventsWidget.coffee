@@ -38,12 +38,12 @@ load = (win) ->
 				R.br()
 				@props.description
 			)
-			$(@refs.name.getDOMNode()).tooltip {
+			$('.small').tooltip {
 				html: true
 				title: React.renderToString tooltipContent
 				placement: 'auto'
 				# required to stop tooltip from being obstructed by menu
-				viewport: $(@refs.name.getDOMNode()).parent()
+				viewport: $(this.getDOMNode()).parent()
 			}
 		render: ->
 			format = @props.format
@@ -54,7 +54,7 @@ load = (win) ->
 			return R.div({className: 'progEventsWidget'},
 				if format is 'large'
 					R.div({
-						className: format, ref: 'name'
+						className: format
 					},
 						title,
 						R.br(),
