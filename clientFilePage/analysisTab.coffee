@@ -23,6 +23,7 @@ load = (win) ->
 	{TimestampFormat} = require('../persist/utils')
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
+	TimeGranularities = ['Day', 'Week', 'Month', 'Year']
 
 	AnalysisView = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -31,7 +32,8 @@ load = (win) ->
 				metricValues: null
 				selectedMetricIds: Imm.Set()
 				xTicks: Imm.List()
-				timeSpan: null
+				xDays: Imm.List()
+				timeSpan: [0, 1]
 				timeGranulatiry: 'day'
 			}
 		componentWillMount: ->
@@ -74,11 +76,13 @@ load = (win) ->
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
-			@setState => {xTicks, metricIdsWithData, metricValues}
+			@setState => {xDays: xTicks, xTicks, metricIdsWithData, metricValues}
 
 		render: ->			
 			# Is there actually enough information to show something?
 			hasData = @state.metricIdsWithData.size > 0
+
+			console.log "@state.selectedMetricIds", @state.selectedMetricIds
 
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
 				R.div({className: "noData #{showWhen not hasData}"},
@@ -89,28 +93,37 @@ load = (win) ->
 					)
 				)
 				R.div({className: "timeScaleToolbar #{showWhen hasData}"},
-					R.div({id: 'timeSpanContainer'},
+					R.div({className: 'timeSpanContainer'},						
 						Slider({
 							ref: 'timeSpanSlider'
+							isEnabled: true
+							tooltip: true
 							isRange: true
 							defaultValue: [0, @state.xTicks.size]
 							ticks: @state.xTicks.pop().toJS()
 							onChange: @_updateTimeSpan
 							formatter: ([start, end]) =>
-								return [
-									Moment(@state.xTicks.get(start)).format('YYYY-MM-DD')
-									Moment(@state.xTicks.get(end)).format('YYYY-MM-DD')
-								]
+								startTime = Moment(@state.xTicks.get(start)).format('YYYY-MM-DD')
+								endTime = Moment(@state.xTicks.get(end)).format('YYYY-MM-DD')
+								return "#{startTime} to #{endTime}"
+						})
+						R.div({className: 'valueDisplay'},
+							(@state.timeSpan.map (index) =>
+								date = Moment(@state.xTicks.get(index)).format('YYYY-MM-DD')
+								return R.div({}, date)
+							)
+						)
+					)
+					R.div({className: 'granularContainer'},
+						Slider({
+							ref: 'granularSlider'
+							isEnabled: true
+							defaultValue: 0
+							ticks: TimeGranularities
+							tickRegions: true
+							onChange: @_updateGranularity
 						})
 					)
-					# R.div({id: 'granularContainer'},
-					# 	Slider({
-					# 		ref: 'granularSlider'
-					# 		defaultValue: 3
-					# 		ticks: ['year', 'month', 'week', 'day']
-					# 		onChange: @_updateGranularity
-					# 	})
-					# )
 				)
 				R.div({className: "mainWrapper #{showWhen hasData}"},
 					R.div({className: "chartContainer"},
@@ -163,26 +176,62 @@ load = (win) ->
 			@setState {timeSpan}
 
 		_updateGranularity: (event) ->
-			# Nothing yet
+			timeGranularity = event.target.value
+			@setState {timeGranularity}
+
+			console.log "xTicks:", @state.xTicks.toJS()
+
+			tickDays = @state.xTicks
+
+			startFirstWeek = tickDays.first().startOf('week')
+			endLastWeek = tickDays.last().endOf('week')
+
+			numberWeeks = endLastWeek.diff startFirstWeek, 'weeks'
+
+			console.log "numberWeeks", numberWeeks
+
+			tickWeeks = Imm.List([0...numberWeeks]).map (weekIndex) =>
+				return startFirstWeek.clone().add(weekIndex, 'weeks')
+
+			console.log "tickWeeks", tickWeeks.toJS()
+
+			@setState {xTicks: tickWeeks}
 
 
 	Slider = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
+		getInitialState: ->
+			slider: null
+
 		componentDidMount: ->
-			slider = $(@refs.slider.getDOMNode()).slider({
-				range: @props.isRange or false
-				tooltip: 'always'
-				min: @props.minValue or 0
-				max: @props.maxValue or @props.ticks.length
-				value: @props.value or @props.defaultValue
-				formatter: @props.formatter or (->)
-			})
-			
-			slider.on('slideStop', (event) => @props.onChange event)
+			@setState {
+				slider: $(@refs.slider.getDOMNode()).slider({
+					enabled: @props.isEnabled
+					tooltip: if @props.tooltip then 'show' else 'hide'
+					range: @props.isRange or false
+					min: @props.minValue or 0
+					max: @props.maxValue or @props.ticks.length
+					ticks: [0...TimeGranularities.length] if @props.tickRegions
+					ticks_labels: TimeGranularities if @props.tickRegions
+					value: @props.defaultValue
+					formatter: @props.formatter or ((value) -> value)
+				})
+			}, =>
+				@state.slider.on('slideStop', (event) => @props.onChange event)
 
 		render: ->
 			return R.input({ref: 'slider'})
+
+		# componentDidUpdate: (oldProps, oldState) ->
+		# 	console.log "Enabled?", @props.isEnabled
+		# 	if @state.slider? and @props.isEnabled isnt oldProps.isEnabled				
+		# 		if @props.isEnabled
+		# 			console.log "Enabling..."
+		# 			@state.slider.enable()
+		# 		else
+		# 			console.log "Disabling..."
+		# 			@state.slider.disable()
 
 
 	Chart = React.createFactory React.createClass
@@ -235,8 +284,6 @@ load = (win) ->
 			@_attachKeyBindings()
 
 		_refreshSelectedMetrics: ->
-			# $('.c3-regions').insertBefore('.c3-chart')
-
 			@_chart.hide()
 
 			@props.selectedMetricIds.forEach (metricId) =>
@@ -255,8 +302,8 @@ load = (win) ->
 
 					# Make eventInfo follow the mouse
 					$(win.document).on('mousemove', (event) ->
-						eventInfo.css('top', event.clientY - eventInfo.outerHeight())
-						eventInfo.css('left', event.clientX)
+						eventInfo.css 'top', event.clientY - (eventInfo.outerHeight() + 15)
+						eventInfo.css 'left', event.clientX
 					)
 				, =>
 					# Hide and unbind!
@@ -412,7 +459,7 @@ load = (win) ->
 						x: {
 							type: 'timeseries'
 							tick: {
-								fit: false
+								fit: true
 								format: '%b %d'
 							}
 							min: @props.xTicks.first().clone().format Persist.TimestampFormat

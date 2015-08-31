@@ -7,9 +7,10 @@
 		flex none
 		flex-basis 85px
 		display flex
-		padding-bottom 25px
+		flex-direction row
 		border-bottom 2px solid sidebar-borders
 		
+		// Default styling for slider
 		.slider				
 			width 100%
 			
@@ -34,19 +35,36 @@
 					
 					&:hover
 						background #3b4e59
+						
+			.slider-tick-label-container
+				margin-left -15% !important
+				margin-right -15% !important
+				
+				> .slider-tick-label
+					width 25% !important
+					text-align center !important
 		
-		> #timeSpanContainer
+		> .timeSpanContainer
 			flex 5
-			display flex
-			align-items flex-end
+			display block
 			padding 0px 30px
 			
-		> #granularContainer
+			> .valueDisplay
+				display flex
+				
+				> div
+					flex 1
+					
+					&:last-child
+						text-align right
+			
+		> .granularContainer
 			flex 1
 			display flex
-			align-items flex-end			
+			align-items center
 			padding 0px 30px
 			
+			// Slider style variation
 			.slider-track-low, .slider-track-high
 				background #e4f5e4
 				
