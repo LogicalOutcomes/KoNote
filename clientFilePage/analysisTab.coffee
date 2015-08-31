@@ -103,26 +103,28 @@ load = (win) ->
 							ticks: @state.xTicks.pop().toJS()
 							onChange: @_updateTimeSpan
 							formatter: ([start, end]) =>
-								startTime = Moment(@state.xTicks.get(start)).format('YYYY-MM-DD')
-								endTime = Moment(@state.xTicks.get(end)).format('YYYY-MM-DD')
-								return "#{startTime} to #{endTime}"
+								startTime = Moment(@state.xTicks.get(start)).format('Do MMM')
+								endTime = Moment(@state.xTicks.get(end)).format('Do MMM')
+								return "#{startTime} - #{endTime}"
 						})
 						R.div({className: 'valueDisplay'},
 							(@state.timeSpan.map (index) =>
-								date = Moment(@state.xTicks.get(index)).format('YYYY-MM-DD')
-								return R.div({}, date)
+								date = Moment(@state.xTicks.get(index)).format('dddd, Do MMMM, \'YY')
+								return R.div({},
+									R.span({}, date)
+								)
 							)
 						)
 					)
 					R.div({className: 'granularContainer'},
-						Slider({
-							ref: 'granularSlider'
-							isEnabled: true
-							defaultValue: 0
-							ticks: TimeGranularities
-							tickRegions: true
-							onChange: @_updateGranularity
-						})
+						# Slider({
+						# 	ref: 'granularSlider'
+						# 	isEnabled: true
+						# 	defaultValue: 0
+						# 	ticks: TimeGranularities
+						# 	tickRegions: true
+						# 	onChange: @_updateGranularity
+						# })
 					)
 				)
 				R.div({className: "mainWrapper #{showWhen hasData}"},
@@ -175,27 +177,27 @@ load = (win) ->
 			timeSpan = event.target.value.split(",")
 			@setState {timeSpan}
 
-		_updateGranularity: (event) ->
-			timeGranularity = event.target.value
-			@setState {timeGranularity}
+		# _updateGranularity: (event) ->
+		# 	timeGranularity = event.target.value
+		# 	@setState {timeGranularity}
 
-			console.log "xTicks:", @state.xTicks.toJS()
+		# 	console.log "xTicks:", @state.xTicks.toJS()
 
-			tickDays = @state.xTicks
+		# 	tickDays = @state.xTicks
 
-			startFirstWeek = tickDays.first().startOf('week')
-			endLastWeek = tickDays.last().endOf('week')
+		# 	startFirstWeek = tickDays.first().startOf('week')
+		# 	endLastWeek = tickDays.last().endOf('week')
 
-			numberWeeks = endLastWeek.diff startFirstWeek, 'weeks'
+		# 	numberWeeks = endLastWeek.diff startFirstWeek, 'weeks'
 
-			console.log "numberWeeks", numberWeeks
+		# 	console.log "numberWeeks", numberWeeks
 
-			tickWeeks = Imm.List([0...numberWeeks]).map (weekIndex) =>
-				return startFirstWeek.clone().add(weekIndex, 'weeks')
+		# 	tickWeeks = Imm.List([0...numberWeeks]).map (weekIndex) =>
+		# 		return startFirstWeek.clone().add(weekIndex, 'weeks')
 
-			console.log "tickWeeks", tickWeeks.toJS()
+		# 	console.log "tickWeeks", tickWeeks.toJS()
 
-			@setState {xTicks: tickWeeks}
+		# 	@setState {xTicks: tickWeeks}
 
 
 	Slider = React.createFactory React.createClass
@@ -244,11 +246,17 @@ load = (win) ->
 		render: ->
 			return R.div({className: 'chartInner'},
 				R.div({
-					className: 'eventInfo'
+					id: 'eventInfo'
 					ref: 'eventInfo'
 				},
-					R.span({className: 'title'})
-					R.p({className: 'description'})
+					R.div({className: 'title'})
+					R.div({className: 'info'}
+						R.div({className: 'description'})
+						R.div({className: 'timeSpan'},
+							R.div({className: 'startDate'})
+							R.div({className: 'endDate'})
+						)
+					)
 				)
 				R.div({
 					className: "chart disabledChart #{showWhen !!@state.isDisabled}"
@@ -291,14 +299,27 @@ load = (win) ->
 
 		_attachKeyBindings: ->
 			# Find our hidden eventInfo box
-			eventInfo = $(@refs.eventInfo.getDOMNode())
+			eventInfo = $('#eventInfo')
+			dateFormat = 'Do MMM [at] h:mm A'
 
 			@props.progEvents.forEach (progEvent) =>
 				# Attach hover binding to progEvent region
 				$('.' + progEvent.get('id')).hover((event) =>
+
+					startTimestamp = Moment(progEvent.get('startTimestamp'), TimestampFormat)
+					endTimestamp = Moment(progEvent.get('endTimestamp'), TimestampFormat)
+
+					# Nullify endTimestamp when doesn't exist
+					unless endTimestamp.isValid()
+						endTimestamp = null
+
 					eventInfo.addClass('show')
 					eventInfo.find('.title').text progEvent.get('title')
-					eventInfo.find('.description').text progEvent.get('description')
+					eventInfo.find('.description').text(progEvent.get('description') or "(no description)")
+
+					eventInfo.find('.startDate').text "From: " + startTimestamp.format(dateFormat)
+					if endTimestamp
+						eventInfo.find('.endDate').text "Until: " + endTimestamp.format(dateFormat)
 
 					# Make eventInfo follow the mouse
 					$(win.document).on('mousemove', (event) ->
@@ -467,7 +488,7 @@ load = (win) ->
 						}
 						y: {
 							show: false
-							max: 1.5
+							max: 1 + (eventRows.size * 1/4)
 						}
 					}				
 					data: {
