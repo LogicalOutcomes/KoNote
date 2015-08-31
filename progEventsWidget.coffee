@@ -30,7 +30,7 @@ load = (win) ->
 			eventDate = [startDate, ' - ', endDate]
 		eventDate
 	
-	progEventWidget = React.createFactory React.createClass
+	progEventsWidget = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		componentDidMount: ->
 			tooltipContent = R.div({},
@@ -76,6 +76,6 @@ load = (win) ->
 					)
 			)
 	
-	return progEventWidget
+	return progEventsWidget
 
 module.exports = {load}
