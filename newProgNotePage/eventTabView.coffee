@@ -37,6 +37,7 @@ load = (win) ->
 		componentDidMount: ->
 			# Initialize datepickers, update @state when value changes
 
+			# TODO Refactor to single function
 			$(@refs.startDate.getDOMNode()).datetimepicker({
 				useCurrent: false
 				format: 'Do MMM, \'YY'
@@ -79,8 +80,8 @@ load = (win) ->
 				className: "eventView #{showWhen @props.isBeingEdited or not @props.editMode}"
 			},
 				R.form({className: showWhen @props.isBeingEdited},
-					R.span({
-						className: 'btn btn-danger'
+					R.button({
+						className: 'btn btn-danger closeButton'
 						onClick: @_closeForm
 					}, 
 						FaIcon('times')
@@ -171,32 +172,42 @@ load = (win) ->
 							}, FaIcon('clock-o'))
 						)
 					)
-					R.button({
-						className: "btn btn-default"
-						onClick: @_toggleIsDateSpan
-					}, 
-						unless @state.isDateSpan
-							"Insert End Date"
-						else
-							"Remove End Date"
-					)
-					R.button({
-						className: 'btn btn-success'
-						type: 'submit'
-						onClick: @_saveEventData
-						disabled: not @state.title or not @state.startDate or (@state.isDateSpan and not @state.endDate) or (@state.usesTimeOfDay and not @state.startTime) or (@state.usesTimeOfDay and @state.isDateSpan and not @state.endTime)
-					}, 
-						"Save"
-						FaIcon('check')
-					)
+					R.div({
+						className: 'btn-toolbar'
+					},
+						R.button({
+							className: "btn btn-default #{showWhen not @state.isDateSpan}"
+							onClick: @_toggleIsDateSpan
+						},
+							"Add End Date"
+						)
+						R.button({
+							className: "btn btn-success #{'fullWidth' if @state.isDateSpan}"
+							type: 'submit'
+							onClick: @_saveEventData
+							disabled: not @state.title or not @state.startDate or (@state.isDateSpan and not @state.endDate) or (@state.usesTimeOfDay and not @state.startTime) or (@state.usesTimeOfDay and @state.isDateSpan and not @state.endTime)
+						}, 
+							"Save "
+							FaIcon('check')
+						)
+					)					
 				)
 
 				R.div({className: "details #{showWhen not @props.isBeingEdited}"},
-					"title: #{@props.data.title}\n"
-					"description: #{@props.data.description}\n"
-					"startTimestamp: #{@_showTimestamp @props.data.startTimestamp}\n"
-					if @props.data.endTimestamp
-						"endTimestamp: #{@_showTimestamp @props.data.endTimestamp}\n"
+					R.div({className: 'title'}, @props.data.title)
+					R.div({className: 'description'}, @props.data.description)
+					R.div({className: 'timeSpan'},
+						R.div({className: 'start'}, 
+							"From: " if @props.data.endTimestamp
+							@_showTimestamp @props.data.startTimestamp
+						)
+						(if @props.data.endTimestamp
+							R.div({className: 'end'}, 
+								"Until: "
+								@_showTimestamp @props.data.endTimestamp
+							)
+						)
+					)
 				)				
 		)
 
@@ -211,7 +222,7 @@ load = (win) ->
 			moment = Moment(timestamp, TimestampFormat)
 
 			if moment.isValid
-				return Moment(moment, TimestampFormat).format('YYYY-MM-DD HH:mm')
+				return Moment(moment, TimestampFormat).format('Do MMMM [at] H:mm A')
 			else
 				return "Invalid Moment"
 
