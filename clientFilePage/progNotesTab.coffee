@@ -288,22 +288,22 @@ load = (win) ->
 									)									
 								)
 					).toJS()...
-					R.div({}
-						R.h3({},
-							"Events"
-						)
 						(@props.progEvents.map (progEvent) =>
-							ProgEventsWidget({
-								format: 'large'
-								title: progEvent.get('title')
-								description: progEvent.get('description')
-								start: progEvent.get('startTimestamp')
-								end: progEvent.get('endTimestamp')
-							})
-						).toJS()...
+							R.div({}
+								R.h3({},
+									"#{Term 'Event'}"
+								)
+								ProgEventsWidget({
+									format: 'large'
+									title: progEvent.get('title')
+									description: progEvent.get('description')
+									start: progEvent.get('startTimestamp')
+									end: progEvent.get('endTimestamp')
+								})
+							)
+					).toJS()...
 					)
 				)
-			)
 		_selectBasicSection: (section) ->
 			@props.setSelectedItem Imm.fromJS {
 				type: 'basicSection'

@@ -56,11 +56,9 @@ load = (win) ->
 					R.div({
 						className: format
 					},
-						title,
-						R.br(),
-						eventDate,
-						R.br(),
-						renderLineBreaks description
+						R.div({className: 'title'}, title)
+						R.div({className: 'description'}, renderLineBreaks description)
+						R.div({className: 'date'}, eventDate)
 					)
 				else
 					R.div({
