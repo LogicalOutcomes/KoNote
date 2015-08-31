@@ -210,7 +210,6 @@ load = (win) ->
 				global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 
 				$('body').bind "mousemove mousedown keypress scroll", (event) ->
-					console.log event
 					global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 			
 			'timeout:timedOut': =>
