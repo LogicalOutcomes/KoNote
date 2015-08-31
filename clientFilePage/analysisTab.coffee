@@ -109,7 +109,7 @@ load = (win) ->
 						})
 						R.div({className: 'valueDisplay'},
 							(@state.timeSpan.map (index) =>
-								date = Moment(@state.xTicks.get(index)).format('dddd, Do MMMM, \'YY')
+								date = Moment(@state.xTicks.get(index)).format('dddd - Do MMMM - YYYY')
 								return R.div({},
 									R.span({}, date)
 								)
@@ -253,8 +253,8 @@ load = (win) ->
 					R.div({className: 'info'}
 						R.div({className: 'description'})
 						R.div({className: 'timeSpan'},
-							R.div({className: 'startDate'})
-							R.div({className: 'endDate'})
+							R.div({className: 'start'})
+							R.div({className: 'end'})
 						)
 					)
 				)
@@ -304,22 +304,24 @@ load = (win) ->
 
 			@props.progEvents.forEach (progEvent) =>
 				# Attach hover binding to progEvent region
-				$('.' + progEvent.get('id')).hover((event) =>
-
-					startTimestamp = Moment(progEvent.get('startTimestamp'), TimestampFormat)
-					endTimestamp = Moment(progEvent.get('endTimestamp'), TimestampFormat)
-
-					# Nullify endTimestamp when doesn't exist
-					unless endTimestamp.isValid()
-						endTimestamp = null
+				$('.' + progEvent.get('id')).hover((event) =>					
 
 					eventInfo.addClass('show')
 					eventInfo.find('.title').text progEvent.get('title')
 					eventInfo.find('.description').text(progEvent.get('description') or "(no description)")
 
-					eventInfo.find('.startDate').text "From: " + startTimestamp.format(dateFormat)
-					if endTimestamp
-						eventInfo.find('.endDate').text "Until: " + endTimestamp.format(dateFormat)
+					startTimestamp = new Moment(progEvent.get('startTimestamp'), TimestampFormat)
+					endTimestamp = new Moment(progEvent.get('endTimestamp'), TimestampFormat)
+
+					startText = startTimestamp.format(dateFormat)
+					endText = if endTimestamp.isValid() then endTimestamp.format(dateFormat) else null
+
+					if endText?
+						startText = "From: " + startText
+						endText = "Until: " + endText
+
+					eventInfo.find('.start').text startText
+					eventInfo.find('.end').text endText
 
 					# Make eventInfo follow the mouse
 					$(win.document).on('mousemove', (event) ->
@@ -435,14 +437,22 @@ load = (win) ->
 
 			_pluckProgEvent = (thisEvent, index) ->
 				# Append class with row number
-				originalProgEvent = Imm.fromJS(thisEvent)
-				newClass = originalProgEvent.get('class') + " row#{rowIndex}"
-				progEvent = originalProgEvent.set('class', newClass)
+				progEvent = Imm.fromJS(thisEvent)
+				newClass = progEvent.get('class') + " row#{rowIndex}"				
+
+				# Convert single-point event date to a short span
+				if not progEvent.get('end')
+					startDate = Moment progEvent.get('start')
+					progEvent = progEvent.set 'end', startDate.clone().add(6, 'hours')
+					newClass = newClass + " singlePoint"
+
+				# Update class
+				progEvent = progEvent.set('class', newClass)
 
 				# Update eventRows, remove from remainingEvents
 				updatedRow = eventRows.get(rowIndex).push progEvent
 				eventRows = eventRows.set rowIndex, updatedRow
-				remainingEvents = remainingEvents.delete(index)
+				remainingEvents = remainingEvents.delete(index)				
 
 				return
 
@@ -458,7 +468,7 @@ load = (win) ->
 					liveIndex = remainingEvents.indexOf(thisEvent)
 
 					_pluckProgEvent(thisEvent, liveIndex) if thisRow.size is 0 or (
-						thisRow.last().get('end')? and 
+						not thisRow.last().get('end')? or 
 						thisEvent.start >= thisRow.last().get('end')
 					)
 
