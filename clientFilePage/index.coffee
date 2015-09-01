@@ -504,7 +504,7 @@ load = (win, {clientFileId}) ->
 					Config.logoSubtitle
 				)
 				R.div({className: 'clientName'},
-					R.span({}, "#{@props.clientName}")
+					@props.clientName
 				)
 				R.div({className: 'recordId'},
 					R.span({}, renderFileId @props.recordId, true)
