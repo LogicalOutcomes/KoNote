@@ -82,8 +82,6 @@ load = (win) ->
 			# Is there actually enough information to show something?
 			hasData = @state.metricIdsWithData.size > 0
 
-			console.log "@state.selectedMetricIds", @state.selectedMetricIds
-
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
 				R.div({className: "noData #{showWhen not hasData}"},
 					R.h1({}, "No data to #{Term 'analyze'}")
@@ -282,7 +280,6 @@ load = (win) ->
 			# Update timeSpan?
 			sameTimeSpan = @props.timeSpan is oldProps.timeSpan
 			unless sameTimeSpan
-				console.log "Updating timeSpan", @props.timeSpan, "from", oldProps.timeSpan
 				@_chart.axis.min {x: @props.xTicks.get(@props.timeSpan[0])}
 				@_chart.axis.max {x: @props.xTicks.get(@props.timeSpan[1])}	
 				
@@ -408,8 +405,6 @@ load = (win) ->
 						position: 'middle'
 						class: 'yearLine'
 					}
-
-			# console.log "ProgEvent RAW", @props.progEvents.toJS()
 
 			# PROG EVENT REGIONS
 			# Build Imm.List of region objects
