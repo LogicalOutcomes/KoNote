@@ -89,6 +89,7 @@ load = (win) ->
 					R.div({className: 'form-group'},
 						R.label({}, "Name")
 						R.input({
+							id: 'nameInput'
 							value: @state.title
 							onChange: @_updateTitle
 							placeholder: "Name of #{Term 'event'}"
