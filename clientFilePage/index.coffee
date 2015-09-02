@@ -358,6 +358,10 @@ load = (win, {clientFileId}) ->
 					unless newProgNote.get('clientFileId') is clientFileId then return
 					@setState (state) => progressNotes: state.progressNotes.push newProgNote
 
+				'create:progEvent': (newProgEvent) =>
+					unless newProgEvent.get('clientFileId') is clientFileId then return
+					@setState (state) => progressEvents: state.progressEvents.push newProgEvent
+
 				'create:metric': (newMetric) =>
 					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
 
