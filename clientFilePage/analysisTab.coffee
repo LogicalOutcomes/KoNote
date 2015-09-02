@@ -84,10 +84,12 @@ load = (win) ->
 
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
 				R.div({className: "noData #{showWhen not hasData}"},
-					R.h1({}, "No data to #{Term 'analyze'}")
 					R.div({},
-						"This tab will become available when this #{Term 'client'} has
-						one or more #{Term 'progress notes'} that contain #{Term 'metrics'}."
+						R.h1({}, "No data to #{Term 'analyze'}")
+						R.div({},
+							"This tab will become available when this #{Term 'client'} has
+							one or more #{Term 'progress notes'} that contain #{Term 'metrics'}."
+						)
 					)
 				)
 				R.div({className: "timeScaleToolbar #{showWhen hasData}"},
