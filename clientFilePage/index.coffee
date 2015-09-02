@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # UI logic for the client file window.
 #
 # Most of the state for this page is held in a `clientFile` object.  Various
@@ -38,21 +42,24 @@ load = (win, {clientFileId}) ->
 			return {
 				status: 'init' # either init or ready
 				isLoading: true
-
+				
 				clientFile: null
 				clientFileLock: null
+				isReadOnly: null
+				lockOperation: null
+
 				progressNotes: null
 				planTargetsById: Imm.Map()
 				metricsById: Imm.Map()
 				loadErrorType: null
+				loadErrorData: null
 			}
 
 		init: ->
 			@_loadData()
 
 		deinit: ->
-			if @state.clientFileLock
-				@state.clientFileLock.release()
+			@_killLocks()		
 
 		suggestClose: ->
 			@refs.ui.suggestClose()
@@ -63,9 +70,11 @@ load = (win, {clientFileId}) ->
 
 				status: @state.status
 				isLoading: @state.isLoading
+				isReadOnly: @state.isReadOnly
 				loadErrorType: @state.loadErrorType
 				clientFile: @state.clientFile
 				progressNotes: @state.progressNotes
+				progressEvents: @state.progressEvents
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
 
@@ -79,24 +88,12 @@ load = (win, {clientFileId}) ->
 		_loadData: ->
 			planTargetHeaders = null
 			progNoteHeaders = null
-			metricHeaders = null
+			progEventHeaders = null
+			metricHeaders = null			
 
 			@setState (state) => {isLoading: true}
 			Async.series [
-				(cb) =>
-					# TODO data dir
-					Persist.Lock.acquire 'data', "clientFile-#{clientFileId}", (err, result) =>
-						if err
-							if err instanceof Persist.Lock.LockInUseError
-								@setState {loadErrorType: 'file-in-use'}
-								return
-
-							cb err
-							return
-
-						@setState {
-							clientFileLock: result
-						}, cb
+				(cb) => @_acquireLock(cb)
 				(cb) =>
 					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
 						if err
@@ -153,6 +150,26 @@ load = (win, {clientFileId}) ->
 							progressNotes: Imm.List(results)
 						}, cb
 				(cb) =>
+					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						progEventHeaders = results
+
+						cb()
+				(cb) =>
+					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
+						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						@setState {
+							progressEvents: Imm.List(results)
+						}, cb
+				(cb) =>
 					ActiveSession.persist.metrics.list (err, results) =>
 						if err
 							cb err
@@ -173,7 +190,7 @@ load = (win, {clientFileId}) ->
 							.map (metric) =>
 								return [metric.get('id'), metric]
 							.fromEntrySeq().toMap()
-						}, cb
+						}, cb				
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -185,6 +202,61 @@ load = (win, {clientFileId}) ->
 
 				# OK, all done
 				@setState (state) => {status: 'ready', isLoading: false}
+
+		_acquireLock: (cb=(->)) ->
+			lockFormat = "clientFile-#{clientFileId}"
+
+			Persist.Lock.acquire global.ActiveSession, lockFormat, (err, lock) =>
+				if err
+					if err instanceof Persist.Lock.LockInUseError						
+						pingInterval = Config.clientFilePing.acquireLock
+
+						@setState => {
+							# Deliver read-only status & metadata
+							isReadOnly: err.metadata
+							# Keep checking for lock availability, returns new lock when true
+							lockOperation: Persist.Lock.acquireWhenFree global.ActiveSession, lockFormat, pingInterval, (err, newLock) =>
+								if err
+									cb err
+									return
+
+								if newLock
+									# Alert user about lock acquisition
+									clientName = renderName @state.clientFile.get('clientName')
+									new win.Notification "#{clientName} file unlocked", {
+										body: "You now have the read/write permissions for this #{Term 'client file'}"
+									}
+								else
+									# Lock acquisition must've been cancelled
+									cb()
+
+								@setState => {
+									clientFileLock: newLock
+									isReadOnly: false
+								}
+						}
+
+						cb()
+					else
+						cb err
+						return
+				else
+					@setState => {
+						clientFileLock: lock
+						isReadOnly: false
+						lockOperation: null
+					}
+					cb()
+
+		_killLocks: ->
+			if @state.clientFileLock?
+				@state.clientFileLock.release(=>
+					@setState => {
+						clientFileLock: null
+					}
+				)
+			if @state.lockOperation?
+				@state.lockOperation.cancel()
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
 			@setState (state) => {isLoading: true}
@@ -286,8 +358,19 @@ load = (win, {clientFileId}) ->
 					unless newProgNote.get('clientFileId') is clientFileId then return
 					@setState (state) => progressNotes: state.progressNotes.push newProgNote
 
+				'create:progEvent': (newProgEvent) =>
+					unless newProgEvent.get('clientFileId') is clientFileId then return
+					@setState (state) => progressEvents: state.progressEvents.push newProgEvent
+
 				'create:metric': (newMetric) =>
 					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
+
+				'timeout:timedOut': =>
+					@_killLocks()
+
+				'timeout:reactivateWindows': =>
+					console.log "Restoring clientFile lock..."
+					@_acquireLock()
 			}
 
 	ClientFilePageUi = React.createFactory React.createClass
@@ -363,38 +446,51 @@ load = (win, {clientFileId}) ->
 
 			return R.div({className: 'clientFilePage'},
 				Spinner({isOverlay: true, isVisible: @props.isLoading})
-				Sidebar({
-					clientName
-					recordId
-					activeTabId
-					onTabChange: @_changeTab
-				})
-				PlanTab.PlanView({
-					ref: 'planTab'
-					isVisible: activeTabId is 'plan'
-					clientFileId
-					clientFile: @props.clientFile
-					plan: @props.clientFile.get('plan')
-					planTargetsById: @props.planTargetsById
-					metricsById: @props.metricsById
+				(if @props.isReadOnly
+					ReadOnlyNotice({
+						isReadOnly: @props.isReadOnly
+					})
+				)
+				R.div({className: 'wrapper'},
+					Sidebar({						
+						clientName
+						recordId
+						activeTabId
+						onTabChange: @_changeTab
+						isReadOnly: @props.isReadOnly
+					})
+					PlanTab.PlanView({
+						ref: 'planTab'
+						isVisible: activeTabId is 'plan'
+						clientFileId
+						clientFile: @props.clientFile
+						plan: @props.clientFile.get('plan')
+						planTargetsById: @props.planTargetsById
+						metricsById: @props.metricsById
+						isReadOnly: @props.isReadOnly
 
-					updatePlan: @props.updatePlan
-				})
-				ProgNotesTab.ProgNotesView({
-					isVisible: activeTabId is 'progressNotes'
-					clientFileId
-					clientFile: @props.clientFile
-					progNotes: @props.progressNotes
-					metricsById: @props.metricsById
+						updatePlan: @props.updatePlan
+					})
+					ProgNotesTab.ProgNotesView({
+						isVisible: activeTabId is 'progressNotes'
+						clientFileId
+						clientFile: @props.clientFile
+						progNotes: @props.progressNotes
+						progEvents: @props.progressEvents
+						metricsById: @props.metricsById
+						isReadOnly: @props.isReadOnly
 
-					createQuickNote: @props.createQuickNote
-				})
-				AnalysisTab.AnalysisView({
-					isVisible: activeTabId is 'analysis'
-					clientFileId
-					progNotes: @props.progressNotes
-					metricsById: @props.metricsById
-				})
+						createQuickNote: @props.createQuickNote
+					})
+					AnalysisTab.AnalysisView({
+						isVisible: activeTabId is 'analysis'
+						clientFileId
+						progNotes: @props.progressNotes
+						progEvents: @props.progressEvents
+						metricsById: @props.metricsById
+						isReadOnly: @props.isReadOnly
+					})
+				)
 			)
 		_changeTab: (newTabId) ->
 			@setState {
@@ -412,7 +508,7 @@ load = (win, {clientFileId}) ->
 					Config.logoSubtitle
 				)
 				R.div({className: 'clientName'},
-					R.span({}, "#{@props.clientName}")
+					@props.clientName
 				)
 				R.div({className: 'recordId'},
 					R.span({}, renderFileId @props.recordId, true)
@@ -457,8 +553,6 @@ load = (win, {clientFileId}) ->
 		componentDidMount: ->
 			console.log "loadErrorType:", @props.loadErrorType
 			msg = switch @props.loadErrorType
-				when 'file-in-use'
-					"This #{Term 'client file'} is already in use."
 				when 'io-error'
 					"""
 						An error occurred while loading the #{Term 'client file'}. 
@@ -470,6 +564,25 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 		render: ->
 			return R.div({className: 'clientFilePage'})
+
+	ReadOnlyNotice = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		render: ->
+			lockOwner = @props.isReadOnly.userName
+
+			return R.div({
+				className: 'readOnlyNotice'
+			}, 
+				R.div({className: 'notice'},
+					(if lockOwner is global.ActiveSession.userName
+						"You already have this file open in another window"
+					else
+						"File currently in use by username: "
+						R.span({className: 'lockOwner'}, lockOwner)
+					)
+				)
+				R.div({className: 'mode'}, "Read-Only Mode")
+			)
 
 	return ClientFilePage
 

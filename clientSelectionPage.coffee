@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # Libraries from Node.js context
 Imm = require 'immutable'
 
@@ -14,7 +18,6 @@ load = (win) ->
 	Gui = win.require 'nw.gui'
 
 	AccountManagerDialog = require('./accountManagerDialog').load(win)
-	ResetPasswordDialog = require('./resetPasswordDialog').load(win)
 	CrashHandler = require('./crashHandler').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	Dialog = require('./dialog').load(win)
@@ -128,16 +131,26 @@ load = (win) ->
 									Config.logoSubtitle
 								)
 							)
-							R.div({className: 'searchBoxContainer'},
+							R.div({className: 'searchBoxContainer input-group'},
 								R.input({
 									className: 'searchBox form-control'
 									ref: 'searchBox'
 									type: 'text'
 									onChange: @_updateQueryText
-									onBlur: @_onSearchBoxBlur
 									placeholder: "Search for a #{Term 'client'}'s profile..."
 									value: @state.queryText
-								})
+								}
+									R.span({
+										className: 'input-group-btn'
+									},
+										R.button({
+											className: "btn btn-default"
+											onClick: @_showAll
+										},
+											'Show All'
+										)
+									)
+								)
 							)
 						)
 						R.div({
@@ -147,7 +160,10 @@ load = (win) ->
 								showWhen not @props.isLoading
 							].join ' '
 						},
-							R.img({src: Config.customerLogoLg})
+							R.img({
+								src: Config.customerLogoLg
+								onClick: @_home
+							})
 						)
 						R.div({
 							className: [
@@ -188,43 +204,26 @@ load = (win) ->
 			)
 
 		_renderUserMenuList: (isAdmin) ->
-			itemsList = [{
-				title: "#{Term 'Client Files'}"
-				dialog: CreateClientFileDialog
-				icon: 'folder-open'}
-			# {
-			# 	title: "Sign Out"
-			# 	# TODO: Call dialog to confirm win.close
-			# 	dialog: null
-			# 	icon: 'times-circle'}
-			]
-
-			if isAdmin
-				itemsList.push {
-					title: "#{Term 'User'} #{Term 'Accounts'}"
-					dialog: AccountManagerDialog
-					icon: 'user-plus'
-				},
-				{
-					title: "Reset Passwords"
-					dialog: ResetPasswordDialog
-					icon: 'key'
-				}
-
-			menuItems = itemsList.map (item) ->
-				return UserMenuItem({
-					title: item.title
-					dialog: item.dialog
-					icon: item.icon
+			return R.ul({},
+				UserMenuItem({
+					title: "New #{Term 'Client File'}"
+					dialog: CreateClientFileDialog
+					icon: 'folder-open'
 				})
-
-			return R.ul({}, menuItems)
+				UserMenuItem({
+					isVisible: isAdmin
+					title: "#{Term 'Account'} Manager"
+					dialog: AccountManagerDialog
+					icon: 'users'
+				})
+			)
 
 		_toggleUserMenu: ->
 			@setState {menuIsOpen: !@state.menuIsOpen}		
+
 		_getResultsList: ->
 			if @state.queryText.trim() is ''
-				return Imm.List()
+				return @props.clientFileList
 
 			queryParts = Imm.fromJS(@state.queryText.split(' '))
 			.map (p) -> p.toLowerCase()
@@ -238,15 +237,19 @@ load = (win) ->
 
 				return queryParts
 				.every (part) ->
-					return firstName.includes(part) or middleName.includes(part) or lastName.includes(part) or recordId.includes(part)
+					return firstName.includes(part) or
+						middleName.includes(part) or
+						lastName.includes(part) or
+						recordId.includes(part)
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
-		_onSearchBoxBlur: (event) ->
-			if @state.queryText is ''
-				@setState {isSmallHeaderSet: false}
+		_showAll: ->
+			@setState {isSmallHeaderSet: true, queryText: ''}
+		_home: ->
+			@setState {isSmallHeaderSet: false, queryText: ''}
 		_onResultSelection: (clientFileId, event) ->
 			openWindow {
 				page: 'clientFile'
@@ -256,12 +259,16 @@ load = (win) ->
 
 	UserMenuItem = React.createFactory React.createClass
 		mixins: [LayeredComponentMixin]
+		getDefaultProps: ->
+			return {
+				isVisible: true
+			}
 		getInitialState: ->
 			return {
 				isOpen: false
 			}
 		render: ->
-			return R.li({}, 				
+			return R.li({className: showWhen(@props.isVisible)},
 				R.div({
 					onClick: @_open
 				}, 
@@ -288,8 +295,6 @@ load = (win) ->
 			})
 		_open: ->
 			@setState {isOpen: true}
-		_cancel: ->
-			@setState {isOpen: false}
 
 	return ClientSelectionPage
 

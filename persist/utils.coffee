@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Base64url = require 'base64url'
 Crypto = require 'crypto'
 Joi = require 'joi'
@@ -13,15 +17,6 @@ generateId = ->
 
 # All object IDs match this pattern
 IdSchema = Joi.string().regex(/^[a-zA-Z0-9_-]+$/)
-
-validate = (value, schema, cb) ->
-	results = Joi.validate value, schema
-
-	if results.error?
-		cb results.error
-		return
-
-	cb null, results.value
 
 TimestampFormat = 'YYYYMMDDTHHmmssSSSZZ'
 
@@ -48,5 +43,4 @@ module.exports = {
 	ObjectNotFoundError
 	TimestampFormat
 	generateId
-	validate
 }

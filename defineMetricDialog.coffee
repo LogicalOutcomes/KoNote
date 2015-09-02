@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # A dialog for allowing the user to define (i.e. create) a new metric
 
 Imm = require 'immutable'
@@ -15,6 +19,7 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
+	{FaIcon, showWhen} = require('./utils').load(win)
 
 	DefineMetricDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -43,6 +48,11 @@ load = (win) ->
 							onChange: @_updateDefinition
 							value: @state.definition
 						})
+					)
+					R.div({className: 'alert alert-warning'},
+						FaIcon('warning'),
+						"The name and definition of a #{Term 'metric'} cannot be changed ",
+						"after it has been created."
 					)
 					R.div({className: 'btn-toolbar'},
 						R.button({

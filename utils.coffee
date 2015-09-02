@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Config = require './config'
 
 # This class allows new error types to be created easily without breaking stack
@@ -38,13 +42,14 @@ load = (win) ->
 			toolbar: false
 			width: 1000
 			height: 700
+			icon: "icon.png"
 		}
 
 	renderName = (name) ->
 		result = []
 		result.push name.get('first')
 
-		if name.has('middle')
+		if name.has('middle') and name.get('middle').size
 			result.push name.get('middle')
 
 		result.push name.get('last')

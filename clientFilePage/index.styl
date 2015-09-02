@@ -5,90 +5,121 @@ sidebar-bg = hsl(hue(logo-light-blue), 35%, 94%)
 sidebar-borders = darken(sidebar-bg, 10%)
 
 #container > .clientFilePage
+	position relative
 	display flex
-
+	flex-direction column
 	height 100%
-
-	> .sidebar
+	
+	> .readOnlyNotice
 		display flex
-		flex-direction column
-		position relative
-
-		width 250px
-
-		border-right 2px solid sidebar-borders
-
-		background sidebar-bg
-		color hsl(hue(sidebar-bg), 15%, 35%)
+		background rgba(255, 174, 0, 0.5)		
+		border-bottom 2px solid sidebar-borders
 		
-		.brandContainer {
-			position absolute
-			left 0px
-			bottom 0px
-			width 100%
+		color #515151
+		
+		> .notice
+			padding 5px 10px
+			flex 4
 			
-			.logoKonode {
-				margin-left 45px
-			}
-		}
+			> .lockOwner
+				display inline-block
+				background white
+				padding 0px 5px
+				border-radius 10px
+				
+				color black
+				font-weight bold
+			
+		> .mode
+			padding 5px 10px
+			flex 1
+			text-align center
+			
+			background sidebar-borders
+			color hsl(hue(sidebar-bg), 15%, 35%)
+	
+	> .wrapper
+		height 100%
+		display flex
 
-		> img
-			margin 0 auto
-
-			max-width 150px
-
-			padding 15px 20px 5px
-
-		> .logoSubtitle
-			color hsl(202, 15%, 55%)
-			font-size 20px
+		> .sidebar
+			display block
+			flex-direction column
+			position relative
 			text-align center
 
-		> .clientName
-			display flex
-			align-items center
+			width 250px
 
-			width 100%
+			border-right 2px solid sidebar-borders
 
-			padding 21px 20px 20px
-
-			font-size 24px
-		
-		> .recordId
-			display flex			
+			background sidebar-bg
+			color hsl(hue(sidebar-bg), 15%, 35%)
 			
-			padding 0px 15px 15px
+			> div
+				text-align left
 			
-			opacity 0.75			
-			font-weight 400
-			
-			> span
+			.brandContainer {
+				position absolute
+				left 0px
+				bottom 0px
 				width 100%
-				display block
+				
+				.logoKonode {
+					margin-left 45px
+				}
+			}
+
+			> img
+				margin 0 auto
+
+				max-width 150px
+
+				padding 15px 20px 5px
+
+			> .logoSubtitle
+				color hsl(202, 15%, 55%)
+				font-size 20px
 				text-align center
 
-		> .tabStrip
-			width 100%
+			> .clientName
+				width 100%
+				padding 21px 20px 20px
+				font-size 24px
+				text-align center
+			
+			> .recordId
+				
+				display flex			
+				
+				padding 0px 15px 15px
+				justify-content center
+				
+				opacity 0.75			
+				font-weight 400
 
-			> .tab
-				padding 15px 20px
+			> .tabStrip
+				width 100%
+				text-align left
 
-				cursor pointer
-				font-weight 600
+				> .tab
+					padding 15px 20px
 
-				&:hover
-					background darken(sidebar-bg, 5%)
+					cursor pointer
+					font-weight 600
 
-				&.active
-					background darken(sidebar-bg, 5%)
+					&:hover
+						background darken(sidebar-bg, 5%)
 
-				> .fa
-					padding-right 5px
+					&.active
+						background darken(sidebar-bg, 5%)
 
-	> .view
-		flex 1
-		overflow auto
+					> .fa
+						padding-right 5px
 
-	@require 'planTab'
-	@require 'progNotesTab'
-	@require 'analysisTab'
+		> .view
+			flex 1
+			overflow auto
+
+		@require 'planTab'
+		@require 'progNotesTab'
+		@require 'analysisTab'

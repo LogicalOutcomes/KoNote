@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # This module defines all cryptographic operations (encryption, digital
 # signatures, etc) used in this project.
 #
@@ -13,8 +17,9 @@ cipherTextV1Prefix = new Buffer([1])
 
 class SymmetricEncryptionKey
 	# Implementation notes:
-	# - Key derivation using PBKDF2-SHA256 with 2^20 iterations and a 32-byte output
-	# - Exported keys include version number in case versioning scheme is needed in future
+	# - Key derivation using PBKDF2-SHA256 with a 32-byte output
+	# - Both encrypted messages and exported keys include version number in
+	#   case versioning scheme is needed in future
 	# - Encryption performed with AES256-GCM
 
 	# PRIVATE CONSTRUCTOR

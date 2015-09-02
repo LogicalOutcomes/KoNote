@@ -1,3 +1,7 @@
+// Copyright (c) Konode. All rights reserved.
+// This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+// that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 (function () {
 	var Stylus = require('stylus');
 	var Fs = require('fs');
@@ -13,9 +17,12 @@
 	// Grabs nw version from package, removes things like ^> etc.
 	var nwPackage = pkg.dependencies[nwName].replace(/[^0-9.]/g, "")
 	var nwRunning = process.versions['node-webkit']	
-	
+
 	if (nwPackage !== nwRunning) {
-		throw "Unmatched NW Versions: [package.json: "+ nwPackage + "] [installed: " + nwRunning + "]"
+		var errMsg = "Unmatched NW Versions: [package.json: "+ nwPackage + "] [installed: " + nwRunning + "]";
+		console.error(errMsg);
+		alert(errMsg);
+		return;
 	}
 
 	// In order to avoid the need for Grunt or a similar build system,

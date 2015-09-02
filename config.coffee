@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 module.exports = {
 	productName: 'KoNote'
 	customerLogoLg: 'customer-logo-lg_GRIFFIN.png'
@@ -10,11 +14,23 @@ module.exports = {
 		label: "CR#"
 	}
 
-	# Set total timeout mins,
+	# Specify data directory
+	dataDirectory: 'data'
+
+
+	# Set total timeout in (minutes),
 	# and how many mins before timeout to show warning
 	timeout: {
-		totalMins: 25
-		warningMins: 15
+		duration: 25
+		warnings: {
+			initial: 10
+			final: 1
+		}
+	}
+
+	# Set ping time for client file in (minutes)
+	clientFilePing: {
+		acquireLock: 0.5
 	}
 
 	# Set terminology to be used around the app, lowercase only
@@ -41,6 +57,7 @@ module.exports = {
 		'event': "event"
 
 		'analysis': "analysis"
+		'analyze': "analyze"
 	}		
 
 	# useTemplate: 'initialAssessment'
@@ -57,6 +74,11 @@ module.exports = {
 			id: 'simpleDemoTemplate'
 			name: 'Simple Demo Template'
 			sections: [
+				{
+					id: 'goals'
+					type: 'plan'
+					name: 'Client Goals'
+				}
 				{
 					id: 'notes'
 					type: 'basic'
@@ -286,6 +308,10 @@ module.exports = {
 		}
 	}
 }
+
+# move data folder alongside the .app folder on osx
+if process.platform == 'darwin'
+	module.exports.dataDirectory = '../../../../data'
 
 # merge with dev-config; overrides defaults
 _ = require 'underscore'

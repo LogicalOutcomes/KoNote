@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # This module handles all logic related user accounts.
 #
 # See also: persist/session
@@ -24,11 +28,6 @@ generateUserAuthParams = ->
 		salt: generateSalt()
 		iterationCount: 600000 # higher is more secure, but slower
 	}
-
-# TODO
-# - changeAccountPassword: requires current password
-# - changeAccountType: requires admin priv
-# - deleteAccount: requires admin priv
 
 getUserDir = (dataDir, userName) ->
 	unless userNameRegex.exec userName
@@ -118,6 +117,18 @@ createAccount = (dataDir, userName, password, accountType, cb) ->
 
 		cb()
 
+listAccounts = (dataDir, cb) ->
+	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
+		if err
+			cb err
+			return
+
+		userNames = Imm.List(subdirs)
+		.filter (dirName) ->
+			return userNameRegex.exec(dirName)
+
+		cb null, userNames
+
 # Read a user's private account data
 readAccount = (dataDir, userName, password, cb) ->
 	userName = userName.toLowerCase()
@@ -140,6 +151,11 @@ readAccount = (dataDir, userName, password, cb) ->
 					return
 
 				authParams = JSON.parse buf
+
+				if authParams.isDeactivated
+					cb new DeactivatedAccountError()
+					return
+
 				cb()
 		(cb) ->
 			SymmetricEncryptionKey.derive password, authParams, (err, result) ->
@@ -186,14 +202,31 @@ resetAccountPassword = (dataDir, userName, newPassword, cb) ->
 	userName = userName.toLowerCase()
 
 	userDir = getUserDir dataDir, userName
-	authParams = generateUserAuthParams()
+	authParamsPath = Path.join(userDir, 'auth-params')
+
+	newAuthParams = generateUserAuthParams()
 	userEncryptionKey = null
 
 	Async.series [
 		(cb) ->
-			authParamsPath = Path.join(userDir, 'auth-params')
+			Fs.readFile authParamsPath, (err, buf) ->
+				if err
+					if err.code is 'ENOENT'
+						cb new UnknownUserNameError()
+						return
 
-			Fs.writeFile authParamsPath, JSON.stringify(authParams), (err, buf) ->
+					cb err
+					return
+
+				oldAuthParams = JSON.parse buf
+
+				if oldAuthParams.isDeactivated
+					cb new DeactivatedAccountError()
+					return
+
+				cb()
+		(cb) ->
+			Fs.writeFile authParamsPath, JSON.stringify(newAuthParams), (err, buf) ->
 				if err
 					if err.code is 'ENOENT'
 						cb new UnknownUserNameError()
@@ -204,7 +237,7 @@ resetAccountPassword = (dataDir, userName, newPassword, cb) ->
 
 				cb()
 		(cb) ->
-			SymmetricEncryptionKey.derive newPassword, authParams, (err, result) ->
+			SymmetricEncryptionKey.derive newPassword, newAuthParams, (err, result) ->
 				if err
 					cb err
 					return
@@ -222,16 +255,63 @@ resetAccountPassword = (dataDir, userName, newPassword, cb) ->
 			Fs.writeFile privateKeysPath, encryptedData, cb
 	], cb
 
+deactivateAccount = (dataDir, userName, cb) ->
+	userName = userName.toLowerCase()
+
+	userDir = getUserDir dataDir, userName
+	authParamsPath = Path.join(userDir, 'auth-params')
+
+	authParams = {isDeactivated: true}
+
+	Async.series [
+		(cb) ->
+			Fs.readFile authParamsPath, (err, buf) ->
+				if err
+					if err.code is 'ENOENT'
+						cb new UnknownUserNameError()
+						return
+
+					cb err
+					return
+
+				oldAuthParams = JSON.parse buf
+
+				if oldAuthParams.isDeactivated
+					cb new DeactivatedAccountError()
+					return
+
+				cb()
+		(cb) ->
+			Fs.writeFile authParamsPath, JSON.stringify(authParams), (err, buf) ->
+				if err
+					if err.code is 'ENOENT'
+						cb new UnknownUserNameError()
+						return
+
+					cb err
+					return
+
+				cb()
+		(cb) ->
+			privateKeysPath = Path.join(userDir, 'private-keys')
+
+			Fs.unlink privateKeysPath, cb
+	], cb
+
 class UserNameTakenError extends CustomError
 class UnknownUserNameError extends CustomError
 class IncorrectPasswordError extends CustomError
+class DeactivatedAccountError extends CustomError
 
 module.exports = {
 	isAccountSystemSetUp
 	createAccount
+	listAccounts
 	readAccount
 	resetAccountPassword
+	deactivateAccount
 	UserNameTakenError
 	UnknownUserNameError
 	IncorrectPasswordError
+	DeactivatedAccountError
 }

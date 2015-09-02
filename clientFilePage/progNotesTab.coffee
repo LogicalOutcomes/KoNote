@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Imm = require 'immutable'
 Moment = require 'moment'
 
@@ -13,6 +17,7 @@ load = (win) ->
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	ProgEventsWidget = require('../progEventsWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	PrintButton = require('../printButton').load(win)
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
@@ -47,6 +52,7 @@ load = (win) ->
 					R.button({
 						className: 'newProgNote btn btn-primary'
 						onClick: @_openNewProgNote
+						disabled: @props.isReadOnly
 					},
 						FaIcon 'file'
 						"New #{Term 'progress note'}"
@@ -54,6 +60,7 @@ load = (win) ->
 					R.button({
 						className: "addQuickNote btn btn-default #{showWhen @props.progNotes.size > 0}"						
 						onClick: @_toggleQuickNotePopover
+						disabled: @props.isReadOnly
 					},
 						FaIcon 'plus'
 						"Add #{Term 'quick note'}"
@@ -69,6 +76,7 @@ load = (win) ->
 							R.button({
 								className: 'newProgNote btn btn-primary btn-lg'
 								onClick: @_openNewProgNote
+								disabled: @props.isReadOnly
 							},
 								FaIcon 'file'
 								"New #{Term 'progress note'}"
@@ -76,12 +84,17 @@ load = (win) ->
 							R.button({
 								className: "addQuickNote btn btn-default btn-lg #{showWhen @props.progNotes.size is 0}"								
 								onClick: @_toggleQuickNotePopover
+								disabled: @props.isReadOnly
 							},
 								FaIcon 'plus'
 								"Add #{Term 'quick note'}"
 							)
 						)
 						(@props.progNotes.reverse().map (progNote) =>
+							# Filter out only events for this progNote
+							progEvents = @props.progEvents.filter (progEvent) =>
+								return progEvent.get('relatedProgNoteId') is progNote.get('id')
+
 							switch progNote.get('type')
 								when 'basic'
 									BasicProgNoteView({
@@ -92,6 +105,7 @@ load = (win) ->
 								when 'full'
 									FullProgNoteView({
 										progNote
+										progEvents
 										clientFile: @props.clientFile
 										key: progNote.get('id')
 										setSelectedItem: @_setSelectedItem
@@ -103,6 +117,7 @@ load = (win) ->
 					ProgNoteDetailView({
 						item: @state.selectedItem
 						progNotes: @props.progNotes
+						progEvents: @props.progEvents
 					})
 				)
 			)
@@ -270,11 +285,25 @@ load = (win) ->
 												)
 											)
 										).toJS()...
-									)
+									)									
 								)
 					).toJS()...
+						(@props.progEvents.map (progEvent) =>
+							R.div({}
+								R.h3({},
+									"#{Term 'Event'}"
+								)
+								ProgEventsWidget({
+									format: 'large'
+									title: progEvent.get('title')
+									description: progEvent.get('description')
+									start: progEvent.get('startTimestamp')
+									end: progEvent.get('endTimestamp')
+								})
+							)
+					).toJS()...
+					)
 				)
-			)
 		_selectBasicSection: (section) ->
 			@props.setSelectedItem Imm.fromJS {
 				type: 'basicSection'

@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Async = require 'async'
 Imm = require 'immutable'
 
@@ -47,8 +51,7 @@ load = (win) ->
 
 			Async.series [
 				(cb) =>
-					# TODO data dir
-					Persist.Users.isAccountSystemSetUp 'data', (err, isSetUp) =>
+					Persist.Users.isAccountSystemSetUp Config.dataDirectory, (err, isSetUp) =>
 						@setState {isLoading: false}
 
 						if err
@@ -89,9 +92,8 @@ load = (win) ->
 							cb()
 					}
 				(cb) =>
-					# TODO data dir
 					@setState {isLoading: true}
-					Persist.setUpDataDirectory 'data', (err) =>
+					Persist.setUpDataDirectory Config.dataDirectory, (err) =>
 						@setState {isLoading: false}
 
 						if err
@@ -100,9 +102,8 @@ load = (win) ->
 
 						cb()
 				(cb) =>
-					# TODO data dir
 					@setState {isLoading: true}
-					Persist.Users.createAccount 'data', 'admin', adminPassword, 'admin', (err) =>
+					Persist.Users.createAccount Config.dataDirectory, 'admin', adminPassword, 'admin', (err) =>
 						@setState {isLoading: false}
 
 						if err
@@ -123,11 +124,10 @@ load = (win) ->
 				@refs.ui.prepareForAdmin()
 				@setState {isSetUp: true}
 
-		_login: (userName, password) ->
-			# TODO where to get data dir path? config?			
+		_login: (userName, password) ->			
 			@setState {isLoading: true}
 
-			Persist.Session.login 'data', userName, password, (err, session) =>
+			Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>
 				@setState {isLoading: false}
 				if err
 					if err instanceof Persist.Session.UnknownUserNameError
@@ -136,6 +136,10 @@ load = (win) ->
 
 					if err instanceof Persist.Session.IncorrectPasswordError
 						@refs.ui.onLoginError('IncorrectPasswordError')
+						return
+
+					if err instanceof Persist.Session.DeactivatedAccountError
+						@refs.ui.onLoginError('DeactivatedAccountError')
 						return
 
 					CrashHandler.handle err
@@ -174,6 +178,8 @@ load = (win) ->
 				when 'IncorrectPasswordError'
 					Bootbox.alert "Incorrect password.  Please try again."
 					@setState {password: ''}
+				when 'DeactivatedAccountError'
+					Bootbox.alert "This user account has been deactivated."
 				else
 					throw new Error "Invalid Login Error"
 

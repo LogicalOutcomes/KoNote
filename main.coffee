@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # Here, we kick off the appropriate page rendering code based on what page ID
 # is specified in the URL.
 #
@@ -55,9 +59,10 @@ init = (win) ->
 
 	containerElem = document.getElementById('container')
 
-	pageComponent = null
-	pageListeners = null
+	pageComponent = null	
 	isLoggedIn = null
+	
+	allListeners = null
 
 	process.nextTick =>
 		renderPage QueryString.parse(win.location.search.substr(1))
@@ -135,6 +140,11 @@ init = (win) ->
 			if event.ctrlKey and (not event.shiftKey) and event.which is 82
 				doHotCodeReplace()
 		, false
+		win.document.addEventListener 'keydown', (event) ->
+			# prevent backspace navigation
+			if event.which is 8 and event.target.tagName is 'BODY'
+				event.preventDefault()
+		, false
 
 	doHotCodeReplace = =>
 		# Save the entire page state into a global var
@@ -156,19 +166,22 @@ init = (win) ->
 		# Reload HTML page
 		win.location.reload(true)
 
-	registerPageListeners = =>		
-		# Register listeners from internal page component
-		pageListeners = Imm.fromJS pageComponent.getPageListeners()
-		.mergeDeep getTimeoutListeners() # and merge in timeout listeners
+	registerPageListeners = =>
+		pageListeners = Imm.fromJS(pageComponent.getPageListeners()).entrySeq()
+		timeoutListeners = Imm.fromJS(getTimeoutListeners()).entrySeq()
 
-		pageListeners.forEach (action, name) =>
+		# EntrySeq list of all listeners combined
+		allListeners = pageListeners.concat timeoutListeners
+
+		# Register all listeners
+		allListeners.forEach ([name, action]) =>
 			global.ActiveSession.persist.eventBus.on name, action
 
 		# Make sure everything is reset
 		global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 
-	unregisterPageListeners = =>		
-		pageListeners.forEach (action, name) =>
+	unregisterPageListeners = =>
+		allListeners.forEach ([name, action]) =>
 			global.ActiveSession.persist.eventBus.off name, action
 
 	# Define the listener here so that it can be removed later

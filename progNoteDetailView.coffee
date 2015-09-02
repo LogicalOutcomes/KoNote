@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Imm = require 'immutable'
 Moment = require 'moment'
 
@@ -7,6 +11,7 @@ Persist = require './persist'
 load = (win) ->
 	React = win.React
 	R = React.DOM
+	ProgEventsWidget = require('./progEventsWidget').load(win)
 	{FaIcon, showWhen} = require('./utils').load(win)
 
 	ProgNoteDetailView = React.createFactory React.createClass
@@ -34,11 +39,15 @@ load = (win) ->
 								.filter (section) => # find relevant sections
 									return section.get('id') is sectionId
 								.map (section) => # turn them into entries
+									progEvents = @props.progEvents.filter (progEvent) =>
+										return progEvent.get('relatedProgNoteId') is progNote.get('id')
+
 									return Imm.fromJS {
 										progNoteId: progNote.get('id')
 										author: progNote.get('author')
 										timestamp: progNote.get('timestamp')
 										notes: section.get('notes')
+										progEvents
 									}
 							else
 								throw new Error "unknown prognote type: #{progNote.get('type')}"
@@ -59,11 +68,15 @@ load = (win) ->
 									.filter (target) => # find relevant targets
 										return target.get('id') is targetId
 									.map (target) =>
+										progEvents = @props.progEvents.filter (progEvent) =>
+											return progEvent.get('relatedProgNoteId') is progNote.get('id')
+
 										return Imm.fromJS {
 											progNoteId: progNote.get('id')
 											author: progNote.get('author')
 											timestamp: progNote.get('timestamp')
 											notes: target.get('notes')
+											progEvents
 										}
 							else
 								throw new Error "unknown prognote type: #{progNote.get('type')}"
@@ -95,6 +108,16 @@ load = (win) ->
 								)
 							)
 							R.div({className: 'notes'}, entry.get('notes'))
+							R.div({className: 'progEvents'},
+								entry.get('progEvents').map (progEvent) =>
+									ProgEventsWidget({
+										format: 'small'
+										title: progEvent.get('title')
+										description: progEvent.get('description')
+										start: progEvent.get('startTimestamp')
+										end: progEvent.get('endTimestamp')
+									})
+							)
 						)
 					).toJS()...
 				)

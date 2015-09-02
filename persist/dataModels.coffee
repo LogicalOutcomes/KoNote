@@ -1,10 +1,14 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Async = require 'async'
 Joi = require 'joi'
 Mkdirp = require 'mkdirp'
 Path = require 'path'
 
 ApiBuilder = require './apiBuilder'
-{IdSchema} = require './utils'
+{IdSchema, TimestampFormat} = require './utils'
 
 dataModelDefinitions = [
 	{
@@ -37,6 +41,19 @@ dataModelDefinitions = [
 			})
 		})
 		children: [
+			{
+				name: 'progEvent'
+				collectionName: 'progEvents'
+				isMutable: false
+				indexes: [['relatedProgNoteId']]
+				schema: Joi.object().keys({
+					relatedProgNoteId: IdSchema
+					title: Joi.string()
+					description: Joi.string().allow('')			
+					startTimestamp: Joi.date().format(TimestampFormat).raw()
+					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+				})
+			}
 			{
 				name: 'planTarget'
 				collectionName: 'planTargets'
@@ -138,22 +155,7 @@ dataModelDefinitions = [
 			name: Joi.string()
 			definition: Joi.string()
 		})
-	}
-	{
-		name: 'progEvent'
-		collectionName: 'progEvents'
-		isMutable: false
-		indexes: []
-		schema: Joi.object().keys({
-			title: Joi.string()
-			description: Joi.string().allow('')
-			# TODO: Event Categories
-			# categoryId: IdSchema
-			relatedProgNoteId: IdSchema			
-			startDate: Joi.date().format('YYYYMMDD').raw()
-			endDate: Joi.date().format('YYYYMMDD').raw().allow('')
-		})
-	}
+	}	
 ]
 
 getApi = (session) ->

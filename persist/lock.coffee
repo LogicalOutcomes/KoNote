@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Async = require 'async'
 Fs = require 'fs'
 Imm = require 'immutable'
@@ -18,6 +22,8 @@ class Lock
 			throw new Error "Lock constructor should only be used internally"
 
 		@_released = false
+		@_isCheckingForLock = false
+
 		@_renewInterval = setInterval =>
 			@_renew (err) =>
 				if err
@@ -26,7 +32,9 @@ class Lock
 					return
 		, leaseRenewalInterval
 
-	@acquire: (dataDir, lockId, cb) ->
+	@acquire: (session, lockId, cb) ->
+		dataDir = session.dataDirectory
+
 		tmpDirPath = Path.join(dataDir, '_tmp')
 		lockDirDest = Path.join(dataDir, '_locks', lockId)
 
@@ -45,6 +53,12 @@ class Lock
 					lockDirOp = op
 					cb()
 			(cb) ->
+				Lock._writeMetadata session, lockDir, tmpDirPath, (err) ->
+					if err
+						cb err
+						return
+					cb()
+			(cb) ->
 				Lock._writeExpiryTimestamp lockDir, tmpDirPath, (err, ts) ->
 					if err
 						cb err
@@ -57,7 +71,7 @@ class Lock
 					if err
 						# If lock is already taken
 						if err.code in ['EPERM', 'ENOTEMPTY']
-							Lock._cleanIfStale dataDir, lockId, cb
+							Lock._cleanIfStale session, lockId, cb
 							return
 
 						cb new IOError err
@@ -71,11 +85,45 @@ class Lock
 
 			cb null, new Lock(lockDirDest, tmpDirPath, expiryTimestamp, 'privateaccess')
 
-	@_cleanIfStale: (dataDir, lockId, cb) ->
+	@acquireWhenFree: (session, lockId, intervalMins, cb) ->	
+		# Makes intervalMinutes optional, keeping cb last
+		unless cb
+			cb = intervalMins
+			intervalMins = 0.5
+		else
+			# Convert mins to ms
+			intervalMs = intervalMins * 60000
+
+		newLock = null
+		isCancelled = null
+
+		# Aggressively check lock existance every specified interval(ms)
+		Async.until(->			
+			return isCancelled or newLock
+		(callback) =>
+			@acquire session, lockId, (err, lock) ->
+				if lock
+					newLock = lock
+					callback()
+				else
+					setTimeout callback, intervalMs
+		(err) ->
+			if isCancelled
+				cb null
+			else
+				cb null, newLock
+		)
+
+		return {cancel: => isCancelled = true}
+
+	@_cleanIfStale: (session, lockId, cb) ->
+		dataDir = session.dataDirectory
+
 		tmpDirPath = Path.join(dataDir, '_tmp')
 		lockDir = Path.join(dataDir, '_locks', lockId)
 
 		expiryLock = null
+
 		Async.series [
 			(cb) ->
 				Lock._isStale lockDir, (err, isStale) ->
@@ -87,12 +135,14 @@ class Lock
 						# Proceed
 						cb()
 					else
-						cb new LockInUseError()
+						# Lock is in use, deliver error with metadata
+						Lock._readMetadata(lockDir, cb)
+						return
 			(cb) ->
 				# The lock has expired, so we need to safely reclaim it while
 				# preventing others from doing the same.
 
-				Lock.acquire dataDir, lockId + '.expiry', (err, result) ->
+				Lock.acquire session, lockId + '.expiry', (err, result) ->
 					if err
 						cb err
 						return
@@ -109,7 +159,9 @@ class Lock
 						# Proceed
 						cb()
 					else
-						cb new LockInUseError()
+						# Lock is in use, deliver error with metadata
+						Lock._readMetadata(lockDir, cb)
+						return
 			(cb) ->
 				Atomic.deleteDirectory lockDir, tmpDirPath, (err) ->
 					if err
@@ -124,7 +176,7 @@ class Lock
 				cb err
 				return
 
-			Lock.acquire dataDir, lockId, cb
+			Lock.acquire session, lockId, cb
 
 	@_isStale: (lockDir, cb) ->
 		Lock._readExpiryTimestamp lockDir, (err, ts) ->
@@ -210,9 +262,16 @@ class Lock
 				cb null, null
 				return
 
-			result = expiryTimestamps.last().format(TimestampFormat)
+			result = expiryTimestamps.last().format(TimestampFormat)			
 
 			cb null, result
+
+	@_readMetadata: (lockDir, cb) ->
+		Fs.readFile lockDir+"/metadata", (err, data) ->
+			if err
+				return new IOError err
+
+			cb new LockInUseError null, JSON.parse(data)
 
 	@_writeExpiryTimestamp: (lockDir, tmpDirPath, cb) ->
 		expiryTimestamp = Moment().add(leaseTime, 'ms').format(TimestampFormat)
@@ -227,7 +286,25 @@ class Lock
 
 			cb null, expiryTimestamp
 
+	@_writeMetadata: (session, lockDir, tmpDirPath, cb) ->
+		metadataFile = Path.join(lockDir, 'metadata')
+
+		metadata = new Buffer(JSON.stringify({
+			userName: session.userName
+		}), 'utf8')
+
+		Atomic.writeBufferToFile metadataFile, tmpDirPath, metadata, (err) ->
+			if err
+				cb new IOError err
+				return
+
+			cb()
+
 class LockInUseError extends CustomError
+	constructor: (message, metadata) ->
+		super "Lock is in use by another user"
+		@metadata = metadata
+
 Lock.LockInUseError = LockInUseError
 
 module.exports = Lock

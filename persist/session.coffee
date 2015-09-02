@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # This module handles all logic related to login sessions, including logging
 # in, logging out, and managing encryption keys.
 
@@ -34,30 +38,44 @@ class Session
 		@_ended = false
 
 		@persist = DataModels.getApi(@)
+		timeoutSpec = Config.timeout
 
-		@timeoutMins = Config.timeout.totalMins
-		@warningMins = Config.timeout.warningMins
+		@timeoutMs = timeoutSpec.duration * 60000
+		@warnDurations = {
+			initial: @timeoutMs - (timeoutSpec.warnings.initial * 60000)
+			final: @timeoutMs - (timeoutSpec.warnings.final * 60000)
+		}
 
 		@resetTimeout()
 
 	resetTimeout: ->
 		# Clear all traces of timeouts
-		if @warning then clearTimeout @warning
 		if @timeout then clearTimeout @timeout
+		if @initialWarning then clearTimeout @initialWarning
+		if @finalWarning then clearTimeout @finalWarning
+
 		@timeout = null
-		@warning = null
+		@initialWarning = null
+		@finalWarning = null		
 
 		# Keeping track of notification delivery to prevent duplicates
-		@firstWarningDelivered = null
-		@minWarningDelivered = null
+		@initialWarningDelivered = null
+		@finalWarningDelivered = null
 
 		# Initiate timeouts
-		@warning = setTimeout @_timeoutWarning, (@timeoutMins - @warningMins) * 60000
-		@timeout = setTimeout @_timedOut, @timeoutMins * 60000
+		@initialWarning = setTimeout(=> 
+			@_triggerEvent('timeout:initialWarning')
+		, @warnDurations.initial)
 
-	_timeoutWarning: => @persist.eventBus.trigger 'timeout:initialWarning'
+		@finalWarning = setTimeout(=>
+			@_triggerEvent('timeout:finalWarning')
+		, @warnDurations.final)
 
-	_timedOut: => @persist.eventBus.trigger 'timeout:timedOut'
+		@timeout = setTimeout(=>
+			@_triggerEvent('timeout:timedOut')
+		, @timeoutMs)
+
+	_triggerEvent: (eventName) => @persist.eventBus.trigger eventName
 
 	isAdmin: ->
 		return @accountType is 'admin'
@@ -66,7 +84,7 @@ class Session
 		Users.readAccount @dataDirectory, @userName, password, (err, account) ->
 			if err
 				cb err
-				return false
+				return
 
 			cb()
 
@@ -81,4 +99,5 @@ module.exports = {
 	login
 	UnknownUserNameError: Users.UnknownUserNameError
 	IncorrectPasswordError: Users.IncorrectPasswordError
+	DeactivatedAccountError: Users.DeactivatedAccountError
 }
