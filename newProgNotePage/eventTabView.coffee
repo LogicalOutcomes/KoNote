@@ -37,43 +37,50 @@ load = (win) ->
 		componentDidMount: ->
 			# Initialize datepickers, update @state when value changes
 
-			# TODO Refactor to single function
-			$(@refs.startDate.getDOMNode()).datetimepicker({
+			# Grab jQ contexts
+			$startDate = $(@refs.startDate.getDOMNode())
+			$startTime = $(@refs.startTime.getDOMNode())
+			$endDate = $(@refs.endDate.getDOMNode())
+			$endTime = $(@refs.endTime.getDOMNode())
+
+			$startDate.datetimepicker({
 				useCurrent: false
 				format: 'Do MMM, \'YY'
 				widgetPositioning: {
 					horizontal: 'right'
 				}
 			}).on 'dp.change', (thisInput) =>
+				$endDate.data('DateTimePicker').minDate(thisInput.date)
 				@setState {startDate: thisInput.date}
 
-			$(@refs.startTime.getDOMNode()).datetimepicker({
+			$startTime.datetimepicker({
 				useCurrent: false
 				format: 'hh:mm a'
 				widgetPositioning: {					
 					horizontal: 'right'
 				}
-			}).on 'dp.change', (thisInput) =>
-				@setState {startTime: thisInput.date}
+			}).on 'dp.change', (thisInput) =>				
+				@setState {startTime: thisInput.date}, => console.log @state.startTime.format('HH:mm')
 
 
-			$(@refs.endDate.getDOMNode()).datetimepicker({
+			$endDate.datetimepicker({
 				useCurrent: false
 				format: 'Do MMM, \'YY'
 				widgetPositioning: {					
 					horizontal: 'right'
 				}
 			}).on 'dp.change', (thisInput) =>
+				$startDate.data('DateTimePicker').maxDate(thisInput.date)
 				@setState {endDate: thisInput.date}
 
-			$(@refs.endTime.getDOMNode()).datetimepicker({
+			$endTime.datetimepicker({
 				useCurrent: false
 				format: 'hh:mm a'
 				widgetPositioning: {					
 					horizontal: 'right'
 				}
 			}).on 'dp.change', (thisInput) =>
-				@setState {endTime: thisInput.date}	
+				@setState {endTime: thisInput.date}, => console.log @state.endTime.format('HH:mm')
 
 		render: ->
 			return R.div({
@@ -90,6 +97,7 @@ load = (win) ->
 						R.label({}, "Name")
 						R.input({
 							id: 'nameInput'
+							className: 'form-control'
 							value: @state.title
 							onChange: @_updateTitle
 							placeholder: "Name of #{Term 'event'}"
@@ -100,7 +108,7 @@ load = (win) ->
 						ExpandingTextArea({
 							value: @state.description
 							onChange: @_updateDescription
-							placeholder: "Explain details of #{Term 'event'}"
+							placeholder: "Describe details (optional)"
 						})
 					)
 					R.div({className: "dateGroup"},
@@ -223,7 +231,7 @@ load = (win) ->
 			moment = Moment(timestamp, TimestampFormat)
 
 			if moment.isValid
-				return Moment(moment, TimestampFormat).format('Do MMMM [at] H:mm A')
+				return Moment(moment, TimestampFormat).format('Do MMMM [at] h:mm A')
 			else
 				return "Invalid Moment"
 
@@ -265,7 +273,7 @@ load = (win) ->
 				startTimestamp = startTimestamp.set('hour', @state.startTime.hour()).set('minute', @state.startTime.minute())
 
 				if @state.isDateSpan
-					endTimestamp = startTimestamp.set('hour', @state.endTime.hour()).set('minute', @state.endTime.minute())
+					endTimestamp = endTimestamp.set('hour', @state.endTime.hour()).set('minute', @state.endTime.minute())
 			# Default to start/end of day for dates
 			else
 				startTimestamp = startTimestamp.startOf('day')
@@ -288,6 +296,16 @@ load = (win) ->
 			event.preventDefault()
 
 			newData = @_compiledFormData()
+
+			unless newData.endTimestamp.length is 0
+				startTimestamp = Moment(newData.startTimestamp, TimestampFormat)
+				endTimestamp = Moment(newData.endTimestamp, TimestampFormat)
+
+				# Ensure startTime is earlier than endTime
+				if startTimestamp.isAfter endTimestamp
+					endDateTime = endTimestamp.format('Do MMMM [at] h:mm A')
+					Bootbox.alert "Please select an end date/time later than #{endDateTime}"
+					return
 
 			@props.save newData, @props.atIndex
 

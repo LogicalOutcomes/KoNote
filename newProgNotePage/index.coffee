@@ -433,9 +433,6 @@ load = (win, {clientFileId}) ->
 									className: 'icon'
 									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
 								},
-									# R.img({
-									# 	src: if thisEvent.endTimestamp? and thisEvent.endTimestamp.length > 0 then './assets/icons/eventSpan.svg' else './assets/icons/eventSingle.svg'
-									# })
 									FaIcon 'calendar'
 								)
 								EventTabView({
