@@ -54,6 +54,8 @@ It might be wise to wait a couple of days before packaging to ensure the given r
 
 #### the grunt way:
 
+(requires npm3: npm install -g npm@3.3.1)
+
 1. Clone repo: `git clone git@github.com:konode001/konote.git`
 2. Open repo: `cd konote`
 3. Run `npm install`

@@ -167,11 +167,11 @@ init = (win) ->
 		win.location.reload(true)
 
 	registerPageListeners = =>
-		pageListeners = Imm.fromJS pageComponent.getPageListeners()
-		timeoutListeners = Imm.fromJS getTimeoutListeners()
+		pageListeners = Imm.fromJS(pageComponent.getPageListeners()).entrySeq()
+		timeoutListeners = Imm.fromJS(getTimeoutListeners()).entrySeq()
 
 		# EntrySeq list of all listeners combined
-		allListeners = pageListeners.concat(timeoutListeners).entrySeq()
+		allListeners = pageListeners.concat timeoutListeners
 
 		# Register all listeners
 		allListeners.forEach ([name, action]) =>

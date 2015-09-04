@@ -70,13 +70,11 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-nw-builder');
 	grunt.loadNpmTasks('grunt-exec');
 	
+	// if on osx, we can install and use appdmg
 	if (process.platform == 'darwin') {
 		grunt.loadNpmTasks('grunt-appdmg');
+		grunt.registerTask('build', ['nwjs', 'exec:prep', 'exec:append', 'exec:set', 'exec:hide', 'appdmg', 'exec:zip', 'exec:clean']);
+	} else {
+		grunt.registerTask('build', ['nwjs', 'exec:prep', 'exec:append', 'exec:set', 'exec:hide', 'exec:zip', 'exec:clean']);
 	}
-	
-	// wooo
-	grunt.registerTask('build', ['nwjs', 'exec:prep', 'exec:append', 'exec:set', 'exec:hide', 'appdmg', 'exec:zip', 'exec:clean']);
-	
-	grunt.registerTask('build-win', ['nwjs', 'exec:prep', 'exec:append', 'exec:set', 'exec:hide', 'exec:zip', 'exec:clean']);
-
 };

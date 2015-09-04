@@ -20,16 +20,23 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
+	{TimestampFormat} = require('../persist/utils')
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
+	TimeGranularities = ['Day', 'Week', 'Month', 'Year']
 
 	AnalysisView = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
+				metricValues: null
 				selectedMetricIds: Imm.Set()
+				xTicks: Imm.List()
+				xDays: Imm.List()
+				timeSpan: [0, 1]
+				timeGranulatiry: 'day'
 			}
-		render: ->
+		componentWillMount: ->
 			# All non-empty metric values
 			metricValues = @props.progNotes.flatMap (progNote) ->
 				return extractMetricsFromProgNote progNote
@@ -39,36 +46,85 @@ load = (win) ->
 			# All metric IDs for which this client file has data
 			metricIdsWithData = metricValues
 			.map((m) -> m.get('id'))
-			.toSet()			
+			.toSet()
 
+
+			# Builds list of ALL the timestamps
+			timestamps = metricValues.map (metricValue) ->
+				return Moment metricValue.get('timestamp'), Persist.TimestampFormat
+
+			# Builds ordered set of unique timestamps (each as unix ms)
+			middayTimeStamps = timestamps.map (timestamp) ->
+				return timestamp.startOf('day').valueOf()
+			.toOrderedSet().sort()
+
+			# Figure out number of days with data
+			daysOfData = middayTimeStamps.size
+
+			# Disable chart view if less than 3 days of data
+			if daysOfData < 3
+				@setState => isDisabled: {message: "Sorry, 
+				#{3 - daysOfData} more days of #{Term 'progress notes'} are required
+				before I can chart anything meaningful here."}
+
+			firstDay = Moment middayTimeStamps.first()
+			lastDay = Moment middayTimeStamps.last()
+
+			dayRange = lastDay.diff(firstDay, 'days') + 1
+
+			# Return a list of full range of timestamps starting from 
+			xTicks = Imm.List([0..dayRange]).map (n) ->
+				firstDay.clone().add(n, 'days')
+
+			@setState => {xDays: xTicks, xTicks, metricIdsWithData, metricValues}
+
+		render: ->			
 			# Is there actually enough information to show something?
-			hasData = metricIdsWithData.size > 0
+			hasData = @state.metricIdsWithData.size > 0
 
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
 				R.div({className: "noData #{showWhen not hasData}"},
-					R.h1({}, "No data to #{Term 'analyze'}")
 					R.div({},
-						"This tab will become available when this #{Term 'client'} has
-						one or more #{Term 'progress notes'} that contain #{Term 'metrics'}."
+						R.h1({}, "No data to #{Term 'analyze'}")
+						R.div({},
+							"This tab will become available when this #{Term 'client'} has
+							one or more #{Term 'progress notes'} that contain #{Term 'metrics'}."
+						)
 					)
 				)
 				R.div({className: "timeScaleToolbar #{showWhen hasData}"},
-					R.div({id: 'timeSpanContainer'},
-						RangeSlider({
+					R.div({className: 'timeSpanContainer'},						
+						Slider({
 							ref: 'timeSpanSlider'
+							isEnabled: true
+							tooltip: true
 							isRange: true
-							defaultValue: [1,7]
-							minValue: 0
-							maxValue: 10
+							defaultValue: [0, @state.xTicks.size]
+							ticks: @state.xTicks.pop().toJS()
+							onChange: @_updateTimeSpan
+							formatter: ([start, end]) =>
+								startTime = Moment(@state.xTicks.get(start)).format('Do MMM')
+								endTime = Moment(@state.xTicks.get(end)).format('Do MMM')
+								return "#{startTime} - #{endTime}"
 						})
+						R.div({className: 'valueDisplay'},
+							(@state.timeSpan.map (index) =>
+								date = Moment(@state.xTicks.get(index)).format('dddd - Do MMMM - YYYY')
+								return R.div({},
+									R.span({}, date)
+								)
+							)
+						)
 					)
-					R.div({id: 'granularContainer'},
-						RangeSlider({
-							ref: 'granularSlider'
-							defaultValue: 0
-							minValue: 0
-							maxValue: 10
-						})
+					R.div({className: 'granularContainer'},
+						# Slider({
+						# 	ref: 'granularSlider'
+						# 	isEnabled: true
+						# 	defaultValue: 0
+						# 	ticks: TimeGranularities
+						# 	tickRegions: true
+						# 	onChange: @_updateGranularity
+						# })
 					)
 				)
 				R.div({className: "mainWrapper #{showWhen hasData}"},
@@ -78,15 +134,18 @@ load = (win) ->
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
+								progEvents: @props.progEvents
 								metricsById: @props.metricsById
-								metricValues
-								selectedMetricIds: @state.selectedMetricIds
+								metricValues: @state.metricValues
+								xTicks: @state.xTicks
+								selectedMetricIds: @state.selectedMetricIds								
+								timeSpan: @state.timeSpan
 							})
 					)
 					R.div({className: "selectionPanel #{showWhen hasData}"},
 						R.div({className: 'heading'}, Term 'Metrics')
 						R.div({className: 'metrics'},
-							(metricIdsWithData.map (metricId) =>
+							(@state.metricIdsWithData.map (metricId) =>
 								metric = @props.metricsById.get(metricId)
 
 								R.div({className: 'metric checkbox'},
@@ -114,27 +173,67 @@ load = (win) ->
 
 				return {selectedMetricIds}
 
+		_updateTimeSpan: (event) ->
+			timeSpan = event.target.value.split(",")
+			@setState {timeSpan}
 
-	RangeSlider = React.createFactory React.createClass
+		# _updateGranularity: (event) ->
+		# 	timeGranularity = event.target.value
+		# 	@setState {timeGranularity}
+
+		# 	console.log "xTicks:", @state.xTicks.toJS()
+
+		# 	tickDays = @state.xTicks
+
+		# 	startFirstWeek = tickDays.first().startOf('week')
+		# 	endLastWeek = tickDays.last().endOf('week')
+
+		# 	numberWeeks = endLastWeek.diff startFirstWeek, 'weeks'
+
+		# 	console.log "numberWeeks", numberWeeks
+
+		# 	tickWeeks = Imm.List([0...numberWeeks]).map (weekIndex) =>
+		# 		return startFirstWeek.clone().add(weekIndex, 'weeks')
+
+		# 	console.log "tickWeeks", tickWeeks.toJS()
+
+		# 	@setState {xTicks: tickWeeks}
+
+
+	Slider = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
-			return {
-				minDate: null
-				maxDate: null
-			}
+			slider: null
 
 		componentDidMount: ->
-			$(@refs.slider.getDOMNode()).slider({
-				range: @props.isRange
-				tooltip: 'always'
+			@setState {
+				slider: $(@refs.slider.getDOMNode()).slider({
+					enabled: @props.isEnabled
+					tooltip: if @props.tooltip then 'show' else 'hide'
+					range: @props.isRange or false
+					min: @props.minValue or 0
+					max: @props.maxValue or @props.ticks.length
+					ticks: [0...TimeGranularities.length] if @props.tickRegions
+					ticks_labels: TimeGranularities if @props.tickRegions
+					value: @props.defaultValue
+					formatter: @props.formatter or ((value) -> value)
+				})
+			}, =>
+				@state.slider.on('slideStop', (event) => @props.onChange event)
 
-				value: @props.defaultValue
-				min: @props.minValue
-				max: @props.maxValue
-			})
-
-		render: ->			
+		render: ->
 			return R.input({ref: 'slider'})
+
+		# componentDidUpdate: (oldProps, oldState) ->
+		# 	console.log "Enabled?", @props.isEnabled
+		# 	if @state.slider? and @props.isEnabled isnt oldProps.isEnabled				
+		# 		if @props.isEnabled
+		# 			console.log "Enabling..."
+		# 			@state.slider.enable()
+		# 		else
+		# 			console.log "Disabling..."
+		# 			@state.slider.disable()
 
 
 	Chart = React.createFactory React.createClass
@@ -145,27 +244,51 @@ load = (win) ->
 			}
 
 		render: ->
-				return R.div({className: 'chartInner'},
-					R.div({
-						className: "chart disabledChart #{showWhen !!@state.isDisabled}"
-					}, 
-						R.span({}, if @state.isDisabled then @state.isDisabled.message)
+			return R.div({className: 'chartInner'},
+				R.div({
+					id: 'eventInfo'
+					ref: 'eventInfo'
+				},
+					R.div({className: 'title'})
+					R.div({className: 'info'}
+						R.div({className: 'description'})
+						R.div({className: 'timeSpan'},
+							R.div({className: 'start'})
+							R.div({className: 'end'})
+						)
 					)
-					R.div({
-						className: "chart #{showWhen not @state.isDisabled}"
-						ref: 'chartDiv'
-					})
 				)
+				R.div({
+					className: "chart disabledChart #{showWhen !!@state.isDisabled}"
+				}, 
+					R.span({}, if @state.isDisabled then @state.isDisabled.message)
+				)
+				R.div({
+					className: "chart #{showWhen not @state.isDisabled}"
+					ref: 'chartDiv'
+				})
+			)
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Show anything that is selected in the view layer
-			sameProps = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
-			unless sameProps or !!@state.isDisabled
+			if @state.isDisabled
+				return
+
+			# Update metrics?
+			sameMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
+			unless sameMetrics
 				@_refreshSelectedMetrics()
+
+			# Update timeSpan?
+			sameTimeSpan = @props.timeSpan is oldProps.timeSpan
+			unless sameTimeSpan
+				@_chart.axis.min {x: @props.xTicks.get(@props.timeSpan[0])}
+				@_chart.axis.max {x: @props.xTicks.get(@props.timeSpan[1])}	
 				
-		componentDidMount: ->
+		componentDidMount: ->			
 			@_generateChart()
 			@_refreshSelectedMetrics()
+			@_attachKeyBindings()
 
 		_refreshSelectedMetrics: ->
 			@_chart.hide()
@@ -173,7 +296,44 @@ load = (win) ->
 			@props.selectedMetricIds.forEach (metricId) =>
 				@_chart.show("y-" + metricId)
 
-		_generateChart: ->
+		_attachKeyBindings: ->
+			# Find our hidden eventInfo box
+			eventInfo = $('#eventInfo')
+			dateFormat = 'Do MMM [at] h:mm A'
+
+			@props.progEvents.forEach (progEvent) =>
+				# Attach hover binding to progEvent region
+				$('.' + progEvent.get('id')).hover((event) =>					
+
+					eventInfo.addClass('show')
+					eventInfo.find('.title').text progEvent.get('title')
+					eventInfo.find('.description').text(progEvent.get('description') or "(no description)")
+
+					startTimestamp = new Moment(progEvent.get('startTimestamp'), TimestampFormat)
+					endTimestamp = new Moment(progEvent.get('endTimestamp'), TimestampFormat)
+
+					startText = startTimestamp.format(dateFormat)
+					endText = if endTimestamp.isValid() then endTimestamp.format(dateFormat) else null
+
+					if endText?
+						startText = "From: " + startText
+						endText = "Until: " + endText
+
+					eventInfo.find('.start').text startText
+					eventInfo.find('.end').text endText
+
+					# Make eventInfo follow the mouse
+					$(win.document).on('mousemove', (event) ->
+						eventInfo.css 'top', event.clientY - (eventInfo.outerHeight() + 15)
+						eventInfo.css 'left', event.clientX
+					)
+				, =>
+					# Hide and unbind!
+					eventInfo.removeClass('show')
+					$(win.document).off('mousemove')
+				)
+
+		_generateChart: ->			
 			# Create a Map from metric ID to data series,
 			# where each data series is a sequence of [x, y] pairs
 			dataSeries = @props.metricValues
@@ -230,26 +390,93 @@ load = (win) ->
 				return metric.map (dataPoint) ->
 					return dataPoint if isNaN(dataPoint)
 					(dataPoint - min) / scaleFactor
+					
 
-			xTicks = @_generateXTicks()
-
-			# Here we build a array of years and timestamps to match
+			# YEAR LINES
+			# Build Imm.List of years and timestamps to match
 			# TODO: This could be refined into a single mapped collection
 			newYears = Imm.List()
 			newYearLines = Imm.List()			
 
-			xTicks.forEach (tick) ->
+			@props.xTicks.forEach (tick) =>
 				unless newYears.contains tick.year()
 					newYears = newYears.push tick.year()
 					newYearLines = newYearLines.push {
-						value: if tick.isSame xTicks.first() then tick else tick.startOf('year')
+						value: if tick.isSame @props.xTicks.first() then tick else tick.startOf('year')
 						text: tick.year()
 						position: 'middle'
 						class: 'yearLine'
 					}
 
+			# PROG EVENT REGIONS
+			# Build Imm.List of region objects
+			progEventRegions = @props.progEvents.map (progEvent) =>
+				eventRegion = {
+					start: @_toUnixMs progEvent.get('startTimestamp')
+					class: "progEventRange #{progEvent.get('id')}"
+				}
+				if Moment(progEvent.get('endTimestamp'), TimestampFormat).isValid()
+					eventRegion.end = @_toUnixMs progEvent.get('endTimestamp')
+
+				# TODO: Classify singular event
+
+				return eventRegion
+
+			# Sort regions in order of start timestamp
+			sortedEvents = progEventRegions.sortBy (event) => event['start']						
+
+
+			# Setting up vars for row sorting
+			remainingEvents = sortedEvents
+			eventRows = Imm.List()
+			progEvents = Imm.List()
+			rowIndex = 0
+
+			_pluckProgEvent = (thisEvent, index) ->
+				# Append class with row number
+				progEvent = Imm.fromJS(thisEvent)
+				newClass = progEvent.get('class') + " row#{rowIndex}"				
+
+				# Convert single-point event date to a short span
+				if not progEvent.get('end')
+					startDate = Moment progEvent.get('start')
+					progEvent = progEvent.set 'end', startDate.clone().add(6, 'hours')
+					newClass = newClass + " singlePoint"
+
+				# Update class
+				progEvent = progEvent.set('class', newClass)
+
+				# Update eventRows, remove from remainingEvents
+				updatedRow = eventRows.get(rowIndex).push progEvent
+				eventRows = eventRows.set rowIndex, updatedRow
+				remainingEvents = remainingEvents.delete(index)				
+
+				return
+
+			while remainingEvents.size > 0
+				# Init new eventRow
+				eventRows = eventRows.push Imm.List()
+
+				# Loop through events, pluck any with non-conflicting dates
+				remainingEvents.forEach (thisEvent) =>
+
+					thisRow = eventRows.get(rowIndex)
+					# Can't rely on forEach index, because .delete() offsets it
+					liveIndex = remainingEvents.indexOf(thisEvent)
+
+					_pluckProgEvent(thisEvent, liveIndex) if thisRow.size is 0 or (
+						not thisRow.last().get('end')? or 
+						thisEvent.start >= thisRow.last().get('end')
+					)
+
+				# Cancat to final (flat) output for c3
+				progEvents = progEvents.concat eventRows.get(rowIndex)
+
+				rowIndex++
+
+
 			# Generate and bind the chart
-			@_chart = C3.generate {
+			@_chart = C3.generate {						
 					bindto: @refs.chartDiv.getDOMNode()
 					grid: {
 						x: {
@@ -263,11 +490,12 @@ load = (win) ->
 								fit: false
 								format: '%b %d'
 							}
-							min: xTicks.first().clone().format Persist.TimestampFormat
-							max: xTicks.last().clone().format Persist.TimestampFormat
+							min: @props.xTicks.first().clone().format Persist.TimestampFormat
+							max: @props.xTicks.last().clone().format Persist.TimestampFormat
 						}
 						y: {
 							show: false
+							max: 1 + (eventRows.size * 1/4)
 						}
 					}				
 					data: {
@@ -277,6 +505,7 @@ load = (win) ->
 						xs: xsMap.toJS()
 						names: dataSeriesNames.toJS()
 					}
+					regions: progEvents.toJS()
 					tooltip: {
 						format: {
 							value: (value, ratio, id, index) ->
@@ -295,41 +524,15 @@ load = (win) ->
 						}
 					}
 					padding: {
-						left: 50
-						right: 50
+						left: 25
+						right: 25
 					}
-					zoom: {
-						enabled: true
-					}
+					onrendered: @_attachKeyBindings
 				}
 
-		_generateXTicks: ->
-			# Builds list of ALL the timestamps
-			timestamps = @props.metricValues.map (metricValue) ->
-				return Moment metricValue.get('timestamp'), Persist.TimestampFormat
-
-			# Builds ordered set of unique timestamps (each as unix ms)
-			middayTimeStamps = timestamps.map (timestamp) ->
-				return timestamp.startOf('day').valueOf()
-			.toOrderedSet().sort()
-
-			# Figure out number of days with data
-			daysOfData = middayTimeStamps.size
-
-			# Disable chart view if less than 3 days of data
-			if daysOfData < 3
-				@setState => isDisabled: {message: "Sorry, 
-				#{3 - daysOfData} more days of #{Term 'progress notes'} are required
-				before I can chart anything meaningful here."}
-
-			firstDay = Moment middayTimeStamps.first()
-			lastDay = Moment middayTimeStamps.last()
-
-			dayRange = lastDay.diff(firstDay, 'days') + 1
-
-			# Return a list of full range of timestamps starting from 
-			return Imm.List([0..dayRange]).map (n) ->
-				firstDay.clone().add(n, 'days')
+		_toUnixMs: (timestamp) ->
+			# Converts to unix ms
+			return Moment(timestamp, TimestampFormat).valueOf()		
 
 
 

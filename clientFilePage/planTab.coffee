@@ -153,6 +153,7 @@ load = (win) ->
 											hasTargetChanged: @_hasTargetChanged targetId
 											key: targetId
 											isActive: targetId is @state.selectedTargetId
+											isReadOnly: @props.isReadOnly
 											onTargetUpdate: @_updateTarget.bind null, targetId
 											onTargetSelection: @_setSelectedTarget.bind null, targetId
 										})
@@ -483,6 +484,7 @@ load = (win) ->
 						ref: 'nameField'
 						placeholder: "Name of #{Term 'target'}"
 						value: currentRevision.get('name')
+						disabled: @props.isReadOnly
 						onChange: @_updateField.bind null, 'name'
 						onFocus: @props.onTargetSelection
 					})
@@ -493,6 +495,7 @@ load = (win) ->
 						ref: 'notesField'
 						placeholder: "Describe the #{Term 'target'} in detail . . ."
 						value: currentRevision.get('notes')
+						disabled: @props.isReadOnly
 						onChange: @_updateField.bind null, 'notes'
 						onFocus: @props.onTargetSelection
 					})

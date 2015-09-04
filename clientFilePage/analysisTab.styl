@@ -3,13 +3,29 @@
 	display flex
 	flex-direction column
 	
+	> .noData
+		flex 1
+
+		display flex
+		align-items center
+		justify-content center
+		flex-direction row !important
+
+		padding 50px
+
+		color #AAA
+		font-size 24px
+		font-weight 700
+		text-align center			
+	
 	.timeScaleToolbar
 		flex none
 		flex-basis 85px
 		display flex
-		padding-bottom 25px
+		flex-direction row
 		border-bottom 2px solid sidebar-borders
 		
+		// Default styling for slider
 		.slider				
 			width 100%
 			
@@ -34,19 +50,63 @@
 					
 					&:hover
 						background #3b4e59
+						
+			.tooltip
+				margin-top -33px
+				
+				.tooltip-inner
+					background sidebar-borders
+					color #4c5d67
+					font-size 13px
+					padding 4px 10px
+				
+				.tooltip-arrow
+					border-top-color sidebar-borders
+						
+			.slider-tick-label-container
+				margin-left -15% !important
+				margin-right -15% !important
+				
+				> .slider-tick-label
+					width 25% !important
+					text-align center !important
 		
-		> #timeSpanContainer
+		> .timeSpanContainer
 			flex 5
-			display flex
-			align-items flex-end
-			padding 0px 30px
+			display block
+			position relative
+			padding 35px 30px 0px 30px
 			
-		> #granularContainer
+			> .valueDisplay
+				position absolute
+				left 0
+				right 0
+				width 100%
+				display flex
+				padding 20px
+				
+				> div
+					flex 1					
+					
+					&:last-child
+						text-align right
+						
+					> span
+						background #fff
+						padding 5px 10px
+						border-radius 5px
+						border 1px solid sidebar-borders
+						
+						font-weight 400
+						color #386787
+			
+		> .granularContainer
 			flex 1
 			display flex
-			align-items flex-end			
+			align-items center
 			padding 0px 30px
 			
+			// Slider style variation
 			.slider-track-low, .slider-track-high
 				background #e4f5e4
 				
@@ -65,35 +125,11 @@
 		flex-direction row
 		align-items stetch
 
-		.noData
-			flex 1
-
-			padding 100px 30px
-
-			color hsl(hue(sidebar-bg), 15%, 35%)
-			text-align center
-
-			> h1
-				margin-bottom 20px		
-
 		.chartContainer
 			flex 5
 			display flex
 
-			padding 20px 30px
-
-			> .noData
-				flex 1
-
-				display flex
-				align-items center
-				justify-content center
-
-				padding 50px
-
-				color #AAA
-				font-size 24px
-				font-weight 700
+			padding 20px 30px			
 
 			> .chartInner			
 				flex 1
@@ -101,6 +137,39 @@
 				display flex
 				align-items center
 				justify-content center
+				
+				> #eventInfo
+					display none
+					z-index 9999
+					position absolute					
+					width 150px
+					margin-left -(@width / 2)
+					
+					background #fff
+					border 1px solid sidebar-borders						
+					
+					> .title
+						font-weight 600 !important
+						background sidebar-borders						
+						padding 5px
+						
+						color #4c5d67
+						font-size 14px
+						
+					> .info
+						
+						> .description
+							font-weight normal
+							padding 5px
+							font-size 12px
+							
+						> .timeSpan
+							font-size 10px
+							
+							> div
+								text-align right
+								background #eee
+								padding 5px
 				
 				.yearLine
 					font-weight bold
@@ -121,6 +190,45 @@
 					font-size 18px
 					font-weight 600	
 					
+				.chart
+					flex 1
+						
+					.c3-zoom-rect
+						display none !important
+
+					.c3-regions
+						
+						.c3-region 
+							
+							> rect
+								// 10% of original height
+								transform scaleY(0.1) !important
+								fill-opacity 0.7 !important
+								fill sidebar-borders
+								
+								&:hover
+									fill-opacity 1 !important
+									fill #1d6977
+									
+							&.singlePoint > rect
+								fill white
+								stroke sidebar-borders
+								stroke-width 2
+								
+								&:hover
+									stroke #1d6977
+										
+							&.row1 > rect
+								transform scaleY(0.1) translateY(350px) !important
+								
+							&.row2 > rect
+								transform scaleY(0.1) translateY(700px) !important
+								
+							&.row3 > rect
+								transform scaleY(0.1) translateY(1050px) !important
+								
+						
+
 		.selectionPanel
 			flex 1
 

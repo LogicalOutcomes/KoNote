@@ -412,7 +412,7 @@ load = (win, {clientFileId}) ->
 					progEvents: @props.progEvents
 				})
 				R.div({className: 'eventsPanel'},
-					R.span({}, "Events")
+					R.span({className: 'title'}, Term "Events")
 					R.div({
 						className: [
 							'eventsList'
@@ -432,7 +432,12 @@ load = (win, {clientFileId}) ->
 								R.div({
 									className: 'icon'
 									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
-								}, "E")
+								},
+									# R.img({
+									# 	src: if thisEvent.endTimestamp? and thisEvent.endTimestamp.length > 0 then './assets/icons/eventSpan.svg' else './assets/icons/eventSingle.svg'
+									# })
+									FaIcon 'calendar'
+								)
 								EventTabView({
 									data: thisEvent
 									atIndex: index
@@ -443,8 +448,8 @@ load = (win, {clientFileId}) ->
 								})
 							)
 						)
-						R.button({
-							className: "btn btn-success"
+						R.button({							
+							className: 'btn btn-default addEventButton'
 							onClick: @_newEventTab
 							disabled: @state.editingWhichEvent?
 						}, FaIcon('plus'))

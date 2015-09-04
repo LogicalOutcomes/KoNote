@@ -5,6 +5,7 @@ sidebar-bg = hsl(hue(logo-light-blue), 35%, 94%)
 sidebar-borders = darken(sidebar-bg, 10%)
 
 #container > .clientFilePage
+	position relative
 	display flex
 	flex-direction column
 	height 100%
@@ -38,7 +39,6 @@ sidebar-borders = darken(sidebar-bg, 10%)
 			color hsl(hue(sidebar-bg), 15%, 35%)
 	
 	> .wrapper
-		position relative
 		height 100%
 		display flex
 
@@ -46,6 +46,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 			display block
 			flex-direction column
 			position relative
+			text-align center
 
 			width 250px
 
@@ -53,6 +54,9 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 			background sidebar-bg
 			color hsl(hue(sidebar-bg), 15%, 35%)
+			
+			> div
+				text-align left
 			
 			.brandContainer {
 				position absolute
@@ -78,30 +82,24 @@ sidebar-borders = darken(sidebar-bg, 10%)
 				text-align center
 
 			> .clientName
-				display flex
-				align-items center
-
 				width 100%
-
 				padding 21px 20px 20px
-
 				font-size 24px
+				text-align center
 			
 			> .recordId
+				
 				display flex			
 				
 				padding 0px 15px 15px
+				justify-content center
 				
 				opacity 0.75			
 				font-weight 400
-				
-				> span
-					width 100%
-					display block
-					text-align center
 
 			> .tabStrip
 				width 100%
+				text-align left
 
 				> .tab
 					padding 15px 20px

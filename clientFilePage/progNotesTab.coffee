@@ -17,6 +17,7 @@ load = (win) ->
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	ProgEventsWidget = require('../progEventsWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	PrintButton = require('../printButton').load(win)
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
@@ -287,13 +288,22 @@ load = (win) ->
 									)									
 								)
 					).toJS()...
-					R.div({className: 'events'}
 						(@props.progEvents.map (progEvent) =>
-							R.div({}, "Prog Event: #{progEvent.get('title')}")
-						).toJS()...
+							R.div({}
+								R.h3({},
+									"#{Term 'Event'}"
+								)
+								ProgEventsWidget({
+									format: 'large'
+									title: progEvent.get('title')
+									description: progEvent.get('description')
+									start: progEvent.get('startTimestamp')
+									end: progEvent.get('endTimestamp')
+								})
+							)
+					).toJS()...
 					)
 				)
-			)
 		_selectBasicSection: (section) ->
 			@props.setSelectedItem Imm.fromJS {
 				type: 'basicSection'

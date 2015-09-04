@@ -1,7 +1,7 @@
 {
   "name": "konote",
   "displayName": "KoNote",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "main": "main.html",
   "window": {
     "icon": "icon.png",
@@ -29,12 +29,11 @@
     "bootstrap": "^3.3.5",
     "bootstrap-slider": "^5.0.12",
     "buffer-equal-constant-time": "^1.0.1",
-    "c3": "https://github.com/konode001/c3#0.4.10-fixes",
+    "c3": "https://github.com/konode001/c3#0.4.10-fixes-regions",
     "d3": "^3.5.0",
     "chai": "^2.3.0",
     "clone": "^1.0.2",
     "coffee-script": "^1.9.3",
-    "d3": "3.5.0",
     "eonasdan-bootstrap-datetimepicker": "^4.15.35",
     "font-awesome": "^4.3.0",
     "handlebars": "^3.0.3",

@@ -11,6 +11,7 @@ Persist = require './persist'
 load = (win) ->
 	React = win.React
 	R = React.DOM
+	ProgEventsWidget = require('./progEventsWidget').load(win)
 	{FaIcon, showWhen} = require('./utils').load(win)
 
 	ProgNoteDetailView = React.createFactory React.createClass
@@ -109,7 +110,13 @@ load = (win) ->
 							R.div({className: 'notes'}, entry.get('notes'))
 							R.div({className: 'progEvents'},
 								entry.get('progEvents').map (progEvent) =>
-									R.div({}, "Event: #{progEvent.get('title')}")
+									ProgEventsWidget({
+										format: 'small'
+										title: progEvent.get('title')
+										description: progEvent.get('description')
+										start: progEvent.get('startTimestamp')
+										end: progEvent.get('endTimestamp')
+									})
 							)
 						)
 					).toJS()...
