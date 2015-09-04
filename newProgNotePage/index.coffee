@@ -287,6 +287,18 @@ load = (win, {clientFileId}) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
 				@setState {progNote: newProps.progNote}
 
+		componentDidUpdate: ->
+			if @state.editingWhichEvent?
+				console.log "Init tooltip"
+				$('#saveNoteButton').tooltip {
+					html: true
+					placement: 'top'
+					title: "Please finish editing your #{Term 'event'} before saving"
+				}
+			else
+				console.log "Destroy tooltip"
+				$('#saveNoteButton').tooltip 'destroy'
+
 		render: ->
 			if @props.isLoading
 				return R.div({className: 'newProgNotePage'},
@@ -398,8 +410,9 @@ load = (win, {clientFileId}) ->
 					)
 					R.div({className: 'buttonRow'},
 						R.button({
-							className: 'save btn btn-primary'
-							onClick: @_save
+							className: "save btn btn-primary #{'disabled' if @state.editingWhichEvent?}"
+							id: 'saveNoteButton'
+							onClick: @_save unless @state.editingWhichEvent?
 						},
 							FaIcon 'check'
 							'Save'
@@ -558,7 +571,7 @@ load = (win, {clientFileId}) ->
 			}
 		_invalidMetricFormat: (value) -> not value.match /^-?\d*\.?\d*$/
 		_save: ->
-			console.log "Saving"
+
 			progNoteId = null
 
 			Async.series [
