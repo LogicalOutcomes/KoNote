@@ -285,12 +285,12 @@ load = (win) ->
 					isOneFullDay = true
 					endTimestamp = Moment(startTimestamp).endOf('day')
 
-			return {
+			return {	
 				title: @state.title
 				description: @state.description
 				startTimestamp: startTimestamp.format(TimestampFormat)
 				endTimestamp: if @state.isDateSpan or isOneFullDay then endTimestamp.format(TimestampFormat) else ''
-			}				
+			}
 
 		_saveEventData: (event) ->
 			event.preventDefault()
@@ -303,8 +303,8 @@ load = (win) ->
 
 				# Ensure startTime is earlier than endTime
 				if startTimestamp.isAfter endTimestamp
-					endDateTime = endTimestamp.format('Do MMMM [at] h:mm A')
-					Bootbox.alert "Please select an end date/time later than #{endDateTime}"
+					startDateTime = startTimestamp.format('Do MMMM [at] h:mm A')
+					Bootbox.alert "Please select an end date/time later than #{startDateTime}"
 					return
 
 			@props.save newData, @props.atIndex
