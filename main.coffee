@@ -129,22 +129,26 @@ init = (win) ->
 			isLoggedIn = true
 			registerPageListeners()
 
-		# Set up keyboard shortcuts
-		win.document.addEventListener 'keyup', (event) ->
-			# If Ctrl-Shift-J
-			if event.ctrlKey and event.shiftKey and event.which is 74
-				Gui.Window.get(win).showDevTools()
-		, false
-		win.document.addEventListener 'keyup', (event) ->
-			# If Ctrl-R
-			if event.ctrlKey and (not event.shiftKey) and event.which is 82
-				doHotCodeReplace()
-		, false
+		# Hotkeys
 		win.document.addEventListener 'keydown', (event) ->
 			# prevent backspace navigation
 			if event.which is 8 and event.target.tagName is 'BODY'
 				event.preventDefault()
 		, false
+
+		# Hotkeys for devMode only
+		if Config.devMode
+			# Set up keyboard shortcuts
+			win.document.addEventListener 'keyup', (event) ->
+				# If Ctrl-Shift-J
+				if event.ctrlKey and event.shiftKey and event.which is 74
+					Gui.Window.get(win).showDevTools()
+			, false
+			win.document.addEventListener 'keyup', (event) ->
+				# If Ctrl-R
+				if event.ctrlKey and (not event.shiftKey) and event.which is 82
+					doHotCodeReplace()
+			, false		
 
 	doHotCodeReplace = =>
 		# Save the entire page state into a global var
