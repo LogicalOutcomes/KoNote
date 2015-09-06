@@ -408,6 +408,10 @@ load = (win) ->
 						class: 'yearLine'
 					}
 
+			# Finally, remove the first yearLine
+			newYearLines = newYearLines.shift()
+
+
 			# PROG EVENT REGIONS
 			# Build Imm.List of region objects
 			progEventRegions = @props.progEvents.map (progEvent) =>
