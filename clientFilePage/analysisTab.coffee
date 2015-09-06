@@ -393,23 +393,20 @@ load = (win) ->
 					
 
 			# YEAR LINES
-			# Build Imm.List of years and timestamps to match
-			# TODO: This could be refined into a single mapped collection
-			newYears = Imm.List()
-			newYearLines = Imm.List()			
+			# Build Imm.List of years and timestamps to matching
+			newYearLines = Imm.List()
+			firstYear = @props.xTicks.first().year()
+			lastYear = @props.xTicks.last().year()
 
-			@props.xTicks.forEach (tick) =>
-				unless newYears.contains tick.year()
-					newYears = newYears.push tick.year()
-					newYearLines = newYearLines.push {
-						value: if tick.isSame @props.xTicks.first() then tick else tick.startOf('year')
-						text: tick.year()
+			# Don't bother if only 1 year (doesn't go past calendar year)
+			unless firstYear is lastYear
+				newYearLines = Imm.List([firstYear..lastYear]).map (year) =>
+					return {
+						value: Moment().year(year).startOf('year')
+						text: year
 						position: 'middle'
 						class: 'yearLine'
 					}
-
-			# Finally, remove the first yearLine
-			newYearLines = newYearLines.shift()
 
 
 			# PROG EVENT REGIONS
