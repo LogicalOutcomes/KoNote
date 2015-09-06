@@ -17,6 +17,10 @@ module.exports = {
 	# Specify data directory
 	dataDirectory: 'data'
 
+	analysis: {
+		# Minimum days of data (metrics/events/treatments) required to enable chart
+		minDaysOfData: 3
+	} 
 
 	# Set total timeout in (minutes),
 	# and how many mins before timeout to show warning

@@ -29,7 +29,10 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
-				metricValues: null
+				hasEnoughData: null
+				daysOfData: null
+
+				metricValues: null				
 				selectedMetricIds: Imm.Set()
 				xTicks: Imm.List()
 				xDays: Imm.List()
@@ -48,7 +51,6 @@ load = (win) ->
 			.map((m) -> m.get('id'))
 			.toSet()
 
-
 			# Builds list of ALL the timestamps
 			timestamps = metricValues.map (metricValue) ->
 				return Moment metricValue.get('timestamp'), Persist.TimestampFormat
@@ -58,42 +60,38 @@ load = (win) ->
 				return timestamp.startOf('day').valueOf()
 			.toOrderedSet().sort()
 
-			# Figure out number of days with data
-			daysOfData = middayTimeStamps.size
-
-			# Disable chart view if less than 3 days of data
-			if daysOfData < 3
-				@setState => isDisabled: {message: "Sorry, 
-				#{3 - daysOfData} more days of #{Term 'progress notes'} are required
-				before I can chart anything meaningful here."}
-
 			firstDay = Moment middayTimeStamps.first()
 			lastDay = Moment middayTimeStamps.last()
-
 			dayRange = lastDay.diff(firstDay, 'days') + 1
 
 			# Return a list of full range of timestamps starting from 
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
-			@setState => {xDays: xTicks, xTicks, metricIdsWithData, metricValues}
+			@setState => {
+				xDays: xTicks
+				daysOfData: middayTimeStamps.size
+				xTicks, metricIdsWithData, metricValues}
 
-		render: ->			
-			# Is there actually enough information to show something?
-			hasData = @state.metricIdsWithData.size > 0
+		render: ->
+			hasEnoughData = @state.daysOfData >= Config.analysis.minDaysOfData
+			console.log "daysOfData", @state.daysOfData
+			console.log "minDaysOfData", Config.analysis.minDaysOfData
 
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
-				R.div({className: "noData #{showWhen not hasData}"},
+				R.div({className: "noData #{showWhen not hasEnoughData}"},
 					R.div({},
-						R.h1({}, "No data to #{Term 'analyze'}")
+						R.h1({}, "More Data Needed")
 						R.div({},
-							"This tab will become available when this #{Term 'client'} has
-							one or more #{Term 'progress notes'} that contain #{Term 'metrics'}."
+							"Sorry, #{Config.analysis.minDaysOfData - @state.daysOfData} 
+							more days of #{Term 'progress notes'} containing 
+							#{Term 'metrics'} or #{Term 'events'} 
+							are required before I can chart anything meaningful here."
 						)
 					)
 				)
-				R.div({className: "timeScaleToolbar #{showWhen hasData}"},
-					R.div({className: 'timeSpanContainer'},						
+				R.div({className: "timeScaleToolbar #{showWhen hasEnoughData}"},
+					R.div({className: 'timeSpanContainer'},
 						Slider({
 							ref: 'timeSpanSlider'
 							isEnabled: true
@@ -127,10 +125,10 @@ load = (win) ->
 						# })
 					)
 				)
-				R.div({className: "mainWrapper #{showWhen hasData}"},
-					R.div({className: "chartContainer"},
-						if @props.isVisible
-							# Force chart to be recreated when tab is opened
+				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
+					R.div({className: 'chartContainer'},
+						# Force chart to be recreated when tab is opened
+						if @props.isVisible and @state.selectedMetricIds.size > 0							
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
@@ -141,8 +139,19 @@ load = (win) ->
 								selectedMetricIds: @state.selectedMetricIds								
 								timeSpan: @state.timeSpan
 							})
+						else
+							# Don't render Chart until data points selected
+							R.div({className: 'noData'},
+								R.div({},
+									R.h1({}, "Select Data")
+									R.div({},
+										"Begin your #{Term 'analysis'} by selecting 
+										one or more data points from the right panel."
+									)
+								)								
+							)
 					)
-					R.div({className: "selectionPanel #{showWhen hasData}"},
+					R.div({className: "selectionPanel"},
 						R.div({className: 'heading'}, Term 'Metrics')
 						R.div({className: 'metrics'},
 							(@state.metricIdsWithData.map (metricId) =>
@@ -238,10 +247,6 @@ load = (win) ->
 
 	Chart = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
-		getInitialState: ->
-			return {
-				isDisabled: null
-			}
 
 		render: ->
 			return R.div({className: 'chartInner'},
@@ -259,21 +264,12 @@ load = (win) ->
 					)
 				)
 				R.div({
-					className: "chart disabledChart #{showWhen !!@state.isDisabled}"
-				}, 
-					R.span({}, if @state.isDisabled then @state.isDisabled.message)
-				)
-				R.div({
-					className: "chart #{showWhen not @state.isDisabled}"
+					className: "chart"
 					ref: 'chartDiv'
 				})
 			)
 
 		componentDidUpdate: (oldProps, oldState) ->
-			# Show anything that is selected in the view layer
-			if @state.isDisabled
-				return
-
 			# Update metrics?
 			sameMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 			unless sameMetrics
