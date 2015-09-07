@@ -38,8 +38,19 @@ load = (win) ->
 				xDays: Imm.List()
 				timeSpan: null
 				# timeGranulatiry: 'day'
+
+				isGenerating: true
 			}
 		componentWillMount: ->
+			@_generateAnalysis()
+
+		componentDidUpdate: (oldProps, oldState) ->
+			unless oldProps is @props
+				@_generateAnalysis()
+
+		_generateAnalysis: ->			
+			console.log ">>>>>>>>> Generating Analysis!"
+
 			# All non-empty metric values
 			metricValues = @props.progNotes.flatMap (progNote) ->
 				return extractMetricsFromProgNote progNote
@@ -62,13 +73,12 @@ load = (win) ->
 			# Filter to unique days, and sort
 			.toOrderedSet().sort()
 
-			console.log "timestampDays", timestampDays.toJS()
-
+			# Determine earliest & latest days
 			firstDay = Moment timestampDays.first()
 			lastDay = Moment timestampDays.last()
 			dayRange = lastDay.diff(firstDay, 'days') + 1
 
-			# Return a list of full range of timestamps starting from 
+			# Create list of all days as moments
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
@@ -76,7 +86,7 @@ load = (win) ->
 				xDays: xTicks
 				daysOfData: timestampDays.size
 				timeSpan: [0, xTicks.size - 1]
-				xTicks, metricIdsWithData, metricValues
+				xTicks, metricIdsWithData, metricValues				
 			}
 
 		render: ->
@@ -132,7 +142,7 @@ load = (win) ->
 				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
 					R.div({className: 'chartContainer'},
 						# Force chart to be re-rendered when tab is opened
-						if @props.isVisible and @state.selectedMetricIds.size > 0							
+						if @props.isVisible and @state.selectedMetricIds.size > 0
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
@@ -274,9 +284,9 @@ load = (win) ->
 			)
 
 		componentDidUpdate: (oldProps, oldState) ->
-			# Update metrics?
-			sameMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
-			unless sameMetrics
+			# Update selected metrics?
+			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
+			unless sameSelectedMetrics
 				@_refreshSelectedMetrics()
 
 			# Update timeSpan?
@@ -284,6 +294,7 @@ load = (win) ->
 			unless sameTimeSpan
 				@_chart.axis.min {x: @props.xTicks.get @props.timeSpan[0]}
 				@_chart.axis.max {x: @props.xTicks.get @props.timeSpan[1]}
+
 				
 		componentDidMount: ->			
 			@_generateChart()
