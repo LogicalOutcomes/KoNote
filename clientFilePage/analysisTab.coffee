@@ -36,8 +36,8 @@ load = (win) ->
 				selectedMetricIds: Imm.Set()
 				xTicks: Imm.List()
 				xDays: Imm.List()
-				timeSpan: [0, 1]
-				timeGranulatiry: 'day'
+				timeSpan: null
+				# timeGranulatiry: 'day'
 			}
 		componentWillMount: ->
 			# All non-empty metric values
@@ -71,12 +71,12 @@ load = (win) ->
 			@setState => {
 				xDays: xTicks
 				daysOfData: middayTimeStamps.size
-				xTicks, metricIdsWithData, metricValues}
+				timeSpan: [0, xTicks.size - 1]
+				xTicks, metricIdsWithData, metricValues			
+			}
 
 		render: ->
 			hasEnoughData = @state.daysOfData >= Config.analysis.minDaysOfData
-			console.log "daysOfData", @state.daysOfData
-			console.log "minDaysOfData", Config.analysis.minDaysOfData
 
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
 				R.div({className: "noData #{showWhen not hasEnoughData}"},
@@ -278,8 +278,8 @@ load = (win) ->
 			# Update timeSpan?
 			sameTimeSpan = @props.timeSpan is oldProps.timeSpan
 			unless sameTimeSpan
-				@_chart.axis.min {x: @props.xTicks.get(@props.timeSpan[0])}
-				@_chart.axis.max {x: @props.xTicks.get(@props.timeSpan[1])}	
+				@_chart.axis.min {x: @props.xTicks.get @props.timeSpan[0]}
+				@_chart.axis.max {x: @props.xTicks.get @props.timeSpan[1]}
 				
 		componentDidMount: ->			
 			@_generateChart()
@@ -487,8 +487,8 @@ load = (win) ->
 								fit: false
 								format: '%b %d'
 							}
-							min: @props.xTicks.first().clone().format Persist.TimestampFormat
-							max: @props.xTicks.last().clone().format Persist.TimestampFormat
+							min: @props.xTicks.get @props.timeSpan[0]
+							max: @props.xTicks.get @props.timeSpan[1]
 						}
 						y: {
 							show: false
