@@ -608,8 +608,6 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
-				console.log "Closing"
-
 				@props.closeWindow()
 
 
