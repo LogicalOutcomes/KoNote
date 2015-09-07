@@ -51,17 +51,21 @@ load = (win) ->
 			.map((m) -> m.get('id'))
 			.toSet()
 
-			# Builds list of ALL the timestamps
-			timestamps = metricValues.map (metricValue) ->
-				return Moment metricValue.get('timestamp'), Persist.TimestampFormat
-
-			# Builds ordered set of unique timestamps (each as unix ms)
-			middayTimeStamps = timestamps.map (timestamp) ->
-				return timestamp.startOf('day').valueOf()
+			# Build list of timestamps from progEvents (start & end) & metrics
+			timestampDays = Imm.List()
+			.concat @props.progEvents.map (progEvent) ->
+				Moment(progEvent.get('startTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
+			.concat @props.progEvents.map (progEvent) ->
+				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
+			.concat metricValues.map (metric) ->
+				Moment(metric.get('timestamp'), Persist.TimestampFormat).startOf('day').valueOf()
+			# Filter to unique days, and sort
 			.toOrderedSet().sort()
 
-			firstDay = Moment middayTimeStamps.first()
-			lastDay = Moment middayTimeStamps.last()
+			console.log "timestampDays", timestampDays.toJS()
+
+			firstDay = Moment timestampDays.first()
+			lastDay = Moment timestampDays.last()
 			dayRange = lastDay.diff(firstDay, 'days') + 1
 
 			# Return a list of full range of timestamps starting from 
@@ -70,9 +74,9 @@ load = (win) ->
 
 			@setState => {
 				xDays: xTicks
-				daysOfData: middayTimeStamps.size
+				daysOfData: timestampDays.size
 				timeSpan: [0, xTicks.size - 1]
-				xTicks, metricIdsWithData, metricValues			
+				xTicks, metricIdsWithData, metricValues
 			}
 
 		render: ->
@@ -127,7 +131,7 @@ load = (win) ->
 				)
 				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
 					R.div({className: 'chartContainer'},
-						# Force chart to be recreated when tab is opened
+						# Force chart to be re-rendered when tab is opened
 						if @props.isVisible and @state.selectedMetricIds.size > 0							
 							Chart({
 								ref: 'mainChart'
@@ -420,8 +424,7 @@ load = (win) ->
 				return eventRegion
 
 			# Sort regions in order of start timestamp
-			sortedEvents = progEventRegions.sortBy (event) => event['start']						
-
+			sortedEvents = progEventRegions.sortBy (event) => event['start']
 
 			# Setting up vars for row sorting
 			remainingEvents = sortedEvents
