@@ -45,11 +45,14 @@ load = (win) ->
 			@_generateAnalysis()
 
 		componentDidUpdate: (oldProps, oldState) ->
-			unless oldProps is @props
+			unless Imm.is oldProps.metricsById, @props.metricsById
+				@_generateAnalysis()
+
+			unless Imm.is oldProps.progEvents, @props.progEvents
 				@_generateAnalysis()
 
 		_generateAnalysis: ->			
-			console.log ">>>>>>>>> Generating Analysis!"
+			console.log "Generating Analysis...."
 
 			# All non-empty metric values
 			metricValues = @props.progNotes.flatMap (progNote) ->
@@ -105,28 +108,29 @@ load = (win) ->
 					)
 				)
 				R.div({className: "timeScaleToolbar #{showWhen hasEnoughData}"},
-					R.div({className: 'timeSpanContainer'},
-						Slider({
-							ref: 'timeSpanSlider'
-							isEnabled: true
-							tooltip: true
-							isRange: true
-							defaultValue: [0, @state.xTicks.size]
-							ticks: @state.xTicks.pop().toJS()
-							onChange: @_updateTimeSpan
-							formatter: ([start, end]) =>
-								startTime = Moment(@state.xTicks.get(start)).format('Do MMM')
-								endTime = Moment(@state.xTicks.get(end)).format('Do MMM')
-								return "#{startTime} - #{endTime}"
-						})
-						R.div({className: 'valueDisplay'},
-							(@state.timeSpan.map (index) =>
-								date = Moment(@state.xTicks.get(index)).format('dddd - Do MMMM - YYYY')
-								return R.div({},
-									R.span({}, date)
+					if @props.isVisible
+						R.div({className: 'timeSpanContainer'},
+							Slider({
+								ref: 'timeSpanSlider'
+								isEnabled: true
+								tooltip: true
+								isRange: true
+								defaultValue: [0, @state.xTicks.size]
+								ticks: @state.xTicks.pop().toJS()
+								onChange: @_updateTimeSpan
+								formatter: ([start, end]) =>
+									startTime = Moment(@state.xTicks.get(start)).format('Do MMM')
+									endTime = Moment(@state.xTicks.get(end)).format('Do MMM')
+									return "#{startTime} - #{endTime}"
+							})
+							R.div({className: 'valueDisplay'},
+								(@state.timeSpan.map (index) =>
+									date = Moment(@state.xTicks.get(index)).format('dddd - Do MMMM - YYYY')
+									return R.div({},
+										R.span({}, date)
+									)
 								)
 							)
-						)
 					)
 					R.div({className: 'granularContainer'},
 						# Slider({
@@ -344,7 +348,8 @@ load = (win) ->
 					$(win.document).off('mousemove')
 				)
 
-		_generateChart: ->			
+		_generateChart: ->
+			console.log "Generating Chart...."
 			# Create a Map from metric ID to data series,
 			# where each data series is a sequence of [x, y] pairs
 			dataSeries = @props.metricValues
