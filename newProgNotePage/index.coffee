@@ -289,14 +289,12 @@ load = (win, {clientFileId}) ->
 
 		componentDidUpdate: ->
 			if @state.editingWhichEvent?
-				console.log "Init tooltip"
 				$('#saveNoteButton').tooltip {
 					html: true
 					placement: 'top'
 					title: "Please finish editing your #{Term 'event'} before saving"
 				}
 			else
-				console.log "Destroy tooltip"
 				$('#saveNoteButton').tooltip 'destroy'
 
 		render: ->
