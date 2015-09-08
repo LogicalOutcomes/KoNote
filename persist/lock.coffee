@@ -173,6 +173,20 @@ class Lock
 				expiryLock.release cb
 		], (err) ->
 			if err
+				if err instanceof LockDeletedError # Comes from @_isStale
+					# Release expiry lock if exists, then acquire lock
+					if expiryLock?
+						expiryLock.release (err) -> 
+							if err
+								cb err
+								return
+
+							Lock.acquire(session, lockId, cb)
+					# Just acquire lock
+					else
+						Lock.acquire(session, lockId, cb)
+					return
+
 				cb err
 				return
 
@@ -184,24 +198,11 @@ class Lock
 				cb err
 				return
 
-			if ts?
-				now = Moment()
-				isStale = Moment(ts, TimestampFormat).isBefore now
+			now = Moment()
+			isStale = Moment(ts, TimestampFormat).isBefore now
 
-				cb null, isStale
-				return
-
-			# OK, there weren't any expiry timestamps in the directory.
-			# That should be impossible, and also kinda sucks.
-			console.error "Detected lock dir with no expiry timestamp: #{JSON.stringify lockDir}"
-			console.error "This shouldn't ever happen."
-
-			# But we don't want to lock the user out of this object forever.
-			# So we'll just delete the lock and continue on.
-			console.error "Continuing on assumption that lock is stale."
-
-			# isStale = true
-			cb null, true
+			cb null, isStale
+			return
 
 	_renew: (cb) ->
 		if @_hasLeaseExpired()
@@ -248,21 +249,38 @@ class Lock
 	@_readExpiryTimestamp: (lockDir, cb) ->
 		Fs.readdir lockDir, (err, fileNames) ->
 			if err
+				# LockDir has been deleted during operation
+				# TODO: Figure out Windows errors to handle
+				if err.code in ['ENOENT']
+					cb new LockDeletedError()
+					return
+
 				cb new IOError err
 				return
 
 			expiryTimestamps = Imm.List(fileNames)
 			.filter (fileName) ->
+				# Does this filename start with 'expire-'?
 				return fileName[0...'expire-'.length] is 'expire-'
 			.map (fileName) ->
+				# Parse timestamp as a Moment
 				return Moment(fileName['expire-'.length...], TimestampFormat)
 			.sort()
 
 			if expiryTimestamps.size is 0
-				cb null, null
+				# OK, there weren't any expiry timestamps in the directory.
+				# That should be impossible, and also kinda sucks.
+				console.error "Detected lock dir with no expiry timestamp: #{JSON.stringify lockDir}"
+				console.error "This shouldn't ever happen."
+
+				# But we don't want to lock the user out of this object forever.
+				# So we'll just delete the lock and continue on.
+				console.error "Continuing on assumption that lock is stale."
+
+				cb null, Moment(0).format(TimestampFormat)
 				return
 
-			result = expiryTimestamps.last().format(TimestampFormat)			
+			result = expiryTimestamps.last().format(TimestampFormat)
 
 			cb null, result
 
@@ -299,6 +317,8 @@ class Lock
 				return
 
 			cb()
+
+class LockDeletedError extends CustomError
 
 class LockInUseError extends CustomError
 	constructor: (message, metadata) ->
