@@ -173,8 +173,9 @@ class Lock
 				expiryLock.release cb
 		], (err) ->
 			if err
-				if err instanceof LockDeletedError # Comes from @_isStale
-					# Release expiry lock if exists, then acquire lock
+				# This error comes from @_isStale and @_readMetadata
+				if err instanceof LockDeletedError
+					# Release expiry lock if exists, then acquire lock again
 					if expiryLock?
 						expiryLock.release (err) -> 
 							if err
@@ -182,7 +183,7 @@ class Lock
 								return
 
 							Lock.acquire(session, lockId, cb)
-					# Just acquire lock
+					# Just acquire lock again
 					else
 						Lock.acquire(session, lockId, cb)
 					return
@@ -287,7 +288,13 @@ class Lock
 	@_readMetadata: (lockDir, cb) ->
 		Fs.readFile lockDir+"/metadata", (err, data) ->
 			if err
-				return new IOError err
+				# TODO: Figure out Windows errors to handle
+				if err.code in ['ENOENT']
+					cb new LockDeletedError()
+					return
+
+				cb new IOError err
+				return
 
 			cb new LockInUseError null, JSON.parse(data)
 
