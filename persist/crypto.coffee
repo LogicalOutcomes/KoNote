@@ -160,4 +160,21 @@ class SymmetricEncryptionKey
 generateSalt = ->
 	return Crypto.randomBytes(16).toString('hex')
 
-module.exports = {SymmetricEncryptionKey, generateSalt}
+# A hard-coded key for obfuscating data
+# WARNING: do not use this for sensitive data!
+# This is just to keep users from getting themselves in trouble by trying to
+# change data files by hand.
+obfuscationKey = SymmetricEncryptionKey.import("symmkey-v1:6f626675736361746520746865207374756666207769746820746865206b6579")
+
+obfuscate = (buf) ->
+	return obfuscationKey.encrypt buf
+
+deobfuscate = (buf) ->
+	return obfuscationKey.decrypt buf
+
+module.exports = {
+	SymmetricEncryptionKey
+	generateSalt
+	obfuscate
+	deobfuscate
+}
