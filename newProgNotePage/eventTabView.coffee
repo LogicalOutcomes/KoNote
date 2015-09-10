@@ -25,7 +25,7 @@ load = (win) ->
 				title: ''
 				description: ''
 
-				startDate: ''
+				startDate: Moment()
 				startTime: ''
 				endDate: ''
 				endTime: ''
@@ -46,6 +46,7 @@ load = (win) ->
 			$startDate.datetimepicker({
 				useCurrent: false
 				format: 'Do MMM, \'YY'
+				defaultDate: Moment()
 				widgetPositioning: {
 					horizontal: 'right'
 				}
@@ -118,7 +119,6 @@ load = (win) ->
 								ref: 'startDate'
 								className: 'form-control'
 								type: 'text'
-								placeholder: "Select date"
 							})
 						)
 						R.div({className: "form-group timeOfDay #{showWhen @state.usesTimeOfDay}"},
