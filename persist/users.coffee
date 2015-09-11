@@ -191,15 +191,21 @@ class Account
 			cb null, new Account dataDir, userName, publicInfo, 'privateaccess'
 
 	decryptWithPassword: (userPassword, cb) =>
+		unless @publicInfo.isActive
+			cb new DeactivatedAccountError()
+			return
+
 		userDir = @_userDir
-		kdfParams = null
-		pwEncryptionKey = null
-		privKeyFile = null
+		accountKeyId = null
+		accountKeyInfo = null
+		accountKey = null
+		privateInfo = null
 		accountType = null
+		decryptedAccount = null
 
 		Async.series [
 			(cb) ->
-				Fs.readFile Path.join(userDir, 'auth-params'), (err, buf) ->
+				Fs.readdir userDir, (err, fileNames) ->
 					if err
 						if err.code is 'ENOENT'
 							cb new UnknownUserNameError()
@@ -208,53 +214,60 @@ class Account
 						cb err
 						return
 
-					kdfParams = JSON.parse buf
-
-					if kdfParams.isDeactivated
-						cb new DeactivatedAccountError()
-						return
+					# Find the highest (i.e. most recent) account key ID
+					accountKeyId = Imm.List(fileNames)
+					.filter (fileName) ->
+						return fileName.startsWith 'account-key-'
+					.map (fileName) ->
+						return Number(fileName['account-key-'.length...])
+					.max()
 
 					cb()
 			(cb) ->
-				SymmetricEncryptionKey.derive password, kdfParams, (err, result) ->
+				Fs.readFile Path.join(userDir, "account-key-#{accountKeyId}"), (err, buf) ->
+					if err
+						cb err
+						return
+
+					accountKeyInfo = JSON.parse buf
+					cb()
+			(cb) ->
+				SymmetricEncryptionKey.derive userPassword, accountKeyInfo.kdfParams, (err, result) ->
 					if err
 						cb err
 						return
 
 					pwEncryptionKey = result
-					cb()
-			(cb) ->
-				Fs.readFile Path.join(userDir, 'private-keys'), (err, buf) ->
-					if err
-						cb err
-						return
 
+					# Use password to decrypt account key
+					encryptedAccountKey = Base64url.decode(accountKeyInfo.accountKey)
 					try
-						decryptedJson = pwEncryptionKey.decrypt buf
+						accountKey = SymmetricEncryptionKey.import(pwEncryptionKey.decrypt(encryptedAccountKey))
 					catch err
 						# If decryption fails, we're probably using the wrong key
+						pwEncryptionKey.erase()
 						cb new IncorrectPasswordError()
 						return
 
-					privKeyFile = JSON.parse decryptedJson
+					pwEncryptionKey.erase()
+
 					cb()
-			(cb) ->
-				Fs.readFile Path.join(userDir, 'account-type'), {encoding: 'utf8'}, (err, result) ->
+			(cb) =>
+				Fs.readFile Path.join(userDir, 'private-info'), (err, buf) ->
 					if err
 						cb err
 						return
 
-					accountType = JSON.parse result
+					privateInfo = JSON.parse accountKey.decrypt buf
 					cb()
 		], (err) ->
 			if err
 				cb err
 				return
 
-			pwEncryptionKey.erase()
+			accountKey.erase()
 
-			globalEncryptionKey = SymmetricEncryptionKey.import privKeyFile.globalEncryptionKey
-			cb null, {userName, accountType, globalEncryptionKey}
+			cb null, new DecryptedAccount @dataDirectory, @userName, @publicInfo, privateInfo, 'privateaccess'
 
 resetAccountPassword = (dataDir, userName, newPassword, cb) ->
 	userName = userName.toLowerCase()
