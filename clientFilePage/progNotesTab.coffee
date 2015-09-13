@@ -214,6 +214,7 @@ load = (win) ->
 							{
 								format: 'progNote'
 								data: @props.progNote
+								events: @props.progEvents
 								clientFile: @props.clientFile
 							}
 						]

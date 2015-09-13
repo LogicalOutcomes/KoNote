@@ -61,6 +61,14 @@ load = (win) ->
 						R.div({className: 'description'}, renderLineBreaks description)
 						R.div({className: 'date'}, eventDate)
 					)
+				else if format is 'print'
+					R.div({
+						className: format, ref: 'name'
+					},
+						R.div({className: 'title'}, 'Event: ', title)
+						R.div({className: 'date'}, eventDate)
+						R.div({className: 'description'}, renderLineBreaks description)
+					)
 				else
 					R.div({
 						className: format, ref: 'name'
