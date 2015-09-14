@@ -12,28 +12,35 @@ Config = require '../config'
 
 {SymmetricEncryptionKey} = require './crypto'
 DataModels = require './dataModels'
-Users = require './users'
+{
+	Account, DecryptedAccount
+	UnknownUserNameError
+	IncorrectPasswordError
+	DeactivatedAccountError
+} = require './users'
 
 login = (dataDir, userName, password, cb) ->
-	Users.readAccount dataDir, userName, password, (err, account) ->
+	Account.read dataDir, userName, (err, account) ->
 		if err
 			cb err
 			return
 
-		cb null, new Session(
-			account.userName
-			account.accountType
-			account.globalEncryptionKey
-			dataDir
-		)
+		account.decryptWithPassword password, (err, decryptedAccount) ->
+			if err
+				cb err
+				return
+
+			cb null, new Session(decryptedAccount)
 
 class Session
-	constructor: (@userName, @accountType, @globalEncryptionKey, @dataDirectory) ->
-		unless @globalEncryptionKey instanceof SymmetricEncryptionKey
-			throw new Error "invalid globalEncryptionKey"
+	constructor: (@account) ->
+		unless @account instanceof DecryptedAccount
+			throw new Error "invalid account object"
 
-		unless @accountType in ['normal', 'admin']
-			throw new Error "unknown account type: #{JSON.stringify @_accountType}"
+		@dataDirectory = @account.dataDirectory
+		@userName = @account.userName
+		@accountType = @account.publicInfo.accountType
+		@globalEncryptionKey = SymmetricEncryptionKey.import @account.privateInfo.globalEncryptionKey
 
 		@_ended = false
 
@@ -81,23 +88,17 @@ class Session
 		return @accountType is 'admin'
 
 	confirmPassword: (password, cb) ->
-		Users.readAccount @dataDirectory, @userName, password, (err, account) ->
-			if err
-				cb err
-				return
-
-			cb()
+		@account.checkPassword password, cb
 
 	logout: ->
 		if @_ended
 			throw new Error "session has already ended"
 
 		@_ended = true
-		@globalEncryptionKey.erase()
 
 module.exports = {
 	login
-	UnknownUserNameError: Users.UnknownUserNameError
-	IncorrectPasswordError: Users.IncorrectPasswordError
-	DeactivatedAccountError: Users.DeactivatedAccountError
+	UnknownUserNameError
+	IncorrectPasswordError
+	DeactivatedAccountError
 }

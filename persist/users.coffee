@@ -2,14 +2,16 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# This module handles all logic related user accounts.
+# This module handles all logic related to user accounts.
 #
 # See also: persist/session
 #
 # TODO Make operations atomic
 # TODO Find a better way of getting data dir location
 
+Assert = require 'assert'
 Async = require 'async'
+Base64url = require 'base64url'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
@@ -17,13 +19,15 @@ Path = require 'path'
 {
 	generateSalt
 	SymmetricEncryptionKey
+	PrivateKey
+	PublicKey
 } = require './crypto'
 
 {CustomError} = require './utils'
 
 userNameRegex = /^[a-zA-Z0-9_-]+$/
 
-generateUserAuthParams = ->
+generateKdfParams = ->
 	return {
 		salt: generateSalt()
 		iterationCount: 600000 # higher is more secure, but slower
@@ -52,71 +56,7 @@ isAccountSystemSetUp = (dataDir, cb) ->
 
 		cb null, (userNames.size > 0)
 
-# Create a new user account
-# User must have full file system access (i.e. be an admin)
-createAccount = (dataDir, userName, password, accountType, cb) ->
-	unless accountType in ['normal', 'admin']
-		cb new Error "unknown account type #{JSON.stringify accountType}"
-		return
-
-	userName = userName.toLowerCase()
-
-	userDir = getUserDir dataDir, userName
-	authParams = generateUserAuthParams()
-	userEncryptionKey = null
-
-	Async.series [
-		(cb) ->
-			Fs.mkdir userDir, (err) ->
-				if err
-					if err.code is 'EEXIST'
-						cb new UserNameTakenError()
-						return
-
-					cb err
-					return
-
-				cb()
-		(cb) ->
-			SymmetricEncryptionKey.derive password, authParams, (err, result) ->
-				if err
-					cb err
-					return
-
-				userEncryptionKey = result
-				cb()
-		(cb) ->
-			authParamsPath = Path.join(userDir, 'auth-params')
-
-			Fs.writeFile authParamsPath, JSON.stringify(authParams), cb
-		(cb) ->
-			accountTypePath = Path.join(userDir, 'account-type')
-
-			Fs.writeFile accountTypePath, JSON.stringify(accountType), cb
-		(cb) ->
-			privateKeysPath = Path.join(userDir, 'private-keys')
-
-			if global.ActiveSession?
-				globalEncryptionKey = global.ActiveSession.globalEncryptionKey
-			else
-				console.log """
-					First time set up of new KoNote instance.  Generating encryption key.
-				"""
-				globalEncryptionKey = SymmetricEncryptionKey.generate()
-
-			privateKeys = {
-				globalEncryptionKey: globalEncryptionKey.export()
-			}
-			encryptedData = userEncryptionKey.encrypt JSON.stringify privateKeys
-
-			Fs.writeFile privateKeysPath, encryptedData, cb
-	], (err) ->
-		if err
-			cb err
-			return
-
-		cb()
-
+# TODO rename to listUserNames
 listAccounts = (dataDir, cb) ->
 	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
 		if err
@@ -125,178 +65,419 @@ listAccounts = (dataDir, cb) ->
 
 		userNames = Imm.List(subdirs)
 		.filter (dirName) ->
+			return dirName isnt '_system'
+		.filter (dirName) ->
 			return userNameRegex.exec(dirName)
 
 		cb null, userNames
 
-# Read a user's private account data
-readAccount = (dataDir, userName, password, cb) ->
-	userName = userName.toLowerCase()
+class Account
+	constructor: (@dataDirectory, @userName, @publicInfo, code) ->
+		if code isnt 'privateaccess'
+			# See Account.read instead
+			throw new Error "Account constructor should only be used internally"
 
-	userDir = getUserDir dataDir, userName
-	authParams = null
-	userEncryptionKey = null
-	privKeyFile = null
-	accountType = null
+		@_userDir = getUserDir @dataDirectory, @userName
 
-	Async.series [
-		(cb) ->
-			Fs.readFile Path.join(userDir, 'auth-params'), (err, buf) ->
-				if err
-					if err.code is 'ENOENT'
-						cb new UnknownUserNameError()
+	# First time set up of user account directory
+	@setUp: (dataDir, cb) ->
+		# Create a mock "_system" user just for creating the first real accounts
+		publicInfo = {
+			accountType: 'admin'
+			isActive: true
+		}
+		privateInfo = {
+			globalEncryptionKey: SymmetricEncryptionKey.generate().export()
+			systemPrivateKey: null
+		}
+		systemPublicKey = null
+
+		Async.series [
+			(cb) ->
+				PrivateKey.generate (err, result) ->
+					if err
+						cb err
 						return
 
-					cb err
-					return
+					privateInfo.systemPrivateKey = result.export()
+					systemPublicKey = result.getPublicKey().export()
+					cb()
+			(cb) ->
+				Fs.mkdir Path.join(dataDir, '_users', '_system'), cb
+			(cb) ->
+				Fs.writeFile Path.join(dataDir, '_users', '_system', 'public-key'), systemPublicKey, cb
+		], (err) ->
+			if err
+				cb err
+				return
 
-				authParams = JSON.parse buf
+			systemAccount = new DecryptedAccount(dataDir, '_system', publicInfo, privateInfo, null, 'privateaccess')
+			cb null, systemAccount
 
-				if authParams.isDeactivated
-					cb new DeactivatedAccountError()
-					return
-
-				cb()
-		(cb) ->
-			SymmetricEncryptionKey.derive password, authParams, (err, result) ->
-				if err
-					cb err
-					return
-
-				userEncryptionKey = result
-				cb()
-		(cb) ->
-			Fs.readFile Path.join(userDir, 'private-keys'), (err, buf) ->
-				if err
-					cb err
-					return
-
-				try
-					decryptedJson = userEncryptionKey.decrypt buf
-				catch err
-					# If decryption fails, we're probably using the wrong key
-					cb new IncorrectPasswordError()
-					return
-
-				privKeyFile = JSON.parse decryptedJson
-				cb()
-		(cb) ->
-			Fs.readFile Path.join(userDir, 'account-type'), {encoding: 'utf8'}, (err, result) ->
-				if err
-					cb err
-					return
-
-				accountType = JSON.parse result
-				cb()
-	], (err) ->
-		if err
-			cb err
+	@create: (loggedInAccount, userName, password, accountType, cb) ->
+		unless accountType in ['normal', 'admin']
+			cb new Error "unknown account type #{JSON.stringify accountType}"
 			return
 
-		userEncryptionKey.erase()
+		userName = userName.toLowerCase()
 
-		globalEncryptionKey = SymmetricEncryptionKey.import privKeyFile.globalEncryptionKey
-		cb null, {userName, accountType, globalEncryptionKey}
+		userDir = getUserDir loggedInAccount.dataDirectory, userName
 
-resetAccountPassword = (dataDir, userName, newPassword, cb) ->
-	userName = userName.toLowerCase()
+		publicInfo = {accountType, isActive: true}
+		kdfParams = generateKdfParams()
+		accountEncryptionKey = SymmetricEncryptionKey.generate()
 
-	userDir = getUserDir dataDir, userName
-	authParamsPath = Path.join(userDir, 'auth-params')
+		systemPublicKey = null
+		pwEncryptionKey = null
 
-	newAuthParams = generateUserAuthParams()
-	userEncryptionKey = null
-
-	Async.series [
-		(cb) ->
-			Fs.readFile authParamsPath, (err, buf) ->
-				if err
-					if err.code is 'ENOENT'
-						cb new UnknownUserNameError()
+		Async.series [
+			(cb) ->
+				Fs.readFile Path.join(loggedInAccount.dataDirectory, '_users', '_system', 'public-key'), (err, buf) ->
+					if err
+						cb err
 						return
 
-					cb err
-					return
+					systemPublicKey = PublicKey.import(buf.toString())
+					cb()
+			(cb) ->
+				Fs.mkdir userDir, (err) ->
+					if err
+						if err.code is 'EEXIST'
+							cb new UserNameTakenError()
+							return
 
-				oldAuthParams = JSON.parse buf
-
-				if oldAuthParams.isDeactivated
-					cb new DeactivatedAccountError()
-					return
-
-				cb()
-		(cb) ->
-			Fs.writeFile authParamsPath, JSON.stringify(newAuthParams), (err, buf) ->
-				if err
-					if err.code is 'ENOENT'
-						cb new UnknownUserNameError()
+						cb err
 						return
 
-					cb err
-					return
-
-				cb()
-		(cb) ->
-			SymmetricEncryptionKey.derive newPassword, newAuthParams, (err, result) ->
-				if err
-					cb err
-					return
-
-				userEncryptionKey = result
-				cb()
-		(cb) ->
-			privateKeysPath = Path.join(userDir, 'private-keys')
-
-			privateKeys = {
-				globalEncryptionKey: global.ActiveSession.globalEncryptionKey.export()
-			}
-			encryptedData = userEncryptionKey.encrypt JSON.stringify privateKeys
-
-			Fs.writeFile privateKeysPath, encryptedData, cb
-	], cb
-
-deactivateAccount = (dataDir, userName, cb) ->
-	userName = userName.toLowerCase()
-
-	userDir = getUserDir dataDir, userName
-	authParamsPath = Path.join(userDir, 'auth-params')
-
-	authParams = {isDeactivated: true}
-
-	Async.series [
-		(cb) ->
-			Fs.readFile authParamsPath, (err, buf) ->
-				if err
-					if err.code is 'ENOENT'
-						cb new UnknownUserNameError()
+					cb()
+			(cb) ->
+				SymmetricEncryptionKey.derive password, kdfParams, (err, result) ->
+					if err
+						cb err
 						return
 
-					cb err
-					return
+					pwEncryptionKey = result
+					cb()
+			(cb) ->
+				publicInfoPath = Path.join(userDir, 'public-info')
 
-				oldAuthParams = JSON.parse buf
+				Fs.writeFile publicInfoPath, JSON.stringify(publicInfo), cb
+			(cb) ->
+				accountKeyFilePath = Path.join(userDir, 'account-key-1')
 
-				if oldAuthParams.isDeactivated
-					cb new DeactivatedAccountError()
-					return
+				# Encrypt account key with user's password
+				encryptedAccountKey = pwEncryptionKey.encrypt accountEncryptionKey.export()
 
-				cb()
-		(cb) ->
-			Fs.writeFile authParamsPath, JSON.stringify(authParams), (err, buf) ->
-				if err
-					if err.code is 'ENOENT'
-						cb new UnknownUserNameError()
+				accountKeyData = {
+					kdfParams
+					accountKey: Base64url.encode encryptedAccountKey
+				}
+
+				Fs.writeFile accountKeyFilePath, JSON.stringify(accountKeyData), cb
+			(cb) ->
+				accountRecoveryPath = Path.join(userDir, 'account-recovery')
+
+				# Encrypt account key with system key to allow admins to reset
+				encryptedAccountKey = systemPublicKey.encrypt accountEncryptionKey.export()
+
+				Fs.writeFile accountRecoveryPath, encryptedAccountKey, cb
+			(cb) ->
+				privateInfoPath = Path.join(userDir, 'private-info')
+
+				privateInfo = {
+					globalEncryptionKey: loggedInAccount.privateInfo.globalEncryptionKey
+				}
+
+				if accountType is 'admin'
+					Assert.strictEqual loggedInAccount.publicInfo.accountType, 'admin', 'only admins can create admins'
+
+					privateInfo.systemPrivateKey = loggedInAccount.privateInfo.systemPrivateKey
+
+				encryptedData = accountEncryptionKey.encrypt JSON.stringify privateInfo
+
+				Fs.writeFile privateInfoPath, encryptedData, cb
+		], (err) ->
+			if err
+				cb err
+				return
+
+			cb null, new Account loggedInAccount.dataDirectory, userName, publicInfo, 'privateaccess'
+
+	@read: (dataDir, userName, cb) =>
+		userName = userName.toLowerCase()
+
+		userDir = getUserDir dataDir, userName
+
+		publicInfo = null
+
+		Async.series [
+			(cb) ->
+				Fs.readFile Path.join(userDir, 'public-info'), (err, buf) ->
+					if err
+						if err.code is 'ENOENT'
+							cb new UnknownUserNameError()
+							return
+
+						cb err
 						return
 
-					cb err
+					publicInfo = JSON.parse buf
+					cb()
+		], (err) ->
+			if err
+				cb err
+				return
+
+			cb null, new Account dataDir, userName, publicInfo, 'privateaccess'
+
+	deactivate: (cb) =>
+		publicInfo = null
+		accountKeyFileNames = null
+
+		Async.series [
+			(cb) =>
+				Fs.readFile Path.join(@_userDir, 'public-info'), (err, buf) =>
+					if err
+						cb err
+						return
+
+					publicInfo = JSON.parse buf
+
+					unless publicInfo.isActive
+						cb new DeactivatedAccountError()
+						return
+
+					cb()
+			(cb) =>
+				publicInfo.isActive = false
+
+				Fs.writeFile Path.join(@_userDir, 'public-info'), JSON.stringify(publicInfo), cb
+			(cb) =>
+				Fs.readdir @_userDir, (err, fileNames) =>
+					if err
+						cb err
+						return
+
+					accountKeyFileNames = Imm.List(fileNames)
+					.filter (fileName) =>
+						return fileName.startsWith 'account-key-'
+
+					cb()
+			(cb) =>
+				Async.each accountKeyFileNames.toArray(), (fileName, cb) =>
+					Fs.unlink Path.join(@_userDir, fileName), cb
+				, cb
+		], cb
+
+	# Returns IncorrectPasswordError if password is incorrect
+	checkPassword: (userPassword, cb) =>
+		# Not all of decryptWithPassword is actually needed to check the
+		# password.  If needed, this can be reimplemented to be more efficient.
+
+		@decryptWithPassword userPassword, (err, result) =>
+			if err
+				cb err
+				return
+
+			cb()
+
+	decryptWithPassword: (userPassword, cb) =>
+		unless @publicInfo.isActive
+			cb new DeactivatedAccountError()
+			return
+
+		userDir = @_userDir
+		accountKeyId = null
+		accountKeyInfo = null
+		accountKey = null
+		privateInfo = null
+		accountType = null
+		decryptedAccount = null
+
+		Async.series [
+			(cb) ->
+				Fs.readdir userDir, (err, fileNames) ->
+					if err
+						if err.code is 'ENOENT'
+							cb new UnknownUserNameError()
+							return
+
+						cb err
+						return
+
+					# Find the highest (i.e. most recent) account key ID
+					accountKeyId = Imm.List(fileNames)
+					.filter (fileName) ->
+						return fileName.startsWith 'account-key-'
+					.map (fileName) ->
+						return Number(fileName['account-key-'.length...])
+					.max()
+
+					cb()
+			(cb) ->
+				Fs.readFile Path.join(userDir, "account-key-#{accountKeyId}"), (err, buf) ->
+					if err
+						cb err
+						return
+
+					accountKeyInfo = JSON.parse buf
+					cb()
+			(cb) ->
+				SymmetricEncryptionKey.derive userPassword, accountKeyInfo.kdfParams, (err, result) ->
+					if err
+						cb err
+						return
+
+					pwEncryptionKey = result
+
+					# Use password to decrypt account key
+					encryptedAccountKey = Base64url.toBuffer(accountKeyInfo.accountKey)
+					try
+						accountKeyBuf = pwEncryptionKey.decrypt(encryptedAccountKey)
+					catch err
+						console.error err.stack
+
+						# If decryption fails, we're probably using the wrong key
+						pwEncryptionKey.erase()
+						cb new IncorrectPasswordError()
+						return
+
+					accountKey = SymmetricEncryptionKey.import(accountKeyBuf.toString())
+
+					pwEncryptionKey.erase()
+
+					cb()
+			(cb) =>
+				Fs.readFile Path.join(userDir, 'private-info'), (err, buf) ->
+					if err
+						cb err
+						return
+
+					privateInfo = JSON.parse accountKey.decrypt buf
+					cb()
+		], (err) =>
+			if err
+				cb err
+				return
+
+			cb null, new DecryptedAccount(
+				@dataDirectory, @userName,
+				@publicInfo, privateInfo, accountKey,
+				'privateaccess'
+			)
+
+	decryptWithSystemKey: (loggedInAccount, cb) =>
+		unless @publicInfo.isActive
+			cb new DeactivatedAccountError()
+			return
+
+		unless loggedInAccount.publicInfo.accountType is 'admin'
+			cb new Error "only admins have access to the system key"
+			return
+
+		userDir = @_userDir
+		accountKey = null
+		privateInfo = null
+		accountType = null
+		decryptedAccount = null
+
+		Async.series [
+			(cb) =>
+				@_findMaxAccountKeyId (err, result) ->
+					if err
+						cb err
+						return
+
+					accountKeyId = result
+					cb()
+			(cb) =>
+				Fs.readFile Path.join(userDir, "account-recovery"), (err, buf) ->
+					if err
+						if err.code is 'ENOENT'
+							cb new UnknownUserNameError()
+							return
+
+						cb err
+						return
+
+					accountKeyBuf = PrivateKey.import(loggedInAccount.privateInfo.systemPrivateKey).decrypt buf
+					accountKey = SymmetricEncryptionKey.import(accountKeyBuf.toString())
+					cb()
+			(cb) =>
+				Fs.readFile Path.join(userDir, 'private-info'), (err, buf) ->
+					if err
+						cb err
+						return
+
+					privateInfo = JSON.parse accountKey.decrypt buf
+					cb()
+		], (err) =>
+			if err
+				cb err
+				return
+
+			cb null, new DecryptedAccount(
+				@dataDirectory, @userName,
+				@publicInfo, privateInfo, accountKey,
+				'privateaccess'
+			)
+
+	_findMaxAccountKeyId: (cb) ->
+		Fs.readdir @_userDir, (err, fileNames) ->
+			if err
+				if err.code is 'ENOENT'
+					cb new UnknownUserNameError()
 					return
 
-				cb()
-		(cb) ->
-			privateKeysPath = Path.join(userDir, 'private-keys')
+				cb err
+				return
 
-			Fs.unlink privateKeysPath, cb
-	], cb
+			# Find the highest (i.e. most recent) account key ID
+			accountKeyId = Imm.List(fileNames)
+			.filter (fileName) ->
+				return fileName.startsWith 'account-key-'
+			.map (fileName) ->
+				return Number(fileName['account-key-'.length...])
+			.max()
+
+			cb null, (accountKeyId or 0)
+
+class DecryptedAccount extends Account
+	constructor: (@dataDirectory, @userName, @publicInfo, @privateInfo, @_accountKey, code) ->
+		if code isnt 'privateaccess'
+			# See Account.decrypt* instead
+			throw new Error "DecryptedAccount constructor should only be used internally"
+
+		@_userDir = getUserDir @dataDirectory, @userName
+
+	setPassword: (newPassword, cb) =>
+		kdfParams = generateKdfParams()
+		nextAccountKeyId = null
+		pwEncryptionKey = null
+
+		Async.series [
+			(cb) =>
+				@_findMaxAccountKeyId (err, result) =>
+					if err
+						cb err
+						return
+
+					nextAccountKeyId = result + 1
+					cb()
+			(cb) =>
+				SymmetricEncryptionKey.derive newPassword, kdfParams, (err, result) =>
+					if err
+						cb err
+						return
+
+					pwEncryptionKey = result
+					cb()
+			(cb) =>
+				accountKeyEncoded = Base64url.encode pwEncryptionKey.encrypt(@_accountKey.export())
+				data = {kdfParams, accountKey: accountKeyEncoded}
+
+				Fs.writeFile Path.join(@_userDir, "account-key-#{nextAccountKeyId}"), JSON.stringify(data), cb
+		], cb
 
 class UserNameTakenError extends CustomError
 class UnknownUserNameError extends CustomError
@@ -305,11 +486,9 @@ class DeactivatedAccountError extends CustomError
 
 module.exports = {
 	isAccountSystemSetUp
-	createAccount
 	listAccounts
-	readAccount
-	resetAccountPassword
-	deactivateAccount
+	Account
+	DecryptedAccount
 	UserNameTakenError
 	UnknownUserNameError
 	IncorrectPasswordError
