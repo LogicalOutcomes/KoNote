@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+Async = require 'async'
+
 Persist = require './persist'
 Account = Persist.Users.Account
 
@@ -58,17 +60,21 @@ load = (win) ->
 											R.td({className: 'userNameCell'}, userName)
 											R.td({className: 'buttonsCell'},
 												R.div({className: 'btn-group'},
-													R.button({
-														className: 'btn btn-default'
-														onClick: @_openResetPasswordDialog.bind null, userName
-													},
-														"Reset password"
+													(if userName isnt global.ActiveSession.userName
+														R.button({
+															className: 'btn btn-default'
+															onClick: @_openResetPasswordDialog.bind null, userName
+														},
+															"Reset password"
+														)
 													)
-													R.button({
-														className: 'btn btn-danger'
-														onClick: @_deactivateAccount.bind null, userName
-													},
-														"Deactivate"
+													(if userName isnt global.ActiveSession.userName
+														R.button({
+															className: 'btn btn-danger'
+															onClick: @_deactivateAccount.bind null, userName
+														},
+															"Deactivate"
+														)
 													)
 												)
 											)
@@ -137,7 +143,7 @@ load = (win) ->
 
 				@setState (s) -> {mode: 'working'}
 
-				Account.read Config.dataDirectory, userName, (err, acc) ->
+				Account.read Config.dataDirectory, userName, (err, acc) =>
 					if err
 						if err instanceof Persist.Users.UnknownUserNameError
 							Bootbox.alert "No account exists with this user name."

@@ -264,7 +264,7 @@ class Account
 
 					cb()
 			(cb) =>
-				Async.each accountKeyFileNames, (fileName, cb) ->
+				Async.each accountKeyFileNames.toArray(), (fileName, cb) =>
 					Fs.unlink Path.join(@_userDir, fileName), cb
 				, cb
 		], cb
@@ -390,7 +390,7 @@ class Account
 
 					accountKeyId = result
 					cb()
-			(cb) ->
+			(cb) =>
 				Fs.readFile Path.join(userDir, "account-recovery"), (err, buf) ->
 					if err
 						if err.code is 'ENOENT'
@@ -400,7 +400,8 @@ class Account
 						cb err
 						return
 
-					accountKey = PrivateKey.import(loggedInAccount.privateInfo.systemPrivateKey).decrypt buf
+					accountKeyBuf = PrivateKey.import(loggedInAccount.privateInfo.systemPrivateKey).decrypt buf
+					accountKey = SymmetricEncryptionKey.import(accountKeyBuf.toString())
 					cb()
 			(cb) =>
 				Fs.readFile Path.join(userDir, 'private-info'), (err, buf) ->
@@ -410,7 +411,7 @@ class Account
 
 					privateInfo = JSON.parse accountKey.decrypt buf
 					cb()
-		], (err) ->
+		], (err) =>
 			if err
 				cb err
 				return
@@ -439,7 +440,7 @@ class Account
 				return Number(fileName['account-key-'.length...])
 			.max()
 
-			cb null, accountKeyId
+			cb null, (accountKeyId or 0)
 
 class DecryptedAccount extends Account
 	constructor: (@dataDirectory, @userName, @publicInfo, @privateInfo, @_accountKey, code) ->
@@ -449,33 +450,33 @@ class DecryptedAccount extends Account
 
 		@_userDir = getUserDir @dataDirectory, @userName
 
-	setPassword: (newPassword, cb) ->
+	setPassword: (newPassword, cb) =>
 		kdfParams = generateKdfParams()
 		nextAccountKeyId = null
 		pwEncryptionKey = null
 
 		Async.series [
-			(cb) ->
-				@_findMaxAccountKeyId (err, result) ->
+			(cb) =>
+				@_findMaxAccountKeyId (err, result) =>
 					if err
 						cb err
 						return
 
 					nextAccountKeyId = result + 1
 					cb()
-			(cb) ->
-				SymmetricEncryptionKey.derive newPassword, kdfParams, (err, result) ->
+			(cb) =>
+				SymmetricEncryptionKey.derive newPassword, kdfParams, (err, result) =>
 					if err
 						cb err
 						return
 
 					pwEncryptionKey = result
 					cb()
-			(cb) ->
+			(cb) =>
 				accountKeyEncoded = Base64url.encode pwEncryptionKey.encrypt(@_accountKey.export())
 				data = {kdfParams, accountKey: accountKeyEncoded}
 
-				Fs.writeFile Path.join(@_userDir, 'account-key-#{nextAccountKeyId}'), JSON.stringify(data), cb
+				Fs.writeFile Path.join(@_userDir, "account-key-#{nextAccountKeyId}"), JSON.stringify(data), cb
 		], cb
 
 class UserNameTakenError extends CustomError
