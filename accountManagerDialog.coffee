@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Persist = require './persist'
+Account = Persist.Users.Account
 
 load = (win) ->
 	$ = win.jQuery
@@ -136,22 +137,27 @@ load = (win) ->
 
 				@setState (s) -> {mode: 'working'}
 
-				Persist.Users.deactivateAccount Config.dataDirectory, userName, (err) =>
-					@setState (s) -> {mode: 'ready'}
-
+				Account.read Config.dataDirectory, userName, (err, acc) ->
 					if err
 						if err instanceof Persist.Users.UnknownUserNameError
 							Bootbox.alert "No account exists with this user name."
 							return
 
-						if err instanceof Persist.Users.DeactivatedAccountError
-							Bootbox.alert "This account is already deactivated."
-							return
-
-						CrashHandler.handle err
+						cb err
 						return
 
-					Bootbox.alert "The account #{userName} has been deactivated."
+					acc.deactivate (err) =>
+						@setState (s) -> {mode: 'ready'}
+
+						if err
+							if err instanceof Persist.Users.DeactivatedAccountError
+								Bootbox.alert "This account is already deactivated."
+								return
+
+							CrashHandler.handle err
+							return
+
+						Bootbox.alert "The account #{userName} has been deactivated."
 
 		_closeDialog: ->
 			@setState (s) -> {
@@ -243,7 +249,7 @@ load = (win) ->
 			accountType = if @state.isAdmin then 'admin' else 'normal'
 
 			@setState {isLoading: true}
-			Persist.Users.createAccount Config.dataDirectory, userName, password, accountType, (err) =>
+			Account.create global.ActiveSession.account, userName, password, accountType, (err) =>
 				@setState {isLoading: false}
 
 				if err
@@ -323,18 +329,41 @@ load = (win) ->
 			password = @state.password
 
 			@setState {isLoading: true}
-			Persist.Users.resetAccountPassword Config.dataDirectory, userName, password, (err) =>
+
+			acc = null
+			decryptedAcc = null
+
+			Async.series [
+				(cb) =>
+					Account.read Config.dataDirectory, userName, (err, result) =>
+						if err
+							if err instanceof Persist.Users.UnknownUserNameError
+								Bootbox.alert "Unknown user! Please check user name and try again"
+								return
+
+							if err instanceof Persist.Users.DeactivatedAccountError
+								Bootbox.alert "The specified user account has been deactivated."
+								return
+
+							cb err
+							return
+
+						acc = result
+						cb()
+				(cb) =>
+					acc.decryptWithSystemKey global.ActiveSession.account, (err, result) =>
+						if err
+							cb err
+							return
+
+						decryptedAcc = result
+						cb()
+				(cb) =>
+					decryptedAcc.setPassword password, cb
+			], (err) =>
 				@setState {isLoading: false}
 
 				if err
-					if err instanceof Persist.Users.UnknownUserNameError
-						Bootbox.alert "Unknown user! Please check user name and try again"
-						return
-
-					if err instanceof Persist.Users.DeactivatedAccountError
-						Bootbox.alert "The specified user account has been permanently deactivated."
-						return
-
 					CrashHandler.handle err
 					return
 

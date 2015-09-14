@@ -48,6 +48,7 @@ load = (win) ->
 
 		_checkSetUp: ->
 			adminPassword = null
+			systemAccount = null
 
 			Async.series [
 				(cb) =>
@@ -81,7 +82,7 @@ load = (win) ->
 				(cb) =>
 					# TODO: Move to ui
 					Bootbox.prompt {
-						title: "Enter password for admin #{Term 'account'}"
+						title: "We will now create a user account called 'admin'.  Please choose a password:"
 						inputType: 'password'
 						callback: (result) ->
 							unless result
@@ -103,7 +104,18 @@ load = (win) ->
 						cb()
 				(cb) =>
 					@setState {isLoading: true}
-					Persist.Users.createAccount Config.dataDirectory, 'admin', adminPassword, 'admin', (err) =>
+					Persist.Users.Account.setUp Config.dataDirectory, (err, result) =>
+						@setState {isLoading: false}
+
+						if err
+							cb err
+							return
+
+						systemAccount = result
+						cb()
+				(cb) =>
+					@setState {isLoading: true}
+					Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
 						@setState {isLoading: false}
 
 						if err

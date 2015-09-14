@@ -9,6 +9,7 @@
 # TODO Make operations atomic
 # TODO Find a better way of getting data dir location
 
+Assert = require 'assert'
 Async = require 'async'
 Base64url = require 'base64url'
 Fs = require 'fs'
@@ -18,6 +19,8 @@ Path = require 'path'
 {
 	generateSalt
 	SymmetricEncryptionKey
+	PrivateKey
+	PublicKey
 } = require './crypto'
 
 {CustomError} = require './utils'
@@ -62,6 +65,8 @@ listAccounts = (dataDir, cb) ->
 
 		userNames = Imm.List(subdirs)
 		.filter (dirName) ->
+			return dirName isnt '_system'
+		.filter (dirName) ->
 			return userNameRegex.exec(dirName)
 
 		cb null, userNames
@@ -74,22 +79,66 @@ class Account
 
 		@_userDir = getUserDir @dataDirectory, @userName
 
-	@create: (dataDir, userName, password, accountType, cb) ->
+	# First time set up of user account directory
+	@setUp: (dataDir, cb) ->
+		# Create a mock "_system" user just for creating the first real accounts
+		publicInfo = {
+			accountType: 'admin'
+			isActive: true
+		}
+		privateInfo = {
+			globalEncryptionKey: SymmetricEncryptionKey.generate().export()
+			systemPrivateKey: null
+		}
+		systemPublicKey = null
+
+		Async.series [
+			(cb) ->
+				PrivateKey.generate (err, result) ->
+					if err
+						cb err
+						return
+
+					privateInfo.systemPrivateKey = result.export()
+					systemPublicKey = result.getPublicKey().export()
+					cb()
+			(cb) ->
+				Fs.mkdir Path.join(dataDir, '_users', '_system'), cb
+			(cb) ->
+				Fs.writeFile Path.join(dataDir, '_users', '_system', 'public-key'), systemPublicKey, cb
+		], (err) ->
+			if err
+				cb err
+				return
+
+			systemAccount = new DecryptedAccount(dataDir, '_system', publicInfo, privateInfo, null, 'privateaccess')
+			cb null, systemAccount
+
+	@create: (loggedInAccount, userName, password, accountType, cb) ->
 		unless accountType in ['normal', 'admin']
 			cb new Error "unknown account type #{JSON.stringify accountType}"
 			return
 
 		userName = userName.toLowerCase()
 
-		userDir = getUserDir dataDir, userName
+		userDir = getUserDir loggedInAccount.dataDirectory, userName
 
 		publicInfo = {accountType, isActive: true}
 		kdfParams = generateKdfParams()
 		accountEncryptionKey = SymmetricEncryptionKey.generate()
 
+		systemPublicKey = null
 		pwEncryptionKey = null
 
 		Async.series [
+			(cb) ->
+				Fs.readFile Path.join(loggedInAccount.dataDirectory, '_users', '_system', 'public-key'), (err, buf) ->
+					if err
+						cb err
+						return
+
+					systemPublicKey = PublicKey.import(buf.toString())
+					cb()
 			(cb) ->
 				Fs.mkdir userDir, (err) ->
 					if err
@@ -129,29 +178,20 @@ class Account
 				accountRecoveryPath = Path.join(userDir, 'account-recovery')
 
 				# Encrypt account key with system key to allow admins to reset
-				# TODO get the system key in a better way
-				# TODO first time set up
-				encryptedAccountKey = global.ActiveSession.systemEncryptionKey.encrypt accountEncryptionKey.export()
+				encryptedAccountKey = systemPublicKey.encrypt accountEncryptionKey.export()
 
 				Fs.writeFile accountRecoveryPath, encryptedAccountKey, cb
 			(cb) ->
 				privateInfoPath = Path.join(userDir, 'private-info')
 
-				if global.ActiveSession?
-					globalEncryptionKey = global.ActiveSession.globalEncryptionKey
-				else
-					console.log """
-						First time set up of new KoNote instance.  Generating encryption key.
-					"""
-					globalEncryptionKey = SymmetricEncryptionKey.generate()
-
 				privateInfo = {
-					globalEncryptionKey: globalEncryptionKey.export()
+					globalEncryptionKey: loggedInAccount.privateInfo.globalEncryptionKey
 				}
 
-				# TODO pass this in as an argument somehow
-				if accountType is 'admin' and global.ActiveSession.systemEncryptionKey?
-					privateInfo.systemEncryptionKey = global.ActiveSession.systemEncryptionKey
+				if accountType is 'admin'
+					Assert.strictEqual loggedInAccount.publicInfo.accountType, 'admin', 'only admins can create admins'
+
+					privateInfo.systemPrivateKey = loggedInAccount.privateInfo.systemPrivateKey
 
 				encryptedData = accountEncryptionKey.encrypt JSON.stringify privateInfo
 
@@ -161,7 +201,7 @@ class Account
 				cb err
 				return
 
-			cb null, new Account dataDir, userName, publicInfo, 'privateaccess'
+			cb null, new Account loggedInAccount.dataDirectory, userName, publicInfo, 'privateaccess'
 
 	@read: (dataDir, userName, cb) =>
 		userName = userName.toLowerCase()
@@ -229,21 +269,17 @@ class Account
 				, cb
 		], cb
 
-	# Provides callback with boolean isPasswordValid
+	# Returns IncorrectPasswordError if password is incorrect
 	checkPassword: (userPassword, cb) =>
 		# Not all of decryptWithPassword is actually needed to check the
 		# password.  If needed, this can be reimplemented to be more efficient.
 
 		@decryptWithPassword userPassword, (err, result) =>
 			if err
-				if err instanceof IncorrectPasswordError
-					cb null, false
-					return
-
 				cb err
 				return
 
-			cb true
+			cb()
 
 	decryptWithPassword: (userPassword, cb) =>
 		unless @publicInfo.isActive
@@ -295,14 +331,18 @@ class Account
 					pwEncryptionKey = result
 
 					# Use password to decrypt account key
-					encryptedAccountKey = Base64url.decode(accountKeyInfo.accountKey)
+					encryptedAccountKey = Base64url.toBuffer(accountKeyInfo.accountKey)
 					try
-						accountKey = SymmetricEncryptionKey.import(pwEncryptionKey.decrypt(encryptedAccountKey))
+						accountKeyBuf = pwEncryptionKey.decrypt(encryptedAccountKey)
 					catch err
+						console.error err.stack
+
 						# If decryption fails, we're probably using the wrong key
 						pwEncryptionKey.erase()
 						cb new IncorrectPasswordError()
 						return
+
+					accountKey = SymmetricEncryptionKey.import(accountKeyBuf.toString())
 
 					pwEncryptionKey.erase()
 
@@ -315,7 +355,7 @@ class Account
 
 					privateInfo = JSON.parse accountKey.decrypt buf
 					cb()
-		], (err) ->
+		], (err) =>
 			if err
 				cb err
 				return
@@ -326,9 +366,13 @@ class Account
 				'privateaccess'
 			)
 
-	decryptWithSystemKey: (systemKey, cb) =>
+	decryptWithSystemKey: (loggedInAccount, cb) =>
 		unless @publicInfo.isActive
 			cb new DeactivatedAccountError()
+			return
+
+		unless loggedInAccount.publicInfo.accountType is 'admin'
+			cb new Error "only admins have access to the system key"
 			return
 
 		userDir = @_userDir
@@ -356,7 +400,7 @@ class Account
 						cb err
 						return
 
-					accountKey = SymmetricEncryptionKey.import systemKey.decrypt buf
+					accountKey = PrivateKey.import(loggedInAccount.privateInfo.systemPrivateKey).decrypt buf
 					cb()
 			(cb) =>
 				Fs.readFile Path.join(userDir, 'private-info'), (err, buf) ->
@@ -442,7 +486,6 @@ class DeactivatedAccountError extends CustomError
 module.exports = {
 	isAccountSystemSetUp
 	listAccounts
-	readAccount
 	Account
 	DecryptedAccount
 	UserNameTakenError
