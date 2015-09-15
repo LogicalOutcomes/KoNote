@@ -178,50 +178,68 @@ load = (win) ->
 								)								
 							)
 					)
-					R.div({className: "selectionPanel"},
-						R.div({className: 'panel metrics'}
-							R.h2({}, Term 'Metrics')
-							(@state.metricIdsWithData.map (metricId) =>
-								metric = @props.metricsById.get(metricId)
+					R.div({className: 'selectionPanel'},
+						R.div({className: 'dataType progEvents'}
+							R.h2({}, Term 'Events')
 
-								R.div({className: 'checkbox'},
+							R.div({className: 'dataOptions'},
+								R.div({className: 'checkbox selectAll'},
+									allProgEventsSelected = Imm.is(
+										@state.selectedProgEventIds, @state.progEventIdsWithData
+									)
+
 									R.label({},
 										R.input({
-											ref: metric.get 'id'
 											type: 'checkbox'
-											onChange: @_updateSelectedMetrics.bind null, metricId
-											checked: @state.selectedMetricIds.contains metricId
+											onChange: @_toggleAllProgEvents.bind null, allProgEventsSelected
+											checked: allProgEventsSelected
 										})
-										metric.get('name')
+										"All #{Term 'Events'}"
 									)
 								)
-							).toJS()...
-							R.div({className: 'checkbox selectAll'},
+							)							
+						)	
+						R.div({className: 'dataType metrics'}
+							R.h2({}, Term 'Metrics')
+							R.div({className: 'dataOptions'},
+								(@state.metricIdsWithData.map (metricId) =>
+									metric = @props.metricsById.get(metricId)
+
+									R.div({className: 'checkbox'},
+										R.label({},
+											R.input({
+												ref: metric.get 'id'
+												type: 'checkbox'
+												onChange: @_updateSelectedMetrics.bind null, metricId
+												checked: @state.selectedMetricIds.contains metricId
+											})
+											metric.get('name')
+										)
+									)
+								).toJS()...
+								R.div({
+									className: [
+										"checkbox selectAll"
+										showWhen @state.metricIdsWithData.size > 1
+									].join ' '
+								},
+									allMetricsSelected = Imm.is(
+										@state.selectedMetricIds, @state.metricIdsWithData
+									)
+
+									console.log allMetricsSelected
+
 									R.label({},
 										R.input({
 											type: 'checkbox'
-											# onChange: @_updateSelectedMetrics.bind null, metricId
-											# checked: @state.selectedMetricIds.contains metricId
+											onChange: @_toggleAllMetrics.bind null, allMetricsSelected
+											checked: allMetricsSelected
 										})
 										"All #{Term 'Metrics'}"
 									)
 								)
-						)
-						R.div({className: 'panel metrics'}
-							R.h2({}, Term 'Metrics')
-							allProgEventsSelected = Imm.is @state.selectedProgEventIds, @state.progEventIdsWithData
-
-							R.div({className: 'checkbox'},
-								R.label({},
-									R.input({
-										type: 'checkbox'
-										onChange: @_toggleAllProgEvents.bind null, allProgEventsSelected
-										checked: allProgEventsSelected
-									})
-									"All #{Term 'Events'}"
-								)
 							)
-						)	
+						)						
 					)
 				)
 			)
@@ -237,6 +255,15 @@ load = (win) ->
 					selectedProgEventIds = @state.progEventIdsWithData
 
 				return {selectedProgEventIds}
+
+		_toggleAllMetrics: (allMetricsSelected) ->
+			@setState ({selectedMetricIds}) =>
+				if allMetricsSelected
+					selectedMetricIds = @state.selectedMetricIds.clear()
+				else
+					selectedMetricIds = @state.metricIdsWithData
+
+				return {selectedMetricIds}
 
 		_updateSelectedMetrics: (metricId) ->
 			@setState ({selectedMetricIds}) =>
@@ -582,8 +609,10 @@ load = (win) ->
 
 				rowIndex++
 
-			# Extend height of chart to fit progEvents' rows
+
+			# Determine regions height
 			chartHeightY = 1 + (eventRows.size * 1/4)
+
 			console.log 'chartHeightY', chartHeightY
 
 			@_chart.axis.max {
