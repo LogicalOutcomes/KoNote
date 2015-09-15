@@ -154,7 +154,7 @@ load = (win) ->
 				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
 					R.div({className: 'chartContainer'},
 						# Force chart to be re-rendered when tab is opened
-						if @props.isVisible and @state.selectedMetricIds.size > 0
+						if @props.isVisible and @_enoughDataToDisplay()
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
@@ -225,6 +225,9 @@ load = (win) ->
 					)
 				)
 			)
+
+		_enoughDataToDisplay: ->
+			@state.selectedMetricIds.size > 0 or @state.selectedProgEventIds.size > 0
 
 		_toggleAllProgEvents: (allProgEventsSelected) ->
 			@setState ({selectedProgEventIds}) =>
@@ -355,10 +358,9 @@ load = (win) ->
 
 				
 		componentDidMount: ->			
-			@_generateChart()			
+			@_generateChart()
 			@_refreshSelectedMetrics()
-			@_generateProgEventRegions()
-			@_attachKeyBindings()		
+			@_refreshSelectedProgEvents()
 
 		_generateChart: ->
 			console.log "Generating Chart...."
@@ -457,7 +459,7 @@ load = (win) ->
 						}
 						y: {
 							show: false
-							max: 1 + (eventRows.size * 1/4)
+							max: 1
 						}
 					}				
 					data: {
@@ -499,7 +501,7 @@ load = (win) ->
 
 		_refreshSelectedProgEvents: ->
 			# Generate c3 regions array
-			progEventRegions = _generateProgEventRegions()
+			progEventRegions = @_generateProgEventRegions()
 
 			console.log 'Regions going into c3:', progEventRegions.toJS()
 
@@ -508,13 +510,17 @@ load = (win) ->
 			@_chart.regions.add progEventRegions.toJS()
 
 			# Bind user interaction events
-			_attachKeyBindings(progEventRegions)
+			@_attachKeyBindings progEventRegions
 
 			@setState => {progEventRegions}
 
 		_generateProgEventRegions: ->
+			# Filter out progEvents that aren't selected
+			selectedProgEvents = @props.progEvents.filter (progEvent) =>
+				return @props.selectedProgEventIds.contains progEvent.get('id')
+
 			# Build Imm.List of region objects
-			progEventRegions = @props.progEvents.map (progEvent) =>
+			progEventRegions = selectedProgEvents.map (progEvent) =>
 				eventRegion = {
 					start: @_toUnixMs progEvent.get('startTimestamp')
 					class: "progEventRange #{progEvent.get('id')}"
@@ -568,7 +574,7 @@ load = (win) ->
 						# Update eventRows, remove from remainingEvents
 						updatedRow = eventRows.get(rowIndex).push progEvent
 						eventRows = eventRows.set rowIndex, updatedRow
-						remainingEvents = remainingEvents.delete(index)	
+						remainingEvents = remainingEvents.delete(liveIndex)
 
 
 				# Cancat to final (flat) output for c3
@@ -576,6 +582,13 @@ load = (win) ->
 
 				rowIndex++
 
+			# Extend height of chart to fit progEvents' rows
+			chartHeightY = 1 + (eventRows.size * 1/4)
+			console.log 'chartHeightY', chartHeightY
+
+			@_chart.axis.max {
+				y: chartHeightY
+			}
 
 			return progEvents
 
