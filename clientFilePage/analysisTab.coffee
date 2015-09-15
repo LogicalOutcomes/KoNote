@@ -34,6 +34,7 @@ load = (win) ->
 
 				metricValues: null				
 				selectedMetricIds: Imm.Set()
+				selectedProgEventIds: Imm.Set()
 				xTicks: Imm.List()
 				xDays: Imm.List()
 				timeSpan: null
@@ -62,7 +63,12 @@ load = (win) ->
 
 			# All metric IDs for which this client file has data
 			metricIdsWithData = metricValues
-			.map((m) -> m.get('id'))
+			.map (m) -> m.get 'id'
+			.toSet()
+
+			# All event IDs
+			progEventIdsWithData = @props.progEvents
+			.map (e) -> e.get 'id'
 			.toSet()
 
 			# Build list of timestamps from progEvents (start & end) & metrics
@@ -89,7 +95,9 @@ load = (win) ->
 				xDays: xTicks
 				daysOfData: timestampDays.size
 				timeSpan: [0, xTicks.size - 1]
-				xTicks, metricIdsWithData, metricValues				
+				xTicks
+				metricIdsWithData, metricValues
+				progEventIdsWithData
 			}
 
 		render: ->
@@ -154,7 +162,8 @@ load = (win) ->
 								metricsById: @props.metricsById
 								metricValues: @state.metricValues
 								xTicks: @state.xTicks
-								selectedMetricIds: @state.selectedMetricIds								
+								selectedMetricIds: @state.selectedMetricIds	
+								selectedProgEventIds: @state.selectedProgEventIds
 								timeSpan: @state.timeSpan
 							})
 						else
@@ -170,14 +179,15 @@ load = (win) ->
 							)
 					)
 					R.div({className: "selectionPanel"},
-						R.div({className: 'heading'}, Term 'Metrics')
-						R.div({className: 'metrics'},
+						R.div({className: 'panel metrics'}
+							R.h2({}, Term 'Metrics')
 							(@state.metricIdsWithData.map (metricId) =>
 								metric = @props.metricsById.get(metricId)
 
-								R.div({className: 'metric checkbox'},
+								R.div({className: 'checkbox'},
 									R.label({},
 										R.input({
+											ref: metric.get 'id'
 											type: 'checkbox'
 											onChange: @_updateSelectedMetrics.bind null, metricId
 											checked: @state.selectedMetricIds.contains metricId
@@ -186,10 +196,44 @@ load = (win) ->
 									)
 								)
 							).toJS()...
+							R.div({className: 'checkbox selectAll'},
+									R.label({},
+										R.input({
+											type: 'checkbox'
+											# onChange: @_updateSelectedMetrics.bind null, metricId
+											# checked: @state.selectedMetricIds.contains metricId
+										})
+										"All #{Term 'Metrics'}"
+									)
+								)
 						)
+						R.div({className: 'panel metrics'}
+							R.h2({}, Term 'Metrics')
+							allProgEventsSelected = Imm.is @state.selectedProgEventIds, @state.progEventIdsWithData
+
+							R.div({className: 'checkbox'},
+								R.label({},
+									R.input({
+										type: 'checkbox'
+										onChange: @_toggleAllProgEvents.bind null, allProgEventsSelected
+										checked: allProgEventsSelected
+									})
+									"All #{Term 'Events'}"
+								)
+							)
+						)	
 					)
-				)				
+				)
 			)
+
+		_toggleAllProgEvents: (allProgEventsSelected) ->
+			@setState ({selectedProgEventIds}) =>
+				if allProgEventsSelected
+					selectedProgEventIds = @state.selectedProgEventIds.clear()
+				else
+					selectedProgEventIds = @state.progEventIdsWithData
+
+				return {selectedProgEventIds}
 
 		_updateSelectedMetrics: (metricId) ->
 			@setState ({selectedMetricIds}) =>
@@ -266,6 +310,11 @@ load = (win) ->
 	Chart = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
+		getInitialState: ->
+			return {
+				progEventRegions: Imm.List()
+			}
+
 		render: ->
 			return R.div({className: 'chartInner'},
 				R.div({
@@ -293,6 +342,11 @@ load = (win) ->
 			unless sameSelectedMetrics
 				@_refreshSelectedMetrics()
 
+			# Update selected progEvents?
+			sameSelectedProgEvents = Imm.is @props.selectedProgEventIds, oldProps.selectedProgEventIds
+			unless sameSelectedProgEvents
+				@_refreshSelectedProgEvents()
+
 			# Update timeSpan?
 			sameTimeSpan = @props.timeSpan is oldProps.timeSpan
 			unless sameTimeSpan
@@ -301,52 +355,10 @@ load = (win) ->
 
 				
 		componentDidMount: ->			
-			@_generateChart()
+			@_generateChart()			
 			@_refreshSelectedMetrics()
-			@_attachKeyBindings()
-
-		_refreshSelectedMetrics: ->
-			@_chart.hide()
-
-			@props.selectedMetricIds.forEach (metricId) =>
-				@_chart.show("y-" + metricId)
-
-		_attachKeyBindings: ->
-			# Find our hidden eventInfo box
-			eventInfo = $('#eventInfo')
-			dateFormat = 'Do MMM [at] h:mm A'
-
-			@props.progEvents.forEach (progEvent) =>
-				# Attach hover binding to progEvent region
-				$('.' + progEvent.get('id')).hover((event) =>					
-
-					eventInfo.addClass('show')
-					eventInfo.find('.title').text progEvent.get('title')
-					eventInfo.find('.description').text(progEvent.get('description') or "(no description)")
-
-					startTimestamp = new Moment(progEvent.get('startTimestamp'), TimestampFormat)
-					endTimestamp = new Moment(progEvent.get('endTimestamp'), TimestampFormat)
-
-					startText = startTimestamp.format(dateFormat)
-					endText = if endTimestamp.isValid() then endTimestamp.format(dateFormat) else null
-
-					if endText?
-						startText = "From: " + startText
-						endText = "Until: " + endText
-
-					eventInfo.find('.start').text startText
-					eventInfo.find('.end').text endText
-
-					# Make eventInfo follow the mouse
-					$(win.document).on('mousemove', (event) ->
-						eventInfo.css 'top', event.clientY - (eventInfo.outerHeight() + 15)
-						eventInfo.css 'left', event.clientX
-					)
-				, =>
-					# Hide and unbind!
-					eventInfo.removeClass('show')
-					$(win.document).off('mousemove')
-				)
+			@_generateProgEventRegions()
+			@_attachKeyBindings()		
 
 		_generateChart: ->
 			console.log "Generating Chart...."
@@ -422,73 +434,7 @@ load = (win) ->
 						text: year
 						position: 'middle'
 						class: 'yearLine'
-					}
-
-
-			# PROG EVENT REGIONS
-			# Build Imm.List of region objects
-			progEventRegions = @props.progEvents.map (progEvent) =>
-				eventRegion = {
-					start: @_toUnixMs progEvent.get('startTimestamp')
-					class: "progEventRange #{progEvent.get('id')}"
-				}
-				if Moment(progEvent.get('endTimestamp'), TimestampFormat).isValid()
-					eventRegion.end = @_toUnixMs progEvent.get('endTimestamp')
-
-				# TODO: Classify singular event
-
-				return eventRegion
-
-			# Sort regions in order of start timestamp
-			sortedEvents = progEventRegions.sortBy (event) => event['start']
-
-			# Setting up vars for row sorting
-			remainingEvents = sortedEvents
-			eventRows = Imm.List()
-			progEvents = Imm.List()
-			rowIndex = 0
-
-			_pluckProgEvent = (thisEvent, index) ->
-				# Append class with row number
-				progEvent = Imm.fromJS(thisEvent)
-				newClass = progEvent.get('class') + " row#{rowIndex}"				
-
-				# Convert single-point event date to a short span
-				if not progEvent.get('end')
-					startDate = Moment progEvent.get('start')
-					progEvent = progEvent.set 'end', startDate.clone().add(6, 'hours')
-					newClass = newClass + " singlePoint"
-
-				# Update class
-				progEvent = progEvent.set('class', newClass)
-
-				# Update eventRows, remove from remainingEvents
-				updatedRow = eventRows.get(rowIndex).push progEvent
-				eventRows = eventRows.set rowIndex, updatedRow
-				remainingEvents = remainingEvents.delete(index)				
-
-				return
-
-			while remainingEvents.size > 0
-				# Init new eventRow
-				eventRows = eventRows.push Imm.List()
-
-				# Loop through events, pluck any with non-conflicting dates
-				remainingEvents.forEach (thisEvent) =>
-
-					thisRow = eventRows.get(rowIndex)
-					# Can't rely on forEach index, because .delete() offsets it
-					liveIndex = remainingEvents.indexOf(thisEvent)
-
-					_pluckProgEvent(thisEvent, liveIndex) if thisRow.size is 0 or (
-						not thisRow.last().get('end')? or 
-						thisEvent.start >= thisRow.last().get('end')
-					)
-
-				# Cancat to final (flat) output for c3
-				progEvents = progEvents.concat eventRows.get(rowIndex)
-
-				rowIndex++
+					}			
 
 
 			# Generate and bind the chart
@@ -521,7 +467,6 @@ load = (win) ->
 						xs: xsMap.toJS()
 						names: dataSeriesNames.toJS()
 					}
-					regions: progEvents.toJS()
 					tooltip: {
 						format: {
 							value: (value, ratio, id, index) ->
@@ -545,6 +490,131 @@ load = (win) ->
 					}
 					onrendered: @_attachKeyBindings
 				}
+
+		_refreshSelectedMetrics: ->
+			@_chart.hide()
+
+			@props.selectedMetricIds.forEach (metricId) =>
+				@_chart.show("y-" + metricId)	
+
+		_refreshSelectedProgEvents: ->
+			# Generate c3 regions array
+			progEventRegions = _generateProgEventRegions()
+
+			console.log 'Regions going into c3:', progEventRegions.toJS()
+
+			# Flush and re-apply regions to c3 chart
+			@_chart.regions.remove()
+			@_chart.regions.add progEventRegions.toJS()
+
+			# Bind user interaction events
+			_attachKeyBindings(progEventRegions)
+
+			@setState => {progEventRegions}
+
+		_generateProgEventRegions: ->
+			# Build Imm.List of region objects
+			progEventRegions = @props.progEvents.map (progEvent) =>
+				eventRegion = {
+					start: @_toUnixMs progEvent.get('startTimestamp')
+					class: "progEventRange #{progEvent.get('id')}"
+				}
+				if Moment(progEvent.get('endTimestamp'), TimestampFormat).isValid()
+					eventRegion.end = @_toUnixMs progEvent.get('endTimestamp')
+
+				# TODO: Classify singular event
+				return eventRegion
+
+			# Sort regions in order of start timestamp
+			sortedEvents = progEventRegions.sortBy (event) => event['start']
+
+			# Setting up vars for row sorting
+			remainingEvents = sortedEvents
+			eventRows = Imm.List()
+			progEvents = Imm.List()
+			rowIndex = 0
+
+			# Process progEvents for regions while remaining events
+			while remainingEvents.size > 0
+
+				# Init new eventRow
+				eventRows = eventRows.push Imm.List()
+
+				# Loop through events, pluck any with non-conflicting dates
+				remainingEvents.forEach (thisEvent) =>
+
+					thisRow = eventRows.get(rowIndex)
+					# Can't rely on forEach index, because .delete() offsets it
+					liveIndex = remainingEvents.indexOf(thisEvent)
+
+					# Let's pluck this progEvent if no rows or timestamps don't conflict
+					if thisRow.size is 0 or (
+						not thisRow.last().get('end')? or 
+						thisEvent.start >= thisRow.last().get('end')
+					)
+						# Append class with row number
+						progEvent = Imm.fromJS(thisEvent)
+						newClass = progEvent.get('class') + " row#{rowIndex}"				
+
+						# Convert single-point event date to a short span
+						if not progEvent.get('end')
+							startDate = Moment progEvent.get('start')
+							progEvent = progEvent.set 'end', startDate.clone().add(6, 'hours')
+							newClass = newClass + " singlePoint"
+
+						# Update class
+						progEvent = progEvent.set('class', newClass)
+
+						# Update eventRows, remove from remainingEvents
+						updatedRow = eventRows.get(rowIndex).push progEvent
+						eventRows = eventRows.set rowIndex, updatedRow
+						remainingEvents = remainingEvents.delete(index)	
+
+
+				# Cancat to final (flat) output for c3
+				progEvents = progEvents.concat eventRows.get(rowIndex)
+
+				rowIndex++
+
+
+			return progEvents
+
+		_attachKeyBindings: ->
+			# Find our hidden eventInfo box
+			eventInfo = $('#eventInfo')
+			dateFormat = 'Do MMM [at] h:mm A'
+
+			@props.progEvents.forEach (progEvent) =>
+				# Attach hover binding to progEvent region
+				$('.' + progEvent.get('id')).hover((event) =>					
+
+					eventInfo.addClass('show')
+					eventInfo.find('.title').text progEvent.get('title')
+					eventInfo.find('.description').text(progEvent.get('description') or "(no description)")
+
+					startTimestamp = new Moment(progEvent.get('startTimestamp'), TimestampFormat)
+					endTimestamp = new Moment(progEvent.get('endTimestamp'), TimestampFormat)
+
+					startText = startTimestamp.format(dateFormat)
+					endText = if endTimestamp.isValid() then endTimestamp.format(dateFormat) else null
+
+					if endText?
+						startText = "From: " + startText
+						endText = "Until: " + endText
+
+					eventInfo.find('.start').text startText
+					eventInfo.find('.end').text endText
+
+					# Make eventInfo follow the mouse
+					$(win.document).on('mousemove', (event) ->
+						eventInfo.css 'top', event.clientY - (eventInfo.outerHeight() + 15)
+						eventInfo.css 'left', event.clientX
+					)
+				, =>
+					# Hide and unbind!
+					eventInfo.removeClass('show')
+					$(win.document).off('mousemove')
+				)
 
 		_toUnixMs: (timestamp) ->
 			# Converts to unix ms
