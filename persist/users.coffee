@@ -450,13 +450,10 @@ class Account
 						console.error err.stack
 
 						# If decryption fails, we're probably using the wrong key
-						pwEncryptionKey.erase()
 						cb new IncorrectPasswordError()
 						return
 
 					accountKey = SymmetricEncryptionKey.import(accountKeyBuf.toString())
-
-					pwEncryptionKey.erase()
 
 					cb()
 			(cb) =>

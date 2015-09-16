@@ -157,12 +157,6 @@ class SymmetricEncryptionKey
 			decipher.final()
 		]
 
-	# Wipe the key from memory.  A key object should not be used after being
-	# erased (it will fail).
-	erase: ->
-		@_rawKeyMaterial.fill(0)
-		@_rawKeyMaterial = null
-
 # TODO move this somewhere else
 usePromise = (promise, cb) ->
 	promise.catch (err) ->
