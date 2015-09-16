@@ -52,11 +52,12 @@ load = (win) ->
 			description = @props.description
 			eventDate = niceDate @props.start, @props.end
 			
-			return R.div({className: 'progEventsWidget'},
+			return R.div({className: format},
 				switch format
 					when 'large'
 						R.div({
-							className: format, ref: 'name'
+							className: 'large-container'
+							ref: 'name'
 						},
 							R.div({className: 'title'}, title)
 							R.div({className: 'description'}, renderLineBreaks description)
@@ -64,15 +65,17 @@ load = (win) ->
 						)
 					when 'print'
 						R.div({
-							className: format, ref: 'name'
+							className: 'print-container'
+							ref: 'name'
 						},
 							R.div({className: 'title'}, 'Event: ', title)
 							R.div({className: 'date'}, eventDate)
 							R.div({className: 'description'}, renderLineBreaks description)
 						)
-					else
+					when 'small'
 						R.div({
-							className: format, ref: 'name'
+							className: 'small-container'
+							ref: 'name'
 						},
 							R.div({
 								className: 'icon'
@@ -81,6 +84,12 @@ load = (win) ->
 								' '
 								title
 							)
+						)
+					else
+						R.div({
+							ref: 'name'
+						},
+							title
 						)
 			)
 	

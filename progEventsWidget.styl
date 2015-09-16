@@ -1,38 +1,46 @@
-.progEventsWidget
+.large
 	display flex
 	max-width 100%
-	
-	> .large
+
+	> .large-container
 		padding 5px 0
 		font-size 14px
 		color #337ab7
-		
+
 		> .title
 			font-size 16px
-		
+
 		> .description
 			color #888
-		
+
 		> .date
 			color #888
 			padding 5px
-	
-	> .print
+
+.print
+	display flex
+	max-width 100%
+
+	> .print-container
 		color #000
 		margin-top 20px
-		
+
 		> .title
 			font-size 22px
 			font-weight 400
-		
+
 		> .date
 			padding 2px
-			
+
 		> .description
 			color #222
 			padding 2px
 
-	> .small
+.small
+	display flex
+	max-width 100%
+
+	> .small-container
 		align-items center
 		height 30px
 		background hsl(202, 95%, 74%)
@@ -42,7 +50,7 @@
 		margin 4px
 		margin-left -4px
 		font-size 14px
-	
+
 	> .icon
 		flex-shrink 0
 		width 30px
