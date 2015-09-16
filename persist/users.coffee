@@ -132,7 +132,9 @@ class Account
 
 		Async.series [
 			(cb) ->
-				Fs.readFile Path.join(loggedInAccount.dataDirectory, '_users', '_system', 'public-key'), (err, buf) ->
+				publicKeyPath = Path.join(loggedInAccount.dataDirectory, '_users', '_system', 'public-key')
+
+				Fs.readFile publicKeyPath, (err, buf) ->
 					if err
 						cb err
 						return
@@ -231,6 +233,14 @@ class Account
 			cb null, new Account dataDir, userName, publicInfo, 'privateaccess'
 
 	deactivate: (cb) =>
+		# BEGIN v1.3.1 migration
+		if Fs.existsSync Path.join(@_userDir, 'auth-params')
+			# This account is in the old format.  To save time, I didn't
+			# implement this method.
+			cb new Error "cannot deactivate accounts in old format"
+			return
+		# END v1.3.1 migration
+
 		publicInfo = null
 		accountKeyFileNames = null
 
@@ -285,6 +295,108 @@ class Account
 		unless @publicInfo.isActive
 			cb new DeactivatedAccountError()
 			return
+
+		# BEGIN v1.3.1 migration
+		if Fs.existsSync Path.join(@_userDir, 'auth-params')
+			# This account is in the old format.
+
+			accountKey = SymmetricEncryptionKey.generate()
+			systemUserDir = Path.join(@dataDirectory, '_users', '_system')
+
+			oldKdfParams = null
+			oldPwEncryptionKey = null
+			globalEncryptionKey = null
+			kdfParams = generateKdfParams()
+			pwEncryptionKey = null
+			systemPrivateKey = null
+			systemPublicKey = null
+
+			Async.series [
+				(cb) =>
+					Fs.readFile Path.join(@_userDir, 'auth-params'), (err, result) =>
+						if err
+							cb err
+							return
+
+						oldKdfParams = JSON.parse result
+						cb()
+				(cb) =>
+					SymmetricEncryptionKey.derive userPassword, oldKdfParams, (err, result) =>
+						if err
+							cb err
+							return
+
+						oldPwEncryptionKey = result
+						cb()
+				(cb) =>
+					Fs.readFile Path.join(@_userDir, 'private-keys'), (err, result) =>
+						if err
+							cb err
+							return
+
+						try
+							oldPrivateKeys = JSON.parse oldPwEncryptionKey.decrypt result
+						catch err
+							console.error err.stack
+
+							# If decryption fails, we're probably using the wrong key
+							cb new IncorrectPasswordError()
+							return
+
+						globalEncryptionKey = SymmetricEncryptionKey.import oldPrivateKeys.globalEncryptionKey
+						cb()
+				(cb) =>
+					Fs.readFile Path.join(systemUserDir, 'old-key'), (err, buf) =>
+						if err
+							cb err
+							return
+
+						systemPrivateKey = PrivateKey.import(globalEncryptionKey.decrypt(buf).toString())
+						systemPublicKey = systemPrivateKey.getPublicKey()
+						cb()
+				(cb) =>
+					SymmetricEncryptionKey.derive userPassword, kdfParams, (err, result) =>
+						if err
+							cb err
+							return
+
+						pwEncryptionKey = result
+						cb()
+				(cb) =>
+					accountKeyFile = JSON.stringify {
+						accountKey: Base64url.encode pwEncryptionKey.encrypt(accountKey.export())
+						kdfParams
+					}
+
+					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, cb
+				(cb) =>
+					accountRecovery = systemPublicKey.encrypt(accountKey.export())
+
+					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, cb
+				(cb) =>
+					privateInfo = {
+						globalEncryptionKey: globalEncryptionKey.export()
+					}
+
+					if @publicInfo.accountType is 'admin'
+						privateInfo.systemPrivateKey = systemPrivateKey.export()
+
+					privateInfoEncrypted = accountKey.encrypt JSON.stringify(privateInfo)
+
+					Fs.writeFile Path.join(@_userDir, 'private-info'), privateInfoEncrypted, cb
+				(cb) =>
+					Fs.unlink Path.join(@_userDir, 'private-keys'), cb
+				(cb) =>
+					Fs.unlink Path.join(@_userDir, 'auth-params'), cb
+			], (err) =>
+				if err
+					cb err
+					return
+
+				# Restart -- this time it should be in the new format
+				@decryptWithPassword userPassword, cb
+			return
+		# END v1.3.1 migration
 
 		userDir = @_userDir
 		accountKeyId = null
@@ -375,6 +487,26 @@ class Account
 			cb new Error "only admins have access to the system key"
 			return
 
+		# BEGIN v1.3.1 migration
+		if Fs.existsSync Path.join(@_userDir, 'auth-params')
+			# This account is in the old format.
+
+			privateInfo = {
+				globalEncryptionKey: loggedInAccount.privateInfo.globalEncryptionKey
+			}
+			if @publicInfo.accountType is 'admin'
+				privateInfo.systemPrivateKey = loggedInAccount.privateInfo.systemPrivateKey
+
+			accountKey = SymmetricEncryptionKey.generate()
+
+			cb null, new DecryptedAccount(
+				@dataDirectory, @userName,
+				@publicInfo, privateInfo, accountKey,
+				'privateaccess'
+			)
+			return
+		# END v1.3.1 migration
+
 		userDir = @_userDir
 		accountKey = null
 		privateInfo = null
@@ -451,6 +583,56 @@ class DecryptedAccount extends Account
 		@_userDir = getUserDir @dataDirectory, @userName
 
 	setPassword: (newPassword, cb) =>
+		# BEGIN v1.3.1 migration
+		if Fs.existsSync Path.join(@_userDir, 'auth-params')
+			# This account is in the old format.
+
+			systemUserDir = Path.join(@dataDirectory, '_users', '_system')
+
+			kdfParams = generateKdfParams()
+			systemPublicKey = null
+			pwEncryptionKey = null
+
+			Async.series [
+				(cb) =>
+					Fs.readFile Path.join(systemUserDir, 'public-key'), (err, buf) =>
+						if err
+							cb err
+							return
+
+						systemPublicKey = PublicKey.import(buf.toString())
+						cb()
+				(cb) =>
+					SymmetricEncryptionKey.derive newPassword, kdfParams, (err, result) =>
+						if err
+							cb err
+							return
+
+						pwEncryptionKey = result
+						cb()
+				(cb) =>
+					accountKeyFile = JSON.stringify {
+						accountKey: Base64url.encode pwEncryptionKey.encrypt(@_accountKey.export())
+						kdfParams
+					}
+
+					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, cb
+				(cb) =>
+					accountRecovery = systemPublicKey.encrypt(@_accountKey.export())
+
+					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, cb
+				(cb) =>
+					privateInfoEncrypted = @_accountKey.encrypt JSON.stringify(@privateInfo)
+
+					Fs.writeFile Path.join(@_userDir, 'private-info'), privateInfoEncrypted, cb
+				(cb) =>
+					Fs.unlink Path.join(@_userDir, 'private-keys'), cb
+				(cb) =>
+					Fs.unlink Path.join(@_userDir, 'auth-params'), cb
+			], cb
+			return
+		# END v1.3.1 migration
+
 		kdfParams = generateKdfParams()
 		nextAccountKeyId = null
 		pwEncryptionKey = null

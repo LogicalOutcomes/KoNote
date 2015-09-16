@@ -160,6 +160,15 @@ load = (win) ->
 								Bootbox.alert "This account is already deactivated."
 								return
 
+							# BEGIN v1.3.1 migration
+							if err.message is "cannot deactivate accounts in old format"
+								# To deactivate an old-style account, just
+								# reset the account's password, then deactivate
+								# it.
+								Bootbox.alert "Please contact KoNode support for assistance in deactivating this account."
+								return
+							# END v1.3.1 migration
+
 							CrashHandler.handle err
 							return
 
@@ -347,10 +356,6 @@ load = (win) ->
 								Bootbox.alert "Unknown user! Please check user name and try again"
 								return
 
-							if err instanceof Persist.Users.DeactivatedAccountError
-								Bootbox.alert "The specified user account has been deactivated."
-								return
-
 							cb err
 							return
 
@@ -359,6 +364,10 @@ load = (win) ->
 				(cb) =>
 					acc.decryptWithSystemKey global.ActiveSession.account, (err, result) =>
 						if err
+							if err instanceof Persist.Users.DeactivatedAccountError
+								Bootbox.alert "The specified user account has been deactivated."
+								return
+
 							cb err
 							return
 
