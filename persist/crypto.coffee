@@ -222,7 +222,7 @@ class PrivateKey
 						name: 'RSA-OAEP'
 						modulusLength: 3072
 						publicExponent: new Uint8Array([1, 0, 1]) # 65537
-						hash: {name: 'SHA-256'}
+						hash: 'SHA-256'
 					},
 					true, # extractable
 					['encrypt', 'decrypt']
@@ -240,7 +240,7 @@ class PrivateKey
 						name: 'RSASSA-PKCS1-v1_5'
 						modulusLength: 3072
 						publicExponent: new Uint8Array([1, 0, 1]) # 65537
-						hash: {name: 'SHA-256'}
+						hash: 'SHA-256'
 					},
 					true, # extractable
 					['sign', 'verify']
