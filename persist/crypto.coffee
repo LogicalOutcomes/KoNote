@@ -14,9 +14,14 @@ Base64url = require 'base64url'
 BufferEq = require 'buffer-equal-constant-time'
 Crypto = require 'crypto'
 
+WebCryptoApi = ->
+	# Pull a reference out of whatever window is available
+	global.window.crypto.subtle
+
 symmKeyV1Prefix = 'symmkey-v1'
 symmCiphertextV1Prefix = new Buffer([1])
 
+rsaKeyLength = 3072
 privKeyV1Prefix = 'privkey-v1'
 pubKeyV1Prefix = 'pubkey-v1'
 asymmCiphertextV1Prefix = new Buffer([1])
@@ -157,29 +162,6 @@ class SymmetricEncryptionKey
 			decipher.final()
 		]
 
-# TODO move this somewhere else
-usePromise = (promise, cb) ->
-	promise.catch (err) ->
-		cb err
-	promise.then (args...) ->
-		cb null, args...
-
-toPemKeyFormat = (fileType, buf) ->
-	result = ''
-
-	result += "-----BEGIN #{fileType}-----\n"
-
-	b64Data = buf.toString('base64')
-	lineLength = 64
-	for lineIndex in [0...Math.ceil(b64Data.length/lineLength)]
-		line = b64Data[(lineLength * lineIndex)...(lineLength * (lineIndex + 1))]
-		result += line
-		result += '\n'
-
-	result += "-----END #{fileType}-----\n"
-
-	return result
-
 # TODO security review still needed for PrivateKey and PublicKey
 class PrivateKey
 	# PRIVATE CONSTRUCTOR
@@ -208,8 +190,6 @@ class PrivateKey
 		@_rawPubSignKey = rawPubSignKey
 
 	@generate: (cb) ->
-		webCryptoApi = global.window.crypto.subtle
-
 		privEncrKey = null
 		pubEncrKey = null
 		privSignKey = null
@@ -217,12 +197,12 @@ class PrivateKey
 
 		Async.series [
 			(cb) ->
-				usePromise webCryptoApi.generateKey(
+				usePromise WebCryptoApi().generateKey(
 					{
 						name: 'RSA-OAEP'
-						modulusLength: 3072
+						modulusLength: rsaKeyLength
 						publicExponent: new Uint8Array([1, 0, 1]) # 65537
-						hash: 'SHA-256'
+						hash: {name: 'SHA-256'}
 					},
 					true, # extractable
 					['encrypt', 'decrypt']
@@ -235,12 +215,12 @@ class PrivateKey
 					pubEncrKey = keyPair.publicKey
 					cb()
 			(cb) ->
-				usePromise webCryptoApi.generateKey(
+				usePromise WebCryptoApi().generateKey(
 					{
 						name: 'RSASSA-PKCS1-v1_5'
-						modulusLength: 3072
+						modulusLength: rsaKeyLength
 						publicExponent: new Uint8Array([1, 0, 1]) # 65537
-						hash: 'SHA-256'
+						hash: {name: 'SHA-256'}
 					},
 					true, # extractable
 					['sign', 'verify']
@@ -259,18 +239,12 @@ class PrivateKey
 					[privSignKey, 'pkcs8']
 					[pubSignKey, 'spki']
 				], ([key, format], cb) ->
-					usePromise webCryptoApi.exportKey(format, key), (err, exportedKeyBuf) ->
+					usePromise WebCryptoApi().exportKey(format, key), (err, exportedKeyBuf) ->
 						if err
 							cb err
 							return
 
-						uint8s = new Uint8Array(exportedKeyBuf)
-						result = new Buffer(uint8s.length)
-
-						for i in [0...result.length]
-							result[i] = uint8s[i]
-
-						cb null, result
+						cb null, fromUint8Array exportedKeyBuf
 				, (err, results) ->
 					if err
 						cb err
@@ -325,7 +299,7 @@ class PrivateKey
 	getPublicKey: ->
 		return new PublicKey(@_rawPubEncrKey, @_rawPubSignKey, 'iknowwhatimdoing')
 
-	decrypt: (encryptedMsg) ->
+	decrypt: (encryptedMsg, cb) ->
 		unless Buffer.isBuffer encryptedMsg
 			throw new Error "expected encryptedMsg to be a Buffer"
 
@@ -333,18 +307,48 @@ class PrivateKey
 		unless BufferEq(prefix, asymmCiphertextV1Prefix)
 			throw new Error "unknown encryption version"
 
-		# next 512 bytes (4096 bits)
+		# next <key length> bytes
 		encryptedContentKey =
-			encryptedMsg[asymmCiphertextV1Prefix.length...(asymmCiphertextV1Prefix.length + 512)]
+			encryptedMsg[asymmCiphertextV1Prefix.length...(asymmCiphertextV1Prefix.length + rsaKeyLength/8)]
 
-		contentKeyText = Crypto.privateDecrypt(
-			toPemKeyFormat('PRIVATE KEY', @_rawPrivEncrKey),
-			encryptedContentKey
-		)
-		contentKey = SymmetricEncryptionKey.import(contentKeyText.toString())
+		# BEGIN NW.js v0.11 code
+		usePromise WebCryptoApi().importKey(
+			'pkcs8', toUint8Array(@_rawPrivEncrKey),
+			{
+				name: 'RSA-OAEP'
+				hash: {name: 'SHA-256'}
+			},
+			true, ['decrypt']
+		), (err, webCryptoKey) =>
+			if err
+				cb err
+				return
 
-		encryptedContent = encryptedMsg[(asymmCiphertextV1Prefix.length + 512)...]
-		return contentKey.decrypt encryptedContent
+			usePromise WebCryptoApi().decrypt(
+				{name: 'RSA-OAEP'}, webCryptoKey, toUint8Array(encryptedContentKey)
+			), (err, contentKeyText) =>
+				if err
+					cb err
+					return
+
+				contentKey = SymmetricEncryptionKey.import(
+					fromUint8Array(contentKeyText).toString()
+				)
+
+				encryptedContent = encryptedMsg[(asymmCiphertextV1Prefix.length + rsaKeyLength/8)...]
+				cb null, contentKey.decrypt encryptedContent
+		# END NW.js v0.11 code
+
+		# BEGIN NW.js v0.12+ code
+#		contentKeyText = Crypto.privateDecrypt(
+#			toPemKeyFormat('PRIVATE KEY', @_rawPrivEncrKey),
+#			encryptedContentKey
+#		)
+#		contentKey = SymmetricEncryptionKey.import(contentKeyText.toString())
+#
+#		encryptedContent = encryptedMsg[(asymmCiphertextV1Prefix.length + rsaKeyLength/8)...]
+#		return contentKey.decrypt encryptedContent
+		# END NW.js v0.12+ code
 
 class PublicKey
 	# PRIVATE CONSTRUCTOR
@@ -386,7 +390,7 @@ class PublicKey
 			Base64url.encode(@_rawPubSignKey)
 		].join ':'
 
-	encrypt: (msg) ->
+	encrypt: (msg, cb) ->
 		if typeof msg is 'string'
 			msg = new Buffer(msg, 'utf8')
 
@@ -400,16 +404,46 @@ class PublicKey
 
 		# Generate a new symmetric key and encrypt using RSA
 		contentKey = SymmetricEncryptionKey.generate()
-		encryptedContentKey = Crypto.publicEncrypt(
-			toPemKeyFormat('PUBLIC KEY', @_rawPubEncrKey),
-			new Buffer(contentKey.export())
-		)
-		outputBuffers.push encryptedContentKey
+		# BEGIN NW.js v0.11 code
+		usePromise WebCryptoApi().importKey(
+			'spki', toUint8Array(@_rawPubEncrKey),
+			{
+				name: 'RSA-OAEP'
+				hash: {name: 'SHA-256'}
+			},
+			true, ['encrypt']
+		), (err, webCryptoKey) =>
+			if err
+				cb err
+				return
 
-		# Encrypt message with content key
-		outputBuffers.push contentKey.encrypt(msg)
+			usePromise WebCryptoApi().encrypt(
+				{name: 'RSA-OAEP'}, webCryptoKey, toUint8Array(new Buffer(contentKey.export()))
+			), (err, encryptedContentKey) =>
+				if err
+					cb err
+					return
 
-		return Buffer.concat outputBuffers
+				outputBuffers.push fromUint8Array(encryptedContentKey)
+
+				# Encrypt message with content key
+				outputBuffers.push contentKey.encrypt(msg)
+
+				cb null, Buffer.concat outputBuffers
+		# END NW.js v0.11 code
+
+		# BEGIN NW.js v0.12+ code
+#		encryptedContentKey = Crypto.publicEncrypt(
+#			toPemKeyFormat('PUBLIC KEY', @_rawPubEncrKey),
+#			new Buffer(contentKey.export())
+#		)
+#		outputBuffers.push encryptedContentKey
+#
+#		# Encrypt message with content key
+#		outputBuffers.push contentKey.encrypt(msg)
+#
+#		return Buffer.concat outputBuffers
+		# END NW.js v0.12+ code
 
 generateSalt = ->
 	return Crypto.randomBytes(16).toString('hex')
@@ -425,6 +459,48 @@ obfuscate = (buf) ->
 
 deobfuscate = (buf) ->
 	return obfuscationKey.decrypt buf
+
+usePromise = (promise, cb) ->
+	promise.catch (err) ->
+		cb err
+	promise.then (args...) ->
+		cb null, args...
+
+toPemKeyFormat = (fileType, buf) ->
+	result = ''
+
+	result += "-----BEGIN #{fileType}-----\n"
+
+	b64Data = buf.toString('base64')
+	lineLength = 64
+	for lineIndex in [0...Math.ceil(b64Data.length/lineLength)]
+		line = b64Data[(lineLength * lineIndex)...(lineLength * (lineIndex + 1))]
+		result += line
+		result += '\n'
+
+	result += "-----END #{fileType}-----\n"
+
+	return result
+
+fromUint8Array = (uint8s) ->
+	uint8s = new Uint8Array uint8s
+	result = new Buffer(uint8s.length)
+
+	for i in [0...result.length]
+		result[i] = uint8s[i]
+
+	return result
+
+toUint8Array = (buf) ->
+	unless Buffer.isBuffer buf
+		throw new Error "expected Buffer"
+
+	result = new Uint8Array(buf.length)
+
+	for i in [0...result.length]
+		result[i] = buf[i]
+
+	return result
 
 module.exports = {
 	SymmetricEncryptionKey

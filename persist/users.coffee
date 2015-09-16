@@ -129,6 +129,7 @@ class Account
 
 		systemPublicKey = null
 		pwEncryptionKey = null
+		encryptedAccountKey = null
 
 		Async.series [
 			(cb) ->
@@ -177,10 +178,16 @@ class Account
 
 				Fs.writeFile accountKeyFilePath, JSON.stringify(accountKeyData), cb
 			(cb) ->
-				accountRecoveryPath = Path.join(userDir, 'account-recovery')
-
 				# Encrypt account key with system key to allow admins to reset
-				encryptedAccountKey = systemPublicKey.encrypt accountEncryptionKey.export()
+				systemPublicKey.encrypt accountEncryptionKey.export(), (err, result) ->
+					if err
+						cb err
+						return
+
+					encryptedAccountKey = result
+					cb()
+			(cb) ->
+				accountRecoveryPath = Path.join(userDir, 'account-recovery')
 
 				Fs.writeFile accountRecoveryPath, encryptedAccountKey, cb
 			(cb) ->
@@ -310,6 +317,7 @@ class Account
 			pwEncryptionKey = null
 			systemPrivateKey = null
 			systemPublicKey = null
+			accountRecovery = null
 
 			Async.series [
 				(cb) =>
@@ -370,8 +378,14 @@ class Account
 
 					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, cb
 				(cb) =>
-					accountRecovery = systemPublicKey.encrypt(accountKey.export())
+					systemPublicKey.encrypt accountKey.export(), (err, result) =>
+						if err
+							cb err
+							return
 
+						accountRecovery = result
+						cb()
+				(cb) =>
 					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, cb
 				(cb) =>
 					privateInfo = {
@@ -509,6 +523,7 @@ class Account
 		privateInfo = null
 		accountType = null
 		decryptedAccount = null
+		accountRecovery = null
 
 		Async.series [
 			(cb) =>
@@ -529,7 +544,16 @@ class Account
 						cb err
 						return
 
-					accountKeyBuf = PrivateKey.import(loggedInAccount.privateInfo.systemPrivateKey).decrypt buf
+					accountRecovery = buf
+					cb()
+			(cb) =>
+				systemPrivateKey = PrivateKey.import(loggedInAccount.privateInfo.systemPrivateKey)
+
+				systemPrivateKey.decrypt accountRecovery, (err, accountKeyBuf) =>
+					if err
+						cb err
+						return
+
 					accountKey = SymmetricEncryptionKey.import(accountKeyBuf.toString())
 					cb()
 			(cb) =>
@@ -589,6 +613,7 @@ class DecryptedAccount extends Account
 			kdfParams = generateKdfParams()
 			systemPublicKey = null
 			pwEncryptionKey = null
+			accountRecovery = null
 
 			Async.series [
 				(cb) =>
@@ -615,8 +640,14 @@ class DecryptedAccount extends Account
 
 					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, cb
 				(cb) =>
-					accountRecovery = systemPublicKey.encrypt(@_accountKey.export())
+					systemPublicKey.encrypt @_accountKey.export(), (err, result) =>
+						if err
+							cb err
+							return
 
+						accountRecovery = result
+						cb()
+				(cb) =>
 					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, cb
 				(cb) =>
 					privateInfoEncrypted = @_accountKey.encrypt JSON.stringify(@privateInfo)
