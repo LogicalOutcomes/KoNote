@@ -53,34 +53,35 @@ load = (win) ->
 			eventDate = niceDate @props.start, @props.end
 			
 			return R.div({className: 'progEventsWidget'},
-				if format is 'large'
-					R.div({
-						className: format, ref: 'name'
-					},
-						R.div({className: 'title'}, title)
-						R.div({className: 'description'}, renderLineBreaks description)
-						R.div({className: 'date'}, eventDate)
-					)
-				else if format is 'print'
-					R.div({
-						className: format, ref: 'name'
-					},
-						R.div({className: 'title'}, 'Event: ', title)
-						R.div({className: 'date'}, eventDate)
-						R.div({className: 'description'}, renderLineBreaks description)
-					)
-				else
-					R.div({
-						className: format, ref: 'name'
-					},
+				switch format
+					when 'large'
 						R.div({
-							className: 'icon'
+							className: format, ref: 'name'
 						},
-							FaIcon 'calendar'
-							' '
-							title
+							R.div({className: 'title'}, title)
+							R.div({className: 'description'}, renderLineBreaks description)
+							R.div({className: 'date'}, eventDate)
 						)
-					)
+					when 'print'
+						R.div({
+							className: format, ref: 'name'
+						},
+							R.div({className: 'title'}, 'Event: ', title)
+							R.div({className: 'date'}, eventDate)
+							R.div({className: 'description'}, renderLineBreaks description)
+						)
+					else
+						R.div({
+							className: format, ref: 'name'
+						},
+							R.div({
+								className: 'icon'
+							},
+								FaIcon 'calendar'
+								' '
+								title
+							)
+						)
 			)
 	
 	return progEventsWidget
