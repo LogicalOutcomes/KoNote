@@ -226,7 +226,7 @@ class PrivateKey
 				usePromise webCryptoApi.generateKey(
 					{
 						name: 'RSA-OAEP'
-						modulusLength: 4096
+						modulusLength: 3072
 						publicExponent: new Uint8Array([1, 0, 1]) # 65537
 						hash: {name: 'SHA-256'}
 					},
@@ -244,7 +244,7 @@ class PrivateKey
 				usePromise webCryptoApi.generateKey(
 					{
 						name: 'RSASSA-PKCS1-v1_5'
-						modulusLength: 4096
+						modulusLength: 3072
 						publicExponent: new Uint8Array([1, 0, 1]) # 65537
 						hash: {name: 'SHA-256'}
 					},
