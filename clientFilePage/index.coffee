@@ -49,6 +49,7 @@ load = (win, {clientFileId}) ->
 				lockOperation: null
 
 				progressNotes: null
+				progressEvents: null
 				planTargetsById: Imm.Map()
 				metricsById: Imm.Map()
 				loadErrorType: null
@@ -56,7 +57,7 @@ load = (win, {clientFileId}) ->
 			}
 
 		init: ->
-			@_loadData()
+			@_acquireLock @_refreshAllData
 
 		deinit: ->
 			@_killLocks()		
@@ -84,124 +85,6 @@ load = (win, {clientFileId}) ->
 				updatePlan: @_updatePlan
 				createQuickNote: @_createQuickNote
 			})
-
-		_loadData: ->
-			planTargetHeaders = null
-			progNoteHeaders = null
-			progEventHeaders = null
-			metricHeaders = null			
-
-			@setState (state) => {isLoading: true}
-			Async.series [
-				(cb) => @_acquireLock(cb)
-				(cb) =>
-					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
-						if err
-							cb err
-							return
-
-						@setState {
-							clientFile: stripMetadata revisions.get(0)
-						}, cb
-				(cb) =>
-					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						planTargetHeaders = results
-						cb()
-				(cb) =>
-					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
-						targetId = planTargetHeader.get('id')
-						ActiveSession.persist.planTargets.readRevisions clientFileId, targetId, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						@setState {
-							planTargetsById: Imm.List(results)
-							.map (planTargetRevs) =>
-								id = planTargetRevs.getIn([0, 'id'])
-								return [
-									id
-									Imm.Map({id, revisions: planTargetRevs.reverse()})
-								]
-							.fromEntrySeq().toMap()
-						}, cb
-				(cb) =>
-					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						progNoteHeaders = results
-						cb()
-				(cb) =>
-					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
-						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						@setState {
-							progressNotes: Imm.List(results)
-						}, cb
-				(cb) =>
-					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						progEventHeaders = results
-
-						cb()
-				(cb) =>
-					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
-						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						@setState {
-							progressEvents: Imm.List(results)
-						}, cb
-				(cb) =>
-					ActiveSession.persist.metrics.list (err, results) =>
-						if err
-							cb err
-							return
-
-						metricHeaders = results
-						cb()
-				(cb) =>
-					Async.map metricHeaders.toArray(), (metricHeader, cb) =>
-						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						@setState {
-							metricsById: Imm.List(results)
-							.map (metric) =>
-								return [metric.get('id'), metric]
-							.fromEntrySeq().toMap()
-						}, cb				
-			], (err) =>
-				if err
-					if err instanceof Persist.IOError
-						@setState {loadErrorType: 'io-error'}
-						return
-
-					CrashHandler.handle err
-					return
-
-				# OK, all done
-				@setState (state) => {status: 'ready', isLoading: false}
 
 		_acquireLock: (cb=(->)) ->
 			lockFormat = "clientFile-#{clientFileId}"
@@ -241,12 +124,170 @@ load = (win, {clientFileId}) ->
 						cb err
 						return
 				else
+
 					@setState => {
 						clientFileLock: lock
 						isReadOnly: false
 						lockOperation: null
-					}
+					}					
 					cb()
+
+		_refreshAllData: ->
+			console.log "Refreshing all data......"
+
+			planTargetHeaders = null
+			progNoteHeaders = null
+			progEventHeaders = null
+			metricHeaders = null
+
+			clientFileInSync = null
+			planTargetsInSync = null
+			progressNotesInSync = null
+			progressEventsInSync = null
+			metricsByIdInSync = null
+
+			@setState (state) => {isLoading: true}
+			Async.series [
+				(cb) =>
+					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
+						if err
+							cb err
+							return
+
+						console.log "......... Fetching clientFile"
+
+						clientFile = stripMetadata revisions.get(0)
+
+						if @state.clientFile?
+							console.log "Updating clientFile"
+							clientFileInSync = Imm.is clientFile, @state.clientFile
+
+						@setState {clientFile}, cb unless clientFileInSync
+				(cb) =>
+					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						planTargetHeaders = results
+						cb()
+				(cb) =>
+					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
+						targetId = planTargetHeader.get('id')
+						ActiveSession.persist.planTargets.readRevisions clientFileId, targetId, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						planTargetsById = Imm.List(results).map (planTargetRevs) =>
+							id = planTargetRevs.getIn([0, 'id'])
+							return [
+								id
+								Imm.Map({id, revisions: planTargetRevs.reverse()})
+							]
+						.fromEntrySeq().toMap()
+
+						unless @state.planTargetsById.isEmpty()
+							console.log "Updating planTargetsById"
+							planTargetsInSync = Imm.is planTargetsById, @state.planTargetsById
+
+						@setState {planTargetsById}, cb unless planTargetsInSync
+				(cb) =>
+					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						progNoteHeaders = results
+						cb()
+				(cb) =>
+					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
+						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						progressNotes = Imm.List(results)
+
+						if @state.progressNotes?
+							console.log "Updating progressNotes"
+							progressNotesInSync = Imm.is progressNotes, @state.progressNotes
+
+						@setState {progressNotes}, cb unless progressNotesInSync
+				(cb) =>
+					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						progEventHeaders = results
+
+						cb()
+				(cb) =>
+					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
+						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						progressEvents = Imm.List(results)
+
+						if @state.progressEvents?
+							console.log "Updating progressEvents"
+							progressEventsInSync = Imm.is progressEvents, @state.progressEvents
+
+						@setState {progressEvents}, cb unless progressEventsInSync
+				(cb) =>
+					ActiveSession.persist.metrics.list (err, results) =>
+						if err
+							cb err
+							return
+
+						metricHeaders = results
+						cb()
+				(cb) =>
+					Async.map metricHeaders.toArray(), (metricHeader, cb) =>
+						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						metricsById = Imm.List(results)
+						.map (metric) =>
+							return [metric.get('id'), metric]
+						.fromEntrySeq().toMap()
+
+						unless @state.metricsById.isEmpty()
+							metricsByIdInSync = Imm.is metricsById, @state.metricsById
+
+						@setState {metricsById}, cb unless metricsByIdInSync
+			], (err) =>
+				if err
+					if err instanceof Persist.IOError
+						@setState {loadErrorType: 'io-error'}
+						return
+
+					CrashHandler.handle err
+					return
+
+				# OK, all done
+				@setState (state) => {status: 'ready', isLoading: false}		
+
+		_compareRemoteChanges: ->
+			# What do we need to compare?
+			
+			clientFile: null
+			clientFileLock: null
+			isReadOnly: null
+			lockOperation: null
+
+			progressNotes: null
+			planTargetsById: Imm.Map()
+			metricsById: Imm.Map()
 
 		_killLocks: ->
 			if @state.clientFileLock?
@@ -370,7 +411,7 @@ load = (win, {clientFileId}) ->
 
 				'timeout:reactivateWindows': =>
 					console.log "Restoring clientFile lock..."
-					@_acquireLock()
+					@_acquireLock @_refreshAllData
 			}
 
 	ClientFilePageUi = React.createFactory React.createClass
