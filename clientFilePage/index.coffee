@@ -57,7 +57,7 @@ load = (win, {clientFileId}) ->
 			}
 
 		init: ->
-			@_acquireLock @_refreshAllData
+			@_renewAllData()
 
 		deinit: ->
 			@_killLocks()		
@@ -86,6 +86,179 @@ load = (win, {clientFileId}) ->
 				createQuickNote: @_createQuickNote
 			})
 
+		_renewAllData: ->
+			console.log "Renewing all data......"
+
+			planTargetHeaders = null
+			progNoteHeaders = null
+			progEventHeaders = null
+			metricHeaders = null
+
+			clientFileInSync = null
+			planTargetsInSync = null
+			progressNotesInSync = null
+			progressEventsInSync = null
+			metricsByIdInSync = null
+
+			@setState (state) => {isLoading: true}
+			Async.series [
+				(cb) => 
+					unless @state.clientFileLock?
+						console.log "Fetching lock"
+						@_acquireLock(cb)
+					else
+						cb()
+				(cb) =>
+					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
+						if err
+							cb err
+							return
+
+						console.log "Grabbing clientFile...."
+
+						clientFile = stripMetadata revisions.get(0)
+
+						if @state.clientFile?
+							console.log "Updating clientFile"
+							clientFileInSync = Imm.is clientFile, @state.clientFile
+
+						@setState {clientFile} unless clientFileInSync
+						cb()
+				(cb) =>
+					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						console.log "Grabbing planTargetHeaders...."
+
+						planTargetHeaders = results
+						cb()
+				(cb) =>
+					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
+						targetId = planTargetHeader.get('id')
+						ActiveSession.persist.planTargets.readRevisions clientFileId, targetId, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						console.log "Grabbing planTargetsById...."
+
+						planTargetsById = Imm.List(results).map (planTargetRevs) =>
+							id = planTargetRevs.getIn([0, 'id'])
+							return [
+								id
+								Imm.Map({id, revisions: planTargetRevs.reverse()})
+							]
+						.fromEntrySeq().toMap()
+
+						unless @state.planTargetsById.isEmpty()
+							console.log "Updating planTargetsById"
+							planTargetsInSync = Imm.is planTargetsById, @state.planTargetsById
+						
+						@setState {planTargetsById} unless planTargetsInSync
+						cb()
+				(cb) =>
+					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						console.log "Grabbing progNoteHeaders...."
+
+						progNoteHeaders = results
+						cb()
+				(cb) =>
+					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
+						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						console.log "Grabbing progressNotes...."
+
+						progressNotes = Imm.List(results)
+
+						if @state.progressNotes?
+							console.log "Updating progressNotes"
+							progressNotesInSync = Imm.is progressNotes, @state.progressNotes
+
+						@setState {progressNotes} unless progressNotesInSync
+						cb()
+				(cb) =>
+					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						console.log "Grabbing progEventHeaders...."
+
+						progEventHeaders = results
+
+						cb()
+				(cb) =>
+					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
+						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						console.log "Grabbing progressEvents...."
+
+						progressEvents = Imm.List(results)
+
+						if @state.progressEvents?
+							console.log "Updating progressEvents"
+							progressEventsInSync = Imm.is progressEvents, @state.progressEvents
+
+						@setState {progressEvents} unless progressEventsInSync
+						cb()
+				(cb) =>
+					ActiveSession.persist.metrics.list (err, results) =>
+						if err
+							cb err
+							return
+
+						console.log "Grabbing metricHeaders...."
+
+						metricHeaders = results
+						cb()
+				(cb) =>
+					Async.map metricHeaders.toArray(), (metricHeader, cb) =>
+						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						console.log "Grabbing metricsById...."
+
+						metricsById = Imm.List(results)
+						.map (metric) =>
+							return [metric.get('id'), metric]
+						.fromEntrySeq().toMap()
+
+						unless @state.metricsById.isEmpty()
+							console.log "Updating metricsById"
+							metricsByIdInSync = Imm.is metricsById, @state.metricsById
+
+						@setState {metricsById} unless metricsByIdInSync
+						cb()
+			], (err) =>
+				if err
+					if err instanceof Persist.IOError
+						@setState {loadErrorType: 'io-error'}
+						return
+
+					CrashHandler.handle err
+					return
+
+				# OK, all done
+				@setState (state) => {status: 'ready', isLoading: false}		
+
 		_acquireLock: (cb=(->)) ->
 			lockFormat = "clientFile-#{clientFileId}"
 
@@ -113,10 +286,10 @@ load = (win, {clientFileId}) ->
 									# Lock acquisition must've been cancelled
 									cb()
 
-								@setState => {
+								@setState {
 									clientFileLock: newLock
 									isReadOnly: false
-								}
+								}, @_renewAllData
 						}
 
 						cb()
@@ -131,163 +304,6 @@ load = (win, {clientFileId}) ->
 						lockOperation: null
 					}					
 					cb()
-
-		_refreshAllData: ->
-			console.log "Refreshing all data......"
-
-			planTargetHeaders = null
-			progNoteHeaders = null
-			progEventHeaders = null
-			metricHeaders = null
-
-			clientFileInSync = null
-			planTargetsInSync = null
-			progressNotesInSync = null
-			progressEventsInSync = null
-			metricsByIdInSync = null
-
-			@setState (state) => {isLoading: true}
-			Async.series [
-				(cb) =>
-					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
-						if err
-							cb err
-							return
-
-						console.log "......... Fetching clientFile"
-
-						clientFile = stripMetadata revisions.get(0)
-
-						if @state.clientFile?
-							console.log "Updating clientFile"
-							clientFileInSync = Imm.is clientFile, @state.clientFile
-
-						@setState {clientFile}, cb unless clientFileInSync
-				(cb) =>
-					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						planTargetHeaders = results
-						cb()
-				(cb) =>
-					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
-						targetId = planTargetHeader.get('id')
-						ActiveSession.persist.planTargets.readRevisions clientFileId, targetId, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						planTargetsById = Imm.List(results).map (planTargetRevs) =>
-							id = planTargetRevs.getIn([0, 'id'])
-							return [
-								id
-								Imm.Map({id, revisions: planTargetRevs.reverse()})
-							]
-						.fromEntrySeq().toMap()
-
-						unless @state.planTargetsById.isEmpty()
-							console.log "Updating planTargetsById"
-							planTargetsInSync = Imm.is planTargetsById, @state.planTargetsById
-
-						@setState {planTargetsById}, cb unless planTargetsInSync
-				(cb) =>
-					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						progNoteHeaders = results
-						cb()
-				(cb) =>
-					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
-						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						progressNotes = Imm.List(results)
-
-						if @state.progressNotes?
-							console.log "Updating progressNotes"
-							progressNotesInSync = Imm.is progressNotes, @state.progressNotes
-
-						@setState {progressNotes}, cb unless progressNotesInSync
-				(cb) =>
-					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						progEventHeaders = results
-
-						cb()
-				(cb) =>
-					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
-						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						progressEvents = Imm.List(results)
-
-						if @state.progressEvents?
-							console.log "Updating progressEvents"
-							progressEventsInSync = Imm.is progressEvents, @state.progressEvents
-
-						@setState {progressEvents}, cb unless progressEventsInSync
-				(cb) =>
-					ActiveSession.persist.metrics.list (err, results) =>
-						if err
-							cb err
-							return
-
-						metricHeaders = results
-						cb()
-				(cb) =>
-					Async.map metricHeaders.toArray(), (metricHeader, cb) =>
-						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						metricsById = Imm.List(results)
-						.map (metric) =>
-							return [metric.get('id'), metric]
-						.fromEntrySeq().toMap()
-
-						unless @state.metricsById.isEmpty()
-							metricsByIdInSync = Imm.is metricsById, @state.metricsById
-
-						@setState {metricsById}, cb unless metricsByIdInSync
-			], (err) =>
-				if err
-					if err instanceof Persist.IOError
-						@setState {loadErrorType: 'io-error'}
-						return
-
-					CrashHandler.handle err
-					return
-
-				# OK, all done
-				@setState (state) => {status: 'ready', isLoading: false}		
-
-		_compareRemoteChanges: ->
-			# What do we need to compare?
-			
-			clientFile: null
-			clientFileLock: null
-			isReadOnly: null
-			lockOperation: null
-
-			progressNotes: null
-			planTargetsById: Imm.Map()
-			metricsById: Imm.Map()
 
 		_killLocks: ->
 			if @state.clientFileLock?
@@ -410,8 +426,7 @@ load = (win, {clientFileId}) ->
 					@_killLocks()
 
 				'timeout:reactivateWindows': =>
-					console.log "Restoring clientFile lock..."
-					@_acquireLock @_refreshAllData
+					@_renewAllData()
 			}
 
 	ClientFilePageUi = React.createFactory React.createClass
