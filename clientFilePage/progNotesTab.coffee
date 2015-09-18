@@ -214,7 +214,7 @@ load = (win) ->
 							{
 								format: 'progNote'
 								data: @props.progNote
-								events: @props.progEvents
+								progEvents: @props.progEvents
 								clientFile: @props.clientFile
 							}
 						]
@@ -289,22 +289,19 @@ load = (win) ->
 									)									
 								)
 					).toJS()...
-						(@props.progEvents.map (progEvent) =>
-							R.div({}
-								R.h3({},
-									"#{Term 'Event'}"
-								)
+
+					unless @props.progEvents.isEmpty()
+						R.div({className: 'progEvents'}
+							R.h3({}, Term 'Events')
+							(@props.progEvents.map (progEvent) =>								
 								ProgEventsWidget({
 									format: 'large'
-									title: progEvent.get('title')
-									description: progEvent.get('description')
-									start: progEvent.get('startTimestamp')
-									end: progEvent.get('endTimestamp')
+									data: progEvent
 								})
-							)
-					).toJS()...
-					)
+							).toJS()...
+						)						
 				)
+			)
 		_selectBasicSection: (section) ->
 			@props.setSelectedItem Imm.fromJS {
 				type: 'basicSection'

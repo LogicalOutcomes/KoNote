@@ -58,7 +58,7 @@ load = (win, {dataSet}) ->
 				(@props.printDataSet.map (printObj) =>					
 					clientFile = printObj.get('clientFile')
 					data = printObj.get('data')
-					events = printObj.get('events')
+					progEvents = printObj.get('progEvents')
 					title = null
 
 					R.div({className: 'printObj'},
@@ -74,13 +74,13 @@ load = (win, {dataSet}) ->
 										BasicProgNoteView({
 											progNote: data
 											clientFile
-											events
+											progEvents
 										})
 									when 'full'
 										FullProgNoteView({
 											progNote: data
 											clientFile
-											events
+											progEvents
 										})
 									else
 										throw new Error "Unknown progNote type: #{progNote.get('type')}"
@@ -89,7 +89,7 @@ load = (win, {dataSet}) ->
 									title: "Care Plan"
 									data
 									clientFile
-									events
+									progEvents
 								})
 							else
 								throw new Error "Unknown print-data type: #{setType}"
@@ -228,17 +228,19 @@ load = (win, {dataSet}) ->
 								)
 					).toJS()...
 				)
-				(@props.events.map (progEvent) =>
-					R.div({}
-						ProgEventsWidget({
-							format: 'print'
-							title: progEvent.get('title')
-							description: progEvent.get('description')
-							start: progEvent.get('startTimestamp')
-							end: progEvent.get('endTimestamp')
-						})
+				(unless @props.progEvents.isEmpty()
+					R.div({className: 'progEvents'},
+						R.h3({}, Term 'Events')
+						(@props.progEvents.map (progEvent) =>
+							R.div({}
+								ProgEventsWidget({
+									format: 'print'
+									data: progEvent
+								})
+							)
+						).toJS()...
 					)
-				).toJS()...
+				)
 			)
 
 	SinglePlanView = React.createFactory React.createClass
@@ -279,17 +281,19 @@ load = (win, {dataSet}) ->
 						)
 					).toJS()...
 				)
-				(@props.events.map (progEvent) =>
-					R.div({}
-						ProgEventsWidget({
-							format: 'print'
-							title: progEvent.get('title')
-							description: progEvent.get('description')
-							start: progEvent.get('startTimestamp')
-							end: progEvent.get('endTimestamp')
-						})
+				(unless @props.progEvents.isEmpty()
+					R.div({className: 'progEvents'},
+						R.h3({}, Term 'Events')
+						(@props.progEvents.map (progEvent) =>
+							R.div({}
+								ProgEventsWidget({
+									format: 'print'
+									data: progEvent
+								})
+							)
+						).toJS()...
 					)
-				).toJS()...
+				)
 			)
 
 	return PrintPreviewPage

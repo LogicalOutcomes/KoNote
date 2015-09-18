@@ -125,10 +125,7 @@ load = (win) ->
 								entry.get('progEvents').map (progEvent) =>
 									ProgEventsWidget({
 										format: 'small'
-										title: progEvent.get('title')
-										description: progEvent.get('description')
-										start: progEvent.get('startTimestamp')
-										end: progEvent.get('endTimestamp')
+										data: progEvent
 									})
 							)
 						)
