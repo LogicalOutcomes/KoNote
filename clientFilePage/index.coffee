@@ -118,9 +118,8 @@ load = (win, {clientFileId}) ->
 
 						clientFile = stripMetadata revisions.get(0)
 
-						if @state.clientFile?
-							console.log "Updating clientFile"
-							clientFileInSync = Imm.is clientFile, @state.clientFile
+						if @state.clientFile?							
+							clientFileInSync = Imm.is clientFile, @state.clientFileq							
 
 						@setState {clientFile} unless clientFileInSync
 						cb()
@@ -154,8 +153,12 @@ load = (win, {clientFileId}) ->
 						.fromEntrySeq().toMap()
 
 						unless @state.planTargetsById.isEmpty()
-							console.log "Updating planTargetsById"
 							planTargetsInSync = Imm.is planTargetsById, @state.planTargetsById
+							console.log "Updating planTargetsById" unless planTargetsInSync
+
+							msg = "planTab has unsaved changes"
+							msg += " and has been re-rendered" unless planTargetsInSync
+							Bootbox.alert "planTab has unsaved changes" if @refs.ui.tabHasChanges('planTab')
 						
 						@setState {planTargetsById} unless planTargetsInSync
 						cb()
@@ -181,9 +184,9 @@ load = (win, {clientFileId}) ->
 
 						progressNotes = Imm.List(results)
 
-						if @state.progressNotes?
-							console.log "Updating progressNotes"
+						if @state.progressNotes?							
 							progressNotesInSync = Imm.is progressNotes, @state.progressNotes
+							console.log "Updating progressNotes" unless progressNotesInSync
 
 						@setState {progressNotes} unless progressNotesInSync
 						cb()
@@ -210,9 +213,9 @@ load = (win, {clientFileId}) ->
 
 						progressEvents = Imm.List(results)
 
-						if @state.progressEvents?
-							console.log "Updating progressEvents"
+						if @state.progressEvents?							
 							progressEventsInSync = Imm.is progressEvents, @state.progressEvents
+							console.log "Updating progressEvents" unless progressEventsInSync
 
 						@setState {progressEvents} unless progressEventsInSync
 						cb()
@@ -241,9 +244,9 @@ load = (win, {clientFileId}) ->
 							return [metric.get('id'), metric]
 						.fromEntrySeq().toMap()
 
-						unless @state.metricsById.isEmpty()
-							console.log "Updating metricsById"
+						unless @state.metricsById.isEmpty()							
 							metricsByIdInSync = Imm.is metricsById, @state.metricsById
+							console.log "Updating metricsById" unless metricsByIdInSync
 
 						@setState {metricsById} unless metricsByIdInSync
 						cb()
@@ -439,6 +442,9 @@ load = (win, {clientFileId}) ->
 
 		componentWillMount: ->
 			@props.maximizeWindow()
+
+		tabHasChanges: (component) ->
+			@refs[component].hasChanges()
 
 		suggestClose: ->
 			# If page still loading
