@@ -32,7 +32,9 @@ load = (win, {dataSet}) ->
 			}
 
 		init: -> # Do nothing
-		deinit: -> # Do nothing
+		deinit: (cb=(->)) ->
+			# Do nothing
+			cb()
 
 		suggestClose: ->
 			@props.closeWindow()

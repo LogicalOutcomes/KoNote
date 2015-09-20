@@ -32,8 +32,8 @@ load = (win) ->
 		init: ->
 			@_checkSetUp()
 
-		deinit: ->
-			@setState {isLoading: false}
+		deinit: (cb=(->)) ->
+			@setState {isLoading: false}, cb
 
 		suggestClose: ->
 			@props.closeWindow()

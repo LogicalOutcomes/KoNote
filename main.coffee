@@ -77,20 +77,18 @@ init = (win) ->
 		pageComponentClass = require(pageModulePath).load(win, requestedPage)
 
 		# Render page in window
-		pageComponent = React.render pageComponentClass({		
+		pageComponent = React.render pageComponentClass({
 			navigateTo: (pageParams) =>
-				pageComponent.deinit()
-				unregisterPageListeners() if isLoggedIn
-				React.unmountComponentAtNode containerElem
-
-				win.location.href = "main.html?" + QueryString.stringify(pageParams)
+				pageComponent.deinit ->
+					unregisterPageListeners() if isLoggedIn
+					React.unmountComponentAtNode containerElem
+					win.location.href = "main.html?" + QueryString.stringify(pageParams)
 
 			closeWindow: =>
-				pageComponent.deinit()
-				unregisterPageListeners() if isLoggedIn
-				React.unmountComponentAtNode containerElem
-
-				nwWin.close true
+				pageComponent.deinit ->
+					unregisterPageListeners() if isLoggedIn
+					React.unmountComponentAtNode containerElem
+					nwWin.close true
 
 			maximizeWindow: =>
 				nwWin.maximize()

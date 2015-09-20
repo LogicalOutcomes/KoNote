@@ -36,8 +36,9 @@ load = (win) ->
 		init: ->
 			@_loadData()
 
-		deinit: ->
+		deinit: (cb=(->)) ->
 			# Nothing need be done
+			cb()
 
 		suggestClose: ->
 			@props.closeWindow()

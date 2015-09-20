@@ -29,6 +29,7 @@ load = (win, {clientFileId}) ->
 	React = win.React
 	R = React.DOM
 	Gui = win.require 'nw.gui'
+	nwWin = Gui.Window.get(win)
 	CrashHandler = require('../crashHandler').load(win)
 	Spinner = require('../spinner').load(win)
 	BrandWidget = require('../brandWidget').load(win)
@@ -59,8 +60,8 @@ load = (win, {clientFileId}) ->
 		init: ->
 			@_renewAllData()
 
-		deinit: ->
-			@_killLocks()		
+		deinit: (cb=(->)) ->
+			@_killLocks cb
 
 		suggestClose: ->
 			@refs.ui.suggestClose()
@@ -86,6 +87,39 @@ load = (win, {clientFileId}) ->
 				createQuickNote: @_createQuickNote
 			})
 
+		_handleDataSync: (newData, oldData) ->
+			return if Imm.is newData, oldData
+
+			if @refs.ui.hasChanges()
+				clientName = renderName @state.clientFile.get('clientName')
+				console.log "Unsaved Changes! Triggering dialog...."
+
+				@_killLocks =>
+					@setState {isReadOnly: "Please back up your changes and reopen the #{Term 'client file'}"}, =>
+						Bootbox.dialog({
+							title: "Client File Unsynchronized"
+							message: "The #{Term 'client file'} data for #{clientName} has been changed
+							elsewhere since you first opened their file.\n\n
+							Would you like to back up your recent unsaved changes?"
+							buttons: {
+								cancel: {
+									label: "No Thanks"
+									className: 'btn-default'
+									callback: @_reloadWindow
+								}
+								success: {
+									label: "Yes Please"
+									className: 'btn-success'
+								}
+							}
+						})
+			else
+				@_reloadWindow()
+
+		_reloadWindow: ->
+			console.log "Reloading window......"
+			@_killLocks nwWin.reloadIgnoringCache
+
 		_renewAllData: ->
 			console.log "Renewing all data......"
 
@@ -94,18 +128,11 @@ load = (win, {clientFileId}) ->
 			progEventHeaders = null
 			metricHeaders = null
 
-			clientFileInSync = null
-			planTargetsInSync = null
-			progressNotesInSync = null
-			progressEventsInSync = null
-			metricsByIdInSync = null
-
 			@setState (state) => {isLoading: true}
 			Async.series [
 				(cb) => 
 					unless @state.clientFileLock?
-						console.log "Fetching lock"
-						@_acquireLock(cb)
+						@_acquireLock cb
 					else
 						cb()
 				(cb) =>
@@ -114,22 +141,18 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						console.log "Grabbing clientFile...."
-
 						clientFile = stripMetadata revisions.get(0)
 
-						if @state.clientFile?							
-							clientFileInSync = Imm.is clientFile, @state.clientFileq							
+						if @state.clientFile?
+							@_handleDataSync clientFile, @state.clientFile
 
-						@setState {clientFile} unless clientFileInSync
+						@setState {clientFile}
 						cb()
 				(cb) =>
 					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
 						if err
 							cb err
 							return
-
-						console.log "Grabbing planTargetHeaders...."
 
 						planTargetHeaders = results
 						cb()
@@ -142,8 +165,6 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						console.log "Grabbing planTargetsById...."
-
 						planTargetsById = Imm.List(results).map (planTargetRevs) =>
 							id = planTargetRevs.getIn([0, 'id'])
 							return [
@@ -153,22 +174,15 @@ load = (win, {clientFileId}) ->
 						.fromEntrySeq().toMap()
 
 						unless @state.planTargetsById.isEmpty()
-							planTargetsInSync = Imm.is planTargetsById, @state.planTargetsById
-							console.log "Updating planTargetsById" unless planTargetsInSync
+							@_handleDataSync planTargetsById, @state.planTargetsById
 
-							msg = "planTab has unsaved changes"
-							msg += " and has been re-rendered" unless planTargetsInSync
-							Bootbox.alert "planTab has unsaved changes" if @refs.ui.tabHasChanges('planTab')
-						
-						@setState {planTargetsById} unless planTargetsInSync
+						@setState {planTargetsById}
 						cb()
 				(cb) =>
 					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
 						if err
 							cb err
 							return
-
-						console.log "Grabbing progNoteHeaders...."
 
 						progNoteHeaders = results
 						cb()
@@ -180,23 +194,18 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						console.log "Grabbing progressNotes...."
-
 						progressNotes = Imm.List(results)
 
-						if @state.progressNotes?							
-							progressNotesInSync = Imm.is progressNotes, @state.progressNotes
-							console.log "Updating progressNotes" unless progressNotesInSync
+						if @state.progressNotes?
+							@_handleDataSync progressNotes, @state.progressNotes
 
-						@setState {progressNotes} unless progressNotesInSync
+						@setState {progressNotes}
 						cb()
 				(cb) =>
 					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
 						if err
 							cb err
 							return
-
-						console.log "Grabbing progEventHeaders...."
 
 						progEventHeaders = results
 
@@ -209,23 +218,19 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						console.log "Grabbing progressEvents...."
-
 						progressEvents = Imm.List(results)
 
-						if @state.progressEvents?							
-							progressEventsInSync = Imm.is progressEvents, @state.progressEvents
-							console.log "Updating progressEvents" unless progressEventsInSync
+						if @state.progressEvents?
+							@_handleDataSync progressEvents, @state.progressEvents
 
-						@setState {progressEvents} unless progressEventsInSync
+
+						@setState {progressEvents}
 						cb()
 				(cb) =>
 					ActiveSession.persist.metrics.list (err, results) =>
 						if err
 							cb err
 							return
-
-						console.log "Grabbing metricHeaders...."
 
 						metricHeaders = results
 						cb()
@@ -237,18 +242,15 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						console.log "Grabbing metricsById...."
-
 						metricsById = Imm.List(results)
 						.map (metric) =>
 							return [metric.get('id'), metric]
 						.fromEntrySeq().toMap()
 
-						unless @state.metricsById.isEmpty()							
-							metricsByIdInSync = Imm.is metricsById, @state.metricsById
-							console.log "Updating metricsById" unless metricsByIdInSync
+						unless @state.metricsById.isEmpty()
+							@_handleDataSync metricsById, @state.metricsById
 
-						@setState {metricsById} unless metricsByIdInSync
+						@setState {metricsById}
 						cb()
 			], (err) =>
 				if err
@@ -285,14 +287,14 @@ load = (win, {clientFileId}) ->
 									new win.Notification "#{clientName} file unlocked", {
 										body: "You now have the read/write permissions for this #{Term 'client file'}"
 									}
+									@setState {
+										clientFileLock: newLock
+										isReadOnly: false
+									}, @_renewAllData
 								else
-									# Lock acquisition must've been cancelled
-									cb()
+									console.log "acquireWhenFree operation cancelled"
 
-								@setState {
-									clientFileLock: newLock
-									isReadOnly: false
-								}, @_renewAllData
+								cb()								
 						}
 
 						cb()
@@ -308,15 +310,16 @@ load = (win, {clientFileId}) ->
 					}					
 					cb()
 
-		_killLocks: ->
+		_killLocks: (cb=(->)) ->
+			console.log "Killing locks...."
 			if @state.clientFileLock?
 				@state.clientFileLock.release(=>
-					@setState => {
-						clientFileLock: null
-					}
+					@setState {clientFileLock: null}, ->
+						console.log "Lock killed!"
+						cb()
 				)
 			if @state.lockOperation?
-				@state.lockOperation.cancel()
+				@state.lockOperation.cancel cb
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
 			@setState (state) => {isLoading: true}
@@ -425,8 +428,8 @@ load = (win, {clientFileId}) ->
 				'create:metric': (newMetric) =>
 					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
 
-				'timeout:timedOut': =>
-					@_killLocks()
+				'timeout:timedOut': =>					
+					@_killLocks Bootbox.hideAll
 
 				'timeout:reactivateWindows': =>
 					@_renewAllData()
@@ -443,8 +446,10 @@ load = (win, {clientFileId}) ->
 		componentWillMount: ->
 			@props.maximizeWindow()
 
-		tabHasChanges: (component) ->
-			@refs[component].hasChanges()
+		hasChanges: ->
+			# Eventually this will cover more
+			# components where unsaved changes can occur
+			@refs.planTab.hasChanges()
 
 		suggestClose: ->
 			# If page still loading
@@ -510,7 +515,7 @@ load = (win, {clientFileId}) ->
 				Spinner({isOverlay: true, isVisible: @props.isLoading})
 				(if @props.isReadOnly
 					ReadOnlyNotice({
-						isReadOnly: @props.isReadOnly
+						metadata: @props.isReadOnly
 					})
 				)
 				R.div({className: 'wrapper'},
@@ -630,18 +635,18 @@ load = (win, {clientFileId}) ->
 	ReadOnlyNotice = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
-			lockOwner = @props.isReadOnly.userName
-
 			return R.div({
 				className: 'readOnlyNotice'
-			}, 
+			},				
 				R.div({className: 'notice'},
-					(if lockOwner is global.ActiveSession.userName
-						"You already have this file open in another window"
-					else
-						"File currently in use by username: "
-						R.span({className: 'lockOwner'}, lockOwner)
-					)
+					if typeof @props.metadata is 'string'
+						@props.metadata
+					else				
+						lockOwner = @props.metadata.userName
+						if lockOwner is global.ActiveSession.userName
+							"You already have this file open in another window"
+						else
+							"File currently in use by username: \"lockOwner\""
 				)
 				R.div({className: 'mode'}, "Read-Only Mode")
 			)

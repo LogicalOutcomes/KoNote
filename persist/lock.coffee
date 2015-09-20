@@ -114,7 +114,11 @@ class Lock
 				cb null, newLock
 		)
 
-		return {cancel: => isCancelled = true}
+		return {
+			cancel: (cb=(->)) -> 
+				isCancelled = true
+				cb()
+		}
 
 	@_cleanIfStale: (session, lockId, cb) ->
 		dataDir = session.dataDirectory
