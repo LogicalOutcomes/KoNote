@@ -87,46 +87,18 @@ load = (win, {clientFileId}) ->
 				createQuickNote: @_createQuickNote
 			})
 
-		_handleDataSync: (newData, oldData) ->
-			return if Imm.is newData, oldData
-
-			if @refs.ui.hasChanges()
-				clientName = renderName @state.clientFile.get('clientName')
-				console.log "Unsaved Changes! Triggering dialog...."
-
-				@_killLocks =>
-					@setState {isReadOnly: "Please back up your changes and reopen the #{Term 'client file'}"}, =>
-						Bootbox.dialog({
-							title: "Client File Unsynchronized"
-							message: "The #{Term 'client file'} data for #{clientName} has been changed
-							elsewhere since you first opened their file.\n\n
-							Would you like to back up your recent unsaved changes?"
-							buttons: {
-								cancel: {
-									label: "No Thanks"
-									className: 'btn-default'
-									callback: @_reloadWindow
-								}
-								success: {
-									label: "Yes Please"
-									className: 'btn-success'
-								}
-							}
-						})
-			else
-				@_reloadWindow()
-
-		_reloadWindow: ->
-			console.log "Reloading window......"
-			@_killLocks nwWin.reloadIgnoringCache
-
 		_renewAllData: ->
 			console.log "Renewing all data......"
 
-			planTargetHeaders = null
-			progNoteHeaders = null
-			progEventHeaders = null
-			metricHeaders = null
+			clientFile =
+			planTargetsById =
+			planTargetHeaders =
+			progNoteHeaders =
+			progressNotes =
+			progEventHeaders =
+			progressEvents =
+			metricHeaders =
+			metricsById = null
 
 			@setState (state) => {isLoading: true}
 			Async.series [
@@ -142,11 +114,6 @@ load = (win, {clientFileId}) ->
 							return
 
 						clientFile = stripMetadata revisions.get(0)
-
-						if @state.clientFile?
-							@_handleDataSync clientFile, @state.clientFile
-
-						@setState {clientFile}
 						cb()
 				(cb) =>
 					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
@@ -173,10 +140,6 @@ load = (win, {clientFileId}) ->
 							]
 						.fromEntrySeq().toMap()
 
-						unless @state.planTargetsById.isEmpty()
-							@_handleDataSync planTargetsById, @state.planTargetsById
-
-						@setState {planTargetsById}
 						cb()
 				(cb) =>
 					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
@@ -195,11 +158,6 @@ load = (win, {clientFileId}) ->
 							return
 
 						progressNotes = Imm.List(results)
-
-						if @state.progressNotes?
-							@_handleDataSync progressNotes, @state.progressNotes
-
-						@setState {progressNotes}
 						cb()
 				(cb) =>
 					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
@@ -208,7 +166,6 @@ load = (win, {clientFileId}) ->
 							return
 
 						progEventHeaders = results
-
 						cb()
 				(cb) =>
 					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
@@ -219,12 +176,6 @@ load = (win, {clientFileId}) ->
 							return
 
 						progressEvents = Imm.List(results)
-
-						if @state.progressEvents?
-							@_handleDataSync progressEvents, @state.progressEvents
-
-
-						@setState {progressEvents}
 						cb()
 				(cb) =>
 					ActiveSession.persist.metrics.list (err, results) =>
@@ -247,10 +198,6 @@ load = (win, {clientFileId}) ->
 							return [metric.get('id'), metric]
 						.fromEntrySeq().toMap()
 
-						unless @state.metricsById.isEmpty()
-							@_handleDataSync metricsById, @state.metricsById
-
-						@setState {metricsById}
 						cb()
 			], (err) =>
 				if err
@@ -262,7 +209,16 @@ load = (win, {clientFileId}) ->
 					return
 
 				# OK, all done
-				@setState (state) => {status: 'ready', isLoading: false}		
+				@setState {
+					status: 'ready'
+					isLoading: false
+
+					clientFile
+					planTargetsById
+					progressNotes
+					progressEvents
+					metricsById
+				}		
 
 		_acquireLock: (cb=(->)) ->
 			lockFormat = "clientFile-#{clientFileId}"
