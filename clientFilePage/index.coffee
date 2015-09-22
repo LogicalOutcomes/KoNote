@@ -225,6 +225,8 @@ load = (win, {clientFileId}) ->
 
 				# Trigger readOnly mode when hasChanges and unsynced
 				if @state.clientFile? and @refs.ui.hasChanges() and fileIsUnsync
+					console.log "Handling remote changes vs local changes..."
+
 					@setState {
 						isLoading: false
 						readOnlyData: {
@@ -252,12 +254,12 @@ load = (win, {clientFileId}) ->
 						}
 				else
 					# OK, load in clientFile state data!
-					@setState {
-						clientFile
-						planTargetsById
+					@setState => {
+						clientFile						
 						progressNotes
 						progressEvents
 						metricsById
+						planTargetsById
 
 						isLoading: false
 						status: 'ready'
