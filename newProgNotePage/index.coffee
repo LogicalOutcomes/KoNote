@@ -49,7 +49,8 @@ load = (win, {clientFileId}) ->
 		init: ->
 			@_loadData()
 
-		deinit: ->
+		deinit: (cb=(->)) ->
+			cb()
 			# Nothing need be done
 
 		getPageListeners: -> {}

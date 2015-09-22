@@ -227,8 +227,6 @@ load = (win) ->
 										@state.selectedMetricIds, @state.metricIdsWithData
 									)
 
-									console.log allMetricsSelected
-
 									R.label({},
 										R.input({
 											type: 'checkbox'

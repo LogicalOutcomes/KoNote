@@ -1,67 +1,47 @@
-.large
-	display flex
-	max-width 100%
+.progEventsWidget	
+	
+	&.large, &.print
+		margin-top 15px
+		padding-left 25px
+		
+		.title
+			font-weight 600
+			font-size 18px
+			
+			> .fa
+				float left
+				margin-left -25px
+				color #07488b
 
-	> .large-container
-		padding 5px 0
-		font-size 14px
-		color #337ab7
+		.description			
+			color #000
 
-		> .title
-			font-size 16px
-
-		> .description
+		.date
 			color #888
+			
+	// Black & White printing
+	&.print
+		.fa
+			color #000 !important
 
-		> .date
-			color #888
-			padding 5px
+	&.small
+		display inline-block
+		
+		.progEventContainer
+			align-items center
+			height 30px
+			background #528a1b
+			border-radius 3px
+			color white
+			padding 5px 10px
+			margin 8px
+			margin-left 0px
+			
+			font-size 14px
+			
+			> .fa
+				margin-right 8px
 
-.print
-	display flex
-	max-width 100%
-
-	> .print-container
-		color #000
-		margin-top 20px
-
-		> .title
-			font-size 22px
-			font-weight 400
-
-		> .date
-			padding 2px
-
-		> .description
-			color #222
-			padding 2px
-
-.small
-	display flex
-	max-width 100%
-
-	> .small-container
-		align-items center
-		height 30px
-		background hsl(202, 95%, 74%)
-		border-radius 3px
-		color white
-		padding 5px
-		margin 4px
-		margin-left -4px
-		font-size 14px
-
-	> .icon
-		flex-shrink 0
-		width 30px
-		text-align center
-		overflow hidden
-		white-space nowrap
-		text-overflow ellipsis
-		padding 0 9px 0 3px
-		color white
-		font-weight 700
-		line-height 30px
-
-.tooltip-inner
-	max-width: 300px;
+	// Hover Tooltip
+	.tooltip-inner
+		max-width: 300px;
