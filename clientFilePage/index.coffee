@@ -274,7 +274,7 @@ load = (win, {clientFileId}) ->
 						console.log "Lock killed!"
 						cb()
 				)
-			if @state.lockOperation?
+			else if @state.lockOperation?
 				@state.lockOperation.cancel cb
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
