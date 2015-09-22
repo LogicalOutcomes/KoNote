@@ -221,7 +221,7 @@ load = (win, {clientFileId}) ->
 					return
 
 				# Trigger readOnly mode when hasChanges and unsynced
-				if @refs.ui.hasChanges() and fileIsUnsync
+				if @state.clientFile? and @refs.ui.hasChanges() and fileIsUnsync
 					@setState {
 						isLoading: false
 						readOnlyData: {
