@@ -102,7 +102,7 @@ load = (win, {clientFileId}) ->
 			metricsById = null
 
 			checkFileSync = (newData, oldData) => 
-				if not fileIsUnsync then fileIsUnsync = Imm.is oldData, newData
+				unless fileIsUnsync then fileIsUnsync = Imm.is oldData, newData
 
 			# Begin the clientFile data load process
 			@setState (state) => {isLoading: true}
@@ -245,7 +245,7 @@ load = (win, {clientFileId}) ->
 									className: 'btn-warning'
 									callback: => @props.refreshWindow()
 								}
-							}							
+							}
 						}
 				else
 					# OK, load in clientFile state data!
@@ -425,7 +425,7 @@ load = (win, {clientFileId}) ->
 				'create:metric': (newMetric) =>
 					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
 
-				'timeout:timedOut': =>					
+				'timeout:timedOut': =>
 					@_killLocks Bootbox.hideAll
 
 				'timeout:reactivateWindows': =>
