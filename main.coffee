@@ -59,9 +59,8 @@ init = (win) ->
 
 	containerElem = document.getElementById('container')
 
-	pageComponent = null	
-	isLoggedIn = null
-	
+	pageComponent =
+	isLoggedIn =
 	allListeners = null
 
 	process.nextTick =>
@@ -90,11 +89,19 @@ init = (win) ->
 					React.unmountComponentAtNode containerElem
 					nwWin.close true
 
+			refreshWindow: =>
+				pageComponent.deinit ->
+					unregisterPageListeners() if isLoggedIn
+					nwWin.removeListener 'close', onWindowCloseEvent
+					React.unmountComponentAtNode containerElem
+					nwWin.reloadIgnoringCache()
+
 			maximizeWindow: =>
 				nwWin.maximize()
 
 			setWindowTitle: (newTitle) =>
 				nwWin.title = newTitle
+
 		}), containerElem
 
 	initPage = =>
