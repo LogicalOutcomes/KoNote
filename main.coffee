@@ -84,13 +84,13 @@ init = (win) ->
 					win.location.href = "main.html?" + QueryString.stringify(pageParams)
 
 			closeWindow: =>
-				pageComponent.deinit ->
+				pageComponent.deinit =>
 					unregisterPageListeners() if isLoggedIn
 					React.unmountComponentAtNode containerElem
 					nwWin.close true
 
 			refreshWindow: =>
-				pageComponent.deinit ->
+				pageComponent.deinit =>
 					unregisterPageListeners() if isLoggedIn
 					nwWin.removeListener 'close', onWindowCloseEvent
 					React.unmountComponentAtNode containerElem

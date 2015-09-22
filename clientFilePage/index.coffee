@@ -105,7 +105,7 @@ load = (win, {clientFileId}) ->
 			metricsById = null
 
 			checkFileSync = (newData, oldData) => 
-				unless fileIsUnsync then fileIsUnsync = Imm.is oldData, newData
+				unless fileIsUnsync then fileIsUnsync = not Imm.is oldData, newData
 
 			# Begin the clientFile data load process
 			@setState (state) => {isLoading: true}
@@ -223,6 +223,11 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
+				console.log "@state.clientFile?", @state.clientFile?
+				if !!@refs.ui
+					console.log "@refs.ui.hasChanges()", @refs.ui.hasChanges()
+				console.log "fileIsUnsync", fileIsUnsync
+
 				# Trigger readOnly mode when hasChanges and unsynced
 				if @state.clientFile? and @refs.ui.hasChanges() and fileIsUnsync
 					console.log "Handling remote changes vs local changes..."
@@ -236,17 +241,18 @@ load = (win, {clientFileId}) ->
 					}, =>
 						clientName = renderName @state.clientFile.get('clientName')
 						Bootbox.dialog {
-							title: "Reload #{Term 'Client File'}?"
-							message: "The #{Term 'client file'} data for #{clientName} has fallen
-							out of sync with the remote database, and you have unsaved changes.
+							title: "Refresh #{Term 'Client File'}?"
+							message: "This #{Term 'client file'} for #{clientName} has been
+							revised since your session timed out. This #{Term 'file'}
+							must be refreshed, and your unsaved changes will be lost! 
 							What would you like to do?"
 							buttons: {
 								cancel: {
-									label: "Back up my changes first"
+									label: "I'll back up my changes first"
 									className: 'btn-success'
 								}
-								success: {								
-									label: "Reload #{Term 'client file'}"
+								success: {
+									label: "Reload #{Term 'client file'} now"
 									className: 'btn-warning'
 									callback: => @props.refreshWindow()
 								}
@@ -254,6 +260,7 @@ load = (win, {clientFileId}) ->
 						}
 				else
 					# OK, load in clientFile state data!
+					console.log "Restored clientFile data to @state"
 					@setState => {
 						clientFile						
 						progressNotes
@@ -452,7 +459,10 @@ load = (win, {clientFileId}) ->
 		hasChanges: ->
 			# Eventually this will cover more
 			# components where unsaved changes can occur
-			@refs.planTab.hasChanges()
+			if @refs.planTab?
+				@refs.planTab.hasChanges()
+			else
+				false
 
 		suggestClose: ->
 			# If page still loading
@@ -521,9 +531,9 @@ load = (win, {clientFileId}) ->
 			return R.div({className: 'clientFilePage'},
 				Spinner({isOverlay: true, isVisible: @props.isLoading})
 
-				if isReadOnly
+				(if isReadOnly
 					ReadOnlyNotice {data: @props.readOnlyData}
-
+				)
 				R.div({className: 'wrapper'},					
 					Sidebar({						
 						clientName
