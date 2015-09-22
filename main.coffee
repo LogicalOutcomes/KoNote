@@ -59,9 +59,8 @@ init = (win) ->
 
 	containerElem = document.getElementById('container')
 
-	pageComponent = null	
-	isLoggedIn = null
-	
+	pageComponent =
+	isLoggedIn =
 	allListeners = null
 
 	process.nextTick =>
@@ -77,26 +76,32 @@ init = (win) ->
 		pageComponentClass = require(pageModulePath).load(win, requestedPage)
 
 		# Render page in window
-		pageComponent = React.render pageComponentClass({		
+		pageComponent = React.render pageComponentClass({
 			navigateTo: (pageParams) =>
-				pageComponent.deinit()
-				unregisterPageListeners() if isLoggedIn
-				React.unmountComponentAtNode containerElem
-
-				win.location.href = "main.html?" + QueryString.stringify(pageParams)
+				pageComponent.deinit ->
+					unregisterPageListeners() if isLoggedIn
+					React.unmountComponentAtNode containerElem
+					win.location.href = "main.html?" + QueryString.stringify(pageParams)
 
 			closeWindow: =>
-				pageComponent.deinit()
-				unregisterPageListeners() if isLoggedIn
-				React.unmountComponentAtNode containerElem
+				pageComponent.deinit =>
+					unregisterPageListeners() if isLoggedIn
+					React.unmountComponentAtNode containerElem
+					nwWin.close true
 
-				nwWin.close true
+			refreshWindow: =>
+				pageComponent.deinit =>
+					unregisterPageListeners() if isLoggedIn
+					nwWin.removeListener 'close', onWindowCloseEvent
+					React.unmountComponentAtNode containerElem
+					nwWin.reloadIgnoringCache()
 
 			maximizeWindow: =>
 				nwWin.maximize()
 
 			setWindowTitle: (newTitle) =>
 				nwWin.title = newTitle
+
 		}), containerElem
 
 	initPage = =>
@@ -129,22 +134,26 @@ init = (win) ->
 			isLoggedIn = true
 			registerPageListeners()
 
-		# Set up keyboard shortcuts
-		win.document.addEventListener 'keyup', (event) ->
-			# If Ctrl-Shift-J
-			if event.ctrlKey and event.shiftKey and event.which is 74
-				Gui.Window.get(win).showDevTools()
-		, false
-		win.document.addEventListener 'keyup', (event) ->
-			# If Ctrl-R
-			if event.ctrlKey and (not event.shiftKey) and event.which is 82
-				doHotCodeReplace()
-		, false
+		# Hotkeys
 		win.document.addEventListener 'keydown', (event) ->
 			# prevent backspace navigation
 			if event.which is 8 and event.target.tagName is 'BODY'
 				event.preventDefault()
 		, false
+
+		# Hotkeys for devMode only
+		if Config.devMode
+			# Set up keyboard shortcuts
+			win.document.addEventListener 'keyup', (event) ->
+				# If Ctrl-Shift-J
+				if event.ctrlKey and event.shiftKey and event.which is 74
+					Gui.Window.get(win).showDevTools()
+			, false
+			win.document.addEventListener 'keyup', (event) ->
+				# If Ctrl-R
+				if event.ctrlKey and (not event.shiftKey) and event.which is 82
+					doHotCodeReplace()
+			, false		
 
 	doHotCodeReplace = =>
 		# Save the entire page state into a global var

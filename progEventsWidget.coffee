@@ -12,68 +12,81 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
-	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('./utils').load(win)
-	
-	niceDate = (start, end) ->
-		startDate = Moment(start, Persist.TimestampFormat).format 'MMMM D, YYYY'
-		startTime = Moment(start, Persist.TimestampFormat).format 'HH:mm'
-		endDate = Moment(end, Persist.TimestampFormat).format 'MMMM D, YYYY'
-		endTime = Moment(end, Persist.TimestampFormat).format 'HH:mm'
-		if (startDate is endDate) and (startTime is '00:00') and (endTime is '23:59')
-			# single day
-			eventDate = startDate
-		else if endDate is 'Invalid date'
-			# single day + time
-			eventDate = [startDate, ' at ', startTime]
-		else
-			# multiple dates
-			eventDate = [startDate, ' - ', endDate]
-		eventDate
+	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('./utils').load(win)	
 	
 	progEventsWidget = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				title: @props.data.get 'title'
+				description: @props.data.get 'description'
+				eventDate: @_niceDate @props.data.get('startTimestamp'), @props.data.get('endTimestamp')
+			}
+
 		componentDidMount: ->
 			tooltipContent = R.div({},
-				niceDate @props.start, @props.end
+				@state.eventDate
 				R.br()
-				@props.description
+				@state.description
 			)
+
 			if @props.format is 'small'
-				$(@refs.name.getDOMNode()).tooltip {
+				$widget = $(@refs.widget.getDOMNode())
+
+				$widget.tooltip {
 					html: true
 					title: React.renderToString tooltipContent
 					placement: 'auto'
 					# required to stop tooltip from being obstructed by menu
-					viewport: $(@refs.name.getDOMNode()).parent()
+					viewport: $widget
 				}
 		render: ->
-			format = @props.format
-			title = @props.title
-			description = @props.description
-			eventDate = niceDate @props.start, @props.end
-			
-			return R.div({className: 'progEventsWidget'},
-				if format is 'large'
-					R.div({
-						className: format, ref: 'name'
-					},
-						R.div({className: 'title'}, title)
-						R.div({className: 'description'}, renderLineBreaks description)
-						R.div({className: 'date'}, eventDate)
-					)
-				else
-					R.div({
-						className: format, ref: 'name'
-					},
+			return R.div({
+				className: "progEventsWidget #{@props.format}"
+			},
+				(switch @props.format
+					when 'large', 'print'
 						R.div({
-							className: 'icon'
+							ref: 'widget'
+							className: 'progEventContainer'
+						},
+							R.h5({className: 'title'},
+								FaIcon 'calendar'
+								@state.title
+							)
+							R.div({className: 'description'},
+								renderLineBreaks @state.description
+								R.div({className: 'date'}, @state.eventDate)
+							)
+						)
+					when 'small'
+						R.div({
+							ref: 'widget'
+							className: 'progEventContainer'
 						},
 							FaIcon 'calendar'
-							' '
-							title
+							@state.title
 						)
-					)
+					else
+						throw new Error "Unknown progEventsWidget format: #{@props.format}"
+				)
 			)
+
+		_niceDate: (start, end) ->
+			startDate = Moment(start, Persist.TimestampFormat).format 'MMMM D, YYYY'
+			startTime = Moment(start, Persist.TimestampFormat).format 'HH:mm'
+			endDate = Moment(end, Persist.TimestampFormat).format 'MMMM D, YYYY'
+			endTime = Moment(end, Persist.TimestampFormat).format 'HH:mm'
+			if (startDate is endDate) and (startTime is '00:00') and (endTime is '23:59')
+				# single day
+				eventDate = startDate
+			else if endDate is 'Invalid date'
+				# single day + time
+				eventDate = [startDate, ' at ', startTime]
+			else
+				# multiple dates
+				eventDate = [startDate, ' - ', endDate]
+			eventDate
 	
 	return progEventsWidget
 

@@ -12,6 +12,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	ProgEventsWidget = require('./progEventsWidget').load(win)
+	MetricWidget = require('./metricWidget').load(win)
 	{FaIcon, showWhen} = require('./utils').load(win)
 
 	ProgNoteDetailView = React.createFactory React.createClass
@@ -77,6 +78,7 @@ load = (win) ->
 											timestamp: progNote.get('timestamp')
 											notes: target.get('notes')
 											progEvents
+											metrics: target.get('metrics')
 										}
 							else
 								throw new Error "unknown prognote type: #{progNote.get('type')}"
@@ -108,14 +110,22 @@ load = (win) ->
 								)
 							)
 							R.div({className: 'notes'}, entry.get('notes'))
+							R.div({className: 'metrics'},
+								if entry.get('metrics')
+									entry.get('metrics').map (metric) =>
+										MetricWidget({
+											isEditable: false
+											key: metric.get('id')
+											name: metric.get('name')
+											definition: metric.get('definition')
+											value: metric.get('value')
+										})
+							)
 							R.div({className: 'progEvents'},
 								entry.get('progEvents').map (progEvent) =>
 									ProgEventsWidget({
 										format: 'small'
-										title: progEvent.get('title')
-										description: progEvent.get('description')
-										start: progEvent.get('startTimestamp')
-										end: progEvent.get('endTimestamp')
+										data: progEvent
 									})
 							)
 						)

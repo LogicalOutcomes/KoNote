@@ -49,7 +49,8 @@ load = (win, {clientFileId}) ->
 		init: ->
 			@_loadData()
 
-		deinit: ->
+		deinit: (cb=(->)) ->
+			cb()
 			# Nothing need be done
 
 		getPageListeners: -> {}
@@ -287,6 +288,16 @@ load = (win, {clientFileId}) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
 				@setState {progNote: newProps.progNote}
 
+		componentDidUpdate: ->
+			if @state.editingWhichEvent?
+				$('#saveNoteButton').tooltip {
+					html: true
+					placement: 'top'
+					title: "Please finish editing your #{Term 'event'} before saving"
+				}
+			else
+				$('#saveNoteButton').tooltip 'destroy'
+
 		render: ->
 			if @props.isLoading
 				return R.div({className: 'newProgNotePage'},
@@ -398,8 +409,9 @@ load = (win, {clientFileId}) ->
 					)
 					R.div({className: 'buttonRow'},
 						R.button({
-							className: 'save btn btn-primary'
-							onClick: @_save
+							className: "save btn btn-primary #{'disabled' if @state.editingWhichEvent?}"
+							id: 'saveNoteButton'
+							onClick: @_save unless @state.editingWhichEvent?
 						},
 							FaIcon 'check'
 							'Save'
@@ -433,9 +445,6 @@ load = (win, {clientFileId}) ->
 									className: 'icon'
 									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
 								},
-									# R.img({
-									# 	src: if thisEvent.endTimestamp? and thisEvent.endTimestamp.length > 0 then './assets/icons/eventSpan.svg' else './assets/icons/eventSingle.svg'
-									# })
 									FaIcon 'calendar'
 								)
 								EventTabView({
@@ -561,7 +570,7 @@ load = (win, {clientFileId}) ->
 			}
 		_invalidMetricFormat: (value) -> not value.match /^-?\d*\.?\d*$/
 		_save: ->
-			console.log "Saving"
+
 			progNoteId = null
 
 			Async.series [
@@ -599,8 +608,6 @@ load = (win, {clientFileId}) ->
 
 					CrashHandler.handle err
 					return
-
-				console.log "Closing"
 
 				@props.closeWindow()
 

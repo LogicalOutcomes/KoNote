@@ -20,6 +20,7 @@ load = (win, {dataSet}) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
+	ProgEventsWidget = require('./progEventsWidget').load(win)
 	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
 
 	PrintPreviewPage = React.createFactory React.createClass
@@ -31,7 +32,9 @@ load = (win, {dataSet}) ->
 			}
 
 		init: -> # Do nothing
-		deinit: -> # Do nothing
+		deinit: (cb=(->)) ->
+			# Do nothing
+			cb()
 
 		suggestClose: ->
 			@props.closeWindow()
@@ -57,6 +60,7 @@ load = (win, {dataSet}) ->
 				(@props.printDataSet.map (printObj) =>					
 					clientFile = printObj.get('clientFile')
 					data = printObj.get('data')
+					progEvents = printObj.get('progEvents')
 					title = null
 
 					R.div({className: 'printObj'},
@@ -72,11 +76,13 @@ load = (win, {dataSet}) ->
 										BasicProgNoteView({
 											progNote: data
 											clientFile
+											progEvents
 										})
 									when 'full'
 										FullProgNoteView({
 											progNote: data
 											clientFile
+											progEvents
 										})
 									else
 										throw new Error "Unknown progNote type: #{progNote.get('type')}"
@@ -85,6 +91,7 @@ load = (win, {dataSet}) ->
 									title: "Care Plan"
 									data
 									clientFile
+									progEvents
 								})
 							else
 								throw new Error "Unknown print-data type: #{setType}"
@@ -223,6 +230,19 @@ load = (win, {dataSet}) ->
 								)
 					).toJS()...
 				)
+				(unless @props.progEvents.isEmpty()
+					R.div({className: 'progEvents'},
+						R.h3({}, Term 'Events')
+						(@props.progEvents.map (progEvent) =>
+							R.div({}
+								ProgEventsWidget({
+									format: 'print'
+									data: progEvent
+								})
+							)
+						).toJS()...
+					)
+				)
 			)
 
 	SinglePlanView = React.createFactory React.createClass
@@ -262,6 +282,19 @@ load = (win, {dataSet}) ->
 							)
 						)
 					).toJS()...
+				)
+				(unless @props.progEvents.isEmpty()
+					R.div({className: 'progEvents'},
+						R.h3({}, Term 'Events')
+						(@props.progEvents.map (progEvent) =>
+							R.div({}
+								ProgEventsWidget({
+									format: 'print'
+									data: progEvent
+								})
+							)
+						).toJS()...
+					)
 				)
 			)
 

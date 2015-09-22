@@ -18,17 +18,13 @@ sidebar-borders = darken(sidebar-bg, 10%)
 		color #515151
 		
 		> .notice
+			transition all .25s ease
 			padding 5px 10px
 			flex 4
 			
-			> .lockOwner
-				display inline-block
-				background white
-				padding 0px 5px
-				border-radius 10px
-				
-				color black
-				font-weight bold
+			&.clickable:hover
+				background #94F27F
+				cursor pointer
 			
 		> .mode
 			padding 5px 10px

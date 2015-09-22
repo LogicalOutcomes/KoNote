@@ -3,7 +3,7 @@
 	display flex
 	flex-direction column
 	
-	> .noData
+	.noData
 		flex 1
 
 		display flex
@@ -22,8 +22,7 @@
 		flex none
 		flex-basis 85px
 		display flex
-		flex-direction row
-		border-bottom 2px solid sidebar-borders
+		flex-direction row		
 		
 		// Default styling for slider
 		.slider				
@@ -98,7 +97,7 @@
 						border 1px solid sidebar-borders
 						
 						font-weight 400
-						color #386787
+						color #5c5c5c
 			
 		> .granularContainer
 			flex 1
@@ -123,13 +122,16 @@
 		flex 1
 		display flex
 		flex-direction row
-		align-items stetch
+		align-items stetch			
 
 		.chartContainer
 			flex 5
 			display flex
 
-			padding 20px 30px			
+			padding 20px 30px
+			border-top 2px solid sidebar-borders
+			border-right 2px solid sidebar-borders
+			border-top-right-radius 25px
 
 			> .chartInner			
 				flex 1
@@ -177,18 +179,6 @@
 					text
 						// Moves year value to right side of yearLine
 						transform rotate(-90deg) translateY(17px)
-						
-				.disabledChart
-					flex 1
-					
-					display flex
-					align-items center
-					justify-content center
-				
-					color #AAA
-					padding 20px
-					font-size 18px
-					font-weight 600	
 					
 				.chart
 					flex 1
@@ -227,14 +217,29 @@
 							&.row3 > rect
 								transform scaleY(0.1) translateY(1050px) !important
 								
+							&.row4 > rect
+								transform scaleY(0.1) translateY(1400px) !important
+								
+							&.row5 > rect
+								transform scaleY(0.1) translateY(1750px) !important
+
 						
 
 		.selectionPanel
 			flex 1
+			padding-top 25px
+			
+			.dataType				
 
-			padding 20px 30px
-			border-left 2px solid sidebar-borders
-
-			> .heading
-				font-size 24px
-				font-weight 300		
+				> h2
+					font-size 24px
+					font-weight 300
+					margin 0
+					padding 15px
+					border-bottom 1px solid sidebar-borders
+					
+				> .dataOptions
+					padding 15px 15px 25px 15px
+					
+					label
+						color #5c5c5c
