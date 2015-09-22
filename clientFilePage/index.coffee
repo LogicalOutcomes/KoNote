@@ -41,6 +41,7 @@ load = (win, {clientFileId}) ->
 	ClientFilePage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
+				status: 'init' # Either init or ready
 				isLoading: true
 				
 				clientFile: null
@@ -69,9 +70,11 @@ load = (win, {clientFileId}) ->
 			return ClientFilePageUi({
 				ref: 'ui'
 
+				status: @state.status
 				isLoading: @state.isLoading
 				readOnlyData: @state.readOnlyData
 				loadErrorType: @state.loadErrorType
+
 				clientFile: @state.clientFile
 				progressNotes: @state.progressNotes
 				progressEvents: @state.progressEvents
@@ -250,13 +253,14 @@ load = (win, {clientFileId}) ->
 				else
 					# OK, load in clientFile state data!
 					@setState {
-						isLoading: false
-
 						clientFile
 						planTargetsById
 						progressNotes
 						progressEvents
 						metricsById
+
+						isLoading: false
+						status: 'ready'
 					}
 
 		_acquireLock: (cb=(->)) ->
@@ -490,15 +494,20 @@ load = (win, {clientFileId}) ->
 
 		render: ->
 			if @props.loadErrorType
-				return LoadError({
+				return LoadError {
 					loadErrorType: @props.loadErrorType
 					closeWindow: @props.closeWindow
-				})
+				}
 
-			if @props.isLoading
+			if @props.status is 'init'
 				return R.div({className: 'clientFilePage'},
-					Spinner({isOverlay: true, isVisible: true})
+					Spinner {
+						isOverlay: true
+						isVisible: true
+					}
 				)
+
+			Assert @props.status is 'ready'
 
 			activeTabId = @state.activeTabId
 			isReadOnly = @props.readOnlyData?
@@ -509,12 +518,11 @@ load = (win, {clientFileId}) ->
 
 			return R.div({className: 'clientFilePage'},
 				Spinner({isOverlay: true, isVisible: @props.isLoading})
-				(if isReadOnly
-					ReadOnlyNotice({
-						data: @props.readOnlyData
-					})
-				)
-				R.div({className: 'wrapper'},
+
+				if isReadOnly
+					ReadOnlyNotice {data: @props.readOnlyData}
+
+				R.div({className: 'wrapper'},					
 					Sidebar({						
 						clientName
 						recordId
