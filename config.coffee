@@ -4,18 +4,19 @@
 
 module.exports = {
 	productName: 'KoNote'
-	customerLogoLg: 'customer-logo-lg_GRIFFIN.png'
-	customerLogoSm: 'customer-logo-sm_GRIFFIN.png'
-	logoSubtitle: 'DSSS'
+	customerLogoLg: 'customer-logo-lg.png'
+	customerLogoSm: 'customer-logo-sm.png'
+	logoSubtitle: 'beta'
 	logoSubtitleColor: 'hsl(205, 78%, 47%)'
 
 	clientFileRecordId: {
 		isEnabled: true
-		label: "CR#"
+		label: "ID#"
 	}
 
 	# Specify data directory
-	dataDirectory: 'data'
+	dataDirectory: '../../Public/data'
+	#dataDirectory: 'data'
 
 	analysis: {
 		# Minimum days of data (metrics/events/treatments) required to enable chart
@@ -65,7 +66,7 @@ module.exports = {
 	}		
 
 	# useTemplate: 'initialAssessment'
-	useTemplate: 'clientLog'
+	useTemplate: 'simpleDemoTemplate'
 
 	# David's demo templates:
 	# useTemplate: 'simpleDemoTemplate'
@@ -313,17 +314,19 @@ module.exports = {
 	}
 }
 
-# move data folder alongside the .app folder on osx
-if process.platform == 'darwin'
-	module.exports.dataDirectory = '../../../../data'
-
-# merge with dev-config; overrides defaults
+# merge with customer, build, and dev config files; overrides defaults
 _ = require 'underscore'
+try
+	configCustomer = require './config-customer'
+	_.extend(module.exports, configCustomer)
+catch err
+	if err.code is 'MODULE_NOT_FOUND'
+		return
+	throw err
 try
 	configDev = require './config-dev'
 	_.extend(module.exports, configDev)
 catch err
-	# ignore if dev-config doesn't exist
 	if err.code is 'MODULE_NOT_FOUND'
 		return
 	throw err
