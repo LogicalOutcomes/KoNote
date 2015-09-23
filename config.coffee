@@ -15,8 +15,7 @@ module.exports = {
 	}
 
 	# Specify data directory
-	dataDirectory: '../../Public/data'
-	#dataDirectory: 'data'
+	dataDirectory: 'data'
 
 	analysis: {
 		# Minimum days of data (metrics/events/treatments) required to enable chart
