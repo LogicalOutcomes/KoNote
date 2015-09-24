@@ -217,6 +217,8 @@ load = (win, {clientFileId}) ->
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
+						console.error err
+						console.error err.stack
 						@setState {loadErrorType: 'io-error'}
 						return
 
