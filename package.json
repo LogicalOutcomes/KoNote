@@ -16,7 +16,7 @@
     "grunt": "^0.4.5",
     "grunt-contrib-copy": "^0.8.1",
     "grunt-exec": "^0.4.6",
-    "grunt-nw-builder": "^2.0.0",
+    "grunt-nw-builder": "https://github.com/conceptualspace/grunt-nw-builder",
     "grunt-prompt": "^1.3.0"
   },
   "optionalDependencies": {
