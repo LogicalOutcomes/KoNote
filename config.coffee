@@ -53,6 +53,7 @@ module.exports = {
 		'plan': "plan"
 		'target': "goal"
 		'plan target': "plan goal"
+		'treatment plan': "treatment plan"
 
 		'progress note': "progress note"
 		'quick note': "quick note"

@@ -493,7 +493,7 @@ load = (win) ->
 					ExpandingTextArea({
 						className: 'notes field'
 						ref: 'notesField'
-						placeholder: "Describe the #{Term 'target'} in detail . . ."
+						placeholder: "Describe the current #{Term 'treatment plan'} . . ."
 						value: currentRevision.get('notes')
 						disabled: @props.isReadOnly
 						onChange: @_updateField.bind null, 'notes'
