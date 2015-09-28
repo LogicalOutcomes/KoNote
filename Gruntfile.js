@@ -12,7 +12,13 @@ ResHacker.exe -modify "KoNote.exe", "KoNote.exe", "icon.ico", ICONGROUP, MAINICO
 
 note: requires forked nw-builder module (disables merging win build with the nw exe)
 https://github.com/speedskater/node-webkit-builder
+
+it is recommended to build on native OS: building for win from mac/linux will not customize application icon or codesign exe; building for mac from windows/linux will not create dmg installer or codesign .app
 */
+
+// TODO:
+// bundle 7zip, resource_hacker, and codesign utility for windows?
+
 var win = null;
 var mac = null;
 var generic = null;
@@ -102,7 +108,7 @@ module.exports = function(grunt) {
 				],
 				options: {
 					process: function (content, srcpath) {
-						return content.replace(/'data'/g,"'../../../data'");
+						return content.replace(/'data'/g,"'../../../../data'");
 					}
 				}
 			},
@@ -164,35 +170,18 @@ module.exports = function(grunt) {
 		},
 		// build pretty .dmg
 		appdmg: {
-			generic: {
-				options: {
-					basepath: './',
-					title: 'KoNote-<%= pkg.version %>',
-					icon: 'icon.icns',
-					background: 'background.tiff', 'icon-size': 104,
-					contents: [
-						{x: 130, y: 150, type: 'file', path: '../konote-releases/temp/mac-generic/KoNote'},
-						{x: 320, y: 150, type: 'link', path: '/Applications'}
-					]
-				},
-				target: {
-					dest: '../konote-releases/konote-<%= pkg.version %>-mac-generic.dmg'
-				}
+			options: {
+				basepath: './',
+				title: 'KoNote-<%= pkg.version %>',
+				icon: 'icon.icns',
+				background: 'background.tiff', 'icon-size': 104,
+				contents: [
+					{x: 130, y: 150, type: 'file', path: '../konote-releases/temp/mac-generic/KoNote'},
+					{x: 320, y: 150, type: 'link', path: '/Applications'}
+				]
 			},
-			griffin: {
-				options: {
-					basepath: './',
-					title: 'KoNote-<%= pkg.version %>',
-					icon: 'icon.icns',
-					background: 'background.tiff', 'icon-size': 104,
-					contents: [
-						{x: 130, y: 150, type: 'file', path: '../konote-releases/temp/mac-griffin/KoNote'},
-						{x: 320, y: 150, type: 'link', path: '/Applications'}
-					]
-				},
-				target: {
-					dest: '../konote-releases/konote-<%= pkg.version %>-mac-griffin.dmg'
-				}
+			target: {
+				dest: '../konote-releases/konote-<%= pkg.version %>-<%= targetName %>-mac.dmg'
 			}
 		}
 	});
@@ -206,9 +195,29 @@ module.exports = function(grunt) {
 	// if on osx, we can use appdmg
 	if (process.platform == 'darwin') {
 		grunt.loadNpmTasks('grunt-appdmg');
+		
+		// for some reason appdmg wouldnt accept arguments,
+		// so creating an alias task with config parameter to properly name the output file
+		grunt.registerTask('appdmg-generic', function() {
+			grunt.config('targetName', 'generic');
+			grunt.task.run('appdmg');
+		});
+		
+		grunt.registerTask('appdmg-griffin', function() {
+			grunt.config('targetName', 'griffin');
+			grunt.task.run('appdmg');
+		});
+		
+		grunt.registerTask('build', function() {
+			grunt.task.run('prompt');
+			grunt.task.run('release')
+		});
 	}
 	
 	grunt.registerTask('release', function() {
+		
+		grunt.task.run('exec:clean');
+		
 		if (win) {
 			if (generic) {
 				// do win generic build
@@ -234,7 +243,7 @@ module.exports = function(grunt) {
 				grunt.task.run('exec:set:mac-generic');
 				grunt.task.run('exec:hide:mac-generic');
 				if (process.platform == 'darwin') {
-					grunt.task.run('appdmg:generic');
+					grunt.task.run('appdmg-generic');
 				}
 			}
 			if (griffin) {
@@ -246,16 +255,11 @@ module.exports = function(grunt) {
 				grunt.task.run('exec:set:mac-griffin');
 				grunt.task.run('exec:hide:mac-griffin');
 				if (process.platform == 'darwin') {
-					grunt.task.run('appdmg:griffin');
+					grunt.task.run('appdmg-griffin');
 				}
 			}
 		}
 		grunt.task.run('exec:clean');
-	});
-	
-	grunt.registerTask('build', function() {
-		grunt.task.run('prompt');
-		grunt.task.run('release')
 	});
 	
 };
