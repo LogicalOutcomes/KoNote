@@ -177,7 +177,7 @@ module.exports = function(grunt) {
 					icon: 'icon.icns',
 					background: 'background.tiff', 'icon-size': 104,
 					contents: [
-						{x: 130, y: 150, type: 'file', path: '../konote-releases/temp/mac-generic/KoNote'},
+						{x: 130, y: 150, type: 'file', path: '../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote'},
 						{x: 320, y: 150, type: 'link', path: '/Applications'}
 					]
 				},
@@ -231,7 +231,7 @@ module.exports = function(grunt) {
 				grunt.task.run('exec:set:mac-generic');
 				grunt.task.run('exec:hide:mac-generic');
 				if (process.platform == 'darwin') {
-					grunt.task.run('appdmg:main:generic-mac');
+					grunt.task.run('appdmg:main:mac-generic');
 				}
 			}
 			if (griffin) {
@@ -243,7 +243,7 @@ module.exports = function(grunt) {
 				grunt.task.run('exec:set:mac-griffin');
 				grunt.task.run('exec:hide:mac-griffin');
 				if (process.platform == 'darwin') {
-					grunt.task.run('appdmg:main:griffin-mac');
+					grunt.task.run('appdmg:main:mac-griffin');
 				}
 			}
 		}
