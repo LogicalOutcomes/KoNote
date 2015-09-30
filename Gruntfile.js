@@ -170,18 +170,18 @@ module.exports = function(grunt) {
 		},
 		// build pretty .dmg
 		appdmg: {
-			options: {
-				basepath: './',
-				title: 'KoNote-<%= pkg.version %>',
-				icon: 'icon.icns',
-				background: 'background.tiff', 'icon-size': 104,
-				contents: [
-					{x: 130, y: 150, type: 'file', path: '../konote-releases/temp/mac-generic/KoNote'},
-					{x: 320, y: 150, type: 'link', path: '/Applications'}
-				]
-			},
-			target: {
-				dest: '../konote-releases/konote-<%= pkg.version %>-<%= targetName %>-mac.dmg'
+			main: {
+				options: {
+					basepath: './',
+					title: 'KoNote-<%= pkg.version %>',
+					icon: 'icon.icns',
+					background: 'background.tiff', 'icon-size': 104,
+					contents: [
+						{x: 130, y: 150, type: 'file', path: '../konote-releases/temp/mac-generic/KoNote'},
+						{x: 320, y: 150, type: 'link', path: '/Applications'}
+					]
+				},
+				dest: '../konote-releases/konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.dmg'
 			}
 		}
 	});
@@ -195,24 +195,12 @@ module.exports = function(grunt) {
 	// if on osx, we can use appdmg
 	if (process.platform == 'darwin') {
 		grunt.loadNpmTasks('grunt-appdmg');
-		
-		// for some reason appdmg wouldnt accept arguments,
-		// so creating an alias task with config parameter to properly name the output file
-		grunt.registerTask('appdmg-generic', function() {
-			grunt.config('targetName', 'generic');
-			grunt.task.run('appdmg');
-		});
-		
-		grunt.registerTask('appdmg-griffin', function() {
-			grunt.config('targetName', 'griffin');
-			grunt.task.run('appdmg');
-		});
-		
-		grunt.registerTask('build', function() {
+	}
+	
+	grunt.registerTask('build', function() {
 			grunt.task.run('prompt');
 			grunt.task.run('release')
-		});
-	}
+	});
 	
 	grunt.registerTask('release', function() {
 		
@@ -243,7 +231,7 @@ module.exports = function(grunt) {
 				grunt.task.run('exec:set:mac-generic');
 				grunt.task.run('exec:hide:mac-generic');
 				if (process.platform == 'darwin') {
-					grunt.task.run('appdmg-generic');
+					grunt.task.run('appdmg:main:generic-mac');
 				}
 			}
 			if (griffin) {
@@ -255,7 +243,7 @@ module.exports = function(grunt) {
 				grunt.task.run('exec:set:mac-griffin');
 				grunt.task.run('exec:hide:mac-griffin');
 				if (process.platform == 'darwin') {
-					grunt.task.run('appdmg-griffin');
+					grunt.task.run('appdmg:main:griffin-mac');
 				}
 			}
 		}
