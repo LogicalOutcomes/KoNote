@@ -321,6 +321,7 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
+							disabled: not @state.password or not @state.confirmPassword
 						}, "Reset Password")
 					)
 				)
@@ -332,10 +333,7 @@ load = (win) ->
 		_updateConfirmPassword: (event) ->
 			@setState {confirmPassword: event.target.value}
 		_submit: ->
-			unless @state.password
-				Bootbox.alert "Password is required"
-				return
-
+			# First catch unmatched passwords
 			unless @state.password is @state.confirmPassword
 				Bootbox.alert "Passwords do not match!"
 				return
