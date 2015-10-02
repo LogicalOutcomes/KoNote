@@ -234,29 +234,23 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
+							disabled: not @state.userName or not @state.password
 						}, "Create #{Term 'Account'}")
 					)
 				)
-			)
-		_cancel: ->
-			@props.onCancel()
+			)		
 		_updateUserName: (event) ->
 			@setState {userName: event.target.value}
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
 		_updateIsAdmin: (event) ->
 			@setState {isAdmin: event.target.checked}
+			
+		_cancel: ->
+			@props.onCancel()
 		_submit: ->
-			unless @state.userName
-				Bootbox.alert "User name is required"
-				return
-
 			unless /^[a-zA-Z0-9_-]+$/.exec @state.userName
 				Bootbox.alert "User name must contain only letters, numbers, underscores, and dashes."
-				return
-
-			unless @state.password
-				Bootbox.alert "Password is required"
 				return
 
 			userName = @state.userName
