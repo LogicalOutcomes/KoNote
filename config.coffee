@@ -60,6 +60,7 @@ module.exports = {
 
 		'metric': "indicator"
 		'event': "event"
+		'program': "program"
 
 		'analysis': "analysis"
 		'analyze': "analyze"

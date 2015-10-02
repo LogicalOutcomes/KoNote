@@ -16,10 +16,11 @@ dataModelDefinitions = [
 		collectionName: 'clientFiles'
 		isMutable: true
 		indexes: [
-			['clientName', 'first'], 
-			['clientName', 'middle'], 
-			['clientName', 'last'],
+			['clientName', 'first']
+			['clientName', 'middle']
+			['clientName', 'last']
 			['recordId']
+			['programIds']
 		]
 		schema: Joi.object().keys({
 			clientName: Joi.object().keys({
@@ -28,6 +29,7 @@ dataModelDefinitions = [
 				last: Joi.string()
 			})
 			recordId: [Joi.string(), '']
+			programIds: Joi.array().items(IdSchema)
 			plan: Joi.object().keys({
 				sections: Joi.array().items(
 					Joi.object().keys({
@@ -155,7 +157,17 @@ dataModelDefinitions = [
 			name: Joi.string()
 			definition: Joi.string()
 		})
-	}	
+	}
+	{
+		name: 'program'
+		collectionName: 'programs'
+		isMutable: true
+		indexes: [['name']]
+		schema: Joi.object().keys({
+			name: Joi.string()
+			description: Joi.string()
+		})
+	}
 ]
 
 getApi = (session) ->
