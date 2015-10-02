@@ -17,7 +17,6 @@ load = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
-	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
 
 	CreateClientFileDialog = React.createFactory React.createClass
