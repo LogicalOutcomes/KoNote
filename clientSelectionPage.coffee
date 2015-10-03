@@ -17,10 +17,10 @@ load = (win) ->
 	R = React.DOM
 	Gui = win.require 'nw.gui'
 
+	ProgramManagerDialog = require('./programManagerDialog').load(win)
 	AccountManagerDialog = require('./accountManagerDialog').load(win)
 	CrashHandler = require('./crashHandler').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
-	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
 	BrandWidget = require('./brandWidget').load(win)	
@@ -215,6 +215,12 @@ load = (win) ->
 					isVisible: isAdmin
 					title: "#{Term 'Account'} Manager"
 					dialog: AccountManagerDialog
+					icon: 'users'
+				})
+				UserMenuItem({
+					isVisible: isAdmin
+					title: Term 'Programs'
+					dialog: ProgramManagerDialog
 					icon: 'users'
 				})
 			)
