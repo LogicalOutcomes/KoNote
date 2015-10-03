@@ -30,13 +30,18 @@ load = (win) ->
 			}
 
 		init: ->
-			@_checkSetUp()
+			@_checkSetUp()			
 
 		deinit: (cb=(->)) ->
 			@setState {isLoading: false}, cb
 
 		suggestClose: ->
 			@props.closeWindow()
+
+		componentWillMount: ->
+			if Config.autoLogin?
+				@_login Config.autoLogin.userName, Config.autoLogin.password
+				return null
 
 		render: ->
 			return new LoginPageUi({
@@ -137,7 +142,7 @@ load = (win) ->
 				@setState {isSetUp: true}
 
 		_login: (userName, password) ->			
-			@setState {isLoading: true}
+			@setState => isLoading: true
 
 			Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>
 				@setState {isLoading: false}
