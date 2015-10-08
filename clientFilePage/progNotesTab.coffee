@@ -39,8 +39,9 @@ load = (win) ->
 				trigger: 'manual'
 				content: '''
 					<textarea class="form-control"></textarea>
-					<div class="buttonBar">
-						<button class="cancel btn btn-default"><i class="fa fa-trash"></i> Discard</button>
+					<div class="buttonBar form-inline">
+						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
+						<button class="cancel btn btn-danger"><i class="fa fa-trash"></i> Discard</button>
 						<button class="save btn btn-primary"><i class="fa fa-check"></i> Save</button>
 					</div>
 				'''
@@ -152,6 +153,13 @@ load = (win) ->
 						quickNoteToggle.popover('hide')
 						quickNoteToggle.data('isVisible', false)
 
+				popover.find('.backdate.date').datetimepicker({
+					useCurrent: false
+					format: 'Do MMM, \'YY'
+					defaultDate: Moment()
+					maxDate: Moment()
+				})
+				
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
 					quickNoteToggle.popover('hide')
