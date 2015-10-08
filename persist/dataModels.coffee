@@ -29,7 +29,6 @@ dataModelDefinitions = [
 				last: Joi.string()
 			})
 			recordId: [Joi.string(), '']
-			programIds: Joi.array().items(IdSchema)
 			plan: Joi.object().keys({
 				sections: Joi.array().items(
 					Joi.object().keys({
@@ -148,6 +147,7 @@ dataModelDefinitions = [
 			)
 		})
 	}
+
 	{
 		name: 'metric'
 		collectionName: 'metrics'
@@ -158,6 +158,7 @@ dataModelDefinitions = [
 			definition: Joi.string()
 		})
 	}
+
 	{
 		name: 'program'
 		collectionName: 'programs'
@@ -166,6 +167,20 @@ dataModelDefinitions = [
 		schema: Joi.object().keys({
 			name: Joi.string()
 			description: Joi.string()
+		})
+	}
+
+	# Link a clientFileId to 1 or more programIds
+	{
+		name: 'clientFileProgramLink'
+		collectionName: 'clientFileProgramLinks'
+		isMutable: true
+		indexes: [['clientFileId', 'programIds']]
+		schema: Joi.object().keys({
+			clientFileId: IdSchema
+			programIds: Joi.array().items(
+				IdSchema
+			)
 		})
 	}
 ]
