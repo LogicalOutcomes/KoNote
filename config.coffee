@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+_ = require 'underscore'
+
 module.exports = {
 	productName: 'KoNote'
 	customerLogoLg: 'customer-logo-lg.png'
@@ -316,18 +318,16 @@ module.exports = {
 }
 
 # merge with customer, build, and dev config files; overrides defaults
-_ = require 'underscore'
 try
 	configCustomer = require './config-customer'
 	_.extend(module.exports, configCustomer)
 catch err
-	if err.code is 'MODULE_NOT_FOUND'
-		return
-	throw err
+	unless err.code is 'MODULE_NOT_FOUND'
+		throw err
+
 try
 	configDev = require './config-dev'
 	_.extend(module.exports, configDev)
 catch err
-	if err.code is 'MODULE_NOT_FOUND'
-		return
-	throw err
+	unless err.code is 'MODULE_NOT_FOUND'
+		throw err
