@@ -184,7 +184,6 @@ load = (win) ->
 			}
 
 		_closeDialog: (event) ->
-			event.preventDefault()			
 			@setState {openDialogId: null}		
 
 	CreateProgramDialog = React.createFactory React.createClass
@@ -206,37 +205,34 @@ load = (win) ->
 						isVisible: @state.isLoading
 						isOverlay: true
 					})
-					R.form({},
-						R.div({className: 'form-group'},
-							R.label({}, "Name")
-							R.input({
-								className: 'form-control'
-								value: @state.name
-								onChange: @_updateName
-							})
-						)
-						R.div({className: 'form-group'},
-							R.label({}, "Description")
-							R.textarea({
-								className: 'form-control'
-								value: @state.description
-								onChange: @_updateDescription
-								rows: 3
-							})
-						)
-						R.div({className: 'btn-toolbar'},
-							R.button({
-								className: 'btn btn-default'
-								onClick: @props.onCancel
-							}, "Cancel")
-							R.button({
-								className: 'btn btn-primary'
-								disabled: not @state.name or not @state.description
-								onClick: @_submit
-								type: 'submit'
-							}, "Create #{Term 'Program'}")
-						)
-					)					
+					R.div({className: 'form-group'},
+						R.label({}, "Name")
+						R.input({
+							className: 'form-control'
+							value: @state.name
+							onChange: @_updateName
+						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Description")
+						R.textarea({
+							className: 'form-control'
+							value: @state.description
+							onChange: @_updateDescription
+							rows: 3
+						})
+					)
+					R.div({className: 'btn-toolbar'},
+						R.button({
+							className: 'btn btn-default'
+							onClick: @props.onCancel
+						}, "Cancel")
+						R.button({
+							className: 'btn btn-primary'
+							disabled: not @state.name or not @state.description
+							onClick: @_submit
+						}, "Create #{Term 'Program'}")
+					)
 				)
 			)
 
