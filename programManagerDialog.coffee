@@ -112,14 +112,24 @@ load = (win) ->
 						else
 							R.table({className: 'table table-striped'},
 								R.tbody({},
-									(@state.programs.map (program) ->
-										console.log "program", program
+									(@state.programs.map (program) =>
 										R.tr({},
 											R.td({className: 'nameCell'}, program.get('name'))
 											R.td({className: 'descriptionCell'}, program.get('description'))
 											R.td({className: 'buttonsCell'},
 												R.div({className: 'btn-group'},
-													R.button({className: 'btn btn-default'}, "Hello")
+													R.button({
+														className: 'btn btn-default'
+														# onClick: @_openDialog 'manageClients'
+													}, 
+														"Manage #{Term 'Clients'}"
+													)
+													R.button({
+														className: 'btn btn-warning'
+														onClick: @_openEditProgramDialog.bind null, program
+													},
+														"Edit"
+													)
 												)
 											)
 										)
@@ -136,12 +146,29 @@ load = (win) ->
 					return CreateProgramDialog({
 						onClose: @_closeDialog
 						onCancel: @_closeDialog
-						onSuccess: (program) =>
-							@_closeDialog()
-							@setState (state) -> {
-								programs: state.programs.push(program)
-							}
+						onSuccess: (newProgram) =>		
+						# Update programs with new one and close dialog					
+							programs = @state.programs.push newProgram							
+							@setState {programs}, @_closeDialog
 					})
+				when 'editProgram'
+					console.log "Editing program!"
+					return EditProgramDialog({
+						onClose: @_closeDialog
+						onCancel: @_closeDialog
+						data: @state.editData
+						onSuccess: (updatedProgram) =>
+						# Update program at list index and close dialog
+							index = @state.programs.indexOf @state.editData
+							programs = @state.programs.set index, updatedProgram
+							@setState {programs}, @_closeDialog
+					})
+				# when 'manageClients'
+				# 	return ManageClientsDialog({
+				# 		onClose: @_closeDialog
+				# 		onCancel: @_closeDialog
+				# 		onSuccess: ()
+				# 	})
 				when null
 					return R.div()
 				else
@@ -149,8 +176,15 @@ load = (win) ->
 
 		_openCreateProgramDialog: ->
 			@setState {openDialogId: 'createProgram'}
+		_openEditProgramDialog: (programData) ->
+			console.log "Triggered"
+			@setState {
+				editData: programData
+				openDialogId: 'editProgram'
+			}
 
-		_closeDialog: ->
+		_closeDialog: (event) ->
+			event.preventDefault()			
 			@setState {openDialogId: null}		
 
 	CreateProgramDialog = React.createFactory React.createClass
@@ -164,7 +198,7 @@ load = (win) ->
 
 		render: ->
 			Dialog({
-				title: "Create new #{Term 'program'}"
+				title: "Create New #{Term 'Program'}"
 				onClose: @props.onCancel
 			}
 				R.div({className: 'createProgramDialog'}
@@ -219,6 +253,7 @@ load = (win) ->
 				description: @state.description
 			})
 
+			# Create the new program, and trigger success
 			ActiveSession.persist.programs.create newProgram, (err, newProgram) =>
 				if err
 					CrashHandler.handle err
@@ -226,6 +261,83 @@ load = (win) ->
 
 				@props.onSuccess(newProgram)
 
+	EditProgramDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				id: @props.data.get('id')
+				name: @props.data.get('name')
+				description: @props.data.get('description')
+				isLoading: false
+			}
+
+		render: ->
+			Dialog({
+				title: "Editing #{Term 'Program'}"
+				onClose: @props.onCancel
+			}
+				R.div({className: 'editProgramDialog'}
+					R.div({className: 'form-group'},
+						R.label({}, "Name")
+						R.input({
+							className: 'form-control'
+							value: @state.name
+							onChange: @_updateName
+						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Description")
+						R.textarea({
+							className: 'form-control'
+							value: @state.description
+							onChange: @_updateDescription
+							rows: 3
+						})
+					)
+					R.div({className: 'btn-toolbar'},
+						R.button({
+							className: 'btn btn-default'
+							onClick: @props.onCancel
+						}, "Cancel")
+						R.button({
+							className: 'btn btn-primary'
+							disabled: not @state.name or not @state.description or not @_hasChanges()
+							onClick: @_submit
+							type: 'submit'
+						}, "Finished Editing")
+					)
+				)
+			)
+		_updateName: (event) ->
+			@setState {name: event.target.value}
+		_updateDescription: (event) ->
+			@setState {description: event.target.value}
+
+		_hasChanges: ->
+			return not Imm.is @_compileProgramObject(), @props.data
+
+		_compileProgramObject: ->
+			return Imm.Map({
+				id: @state.id
+				name: @state.name
+				description: @state.description
+			})
+
+		_submit: (event) ->
+			console.log "EVENT:", event
+			event.preventDefault()
+			console.log "Event", event
+
+			editedProgram = @_compileProgramObject()
+
+			# Make new revision for this program ID
+			ActiveSession.persist.programs.createRevision editedProgram, (err, updatedProgram) =>
+				if err
+					CrashHandler.handle.err
+					return
+
+				# Deliver updated program back to main dialog
+				@props.onSuccess updatedProgram
 
 	return ClientProgramsDialog
 
