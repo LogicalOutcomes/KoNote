@@ -29,19 +29,21 @@ load = (win) ->
 				isSetUp: false
 			}
 
-		init: ->
-			@_checkSetUp()			
+		init: ->			
+			if Config.autoLogin?
+				@_autoLogin()
+				return
+
+			@_checkSetUp()
+
+		_autoLogin: ->
+			@_login Config.autoLogin.userName, Config.autoLogin.password
 
 		deinit: (cb=(->)) ->
 			@setState {isLoading: false}, cb
 
 		suggestClose: ->
 			@props.closeWindow()
-
-		componentWillMount: ->
-			if Config.autoLogin?
-				@_login Config.autoLogin.userName, Config.autoLogin.password
-				return null
 
 		render: ->
 			return new LoginPageUi({
@@ -201,6 +203,7 @@ load = (win) ->
 					throw new Error "Invalid Login Error"
 
 		render: ->
+			return R.div({}) if Config.autoLogin?
 			return R.div({className: 'loginPage'},
 				Spinner({
 					isVisible: @props.isLoading
