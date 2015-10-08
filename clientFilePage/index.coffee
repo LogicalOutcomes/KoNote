@@ -393,22 +393,23 @@ load = (win, {clientFileId}) ->
 				# that update the UI.
 
 		_createQuickNote: (notes, cb) ->
-			note = Imm.fromJS {
-				type: 'basic'
-				clientFileId
-				notes
-				backdate: ''
-			}
+			if notes != ''
+				note = Imm.fromJS {
+					type: 'basic'
+					clientFileId
+					notes
+					backdate: ''
+				}
 
-			@setState (state) => {isLoading: true}
-			global.ActiveSession.persist.progNotes.create note, (err) =>
-				@setState (state) => {isLoading: false}
+				@setState (state) => {isLoading: true}
+				global.ActiveSession.persist.progNotes.create note, (err) =>
+					@setState (state) => {isLoading: false}
 
-				if err
-					cb err
-					return
+					if err
+						cb err
+						return
 
-				cb()
+					cb()
 
 		getPageListeners: ->
 			return {
