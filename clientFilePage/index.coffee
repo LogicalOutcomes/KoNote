@@ -397,6 +397,7 @@ load = (win, {clientFileId}) ->
 				type: 'basic'
 				clientFileId
 				notes
+				backdate: ''
 			}
 
 			@setState (state) => {isLoading: true}

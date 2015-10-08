@@ -75,6 +75,7 @@ dataModelDefinitions = [
 					Joi.object().keys({
 						type: 'basic' # aka "Quick Notes"
 						notes: Joi.string()
+						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 					})
 					Joi.object().keys({
 						type: 'full'

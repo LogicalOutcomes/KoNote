@@ -20,7 +20,11 @@ module.exports = {
 	analysis: {
 		# Minimum days of data (metrics/events/treatments) required to enable chart
 		minDaysOfData: 3
-	} 
+	}
+
+	devMode: true
+	
+	#autoLogin: {userName: 'admin', password: 'test'}
 
 	# Set total timeout in (minutes),
 	# and how many mins before timeout to show warning
