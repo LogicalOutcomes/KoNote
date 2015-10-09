@@ -26,68 +26,10 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				mode: 'loading' # loading, ready, or working
 				openDialogId: null
-
-				clientFileHeaders: null
-				programs: Imm.List()
 			}
 
-		componentWillMount: ->
-			clientFileHeaders = null
-			programHeaders = null
-			programs = null
-
-			Async.series [
-				(cb) =>
-					ActiveSession.persist.clientFiles.list (err, result) =>
-						if err
-							cb err
-							return
-
-						clientFileHeaders = result
-						console.log "clientFileHeaders", clientFileHeaders.toJS()
-						cb()
-				(cb) =>
-					ActiveSession.persist.programs.list (err, result) =>
-						if err
-							cb err
-							return
-
-						programHeaders = result
-						console.log "programHeaders", programHeaders.toJS()
-						cb()
-				(cb) =>
-					Async.map programHeaders.toArray(), (programHeader, cb) =>
-						progId = programHeader.get('id')
-						ActiveSession.persist.programs.readLatestRevisions progId, 1, cb
-					, (err, results) =>
-							if err
-								cb err
-								return
-
-							programs = Imm.List(results).map (program) -> stripMetadata program.get(0)
-							cb()
-			], (err) =>
-				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again.", =>
-							@props.onCancel()
-						return
-
-					CrashHandler.handle err
-					return
-
-				@setState {
-					clientFileHeaders
-					programs
-					mode: 'ready'
-				}
-
 		render: ->
-			# if @state.mode is 'loading'
-			# 	return R.div({})
-			# else
 			return Dialog({
 				title: "#{Term 'Client'} #{Term 'Programs'}"
 				onClose: @props.onCancel
@@ -107,12 +49,12 @@ load = (win) ->
 								" New #{Term 'Program'}"
 							)
 						)
-						if @state.programs.size is 0
+						if @props.programs.size is 0
 							R.div({className: 'noData'}, "No #{Term 'programs'} exist yet.")
 						else
 							R.table({className: 'table table-striped'},
 								R.tbody({},
-									(@state.programs.map (program) =>
+									(@props.programs.map (program) =>
 										R.tr({},
 											R.td({className: 'nameCell'}, program.get('name'))
 											R.td({className: 'descriptionCell'}, program.get('description'))
@@ -146,22 +88,14 @@ load = (win) ->
 					return CreateProgramDialog({
 						onClose: @_closeDialog
 						onCancel: @_closeDialog
-						onSuccess: (newProgram) =>		
-						# Update programs with new one and close dialog					
-							programs = @state.programs.push newProgram							
-							@setState {programs}, @_closeDialog
+						onSuccess: @_closeDialog
 					})
 				when 'editProgram'
-					console.log "Editing program!"
 					return EditProgramDialog({
 						onClose: @_closeDialog
-						onCancel: @_closeDialog
+						onCancel: @_closeDialog						
+						onSuccess: @_closeDialog
 						data: @state.editData
-						onSuccess: (updatedProgram) =>
-						# Update program at list index and close dialog
-							index = @state.programs.indexOf @state.editData
-							programs = @state.programs.set index, updatedProgram
-							@setState {programs}, @_closeDialog
 					})
 				# when 'manageClients'
 				# 	return ManageClientsDialog({
@@ -177,7 +111,6 @@ load = (win) ->
 		_openCreateProgramDialog: ->
 			@setState {openDialogId: 'createProgram'}
 		_openEditProgramDialog: (programData) ->
-			console.log "Triggered"
 			@setState {
 				editData: programData
 				openDialogId: 'editProgram'
@@ -249,13 +182,13 @@ load = (win) ->
 				description: @state.description
 			})
 
-			# Create the new program, and trigger success
+			# Create the new program, and close
 			ActiveSession.persist.programs.create newProgram, (err, newProgram) =>
 				if err
 					CrashHandler.handle err
 					return
 
-				@props.onSuccess(newProgram)
+				@props.onSuccess()
 
 	EditProgramDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -319,21 +252,16 @@ load = (win) ->
 				description: @state.description
 			})
 
-		_submit: (event) ->
-			console.log "EVENT:", event
-			event.preventDefault()
-			console.log "Event", event
-
+		_submit: ->
 			editedProgram = @_compileProgramObject()
 
-			# Make new revision for this program ID
+			# Create new revision for program, and close
 			ActiveSession.persist.programs.createRevision editedProgram, (err, updatedProgram) =>
 				if err
 					CrashHandler.handle.err
 					return
 
-				# Deliver updated program back to main dialog
-				@props.onSuccess updatedProgram
+				@props.onSuccess()
 
 	return ClientProgramsDialog
 

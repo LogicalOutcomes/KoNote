@@ -4,6 +4,8 @@
 
 # Libraries from Node.js context
 Imm = require 'immutable'
+Async = require 'async'
+_ = require 'underscore'
 
 Config = require './config'
 Term = require './term'
@@ -24,16 +26,18 @@ load = (win) ->
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
 	BrandWidget = require('./brandWidget').load(win)	
-	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
+	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
 
 	ClientSelectionPage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
 				isLoading: true
-				clientFileList: null
+				clientFileHeaders: Imm.List()
+				programs: Imm.List()
 			}
 
 		init: ->
+			console.log "Starting load"
 			@_loadData()
 
 		deinit: (cb=(->)) ->
@@ -44,34 +48,86 @@ load = (win) ->
 			@props.closeWindow()
 
 		render: ->
-			return new ClientSelectionPageUi({
+			return ClientSelectionPageUi({
 				isLoading: @state.isLoading
-				clientFileList: @state.clientFileList
+				clientFileHeaders: @state.clientFileHeaders
+				programs: @state.programs
 			})
 
 		_loadData: ->
-			ActiveSession.persist.clientFiles.list (err, result) =>
+			clientFileHeaders = null
+			programHeaders = null
+			programs = null
+
+			Async.series [
+				(cb) =>
+					ActiveSession.persist.clientFiles.list (err, result) =>
+						if err
+							cb err
+							return
+
+						clientFileHeaders = result
+						cb()
+				(cb) =>
+					ActiveSession.persist.programs.list (err, result) =>
+						if err
+							cb err
+							return
+
+						programHeaders = result
+						cb()
+				(cb) =>
+					Async.map programHeaders.toArray(), (programHeader, cb) =>
+						progId = programHeader.get('id')
+						ActiveSession.persist.programs.readLatestRevisions progId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						programs = Imm.List(results).map (program) -> stripMetadata program.get(0)
+						cb()
+			], (err) =>
 				if err
 					if err instanceof Persist.IOError
-						Bootbox.alert """
-							Please check your network connection and try again.
-						""", =>
-							@props.closeWindow()
+						console.error err
+						console.error err.stack
+						@setState {loadErrorType: 'io-error'}
 						return
 
 					CrashHandler.handle err
 					return
 
-				@setState (state) =>
-					return {
-						isLoading: false
-						clientFileList: result
-					}
+				# Data loaded successfully, fill up state
+				@setState {
+					isLoading: false
+					programs
+					clientFileHeaders
+				}
 
 		getPageListeners: ->
 			return {
 				'create:clientFile': (newFile) =>
-					@setState (state) => clientFileList: state.clientFileList.push newFile
+					clientFileHeaders = @state.clientFileHeaders.push newFile
+					@setState {clientFileHeaders}, =>
+						openWindow {
+							page: 'clientFile'
+							clientFileId: newFile.get('id')
+						}
+				'create:program createRevision:program': (newRev) =>
+					programId = newRev.get('id')
+					# Updating or creating new program?
+					existingProgram = @state.programs.find (program) =>
+						program.get('id') is programId
+
+					@setState (state) =>
+						if existingProgram?
+							programIndex = state.programs.indexOf existingProgram
+							programs = state.programs.set programIndex, newRev
+						else
+							programs = state.programs.push newRev
+
+						return {programs}
 			}
 
 	ClientSelectionPageUi = React.createFactory React.createClass
@@ -86,7 +142,7 @@ load = (win) ->
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# If loading just finished
-			if oldProps.isLoading and (not @props.isLoading)
+			if oldProps.isLoading and not @props.isLoading
 				setTimeout(=>
 					@refs.searchBox.getDOMNode().focus()
 				, 100)
@@ -181,7 +237,8 @@ load = (win) ->
 									}
 										R.span({
 											className: 'recordId'
-										}, if result.has('recordId') and result.get('recordId').length > 0 then Config.clientFileRecordId.label + " #{result.get('recordId')}"),
+										}, if result.has('recordId') and result.get('recordId').length > 0
+											Config.clientFileRecordId.label + " #{result.get('recordId')}"),
 									renderName result.get('clientName')
 									)
 								).toJS()
@@ -210,6 +267,9 @@ load = (win) ->
 					title: "New #{Term 'Client File'}"
 					dialog: CreateClientFileDialog
 					icon: 'folder-open'
+					data: {
+						clientFileHeaders: @props.clientFileHeaders
+					}
 				})
 				UserMenuItem({
 					isVisible: isAdmin
@@ -222,6 +282,9 @@ load = (win) ->
 					title: Term 'Programs'
 					dialog: ProgramManagerDialog
 					icon: 'users'
+					data: {
+						programs: @props.programs
+					}
 				})
 			)
 
@@ -230,12 +293,12 @@ load = (win) ->
 
 		_getResultsList: ->
 			if @state.queryText.trim() is ''
-				return @props.clientFileList
+				return @props.clientFileHeaders
 
 			queryParts = Imm.fromJS(@state.queryText.split(' '))
 			.map (p) -> p.toLowerCase()
 
-			return @props.clientFileList
+			return @props.clientFileHeaders
 			.filter (clientFile) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
 				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
@@ -274,10 +337,11 @@ load = (win) ->
 			return {
 				isOpen: false
 			}
+
 		render: ->
 			return R.li({className: showWhen(@props.isVisible)},
 				R.div({
-					onClick: @_open
+					onClick: @_openMenu
 				}, 
 					FaIcon(@props.icon)
 					@props.title
@@ -287,21 +351,21 @@ load = (win) ->
 			unless @state.isOpen
 				return R.div()
 
-			return @props.dialog({
-				onClose: =>
-					@setState {isOpen: false}
-				onCancel: =>
-					@setState {isOpen: false}
-				onSuccess: (clientFileId) =>
-					@setState {isOpen: false}					
-					if clientFileId
-						openWindow {
-							page: 'clientFile'
-							clientFileId
-						}
-			})
-		_open: ->
+			# Default user menu functions
+			defaultProps = {
+				onClose: @_closeMenu
+				onCancel: @_closeMenu
+				onSuccess: @_closeMenu					
+			}
+			# Extend with custom data/function props
+			propsWithData = _.extend defaultProps, @props.data
+
+			return @props.dialog propsWithData
+
+		_openMenu: ->
 			@setState {isOpen: true}
+		_closeMenu: ->
+			@setState {isOpen: false}
 
 	return ClientSelectionPage
 
