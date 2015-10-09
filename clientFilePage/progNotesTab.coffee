@@ -180,8 +180,12 @@ load = (win) ->
 			R.div({className: 'basic progNote'},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
-						Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
-						.format 'MMMM D, YYYY [at] HH:mm'
+						if @props.progNote.get('backdate') != ''
+							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							.format('MMMM D, YYYY [at] HH:mm') + " (note backdated as " + Moment(@props.progNote.get('backdate'), Persist.TimestampFormat).format('MMMM D, YYYY') + ")"
+						else
+							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							.format 'MMMM D, YYYY [at] HH:mm'
 					)
 					R.div({className: 'author'},
 						' by '
