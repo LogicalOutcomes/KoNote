@@ -203,7 +203,11 @@ load = (win) ->
 					throw new Error "Invalid Login Error"
 
 		render: ->
-			return R.div({}) if Config.autoLogin?
+			if Config.autoLogin?
+				return R.div({className: 'loginPage'},
+					R.div({className: 'autoLogin'}, "Auto-Login Enabled . . .")
+				)
+
 			return R.div({className: 'loginPage'},
 				Spinner({
 					isVisible: @props.isLoading
