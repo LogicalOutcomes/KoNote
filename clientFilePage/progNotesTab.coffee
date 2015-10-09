@@ -139,7 +139,7 @@ load = (win) ->
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
-					@props.createQuickNote popover.find('textarea').val(), (err) =>
+					@props.createQuickNote popover.find('textarea').val(), popover.find('input').val(), (err) =>
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
@@ -154,10 +154,12 @@ load = (win) ->
 						quickNoteToggle.data('isVisible', false)
 
 				popover.find('.backdate.date').datetimepicker({
-					useCurrent: false
-					format: 'Do MMM, \'YY'
+					format: Persist.TimestampFormat
 					defaultDate: Moment()
 					maxDate: Moment()
+					widgetPositioning: {
+						vertical: 'bottom'
+					}
 				})
 				
 				popover.find('.cancel.btn').on 'click', (event) =>

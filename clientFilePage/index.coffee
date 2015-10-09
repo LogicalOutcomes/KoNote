@@ -392,13 +392,13 @@ load = (win, {clientFileId}) ->
 				# Persist operations will automatically trigger event listeners
 				# that update the UI.
 
-		_createQuickNote: (notes, cb) ->
+		_createQuickNote: (notes, backdate, cb) ->
 			if notes != ''
 				note = Imm.fromJS {
 					type: 'basic'
 					clientFileId
 					notes
-					backdate: ''
+					backdate
 				}
 
 				@setState (state) => {isLoading: true}
