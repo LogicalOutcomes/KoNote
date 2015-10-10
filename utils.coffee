@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Config = require './config'
+_ = require 'underscore'
 
 # This class allows new error types to be created easily without breaking stack
 # traces, toString, etc.
@@ -32,8 +33,13 @@ load = (win) ->
 	Gui = win.require 'nw.gui'
 
 	# Shortcut for using Font Awesome icons in React
-	FaIcon = (name) ->
-		return R.i({className: "fa fa-#{name}"})
+	FaIcon = (name, customProps) ->
+		properties = {className: "fa fa-#{name}"}
+		if customProps?
+			# Extend in any custom settings
+			_.extend properties, customProps
+
+		return R.i(properties)
 
 	# A convenience method for opening a new window
 	openWindow = (params) ->
