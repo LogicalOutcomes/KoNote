@@ -235,11 +235,11 @@ load = (win) ->
 										className: 'result'
 										onClick: @_onResultSelection.bind(null, result.get('id'))
 									}
-										R.span({
-											className: 'recordId'
-										}, if result.has('recordId') and result.get('recordId').length > 0
-											Config.clientFileRecordId.label + " #{result.get('recordId')}"),
-									renderName result.get('clientName')
+										R.span({className: 'recordId'}, 
+											if result.has('recordId') and result.get('recordId').length > 0
+												Config.clientFileRecordId.label + " #{result.get('recordId')}"
+										)
+										renderName result.get('clientName')
 									)
 								).toJS()
 							else
@@ -284,6 +284,7 @@ load = (win) ->
 					icon: 'users'
 					data: {
 						programs: @props.programs
+						clientFileHeaders: @props.clientFileHeaders
 					}
 				})
 			)
@@ -311,11 +312,13 @@ load = (win) ->
 						middleName.includes(part) or
 						lastName.includes(part) or
 						recordId.includes(part)
+
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
+
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
 		_home: ->
