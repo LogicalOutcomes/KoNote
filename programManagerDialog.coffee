@@ -19,14 +19,15 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
-	{FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
+	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
-	ClientProgramsDialog = React.createFactory React.createClass
+	ProgramManagerDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin, LayeredComponentMixin]
 
 		getInitialState: ->
 			return {
 				openDialogId: null
+				expandedMemberLists: Imm.List()
 			}
 
 		render: ->
@@ -34,7 +35,7 @@ load = (win) ->
 				title: "#{Term 'Client'} #{Term 'Programs'}"
 				onClose: @props.onCancel
 			},
-				R.div({className: 'clientProgramsDialog'},
+				R.div({className: 'programManagerDialog'},
 					Spinner({
 						isVisible: @state.mode in ['loading', 'working']
 						isOverlay: true
@@ -56,22 +57,33 @@ load = (win) ->
 								R.tbody({},
 									(@props.programs.map (program) =>
 										R.tr({},
-											R.td({className: 'nameCell'}, program.get('name'))
-											R.td({className: 'descriptionCell'}, program.get('description'))
+											R.td({},
+												R.h5({}, program.get 'name')
+												R.p({}, program.get 'description')
+												(if @state.expandedMemberLists.includes program.get('id')
+													R.span({className: 'clientName'}, 
+														R.span({}, "ClientA")
+														FaIcon('times', {
+															onClick: @_removeClientFromProgram.bind null, 12345, program.get('id')
+														})
+													)
+													R.button({
+														className: 'btn btn-success btn-sm'
+														onClick: @_openManageClientsDialog.bind null, program
+													}, "Add #{Term 'Clients'}")
+												)
+											)
 											R.td({className: 'buttonsCell'},
 												R.div({className: 'btn-group'},
 													R.button({
-														className: 'btn btn-default'
-														# onClick: @_openDialog 'manageClients'
-													}, 
-														"Manage #{Term 'Clients'}"
-													)
-													R.button({
 														className: 'btn btn-warning'
 														onClick: @_openEditProgramDialog.bind null, program
-													},
-														"Edit"
-													)
+													}, "Edit")
+													R.button({
+														className: 'btn btn-success'
+														disabled: false
+														onClick: @_toggleProgramClients.bind null, program.get('id')
+													}, "X #{Term 'Clients'}")
 												)
 											)
 										)
@@ -97,12 +109,13 @@ load = (win) ->
 						onSuccess: @_closeDialog
 						data: @state.editData
 					})
-				# when 'manageClients'
-				# 	return ManageClientsDialog({
-				# 		onClose: @_closeDialog
-				# 		onCancel: @_closeDialog
-				# 		onSuccess: ()
-				# 	})
+				when 'manageProgramClients'
+					return ManageProgramClientsDialog({
+						onClose: @_closeDialog
+						onCancel: @_closeDialog						
+						onSuccess: @_closeDialog
+						data: @state.editData
+					})
 				when null
 					return R.div()
 				else
@@ -115,6 +128,29 @@ load = (win) ->
 				editData: programData
 				openDialogId: 'editProgram'
 			}
+		_openManageClientsDialog: (program) ->
+			@setState {				
+				openDialogId: 'manageProgramClients'
+				editData: {
+					program
+					clientFileHeaders: @props.clientFileHeaders
+				}
+			}
+
+		_toggleProgramClients: (programId) ->
+			# Toggling logic for list of open membership 
+			if @state.expandedMemberLists.includes programId
+				listIndex = @state.expandedMemberLists.indexOf programId
+				expandedMemberLists = @state.expandedMemberLists.delete listIndex
+			else
+				expandedMemberLists = @state.expandedMemberLists.push programId
+
+			@setState {expandedMemberLists}
+		
+		_removeClientFromProgram: (clientId, programId) ->
+			Bootbox.confirm "Are you sure you want to remove clientId from program?", (confirmed) =>
+				if confirmed
+					Bootbox.alert "Ok, deleting..."
 
 		_closeDialog: (event) ->
 			@setState {openDialogId: null}		
@@ -129,10 +165,10 @@ load = (win) ->
 			}
 
 		render: ->
-			Dialog({
+			return Dialog({
 				title: "Create New #{Term 'Program'}"
 				onClose: @props.onCancel
-			}
+			},
 				R.div({className: 'createProgramDialog'}
 					Spinner({
 						isVisible: @state.isLoading
@@ -201,11 +237,11 @@ load = (win) ->
 			}
 
 		render: ->
-			Dialog({
+			return Dialog({
 				title: "Editing #{Term 'Program'}"
 				onClose: @props.onCancel
-			}
-				R.div({className: 'editProgramDialog'}
+			},
+				R.div({className: 'createProgramDialog editProgramDialog'}
 					R.div({className: 'form-group'},
 						R.label({}, "Name")
 						R.input({
@@ -233,7 +269,7 @@ load = (win) ->
 							disabled: not @state.name or not @state.description or not @_hasChanges()
 							onClick: @_submit
 							type: 'submit'
-						}, "Finished Editing")
+						}, "Finished Editing")						
 					)
 				)
 			)
@@ -263,6 +299,130 @@ load = (win) ->
 
 				@props.onSuccess()
 
-	return ClientProgramsDialog
+	ManageProgramClientsDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				searchQuery: ''
+				selectedClientIds: Imm.List()
+			}
+
+		render: ->
+			searchResults = @_getResultsList()
+
+			return Dialog({
+				title: "Add Clients"
+				onClose: @props.onClose
+			},
+				R.div({className: 'manageClientsDialog'},
+					R.div({className: 'clientPicker panel panel-default'},
+						R.div({className: 'form-group panel-heading'}
+							R.label({}, "Search")
+							R.input({
+								className: 'form-control'
+								placeholder: "by name" + 
+								(" or #{Config.clientFileRecordId.label}" if Config.clientFileRecordId?)
+								onChange: @_updateSearchQuery
+							})
+						)
+						R.table({className: 'table panel-body'},
+							R.thead({},
+								R.tr({},
+									R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
+									R.td({colspan: 2}, "#{Term 'Client'} Name")
+								)
+							)
+							R.tbody({},
+								(searchResults.map (result) =>
+									clientId = result.get('id')
+
+									R.tr({key: clientId},
+										R.td({}, result.get('recordId')) if Config.clientFileRecordId?
+										R.td({}, renderName result.get('clientName'))
+										R.td({},
+											(if @state.selectedClientIds.includes clientId											
+												R.button({
+													className: 'btn btn-danger btn-sm'
+													onClick: @_removeClientId.bind null, clientId
+												},
+													FaIcon('minus')
+												)
+											else
+												R.button({
+													className: 'btn btn-default btn-sm'
+													onClick: @_addClientId.bind null, clientId
+												},
+													FaIcon('plus')
+												)
+											)
+										)
+									)
+								)
+							)
+						)
+					)
+					R.div({className: 'programClients'},
+						R.table({className: 'table table-striped'}
+							R.thead({},
+								R.tr({},
+									R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
+									R.td({colspan: 2}, "#{Term 'Client'} Name")
+								)
+							)
+							R.tbody({},
+								(@state.selectedClientIds.map (clientId) =>
+									client = @_findClientById clientId
+
+									R.tr({key: clientId},
+										R.td({}, client.get('recordId')) if Config.clientFileRecordId?
+										R.td({}, renderName client.get('clientName'))
+										R.td({}, 
+											R.button({
+												className: 'btn btn-danger btn-sm'
+												onClick: @_removeClientId.bind null, clientId
+											},
+												FaIcon('minus')
+											)
+										)
+									)
+								)
+							)
+						)
+					)
+				)
+			)		
+
+		_addClientId: (clientId) ->
+			selectedClientIds = @state.selectedClientIds.push clientId
+			@setState {selectedClientIds}
+		_removeClientId: (clientId) ->
+			listIndex = @state.selectedClientIds.indexOf clientId
+			selectedClientIds = @state.selectedClientIds.delete listIndex
+			@setState {selectedClientIds}
+		_findClientById: (clientId) ->
+			@props.data.clientFileHeaders.find (client) -> client.get('id') is clientId
+
+		_updateSearchQuery: (event) ->
+			@setState {searchQuery: event.target.value}
+
+		_getResultsList: ->
+			queryParts = Imm.fromJS(@state.searchQuery.split(' '))
+			.map (p) -> p.toLowerCase()
+
+			return @props.data.clientFileHeaders
+			.filter (clientFile) ->
+				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
+				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
+				lastName = clientFile.getIn(['clientName', 'last']).toLowerCase()
+				recordId = clientFile.getIn(['recordId']).toLowerCase()				
+
+				return queryParts
+				.every (part) ->
+					return firstName.includes(part) or
+						middleName.includes(part) or
+						lastName.includes(part) or
+						recordId.includes(part)
+
+	return ProgramManagerDialog
 
 module.exports = {load}
