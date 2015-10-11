@@ -34,63 +34,88 @@ load = (win) ->
 			return Dialog({
 				title: "#{Term 'Client'} #{Term 'Programs'}"
 				onClose: @props.onCancel
+				containerClasses: ['noPadding'] if @props.programs.size > 0
 			},
 				R.div({className: 'programManagerDialog'},
 					Spinner({
 						isVisible: @state.mode in ['loading', 'working']
 						isOverlay: true
-					})					
-					R.div({},
-						R.div({className: 'btn-toolbar'},
+					})
+					(if @props.programs.size is 0
+						# Fresh-run UI
+						R.div({className: 'noData'}, 
+							R.span({}, "No #{Term 'programs'} exist yet.")
 							R.button({
-								className: 'btn btn-primary'
+								className: 'btn btn-primary btn-lg'
 								onClick: @_openCreateProgramDialog
 							},
 								FaIcon('plus')
-								" New #{Term 'Program'}"
+								" Create #{Term 'Program'}"
 							)
 						)
-						if @props.programs.size is 0
-							R.div({className: 'noData'}, "No #{Term 'programs'} exist yet.")
-						else
+					else
+						R.div({className: 'hasData'},
+							R.div({className: 'options'},
+								R.button({
+									className: 'btn btn-primary'
+									onClick: @_openCreateProgramDialog
+								},
+									FaIcon('plus')
+									" Create #{Term 'Program'}"
+								)
+							)
 							R.table({className: 'table table-striped'},
 								R.tbody({},
 									(@props.programs.map (program) =>
+										isExpanded = @state.expandedMemberLists.includes program.get('id')
+
 										R.tr({},
 											R.td({},
-												R.h5({}, program.get 'name')
-												R.p({}, program.get 'description')
-												(if @state.expandedMemberLists.includes program.get('id')
-													R.span({className: 'clientName'}, 
-														R.span({}, "ClientA")
-														FaIcon('times', {
-															onClick: @_removeClientFromProgram.bind null, 12345, program.get('id')
-														})
+												R.h4({
+													className: 'programName'
+													onClick: @_toggleExpandedView.bind null, program.get('id')
+												},
+													(if not isExpanded
+														FaIcon('plus')
+													else
+														FaIcon('minus')
 													)
-													R.button({
-														className: 'btn btn-success btn-sm'
-														onClick: @_openManageClientsDialog.bind null, program
-													}, "Add #{Term 'Clients'}")
+													program.get 'name'
+												)
+
+												(if isExpanded
+													R.div({},
+														R.p({}, program.get 'description')
+														R.span({className: 'clientName'}, 
+															R.span({}, "ClientA")
+															FaIcon('times', {
+																onClick: @_removeClientFromProgram.bind null, 12345, program.get('id')
+															})
+														)
+													)
 												)
 											)
-											R.td({className: 'buttonsCell'},
+											R.td({},
 												R.div({className: 'btn-group'},
 													R.button({
 														className: 'btn btn-warning'
 														onClick: @_openEditProgramDialog.bind null, program
 													}, "Edit")
 													R.button({
-														className: 'btn btn-success'
-														disabled: false
-														onClick: @_toggleProgramClients.bind null, program.get('id')
-													}, "X #{Term 'Clients'}")
-												)
+														className: 'btn btn-default'
+														onClick: @_openManageClientsDialog.bind null, program
+													},														
+														Term 'Clients'
+														R.span({className: 'badge'}, 0)
+													)
+												)												
 											)
 										)
 									)
 								)
 							)
 						)
+					)
 				)
 			)
 
@@ -137,7 +162,7 @@ load = (win) ->
 				}
 			}
 
-		_toggleProgramClients: (programId) ->
+		_toggleExpandedView: (programId) ->
 			# Toggling logic for list of open membership 
 			if @state.expandedMemberLists.includes programId
 				listIndex = @state.expandedMemberLists.indexOf programId
@@ -164,6 +189,9 @@ load = (win) ->
 				isLoading: false
 			}
 
+		componentDidMount: ->
+			@refs.programName.getDOMNode().focus()
+
 		render: ->
 			return Dialog({
 				title: "Create New #{Term 'Program'}"
@@ -175,8 +203,9 @@ load = (win) ->
 						isOverlay: true
 					})
 					R.div({className: 'form-group'},
-						R.label({}, "Name")
+						R.label({}, "#{Term 'Program'} Name")
 						R.input({
+							ref: 'programName'
 							className: 'form-control'
 							value: @state.name
 							onChange: @_updateName
@@ -197,7 +226,7 @@ load = (win) ->
 							onClick: @props.onCancel
 						}, "Cancel")
 						R.button({
-							className: 'btn btn-primary'
+							className: 'btn btn-success'
 							disabled: not @state.name or not @state.description
 							onClick: @_submit
 						}, "Create #{Term 'Program'}")
@@ -241,6 +270,7 @@ load = (win) ->
 				title: "Editing #{Term 'Program'}"
 				onClose: @props.onCancel
 			},
+				# Uses createProgramDialog stylesheet, own for overrides
 				R.div({className: 'createProgramDialog editProgramDialog'}
 					R.div({className: 'form-group'},
 						R.label({}, "Name")
@@ -265,7 +295,7 @@ load = (win) ->
 							onClick: @props.onCancel
 						}, "Cancel")
 						R.button({
-							className: 'btn btn-primary'
+							className: 'btn btn-success'
 							disabled: not @state.name or not @state.description or not @_hasChanges()
 							onClick: @_submit
 							type: 'submit'
@@ -307,52 +337,70 @@ load = (win) ->
 				selectedClientIds: Imm.List()
 			}
 
+		componentDidMount: ->
+			@refs.clientSearchBox.getDOMNode().focus()
+
 		render: ->
 			searchResults = @_getResultsList()
 
 			return Dialog({
-				title: "Add Clients"
+				title: "Manage #{Term 'Program'} #{Term 'Clients'}"
 				onClose: @props.onClose
 			},
-				R.div({className: 'manageClientsDialog'},
+				R.div({className: 'manageProgramClientsDialog'},
 					R.div({className: 'clientPicker panel panel-default'},
-						R.div({className: 'form-group panel-heading'}
+						R.div({className: 'panel-heading'}
 							R.label({}, "Search")
 							R.input({
 								className: 'form-control'
-								placeholder: "by name" + 
+								placeholder: "by #{Term 'client'} name" + 
 								(" or #{Config.clientFileRecordId.label}" if Config.clientFileRecordId?)
 								onChange: @_updateSearchQuery
+								ref: 'clientSearchBox'
 							})
 						)
-						R.table({className: 'table panel-body'},
-							R.thead({},
-								R.tr({},
-									R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
-									R.td({colspan: 2}, "#{Term 'Client'} Name")
-								)
+						(if searchResults.isEmpty()
+							R.div({className: 'panel-body noData'}, 
+								"No #{Term 'client'} matches for \"#{@state.searchQuery}\""
 							)
-							R.tbody({},
-								(searchResults.map (result) =>
-									clientId = result.get('id')
+						else
+							R.table({className: 'panel-body table'},
+								R.thead({},
+									R.tr({},
+										R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
+										R.td({colspan: 2}, "#{Term 'Client'} Name")
+									)
+								)
+								R.tbody({},
+									(searchResults.map (result) =>
+										clientId = result.get('id')
+										recordId = result.get('recordId')
 
-									R.tr({key: clientId},
-										R.td({}, result.get('recordId')) if Config.clientFileRecordId?
-										R.td({}, renderName result.get('clientName'))
-										R.td({},
-											(if @state.selectedClientIds.includes clientId											
-												R.button({
-													className: 'btn btn-danger btn-sm'
-													onClick: @_removeClientId.bind null, clientId
-												},
-													FaIcon('minus')
+										R.tr({key: "result-" + clientId},
+											if Config.clientFileRecordId?
+												R.td({}, 
+													(if recordId.length > 0
+														recordId
+													else
+														R.div({className: 'noId'}, "n/a")
+													)
 												)
-											else
-												R.button({
-													className: 'btn btn-default btn-sm'
-													onClick: @_addClientId.bind null, clientId
-												},
-													FaIcon('plus')
+											R.td({}, renderName result.get('clientName'))
+											R.td({},
+												(if @state.selectedClientIds.includes clientId											
+													R.button({
+														className: 'btn btn-danger btn-sm'
+														onClick: @_removeClientId.bind null, clientId
+													},
+														FaIcon('minus')
+													)
+												else
+													R.button({
+														className: 'btn btn-default btn-sm'
+														onClick: @_addClientId.bind null, clientId
+													},
+														FaIcon('plus')
+													)
 												)
 											)
 										)
@@ -361,27 +409,48 @@ load = (win) ->
 							)
 						)
 					)
-					R.div({className: 'programClients'},
-						R.table({className: 'table table-striped'}
-							R.thead({},
-								R.tr({},
-									R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
-									R.td({colspan: 2}, "#{Term 'Client'} Name")
-								)
+					R.div({className: 'programClients panel panel-default'},
+						R.div({className: 'panel-heading'}, 
+							R.h3({className: 'panel-title'},
+								if not @state.selectedClientIds.isEmpty()
+									R.span({className: 'badge'}, @state.selectedClientIds.size)
+								@props.data.program.get('name')
 							)
-							R.tbody({},
-								(@state.selectedClientIds.map (clientId) =>
-									client = @_findClientById clientId
+						)
+						(if @state.selectedClientIds.isEmpty()
+							R.div({className: 'panel-body noData'},
+								"This #{Term 'program'} has no members yet."
+							)
+						else
+							R.table({className: 'panel-body table table-striped'}
+								R.thead({},
+									R.tr({},
+										R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
+										R.td({colspan: 2}, "#{Term 'Client'} Name")
+									)
+								)
+								R.tbody({},
+									(@state.selectedClientIds.map (clientId) =>
+										client = @_findClientById clientId
+										recordId = client.get('recordId')
 
-									R.tr({key: clientId},
-										R.td({}, client.get('recordId')) if Config.clientFileRecordId?
-										R.td({}, renderName client.get('clientName'))
-										R.td({}, 
-											R.button({
-												className: 'btn btn-danger btn-sm'
-												onClick: @_removeClientId.bind null, clientId
-											},
-												FaIcon('minus')
+										R.tr({key: "selected-" + clientId},
+											if Config.clientFileRecordId?
+												R.td({}, 
+													(if recordId.length > 0
+														recordId
+													else
+														R.div({className: 'noId'}, "n/a")
+													)
+												)
+											R.td({}, renderName client.get('clientName'))
+											R.td({}, 
+												R.button({
+													className: 'btn btn-danger btn-sm'
+													onClick: @_removeClientId.bind null, clientId
+												},
+													FaIcon('minus')
+												)
 											)
 										)
 									)
