@@ -191,16 +191,18 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
-				# Done loading data, we can generate the prognote now
-				@setState (state) =>
-					return {						
-						isLoading: false
-						progNote: @_createProgNoteFromTemplate(
-							template, state.clientFile, planTargetsById, metricsById
-						)
-					}
+				progNote = @_createProgNoteFromTemplate(
+					template
+					@state.clientFile
+					planTargetsById
+					metricsById
+				)
 
-				@render()		
+				# Done loading data, we can generate the prognote now
+				@setState {						
+						isLoading: false
+						progNote
+					}
 
 		_createProgNoteFromTemplate: (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
