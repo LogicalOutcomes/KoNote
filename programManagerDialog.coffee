@@ -17,6 +17,7 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
+	Slider = require('./slider').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
@@ -31,17 +32,20 @@ load = (win) ->
 			}
 
 		render: ->
+			noData = @props.programs.size is 0
+
 			return Dialog({
 				title: "#{Term 'Client'} #{Term 'Programs'}"
 				onClose: @props.onCancel
-				containerClasses: ['noPadding'] if @props.programs.size > 0
+				containerClasses: ['noPadding'] unless noData
+				disableBackgroundClick: true
 			},
 				R.div({className: 'programManagerDialog'},
 					Spinner({
 						isVisible: @state.mode in ['loading', 'working']
 						isOverlay: true
 					})
-					(if @props.programs.size is 0
+					(if noData
 						# Fresh-run UI
 						R.div({className: 'noData'}, 
 							R.span({}, "No #{Term 'programs'} exist yet.")
@@ -186,6 +190,7 @@ load = (win) ->
 			return {
 				name: ''
 				description: ''
+				colorHuePercent: null
 				isLoading: false
 			}
 
@@ -196,8 +201,15 @@ load = (win) ->
 			return Dialog({
 				title: "Create New #{Term 'Program'}"
 				onClose: @props.onCancel
+				containerClasses: ['noPadding']
 			},
-				R.div({className: 'createProgramDialog'}
+				R.div({
+					className: 'createProgramDialog'
+					style: {
+						background: if @state.colorHuePercent?
+							"hsl(#{(@state.colorHuePercent / 100) * 360},100%,90%)"
+					}
+				},
 					Spinner({
 						isVisible: @state.isLoading
 						isOverlay: true
@@ -220,6 +232,17 @@ load = (win) ->
 							rows: 3
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "Choose a color key")
+						Slider({
+							isEnabled: true
+							tooltip: false
+							isRange: false
+							minValue: 0
+							maxValue: 100
+							onSlide: @_updateColorHuePercent
+						})
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -238,6 +261,10 @@ load = (win) ->
 			@setState {name: event.target.value}
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
+		_updateColorHuePercent: (event) ->
+			colorHuePercent = event.target.value
+			console.log "Hue:", colorHuePercent
+			@setState {colorHuePercent}
 
 		_submit: (event) ->
 			event.preventDefault()
