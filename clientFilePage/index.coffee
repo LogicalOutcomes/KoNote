@@ -263,7 +263,7 @@ load = (win, {clientFileId}) ->
 				else
 					# OK, load in clientFile state data!
 					console.log "Restored clientFile data to @state"
-					@setState => {
+					@setState {
 						clientFile						
 						progressNotes
 						progressEvents
