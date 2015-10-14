@@ -28,7 +28,7 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				selectedItem: null
-				backdate: Moment()
+				backdate: ''
 			}
 
 		componentDidMount: ->
@@ -141,7 +141,7 @@ load = (win) ->
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
-					@props.createQuickNote popover.find('textarea').val(), Moment(@state.backdate).format(Persist.TimestampFormat), (err) =>
+					@props.createQuickNote popover.find('textarea').val(), @state.backdate, (err) =>
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
@@ -163,7 +163,7 @@ load = (win) ->
 						vertical: 'bottom'
 					}
 				}).on 'dp.change', (e) =>
-					@setState {backdate: e.date}
+					@setState {backdate: Moment(e.date).format(Persist.TimestampFormat)}
 				
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
@@ -184,8 +184,8 @@ load = (win) ->
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
 						if @props.progNote.get('backdate') != ''
-							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
-							.format('MMMM D, YYYY [at] HH:mm') + " (note backdated as " + Moment(@props.progNote.get('backdate'), Persist.TimestampFormat).format('MMMM D, YYYY') + ")"
+							Moment(@props.progNote.get('backdate'), Persist.TimestampFormat)
+							.format('MMMM D, YYYY [at] HH:mm') + " (late)"
 						else
 							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
 							.format 'MMMM D, YYYY [at] HH:mm'
