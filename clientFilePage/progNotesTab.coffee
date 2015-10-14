@@ -28,9 +28,11 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				selectedItem: null
+				backdate: Moment()
 			}
 
 		componentDidMount: ->
+			
 			quickNoteToggle = $('.addQuickNote')
 			quickNoteToggle.data 'isVisible', false
 			quickNoteToggle.popover {
@@ -139,7 +141,7 @@ load = (win) ->
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
-					@props.createQuickNote popover.find('textarea').val(), popover.find('input').val(), (err) =>
+					@props.createQuickNote popover.find('textarea').val(), Moment(@state.backdate).format(Persist.TimestampFormat), (err) =>
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
@@ -154,13 +156,14 @@ load = (win) ->
 						quickNoteToggle.data('isVisible', false)
 
 				popover.find('.backdate.date').datetimepicker({
-					format: Persist.TimestampFormat
+					format: 'MMM-DD-YYYY'
 					defaultDate: Moment()
 					maxDate: Moment()
 					widgetPositioning: {
 						vertical: 'bottom'
 					}
-				})
+				}).on 'dp.change', (e) =>
+					@setState {backdate: e.date}
 				
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
