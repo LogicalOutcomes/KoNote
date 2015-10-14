@@ -150,67 +150,15 @@ load = (win) ->
 					@refs.searchBox.getDOMNode().focus()
 				, 100)
 
+			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
+				@_refreshResults
+
 			if @state.queryText isnt oldState.queryText
 				@_refreshResults()
 
 		componentDidMount: ->
 			@_refreshResults()
-
-			searchBox = @refs.searchBox.getDOMNode()
-
-			# Key-bindings for searchBox
-			$(searchBox).on 'keydown', (event) =>
-				# Don't need to see this unless in full search view
-				return if not @state.isSmallHeaderSet
-
-				# What was pressed?
-				switch event.which
-
-					when 40 # Down arrow
-						queryResults = @state.queryResults						
-
-						# Choose first result on fresh-run
-						if not @state.hoverClientId?
-							@setState hoverClientId: queryResults.first().get('id')
-							return
-
-						hoverClientId = null
-
-						currentResultIndex = queryResults.findIndex (result) =>
-							return result.get('id') is @state.hoverClientId
-
-						nextIndex = currentResultIndex + 1
-
-						# Ensure the next result index exists, otherwise skip
-						if queryResults.get(nextIndex)?
-							hoverClientId = queryResults.get(nextIndex).get('id')
-						else
-							hoverClientId = queryResults.first().get('id')
-
-						@setState {hoverClientId}
-
-					when 38 # Up arrow
-						queryResults = @state.queryResults						
-
-						# Choose first result on fresh-run
-						if not @state.hoverClientId?
-							@setState hoverClientId: queryResults.last().get('id')
-							return
-
-						hoverClientId = null
-
-						currentResultIndex = queryResults.findIndex (result) =>
-							return result.get('id') is @state.hoverClientId
-
-						nextIndex = currentResultIndex - 1
-
-						# Ensure the next result index exists, otherwise skip
-						if queryResults.get(nextIndex)?
-							hoverClientId = queryResults.get(nextIndex).get('id')
-						else
-							hoverClientId = queryResults.first().get('id')
-
-						@setState {hoverClientId}
+			@_attachKeyBindings()
 
 		render: ->
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
@@ -294,8 +242,8 @@ load = (win) ->
 								R.div({
 									key: "result-" + result.get('id')
 									className: [
-										"result"
-										"active" if @state.hoverClientId is result.get('id')
+										"hover" if @state.hoverClientId is result.get('id')
+										"result"										
 									].join ' '
 									onClick: @_onResultSelection.bind(null, result.get('id'))
 								}
@@ -351,7 +299,54 @@ load = (win) ->
 			)
 
 		_toggleUserMenu: ->
-			@setState {menuIsOpen: !@state.menuIsOpen}
+			@setState {menuIsOpen: !@state.menuIsOpen}		
+
+		_attachKeyBindings: ->
+			searchBox = @refs.searchBox.getDOMNode()
+
+			# $(searchBox).on 'submit', (event) -> event.preventDefault()
+
+			# Key-bindings for searchBox
+			$(searchBox).on 'keydown', (event) =>
+				# Don't need to see this unless in full search view
+				return if not @state.isSmallHeaderSet
+
+				switch event.which
+					when 40 # Down arrow
+						event.preventDefault()
+						@_shiftHoverClientId(1)
+					when 38 # Up arrow
+						event.preventDefault()
+						@_shiftHoverClientId(-1)
+					when 27 # Esc
+						@setState hoverClientId: null
+					when 13 # Enter
+						$('.hover')[0].click()
+						return false
+
+		_shiftHoverClientId: (modifier) ->
+			hoverClientId = null
+			queryResults = @state.queryResults
+
+			# Get our current index position
+			currentResultIndex = queryResults.findIndex (result) =>
+				return result.get('id') is @state.hoverClientId
+
+			nextIndex = currentResultIndex + modifier
+
+			# Skip to first/last if first-run or next is non-existent
+			if not queryResults.get(nextIndex)? or not @state.hoverClientId?
+				if modifier > 0
+					hoverClientId = queryResults.first().get('id')
+				else
+					hoverClientId = queryResults.last().get('id')
+
+				@setState {hoverClientId}
+				return
+
+			# No wacky skip behaviour needed, move to next/previous result
+			hoverClientId = queryResults.get(nextIndex).get('id')
+			@setState {hoverClientId}
 
 		_refreshResults: ->
 			# Return all results if search query is empty
@@ -379,7 +374,7 @@ load = (win) ->
 						recordId.includes(part)
 
 			@setState {queryResults}
-			
+
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 

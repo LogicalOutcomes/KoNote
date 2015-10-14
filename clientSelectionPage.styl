@@ -136,13 +136,19 @@ sidebar-borders = darken(sidebar-bg, 10%)
 					cursor pointer
 					font-weight 600
 
-					&:hover, &.active
-						color white
-						background hsl(200, 80%, 80%)
+					// Actual hover and simulated hover
+					&:hover, &.hover
+						color white						
 						
 						> .recordId
 							opacity 1
 							color white
+					
+					&.hover
+						background hsl(200, 80%, 85%)
+						
+					&:hover
+						background hsl(200, 80%, 80%)
 					
 					> .recordId
 						float right
