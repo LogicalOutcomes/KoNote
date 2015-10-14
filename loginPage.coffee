@@ -18,6 +18,7 @@ load = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
+	Dialog = require('./dialog').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
 	LoginPage = React.createFactory React.createClass
@@ -85,18 +86,46 @@ load = (win) ->
 
 						cb()
 				(cb) =>
-					# TODO: Move to ui
-					Bootbox.prompt {
-						title: "We will now create a user account called 'admin'.  Please choose a password:"
-						inputType: 'password'
-						callback: (result) ->
-							unless result
-								process.exit(0)
-								return
+					containerElem = $('#container')[0]
 
-							adminPassword = result
+					React.render NewInstallationDialog({
+						onSuccess: (password) ->
+							adminPassword = password
 							cb()
-					}
+					}), containerElem
+
+					# TODO: Move to ui
+					# Bootbox.prompt {
+					# 	title: "We will now create a user account called 'admin'.  Please choose a password:"
+					# 	inputType: 'password'
+					# 	callback: (result) ->
+					# 		unless result
+					# 			process.exit(0)
+					# 			return
+
+					# 		adminPassword = result
+					# 		cb()
+					# }
+
+					# Bootbox.dialog {
+					# 	title: "New #{Config.productName} Installation"
+					# 	message: """
+					# 		<input type="password" name="adminPassword">
+					# 		<input type="password" name="adminPasswordConfirm">
+					# 	"""
+					# 	buttons: {
+					# 		success: {
+					# 			label: "Go!"
+					# 			className: 'btn-success'
+					# 			callback: ->
+					# 				password = $('input[name="adminPassword"]').val()
+					# 				passwordConfirm = $('input[name="adminPasswordConfirm').val()
+
+					# 				console.log "password", password
+					# 				console.log "passwordConfirm", passwordConfirm
+					# 		}
+					# 	}
+					# }
 				(cb) =>
 					@setState {isLoading: true}
 					Persist.setUpDataDirectory Config.dataDirectory, (err) =>
@@ -201,6 +230,16 @@ load = (win) ->
 					throw new Error "Invalid Login Error"
 
 		render: ->
+			if Config.autoLogin?
+				return R.div({className: 'loginPage'},
+					R.div({className: 'autoLogin'}, "Auto-Login Enabled . . .")
+				)
+
+			if @state.isNewInstallation
+				return R.div({className: 'loginPage'},
+					NewInstallationDialog({})
+				)
+
 			return R.div({className: 'loginPage'},
 				Spinner({
 					isVisible: @props.isLoading
@@ -244,6 +283,58 @@ load = (win) ->
 			@setState {userName: event.target.value}
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
+
+	NewInstallationDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				adminPassword: ''
+				adminPasswordConfirm: ''
+			}
+
+		render: ->
+			return Dialog({
+				title: "Create Administrator Account"
+				disableBackgroundClick: true
+			},
+				R.div({className: 'newInstallationDialog'},
+					R.div({className: 'form-group'},
+						R.label({},
+							"Set password"						
+							R.input({
+								type: 'password'
+								className: 'form-control'
+								onChange: @_updateAdminPassword
+							})
+						)
+					)
+					R.div({className: 'form-group'},
+						R.label({},
+							"Confirm password"						
+							R.input({
+								type: 'password'
+								className: 'form-control'
+								onChange: @_updateAdminPasswordConfirm
+							})
+						)
+					)
+					R.div({className: 'btn-toolbar'},
+						R.button({
+							className: 'btn btn-success'
+							disabled: @state.adminPassword.length is 0 or @state.adminPassword isnt @state.adminPasswordConfirm
+						},
+							"Finish Installation"
+						)
+					)
+				)
+			)
+
+		_updateAdminPassword: (event) ->
+			@setState {adminPassword: event.target.value}
+
+		_updateAdminPasswordConfirm: (event) ->
+			@setState {adminPasswordConfirm: event.target.value}
+
 
 	return LoginPage
 
