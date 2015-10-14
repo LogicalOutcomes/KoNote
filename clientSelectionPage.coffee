@@ -304,15 +304,13 @@ load = (win) ->
 		_attachKeyBindings: ->
 			searchBox = @refs.searchBox.getDOMNode()
 
-			# $(searchBox).on 'submit', (event) -> event.preventDefault()
-
 			# Key-bindings for searchBox
 			$(searchBox).on 'keydown', (event) =>
 				# Don't need to see this unless in full search view
 				return if not @state.isSmallHeaderSet
 
 				switch event.which
-					when 40 # Down arrow
+					when 40, 9 # Down arrow
 						event.preventDefault()
 						@_shiftHoverClientId(1)
 					when 38 # Up arrow
