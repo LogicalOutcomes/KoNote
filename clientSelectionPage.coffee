@@ -136,8 +136,11 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				isSmallHeaderSet: false
-				queryText: ''
 				menuIsOpen: false
+
+				queryText: ''
+				queryResults: Imm.List()				
+				hoverClientId: null
 			}
 
 		componentDidUpdate: (oldProps, oldState) ->
@@ -147,12 +150,70 @@ load = (win) ->
 					@refs.searchBox.getDOMNode().focus()
 				, 100)
 
+			if @state.queryText isnt oldState.queryText
+				@_refreshResults()
+
+		componentDidMount: ->
+			@_refreshResults()
+
+			searchBox = @refs.searchBox.getDOMNode()
+
+			# Key-bindings for searchBox
+			$(searchBox).on 'keydown', (event) =>
+				# Don't need to see this unless in full search view
+				return if not @state.isSmallHeaderSet
+
+				# What was pressed?
+				switch event.which
+
+					when 40 # Down arrow
+						queryResults = @state.queryResults						
+
+						# Choose first result on fresh-run
+						if not @state.hoverClientId?
+							@setState hoverClientId: queryResults.first().get('id')
+							return
+
+						hoverClientId = null
+
+						currentResultIndex = queryResults.findIndex (result) =>
+							return result.get('id') is @state.hoverClientId
+
+						nextIndex = currentResultIndex + 1
+
+						# Ensure the next result index exists, otherwise skip
+						if queryResults.get(nextIndex)?
+							hoverClientId = queryResults.get(nextIndex).get('id')
+						else
+							hoverClientId = queryResults.first().get('id')
+
+						@setState {hoverClientId}
+
+					when 38 # Up arrow
+						queryResults = @state.queryResults						
+
+						# Choose first result on fresh-run
+						if not @state.hoverClientId?
+							@setState hoverClientId: queryResults.last().get('id')
+							return
+
+						hoverClientId = null
+
+						currentResultIndex = queryResults.findIndex (result) =>
+							return result.get('id') is @state.hoverClientId
+
+						nextIndex = currentResultIndex - 1
+
+						# Ensure the next result index exists, otherwise skip
+						if queryResults.get(nextIndex)?
+							hoverClientId = queryResults.get(nextIndex).get('id')
+						else
+							hoverClientId = queryResults.first().get('id')
+
+						@setState {hoverClientId}
+
 		render: ->
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
-
-			results = null
-			unless @props.isLoading
-				results = @_getResultsList()
 
 			return R.div({
 					id: 'clientSelectionPage'
@@ -229,22 +290,22 @@ load = (win) ->
 								showWhen not @props.isLoading
 							].join ' '
 						},
-							(if results?
-								(results.map (result) =>
-									R.div({
-										className: 'result'
-										onClick: @_onResultSelection.bind(null, result.get('id'))
-									}
-										R.span({className: 'recordId'}, 
-											if result.has('recordId') and result.get('recordId').length > 0
-												Config.clientFileRecordId.label + " #{result.get('recordId')}"
-										)
-										renderName result.get('clientName')
+							(@state.queryResults.map (result) =>
+								R.div({
+									key: "result-" + result.get('id')
+									className: [
+										"result"
+										"active" if @state.hoverClientId is result.get('id')
+									].join ' '
+									onClick: @_onResultSelection.bind(null, result.get('id'))
+								}
+									R.span({className: 'recordId'}, 
+										if result.has('recordId') and result.get('recordId').length > 0
+											Config.clientFileRecordId.label + " #{result.get('recordId')}"
 									)
-								).toJS()
-							else
-								[]
-							)...
+									renderName result.get('clientName')
+								)
+							).toJS()
 						)
 					)
 				)
@@ -290,16 +351,20 @@ load = (win) ->
 			)
 
 		_toggleUserMenu: ->
-			@setState {menuIsOpen: !@state.menuIsOpen}		
+			@setState {menuIsOpen: !@state.menuIsOpen}
 
-		_getResultsList: ->
-			if @state.queryText.trim() is ''
-				return @props.clientFileHeaders
+		_refreshResults: ->
+			# Return all results if search query is empty
+			if @state.queryText.trim().length is 0
+				@setState {queryResults: @props.clientFileHeaders}
+				return
 
+			# Calculate query parts & results
 			queryParts = Imm.fromJS(@state.queryText.split(' '))
 			.map (p) -> p.toLowerCase()
 
-			return @props.clientFileHeaders
+
+			queryResults = @props.clientFileHeaders
 			.filter (clientFile) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
 				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
@@ -313,6 +378,8 @@ load = (win) ->
 						lastName.includes(part) or
 						recordId.includes(part)
 
+			@setState {queryResults}
+			
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 

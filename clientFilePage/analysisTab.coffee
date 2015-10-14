@@ -43,14 +43,19 @@ load = (win) ->
 
 				isGenerating: true
 			}
+
 		componentWillMount: ->
 			@_generateAnalysis()
 
 		componentDidUpdate: (oldProps, oldState) ->
+			# TODO: Simpler indicator of important props change			
 			unless Imm.is oldProps.metricsById, @props.metricsById
 				@_generateAnalysis()
 
 			unless Imm.is oldProps.progEvents, @props.progEvents
+				@_generateAnalysis()
+
+			unless Imm.is oldProps.progNotes, @props.progNotes
 				@_generateAnalysis()
 
 		_generateAnalysis: ->			
@@ -300,6 +305,8 @@ load = (win) ->
 			)
 
 		componentDidUpdate: (oldProps, oldState) ->
+			# TODO: Sort out repetition here, like parent component
+
 			# Update selected metrics?
 			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 			unless sameSelectedMetrics
@@ -308,6 +315,11 @@ load = (win) ->
 			# Update selected progEvents?
 			sameSelectedProgEvents = Imm.is @props.selectedProgEventIds, oldProps.selectedProgEventIds
 			unless sameSelectedProgEvents
+				@_refreshSelectedProgEvents()
+
+			# Update selected progNotes?
+			sameMetricValues = Imm.is @props.metricValues, oldProps.metricValues
+			unless sameMetricValues
 				@_refreshSelectedProgEvents()
 
 			# Update timeSpan?
