@@ -167,7 +167,16 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						progressNotes = Imm.List results
+						# sort by date (backdate if present)
+						# datetimeformat converted to int for safe sorting
+						Async.sortBy results, ((item, callback) ->
+							if item.get('backdate') != ''
+								sortDate = item.get('backdate').replace(/[^\d]/g, '')
+							else
+								sortDate = item.get('timestamp').replace(/[^\d]/g, '')
+							callback err, sortDate
+						), (err, results) ->
+							progressNotes = Imm.List results.reverse()
 
 						# checkFileSync progressNotes, @state.progressNotes
 						cb()

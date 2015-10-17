@@ -185,7 +185,7 @@ load = (win) ->
 					R.div({className: 'timestamp'},
 						if @props.progNote.get('backdate') != ''
 							Moment(@props.progNote.get('backdate'), Persist.TimestampFormat)
-							.format('MMMM D, YYYY [at] HH:mm') + " (late)"
+							.format('MMMM D, YYYY [at] HH:mm') + " (late entry)"
 						else
 							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
 							.format 'MMMM D, YYYY [at] HH:mm'
