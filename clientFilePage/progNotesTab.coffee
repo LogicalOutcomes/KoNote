@@ -126,7 +126,7 @@ load = (win) ->
 			)
 		_openNewProgNote: ->
 			openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
-		_toggleQuickNotePopover: ->			
+		_toggleQuickNotePopover: ->
 			quickNoteToggle = $('.addQuickNote:not(.hide)')
 
 			if quickNoteToggle.data('isVisible')
@@ -142,6 +142,7 @@ load = (win) ->
 					event.preventDefault()
 
 					@props.createQuickNote popover.find('textarea').val(), @state.backdate, (err) =>
+						@setState {backdate: ''}
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
