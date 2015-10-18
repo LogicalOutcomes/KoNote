@@ -176,7 +176,7 @@ load = (win, {clientFileId}) ->
 								sortDate = item.get('timestamp').replace(/[^\d]/g, '')
 							callback err, sortDate
 						), (err, results) ->
-							progressNotes = Imm.List results.reverse()
+							progressNotes = Imm.List results
 
 						# checkFileSync progressNotes, @state.progressNotes
 						cb()
