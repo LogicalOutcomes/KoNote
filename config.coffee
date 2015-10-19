@@ -4,7 +4,7 @@
 
 module.exports = {
 	productName: 'KoNote'
-	customerLogoLg: 'customer-logo-lg.png'
+	customerLogoLg: 'konote-logo-lg.png'
 	customerLogoSm: 'customer-logo-sm.png'
 	logoSubtitle: 'beta'
 	logoSubtitleColor: 'hsl(205, 78%, 47%)'
@@ -38,7 +38,7 @@ module.exports = {
 
 	# Set ping time for client file in (minutes)
 	clientFilePing: {
-		acquireLock: 0.5
+		acquireLock: 0.1
 	}
 
 	# Set terminology to be used around the app, lowercase only
@@ -70,7 +70,7 @@ module.exports = {
 	}		
 
 	# useTemplate: 'initialAssessment'
-	useTemplate: 'simpleDemoTemplate'
+	useTemplate: 'clientLog'
 
 	# David's demo templates:
 	# useTemplate: 'simpleDemoTemplate'
