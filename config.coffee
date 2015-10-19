@@ -2,9 +2,11 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+_ = require 'underscore'
+
 module.exports = {
 	productName: 'KoNote'
-	customerLogoLg: 'konote-logo-lg.png'
+	customerLogoLg: 'customer-logo-lg.png'
 	customerLogoSm: 'customer-logo-sm.png'
 	logoSubtitle: 'beta'
 	logoSubtitleColor: 'hsl(205, 78%, 47%)'
@@ -20,11 +22,7 @@ module.exports = {
 	analysis: {
 		# Minimum days of data (metrics/events/treatments) required to enable chart
 		minDaysOfData: 3
-	}
-
-	devMode: true
-	
-	#autoLogin: {userName: 'admin', password: 'test'}
+	} 
 
 	# Set total timeout in (minutes),
 	# and how many mins before timeout to show warning
@@ -38,7 +36,7 @@ module.exports = {
 
 	# Set ping time for client file in (minutes)
 	clientFilePing: {
-		acquireLock: 0.1
+		acquireLock: 0.5
 	}
 
 	# Set terminology to be used around the app, lowercase only
@@ -70,7 +68,7 @@ module.exports = {
 	}		
 
 	# useTemplate: 'initialAssessment'
-	useTemplate: 'clientLog'
+	useTemplate: 'simpleDemoTemplate'
 
 	# David's demo templates:
 	# useTemplate: 'simpleDemoTemplate'
@@ -319,18 +317,16 @@ module.exports = {
 }
 
 # merge with customer, build, and dev config files; overrides defaults
-_ = require 'underscore'
 try
 	configCustomer = require './config-customer'
 	_.extend(module.exports, configCustomer)
 catch err
-	if err.code is 'MODULE_NOT_FOUND'
-		return
-	throw err
+	unless err.code is 'MODULE_NOT_FOUND'
+		throw err
+
 try
 	configDev = require './config-dev'
 	_.extend(module.exports, configDev)
 catch err
-	if err.code is 'MODULE_NOT_FOUND'
-		return
-	throw err
+	unless err.code is 'MODULE_NOT_FOUND'
+		throw err
