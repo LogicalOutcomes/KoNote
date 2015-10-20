@@ -564,6 +564,8 @@ load = (win, {clientFileId}) ->
 						progEvents: @props.progressEvents
 						metricsById: @props.metricsById
 						isReadOnly
+						hasChanges: @hasChanges
+						onTabChange: @_changeTab
 
 						createQuickNote: @props.createQuickNote
 					})
