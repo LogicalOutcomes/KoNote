@@ -47,7 +47,7 @@ isAccountSystemSetUp = (dataDir, cb) ->
 				cb null, false
 				return
 
-			cb err
+			cb new IOError err
 			return
 
 		userNames = Imm.List(subdirs)
@@ -60,7 +60,7 @@ isAccountSystemSetUp = (dataDir, cb) ->
 listAccounts = (dataDir, cb) ->
 	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
 		if err
-			cb err
+			cb new IOError err
 			return
 
 		userNames = Imm.List(subdirs)
@@ -93,8 +93,8 @@ class Account
 		systemPublicKey = null
 
 		Async.series [
-			(cb) ->
-				PrivateKey.generate (err, result) ->
+			(cb) =>
+				PrivateKey.generate (err, result) =>
 					if err
 						cb err
 						return
@@ -102,11 +102,21 @@ class Account
 					privateInfo.systemPrivateKey = result.export()
 					systemPublicKey = result.getPublicKey().export()
 					cb()
-			(cb) ->
-				Fs.mkdir Path.join(dataDir, '_users', '_system'), cb
-			(cb) ->
-				Fs.writeFile Path.join(dataDir, '_users', '_system', 'public-key'), systemPublicKey, cb
-		], (err) ->
+			(cb) =>
+				Fs.mkdir Path.join(dataDir, '_users', '_system'), (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
+			(cb) =>
+				Fs.writeFile Path.join(dataDir, '_users', '_system', 'public-key'), systemPublicKey, (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
+		], (err) =>
 			if err
 				cb err
 				return
@@ -137,7 +147,7 @@ class Account
 
 				Fs.readFile publicKeyPath, (err, buf) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					systemPublicKey = PublicKey.import(buf.toString())
@@ -149,7 +159,7 @@ class Account
 							cb new UserNameTakenError()
 							return
 
-						cb err
+						cb new IOError err
 						return
 
 					cb()
@@ -164,7 +174,12 @@ class Account
 			(cb) ->
 				publicInfoPath = Path.join(userDir, 'public-info')
 
-				Fs.writeFile publicInfoPath, JSON.stringify(publicInfo), cb
+				Fs.writeFile publicInfoPath, JSON.stringify(publicInfo), (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 			(cb) ->
 				accountKeyFilePath = Path.join(userDir, 'account-key-1')
 
@@ -176,7 +191,12 @@ class Account
 					accountKey: Base64url.encode encryptedAccountKey
 				}
 
-				Fs.writeFile accountKeyFilePath, JSON.stringify(accountKeyData), cb
+				Fs.writeFile accountKeyFilePath, JSON.stringify(accountKeyData), (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 			(cb) ->
 				# Encrypt account key with system key to allow admins to reset
 				systemPublicKey.encrypt accountEncryptionKey.export(), (err, result) ->
@@ -189,7 +209,12 @@ class Account
 			(cb) ->
 				accountRecoveryPath = Path.join(userDir, 'account-recovery')
 
-				Fs.writeFile accountRecoveryPath, encryptedAccountKey, cb
+				Fs.writeFile accountRecoveryPath, encryptedAccountKey, (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 			(cb) ->
 				privateInfoPath = Path.join(userDir, 'private-info')
 
@@ -204,7 +229,12 @@ class Account
 
 				encryptedData = accountEncryptionKey.encrypt JSON.stringify privateInfo
 
-				Fs.writeFile privateInfoPath, encryptedData, cb
+				Fs.writeFile privateInfoPath, encryptedData, (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 		], (err) ->
 			if err
 				cb err
@@ -227,7 +257,7 @@ class Account
 							cb new UnknownUserNameError()
 							return
 
-						cb err
+						cb new IOError err
 						return
 
 					publicInfo = JSON.parse buf
@@ -255,7 +285,7 @@ class Account
 			(cb) =>
 				Fs.readFile Path.join(@_userDir, 'public-info'), (err, buf) =>
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					publicInfo = JSON.parse buf
@@ -268,11 +298,16 @@ class Account
 			(cb) =>
 				publicInfo.isActive = false
 
-				Fs.writeFile Path.join(@_userDir, 'public-info'), JSON.stringify(publicInfo), cb
+				Fs.writeFile Path.join(@_userDir, 'public-info'), JSON.stringify(publicInfo), (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 			(cb) =>
 				Fs.readdir @_userDir, (err, fileNames) =>
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					accountKeyFileNames = Imm.List(fileNames)
@@ -282,7 +317,12 @@ class Account
 					cb()
 			(cb) =>
 				Async.each accountKeyFileNames.toArray(), (fileName, cb) =>
-					Fs.unlink Path.join(@_userDir, fileName), cb
+					Fs.unlink Path.join(@_userDir, fileName), (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				, cb
 		], cb
 
@@ -323,7 +363,7 @@ class Account
 				(cb) =>
 					Fs.readFile Path.join(@_userDir, 'auth-params'), (err, result) =>
 						if err
-							cb err
+							cb new IOError err
 							return
 
 						oldKdfParams = JSON.parse result
@@ -339,7 +379,7 @@ class Account
 				(cb) =>
 					Fs.readFile Path.join(@_userDir, 'private-keys'), (err, result) =>
 						if err
-							cb err
+							cb new IOError err
 							return
 
 						try
@@ -356,7 +396,7 @@ class Account
 				(cb) =>
 					Fs.readFile Path.join(systemUserDir, 'old-key'), (err, buf) =>
 						if err
-							cb err
+							cb new IOError err
 							return
 
 						systemPrivateKey = PrivateKey.import(globalEncryptionKey.decrypt(buf).toString())
@@ -376,7 +416,12 @@ class Account
 						kdfParams
 					}
 
-					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, cb
+					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
 					systemPublicKey.encrypt accountKey.export(), (err, result) =>
 						if err
@@ -386,7 +431,12 @@ class Account
 						accountRecovery = result
 						cb()
 				(cb) =>
-					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, cb
+					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
 					privateInfo = {
 						globalEncryptionKey: globalEncryptionKey.export()
@@ -397,11 +447,26 @@ class Account
 
 					privateInfoEncrypted = accountKey.encrypt JSON.stringify(privateInfo)
 
-					Fs.writeFile Path.join(@_userDir, 'private-info'), privateInfoEncrypted, cb
+					Fs.writeFile Path.join(@_userDir, 'private-info'), privateInfoEncrypted, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
-					Fs.unlink Path.join(@_userDir, 'private-keys'), cb
+					Fs.unlink Path.join(@_userDir, 'private-keys'), (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
-					Fs.unlink Path.join(@_userDir, 'auth-params'), cb
+					Fs.unlink Path.join(@_userDir, 'auth-params'), (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 			], (err) =>
 				if err
 					cb err
@@ -428,7 +493,7 @@ class Account
 							cb new UnknownUserNameError()
 							return
 
-						cb err
+						cb new IOError err
 						return
 
 					# Find the highest (i.e. most recent) account key ID
@@ -443,7 +508,7 @@ class Account
 			(cb) ->
 				Fs.readFile Path.join(userDir, "account-key-#{accountKeyId}"), (err, buf) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					accountKeyInfo = JSON.parse buf
@@ -473,7 +538,7 @@ class Account
 			(cb) =>
 				Fs.readFile Path.join(userDir, 'private-info'), (err, buf) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					privateInfo = JSON.parse accountKey.decrypt buf
@@ -541,7 +606,7 @@ class Account
 							cb new UnknownUserNameError()
 							return
 
-						cb err
+						cb new IOError err
 						return
 
 					accountRecovery = buf
@@ -559,7 +624,7 @@ class Account
 			(cb) =>
 				Fs.readFile Path.join(userDir, 'private-info'), (err, buf) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					privateInfo = JSON.parse accountKey.decrypt buf
@@ -582,7 +647,7 @@ class Account
 					cb new UnknownUserNameError()
 					return
 
-				cb err
+				cb new IOError err
 				return
 
 			# Find the highest (i.e. most recent) account key ID
@@ -619,7 +684,7 @@ class DecryptedAccount extends Account
 				(cb) =>
 					Fs.readFile Path.join(systemUserDir, 'public-key'), (err, buf) =>
 						if err
-							cb err
+							cb new IOError err
 							return
 
 						systemPublicKey = PublicKey.import(buf.toString())
@@ -638,7 +703,12 @@ class DecryptedAccount extends Account
 						kdfParams
 					}
 
-					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, cb
+					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
 					systemPublicKey.encrypt @_accountKey.export(), (err, result) =>
 						if err
@@ -648,15 +718,35 @@ class DecryptedAccount extends Account
 						accountRecovery = result
 						cb()
 				(cb) =>
-					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, cb
+					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
 					privateInfoEncrypted = @_accountKey.encrypt JSON.stringify(@privateInfo)
 
-					Fs.writeFile Path.join(@_userDir, 'private-info'), privateInfoEncrypted, cb
+					Fs.writeFile Path.join(@_userDir, 'private-info'), privateInfoEncrypted, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
-					Fs.unlink Path.join(@_userDir, 'private-keys'), cb
+					Fs.unlink Path.join(@_userDir, 'private-keys'), (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
-					Fs.unlink Path.join(@_userDir, 'auth-params'), cb
+					Fs.unlink Path.join(@_userDir, 'auth-params'), (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 			], cb
 			return
 		# END v1.3.1 migration
@@ -686,7 +776,12 @@ class DecryptedAccount extends Account
 				accountKeyEncoded = Base64url.encode pwEncryptionKey.encrypt(@_accountKey.export())
 				data = {kdfParams, accountKey: accountKeyEncoded}
 
-				Fs.writeFile Path.join(@_userDir, "account-key-#{nextAccountKeyId}"), JSON.stringify(data), cb
+				Fs.writeFile Path.join(@_userDir, "account-key-#{nextAccountKeyId}"), JSON.stringify(data), (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 		], cb
 
 class UserNameTakenError extends CustomError
