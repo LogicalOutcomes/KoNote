@@ -12,8 +12,14 @@
 # Example:
 #   scripts/decrypt.coffee data user pw data/clientFiles/some-encrypted-file
 
+# ES6 polyfills
+require 'string.prototype.endswith'
+require 'string.prototype.includes'
+require 'string.prototype.startswith'
+
 Fs = require 'fs'
 
+{SymmetricEncryptionKey} = require '../persist/crypto'
 Users = require '../persist/users'
 
 if process.argv.length not in [5, 6]
@@ -26,19 +32,24 @@ userName = process.argv[3]
 password = process.argv[4]
 encryptedFile = process.argv[5]
 
-Users.readAccount dataDir, userName, password, (err, result) =>
+Users.Account.read dataDir, userName, (err, account) =>
 	if err
 		console.error err.stack
 		return
 
-	{globalEncryptionKey} = result
-
-	readEncryptedFile (err, encryptedInput) =>
+	account.decryptWithPassword password, (err, decryptedAccount) =>
 		if err
 			console.error err.stack
 			return
 
-		process.stdout.write globalEncryptionKey.decrypt encryptedInput
+		globalEncryptionKey = SymmetricEncryptionKey.import decryptedAccount.privateInfo.globalEncryptionKey
+
+		readEncryptedFile (err, encryptedInput) =>
+			if err
+				console.error err.stack
+				return
+
+			process.stdout.write globalEncryptionKey.decrypt encryptedInput
 
 readEncryptedFile = (cb) =>
 	if encryptedFile
