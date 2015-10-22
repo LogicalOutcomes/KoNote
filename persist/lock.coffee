@@ -300,7 +300,7 @@ class Lock
 				cb new IOError err
 				return
 
-			cb new LockInUseError null, JSON.parse(data)
+			cb new LockInUseError JSON.parse(data)
 
 	@_writeExpiryTimestamp: (lockDir, tmpDirPath, cb) ->
 		expiryTimestamp = Moment().add(leaseTime, 'ms').format(TimestampFormat)
@@ -332,7 +332,7 @@ class Lock
 class LockDeletedError extends CustomError
 
 class LockInUseError extends CustomError
-	constructor: (message, metadata) ->
+	constructor: (metadata) ->
 		super "Lock is in use by another user"
 		@metadata = metadata
 
