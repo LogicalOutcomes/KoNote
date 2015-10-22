@@ -48,7 +48,7 @@ class Lock
 			(cb) ->
 				Atomic.writeDirectory lockDirDest, tmpDirPath, (err, tmpLockDir, op) ->
 					if err
-						cb new IOError err
+						cb err
 						return
 
 					lockDir = tmpLockDir
@@ -72,11 +72,11 @@ class Lock
 				lockDirOp.commit (err) ->
 					if err
 						# If lock is already taken
-						if err.code in ['EPERM', 'ENOTEMPTY']
+						if err instanceof IOError and err.cause.code in ['EPERM', 'ENOTEMPTY']
 							Lock._cleanIfStale session, lockId, cb
 							return
 
-						cb new IOError err
+						cb err
 						return
 
 					cb()
@@ -169,12 +169,7 @@ class Lock
 						Lock._readMetadata(lockDir, cb)
 						return
 			(cb) ->
-				Atomic.deleteDirectory lockDir, tmpDirPath, (err) ->
-					if err
-						cb new IOError err
-						return
-
-					cb()
+				Atomic.deleteDirectory lockDir, tmpDirPath, cb
 			(cb) ->
 				expiryLock.release cb
 		], (err) ->
@@ -243,12 +238,7 @@ class Lock
 		@_renewInterval = null
 		@_released = true
 
-		Atomic.deleteDirectory @_path, @_tmpDirPath, (err) ->
-			if err
-				cb new IOError err
-				return
-
-			cb()
+		Atomic.deleteDirectory @_path, @_tmpDirPath, cb
 
 	_hasLeaseExpired: ->
 		return Moment(@_nextExpiryTimestamp, TimestampFormat).isBefore Moment()
@@ -312,7 +302,7 @@ class Lock
 
 		Atomic.writeBufferToFile expiryTimestampFile, tmpDirPath, fileData, (err) ->
 			if err
-				cb new IOError err
+				cb err
 				return
 
 			cb null, expiryTimestamp
@@ -324,12 +314,7 @@ class Lock
 			userName: session.userName
 		}), 'utf8')
 
-		Atomic.writeBufferToFile metadataFile, tmpDirPath, metadata, (err) ->
-			if err
-				cb new IOError err
-				return
-
-			cb()
+		Atomic.writeBufferToFile metadataFile, tmpDirPath, metadata, cb
 
 class LockDeletedError extends CustomError
 
