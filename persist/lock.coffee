@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# This module's API is documented on the wiki.
+
 Async = require 'async'
 Fs = require 'fs'
 Imm = require 'immutable'
