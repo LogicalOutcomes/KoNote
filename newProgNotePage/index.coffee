@@ -207,6 +207,7 @@ load = (win, {clientFileId}) ->
 				type: 'full'
 				clientFileId: clientFile.get('id')
 				templateId: template.get('id')
+				backdate: ''
 				sections: template.get('sections').map (section) =>
 					switch section.get('type')
 						when 'basic'
@@ -335,6 +336,13 @@ load = (win, {clientFileId}) ->
 
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
+					R.label({},
+						"Backdate "
+						R.input({
+							className: 'backdate date'
+							onChange: @_updateBackdate
+						})
+					)
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
 							switch section.get('type')
@@ -518,6 +526,10 @@ load = (win, {clientFileId}) ->
 					targetId: target.get('id')
 					targetName: target.get('name')
 				}
+			}
+		_updateBackdate: (event) ->
+			@setState {
+				progNote: @state.progNote.setIn ['backdate'], event.target.value
 			}
 		_updateBasicSectionNotes: (sectionId, event) ->
 			sectionIndex = @_getSectionIndex sectionId
