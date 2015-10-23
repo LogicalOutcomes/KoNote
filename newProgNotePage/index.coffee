@@ -260,13 +260,13 @@ load = (win, {clientFileId}) ->
 
 				progEvents: Imm.List()
 				editingWhichEvent: null
-
+				changes: false
 				success: false
 				showExitAlert: false
 			}
 
 		suggestClose: ->
-			if not @state.showExitAlert
+			if @state.changes and not @state.showExitAlert
 				@setState {showExitAlert: true}
 				Bootbox.dialog {
 					message: "Are you sure you want to cancel this #{Term('progress note')}?"
@@ -285,6 +285,8 @@ load = (win, {clientFileId}) ->
 						}
 					}
 				}
+			else
+				@props.closeWindow()
 
 		componentWillReceiveProps: (newProps) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
@@ -522,6 +524,7 @@ load = (win, {clientFileId}) ->
 				}
 			}
 		_updateBasicSectionNotes: (sectionId, event) ->
+			@setState {changes: true}
 			sectionIndex = @_getSectionIndex sectionId
 
 			@setState {
@@ -530,6 +533,7 @@ load = (win, {clientFileId}) ->
 		_updateBasicSectionMetric: (sectionId, metricId, newValue) ->
 			return @render() if @_invalidMetricFormat(newValue)
 
+			@setState {changes: true}
 			sectionIndex = @_getSectionIndex sectionId
 
 			metricIndex = @state.progNote.getIn(['sections', sectionIndex, 'metrics']).findIndex (m) =>
@@ -543,10 +547,10 @@ load = (win, {clientFileId}) ->
 			}
 		_updatePlanSectionNotes: (sectionId, targetId, event) ->
 			sectionIndex = @_getSectionIndex sectionId
-
 			targetIndex = @state.progNote.getIn(['sections', sectionIndex, 'targets']).findIndex (t) =>
 				return t.get('id') is targetId
 
+			@setState {changes: true}
 			@setState {
 				progNote: @state.progNote.setIn(
 					['sections', sectionIndex, 'targets', targetIndex, 'notes'],
@@ -564,6 +568,7 @@ load = (win, {clientFileId}) ->
 			).findIndex (m) =>
 				return m.get('id') is metricId			
 
+			@setState {changes: true}
 			@setState {
 				progNote: @state.progNote.setIn(
 					['sections', sectionIndex, 'targets', targetIndex, 'metrics', metricIndex, 'value']
@@ -610,7 +615,7 @@ load = (win, {clientFileId}) ->
 
 					CrashHandler.handle err
 					return
-
+				@setState {changes: false}
 				@props.closeWindow()
 
 
