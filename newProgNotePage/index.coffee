@@ -336,13 +336,25 @@ load = (win, {clientFileId}) ->
 
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
-					R.label({},
-						"Backdate "
+					R.div({className: 'input-group'},
 						R.input({
-							className: 'backdate date'
+							className: 'form-control backdate date'
 							onChange: @_updateBackdate
-						})
+							value: Moment().format(Persist.TimestampFormat)
+						},
+							R.span({className: 'input-group-addon'}
+								FaIcon 'calendar'
+							)
+						)
 					)
+					#console.log("STATE " + @state.progNote.get('backdate'))
+					R.div({
+						className: "#{showWhen @state.progNote.get('backdate') != ''}"
+						style: 'font-style': 'normal', 'padding': '5px', 'color': 'red'
+					},
+						"(back-dated entry)"
+					)
+					R.hr({})
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
 							switch section.get('type')
