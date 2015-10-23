@@ -27,19 +27,8 @@ Path = require 'path'
 
 userNameRegex = /^[a-zA-Z0-9_-]+$/
 
-generateKdfParams = ->
-	return {
-		salt: generateSalt()
-		iterationCount: 600000 # higher is more secure, but slower
-	}
-
-getUserDir = (dataDir, userName) ->
-	unless userNameRegex.exec userName
-		throw new Error "invalid characters in user name"
-
-	return Path.join dataDir, '_users', userName
-
 # Check if there are any user accounts set up
+# Returns: boolean
 isAccountSystemSetUp = (dataDir, cb) ->
 	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
 		if err
@@ -56,8 +45,7 @@ isAccountSystemSetUp = (dataDir, cb) ->
 
 		cb null, (userNames.size > 0)
 
-# TODO rename to listUserNames
-listAccounts = (dataDir, cb) ->
+listUserNames = (dataDir, cb) ->
 	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
 		if err
 			cb new IOError err
@@ -784,6 +772,18 @@ class DecryptedAccount extends Account
 					cb()
 		], cb
 
+generateKdfParams = ->
+	return {
+		salt: generateSalt()
+		iterationCount: 600000 # higher is more secure, but slower
+	}
+
+getUserDir = (dataDir, userName) ->
+	unless userNameRegex.exec userName
+		throw new Error "invalid characters in user name"
+
+	return Path.join dataDir, '_users', userName
+
 class UserNameTakenError extends CustomError
 class UnknownUserNameError extends CustomError
 class IncorrectPasswordError extends CustomError
@@ -791,7 +791,7 @@ class DeactivatedAccountError extends CustomError
 
 module.exports = {
 	isAccountSystemSetUp
-	listAccounts
+	listUserNames
 	Account
 	DecryptedAccount
 	UserNameTakenError
