@@ -27,8 +27,13 @@ Path = require 'path'
 
 userNameRegex = /^[a-zA-Z0-9_-]+$/
 
-# Check if there are any user accounts set up
-# Returns: boolean
+# Check if the account system is set up.  The account system must be set up
+# before any accounts can be created, see `Account.setUp`.
+#
+# Errors:
+# - IOError
+#
+# (string dataDir, function cb(Error err, boolean isSetUp)) -> undefined
 isAccountSystemSetUp = (dataDir, cb) ->
 	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
 		if err
@@ -45,6 +50,12 @@ isAccountSystemSetUp = (dataDir, cb) ->
 
 		cb null, (userNames.size > 0)
 
+# Produce a list of the user names of all accounts in the system.
+#
+# Errors:
+# - IOError
+#
+# (string dataDir, function cb(Error err, Imm.List userNames)) -> undefined
 listUserNames = (dataDir, cb) ->
 	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
 		if err
@@ -59,7 +70,11 @@ listUserNames = (dataDir, cb) ->
 
 		cb null, userNames
 
+# Account objects contain the public information on a user account (and related operations).
+# Account objects also provide "decrypt" methods that are gateways to the
+# private information in a user account (see DecryptedAccount).
 class Account
+	# Private constructor
 	constructor: (@dataDirectory, @userName, @publicInfo, code) ->
 		if code isnt 'privateaccess'
 			# See Account.read instead
@@ -67,7 +82,21 @@ class Account
 
 		@_userDir = getUserDir @dataDirectory, @userName
 
-	# First time set up of user account directory
+	# Sets up the account system.  A new data directory must be set up before
+	# any user accounts can be created.  This set up process generates a
+	# special "_system" account which can be used to set up other accounts.
+	# The _system account does not have a password, and cannot be accessed from
+	# the UI.  It exists just for the purpose of setting up the first admin
+	# account.
+	#
+	# Note: this method assumes that the data directory has already undergone
+	# some basic set up outside of the account system (see
+	# `Persist.setUpDataDirectory`).
+	#
+	# Errors:
+	# - IOError
+	#
+	# (string dataDir, function cb(Error err, Account systemAccount)) -> undefined
 	@setUp: (dataDir, cb) ->
 		# Create a mock "_system" user just for creating the first real accounts
 		publicInfo = {
@@ -112,10 +141,22 @@ class Account
 			systemAccount = new DecryptedAccount(dataDir, '_system', publicInfo, privateInfo, null, 'privateaccess')
 			cb null, systemAccount
 
+	# Creates a new user account, and returns an Account object representing
+	# that account.
+	#
+	# Errors:
+	# - UserNameTakenError if the user name has already been taken
+	# - IOError
+	#
+	# (DecryptedAccount loggedInAccount, string userName, string password, string accountType,
+	#  function cb(Error err, Account newAccount)) -> undefined
 	@create: (loggedInAccount, userName, password, accountType, cb) ->
 		unless accountType in ['normal', 'admin']
 			cb new Error "unknown account type #{JSON.stringify accountType}"
 			return
+
+		if accountType is 'admin'
+			Assert.strictEqual loggedInAccount.publicInfo.accountType, 'admin', 'only admins can create admins'
 
 		userName = userName.toLowerCase()
 
@@ -230,6 +271,13 @@ class Account
 
 			cb null, new Account loggedInAccount.dataDirectory, userName, publicInfo, 'privateaccess'
 
+	# Read the public information for the account with the specified user name.
+	#
+	# Errors:
+	# - UnknownUserNameError if no account exists with that user name
+	# - IOError
+	#
+	# (string dataDir, string userName, function cb(Error err, Account a)) -> undefined
 	@read: (dataDir, userName, cb) =>
 		userName = userName.toLowerCase()
 
@@ -257,6 +305,13 @@ class Account
 
 			cb null, new Account dataDir, userName, publicInfo, 'privateaccess'
 
+	# Deactivate this account.  Requires the ability to modify/delete files.
+	#
+	# Errors:
+	# - DeactivatedAccountError if the account has already been deactivated
+	# - IOError
+	#
+	# (function cb(Error err)) -> undefined
 	deactivate: (cb) =>
 		# BEGIN v1.3.1 migration
 		if Fs.existsSync Path.join(@_userDir, 'auth-params')
@@ -314,7 +369,13 @@ class Account
 				, cb
 		], cb
 
-	# Returns IncorrectPasswordError if password is incorrect
+	# Check if the specified password is valid for this user account.
+	#
+	# Errors:
+	# - IncorrectPasswordError if the passsword was incorrect
+	# - IOError
+	#
+	# (string userPassword, function cb(Error err)) -> undefined
 	checkPassword: (userPassword, cb) =>
 		# Not all of decryptWithPassword is actually needed to check the
 		# password.  If needed, this can be reimplemented to be more efficient.
@@ -326,6 +387,15 @@ class Account
 
 			cb()
 
+	# Access this account's private information using the specified password.
+	#
+	# Errors:
+	# - DeactivatedAccountError
+	# - UnknownUserNameError if this account no longer exists
+	# - IncorrectPasswordError
+	# - IOError
+	#
+	# (string userPassword, function cb(Error err, DecryptedAccount a)) -> undefined
 	decryptWithPassword: (userPassword, cb) =>
 		unless @publicInfo.isActive
 			cb new DeactivatedAccountError()
@@ -542,6 +612,15 @@ class Account
 				'privateaccess'
 			)
 
+	# Access this account's private information using the system key (i.e. the
+	# admin override).  `loggedInAccount` must be an admin account.
+	#
+	# Errors:
+	# - DeactivatedAccountError
+	# - UnknownUserNameError if this account no longer exists
+	# - IOError
+	#
+	# (DecryptedAccount loggedInAccount, function cb(Error err, DecryptedAccount a)) -> undefined
 	decryptWithSystemKey: (loggedInAccount, cb) =>
 		unless @publicInfo.isActive
 			cb new DeactivatedAccountError()
@@ -648,6 +727,9 @@ class Account
 
 			cb null, (accountKeyId or 0)
 
+# DecryptedAccount objects contain both the private and public information in a
+# user account, including encryption keys, and provide related functionality.
+# DecryptedAccount objects can be obtained using Account's "decrypt" methods.
 class DecryptedAccount extends Account
 	constructor: (@dataDirectory, @userName, @publicInfo, @privateInfo, @_accountKey, code) ->
 		if code isnt 'privateaccess'
@@ -656,6 +738,13 @@ class DecryptedAccount extends Account
 
 		@_userDir = getUserDir @dataDirectory, @userName
 
+	# Updates this user account's password.
+	#
+	# Errors:
+	# - UnknownUserNameError if this account no longer exists
+	# - IOError
+	#
+	# (string newPassword, function cb(Error err)) -> undefined
 	setPassword: (newPassword, cb) =>
 		# BEGIN v1.3.1 migration
 		if Fs.existsSync Path.join(@_userDir, 'auth-params')
