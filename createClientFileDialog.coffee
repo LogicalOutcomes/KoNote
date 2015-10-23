@@ -22,6 +22,9 @@ load = (win) ->
 
 	CreateClientFileDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+		componentDidMount: ->
+			@refs.firstNameField.getDOMNode().focus()
+		
 		getInitialState: ->
 			return {
 				firstName: ''
@@ -39,6 +42,7 @@ load = (win) ->
 					R.div({className: 'form-group'},
 						R.label({}, "First name"),
 						R.input({
+							ref: 'firstNameField'
 							className: 'form-control'
 							onChange: @_updateFirstName
 							value: @state.firstName
