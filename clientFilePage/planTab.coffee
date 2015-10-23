@@ -84,13 +84,13 @@ load = (win) ->
 							R.button({
 								className: [
 									'save btn'
-									'btn-' + if @hasChanges() then 'success canSave' else 'warning'
+									'btn-' + if @hasChanges() then 'success canSave'
 								].join ' '
 								disabled: not @hasChanges() or @props.isReadOnly
 								onClick: @_save
 							},
 								FaIcon('save')
-								if @hasChanges() then "Save #{Term 'Plan'}" else "No Changes to Save"
+								"Save #{Term 'Plan'}"
 							)	
 						)
 						R.span({className: 'rightMenu'},							
