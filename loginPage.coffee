@@ -94,38 +94,6 @@ load = (win) ->
 							cb()
 					}), containerElem
 
-					# TODO: Move to ui
-					# Bootbox.prompt {
-					# 	title: "We will now create a user account called 'admin'.  Please choose a password:"
-					# 	inputType: 'password'
-					# 	callback: (result) ->
-					# 		unless result
-					# 			process.exit(0)
-					# 			return
-
-					# 		adminPassword = result
-					# 		cb()
-					# }
-
-					# Bootbox.dialog {
-					# 	title: "New #{Config.productName} Installation"
-					# 	message: """
-					# 		<input type="password" name="adminPassword">
-					# 		<input type="password" name="adminPasswordConfirm">
-					# 	"""
-					# 	buttons: {
-					# 		success: {
-					# 			label: "Go!"
-					# 			className: 'btn-success'
-					# 			callback: ->
-					# 				password = $('input[name="adminPassword"]').val()
-					# 				passwordConfirm = $('input[name="adminPasswordConfirm').val()
-
-					# 				console.log "password", password
-					# 				console.log "passwordConfirm", passwordConfirm
-					# 		}
-					# 	}
-					# }
 				(cb) =>
 					@setState {isLoading: true}
 					Persist.setUpDataDirectory Config.dataDirectory, (err) =>
@@ -213,9 +181,10 @@ load = (win) ->
 			@refs.passwordField.getDOMNode().focus()
 
 		isSetUp: ->
-			setTimeout(=>
-				@refs.userNameField.getDOMNode().focus()
-			, 100)
+			unless Config.autoLogin?
+				setTimeout(=>
+					@refs.userNameField.getDOMNode().focus()
+				, 100)
 
 		onLoginError: (type) ->
 			switch type
@@ -233,11 +202,6 @@ load = (win) ->
 			if Config.autoLogin?
 				return R.div({className: 'loginPage'},
 					R.div({className: 'autoLogin'}, "Auto-Login Enabled . . .")
-				)
-
-			if @state.isNewInstallation
-				return R.div({className: 'loginPage'},
-					NewInstallationDialog({})
 				)
 
 			return R.div({className: 'loginPage'},
