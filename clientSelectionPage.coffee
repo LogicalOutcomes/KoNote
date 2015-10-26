@@ -89,17 +89,21 @@ load = (win) ->
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# If loading just finished
-			if oldProps.isLoading and (not @props.isLoading)
+			if oldProps.isLoading and not @props.isLoading
 				setTimeout(=>
 					@refs.searchBox.getDOMNode().focus()
 				, 100)
 
+				@_refreshResults()
+				@_attachKeyBindings()
+
 			if @state.queryText isnt oldState.queryText
 				@_refreshResults()
 
-		componentDidMount: ->
-			@_refreshResults()
+			if @props.clientFileList isnt oldProps.clientFileList
+				@_refreshResults()
 
+		_attachKeyBindings: ->
 			searchBox = @refs.searchBox.getDOMNode()
 
 			# Key-bindings for searchBox
@@ -158,6 +162,14 @@ load = (win) ->
 
 		render: ->
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
+
+			if @props.isLoading
+				return R.div({id: 'clientSelectionPage'},
+					Spinner {
+						isOverlay: true
+						isVisible: true
+					}
+				)
 
 			return R.div({
 					id: 'clientSelectionPage'
@@ -234,6 +246,7 @@ load = (win) ->
 								showWhen not @props.isLoading
 							].join ' '
 						},
+							console.log '@state.queryResults', @state.queryResults
 							(@state.queryResults.map (result) =>
 								R.div({
 									key: "result-" + result.get('id')
@@ -288,14 +301,14 @@ load = (win) ->
 		_refreshResults: ->
 			# Return all results if search query is empty
 			if @state.queryText.trim().length is 0
-				@setState {queryResults: @props.clientFileHeaders}
+				@setState {queryResults: @props.clientFileList}
 				return
 
 			# Calculate query parts & results
 			queryParts = Imm.fromJS(@state.queryText.split(' '))
 			.map (p) -> p.toLowerCase()
 
-			queryResults = @props.clientFileHeaders
+			queryResults = @props.clientFileList
 			.filter (clientFile) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
 				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
