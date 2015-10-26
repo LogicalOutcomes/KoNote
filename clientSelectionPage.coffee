@@ -50,8 +50,8 @@ load = (win) ->
 		render: ->
 			return ClientSelectionPageUi({
 				isLoading: @state.isLoading
-				clientFileHeaders: Imm.List()
-				programs: Imm.List()
+				clientFileHeaders: @state.clientFileHeaders
+				programs: @state.programs
 			})
 
 		_loadData: ->
@@ -79,6 +79,7 @@ load = (win) ->
 				(cb) =>
 					Async.map programHeaders.toArray(), (programHeader, cb) =>
 						progId = programHeader.get('id')
+
 						ActiveSession.persist.programs.readLatestRevisions progId, 1, cb
 					, (err, results) =>
 						if err
@@ -220,18 +221,18 @@ load = (win) ->
 		render: ->
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
 
-			if @props.isLoading
-				return R.div({id: 'clientSelectionPage'},
-					Spinner {
-						isOverlay: true
-						isVisible: true
-					}
-				)
-
 			return R.div({
 					id: 'clientSelectionPage'
 					className: if @state.menuIsOpen then 'openMenu' else ''
 				},
+				(if @props.isLoading
+					R.div({id: 'clientSelectionPage'},
+						Spinner {
+							isOverlay: true
+							isVisible: true
+						}
+					)
+				)
 				R.a({
 					id: 'expandMenuButton'
 					onClick: @_toggleUserMenu
@@ -436,7 +437,7 @@ load = (win) ->
 						recordId.includes(part)
 
 			@setState {queryResults}
-			
+
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 
