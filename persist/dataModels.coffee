@@ -162,10 +162,11 @@ dataModelDefinitions = [
 		name: 'program'
 		collectionName: 'programs'
 		isMutable: true
-		indexes: [['name']]
+		indexes: [['name'], ['colorHex']]
 		schema: Joi.object().keys({
 			name: Joi.string()
 			description: Joi.string()
+			colorHex: Joi.string().regex(/^#[A-Fa-f0-9]{6}/)
 		})
 	}
 
