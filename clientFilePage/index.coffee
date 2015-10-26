@@ -92,16 +92,16 @@ load = (win, {clientFileId}) ->
 			console.log "Renewing all data......"
 
 			# Sync check
-			fileIsUnsync =
+			fileIsUnsync = null
 			# File data
-			clientFile =
-			planTargetsById =
-			planTargetHeaders =
-			progNoteHeaders =
-			progressNotes =
-			progEventHeaders =
-			progressEvents =
-			metricHeaders =
+			clientFile = null
+			planTargetsById = null
+			planTargetHeaders = null
+			progNoteHeaders = null
+			progressNotes = null
+			progEventHeaders = null
+			progressEvents = null
+			metricHeaders = null
 			metricsById = null
 
 			checkFileSync = (newData, oldData) => 
