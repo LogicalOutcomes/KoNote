@@ -20,7 +20,6 @@ dataModelDefinitions = [
 			['clientName', 'middle']
 			['clientName', 'last']
 			['recordId']
-			['programIds']
 		]
 		schema: Joi.object().keys({
 			clientName: Joi.object().keys({
