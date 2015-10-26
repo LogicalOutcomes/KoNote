@@ -6,6 +6,7 @@ Path = require 'path'
 Rimraf = require 'rimraf'
 
 Atomic = require '../../persist/atomic'
+{IOError} = require '../../persist'
 
 dataDir = 'atomicTestData'
 tmpDir = 'atomicTestTmp'
@@ -247,7 +248,8 @@ describe 'Atomic', ->
 					op.commit (err) ->
 						if process.platform is 'win32'
 							Assert err
-							Assert err.code is 'EPERM'
+							Assert err instanceof IOError
+							Assert err.cause.code is 'EPERM'
 
 							cb()
 							return
@@ -294,14 +296,15 @@ describe 'Atomic', ->
 				(cb) ->
 					op.commit (err) ->
 						Assert err
+						Assert err instanceof IOError
 
 						switch process.platform
 							when 'win32'
-								Assert.equal err.code, 'EPERM'
+								Assert.equal err.cause.code, 'EPERM'
 							when 'darwin'
-								Assert.equal err.code, 'ENOTEMPTY'
+								Assert.equal err.cause.code, 'ENOTEMPTY'
 							when 'linux'
-								Assert.equal err.code, 'ENOTEMPTY'
+								Assert.equal err.cause.code, 'ENOTEMPTY'
 							else
 								throw new Error "unknown platform #{process.platform}"
 

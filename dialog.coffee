@@ -4,6 +4,11 @@
 
 # A generic dialog component
 
+# Props:
+# 	containerClasses: []
+# 	disableBackgroundClick: boolean
+# 	disableCancel: boolean
+
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
@@ -18,15 +23,17 @@ load = (win) ->
 					'dialogContainer'
 					if @props.containerClasses then @props.containerClasses.join(' ')
 				].join(' ')
-				onClick: if not @props.disableBackgroundClick then @_onBackgroundClick
+				onClick: unless @props.disableCancel or @props.disableBackgroundClick then @_onBackgroundClick
 			},
 				R.div({className: 'dialog panel panel-primary'},
 					R.div({className: 'panel-heading'},
 						R.h3({className: 'panel-title'}, @props.title)
-						R.span({
-							className: 'panel-quit'
-							onClick: @props.onClose
-						}, FaIcon('times'))
+						(unless @props.disableCancel
+							R.span({
+								className: 'panel-quit'
+								onClick: @props.onClose
+							}, FaIcon('times'))
+						)
 					)
 					R.div({className: 'panel-body'},
 						@props.children

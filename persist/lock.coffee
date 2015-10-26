@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# This module's API is documented on the wiki.
+
 Async = require 'async'
 Fs = require 'fs'
 Imm = require 'immutable'
@@ -46,7 +48,7 @@ class Lock
 			(cb) ->
 				Atomic.writeDirectory lockDirDest, tmpDirPath, (err, tmpLockDir, op) ->
 					if err
-						cb new IOError err
+						cb err
 						return
 
 					lockDir = tmpLockDir
@@ -70,11 +72,11 @@ class Lock
 				lockDirOp.commit (err) ->
 					if err
 						# If lock is already taken
-						if err.code in ['EPERM', 'ENOTEMPTY']
+						if err instanceof IOError and err.cause.code in ['EPERM', 'ENOTEMPTY']
 							Lock._cleanIfStale session, lockId, cb
 							return
 
-						cb new IOError err
+						cb err
 						return
 
 					cb()
@@ -167,12 +169,7 @@ class Lock
 						Lock._readMetadata(lockDir, cb)
 						return
 			(cb) ->
-				Atomic.deleteDirectory lockDir, tmpDirPath, (err) ->
-					if err
-						cb new IOError err
-						return
-
-					cb()
+				Atomic.deleteDirectory lockDir, tmpDirPath, cb
 			(cb) ->
 				expiryLock.release cb
 		], (err) ->
@@ -241,12 +238,7 @@ class Lock
 		@_renewInterval = null
 		@_released = true
 
-		Atomic.deleteDirectory @_path, @_tmpDirPath, (err) ->
-			if err
-				cb new IOError err
-				return
-
-			cb()
+		Atomic.deleteDirectory @_path, @_tmpDirPath, cb
 
 	_hasLeaseExpired: ->
 		return Moment(@_nextExpiryTimestamp, TimestampFormat).isBefore Moment()
@@ -300,7 +292,7 @@ class Lock
 				cb new IOError err
 				return
 
-			cb new LockInUseError null, JSON.parse(data)
+			cb new LockInUseError JSON.parse(data)
 
 	@_writeExpiryTimestamp: (lockDir, tmpDirPath, cb) ->
 		expiryTimestamp = Moment().add(leaseTime, 'ms').format(TimestampFormat)
@@ -310,7 +302,7 @@ class Lock
 
 		Atomic.writeBufferToFile expiryTimestampFile, tmpDirPath, fileData, (err) ->
 			if err
-				cb new IOError err
+				cb err
 				return
 
 			cb null, expiryTimestamp
@@ -322,17 +314,12 @@ class Lock
 			userName: session.userName
 		}), 'utf8')
 
-		Atomic.writeBufferToFile metadataFile, tmpDirPath, metadata, (err) ->
-			if err
-				cb new IOError err
-				return
-
-			cb()
+		Atomic.writeBufferToFile metadataFile, tmpDirPath, metadata, cb
 
 class LockDeletedError extends CustomError
 
 class LockInUseError extends CustomError
-	constructor: (message, metadata) ->
+	constructor: (metadata) ->
 		super "Lock is in use by another user"
 		@metadata = metadata
 

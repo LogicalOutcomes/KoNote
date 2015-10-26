@@ -122,7 +122,37 @@ load = (win) ->
 				)
 			)
 		_openNewProgNote: ->
-			openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
+			if @props.hasChanges()
+				Bootbox.dialog {
+					title: "Unsaved Changes to #{Term 'Plan'}"
+					message: """
+						You have unsaved changes in the #{Term 'plan'} that will not be reflected in this
+						#{Term 'progress note'}. How would you like to proceed?
+					"""
+					buttons: {
+						default: {
+							label: "Cancel"
+							className: "btn-default"
+							callback: => Bootbox.hideAll()
+						}
+						danger: {
+							label: "Ignore"
+							className: "btn-danger"
+							callback: => 
+								openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
+						}
+						success: {
+							label: "View #{Term 'Plan'}"
+							className: "btn-success"
+							callback: => 
+								Bootbox.hideAll()
+								@props.onTabChange 'plan'
+						}
+					}
+				}
+			else
+				openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
+
 		_toggleQuickNotePopover: ->			
 			quickNoteToggle = $('.addQuickNote:not(.hide)')
 

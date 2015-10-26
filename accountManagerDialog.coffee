@@ -111,7 +111,7 @@ load = (win) ->
 					throw new Error "Unknown dialog ID: #{JSON.stringify @state.openDialogId}"
 
 		componentDidMount: ->
-			Persist.Users.listAccounts Config.dataDirectory, (err, userNames) =>
+			Persist.Users.listUserNames Config.dataDirectory, (err, userNames) =>
 				if err
 					CrashHandler.handle err
 					return

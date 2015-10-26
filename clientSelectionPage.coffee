@@ -50,8 +50,8 @@ load = (win) ->
 		render: ->
 			return ClientSelectionPageUi({
 				isLoading: @state.isLoading
-				clientFileHeaders: @state.clientFileHeaders
-				programs: @state.programs
+				clientFileHeaders: Imm.List()
+				programs: Imm.List()
 			})
 
 		_loadData: ->
@@ -151,7 +151,7 @@ load = (win) ->
 				, 100)
 
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
-				@_refreshResults
+				@_refreshResults()
 
 			if @state.queryText isnt oldState.queryText
 				@_refreshResults()
@@ -160,8 +160,73 @@ load = (win) ->
 			@_refreshResults()
 			@_attachKeyBindings()
 
+		_attachKeyBindings: ->
+			searchBox = @refs.searchBox.getDOMNode()
+
+			# Key-bindings for searchBox
+			$(searchBox).on 'keydown', (event) =>
+				# Don't need to see this unless in full search view
+				return if not @state.isSmallHeaderSet
+
+				# What was pressed?
+				switch event.which
+
+					when 40 # Down arrow
+						queryResults = @state.queryResults						
+
+						# Choose first result on fresh-run
+						if not @state.hoverClientId?
+							@setState hoverClientId: queryResults.first().get('id')
+							return
+
+						hoverClientId = null
+
+						currentResultIndex = queryResults.findIndex (result) =>
+							return result.get('id') is @state.hoverClientId
+
+						nextIndex = currentResultIndex + 1
+
+						# Ensure the next result index exists, otherwise skip
+						if queryResults.get(nextIndex)?
+							hoverClientId = queryResults.get(nextIndex).get('id')
+						else
+							hoverClientId = queryResults.first().get('id')
+
+						@setState {hoverClientId}
+
+					when 38 # Up arrow
+						queryResults = @state.queryResults						
+
+						# Choose first result on fresh-run
+						if not @state.hoverClientId?
+							@setState hoverClientId: queryResults.last().get('id')
+							return
+
+						hoverClientId = null
+
+						currentResultIndex = queryResults.findIndex (result) =>
+							return result.get('id') is @state.hoverClientId
+
+						nextIndex = currentResultIndex - 1
+
+						# Ensure the next result index exists, otherwise skip
+						if queryResults.get(nextIndex)?
+							hoverClientId = queryResults.get(nextIndex).get('id')
+						else
+							hoverClientId = queryResults.first().get('id')
+
+						@setState {hoverClientId}
+
 		render: ->
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
+
+			if @props.isLoading
+				return R.div({id: 'clientSelectionPage'},
+					Spinner {
+						isOverlay: true
+						isVisible: true
+					}
+				)
 
 			return R.div({
 					id: 'clientSelectionPage'
@@ -242,8 +307,8 @@ load = (win) ->
 								R.div({
 									key: "result-" + result.get('id')
 									className: [
-										"hover" if @state.hoverClientId is result.get('id')
-										"result"										
+										"result"
+										"active" if @state.hoverClientId is result.get('id')
 									].join ' '
 									onClick: @_onResultSelection.bind(null, result.get('id'))
 								}
@@ -356,7 +421,6 @@ load = (win) ->
 			queryParts = Imm.fromJS(@state.queryText.split(' '))
 			.map (p) -> p.toLowerCase()
 
-
 			queryResults = @props.clientFileHeaders
 			.filter (clientFile) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
@@ -372,7 +436,7 @@ load = (win) ->
 						recordId.includes(part)
 
 			@setState {queryResults}
-
+			
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 
