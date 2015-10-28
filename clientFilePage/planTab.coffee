@@ -84,7 +84,7 @@ load = (win) ->
 							R.button({
 								className: [
 									'save btn'
-									'btn-' + if @hasChanges() then 'success canSave'
+									if @hasChanges() then 'btn-success canSave'
 								].join ' '
 								disabled: not @hasChanges() or @props.isReadOnly
 								onClick: @_save
