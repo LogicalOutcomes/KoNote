@@ -164,59 +164,50 @@ load = (win) ->
 		_attachKeyBindings: ->
 			searchBox = @refs.searchBox.getDOMNode()
 
+			_attachKeyBindings: ->
+			searchBox = @refs.searchBox.getDOMNode()
+
 			# Key-bindings for searchBox
 			$(searchBox).on 'keydown', (event) =>
 				# Don't need to see this unless in full search view
 				return if not @state.isSmallHeaderSet
 
-				# What was pressed?
 				switch event.which
-
 					when 40 # Down arrow
-						queryResults = @state.queryResults						
-
-						# Choose first result on fresh-run
-						if not @state.hoverClientId?
-							@setState hoverClientId: queryResults.first().get('id')
-							return
-
-						hoverClientId = null
-
-						currentResultIndex = queryResults.findIndex (result) =>
-							return result.get('id') is @state.hoverClientId
-
-						nextIndex = currentResultIndex + 1
-
-						# Ensure the next result index exists, otherwise skip
-						if queryResults.get(nextIndex)?
-							hoverClientId = queryResults.get(nextIndex).get('id')
-						else
-							hoverClientId = queryResults.first().get('id')
-
-						@setState {hoverClientId}
-
+						event.preventDefault()
+						@_shiftHoverClientId(1)
 					when 38 # Up arrow
-						queryResults = @state.queryResults						
+						event.preventDefault()
+						@_shiftHoverClientId(-1)
+					when 27 # Esc
+						@setState hoverClientId: null
+					when 13 # Enter
+						$('.hover')[0].click()
+						return false
 
-						# Choose first result on fresh-run
-						if not @state.hoverClientId?
-							@setState hoverClientId: queryResults.last().get('id')
-							return
+		_shiftHoverClientId: (modifier) ->
+			hoverClientId = null
+			queryResults = @state.queryResults
 
-						hoverClientId = null
+			# Get our current index position
+			currentResultIndex = queryResults.findIndex (result) =>
+				return result.get('id') is @state.hoverClientId
 
-						currentResultIndex = queryResults.findIndex (result) =>
-							return result.get('id') is @state.hoverClientId
+			nextIndex = currentResultIndex + modifier
 
-						nextIndex = currentResultIndex - 1
+			# Skip to first/last if first-run or next is non-existent
+			if not queryResults.get(nextIndex)? or not @state.hoverClientId?
+				if modifier > 0
+					hoverClientId = queryResults.first().get('id')
+				else
+					hoverClientId = queryResults.last().get('id')
 
-						# Ensure the next result index exists, otherwise skip
-						if queryResults.get(nextIndex)?
-							hoverClientId = queryResults.get(nextIndex).get('id')
-						else
-							hoverClientId = queryResults.first().get('id')
+				@setState {hoverClientId}
+				return
 
-						@setState {hoverClientId}
+			# No wacky skip behaviour needed, move to next/previous result
+			hoverClientId = queryResults.get(nextIndex).get('id')
+			@setState {hoverClientId}
 
 		render: ->
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
