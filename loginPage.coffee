@@ -16,6 +16,8 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	NewInstallationPage = require('./newInstallationPage').load(win)
+
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
 	Dialog = require('./dialog').load(win)
@@ -65,71 +67,23 @@ load = (win) ->
 							cb err
 							return
 
-						if isSetUp
-							# Already set up, no need to continue here
-							@setState {isSetUp: true}, =>
-								@refs.ui.isSetUp()
-							return
+						# if isSetUp
+						# 	# Already set up, no need to continue here
+						# 	@setState {isSetUp: true}, =>
+						# 		@refs.ui.isSetUp()
+						# 	return
 
 						# Data directory hasn't been set up yet.
 						cb()
 				(cb) =>
-					# TODO: Move to ui
-					Bootbox.confirm """
-						#{Config.productName} could not find any data.  Unless this is your first
-						time using #{Config.productName}, this may indicate a problem.  Would you
-						like to set up #{Config.productName} from scratch?
-					""", (result) =>
-						unless result
-							process.exit(0)
-							return
-
-						cb()
-				(cb) =>
 					containerElem = $('#container')[0]
 
-					React.render NewInstallationDialog({
+					React.render NewInstallationPage({
 						onSuccess: (password) ->
 							adminPassword = password
 							cb()
 					}), containerElem
-
-				(cb) =>
-					@setState {isLoading: true}
-					Persist.setUpDataDirectory Config.dataDirectory, (err) =>
-						@setState {isLoading: false}
-
-						if err
-							cb err
-							return
-
-						cb()
-				(cb) =>
-					@setState {isLoading: true}
-					Persist.Users.Account.setUp Config.dataDirectory, (err, result) =>
-						@setState {isLoading: false}
-
-						if err
-							cb err
-							return
-
-						systemAccount = result
-						cb()
-				(cb) =>
-					@setState {isLoading: true}
-					Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
-						@setState {isLoading: false}
-
-						if err
-							if err instanceof Persist.Users.UserNameTakenError
-								Bootbox.alert "An admin #{Term 'user account'} already exists."
-								process.exit(1)
-								return
-
-							cb err
-							return
-
-						cb()
+				
 			], (err) =>
 				if err
 					CrashHandler.handle err
@@ -247,57 +201,6 @@ load = (win) ->
 			@setState {userName: event.target.value}
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
-
-	NewInstallationDialog = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]
-		getInitialState: ->
-			return {
-				adminPassword: ''
-				adminPasswordConfirm: ''
-			}
-
-		render: ->
-			return Dialog({
-				title: "Create Administrator Account"
-				disableBackgroundClick: true
-			},
-				R.div({className: 'newInstallationDialog'},
-					R.div({className: 'form-group'},
-						R.label({},
-							"Set password"						
-							R.input({
-								type: 'password'
-								className: 'form-control'
-								onChange: @_updateAdminPassword
-							})
-						)
-					)
-					R.div({className: 'form-group'},
-						R.label({},
-							"Confirm password"						
-							R.input({
-								type: 'password'
-								className: 'form-control'
-								onChange: @_updateAdminPasswordConfirm
-							})
-						)
-					)
-					R.div({className: 'btn-toolbar'},
-						R.button({
-							className: 'btn btn-success'
-							disabled: @state.adminPassword.length is 0 or @state.adminPassword isnt @state.adminPasswordConfirm
-						},
-							"Finish Installation"
-						)
-					)
-				)
-			)
-
-		_updateAdminPassword: (event) ->
-			@setState {adminPassword: event.target.value}
-
-		_updateAdminPasswordConfirm: (event) ->
-			@setState {adminPasswordConfirm: event.target.value}
 
 
 	return LoginPage
