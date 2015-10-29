@@ -56,7 +56,10 @@ load = (win) ->
 		render: ->
 			return R.div({id: 'newInstallationPage'},
 				R.section({},
-					R.div({id: 'brandContainer'},
+					R.div({
+						id: 'brandContainer'
+						className: 'animated fadeInDown'
+					},
 						R.div({},
 							R.img({
 								id: 'logoImage'
@@ -65,7 +68,10 @@ load = (win) ->
 							R.div({id: 'version'}, "v1.4.0 (Beta)")
 						)						
 					)
-					R.div({id: 'contentContainer'}
+					R.div({
+						id: 'contentContainer'
+						className: 'animated fadeInUp'
+					},
 						R.h1({}, "You're almost done!")
 						R.p({}, "Welcome to the KoNote beta program.")
 						R.p({}, "Let's set you up with an \"admin\" account, and launch your new database.")
