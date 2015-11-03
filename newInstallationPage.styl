@@ -39,32 +39,45 @@
 					font-weight 300
 				
 		
-		> #contentContainer
+		> .contentContainer
 			flex 7
 			padding 25px
 			
-			display flex
-			flex-direction column
-			align-items center
-			
-			h1				
-				font-size 38px
-				line-height 76px
-				margin-bottom 25px
-				
-				font-weight 700
-				text-align center
-				
-			p
-				max-width 75%
-				font-size 20px
-				line-height 1.75em
-				
-				font-weight 400
-				text-align center
-				
-			.btn-toolbar
-				margin 25px 0px
-				
-				button .fa
-					margin-left 15px
+			> div
+				display flex
+				flex-direction column
+				align-items center
+					
+				h1
+					font-size 38px
+					line-height 76px
+					margin-bottom 25px
+					
+					font-weight 700
+					text-align center
+					
+				p
+					max-width 75%
+					font-size 19px
+					line-height 1.75em
+					
+					font-weight 400
+					text-align center
+					
+				.form-group
+					width 50%
+					min-width 200px
+					position relative
+					
+					input
+						position relative
+						letter-spacing 2px
+					
+					.glyphicon
+						opacity 0
+					&.has-success .glyphicon
+						opacity 1
+					
+				.btn-toolbar
+					button .fa
+						margin 0px 10px
