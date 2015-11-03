@@ -417,7 +417,8 @@ load = (win, {clientFileId}) ->
 					)
 					R.div({className: 'buttonRow'},
 						R.button({
-							className: "save btn btn-primary #{'disabled' if @state.editingWhichEvent?}"
+							className: "save btn btn-primary #{'disabled' if @state.editingWhichEvent? or
+								not @hasChanges()}"
 							id: 'saveNoteButton'
 							onClick: @_save unless @state.editingWhichEvent?
 						},
