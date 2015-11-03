@@ -30,6 +30,7 @@ load = (win) ->
 			return {
 				isLoading: true
 				isSetUp: false
+				isNewInstallation: false
 			}
 
 		init: ->
@@ -41,56 +42,44 @@ load = (win) ->
 		suggestClose: ->
 			@props.closeWindow()
 
-		componentWillMount: ->
-			if Config.autoLogin?
-				@_login Config.autoLogin.userName, Config.autoLogin.password
-				return null
-
 		render: ->
+			unless @state.isSetUp
+				return NewInstallationPage({
+					onSuccess: =>
+						@setState {isSetUp: true}
+				})
+
 			return new LoginPageUi({
 				ref: 'ui'
 				isLoading: @state.isLoading
 				isSetUp: @state.isSetUp
+				isNewInstallation: @state.isNewInstallation
 				login: @_login
 			})
 
 		_checkSetUp: ->
-			adminPassword = null
-			systemAccount = null
+			console.log "Probing setup..."
 
-			Async.series [
-				(cb) =>
-					Persist.Users.isAccountSystemSetUp Config.dataDirectory, (err, isSetUp) =>
-						@setState {isLoading: false}
+			# Check to make sure the dataDir exists and has an account system
+			Persist.Users.isAccountSystemSetUp Config.dataDirectory, (err, isSetUp) =>
+				@setState {isLoading: false}
 
-						if err
-							cb err
-							return
-
-						# if isSetUp
-						# 	# Already set up, no need to continue here
-						# 	@setState {isSetUp: true}, =>
-						# 		@refs.ui.isSetUp()
-						# 	return
-
-						# Data directory hasn't been set up yet.
-						cb()
-				(cb) =>
-					containerElem = $('#container')[0]
-
-					React.render NewInstallationPage({
-						onSuccess: (password) ->
-							adminPassword = password
-							cb()
-					}), containerElem
-				
-			], (err) =>
 				if err
 					CrashHandler.handle err
 					return
 
-				@refs.ui.prepareForAdmin()
-				@setState {isSetUp: true}
+				if isSetUp					
+					# Already set up, no need to continue here
+					console.log "Set up confirmed..."
+					@setState {isSetUp: true}
+					return
+
+				# Falsy isSetUp triggers NewInstallationPage
+				console.log "Not set up, redirecting to installation page..."				
+				@setState {
+					isSetUp: false
+					isNewInstallation: true
+				}
 
 		_login: (userName, password) ->			
 			@setState => isLoading: true
@@ -130,25 +119,30 @@ load = (win) ->
 				password: ''
 			}
 
-		prepareForAdmin: ->
-			@setState {userName: 'admin'}
-			@refs.passwordField.getDOMNode().focus()
-
-		isSetUp: ->
-			unless Config.autoLogin?
+		componentDidMount: ->
+			unless Config.autoLogin? or (@props.isSetUp and @props.isNewInstallation)
 				setTimeout(=>
 					@refs.userNameField.getDOMNode().focus()
 				, 100)
 
+			if @props.isNewInstallation
+				@setState {
+					userName: 'admin'
+				}, ->
+					@refs.passwordField.getDOMNode().focus()
+
 		onLoginError: (type) ->
 			switch type
 				when 'UnknownUserNameError'
-					Bootbox.alert "Unknown user name.  Please try again."
+					Bootbox.alert "Unknown user name.  Please try again.", ->
+						@refs.userNameField.getDOMNode().focus()
 				when 'IncorrectPasswordError'
-					Bootbox.alert "Incorrect password.  Please try again."
-					@setState {password: ''}
+					Bootbox.alert "Incorrect password.  Please try again.", ->
+						@setState {password: ''}
+						@refs.passwordField.getDOMNode().focus()						
 				when 'DeactivatedAccountError'
-					Bootbox.alert "This user account has been deactivated."
+					Bootbox.alert "This user account has been deactivated.", ->
+						@refs.userNameField.getDOMNode().focus()
 				else
 					throw new Error "Invalid Login Error"
 

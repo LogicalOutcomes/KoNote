@@ -3,13 +3,17 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Config = require './config'
+Persist = require './persist'
+Async = require 'async'
 
 load = (win) ->
 	# Libraries from browser context
 	$ = win.jQuery
 	React = win.React
+	Bootbox = win.bootbox
 	R = React.DOM
 
+	Spinner = require('./spinner').load(win)	
 	{FaIcon} = require('./utils').load(win)
 
 	NewInstallationPage = React.createFactory React.createClass
@@ -20,13 +24,35 @@ load = (win) ->
 				openTab: 'index'
 
 				isLoading: null
-				loadingMessage: ""
+				installProgress: {
+					message: null
+					percent: null
+				}
 
 				password: ''
 				passwordConfirmation: ''
 			}
 
+		componentDidUpdate: (oldProps, oldState) ->
+			# Detech tab change to createAdmin
+			if @state.openTab isnt oldState.openTab and @state.openTab is 'createAdmin'
+				# Focus first password input
+				$password = $(@refs.password.getDOMNode())
+				$password.focus()
+
 		render: ->
+			# TODO: Extract this to UI component
+
+			if @state.isLoading
+				return R.div({id: 'newInstallationPage'},
+					Spinner {
+						isOverlay: true
+						isVisible: true
+						message: @state.installProgress.message
+						percent: @state.installProgress.percent
+					}
+				)
+
 			return R.div({id: 'newInstallationPage'},
 				R.section({},
 					R.div({
@@ -50,9 +76,11 @@ load = (win) ->
 									R.h1({}, "You're almost done!")
 									R.p({}, "Welcome to the #{Config.productName} beta program.")
 									R.p({}, "Let's set you up with an \"admin\" account, and launch your new database.")
+									R.br({})
 									R.div({className: 'btn-toolbar'},
 										R.button({
 											className: 'btn btn-lg btn-default'
+											onClick: @_switchTab.bind null, 'help'
 										}, 
 											"Help"
 										)
@@ -61,7 +89,7 @@ load = (win) ->
 											onClick: @_switchTab.bind null, 'createAdmin'
 										}, 
 											"Create Admin Account"
-											FaIcon('arrow-right')
+											FaIcon('arrow-right right-side')
 										)
 									)
 								)
@@ -75,10 +103,11 @@ load = (win) ->
 									R.div({
 										className: [
 											'form-group'
-											'has-success has-feedback' if @state.password.length >= 5
+											'has-success has-feedback' if @state.password.length > 5
 										].join ' '
 									},
 										R.input({
+											ref: 'password'
 											className: 'form-control'
 											type: 'password'											
 											placeholder: "Set Password"
@@ -97,6 +126,7 @@ load = (win) ->
 										].join ' '
 									},
 										R.input({
+											ref: 'passwordConfirmation'
 											className: 'form-control'
 											type: 'password'											
 											placeholder: "Confirm Password"
@@ -110,7 +140,7 @@ load = (win) ->
 											className: 'btn btn-lg btn-default'
 											onClick: @_switchTab.bind null, 'index'
 										},
-											FaIcon('arrow-left')
+											FaIcon('arrow-left left-side')
 											"Back"
 										)
 										R.button({
@@ -119,10 +149,35 @@ load = (win) ->
 												'animated pulse' if @_passwordsMatch()
 											].join ' '
 											disabled: not @_passwordsMatch()
+											onClick: @_install
 										}, 
 											"Complete Installation"
-											FaIcon('check')
+											FaIcon('check right-side')
 										)
+									)
+								)
+							
+							when 'help'
+								R.div({ref: 'help'},
+									R.h1({}, "How can we help?")
+									R.p({}, "Your feedback is very important to us.")
+									R.p({},
+										"As a #{Config.productName} beta tester, you are
+										entitled to free 1-on-1 support with Dr. Gotlib MD."
+									)
+									R.br({})
+									R.div({className: 'btn-toolbar'},
+										R.button({
+											className: 'btn btn-lg btn-default'
+											onClick: @_switchTab.bind null, 'index'
+										},
+											FaIcon('arrow-left left-side')
+											"Back"
+										)
+										R.button({
+											className: 'btn btn-lg btn-warning'
+											onClick: @_showContactInfo
+										}, "Contact Information")
 									)
 								)
 						)
@@ -159,40 +214,94 @@ load = (win) ->
 					$newTab.attr 'class', ('animated fadeIn' + onDirection)
 			, 500)
 
+		_showContactInfo: ->
+			Bootbox.dialog {
+				title: "Contact Information:"
+				message: """
+					<ul>
+						<li>E-mail: david@konode.ca</li>
+						<li>Phone: 1-416-816-3422</li>
+					</ul>
+				"""
+				buttons: {
+					success: {
+						label: "Done"
+						className: 'btn btn-success'
+					}
+				}
+			}
+
+		_updateProgress: (percent, message) ->
+			if not percent and not message
+				percent = message = null
+
+			@setState =>
+				isLoading: true
+				installProgress: {percent, message}
+
+			console.log "Updated progress:", percent, message
+
 		_install: ->
+			if @state.password isnt @state.passwordConfirmation
+				Bootbox.alert "Passwords do not match"
+				return
+
+			if @state.password.length <= 5
+				Bootbox.alert "Please use a password with more than 5 characters"
+				return
+
 			systemAccount = null
+			adminPassword = @state.password
 
-			(cb) =>
-				@setState {isLoading: true}
-				# Set up data directory, with subfolders from dataModels
-				Persist.setUpDataDirectory Config.dataDirectory, (err) =>
-					if err
-						cb err
-						return
+			@_updateProgress()
 
-					cb()
-			(cb) =>
-				# Generate mock "_system" admin user
-				Persist.Users.Account.setUp Config.dataDirectory, (err, result) =>
-					if err
-						cb err
-						return
+			Async.series [
+				(cb) =>
+					@_updateProgress 0, "Setting up database directory"
 
-					systemAccount = result
-					cb()
-			(cb) =>
-				# Create admin user account using systemAccount
-				Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
-					if err
-						if err instanceof Persist.Users.UserNameTakenError
-							Bootbox.alert "An admin #{Term 'user account'} already exists."
-							process.exit(1)
+					# Set up data directory, with subfolders from dataModels
+					Persist.setUpDataDirectory Config.dataDirectory, (err) =>
+						if err
+							cb err
 							return
 
-						cb err
-						return
+						cb()
+				(cb) =>
+					@_updateProgress 25, "Configuring accounts system . . ."
 
-					cb()
+					# Generate mock "_system" admin user
+					Persist.Users.Account.setUp Config.dataDirectory, (err, result) =>
+						if err
+							cb err
+							return
+
+						systemAccount = result
+						cb()
+				(cb) =>
+					@_updateProgress 75, "Creating your \"admin\" user . . ."
+					# Create admin user account using systemAccount
+					Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
+						if err
+							if err instanceof Persist.Users.UserNameTakenError
+								Bootbox.alert "An admin #{Term 'user account'} already exists."
+								process.exit(1)
+								return
+
+							cb err
+							return
+
+						cb()
+			], (err) =>
+				if err
+					CrashHandler.handle err
+					return
+
+				@_updateProgress 100, "Successfully installed #{Config.productName}!"
+
+				setTimeout(=>
+					@setState {isLoading: false}, -> @props.onSuccess()
+				, 1000)
+
 
 	return NewInstallationPage
 
