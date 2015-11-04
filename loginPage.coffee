@@ -134,15 +134,22 @@ load = (win) ->
 		onLoginError: (type) ->
 			switch type
 				when 'UnknownUserNameError'
-					Bootbox.alert "Unknown user name.  Please try again.", ->
-						@refs.userNameField.getDOMNode().focus()
+					Bootbox.alert "Unknown user name.  Please try again.", =>
+						setTimeout(=>
+							@refs.userNameField.getDOMNode().focus()
+						, 100)
 				when 'IncorrectPasswordError'
-					Bootbox.alert "Incorrect password.  Please try again.", ->
+					Bootbox.alert "Incorrect password.  Please try again.", =>
 						@setState {password: ''}
-						@refs.passwordField.getDOMNode().focus()						
+						setTimeout(=>
+							@refs.passwordField.getDOMNode().focus()
+						, 100)
 				when 'DeactivatedAccountError'
-					Bootbox.alert "This user account has been deactivated.", ->
+					Bootbox.alert "This user account has been deactivated.", =>
 						@refs.userNameField.getDOMNode().focus()
+						setTimeout(=>
+							@refs.userNameField.getDOMNode().focus()
+						, 100)
 				else
 					throw new Error "Invalid Login Error"
 
