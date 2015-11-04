@@ -70,7 +70,10 @@ dataModelDefinitions = [
 				name: 'progNote'
 				collectionName: 'progNotes'
 				isMutable: false
-				indexes: [['timestamp']]
+				indexes: [
+					['timestamp'],
+					['backdate']
+				]
 				schema: [
 					Joi.object().keys({
 						type: 'basic' # aka "Quick Notes"
