@@ -420,7 +420,7 @@ load = (win, {clientFileId}) ->
 							className: "save btn btn-primary #{'disabled' if @state.editingWhichEvent? or
 								not @hasChanges()}"
 							id: 'saveNoteButton'
-							onClick: @_save unless @state.editingWhichEvent?
+							onClick: @_save unless @state.editingWhichEvent? or not @hasChanges()
 						},
 							FaIcon 'check'
 							'Save'
