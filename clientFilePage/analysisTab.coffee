@@ -138,7 +138,7 @@ load = (win) ->
 							})
 							R.div({className: 'valueDisplay'},
 								(@state.timeSpan.map (index) =>
-									date = Moment(@state.xTicks.get(index)).format('dddd - Do MMMM - YYYY')
+									date = Moment(@state.xTicks.get(index)).format('MMM Do - YYYY')
 									return R.div({key: index},
 										R.span({}, date)
 									)
