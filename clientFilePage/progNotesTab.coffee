@@ -157,7 +157,7 @@ load = (win) ->
 						quickNoteToggle.data('isVisible', false)
 
 				popover.find('.backdate.date').datetimepicker({
-					format: 'MMM-DD-YYYY'
+					format: 'MMM-DD-YYYY h:mm A'
 					defaultDate: Moment()
 					maxDate: Moment()
 					widgetPositioning: {

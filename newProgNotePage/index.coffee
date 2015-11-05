@@ -254,7 +254,7 @@ load = (win, {clientFileId}) ->
 		mixins: [React.addons.PureRenderMixin]
 		componentDidMount: ->
 			$(@refs.backdate.getDOMNode()).datetimepicker({
-				format: 'MMM-DD-YYYY'
+				format: 'MMM-DD-YYYY h:mm A'
 				defaultDate: Moment()
 				maxDate: Moment()
 				widgetPositioning: {
