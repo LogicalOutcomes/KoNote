@@ -22,7 +22,7 @@ load = (win) ->
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
-	ProgramManagerDialog = React.createFactory React.createClass
+	ProgramManagerTab = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin, LayeredComponentMixin]
 
 		getInitialState: ->
@@ -519,6 +519,6 @@ load = (win) ->
 						lastName.includes(part) or
 						recordId.includes(part)
 
-	return ProgramManagerDialog
+	return ProgramManagerTab
 
 module.exports = {load}

@@ -19,10 +19,10 @@ load = (win) ->
 	R = React.DOM
 	Gui = win.require 'nw.gui'
 
-	ProgramManagerDialog = require('./programManagerDialog').load(win)
-	AccountManagerDialog = require('./accountManagerDialog').load(win)
+	ProgramManagerTab = require('./programManagerTab').load(win)
+	AccountManagerTab = require('./accountManagerTab').load(win)
+	ClientFileManagerTab = require('./clientFileManagerTab').load(win)
 	CrashHandler = require('./crashHandler').load(win)
-	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
 	BrandWidget = require('./brandWidget').load(win)	
@@ -142,6 +142,8 @@ load = (win) ->
 				queryText: ''
 				queryResults: Imm.List()				
 				hoverClientId: null
+
+				managerLayer: null
 			}
 
 		componentDidUpdate: (oldProps, oldState) ->
@@ -217,24 +219,32 @@ load = (win) ->
 					className: if @state.menuIsOpen then 'openMenu' else ''
 				},
 				(if @props.isLoading
-					R.div({id: 'clientSelectionPage'},
-						Spinner {
-							isOverlay: true
-							isVisible: true
-						}
-					)
+					Spinner {
+						isOverlay: true
+						isVisible: true
+					}
 				)
 				R.a({
 					id: 'expandMenuButton'
+					className: showWhen not @state.managerLayer?
 					onClick: @_toggleUserMenu
 				}, 
 					FaIcon 'bars'
 				)
 				R.div({
-					id: 'mainContainer'
-					onClick: if @state.menuIsOpen then @_toggleUserMenu
-				},					
-					R.div({id: 'main'},
+					id: 'mainContainer'					
+				},
+					(if @state.managerLayer?
+						ManagerLayer({
+							name: @state.managerLayer
+							clientFileHeaders: @props.clientFileHeaders
+							onClose: @_updateManagerLayer.bind null, null
+						})
+					)
+					R.div({
+						id: 'main'
+						onClick: if @state.menuIsOpen then @_toggleUserMenu
+					},
 						Spinner({
 							isVisible: @props.isLoading
 							isOverlay: true
@@ -330,33 +340,29 @@ load = (win) ->
 		_renderUserMenuList: (isAdmin) ->
 			return R.ul({},
 				UserMenuItem({
-					title: "New #{Term 'Client File'}"
-					dialog: CreateClientFileDialog
+					title: Term 'Client Files'
 					icon: 'folder-open'
-					data: {
-						clientFileHeaders: @props.clientFileHeaders
-					}
-				})
-				UserMenuItem({
-					isVisible: isAdmin
-					title: "#{Term 'Account'} Manager"
-					dialog: AccountManagerDialog
-					icon: 'users'
-				})
+					onClick: @_updateManagerLayer.bind null, 'clientFileManagerTab'
+				})				
 				UserMenuItem({
 					isVisible: isAdmin
 					title: Term 'Programs'
-					dialog: ProgramManagerDialog
 					icon: 'users'
-					data: {
-						programs: @props.programs
-						clientFileHeaders: @props.clientFileHeaders
-					}
+					onClick: @_updateManagerLayer.bind null, 'programManagerTab'
+				})
+				UserMenuItem({
+					isVisible: isAdmin
+					title: "User #{Term 'Accounts'}"
+					icon: 'key'
+					onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
 				})
 			)
 
+		_updateManagerLayer: (managerLayer) ->
+			@setState {managerLayer}
+
 		_toggleUserMenu: ->
-			@setState {menuIsOpen: !@state.menuIsOpen}		
+			@setState {menuIsOpen: not @state.menuIsOpen}		
 
 		_attachKeyBindings: ->
 			searchBox = @refs.searchBox.getDOMNode()
@@ -446,45 +452,53 @@ load = (win) ->
 			}
 
 
+	ManagerLayer = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
+		render: ->
+			Module = switch @props.name
+				when 'clientFileManagerTab'
+					ClientFileManagerTab
+				when 'programManagerTab'
+					ProgramManagerTab
+				when 'accountManagerTab'
+					AccountManagerTab
+
+			return R.div({className: 'managerLayer'},
+				R.div({className: 'managerLayerContainer'},
+					R.a({
+						className: 'closeManagerButton'
+						onClick: @props.onClose
+					}, FaIcon 'times')
+
+					Module @props
+				)
+			)
+
+
 	UserMenuItem = React.createFactory React.createClass
-		mixins: [LayeredComponentMixin]
+		mixins: [React.addons.PureRenderMixin]
+
 		getDefaultProps: ->
 			return {
 				isVisible: true
 			}
+
 		getInitialState: ->
 			return {
 				isOpen: false
 			}
 
 		render: ->
-			return R.li({className: showWhen(@props.isVisible)},
+			return R.li({className: showWhen @props.isVisible},
 				R.div({
-					onClick: @_openMenu
+					onClick: @props.onClick.bind null, @props.module
 				}, 
 					FaIcon(@props.icon)
 					@props.title
 				)
 			)
-		renderLayer: ->
-			unless @state.isOpen
-				return R.div()
 
-			# Default user menu functions
-			defaultProps = {
-				onClose: @_closeMenu
-				onCancel: @_closeMenu
-				onSuccess: @_closeMenu					
-			}
-			# Extend with custom data/function props
-			propsWithData = _.extend defaultProps, @props.data
-
-			return @props.dialog propsWithData
-
-		_openMenu: ->
-			@setState {isOpen: true}
-		_closeMenu: ->
-			@setState {isOpen: false}
 
 	return ClientSelectionPage
 
