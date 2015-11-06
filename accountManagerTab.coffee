@@ -90,14 +90,10 @@ load = (win) ->
 						icon: 'plus'
 						dialog: CreateAccountDialog
 						onSuccess: (userAccount) =>
-							console.log "new userAccount", userAccount
-
+							# Push in new userAccount manually,
+							# because not listening for it on pageComponent
 							newAccount = @_buildUserAccountObject(userAccount)
-							console.log "built account", newAccount
-
-							console.log "userAccounts Before:", @state.userAccounts
 							userAccounts = @state.userAccounts.push newAccount
-							console.log "userAccounts After:", userAccounts
 							@setState {userAccounts}
 					})
 				)
