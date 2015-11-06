@@ -19,9 +19,7 @@ load = (win) ->
 	R = React.DOM
 	Gui = win.require 'nw.gui'
 
-	ProgramManagerTab = require('./programManagerTab').load(win)
-	AccountManagerTab = require('./accountManagerTab').load(win)
-	ClientFileManagerTab = require('./clientFileManagerTab').load(win)
+	ManagerLayer = require('./managerLayer').load(win)	
 	CrashHandler = require('./crashHandler').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
@@ -449,31 +447,7 @@ load = (win) ->
 			openWindow {
 				page: 'clientFile'
 				clientFileId
-			}
-
-
-	ManagerLayer = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]
-
-		render: ->
-			Module = switch @props.name
-				when 'clientFileManagerTab'
-					ClientFileManagerTab
-				when 'programManagerTab'
-					ProgramManagerTab
-				when 'accountManagerTab'
-					AccountManagerTab
-
-			return R.div({className: 'managerLayer'},
-				R.div({className: 'managerLayerContainer'},
-					R.a({
-						className: 'closeManagerButton'
-						onClick: @props.onClose
-					}, FaIcon 'times')
-
-					Module @props
-				)
-			)
+			}	
 
 
 	UserMenuItem = React.createFactory React.createClass
