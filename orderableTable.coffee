@@ -14,22 +14,32 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	OpenDialogButton = require('./openDialogButton').load(win)
 	{FaIcon, showWhen} = require('./utils').load(win)
 
 	OrderableTable = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: ->
+		getDefaultProps: ->
 			return {
-				sortByData: @props.columns.first().dataPath
+				data: Imm.List()				
+				columns: Imm.List()
+				rowKey: ['id']
+				rowIsVisible: -> return true
+			}
+
+		getInitialState: ->
+			firstColumn = @props.columns.first().dataPath
+
+			return {
+				sortByData: firstColumn
 				isSortAsc: null
 			}
 
 		render: ->
-			console.log "sortByData", @state.sortByData
-
 			data = @props.data
 			.sortBy (dataPoint) => dataPoint.getIn(@state.sortByData).toLowerCase()
+			.filter (dataPoint) => @props.rowIsVisible(dataPoint)
 
 			if @state.isSortAsc
 				data = data.reverse()
@@ -37,13 +47,13 @@ load = (win) ->
 			return R.table({className: 'table table-striped orderableTable'},
 				R.thead({},
 					R.tr({},
-						(@props.columns.map ({name, dataPath}) =>
+						(@props.columns.map (column) =>
 							R.th({}, 
 								R.span({
-									onClick: @_sortBy.bind null, dataPath
+									onClick: @_sortBy.bind null, column.dataPath
 								}, 
-									name
-									if @state.sortByData is dataPath
+									column.name unless column.nameIsVisible? and not column.nameIsVisible
+									if @state.sortByData is column.dataPath
 										(FaIcon("chevron-#{
 											if @state.isSortAsc then 'up' else 'down'
 										}"))
@@ -54,23 +64,42 @@ load = (win) ->
 				)
 				R.tbody({},
 					(data.map (dataPoint) =>
-						R.tr({key: dataPoint.get('id')},
-							(@props.columns.map ({name, dataPath, extraPath, defaultValue}) =>
-								R.td({},
+						R.tr({key: dataPoint.getIn(@props.rowKey)},
+							(@props.columns.map (column) =>
+								R.td({
+									key: column.name
+									className: 'hasButtons' if column.buttons?
+								},
 									
-									hasDataValue = dataPath? and dataPoint.getIn(dataPath).length > 0
-									hasExtraDataValue = extraPath? and dataPoint.getIn(extraPath).length > 0
+									hasDataValue = column.dataPath? and dataPoint.getIn(column.dataPath).length > 0
+									hasExtraDataValue = column.extraPath? and dataPoint.getIn(column.extraPath).length > 0
 
 									R.span({className: "dataValue #{'noValue' if not hasDataValue}"},
 										(if hasDataValue
-											dataPoint.getIn(dataPath)
-										else if defaultValue?
-											(defaultValue)
+											dataPoint.getIn(column.dataPath)
+										else if column.defaultValue?
+											(column.defaultValue)
 										)
 									)
 									(if hasExtraDataValue
 										R.span({className: 'extraDataValue'},
-											", " + dataPoint.getIn(extraPath)
+											", " + dataPoint.getIn(column.extraPath)
+										)
+									)
+
+									(if column.buttons?
+										R.div({className: 'btn-group'},
+											column.buttons.map (button) =>
+												if button.dialog?
+													OpenDialogButton(button)
+												else
+													R.button({
+														className: button.className
+														onClick: button.onClick(dataPoint)
+													}, 
+														button.text if button.text?
+														FaIcon(button.icon) if button.icon?
+													)
 										)
 									)
 								)

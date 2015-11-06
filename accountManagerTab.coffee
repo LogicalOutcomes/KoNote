@@ -3,9 +3,9 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Async = require 'async'
-
+_ = require 'underscore'
+Imm = require 'immutable'
 Persist = require './persist'
-Account = Persist.Users.Account
 
 load = (win) ->
 	$ = win.jQuery
@@ -17,109 +17,137 @@ load = (win) ->
 	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
-	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
+	OrderableTable = require('./orderableTable').load(win)
+	OpenDialogButton = require('./openDialogButton').load(win)
 	Spinner = require('./spinner').load(win)	
 	{FaIcon, showWhen} = require('./utils').load(win)
 
-	AccountManagerDialog = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin, LayeredComponentMixin]
+	AccountManagerTab = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
 			return {
 				mode: 'loading' # loading, ready, or working
 				openDialogId: null
-				userNames: null
+				userAccounts: Imm.List()
 			}
 
 		render: ->
-			Dialog({
-				title: "#{Term 'Account'} Manager"
-				onClose: @props.onCancel
+			return R.div({
+				className: 'accountManagerTab'
 			},
-				R.div({className: 'accountManagerDialog'},
-					Spinner({
-						isVisible: @state.mode in ['loading', 'working']
-						isOverlay: true
-					})
-					if @state.mode in ['ready', 'working']
-						R.div({},
-							R.div({className: 'btn-toolbar'},
-								R.button({
-									className: 'btn btn-primary'
-									onClick: @_openCreateAccountDialog
-								},
-									FaIcon('plus')
-									" New User"
-								)
-							)
+				R.div({className: 'header'},
+					R.h1({}, Term 'User Accounts')
+				)
+				R.div({className: 'main'},
+					OrderableTable({
+						data: Imm.List @state.userAccounts
+						rowKey: ['userName']
+						rowIsVisible: (row) =>
+							return row.getIn(['publicInfo', 'isActive'])
+						columns: Imm.List [
+							{
+								name: "User Name"
+								dataPath: ['userName']
+							}
+							{
+								name: "Account Type"
+								dataPath: ['publicInfo', 'accountType']
+							}
+							{
+								name: "Options"
+								nameIsVisible: false
+								buttons: [
+									{
+										className: 'btn btn-default'
+										text: "Reset Password"
+										# icon: 'key'
+										dialog: ResetPasswordDialog
+									}
+									{
+										className: 'btn btn-danger'
+										text: "Deactivate"
+										# icon: 'user'
+										onClick: (dataPoint) =>
+											userName = dataPoint.get('userName')
 
-							R.table({className: 'userTable table table-striped'},
-								R.tbody({},
-									(@state.userNames.sort().map (userName) =>
-										R.tr({},
-											R.td({className: 'userNameCell'}, userName)
-											R.td({className: 'buttonsCell'},
-												R.div({className: 'btn-group'},
-													(if userName isnt global.ActiveSession.userName
-														R.button({
-															className: 'btn btn-default'
-															onClick: @_openResetPasswordDialog.bind null, userName
-														},
-															"Reset password"
-														)
-													)
-													(if userName isnt global.ActiveSession.userName
-														R.button({
-															className: 'btn btn-danger'
-															onClick: @_deactivateAccount.bind null, userName
-														},
-															"Deactivate"
-														)
-													)
-												)
-											)
-										)
-									).toArray()...
-								)
-							)
-						)
+											@_deactivateAccount.bind null, userName, =>
+												# Remove userAccount
+												userAccounts = @state.userAccounts
+												.filter (userAccount) => userAccount.get('userName') isnt userName
+												# Restore state
+												@setState {userAccounts}
+									}									
+								]
+							}
+						]
+					})
+				)
+				R.div({className: 'optionsMenu'},
+					OpenDialogButton({
+						className: 'btn btn-lg btn-primary'
+						text: "New #{Term 'Account'} "
+						icon: 'plus'
+						dialog: CreateAccountDialog
+						onSuccess: (userAccount) =>
+							console.log "new userAccount", userAccount
+
+							newAccount = @_buildUserAccountObject(userAccount)
+							console.log "built account", newAccount
+
+							console.log "userAccounts Before:", @state.userAccounts
+							userAccounts = @state.userAccounts.push newAccount
+							console.log "userAccounts After:", userAccounts
+							@setState {userAccounts}
+					})
 				)
 			)
 
-		renderLayer: ->
-			switch @state.openDialogId
-				when 'createAccount'
-					return CreateAccountDialog({
-						onClose: @_closeDialog
-						onCancel: @_closeDialog
-						onSuccess: (userName) =>
-							@_closeDialog()
-							@setState (s) -> {
-								userNames: s.userNames.push(userName)
-							}
-					})
-				when 'resetPassword'
-					return ResetPasswordDialog({
-						userName: @state.selectedUserName
-						onClose: @_closeDialog
-						onCancel: @_closeDialog
-						onSuccess: @_closeDialog
-					})
-				when null
-					return R.div()
-				else
-					throw new Error "Unknown dialog ID: #{JSON.stringify @state.openDialogId}"
-
 		componentDidMount: ->
-			Persist.Users.listUserNames Config.dataDirectory, (err, userNames) =>
+			# Load Users publicInfo
+			userNames = null
+			userAccounts = null
+
+			Async.series [
+				(cb) =>
+					Persist.Users.listUserNames Config.dataDirectory, (err, result) =>
+						if err
+							cb err
+							return
+
+						userNames = result
+						cb()
+				(cb) =>
+					Async.map userNames.toArray(), (userName, cb) =>
+
+						Persist.Users.Account.read Config.dataDirectory, userName, (err, result) =>
+							if err
+								cb err
+								return
+
+							# Build object with only userName and publicInfo
+							userAccountObject = @_buildUserAccountObject(result)
+						
+							cb null, userAccountObject
+
+					, (err, results) =>
+						userAccounts = Imm.List(results)
+						cb()
+
+			], (err) =>
 				if err
 					CrashHandler.handle err
 					return
 
-				@setState (s) -> {
-					mode: 'ready'
-					userNames
+				@setState {
+					userAccounts
 				}
+
+		_buildUserAccountObject: (userAccount) ->
+			return Imm.fromJS {
+				userName: userAccount.userName
+				publicInfo: userAccount.publicInfo
+			}
 
 		_openCreateAccountDialog: ->
 			@setState (s) -> {
@@ -132,7 +160,7 @@ load = (win) ->
 				selectedUserName: userName
 			}
 
-		_deactivateAccount: (userName) ->
+		_deactivateAccount: (userName, cb) ->
 			if userName is global.ActiveSession.userName
 				Bootbox.alert "Accounts cannot deactivate themselves.  Try logging in using a different account."
 				return
@@ -143,7 +171,7 @@ load = (win) ->
 
 				@setState (s) -> {mode: 'working'}
 
-				Account.read Config.dataDirectory, userName, (err, acc) =>
+				Persist.Users.Account.read Config.dataDirectory, userName, (err, acc) =>
 					if err
 						if err instanceof Persist.Users.UnknownUserNameError
 							Bootbox.alert "No account exists with this user name."
@@ -172,6 +200,7 @@ load = (win) ->
 							CrashHandler.handle err
 							return
 
+						cb()
 						Bootbox.alert "The account #{userName} has been deactivated."
 
 		_closeDialog: ->
@@ -258,7 +287,8 @@ load = (win) ->
 			accountType = if @state.isAdmin then 'admin' else 'normal'
 
 			@setState {isLoading: true}
-			Account.create global.ActiveSession.account, userName, password, accountType, (err) =>
+
+			Persist.Users.Account.create global.ActiveSession.account, userName, password, accountType, (err, result) =>
 				@setState {isLoading: false}
 
 				if err
@@ -269,7 +299,8 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@props.onSuccess(userName)
+				newAccount = result
+				@props.onSuccess(newAccount)
 
 	ResetPasswordDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -342,7 +373,7 @@ load = (win) ->
 
 			Async.series [
 				(cb) =>
-					Account.read Config.dataDirectory, userName, (err, result) =>
+					Persist.Users.Account.read Config.dataDirectory, userName, (err, result) =>
 						if err
 							if err instanceof Persist.Users.UnknownUserNameError
 								Bootbox.alert "Unknown user! Please check user name and try again"
@@ -379,6 +410,6 @@ load = (win) ->
 					callback: =>
 						@props.onSuccess()
 
-	return AccountManagerDialog
+	return AccountManagerTab
 
 module.exports = {load}
