@@ -4,19 +4,22 @@
 
 # Load in Timeout listeners and trigger warning dialogs
 
+Config = require './config'
+Persist = require './persist'
+
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
 	Bootbox = win.bootbox
 	Gui = win.require 'nw.gui'
-	nwWin = Gui.Window.get(win)
-	Config = require('./config')
+	nwWin = Gui.Window.get(win)	
 
 	Dialog = require('./dialog').load(win)
-	Spinner = require('./spinner').load(win)
-	Persist = require('./persist')	
-	Moment = require('moment')	
+	Spinner = require('./spinner').load(win)	
+	CrashHandler = require('./crashHandler').load(win)
+	
+	Moment = require('moment')
 
 	TimeoutWarning = React.createFactory React.createClass
 		getInitialState: ->
