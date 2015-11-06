@@ -209,6 +209,7 @@ load = (win, {clientFileId}) ->
 				type: 'full'
 				clientFileId: clientFile.get('id')
 				templateId: template.get('id')
+				backdate: ''
 				sections: template.get('sections').map (section) =>
 					switch section.get('type')
 						when 'basic'
@@ -250,6 +251,30 @@ load = (win, {clientFileId}) ->
 										}
 							}
 			}
+
+	backdateWidget = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		componentDidMount: ->
+			$(@refs.backdate.getDOMNode()).datetimepicker({
+				format: 'MMM-DD-YYYY h:mm A'
+				defaultDate: Moment()
+				maxDate: Moment()
+				widgetPositioning: {
+					vertical: 'bottom'
+				}
+			}).on 'dp.change', (e) =>
+				@props.onChange e
+		render: ->
+			return R.div({className: 'input-group'},
+				R.input({
+					ref: 'backdate'
+					className: 'form-control backdate date'
+				},
+					R.span({className: 'input-group-addon'}
+						FaIcon 'calendar'
+					)
+				)
+			)
 
 	NewProgNotePageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -343,6 +368,14 @@ load = (win, {clientFileId}) ->
 
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
+					backdateWidget({onChange: @_updateBackdate})
+					R.div({
+						className: "#{showWhen @state.progNote.get('backdate') != ''}"
+						style: 'font-style': 'normal', 'padding': '5px', 'color': 'red'
+					},
+						"(back-dated entry)"
+					)
+					R.hr({})
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
 							switch section.get('type')
@@ -527,6 +560,10 @@ load = (win, {clientFileId}) ->
 					targetId: target.get('id')
 					targetName: target.get('name')
 				}
+			}
+		_updateBackdate: (event) ->
+			@setState {
+				progNote: @state.progNote.setIn ['backdate'], Moment(event.date).format(Persist.TimestampFormat)
 			}
 		_updateBasicSectionNotes: (sectionId, event) ->
 			sectionIndex = @_getSectionIndex sectionId

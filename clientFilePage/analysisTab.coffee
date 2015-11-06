@@ -84,6 +84,8 @@ load = (win) ->
 				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat metricValues.map (metric) ->
 				Moment(metric.get('timestamp'), Persist.TimestampFormat).startOf('day').valueOf()
+			.concat metricValues.map (metric) ->
+				Moment(metric.get('backdate'), Persist.TimestampFormat).startOf('day').valueOf()
 			# Filter to unique days, and sort
 			.toOrderedSet().sort()
 
@@ -681,7 +683,10 @@ load = (win) ->
 				return Imm.List()
 			when 'full'
 				return progNote.get('sections').flatMap (section) ->
-					return extractMetricsFromProgNoteSection section, progNote.get('timestamp')
+					if progNote.get('backdate') != ''
+						return extractMetricsFromProgNoteSection section, progNote.get('backdate')
+					else
+						return extractMetricsFromProgNoteSection section, progNote.get('timestamp')
 			else
 				throw new Error "unknown prognote type: #{JSON.stringify progNote.get('type')}"
 
