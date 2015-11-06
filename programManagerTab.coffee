@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 Imm = require 'immutable'
 Async = require 'async'	
+TinyColor = require 'tinycolor2'
 
 Persist = require './persist'
 Config = require './config'
@@ -18,12 +19,13 @@ load = (win) ->
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
 	Slider = require('./slider').load(win)
-	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
+	OrderableTable = require('./orderableTable').load(win)
+	OpenDialogButton = require('./openDialogButton').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
 	ProgramManagerTab = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin, LayeredComponentMixin]
+		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
 			return {
@@ -32,157 +34,53 @@ load = (win) ->
 			}
 
 		render: ->
-			noData = @props.programs.size is 0
+			# noData = @props.programs.size is 0
 
-			return Dialog({
-				title: "#{Term 'Client'} #{Term 'Programs'}"
-				onClose: @props.onCancel
-				containerClasses: ['noPadding'] unless noData
-				disableBackgroundClick: true
-			},
-				R.div({className: 'programManagerDialog'},
-					Spinner({
-						isVisible: @state.mode in ['loading', 'working']
-						isOverlay: true
-					})
-					(if noData
-						# Fresh-run UI
-						R.div({className: 'noData'}, 
-							R.span({}, "No #{Term 'programs'} exist yet.")
-							R.button({
-								className: 'btn btn-primary btn-lg'
-								onClick: @_openCreateProgramDialog
-							},
-								FaIcon('plus')
-								" Create #{Term 'Program'}"
-							)
-						)
-					else
-						R.div({className: 'hasData'},
-							R.div({className: 'options'},
-								R.button({
-									className: 'btn btn-primary'
-									onClick: @_openCreateProgramDialog
-								},
-									FaIcon('plus')
-									" Create #{Term 'Program'}"
-								)
-							)
-							R.table({className: 'table table-striped'},
-								R.tbody({},
-									(@props.programs.map (program) =>
-										isExpanded = @state.expandedMemberLists.includes program.get('id')
+			console.log "@props.programs", @props.programs
 
-										R.tr({},
-											R.td({},
-												R.h4({
-													className: 'programName'
-													onClick: @_toggleExpandedView.bind null, program.get('id')
-												},
-													(if not isExpanded
-														FaIcon('plus')
-													else
-														FaIcon('minus')
-													)
-													program.get 'name'
-												)
-
-												(if isExpanded
-													R.div({},
-														R.p({}, program.get 'description')
-														R.span({className: 'clientName'}, 
-															R.span({}, "ClientA")
-															FaIcon('times', {
-																onClick: @_removeClientFromProgram.bind null, 12345, program.get('id')
-															})
-														)
-													)
-												)
-											)
-											R.td({},
-												R.div({className: 'btn-group'},
-													R.button({
-														className: 'btn btn-warning'
-														onClick: @_openEditProgramDialog.bind null, program
-													}, "Edit")
-													R.button({
-														className: 'btn btn-default'
-														onClick: @_openManageClientsDialog.bind null, program
-													},														
-														Term 'Clients'
-														R.span({className: 'badge'}, 0)
-													)
-												)												
-											)
-										)
-									)
-								)
-							)
-						)
-					)
+			return R.div({className: 'programManagerTab'},
+				R.div({className: 'header'},
+					R.h1({}, Term 'Programs')
 				)
-			)
-
-		renderLayer: ->
-			switch @state.openDialogId
-				when 'createProgram'
-					return CreateProgramDialog({
-						onClose: @_closeDialog
-						onCancel: @_closeDialog
-						onSuccess: @_closeDialog
+				R.div({className: 'main'},
+					OrderableTable({
+						data: Imm.List @props.programs
+						rowStyle: (row) =>
+							return {
+								background: row.get('colorHex')
+							}
+						columns: Imm.List [
+							{
+								name: "Program Name"
+								dataPath: ['name']
+							}
+							{
+								name: "Description"
+								dataPath: ['description']
+							}
+							{
+								name: "Options"
+								nameIsVisible: false
+								buttons: [
+									{
+										className: 'btn btn-default'
+										text: "Modify"
+										dialog: EditProgramDialog
+									}
+								]
+							}
+						]
 					})
-				when 'editProgram'
-					return EditProgramDialog({
-						onClose: @_closeDialog
-						onCancel: @_closeDialog						
-						onSuccess: @_closeDialog
-						data: @state.editData
+				)
+				R.div({className: 'optionsMenu'},
+					OpenDialogButton({
+						className: 'btn btn-lg btn-primary'
+						text: "New #{Term 'Program'} "
+						icon: 'plus'
+						dialog: CreateProgramDialog
 					})
-				when 'manageProgramClients'
-					return ManageProgramClientsDialog({
-						onClose: @_closeDialog
-						onCancel: @_closeDialog						
-						onSuccess: @_closeDialog
-						data: @state.editData
-					})
-				when null
-					return R.div()
-				else
-					throw new Error "Unknown dialog ID: #{JSON.stringify @state.openDialogId}"
-
-		_openCreateProgramDialog: ->
-			@setState {openDialogId: 'createProgram'}
-		_openEditProgramDialog: (programData) ->
-			@setState {
-				editData: programData
-				openDialogId: 'editProgram'
-			}
-		_openManageClientsDialog: (program) ->
-			@setState {				
-				openDialogId: 'manageProgramClients'
-				editData: {
-					program
-					clientFileHeaders: @props.clientFileHeaders
-				}
-			}
-
-		_toggleExpandedView: (programId) ->
-			# Toggling logic for list of open membership 
-			if @state.expandedMemberLists.includes programId
-				listIndex = @state.expandedMemberLists.indexOf programId
-				expandedMemberLists = @state.expandedMemberLists.delete listIndex
-			else
-				expandedMemberLists = @state.expandedMemberLists.push programId
-
-			@setState {expandedMemberLists}
-		
-		_removeClientFromProgram: (clientId, programId) ->
-			Bootbox.confirm "Are you sure you want to remove clientId from program?", (confirmed) =>
-				if confirmed
-					Bootbox.alert "Ok, deleting..."
-
-		_closeDialog: (event) ->
-			@setState {openDialogId: null}		
+				)
+			)	
 
 	CreateProgramDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -190,7 +88,7 @@ load = (win) ->
 			return {
 				name: ''
 				description: ''
-				colorHuePercent: null
+				colorHuePercent: 0
 				isLoading: false
 			}
 
@@ -239,7 +137,8 @@ load = (win) ->
 							tooltip: false
 							isRange: false
 							minValue: 0
-							maxValue: 100
+							maxValue: 99
+							defaultValue: 0
 							onSlide: @_updateColorHuePercent
 						})
 					)
@@ -263,15 +162,24 @@ load = (win) ->
 			@setState {description: event.target.value}
 		_updateColorHuePercent: (event) ->
 			colorHuePercent = event.target.value
-			console.log "Hue:", colorHuePercent
 			@setState {colorHuePercent}
 
 		_submit: (event) ->
 			event.preventDefault()
 
-			newProgram = Imm.Map({
+			hueDegrees = (@state.colorHuePercent / 100) * 360
+			colorHex = TinyColor({
+				h: hueDegrees
+				s: 100
+				l: 90
+			}).toHexString()
+
+			console.log "colorHex", colorHex
+
+			newProgram = Imm.fromJS({
 				name: @state.name
 				description: @state.description
+				colorHex
 			})
 
 			# Create the new program, and close
@@ -280,7 +188,9 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
+				console.log "Added new program:", newProgram
 				@props.onSuccess()
+
 
 	EditProgramDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -289,19 +199,34 @@ load = (win) ->
 				id: @props.data.get('id')
 				name: @props.data.get('name')
 				description: @props.data.get('description')
+				colorHuePercent: @_convertToHuePercent @props.data.get('colorHex')
 				isLoading: false
-			}
+			}		
+
+		componentDidMount: ->
+			@refs.programName.getDOMNode().focus()
 
 		render: ->
 			return Dialog({
 				title: "Editing #{Term 'Program'}"
 				onClose: @props.onCancel
+				containerClasses: ['noPadding']
 			},
-				# Uses createProgramDialog stylesheet, own for overrides
-				R.div({className: 'createProgramDialog editProgramDialog'}
+				R.div({
+					className: 'createProgramDialog'
+					style: {
+						background: if @state.colorHuePercent?
+							"hsl(#{(@state.colorHuePercent / 100) * 360},100%,90%)"
+					}
+				},
+					Spinner({
+						isVisible: @state.isLoading
+						isOverlay: true
+					})
 					R.div({className: 'form-group'},
-						R.label({}, "Name")
+						R.label({}, "#{Term 'Program'} Name")
 						R.input({
+							ref: 'programName'
 							className: 'form-control'
 							value: @state.name
 							onChange: @_updateName
@@ -316,6 +241,18 @@ load = (win) ->
 							rows: 3
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "Choose a color key")
+						Slider({
+							isEnabled: true
+							tooltip: false
+							isRange: false
+							minValue: 0
+							maxValue: 99
+							onSlide: @_updateColorHuePercent
+							defaultValue: @state.colorHuePercent
+						})
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -323,30 +260,44 @@ load = (win) ->
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-success'
-							disabled: not @state.name or not @state.description or not @_hasChanges()
+							disabled: not @state.name or not @state.description
 							onClick: @_submit
-							type: 'submit'
-						}, "Finished Editing")						
+						}, "Modify #{Term 'Program'}")
 					)
 				)
 			)
+
 		_updateName: (event) ->
 			@setState {name: event.target.value}
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
+		_updateColorHuePercent: (event) ->
+			colorHuePercent = event.target.value
+			@setState {colorHuePercent}
 
-		_hasChanges: ->
-			return not Imm.is @_compileProgramObject(), @props.data
+		_convertToHuePercent: (hex) ->
+			hsl = TinyColor(hex).toHsl()
+			huePercent = (hsl.h / 360) * 100
+			return huePercent
 
-		_compileProgramObject: ->
-			return Imm.Map({
-				id: @state.id
+		_submit: (event) ->
+			event.preventDefault()
+
+			hueDegrees = (@state.colorHuePercent / 100) * 360
+			colorHex = TinyColor({
+				h: hueDegrees
+				s: 100
+				l: 90
+			}).toHexString()
+
+			console.log "colorHex", colorHex
+
+			editedProgram = Imm.fromJS({
+				id: @props.data.get('id')
 				name: @state.name
 				description: @state.description
+				colorHex
 			})
-
-		_submit: ->
-			editedProgram = @_compileProgramObject()
 
 			# Create new revision for program, and close
 			ActiveSession.persist.programs.createRevision editedProgram, (err, updatedProgram) =>
@@ -355,6 +306,7 @@ load = (win) ->
 					return
 
 				@props.onSuccess()
+
 
 	ManageProgramClientsDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]

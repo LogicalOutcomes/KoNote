@@ -236,6 +236,7 @@ load = (win) ->
 						ManagerLayer({
 							name: @state.managerLayer
 							clientFileHeaders: @props.clientFileHeaders
+							programs: @props.programs
 							onClose: @_updateManagerLayer.bind null, null
 						})
 					)

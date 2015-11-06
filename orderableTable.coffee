@@ -5,6 +5,7 @@
 # Table component with toggleable ordering
 
 Imm = require 'immutable'
+_ = require 'underscore'
 Config = require './config'
 Term = require './term'
 
@@ -25,6 +26,7 @@ load = (win) ->
 				data: Imm.List()				
 				columns: Imm.List()
 				rowKey: ['id']
+				rowStyle: -> return {}
 				rowIsVisible: -> return true
 			}
 
@@ -64,7 +66,10 @@ load = (win) ->
 				)
 				R.tbody({},
 					(data.map (dataPoint) =>
-						R.tr({key: dataPoint.getIn(@props.rowKey)},
+						R.tr({
+							key: dataPoint.getIn(@props.rowKey)
+							style: @props.rowStyle(dataPoint)
+						},
 							(@props.columns.map (column) =>
 								R.td({
 									key: column.name
@@ -91,6 +96,7 @@ load = (win) ->
 										R.div({className: 'btn-group'},
 											column.buttons.map (button) =>
 												if button.dialog?
+													button.data = dataPoint
 													OpenDialogButton(button)
 												else
 													R.button({

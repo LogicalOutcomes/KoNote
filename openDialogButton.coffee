@@ -49,6 +49,8 @@ load = (win) ->
 				onSuccess: (arg) =>
 					@props.onSuccess(arg)
 					@setState {isOpen: false}
+					
+				data: @props.data if @props.data?
 			})
 
 	return OpenDialogButton
