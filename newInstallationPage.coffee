@@ -75,7 +75,7 @@ load = (win) ->
 								R.div({ref: 'index'},
 									R.h1({}, "You're almost done!")
 									R.p({}, "Welcome to the #{Config.productName} beta program.")
-									R.p({}, "Let's set you up with an \"admin\" account, and launch your new database.")
+									R.p({}, "Let's set you up with an admin account, and complete the installation.")
 									R.br({})
 									R.div({className: 'btn-toolbar'},
 										R.button({
@@ -97,13 +97,16 @@ load = (win) ->
 								R.div({ref: 'createAdmin'},
 									R.h1({}, "Admin Account")
 									R.p({}, 
-										"Your account's user name will be \"admin\". 
-										Set and confirm a secure password."
+										"Your user name will be \""
+										R.strong({}, "admin")
+										"\"."
+										R.br({})
+										"Set and confirm a secure password."
 									)
 									R.div({
 										className: [
 											'form-group'
-											'has-success has-feedback' if @state.password.length > 5
+											'has-success has-feedback' if @state.password.length > 0
 										].join ' '
 									},
 										R.input({
@@ -163,7 +166,7 @@ load = (win) ->
 									R.p({}, "Your feedback is very important to us.")
 									R.p({},
 										"As a #{Config.productName} beta tester, you are
-										entitled to free 1-on-1 support with Dr. Gotlib MD."
+										entitled to free 1-on-1 support with Dr. Gotlib"
 									)
 									R.br({})
 									R.div({className: 'btn-toolbar'},
@@ -192,7 +195,7 @@ load = (win) ->
 			@setState {passwordConfirmation: event.target.value}
 
 		_passwordsMatch: ->
-			return @state.password is @state.passwordConfirmation and @state.password.length > 5
+			return @state.password is @state.passwordConfirmation and @state.password.length > 0
 
 		_switchTab: (newTab) ->
 			# TODO: Make this some kind of flexible component/mixin
@@ -246,10 +249,6 @@ load = (win) ->
 				Bootbox.alert "Passwords do not match"
 				return
 
-			if @state.password.length <= 5
-				Bootbox.alert "Please use a password with more than 5 characters"
-				return
-
 			systemAccount = null
 			adminPassword = @state.password
 
@@ -267,7 +266,7 @@ load = (win) ->
 
 						cb()
 				(cb) =>
-					@_updateProgress 25, "Configuring accounts system . . ."
+					@_updateProgress 25, "Configuring accounts system \n(this may take a while...)"
 
 					# Generate mock "_system" admin user
 					Persist.Users.Account.setUp Config.dataDirectory, (err, result) =>

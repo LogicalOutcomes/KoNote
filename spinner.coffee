@@ -48,7 +48,12 @@ load = (win) ->
 					)
 				)
 
-				R.div({className: 'animated bounce' if @props.percent? and @props.percent >= 100},
+				R.div({
+					className: [
+						'infoContainer'
+						'animated bounce' if @props.percent? and @props.percent >= 100
+					].join ' '
+				},
 					if @props.message?
 						R.div({className: 'message'}, @props.message)
 
