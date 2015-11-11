@@ -173,6 +173,159 @@ migrations = Imm.List([
 					, cb
 			], cb
 	}
+	{
+		from: '1.3.1'
+		to: '1.4.0'
+		run: (dataDir, userName, password, cb) ->
+			# What are we creating? New empty value for backdate in each progNote
+			# Get full list of progNotes
+			# Loop through each progNote, add in the backdate
+			# Overwrite progNotes
+
+			clientFiles = null
+			clientFileDirs = null
+
+			adminKdfParams = null
+			adminPwEncryptionKey = null
+			adminPrivateKeys = null
+
+			Async.series [
+				# Getting admin authorization
+				# (cb) ->
+				# 	console.log "Reading admin's auth-params"
+				# 	Fs.readFile Path.join(dataDir, '_users', userName, 'auth-params'), (err, result) ->
+				# 		if err
+				# 			cb err
+				# 			return
+
+				# 		adminKdfParams = JSON.parse result
+				# 		cb()
+				# (cb) ->
+				# 	console.log "Deriving key from admin password"
+				# 	SymmetricEncryptionKey.derive password, adminKdfParams, (err, result) ->
+				# 		if err
+				# 			cb err
+				# 			return
+
+				# 		adminPwEncryptionKey = result
+				# 		cb()
+				# (cb) ->
+				# 	console.log "Reading admin private keys"
+				# 	Fs.readFile Path.join(dataDir, '_users', userName, 'private-keys'), (err, result) ->
+				# 		if err
+				# 			cb err
+				# 			return
+
+				# 		adminPrivateKeys = JSON.parse adminPwEncryptionKey.decrypt result
+				# 		cb()
+				# Grab all progNotes for each clientFile
+				(cb) ->
+					console.log "Listing clientFiles dir"
+					Fs.readdir Path.join(dataDir, 'clientFiles'), (err, result) ->
+						if err
+							cb err
+							return
+
+						clientFileDirs = result
+						console.log "clientFileDirs", clientFileDirs
+						cb()
+				(cb) ->
+					console.log "About to loop through each clientFile dir"
+
+					Async.eachSeries clientFileDirs, (clientFile, cb) ->
+						progNotesDir = Path.join(dataDir, 'clientFiles', clientFile, 'progNotes')
+
+						console.info " - #{clientFile}"
+						progNoteDirs = null
+
+						Async.series [
+							# Get list of progNote directories
+							(cb) =>
+								console.log "Listing progNotes directories"
+
+								Fs.readdir progNotesDir, (err, result) ->
+									if err
+										cb err
+										return
+
+									progNoteDirs = result
+									console.log "progNoteDirs", progNoteDirs
+									
+									cb()
+							(cb) =>
+								console.log "Read each progNote directory"
+
+								# Loop through progNote directories
+								Async.eachSeries progNoteDirs, (progNote, cb) ->					
+
+									progNoteFiles = null
+									progNoteFilePath = null
+									progNoteFolders = null
+
+									progNoteDir = Path.join(progNotesDir, progNote)
+									console.log "Added directory name to path + ", progNote
+
+									console.log "progNoteDir", progNoteDir
+
+									Async.series [
+										(cb) =>
+											console.log "About to read progNote dir...."
+											# Read the names of progNote folders
+											Fs.readdir progNoteDir, (err, result) ->
+												if err
+													cb err
+													return
+
+												progNoteFiles = result
+												# console.log "progNoteFiles", progNoteFiles
+												cb()
+										(cb) =>
+											console.log "About to loop through progNote files, which are: ", progNoteFiles
+
+											# Loop through each progNote file
+											Async.eachSeries progNoteFiles, (progNoteFile, cb) ->
+
+												progNoteFilePath = Path.join(progNoteDir, progNoteFile)
+
+												console.log "progNoteFilePath : : ", progNoteFilePath
+
+												# Get list of all files in this progNote folder
+												# Fs.readdir progNoteFolderPath, (err, result) ->
+												# 	if err
+												# 		console.error err
+												# 		cb err
+												# 		return
+
+												# 	progNoteFileList = result
+
+												# 	# Loop through each file in the given progNote folder
+												# 	Async.eachSeries progNoteFileList, (progNoteFile, cb) ->
+
+												# 		progNoteFilePath = Path.join(progNoteFolderPath, progNoteFile)
+												# 		console.log "progNoteFilePath", progNoteFilePath
+
+												# 		Fs.readFile progNoteFilePath, (err, result) ->
+												# 			if err
+												# 				cb err
+												# 				return
+
+												# 			# progNoteJSON = JSON.parse adminPwEncryptionKey.decrypt result
+												# 			# console.log "progNoteJSON", progNoteJSON
+												# 			console.info "JSON RESULT:", JSON.parse result
+												# 			console.warn "It's a miracle!!!"
+												# 			cb()
+												# 	, cb
+												cb()
+
+											, cb
+									], cb
+									
+								, cb
+
+						], cb
+					, cb
+			], cb
+	}
 ])
 
 module.exports = {runMigration, migrate}
