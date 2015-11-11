@@ -25,11 +25,88 @@
 #	each other, and from their environment.
 
 Async = require 'async'
+Base64url = require 'base64url'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
 
 {SymmetricEncryptionKey, PrivateKey, PublicKey} = require './persist/crypto'
+
+loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
+	userDir = Path.join(dataDir, '_users', userName)
+
+	accountKeyId = null
+	accountKeyInfo = null
+	accountKey = null
+	privateInfo = null
+	accountType = null
+	decryptedAccount = null
+
+	Async.series [
+		(cb) ->
+			Fs.readdir userDir, (err, fileNames) ->
+				if err
+					if err.code is 'ENOENT'
+						cb new UnknownUserNameError()
+						return
+
+					cb new IOError err
+					return
+
+				# Find the highest (i.e. most recent) account key ID
+				accountKeyId = Imm.List(fileNames)
+				.filter (fileName) ->
+					return fileName.startsWith 'account-key-'
+				.map (fileName) ->
+					return Number(fileName['account-key-'.length...])
+				.max()
+
+				cb()
+		(cb) ->
+			Fs.readFile Path.join(userDir, "account-key-#{accountKeyId}"), (err, buf) ->
+				if err
+					cb new IOError err
+					return
+
+				accountKeyInfo = JSON.parse buf
+				cb()
+		(cb) ->
+			SymmetricEncryptionKey.derive userPassword, accountKeyInfo.kdfParams, (err, result) ->
+				if err
+					cb err
+					return
+
+				pwEncryptionKey = result
+
+				# Use password to decrypt account key
+				encryptedAccountKey = Base64url.toBuffer(accountKeyInfo.accountKey)
+				try
+					accountKeyBuf = pwEncryptionKey.decrypt(encryptedAccountKey)
+				catch err
+					console.error err.stack
+
+					# If decryption fails, we're probably using the wrong key
+					cb new IncorrectPasswordError()
+					return
+
+				accountKey = SymmetricEncryptionKey.import(accountKeyBuf.toString())
+
+				cb()
+		(cb) =>
+			Fs.readFile Path.join(userDir, 'private-info'), (err, buf) ->
+				if err
+					cb new IOError err
+					return
+
+				privateInfo = JSON.parse accountKey.decrypt buf
+				cb()
+	], (err) =>
+		if err
+			cb err
+			return
+
+		globalEncryptionKey = SymmetricEncryptionKey.import privateInfo.globalEncryptionKey
+		cb null, globalEncryptionKey
 
 # Use this at the command line
 runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
