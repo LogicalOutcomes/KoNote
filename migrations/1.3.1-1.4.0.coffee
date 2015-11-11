@@ -45,7 +45,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 				accountKeyInfo = JSON.parse buf
 				cb()
 		(cb) ->
-			SymmetricEncryptionKey.derive userPassword, accountKeyInfo.kdfParams, (err, result) ->
+			SymmetricEncryptionKey.derive password, accountKeyInfo.kdfParams, (err, result) ->
 				if err
 					cb err
 					return
@@ -86,7 +86,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 module.exports = {
 
 	run: (dataDir, userName, password, cb) ->
-		
+
 		globalEncryptionKey = null
 		clientFiles = null
 		clientFileDirs = null
@@ -195,7 +195,5 @@ module.exports = {
 					], cb
 				, cb
 		], cb
-
-	}
 
 }
