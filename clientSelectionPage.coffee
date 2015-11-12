@@ -90,79 +90,22 @@ load = (win) ->
 		componentDidUpdate: (oldProps, oldState) ->
 			# If loading just finished
 			if oldProps.isLoading and not @props.isLoading
+
 				setTimeout(=>
-					@refs.searchBox.getDOMNode().focus()
+					$searchBox = $(@refs.searchBox.getDOMNode())
+					$searchBox.focus()
+					@_attachKeyBindings($searchBox)
 				, 100)
 
-				@_refreshResults()
-				@_attachKeyBindings()
+				@_refreshResults()				
 
 			if @state.queryText isnt oldState.queryText
 				@_refreshResults()
 
 			if @props.clientFileList isnt oldProps.clientFileList
-				@_refreshResults()
-
-		_attachKeyBindings: ->
-			searchBox = @refs.searchBox.getDOMNode()
-
-			# Key-bindings for searchBox
-			$(searchBox).on 'keydown', (event) =>
-				# Don't need to see this unless in full search view
-				return if not @state.isSmallHeaderSet
-
-				# What was pressed?
-				switch event.which
-
-					when 40 # Down arrow
-						queryResults = @state.queryResults						
-
-						# Choose first result on fresh-run
-						if not @state.hoverClientId?
-							@setState hoverClientId: queryResults.first().get('id')
-							return
-
-						hoverClientId = null
-
-						currentResultIndex = queryResults.findIndex (result) =>
-							return result.get('id') is @state.hoverClientId
-
-						nextIndex = currentResultIndex + 1
-
-						# Ensure the next result index exists, otherwise skip
-						if queryResults.get(nextIndex)?
-							hoverClientId = queryResults.get(nextIndex).get('id')
-						else
-							hoverClientId = queryResults.first().get('id')
-
-						@setState {hoverClientId}
-
-					when 38 # Up arrow
-						queryResults = @state.queryResults						
-
-						# Choose first result on fresh-run
-						if not @state.hoverClientId?
-							@setState hoverClientId: queryResults.last().get('id')
-							return
-
-						hoverClientId = null
-
-						currentResultIndex = queryResults.findIndex (result) =>
-							return result.get('id') is @state.hoverClientId
-
-						nextIndex = currentResultIndex - 1
-
-						# Ensure the next result index exists, otherwise skip
-						if queryResults.get(nextIndex)?
-							hoverClientId = queryResults.get(nextIndex).get('id')
-						else
-							hoverClientId = queryResults.first().get('id')
-
-						@setState {hoverClientId}
+				@_refreshResults()		
 
 		render: ->
-			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
-
 			if @props.isLoading
 				return R.div({id: 'clientSelectionPage'},
 					Spinner {
@@ -170,6 +113,8 @@ load = (win) ->
 						isVisible: true
 					}
 				)
+
+			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet			
 
 			return R.div({
 					id: 'clientSelectionPage'
@@ -246,7 +191,6 @@ load = (win) ->
 								showWhen not @props.isLoading
 							].join ' '
 						},
-							console.log '@state.queryResults', @state.queryResults
 							(@state.queryResults.map (result) =>
 								R.div({
 									key: "result-" + result.get('id')
@@ -279,6 +223,52 @@ load = (win) ->
 				)
 			)
 
+
+		_attachKeyBindings: ($searchBox) ->
+			# Key-bindings for searchBox
+			$searchBox.on 'keydown', (event) =>
+				# Don't need to see this unless in full search view
+				return if not @state.isSmallHeaderSet
+
+				switch event.which
+					when 40 # Down arrow
+						event.preventDefault()
+						@_shiftHoverClientId(1)
+					when 38 # Up arrow
+						event.preventDefault()
+						@_shiftHoverClientId(-1)
+					when 27 # Esc
+						@setState hoverClientId: null
+					when 13 # Enter
+						$active = $('.active')
+						return unless $active.length
+						$active[0].click()
+						return false
+
+		_shiftHoverClientId: (modifier) ->
+			hoverClientId = null
+			queryResults = @state.queryResults
+
+			# Get our current index position
+			currentResultIndex = queryResults.findIndex (result) =>
+				return result.get('id') is @state.hoverClientId
+
+			nextIndex = currentResultIndex + modifier
+
+			# Skip to first/last if first-run or next is non-existent
+			if not queryResults.get(nextIndex)? or not @state.hoverClientId?
+				if modifier > 0
+					hoverClientId = queryResults.first().get('id')
+				else
+					hoverClientId = queryResults.last().get('id')
+
+				@setState {hoverClientId}
+				return
+
+			# No wacky skip behaviour needed, move to next/previous result
+			hoverClientId = queryResults.get(nextIndex).get('id')
+			@setState {hoverClientId}
+
 		_renderUserMenuList: (isAdmin) ->
 			return R.ul({},
 				UserMenuItem({
@@ -295,8 +285,7 @@ load = (win) ->
 			)
 
 		_toggleUserMenu: ->
-			@setState {menuIsOpen: !@state.menuIsOpen}		
-
+			@setState {menuIsOpen: !@state.menuIsOpen}
 
 		_refreshResults: ->
 			# Return all results if search query is empty
