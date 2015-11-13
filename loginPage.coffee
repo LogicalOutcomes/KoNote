@@ -166,7 +166,7 @@ load = (win) ->
 				})
 				R.form({className: "loginForm #{showWhen @props.isSetUp}"},
 					R.div({className: 'form-group'},
-						R.label({}, "User name")
+						R.label({}, "Username")
 						R.input({
 							className: 'form-control'
 							ref: 'userNameField'

@@ -89,10 +89,11 @@ load = (win) ->
 								)
 							when 'createAdmin'
 								R.div({ref: 'createAdmin'},
-									R.p({}, 
-										"Your username will be \""
-										R.strong({}, "admin")
-										"\". Please choose a password:"
+									R.h2({}, "Your username will be \"admin\"")
+									R.p({}, 								
+										"Please choose a secure password:"
+										R.br({})
+										R.br({})
 									)
 									R.div({
 										className: [
@@ -138,7 +139,7 @@ load = (win) ->
 											disabled: not @_passwordsMatch()
 											onClick: @_install
 										}, 
-											"Submit"
+											"Finished"
 										)
 									)
 								)
