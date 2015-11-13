@@ -68,13 +68,14 @@ load = (win) ->
 						)						
 					)
 					R.div({
-						className: 'contentContainer animated fadeInUp'
+						id: 'contentContainer'
+						className: 'animated fadeInUp'
 					},
 						(switch @state.openTab
 							when 'index'
 								R.div({ref: 'index'},
 									R.h2({}, "Thank you for trying the #{Config.productName} beta!")
-									R.p({}, "To get started, let's setup your account")
+									R.p({}, "To get started, let's set up your user account...")
 									R.br({})
 									R.div({className: 'btn-toolbar'},
 										R.button({
@@ -141,6 +142,16 @@ load = (win) ->
 										)
 									)
 								)
+
+						)
+					)
+					R.div({
+						id: 'helpContainer'
+						className: 'animated fadeIn'
+					}, 
+						"Contact us:"						
+						R.a({href: 'mailto:help@konode.ca'},
+							"help@konode.ca"
 						)
 					)
 				)
