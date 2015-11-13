@@ -28,9 +28,11 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				selectedItem: null
+				backdate: ''
 			}
 
 		componentDidMount: ->
+			
 			quickNoteToggle = $('.addQuickNote')
 			quickNoteToggle.data 'isVisible', false
 			quickNoteToggle.popover {
@@ -39,8 +41,9 @@ load = (win) ->
 				trigger: 'manual'
 				content: '''
 					<textarea class="form-control"></textarea>
-					<div class="buttonBar">
-						<button class="cancel btn btn-default"><i class="fa fa-trash"></i> Discard</button>
+					<div class="buttonBar form-inline">
+						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
+						<button class="cancel btn btn-danger"><i class="fa fa-trash"></i> Discard</button>
 						<button class="save btn btn-primary"><i class="fa fa-check"></i> Save</button>
 					</div>
 				'''
@@ -122,8 +125,38 @@ load = (win) ->
 				)
 			)
 		_openNewProgNote: ->
-			openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
-		_toggleQuickNotePopover: ->			
+			if @props.hasChanges()
+				Bootbox.dialog {
+					title: "Unsaved Changes to #{Term 'Plan'}"
+					message: """
+						You have unsaved changes in the #{Term 'plan'} that will not be reflected in this
+						#{Term 'progress note'}. How would you like to proceed?
+					"""
+					buttons: {
+						default: {
+							label: "Cancel"
+							className: "btn-default"
+							callback: => Bootbox.hideAll()
+						}
+						danger: {
+							label: "Ignore"
+							className: "btn-danger"
+							callback: => 
+								openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
+						}
+						success: {
+							label: "View #{Term 'Plan'}"
+							className: "btn-success"
+							callback: => 
+								Bootbox.hideAll()
+								@props.onTabChange 'plan'
+						}
+					}
+				}
+			else
+				openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
+
+		_toggleQuickNotePopover: ->
 			quickNoteToggle = $('.addQuickNote:not(.hide)')
 
 			if quickNoteToggle.data('isVisible')
@@ -138,7 +171,8 @@ load = (win) ->
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
-					@props.createQuickNote popover.find('textarea').val(), (err) =>
+					@props.createQuickNote popover.find('textarea').val(), @state.backdate, (err) =>
+						@setState {backdate: ''}
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
@@ -152,6 +186,16 @@ load = (win) ->
 						quickNoteToggle.popover('hide')
 						quickNoteToggle.data('isVisible', false)
 
+				popover.find('.backdate.date').datetimepicker({
+					format: 'MMM-DD-YYYY h:mm A'
+					defaultDate: Moment()
+					maxDate: Moment()
+					widgetPositioning: {
+						vertical: 'bottom'
+					}
+				}).on 'dp.change', (e) =>
+					@setState {backdate: Moment(e.date).format(Persist.TimestampFormat)}
+				
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
 					quickNoteToggle.popover('hide')
@@ -170,8 +214,12 @@ load = (win) ->
 			R.div({className: 'basic progNote'},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
-						Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
-						.format 'MMMM D, YYYY [at] HH:mm'
+						if @props.progNote.get('backdate') != ''
+							Moment(@props.progNote.get('backdate'), Persist.TimestampFormat)
+							.format('MMMM D, YYYY') + " (late entry)"
+						else
+							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							.format 'MMMM D, YYYY [at] HH:mm'
 					)
 					R.div({className: 'author'},
 						' by '
@@ -200,8 +248,12 @@ load = (win) ->
 			R.div({className: 'full progNote'},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
-						Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
-						.format 'MMMM D, YYYY [at] HH:mm'
+						if @props.progNote.get('backdate') != ''
+							Moment(@props.progNote.get('backdate'), Persist.TimestampFormat)
+							.format('MMMM D, YYYY') + " (late entry)"
+						else
+							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							.format 'MMMM D, YYYY [at] HH:mm'
 					)
 					R.div({className: 'author'},
 						' by '

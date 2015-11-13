@@ -47,6 +47,7 @@ load = (win) ->
 										progNoteId: progNote.get('id')
 										author: progNote.get('author')
 										timestamp: progNote.get('timestamp')
+										backdate: progNote.get('backdate')
 										notes: section.get('notes')
 										progEvents
 									}
@@ -76,6 +77,7 @@ load = (win) ->
 											progNoteId: progNote.get('id')
 											author: progNote.get('author')
 											timestamp: progNote.get('timestamp')
+											backdate: progNote.get('backdate')
 											notes: target.get('notes')
 											progEvents
 											metrics: target.get('metrics')
@@ -89,7 +91,11 @@ load = (win) ->
 			.filter (entry) -> # remove blank entries
 				return entry.get('notes').trim() isnt ''
 			.sortBy (entry) -> # sort by reverse chronological order
-				return entry.get('timestamp')
+				#return entry.get('timestamp')
+				if entry.get('backdate') != ''
+					return entry.get('backdate')
+				else
+					return entry.get('timestamp')
 			.reverse()
 
 			return R.div({className: 'progNoteDetailView'},
@@ -101,8 +107,12 @@ load = (win) ->
 						R.div({className: 'entry'},
 							R.div({className: 'header'}								
 								R.div({className: 'timestamp'},
-									Moment(entry.get('timestamp'), Persist.TimestampFormat)
-									.format('MMMM D, YYYY [at] HH:mm')
+									if entry.get('backdate') != ''
+										Moment(entry.get('backdate'), Persist.TimestampFormat)
+										.format('MMMM D, YYYY [at] HH:mm') + ' (late entry)'
+									else
+										Moment(entry.get('timestamp'), Persist.TimestampFormat)
+										.format('MMMM D, YYYY [at] HH:mm')
 								)
 								R.div({className: 'author'},
 									FaIcon('user')

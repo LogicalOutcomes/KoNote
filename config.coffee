@@ -2,16 +2,18 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+_ = require 'underscore'
+
 module.exports = {
 	productName: 'KoNote'
-	customerLogoLg: 'customer-logo-lg_GRIFFIN.png'
-	customerLogoSm: 'customer-logo-sm_GRIFFIN.png'
-	logoSubtitle: 'DSSS'
+	customerLogoLg: 'customer-logo-lg.png'
+	customerLogoSm: 'customer-logo-sm.png'
+	logoSubtitle: 'beta'
 	logoSubtitleColor: 'hsl(205, 78%, 47%)'
 
 	clientFileRecordId: {
 		isEnabled: true
-		label: "CR#"
+		label: "ID#"
 	}
 
 	# Specify data directory
@@ -53,6 +55,7 @@ module.exports = {
 		'plan': "plan"
 		'target': "goal"
 		'plan target': "plan goal"
+		'treatment plan': "treatment plan"
 
 		'progress note': "progress note"
 		'quick note': "quick note"
@@ -65,7 +68,7 @@ module.exports = {
 	}		
 
 	# useTemplate: 'initialAssessment'
-	useTemplate: 'clientLog'
+	useTemplate: 'simpleDemoTemplate'
 
 	# David's demo templates:
 	# useTemplate: 'simpleDemoTemplate'
@@ -313,17 +316,17 @@ module.exports = {
 	}
 }
 
-# move data folder alongside the .app folder on osx
-if process.platform == 'darwin'
-	module.exports.dataDirectory = '../../../../data'
+# merge with customer, build, and dev config files; overrides defaults
+try
+	configCustomer = require './config-customer'
+	_.extend(module.exports, configCustomer)
+catch err
+	unless err.code is 'MODULE_NOT_FOUND'
+		throw err
 
-# merge with dev-config; overrides defaults
-_ = require 'underscore'
 try
 	configDev = require './config-dev'
 	_.extend(module.exports, configDev)
 catch err
-	# ignore if dev-config doesn't exist
-	if err.code is 'MODULE_NOT_FOUND'
-		return
-	throw err
+	unless err.code is 'MODULE_NOT_FOUND'
+		throw err

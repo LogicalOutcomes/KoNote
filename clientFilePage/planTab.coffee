@@ -84,13 +84,13 @@ load = (win) ->
 							R.button({
 								className: [
 									'save btn'
-									'btn-' + if @hasChanges() then 'success canSave' else 'warning'
+									if @hasChanges() then 'btn-success canSave'
 								].join ' '
 								disabled: not @hasChanges() or @props.isReadOnly
 								onClick: @_save
 							},
 								FaIcon('save')
-								if @hasChanges() then "Save #{Term 'Plan'}" else "No Changes to Save"
+								"Save #{Term 'Plan'}"
 							)	
 						)
 						R.span({className: 'rightMenu'},							
@@ -493,7 +493,7 @@ load = (win) ->
 					ExpandingTextArea({
 						className: 'notes field'
 						ref: 'notesField'
-						placeholder: "Describe the #{Term 'target'} in detail . . ."
+						placeholder: "Describe the current #{Term 'treatment plan'} . . ."
 						value: currentRevision.get('notes')
 						disabled: @props.isReadOnly
 						onChange: @_updateField.bind null, 'notes'

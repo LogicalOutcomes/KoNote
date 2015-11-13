@@ -27,19 +27,13 @@ Path = require 'path'
 
 userNameRegex = /^[a-zA-Z0-9_-]+$/
 
-generateKdfParams = ->
-	return {
-		salt: generateSalt()
-		iterationCount: 600000 # higher is more secure, but slower
-	}
-
-getUserDir = (dataDir, userName) ->
-	unless userNameRegex.exec userName
-		throw new Error "invalid characters in user name"
-
-	return Path.join dataDir, '_users', userName
-
-# Check if there are any user accounts set up
+# Check if the account system is set up.  The account system must be set up
+# before any accounts can be created, see `Account.setUp`.
+#
+# Errors:
+# - IOError
+#
+# (string dataDir, function cb(Error err, boolean isSetUp)) -> undefined
 isAccountSystemSetUp = (dataDir, cb) ->
 	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
 		if err
@@ -47,7 +41,7 @@ isAccountSystemSetUp = (dataDir, cb) ->
 				cb null, false
 				return
 
-			cb err
+			cb new IOError err
 			return
 
 		userNames = Imm.List(subdirs)
@@ -56,11 +50,16 @@ isAccountSystemSetUp = (dataDir, cb) ->
 
 		cb null, (userNames.size > 0)
 
-# TODO rename to listUserNames
-listAccounts = (dataDir, cb) ->
+# Produce a list of the user names of all accounts in the system.
+#
+# Errors:
+# - IOError
+#
+# (string dataDir, function cb(Error err, Imm.List userNames)) -> undefined
+listUserNames = (dataDir, cb) ->
 	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
 		if err
-			cb err
+			cb new IOError err
 			return
 
 		userNames = Imm.List(subdirs)
@@ -71,7 +70,11 @@ listAccounts = (dataDir, cb) ->
 
 		cb null, userNames
 
+# Account objects contain the public information on a user account (and related operations).
+# Account objects also provide "decrypt" methods that are gateways to the
+# private information in a user account (see DecryptedAccount).
 class Account
+	# Private constructor
 	constructor: (@dataDirectory, @userName, @publicInfo, code) ->
 		if code isnt 'privateaccess'
 			# See Account.read instead
@@ -79,7 +82,21 @@ class Account
 
 		@_userDir = getUserDir @dataDirectory, @userName
 
-	# First time set up of user account directory
+	# Sets up the account system.  A new data directory must be set up before
+	# any user accounts can be created.  This set up process generates a
+	# special "_system" account which can be used to set up other accounts.
+	# The _system account does not have a password, and cannot be accessed from
+	# the UI.  It exists just for the purpose of setting up the first admin
+	# account.
+	#
+	# Note: this method assumes that the data directory has already undergone
+	# some basic set up outside of the account system (see
+	# `Persist.setUpDataDirectory`).
+	#
+	# Errors:
+	# - IOError
+	#
+	# (string dataDir, function cb(Error err, Account systemAccount)) -> undefined
 	@setUp: (dataDir, cb) ->
 		# Create a mock "_system" user just for creating the first real accounts
 		publicInfo = {
@@ -93,8 +110,8 @@ class Account
 		systemPublicKey = null
 
 		Async.series [
-			(cb) ->
-				PrivateKey.generate (err, result) ->
+			(cb) =>
+				PrivateKey.generate (err, result) =>
 					if err
 						cb err
 						return
@@ -102,11 +119,21 @@ class Account
 					privateInfo.systemPrivateKey = result.export()
 					systemPublicKey = result.getPublicKey().export()
 					cb()
-			(cb) ->
-				Fs.mkdir Path.join(dataDir, '_users', '_system'), cb
-			(cb) ->
-				Fs.writeFile Path.join(dataDir, '_users', '_system', 'public-key'), systemPublicKey, cb
-		], (err) ->
+			(cb) =>
+				Fs.mkdir Path.join(dataDir, '_users', '_system'), (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
+			(cb) =>
+				Fs.writeFile Path.join(dataDir, '_users', '_system', 'public-key'), systemPublicKey, (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
+		], (err) =>
 			if err
 				cb err
 				return
@@ -114,10 +141,22 @@ class Account
 			systemAccount = new DecryptedAccount(dataDir, '_system', publicInfo, privateInfo, null, 'privateaccess')
 			cb null, systemAccount
 
+	# Creates a new user account, and returns an Account object representing
+	# that account.
+	#
+	# Errors:
+	# - UserNameTakenError if the user name has already been taken
+	# - IOError
+	#
+	# (DecryptedAccount loggedInAccount, string userName, string password, string accountType,
+	#  function cb(Error err, Account newAccount)) -> undefined
 	@create: (loggedInAccount, userName, password, accountType, cb) ->
 		unless accountType in ['normal', 'admin']
 			cb new Error "unknown account type #{JSON.stringify accountType}"
 			return
+
+		if accountType is 'admin'
+			Assert.strictEqual loggedInAccount.publicInfo.accountType, 'admin', 'only admins can create admins'
 
 		userName = userName.toLowerCase()
 
@@ -137,7 +176,7 @@ class Account
 
 				Fs.readFile publicKeyPath, (err, buf) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					systemPublicKey = PublicKey.import(buf.toString())
@@ -149,7 +188,7 @@ class Account
 							cb new UserNameTakenError()
 							return
 
-						cb err
+						cb new IOError err
 						return
 
 					cb()
@@ -164,7 +203,12 @@ class Account
 			(cb) ->
 				publicInfoPath = Path.join(userDir, 'public-info')
 
-				Fs.writeFile publicInfoPath, JSON.stringify(publicInfo), cb
+				Fs.writeFile publicInfoPath, JSON.stringify(publicInfo), (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 			(cb) ->
 				accountKeyFilePath = Path.join(userDir, 'account-key-1')
 
@@ -176,7 +220,12 @@ class Account
 					accountKey: Base64url.encode encryptedAccountKey
 				}
 
-				Fs.writeFile accountKeyFilePath, JSON.stringify(accountKeyData), cb
+				Fs.writeFile accountKeyFilePath, JSON.stringify(accountKeyData), (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 			(cb) ->
 				# Encrypt account key with system key to allow admins to reset
 				systemPublicKey.encrypt accountEncryptionKey.export(), (err, result) ->
@@ -189,7 +238,12 @@ class Account
 			(cb) ->
 				accountRecoveryPath = Path.join(userDir, 'account-recovery')
 
-				Fs.writeFile accountRecoveryPath, encryptedAccountKey, cb
+				Fs.writeFile accountRecoveryPath, encryptedAccountKey, (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 			(cb) ->
 				privateInfoPath = Path.join(userDir, 'private-info')
 
@@ -204,7 +258,12 @@ class Account
 
 				encryptedData = accountEncryptionKey.encrypt JSON.stringify privateInfo
 
-				Fs.writeFile privateInfoPath, encryptedData, cb
+				Fs.writeFile privateInfoPath, encryptedData, (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 		], (err) ->
 			if err
 				cb err
@@ -212,6 +271,13 @@ class Account
 
 			cb null, new Account loggedInAccount.dataDirectory, userName, publicInfo, 'privateaccess'
 
+	# Read the public information for the account with the specified user name.
+	#
+	# Errors:
+	# - UnknownUserNameError if no account exists with that user name
+	# - IOError
+	#
+	# (string dataDir, string userName, function cb(Error err, Account a)) -> undefined
 	@read: (dataDir, userName, cb) =>
 		userName = userName.toLowerCase()
 
@@ -227,7 +293,7 @@ class Account
 							cb new UnknownUserNameError()
 							return
 
-						cb err
+						cb new IOError err
 						return
 
 					publicInfo = JSON.parse buf
@@ -239,6 +305,13 @@ class Account
 
 			cb null, new Account dataDir, userName, publicInfo, 'privateaccess'
 
+	# Deactivate this account.  Requires the ability to modify/delete files.
+	#
+	# Errors:
+	# - DeactivatedAccountError if the account has already been deactivated
+	# - IOError
+	#
+	# (function cb(Error err)) -> undefined
 	deactivate: (cb) =>
 		# BEGIN v1.3.1 migration
 		if Fs.existsSync Path.join(@_userDir, 'auth-params')
@@ -255,7 +328,7 @@ class Account
 			(cb) =>
 				Fs.readFile Path.join(@_userDir, 'public-info'), (err, buf) =>
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					publicInfo = JSON.parse buf
@@ -268,11 +341,16 @@ class Account
 			(cb) =>
 				publicInfo.isActive = false
 
-				Fs.writeFile Path.join(@_userDir, 'public-info'), JSON.stringify(publicInfo), cb
+				Fs.writeFile Path.join(@_userDir, 'public-info'), JSON.stringify(publicInfo), (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 			(cb) =>
 				Fs.readdir @_userDir, (err, fileNames) =>
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					accountKeyFileNames = Imm.List(fileNames)
@@ -282,11 +360,22 @@ class Account
 					cb()
 			(cb) =>
 				Async.each accountKeyFileNames.toArray(), (fileName, cb) =>
-					Fs.unlink Path.join(@_userDir, fileName), cb
+					Fs.unlink Path.join(@_userDir, fileName), (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				, cb
 		], cb
 
-	# Returns IncorrectPasswordError if password is incorrect
+	# Check if the specified password is valid for this user account.
+	#
+	# Errors:
+	# - IncorrectPasswordError if the passsword was incorrect
+	# - IOError
+	#
+	# (string userPassword, function cb(Error err)) -> undefined
 	checkPassword: (userPassword, cb) =>
 		# Not all of decryptWithPassword is actually needed to check the
 		# password.  If needed, this can be reimplemented to be more efficient.
@@ -298,6 +387,15 @@ class Account
 
 			cb()
 
+	# Access this account's private information using the specified password.
+	#
+	# Errors:
+	# - DeactivatedAccountError
+	# - UnknownUserNameError if this account no longer exists
+	# - IncorrectPasswordError
+	# - IOError
+	#
+	# (string userPassword, function cb(Error err, DecryptedAccount a)) -> undefined
 	decryptWithPassword: (userPassword, cb) =>
 		unless @publicInfo.isActive
 			cb new DeactivatedAccountError()
@@ -323,7 +421,7 @@ class Account
 				(cb) =>
 					Fs.readFile Path.join(@_userDir, 'auth-params'), (err, result) =>
 						if err
-							cb err
+							cb new IOError err
 							return
 
 						oldKdfParams = JSON.parse result
@@ -339,7 +437,7 @@ class Account
 				(cb) =>
 					Fs.readFile Path.join(@_userDir, 'private-keys'), (err, result) =>
 						if err
-							cb err
+							cb new IOError err
 							return
 
 						try
@@ -356,7 +454,7 @@ class Account
 				(cb) =>
 					Fs.readFile Path.join(systemUserDir, 'old-key'), (err, buf) =>
 						if err
-							cb err
+							cb new IOError err
 							return
 
 						systemPrivateKey = PrivateKey.import(globalEncryptionKey.decrypt(buf).toString())
@@ -376,7 +474,12 @@ class Account
 						kdfParams
 					}
 
-					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, cb
+					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
 					systemPublicKey.encrypt accountKey.export(), (err, result) =>
 						if err
@@ -386,7 +489,12 @@ class Account
 						accountRecovery = result
 						cb()
 				(cb) =>
-					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, cb
+					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
 					privateInfo = {
 						globalEncryptionKey: globalEncryptionKey.export()
@@ -397,11 +505,26 @@ class Account
 
 					privateInfoEncrypted = accountKey.encrypt JSON.stringify(privateInfo)
 
-					Fs.writeFile Path.join(@_userDir, 'private-info'), privateInfoEncrypted, cb
+					Fs.writeFile Path.join(@_userDir, 'private-info'), privateInfoEncrypted, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
-					Fs.unlink Path.join(@_userDir, 'private-keys'), cb
+					Fs.unlink Path.join(@_userDir, 'private-keys'), (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
-					Fs.unlink Path.join(@_userDir, 'auth-params'), cb
+					Fs.unlink Path.join(@_userDir, 'auth-params'), (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 			], (err) =>
 				if err
 					cb err
@@ -428,7 +551,7 @@ class Account
 							cb new UnknownUserNameError()
 							return
 
-						cb err
+						cb new IOError err
 						return
 
 					# Find the highest (i.e. most recent) account key ID
@@ -443,7 +566,7 @@ class Account
 			(cb) ->
 				Fs.readFile Path.join(userDir, "account-key-#{accountKeyId}"), (err, buf) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					accountKeyInfo = JSON.parse buf
@@ -473,7 +596,7 @@ class Account
 			(cb) =>
 				Fs.readFile Path.join(userDir, 'private-info'), (err, buf) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					privateInfo = JSON.parse accountKey.decrypt buf
@@ -489,6 +612,15 @@ class Account
 				'privateaccess'
 			)
 
+	# Access this account's private information using the system key (i.e. the
+	# admin override).  `loggedInAccount` must be an admin account.
+	#
+	# Errors:
+	# - DeactivatedAccountError
+	# - UnknownUserNameError if this account no longer exists
+	# - IOError
+	#
+	# (DecryptedAccount loggedInAccount, function cb(Error err, DecryptedAccount a)) -> undefined
 	decryptWithSystemKey: (loggedInAccount, cb) =>
 		unless @publicInfo.isActive
 			cb new DeactivatedAccountError()
@@ -541,7 +673,7 @@ class Account
 							cb new UnknownUserNameError()
 							return
 
-						cb err
+						cb new IOError err
 						return
 
 					accountRecovery = buf
@@ -559,7 +691,7 @@ class Account
 			(cb) =>
 				Fs.readFile Path.join(userDir, 'private-info'), (err, buf) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					privateInfo = JSON.parse accountKey.decrypt buf
@@ -582,7 +714,7 @@ class Account
 					cb new UnknownUserNameError()
 					return
 
-				cb err
+				cb new IOError err
 				return
 
 			# Find the highest (i.e. most recent) account key ID
@@ -595,6 +727,9 @@ class Account
 
 			cb null, (accountKeyId or 0)
 
+# DecryptedAccount objects contain both the private and public information in a
+# user account, including encryption keys, and provide related functionality.
+# DecryptedAccount objects can be obtained using Account's "decrypt" methods.
 class DecryptedAccount extends Account
 	constructor: (@dataDirectory, @userName, @publicInfo, @privateInfo, @_accountKey, code) ->
 		if code isnt 'privateaccess'
@@ -603,6 +738,13 @@ class DecryptedAccount extends Account
 
 		@_userDir = getUserDir @dataDirectory, @userName
 
+	# Updates this user account's password.
+	#
+	# Errors:
+	# - UnknownUserNameError if this account no longer exists
+	# - IOError
+	#
+	# (string newPassword, function cb(Error err)) -> undefined
 	setPassword: (newPassword, cb) =>
 		# BEGIN v1.3.1 migration
 		if Fs.existsSync Path.join(@_userDir, 'auth-params')
@@ -619,7 +761,7 @@ class DecryptedAccount extends Account
 				(cb) =>
 					Fs.readFile Path.join(systemUserDir, 'public-key'), (err, buf) =>
 						if err
-							cb err
+							cb new IOError err
 							return
 
 						systemPublicKey = PublicKey.import(buf.toString())
@@ -638,7 +780,12 @@ class DecryptedAccount extends Account
 						kdfParams
 					}
 
-					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, cb
+					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
 					systemPublicKey.encrypt @_accountKey.export(), (err, result) =>
 						if err
@@ -648,15 +795,35 @@ class DecryptedAccount extends Account
 						accountRecovery = result
 						cb()
 				(cb) =>
-					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, cb
+					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
 					privateInfoEncrypted = @_accountKey.encrypt JSON.stringify(@privateInfo)
 
-					Fs.writeFile Path.join(@_userDir, 'private-info'), privateInfoEncrypted, cb
+					Fs.writeFile Path.join(@_userDir, 'private-info'), privateInfoEncrypted, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
-					Fs.unlink Path.join(@_userDir, 'private-keys'), cb
+					Fs.unlink Path.join(@_userDir, 'private-keys'), (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				(cb) =>
-					Fs.unlink Path.join(@_userDir, 'auth-params'), cb
+					Fs.unlink Path.join(@_userDir, 'auth-params'), (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 			], cb
 			return
 		# END v1.3.1 migration
@@ -686,8 +853,25 @@ class DecryptedAccount extends Account
 				accountKeyEncoded = Base64url.encode pwEncryptionKey.encrypt(@_accountKey.export())
 				data = {kdfParams, accountKey: accountKeyEncoded}
 
-				Fs.writeFile Path.join(@_userDir, "account-key-#{nextAccountKeyId}"), JSON.stringify(data), cb
+				Fs.writeFile Path.join(@_userDir, "account-key-#{nextAccountKeyId}"), JSON.stringify(data), (err) =>
+					if err
+						cb new IOError err
+						return
+
+					cb()
 		], cb
+
+generateKdfParams = ->
+	return {
+		salt: generateSalt()
+		iterationCount: 600000 # higher is more secure, but slower
+	}
+
+getUserDir = (dataDir, userName) ->
+	unless userNameRegex.exec userName
+		throw new Error "invalid characters in user name"
+
+	return Path.join dataDir, '_users', userName
 
 class UserNameTakenError extends CustomError
 class UnknownUserNameError extends CustomError
@@ -696,7 +880,7 @@ class DeactivatedAccountError extends CustomError
 
 module.exports = {
 	isAccountSystemSetUp
-	listAccounts
+	listUserNames
 	Account
 	DecryptedAccount
 	UserNameTakenError

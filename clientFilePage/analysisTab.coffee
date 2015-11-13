@@ -42,14 +42,19 @@ load = (win) ->
 
 				isGenerating: true
 			}
+
 		componentWillMount: ->
 			@_generateAnalysis()
 
 		componentDidUpdate: (oldProps, oldState) ->
+			# TODO: Simpler indicator of important props change			
 			unless Imm.is oldProps.metricsById, @props.metricsById
 				@_generateAnalysis()
 
 			unless Imm.is oldProps.progEvents, @props.progEvents
+				@_generateAnalysis()
+
+			unless Imm.is oldProps.progNotes, @props.progNotes
 				@_generateAnalysis()
 
 		_generateAnalysis: ->			
@@ -79,6 +84,8 @@ load = (win) ->
 				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat metricValues.map (metric) ->
 				Moment(metric.get('timestamp'), Persist.TimestampFormat).startOf('day').valueOf()
+			.concat metricValues.map (metric) ->
+				Moment(metric.get('backdate'), Persist.TimestampFormat).startOf('day').valueOf()
 			# Filter to unique days, and sort
 			.toOrderedSet().sort()
 
@@ -133,8 +140,8 @@ load = (win) ->
 							})
 							R.div({className: 'valueDisplay'},
 								(@state.timeSpan.map (index) =>
-									date = Moment(@state.xTicks.get(index)).format('dddd - Do MMMM - YYYY')
-									return R.div({},
+									date = Moment(@state.xTicks.get(index)).format('MMM Do - YYYY')
+									return R.div({key: index},
 										R.span({}, date)
 									)
 								)
@@ -365,6 +372,8 @@ load = (win) ->
 			)
 
 		componentDidUpdate: (oldProps, oldState) ->
+			# TODO: Sort out repetition here, like parent component
+
 			# Update selected metrics?
 			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 			unless sameSelectedMetrics
@@ -373,6 +382,11 @@ load = (win) ->
 			# Update selected progEvents?
 			sameSelectedProgEvents = Imm.is @props.selectedProgEventIds, oldProps.selectedProgEventIds
 			unless sameSelectedProgEvents
+				@_refreshSelectedProgEvents()
+
+			# Update selected progNotes?
+			sameMetricValues = Imm.is @props.metricValues, oldProps.metricValues
+			unless sameMetricValues
 				@_refreshSelectedProgEvents()
 
 			# Update timeSpan?
@@ -669,7 +683,10 @@ load = (win) ->
 				return Imm.List()
 			when 'full'
 				return progNote.get('sections').flatMap (section) ->
-					return extractMetricsFromProgNoteSection section, progNote.get('timestamp')
+					if progNote.get('backdate') != ''
+						return extractMetricsFromProgNoteSection section, progNote.get('backdate')
+					else
+						return extractMetricsFromProgNoteSection section, progNote.get('timestamp')
 			else
 				throw new Error "unknown prognote type: #{JSON.stringify progNote.get('type')}"
 

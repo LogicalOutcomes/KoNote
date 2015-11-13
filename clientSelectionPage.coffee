@@ -80,23 +80,41 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				isSmallHeaderSet: false
-				queryText: ''
 				menuIsOpen: false
+
+				queryText: ''
+				queryResults: Imm.List()				
+				hoverClientId: null
 			}
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# If loading just finished
-			if oldProps.isLoading and (not @props.isLoading)
+			if oldProps.isLoading and not @props.isLoading
+
 				setTimeout(=>
-					@refs.searchBox.getDOMNode().focus()
+					$searchBox = $(@refs.searchBox.getDOMNode())
+					$searchBox.focus()
+					@_attachKeyBindings($searchBox)
 				, 100)
 
-		render: ->
-			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
+				@_refreshResults()				
 
-			results = null
-			unless @props.isLoading
-				results = @_getResultsList()
+			if @state.queryText isnt oldState.queryText
+				@_refreshResults()
+
+			if @props.clientFileList isnt oldProps.clientFileList
+				@_refreshResults()		
+
+		render: ->
+			if @props.isLoading
+				return R.div({id: 'clientSelectionPage'},
+					Spinner {
+						isOverlay: true
+						isVisible: true
+					}
+				)
+
+			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet			
 
 			return R.div({
 					id: 'clientSelectionPage'
@@ -173,21 +191,22 @@ load = (win) ->
 								showWhen not @props.isLoading
 							].join ' '
 						},
-							(if results?
-								(results.map (result) =>
-									R.div({
-										className: 'result'
-										onClick: @_onResultSelection.bind(null, result.get('id'))
-									}
-										R.span({
-											className: 'recordId'
-										}, if result.has('recordId') and result.get('recordId').length > 0 then Config.clientFileRecordId.label + " #{result.get('recordId')}"),
-									renderName result.get('clientName')
+							(@state.queryResults.map (result) =>
+								R.div({
+									key: "result-" + result.get('id')
+									className: [
+										"result"
+										"active" if @state.hoverClientId is result.get('id')
+									].join ' '
+									onClick: @_onResultSelection.bind(null, result.get('id'))
+								}
+									R.span({className: 'recordId'}, 
+										if result.has('recordId') and result.get('recordId').length > 0
+											Config.clientFileRecordId.label + " #{result.get('recordId')}"
 									)
-								).toJS()
-							else
-								[]
-							)...
+									renderName result.get('clientName')
+								)
+							).toJS()
 						)
 					)
 				)
@@ -203,6 +222,52 @@ load = (win) ->
 					)
 				)
 			)
+
+
+		_attachKeyBindings: ($searchBox) ->
+			# Key-bindings for searchBox
+			$searchBox.on 'keydown', (event) =>
+				# Don't need to see this unless in full search view
+				return if not @state.isSmallHeaderSet
+
+				switch event.which
+					when 40 # Down arrow
+						event.preventDefault()
+						@_shiftHoverClientId(1)
+					when 38 # Up arrow
+						event.preventDefault()
+						@_shiftHoverClientId(-1)
+					when 27 # Esc
+						@setState hoverClientId: null
+					when 13 # Enter
+						$active = $('.active')
+						return unless $active.length
+						$active[0].click()
+						return false
+
+		_shiftHoverClientId: (modifier) ->
+			hoverClientId = null
+			queryResults = @state.queryResults
+
+			# Get our current index position
+			currentResultIndex = queryResults.findIndex (result) =>
+				return result.get('id') is @state.hoverClientId
+
+			nextIndex = currentResultIndex + modifier
+
+			# Skip to first/last if first-run or next is non-existent
+			if not queryResults.get(nextIndex)? or not @state.hoverClientId?
+				if modifier > 0
+					hoverClientId = queryResults.first().get('id')
+				else
+					hoverClientId = queryResults.last().get('id')
+
+				@setState {hoverClientId}
+				return
+
+			# No wacky skip behaviour needed, move to next/previous result
+			hoverClientId = queryResults.get(nextIndex).get('id')
+			@setState {hoverClientId}
 
 		_renderUserMenuList: (isAdmin) ->
 			return R.ul({},
@@ -220,16 +285,19 @@ load = (win) ->
 			)
 
 		_toggleUserMenu: ->
-			@setState {menuIsOpen: !@state.menuIsOpen}		
+			@setState {menuIsOpen: !@state.menuIsOpen}
 
-		_getResultsList: ->
-			if @state.queryText.trim() is ''
-				return @props.clientFileList
+		_refreshResults: ->
+			# Return all results if search query is empty
+			if @state.queryText.trim().length is 0
+				@setState {queryResults: @props.clientFileList}
+				return
 
+			# Calculate query parts & results
 			queryParts = Imm.fromJS(@state.queryText.split(' '))
 			.map (p) -> p.toLowerCase()
 
-			return @props.clientFileList
+			queryResults = @props.clientFileList
 			.filter (clientFile) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
 				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
@@ -242,6 +310,9 @@ load = (win) ->
 						middleName.includes(part) or
 						lastName.includes(part) or
 						recordId.includes(part)
+
+			@setState {queryResults}
+			
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 

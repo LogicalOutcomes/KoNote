@@ -35,7 +35,7 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			# Initialize datepickers, update @state when value changes
+			# Initialize datepickers, bind to @state
 
 			# Grab jQ contexts
 			$startDate = $(@refs.startDate.getDOMNode())
@@ -61,10 +61,11 @@ load = (win) ->
 					horizontal: 'right'
 				}
 			}).on 'dp.change', (thisInput) =>				
-				@setState {startTime: thisInput.date}, => console.log @state.startTime.format('HH:mm')
+				@setState {startTime: thisInput.date}
 
 
 			$endDate.datetimepicker({
+				minDate: Moment()
 				useCurrent: false
 				format: 'Do MMM, \'YY'
 				widgetPositioning: {					
@@ -81,7 +82,7 @@ load = (win) ->
 					horizontal: 'right'
 				}
 			}).on 'dp.change', (thisInput) =>
-				@setState {endTime: thisInput.date}, => console.log @state.endTime.format('HH:mm')
+				@setState {endTime: thisInput.date}
 
 		render: ->
 			return R.div({

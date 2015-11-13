@@ -78,21 +78,22 @@ See: https://github.com/nwjs/nw.js/wiki/how-to-package-and-distribute-your-apps#
 ##### Prepare & Clean Repository
 1. Clone repo: `git clone git@github.com:konode001/konote.git`
 2. Open repo: `cd konote`
-3. Delete `.git` folder inside repo: `rm -rf .git`
-4. Run `npm install`
-5. Delete `node_modules/nw` or `node_modules/node-webkit`: `rm -rf node_modules/X`
-6. Delete this README.md: `rm README.md`
+3. Checkout master: git checkout master
+4. Delete `.git` folder inside repo: `rm -rf .git`
+5. Run `npm install`
+6. Delete `node_modules/nw` or `node_modules/node-webkit`: `rm -rf node_modules/X`
+7. Delete this README.md: `rm README.md`
 
 ##### Package Raw Version (no specific nwjs OS)
-7. Zip up the repo dir, name as: "**KoNote vX.X.X (Raw)**"
-8. Upload zip file to Google Docs: /KoNode Team/KoNote/
+8. Zip up the repo dir, name as: "**KoNote vX.X.X (Raw)**"
+9. Upload zip file to Google Docs: /KoNode Team/KoNote/
 
 ##### Package OS Version (do for each OS)
-9. Download and unzip a copy of NW.js into the repo directory for the appropriate platform (Win/Mac/Linux, 32-/64-bit)
+10. Download and unzip a copy of NW.js into the repo directory for the appropriate platform (Win/Mac/Linux, 32-/64-bit)
 	- Recent Versions: https://github.com/nwjs/nw.js
 	- Old Versions: https://github.com/nwjs/nw.js/wiki/Downloads-of-old-versions
-10. Zip up the repo dir, name as: "**KoNote vX.X.X Win32/Win64/Mac32/Mac64/Linux32/Linux64**" (switch for OS)
-11. Upload zip file to Google Docs: /KoNode Team/KoNote/Releases/vX.X.X
+11. Zip up the repo dir, name as: "**KoNote vX.X.X Win32/Win64/Mac32/Mac64/Linux32/Linux64**" (switch for OS)
+12. Upload zip file to Google Docs: /KoNode Team/KoNote/Releases/vX.X.X
 
 Ask the user to unzip whole folder and run `nw.exe` or `nw.app`
 (On Mac if the user gets a warning that nw.app is untrusted they can Ctrl-click and open)

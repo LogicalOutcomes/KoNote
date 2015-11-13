@@ -191,22 +191,25 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
-				# Done loading data, we can generate the prognote now
-				@setState (state) =>
-					return {						
-						isLoading: false
-						progNote: @_createProgNoteFromTemplate(
-							template, state.clientFile, planTargetsById, metricsById
-						)
-					}
+				progNote = @_createProgNoteFromTemplate(
+					template
+					@state.clientFile
+					planTargetsById
+					metricsById
+				)
 
-				@render()		
+				# Done loading data, we can generate the prognote now
+				@setState {						
+						isLoading: false
+						progNote
+					}
 
 		_createProgNoteFromTemplate: (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
 				type: 'full'
 				clientFileId: clientFile.get('id')
 				templateId: template.get('id')
+				backdate: ''
 				sections: template.get('sections').map (section) =>
 					switch section.get('type')
 						when 'basic'
@@ -247,7 +250,7 @@ load = (win, {clientFileId}) ->
 												}
 										}
 							}
-			}
+			}	
 
 	NewProgNotePageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -258,13 +261,12 @@ load = (win, {clientFileId}) ->
 
 				progEvents: Imm.List()
 				editingWhichEvent: null
-
 				success: false
 				showExitAlert: false
 			}
 
 		suggestClose: ->
-			if not @state.showExitAlert
+			if @hasChanges() and not @state.showExitAlert
 				@setState {showExitAlert: true}
 				Bootbox.dialog {
 					message: "Are you sure you want to cancel this #{Term('progress note')}?"
@@ -283,7 +285,14 @@ load = (win, {clientFileId}) ->
 						}
 					}
 				}
+			else
+				@props.closeWindow()
 
+		hasChanges: ->
+			unless Imm.is @props.progNote, @state.progNote
+				return true
+			return false
+		
 		componentWillReceiveProps: (newProps) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
 				@setState {progNote: newProps.progNote}
@@ -335,6 +344,14 @@ load = (win, {clientFileId}) ->
 
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
+
+					BackdateWidget({onChange: @_updateBackdate})
+					if @state.progNote.get('backdate').length > 0
+						R.div({className: 'backdateMessage'},
+							"(back-dated entry)"
+						)
+
+					R.hr({})
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
 							switch section.get('type')
@@ -367,7 +384,8 @@ load = (win, {clientFileId}) ->
 											section.get('name')
 										)
 										R.div({className: "empty #{showWhen section.get('targets').size is 0}"},
-											"This #{Term 'section'} is empty because the client has no #{Term 'plan'} #{Term 'targets'}."
+											"This #{Term 'section'} is empty because 
+											the client has no #{Term 'plan'} #{Term 'targets'}."
 										)
 										R.div({className: 'targets'},
 											(section.get('targets').map (target) =>
@@ -409,9 +427,10 @@ load = (win, {clientFileId}) ->
 					)
 					R.div({className: 'buttonRow'},
 						R.button({
-							className: "save btn btn-primary #{'disabled' if @state.editingWhichEvent?}"
+							className: "save btn btn-primary #{'disabled' if @state.editingWhichEvent? or
+								not @hasChanges()}"
 							id: 'saveNoteButton'
-							onClick: @_save unless @state.editingWhichEvent?
+							onClick: @_save unless @state.editingWhichEvent? or not @hasChanges()
 						},
 							FaIcon 'check'
 							'Save'
@@ -519,12 +538,17 @@ load = (win, {clientFileId}) ->
 					targetName: target.get('name')
 				}
 			}
+
+		_updateBackdate: (event) ->
+			backdate = Moment(event.date).format(Persist.TimestampFormat)
+			progNote = @state.progNote.setIn ['backdate'], backdate
+			@setState {progNote}
+
 		_updateBasicSectionNotes: (sectionId, event) ->
 			sectionIndex = @_getSectionIndex sectionId
+			progNote = @state.progNote.setIn ['sections', sectionIndex, 'notes'], event.target.value
+			@setState {progNote}
 
-			@setState {
-				progNote: @state.progNote.setIn ['sections', sectionIndex, 'notes'], event.target.value
-			}
 		_updateBasicSectionMetric: (sectionId, metricId, newValue) ->
 			return @render() if @_invalidMetricFormat(newValue)
 
@@ -539,9 +563,9 @@ load = (win, {clientFileId}) ->
 					newValue
 				)
 			}
+
 		_updatePlanSectionNotes: (sectionId, targetId, event) ->
 			sectionIndex = @_getSectionIndex sectionId
-
 			targetIndex = @state.progNote.getIn(['sections', sectionIndex, 'targets']).findIndex (t) =>
 				return t.get('id') is targetId
 
@@ -551,6 +575,7 @@ load = (win, {clientFileId}) ->
 					event.target.value
 				)
 			}
+
 		_updatePlanSectionMetric: (sectionId, targetId, metricId, newValue) ->
 			return @render() if @_invalidMetricFormat(newValue)
 
@@ -568,9 +593,10 @@ load = (win, {clientFileId}) ->
 					newValue
 				)
 			}
-		_invalidMetricFormat: (value) -> not value.match /^-?\d*\.?\d*$/
-		_save: ->
 
+		_invalidMetricFormat: (value) -> not value.match /^-?\d*\.?\d*$/
+
+		_save: ->
 			progNoteId = null
 
 			Async.series [
@@ -608,8 +634,32 @@ load = (win, {clientFileId}) ->
 
 					CrashHandler.handle err
 					return
-
 				@props.closeWindow()
+
+
+	BackdateWidget = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		componentDidMount: ->
+			$(@refs.backdate.getDOMNode()).datetimepicker({
+				format: 'MMM-DD-YYYY h:mm A'
+				defaultDate: Moment()
+				maxDate: Moment()
+				widgetPositioning: {
+					vertical: 'bottom'
+				}
+			}).on 'dp.change', (e) =>
+				@props.onChange e
+		render: ->
+			return R.div({className: 'input-group'},
+				R.input({
+					ref: 'backdate'
+					className: 'form-control backdate date'
+				},
+					R.span({className: 'input-group-addon'}
+						FaIcon('calendar')
+					)
+				)
+			)
 
 
 	return NewProgNotePage

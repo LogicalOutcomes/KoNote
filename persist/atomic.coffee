@@ -19,7 +19,7 @@ Fs = require 'fs'
 Path = require 'path'
 Rimraf = require 'rimraf'
 
-{generateId} = require './utils'
+{generateId, IOError} = require './utils'
 
 # Atomically write a file to the specified path.
 #
@@ -37,15 +37,25 @@ writeFile = (path, tmpDirPath, cb) =>
 
 	Fs.open tmpPath, 'w', (err, fd) =>
 		if err
-			cb err
+			cb new IOError err
 			return
 
 		commit = (cb) =>
 			Async.series [
-				(cb) ->
-					Fs.close fd, cb
-				(cb) ->
-					Fs.rename tmpPath, path, cb
+				(cb) =>
+					Fs.close fd, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
+				(cb) =>
+					Fs.rename tmpPath, path, (err) =>
+						if err
+							cb new IOError err
+							return
+
+						cb()
 			], cb
 
 		cb null, fd, new AtomicOperation(commit)
@@ -71,7 +81,12 @@ writeBufferToFile = (path, tmpDirPath, dataBuf, cb) =>
 				fileOp = op
 				cb()
 		(cb) =>
-			Fs.write fileHandle, dataBuf, 0, dataBuf.length, cb
+			Fs.write fileHandle, dataBuf, 0, dataBuf.length, (err) =>
+				if err
+					cb new IOError err
+					return
+
+				cb()
 		(cb) =>
 			fileOp.commit cb
 	], cb
@@ -101,11 +116,16 @@ writeDirectory = (path, tmpDirPath, cb) =>
 
 	Fs.mkdir tmpPath, (err) =>
 		if err
-			cb err
+			cb new IOError err
 			return
 
 		commit = (cb) =>
-			Fs.rename tmpPath, path, cb
+			Fs.rename tmpPath, path, (err) =>
+				if err
+					cb new IOError err
+					return
+
+				cb()
 
 		cb null, tmpPath, new AtomicOperation(commit)
 
@@ -117,9 +137,19 @@ deleteDirectory = (path, tmpDirPath, cb) =>
 
 	Async.series [
 		(cb) =>
-			Fs.rename path, tmpPath, cb
+			Fs.rename path, tmpPath, (err) =>
+				if err
+					cb new IOError err
+					return
+
+				cb()
 		(cb) =>
-			Rimraf tmpPath, cb
+			Rimraf tmpPath, (err) =>
+				if err
+					cb new IOError err
+					return
+
+				cb()
 	], cb
 
 # AtomicOperation objects are returned by some of the above functions.
