@@ -91,7 +91,7 @@ load = (win) ->
 								R.div({ref: 'createAdmin'},
 									R.h2({}, "Your username will be \"admin\"")
 									R.p({}, 								
-										"Please choose a secure password:"
+										"Please choose a password:"
 										R.br({})
 										R.br({})
 									)
@@ -138,8 +138,8 @@ load = (win) ->
 											].join ' '
 											disabled: not @_passwordsMatch()
 											onClick: @_install
-										}, 
-											"Finished"
+										},
+											"Create Account"
 										)
 									)
 								)
