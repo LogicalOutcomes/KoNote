@@ -164,6 +164,10 @@ module.exports = {
 										console.log "About to loop through progNote files, which are: ", progNoteFiles
 
 										# Check to see if there's only 1 progNoteFile, deliver error if > 1 or 0
+										
+										if progNoteFiles.length is not 1
+											console.log "error, expect 1 prognote per directory. are you sure you are migrating from 1.3.1?"
+											return
 
 										# Loop through each progNote file
 										Async.eachSeries progNoteFiles, (progNoteFile, cb) ->
@@ -171,24 +175,62 @@ module.exports = {
 											progNoteFilePath = Path.join(progNoteDir, progNoteFile)
 
 											console.log "progNoteFilePath : : ", progNoteFilePath
+											
+											newBuf = null
 
 											# Read and write file!
+											Async.series [
+												(cb) ->
+													# read file
+													Fs.readFile progNoteFilePath, (err, buf) ->
+														if err
+															cb new IOError err
+															return
+														note = JSON.parse globalEncryptionKey.decrypt buf
+														console.log "backdate: ", note.backdate
 
-											# read file (result)
+														note.backdate = ''
+
+														newBuf = globalEncryptionKey.encrypt JSON.stringify note
+														cb()
+												(cb) ->
+													#write file 
+													Fs.writeFile progNoteFilePath, newBuf, (err) ->
+														if err
+															cb new IOError err
+															return
+														console.log "file saved"
+														cb()
+												(cb) ->
+													# rename directory (add index)
+
+													console.log "prognote folder: ", progNote
+													console.log "prognote parent folder: ", progNotesDir
+													
+													tempProgNote = progNote.replace(".", "..")
+													
+													newProgNoteDir = Path.join(progNotesDir, tempProgNote)
+													
+													#progNoteParent = progNotesDir
+													#newProgNoteDir = tempProgNoteDir.splice(-1, '')
+													#console.log "new dir: ", newProgNoteDir
+													#newProgNotePath = newProgNoteDir.join
+													
+													
+													Fs.rename progNoteDir, newProgNoteDir, (err) ->
+														if err
+															cb err
+															console.log "Error renaming directory: ", err
+															return
+														console.log "directory renamed"
+														cb()
+											], cb
 
 											# obj = JSON.parse globalEncryptionKey.decrypt result
-
 											# obj.backdate = ''
-
 											# newBuf = globalEncryptionKey.encrypt JSON.stringify obj
-
 											# save
-
 											# {}
-
-
-
-											cb()
 										, cb
 								], cb
 							, cb
