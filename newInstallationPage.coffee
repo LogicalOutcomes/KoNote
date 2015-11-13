@@ -64,28 +64,21 @@ load = (win) ->
 								id: 'logoImage'
 								src: './assets/brand/logo.png'
 							})
-							R.div({id: 'version'}, "v1.4.0 (Beta)")
+							R.div({id: 'version'}, "v1.4.0 Beta")
 						)						
 					)
 					R.div({
-						className: 'contentContainer'
+						className: 'contentContainer animated fadeInUp'
 					},
 						(switch @state.openTab
 							when 'index'
 								R.div({ref: 'index'},
-									R.h1({}, "You're almost done!")
-									R.p({}, "Welcome to the #{Config.productName} beta program.")
-									R.p({}, "Let's set you up with an admin account, and complete the installation.")
+									R.h2({}, "Thank you for trying the #{Config.productName} beta!")
+									R.p({}, "To get started, let's setup your account")
 									R.br({})
 									R.div({className: 'btn-toolbar'},
 										R.button({
-											className: 'btn btn-lg btn-default'
-											onClick: @_switchTab.bind null, 'help'
-										}, 
-											"Help"
-										)
-										R.button({
-											className: 'btn btn-lg btn-primary'
+											className: 'btn btn-lg btn-success'
 											onClick: @_switchTab.bind null, 'createAdmin'
 										}, 
 											"Create Admin Account"

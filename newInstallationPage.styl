@@ -1,7 +1,4 @@
 #newInstallationPage	
-	background url('./assets/images/setupPage-background.jpg') no-repeat center center fixed
-	background-size cover
-		
 	height 100%
 	display flex
 	flex-direction column
@@ -9,20 +6,22 @@
 	align-items stretch
 	
 	overflow hidden
-	
-	color #575757
+	background-color: #3176aa
+	color #fff
 	
 	section
-		padding-right 40%
 		display flex
 		flex-direction column
 		
 		height 100%
 		
+		align-items: center
+		justify-content: center
+		
 		> #brandContainer
-			flex 5
+			flex 9
 			text-align center
-			
+			margin-bottom: -50px
 			display flex
 			flex-direction column
 			justify-content center
@@ -34,14 +33,18 @@
 					width auto
 					
 				#version
-					font-size 22px
+					font-size 18px
 					line-height 26px
 					font-weight 300
 				
 		
 		> .contentContainer
+			display flex
+			flex-direction column
 			flex 7
 			padding 25px
+			align-items center
+
 			
 			> div
 				display flex
@@ -57,7 +60,6 @@
 					text-align center
 					
 				p
-					max-width 75%
 					font-size 19px
 					line-height 1.75em
 					
@@ -78,11 +80,5 @@
 					&.has-success .glyphicon
 						opacity 1
 					
-				.btn-toolbar
-					
-					.fa
-						&.right-side
-							margin-left 15px
-						&.left-side
-							margin-right 15px
-						
+				.btn .fa 
+					margin-left 15px
