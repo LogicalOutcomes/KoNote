@@ -250,31 +250,7 @@ load = (win, {clientFileId}) ->
 												}
 										}
 							}
-			}
-
-	backdateWidget = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]
-		componentDidMount: ->
-			$(@refs.backdate.getDOMNode()).datetimepicker({
-				format: 'MMM-DD-YYYY h:mm A'
-				defaultDate: Moment()
-				maxDate: Moment()
-				widgetPositioning: {
-					vertical: 'bottom'
-				}
-			}).on 'dp.change', (e) =>
-				@props.onChange e
-		render: ->
-			return R.div({className: 'input-group'},
-				R.input({
-					ref: 'backdate'
-					className: 'form-control backdate date'
-				},
-					R.span({className: 'input-group-addon'}
-						FaIcon 'calendar'
-					)
-				)
-			)
+			}	
 
 	NewProgNotePageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -368,13 +344,13 @@ load = (win, {clientFileId}) ->
 
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
-					backdateWidget({onChange: @_updateBackdate})
-					R.div({
-						className: "#{showWhen @state.progNote.get('backdate') != ''}"
-						style: 'font-style': 'normal', 'padding': '5px', 'color': 'red'
-					},
-						"(back-dated entry)"
-					)
+
+					BackdateWidget({onChange: @_updateBackdate})
+					if @state.progNote.get('backdate').length > 0
+						R.div({className: 'backdateMessage'},
+							"(back-dated entry)"
+						)
+
 					R.hr({})
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
@@ -408,7 +384,8 @@ load = (win, {clientFileId}) ->
 											section.get('name')
 										)
 										R.div({className: "empty #{showWhen section.get('targets').size is 0}"},
-											"This #{Term 'section'} is empty because the client has no #{Term 'plan'} #{Term 'targets'}."
+											"This #{Term 'section'} is empty because 
+											the client has no #{Term 'plan'} #{Term 'targets'}."
 										)
 										R.div({className: 'targets'},
 											(section.get('targets').map (target) =>
@@ -561,16 +538,17 @@ load = (win, {clientFileId}) ->
 					targetName: target.get('name')
 				}
 			}
+
 		_updateBackdate: (event) ->
-			@setState {
-				progNote: @state.progNote.setIn ['backdate'], Moment(event.date).format(Persist.TimestampFormat)
-			}
+			backdate = Moment(event.date).format(Persist.TimestampFormat)
+			progNote = @state.progNote.setIn ['backdate'], backdate
+			@setState {progNote}
+
 		_updateBasicSectionNotes: (sectionId, event) ->
 			sectionIndex = @_getSectionIndex sectionId
+			progNote = @state.progNote.setIn ['sections', sectionIndex, 'notes'], event.target.value
+			@setState {progNote}
 
-			@setState {
-				progNote: @state.progNote.setIn ['sections', sectionIndex, 'notes'], event.target.value
-			}
 		_updateBasicSectionMetric: (sectionId, metricId, newValue) ->
 			return @render() if @_invalidMetricFormat(newValue)
 
@@ -585,6 +563,7 @@ load = (win, {clientFileId}) ->
 					newValue
 				)
 			}
+
 		_updatePlanSectionNotes: (sectionId, targetId, event) ->
 			sectionIndex = @_getSectionIndex sectionId
 			targetIndex = @state.progNote.getIn(['sections', sectionIndex, 'targets']).findIndex (t) =>
@@ -596,6 +575,7 @@ load = (win, {clientFileId}) ->
 					event.target.value
 				)
 			}
+
 		_updatePlanSectionMetric: (sectionId, targetId, metricId, newValue) ->
 			return @render() if @_invalidMetricFormat(newValue)
 
@@ -613,9 +593,10 @@ load = (win, {clientFileId}) ->
 					newValue
 				)
 			}
-		_invalidMetricFormat: (value) -> not value.match /^-?\d*\.?\d*$/
-		_save: ->
 
+		_invalidMetricFormat: (value) -> not value.match /^-?\d*\.?\d*$/
+
+		_save: ->
 			progNoteId = null
 
 			Async.series [
@@ -654,6 +635,31 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 				@props.closeWindow()
+
+
+	BackdateWidget = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		componentDidMount: ->
+			$(@refs.backdate.getDOMNode()).datetimepicker({
+				format: 'MMM-DD-YYYY h:mm A'
+				defaultDate: Moment()
+				maxDate: Moment()
+				widgetPositioning: {
+					vertical: 'bottom'
+				}
+			}).on 'dp.change', (e) =>
+				@props.onChange e
+		render: ->
+			return R.div({className: 'input-group'},
+				R.input({
+					ref: 'backdate'
+					className: 'form-control backdate date'
+				},
+					R.span({className: 'input-group-addon'}
+						FaIcon('calendar')
+					)
+				)
+			)
 
 
 	return NewProgNotePage
