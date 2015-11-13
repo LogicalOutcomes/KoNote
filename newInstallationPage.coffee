@@ -88,13 +88,10 @@ load = (win) ->
 								)
 							when 'createAdmin'
 								R.div({ref: 'createAdmin'},
-									R.h1({}, "Admin Account")
 									R.p({}, 
-										"Your user name will be \""
+										"Your username will be \""
 										R.strong({}, "admin")
-										"\"."
-										R.br({})
-										"Set and confirm a secure password."
+										"\". Please choose a password:"
 									)
 									R.div({
 										className: [
@@ -133,13 +130,6 @@ load = (win) ->
 									)
 									R.div({className: 'btn-toolbar'},
 										R.button({
-											className: 'btn btn-lg btn-default'
-											onClick: @_switchTab.bind null, 'index'
-										},
-											FaIcon('arrow-left left-side')
-											"Back"
-										)
-										R.button({
 											className: [
 												'btn btn-lg btn-success'
 												'animated pulse' if @_passwordsMatch()
@@ -147,33 +137,8 @@ load = (win) ->
 											disabled: not @_passwordsMatch()
 											onClick: @_install
 										}, 
-											"Complete Installation"
-											FaIcon('check right-side')
+											"Submit"
 										)
-									)
-								)
-							
-							when 'help'
-								R.div({ref: 'help'},
-									R.h1({}, "How can we help?")
-									R.p({}, "Your feedback is very important to us.")
-									R.p({},
-										"As a #{Config.productName} beta tester, you are
-										entitled to free 1-on-1 support with Dr. Gotlib"
-									)
-									R.br({})
-									R.div({className: 'btn-toolbar'},
-										R.button({
-											className: 'btn btn-lg btn-default'
-											onClick: @_switchTab.bind null, 'index'
-										},
-											FaIcon('arrow-left left-side')
-											"Back"
-										)
-										R.button({
-											className: 'btn btn-lg btn-warning'
-											onClick: @_showContactInfo
-										}, "Contact Information")
 									)
 								)
 						)
