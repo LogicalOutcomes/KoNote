@@ -147,6 +147,7 @@ module.exports = {
 								Async.series [
 									(cb) =>
 										console.log "About to read progNote dir...."
+
 										# Read the names of progNote folders
 										Fs.readdir progNoteDir, (err, result) ->
 											if err
@@ -158,23 +159,17 @@ module.exports = {
 									(cb) =>
 										console.log "About to loop through progNote files, which are: ", progNoteFiles
 
-										# Check to see if there's only 1 progNoteFile, deliver error if > 1 or 0
-										
-										unless progNoteFiles.length is 1
-											console.log "error, expect 1 prognote per directory. are you sure you are migrating from 1.3.1?"
-											return
-
 										# Loop through each progNote file
 										Async.eachSeries progNoteFiles, (progNoteFile, cb) ->
 
 											progNoteFilePath = Path.join(progNoteDir, progNoteFile)
-											
+
 											newBuf = null
 
-											# Read and write file!
+											# Read and write progNote file and its directory
 											Async.series [
 												(cb) ->
-													# read file
+													# Read file, add blank backdate
 													Fs.readFile progNoteFilePath, (err, buf) ->
 														if err
 															cb err
@@ -184,14 +179,14 @@ module.exports = {
 														newBuf = globalEncryptionKey.encrypt JSON.stringify note
 														cb()
 												(cb) ->
-													#write file 
+													# Write file 
 													Fs.writeFile progNoteFilePath, newBuf, (err) ->
 														if err
 															cb err
 															return
 														cb()
 												(cb) ->
-													# rename directory (add index)		
+													# Rename parent directory with empty index
 													tempProgNote = progNote.replace(".", "..")
 													newProgNoteDir = Path.join(progNotesDir, tempProgNote)
 													
@@ -200,6 +195,8 @@ module.exports = {
 															cb err
 															console.error "Error renaming directory: ", err
 															return
+
+														console.log "Rewrote folder and file for progNote:", progNoteFile
 														cb()
 											], cb
 
