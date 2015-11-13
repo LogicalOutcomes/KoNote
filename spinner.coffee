@@ -26,7 +26,12 @@ load = (win) ->
 		render: ->
 			isVisible = @props.isVisible isnt false
 
-			spinner = R.div({className: "spinnerComponent #{showWhen isVisible}"},
+			spinner = R.div({
+				className: [
+					"spinnerComponent #{showWhen isVisible}"
+					'animated fadeOut' if @props.percent? and @props.percent >= 100
+				].join ' '
+			},
 				R.div({className: 'inner'},
 					R.div({className: 'container container1'},
 						R.div({className: 'circle circle1'})
@@ -51,19 +56,14 @@ load = (win) ->
 				R.div({
 					className: [
 						'infoContainer'
-						'animated bounce' if @props.percent? and @props.percent >= 100
+						# 'animated flash' if @props.percent? and @props.percent >= 100
 					].join ' '
 				},
 					if @props.message?
 						R.div({className: 'message'}, @props.message)
 
 					if @props.percent?
-						R.div({
-							className: [
-								'progress'
-								'animated bounce' if @props.percent >= 100
-							].join ' '
-						}, 
+						R.div({className: 'progress'}, 
 							R.div({
 								className: [
 									'progress-bar progress-bar-striped active'

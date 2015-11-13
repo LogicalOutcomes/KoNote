@@ -64,28 +64,22 @@ load = (win) ->
 								id: 'logoImage'
 								src: './assets/brand/logo.png'
 							})
-							R.div({id: 'version'}, "v1.4.0 (Beta)")
+							R.div({id: 'version'}, "v1.4.0 Beta")
 						)						
 					)
 					R.div({
-						className: 'contentContainer'
+						id: 'contentContainer'
+						className: 'animated fadeInUp'
 					},
 						(switch @state.openTab
 							when 'index'
 								R.div({ref: 'index'},
-									R.h1({}, "You're almost done!")
-									R.p({}, "Welcome to the #{Config.productName} beta program.")
-									R.p({}, "Let's set you up with an admin account, and complete the installation.")
+									R.h2({}, "Thank you for trying the #{Config.productName} beta!")
+									R.p({}, "To get started, let's set up your user account...")
 									R.br({})
 									R.div({className: 'btn-toolbar'},
 										R.button({
-											className: 'btn btn-lg btn-default'
-											onClick: @_switchTab.bind null, 'help'
-										}, 
-											"Help"
-										)
-										R.button({
-											className: 'btn btn-lg btn-primary'
+											className: 'btn btn-lg btn-success'
 											onClick: @_switchTab.bind null, 'createAdmin'
 										}, 
 											"Create Admin Account"
@@ -95,13 +89,11 @@ load = (win) ->
 								)
 							when 'createAdmin'
 								R.div({ref: 'createAdmin'},
-									R.h1({}, "Admin Account")
-									R.p({}, 
-										"Your user name will be \""
-										R.strong({}, "admin")
-										"\"."
+									R.h2({}, "Your username will be \"admin\"")
+									R.p({}, 								
+										"Please choose a password:"
 										R.br({})
-										"Set and confirm a secure password."
+										R.br({})
 									)
 									R.div({
 										className: [
@@ -140,49 +132,27 @@ load = (win) ->
 									)
 									R.div({className: 'btn-toolbar'},
 										R.button({
-											className: 'btn btn-lg btn-default'
-											onClick: @_switchTab.bind null, 'index'
-										},
-											FaIcon('arrow-left left-side')
-											"Back"
-										)
-										R.button({
 											className: [
 												'btn btn-lg btn-success'
 												'animated pulse' if @_passwordsMatch()
 											].join ' '
 											disabled: not @_passwordsMatch()
 											onClick: @_install
-										}, 
-											"Complete Installation"
-											FaIcon('check right-side')
-										)
-									)
-								)
-							
-							when 'help'
-								R.div({ref: 'help'},
-									R.h1({}, "How can we help?")
-									R.p({}, "Your feedback is very important to us.")
-									R.p({},
-										"As a #{Config.productName} beta tester, you are
-										entitled to free 1-on-1 support with Dr. Gotlib"
-									)
-									R.br({})
-									R.div({className: 'btn-toolbar'},
-										R.button({
-											className: 'btn btn-lg btn-default'
-											onClick: @_switchTab.bind null, 'index'
 										},
-											FaIcon('arrow-left left-side')
-											"Back"
+											"Create Account"
 										)
-										R.button({
-											className: 'btn btn-lg btn-warning'
-											onClick: @_showContactInfo
-										}, "Contact Information")
 									)
 								)
+
+						)
+					)
+					R.div({
+						id: 'helpContainer'
+						className: 'animated fadeIn'
+					}, 
+						"Contact us:"						
+						R.a({href: 'mailto:help@konode.ca'},
+							"help@konode.ca"
 						)
 					)
 				)

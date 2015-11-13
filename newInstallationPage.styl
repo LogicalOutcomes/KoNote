@@ -1,7 +1,4 @@
 #newInstallationPage	
-	background url('./assets/images/setupPage-background.jpg') no-repeat center center fixed
-	background-size cover
-		
 	height 100%
 	display flex
 	flex-direction column
@@ -9,20 +6,22 @@
 	align-items stretch
 	
 	overflow hidden
-	
-	color #575757
+	background-color: #3176aa
+	color #fff
 	
 	section
-		padding-right 40%
 		display flex
 		flex-direction column
 		
 		height 100%
 		
+		align-items center
+		justify-content center
+		
 		> #brandContainer
-			flex 5
+			flex 9
 			text-align center
-			
+			margin-bottom -50px
 			display flex
 			flex-direction column
 			justify-content center
@@ -34,30 +33,29 @@
 					width auto
 					
 				#version
-					font-size 22px
+					font-size 18px
 					line-height 26px
 					font-weight 300
 				
 		
-		> .contentContainer
-			flex 7
+		> #contentContainer
+			display flex
+			flex-direction column
+			flex 8
 			padding 25px
+			align-items center
+
 			
 			> div
 				display flex
 				flex-direction column
 				align-items center
 					
-				h1
-					font-size 38px
-					line-height 76px
-					margin-bottom 25px
-					
-					font-weight 700
-					text-align center
+				h2
+					padding-bottom 15px
+					border-bottom 1px solid #216293
 					
 				p
-					max-width 75%
 					font-size 19px
 					line-height 1.75em
 					
@@ -78,11 +76,23 @@
 					&.has-success .glyphicon
 						opacity 1
 					
-				.btn-toolbar
+				.btn .fa 
+					margin-left 15px
 					
-					.fa
-						&.right-side
-							margin-left 15px
-						&.left-side
-							margin-right 15px
-						
+		> #helpContainer
+			flex 1.5
+			display flex
+			align-items center
+			justify-content center
+			
+			span, a
+				opacity .8
+			
+			a				
+				color white
+				text-decoration underline
+				margin-left 5px
+				transition all .25s ease
+				
+				&:hover
+					opacity 1
