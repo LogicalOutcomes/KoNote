@@ -1,0 +1,88 @@
+#newInstallationPage	
+	background url('./assets/images/setupPage-background.jpg') no-repeat center center fixed
+	background-size cover
+		
+	height 100%
+	display flex
+	flex-direction column
+	justify-content center
+	align-items stretch
+	
+	overflow hidden
+	
+	color #575757
+	
+	section
+		padding-right 40%
+		display flex
+		flex-direction column
+		
+		height 100%
+		
+		> #brandContainer
+			flex 5
+			text-align center
+			
+			display flex
+			flex-direction column
+			justify-content center
+			
+			> div
+			
+				img
+					height 185px
+					width auto
+					
+				#version
+					font-size 22px
+					line-height 26px
+					font-weight 300
+				
+		
+		> .contentContainer
+			flex 7
+			padding 25px
+			
+			> div
+				display flex
+				flex-direction column
+				align-items center
+					
+				h1
+					font-size 38px
+					line-height 76px
+					margin-bottom 25px
+					
+					font-weight 700
+					text-align center
+					
+				p
+					max-width 75%
+					font-size 19px
+					line-height 1.75em
+					
+					font-weight 400
+					text-align center
+					
+				.form-group
+					width 50%
+					min-width 200px
+					position relative
+					
+					input
+						position relative
+						letter-spacing 2px
+					
+					.glyphicon
+						opacity 0
+					&.has-success .glyphicon
+						opacity 1
+					
+				.btn-toolbar
+					
+					.fa
+						&.right-side
+							margin-left 15px
+						&.left-side
+							margin-right 15px
+						

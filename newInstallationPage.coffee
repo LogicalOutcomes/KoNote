@@ -1,0 +1,307 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
+Config = require './config'
+Persist = require './persist'
+Async = require 'async'
+
+load = (win) ->
+	# Libraries from browser context
+	$ = win.jQuery
+	React = win.React
+	Bootbox = win.bootbox
+	R = React.DOM
+
+	Spinner = require('./spinner').load(win)	
+	{FaIcon} = require('./utils').load(win)
+
+	NewInstallationPage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			return {
+				openTab: 'index'
+
+				isLoading: null
+				installProgress: {
+					message: null
+					percent: null
+				}
+
+				password: ''
+				passwordConfirmation: ''
+			}
+
+		componentDidUpdate: (oldProps, oldState) ->
+			# Detech tab change to createAdmin
+			if @state.openTab isnt oldState.openTab and @state.openTab is 'createAdmin'
+				# Focus first password input
+				$password = $(@refs.password.getDOMNode())
+				$password.focus()
+
+		render: ->
+			# TODO: Extract this to UI component
+
+			if @state.isLoading
+				return R.div({id: 'newInstallationPage'},
+					Spinner {
+						isOverlay: true
+						isVisible: true
+						message: @state.installProgress.message
+						percent: @state.installProgress.percent
+					}
+				)
+
+			return R.div({id: 'newInstallationPage'},
+				R.section({},
+					R.div({
+						id: 'brandContainer'
+						className: 'animated fadeInDown'
+					},
+						R.div({},
+							R.img({
+								id: 'logoImage'
+								src: './assets/brand/logo.png'
+							})
+							R.div({id: 'version'}, "v1.4.0 (Beta)")
+						)						
+					)
+					R.div({
+						className: 'contentContainer'
+					},
+						(switch @state.openTab
+							when 'index'
+								R.div({ref: 'index'},
+									R.h1({}, "You're almost done!")
+									R.p({}, "Welcome to the #{Config.productName} beta program.")
+									R.p({}, "Let's set you up with an admin account, and complete the installation.")
+									R.br({})
+									R.div({className: 'btn-toolbar'},
+										R.button({
+											className: 'btn btn-lg btn-default'
+											onClick: @_switchTab.bind null, 'help'
+										}, 
+											"Help"
+										)
+										R.button({
+											className: 'btn btn-lg btn-primary'
+											onClick: @_switchTab.bind null, 'createAdmin'
+										}, 
+											"Create Admin Account"
+											FaIcon('arrow-right right-side')
+										)
+									)
+								)
+							when 'createAdmin'
+								R.div({ref: 'createAdmin'},
+									R.h1({}, "Admin Account")
+									R.p({}, 
+										"Your user name will be \""
+										R.strong({}, "admin")
+										"\"."
+										R.br({})
+										"Set and confirm a secure password."
+									)
+									R.div({
+										className: [
+											'form-group'
+											'has-success has-feedback' if @state.password.length > 0
+										].join ' '
+									},
+										R.input({
+											ref: 'password'
+											className: 'form-control'
+											type: 'password'											
+											placeholder: "Set Password"
+											value: @state.password
+											onChange: @_updatePassword											
+										})
+										R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
+									)
+									R.div({
+										className: [
+											'form-group'
+											if @_passwordsMatch()
+												'has-success has-feedback'
+											else if @state.passwordConfirmation.length > 0
+												'has-error'
+										].join ' '
+									},
+										R.input({
+											ref: 'passwordConfirmation'
+											className: 'form-control'
+											type: 'password'											
+											placeholder: "Confirm Password"
+											value: @state.passwordConfirmation
+											onChange: @_updatePasswordConfirmation
+										})
+										R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
+									)
+									R.div({className: 'btn-toolbar'},
+										R.button({
+											className: 'btn btn-lg btn-default'
+											onClick: @_switchTab.bind null, 'index'
+										},
+											FaIcon('arrow-left left-side')
+											"Back"
+										)
+										R.button({
+											className: [
+												'btn btn-lg btn-success'
+												'animated pulse' if @_passwordsMatch()
+											].join ' '
+											disabled: not @_passwordsMatch()
+											onClick: @_install
+										}, 
+											"Complete Installation"
+											FaIcon('check right-side')
+										)
+									)
+								)
+							
+							when 'help'
+								R.div({ref: 'help'},
+									R.h1({}, "How can we help?")
+									R.p({}, "Your feedback is very important to us.")
+									R.p({},
+										"As a #{Config.productName} beta tester, you are
+										entitled to free 1-on-1 support with Dr. Gotlib"
+									)
+									R.br({})
+									R.div({className: 'btn-toolbar'},
+										R.button({
+											className: 'btn btn-lg btn-default'
+											onClick: @_switchTab.bind null, 'index'
+										},
+											FaIcon('arrow-left left-side')
+											"Back"
+										)
+										R.button({
+											className: 'btn btn-lg btn-warning'
+											onClick: @_showContactInfo
+										}, "Contact Information")
+									)
+								)
+						)
+					)
+				)
+			)
+
+		_updatePassword: (event) ->
+			@setState {password: event.target.value}
+
+		_updatePasswordConfirmation: (event) ->
+			@setState {passwordConfirmation: event.target.value}
+
+		_passwordsMatch: ->
+			return @state.password is @state.passwordConfirmation and @state.password.length > 0
+
+		_switchTab: (newTab) ->
+			# TODO: Make this some kind of flexible component/mixin
+			openTab = @state.openTab
+			isIndex = openTab is 'index'
+			
+			# Animation directions
+			offDirection = if isIndex then 'Left' else 'Right'
+			onDirection = if isIndex then 'Right' else 'Left'
+
+			# Transition out oldTab
+			$oldTab = $(@refs[openTab].getDOMNode())
+			$oldTab.attr 'class', ('animated fadeOut' + offDirection)
+
+			# Wait (.75 of anim default) and transition in the newTab
+			setTimeout(=>
+				@setState {openTab: newTab}, =>
+					$newTab = $(@refs[newTab].getDOMNode())
+					$newTab.attr 'class', ('animated fadeIn' + onDirection)
+			, 500)
+
+		_showContactInfo: ->
+			Bootbox.dialog {
+				title: "Contact Information:"
+				message: """
+					<ul>
+						<li>E-mail: david@konode.ca</li>
+						<li>Phone: 1-416-816-3422</li>
+					</ul>
+				"""
+				buttons: {
+					success: {
+						label: "Done"
+						className: 'btn btn-success'
+					}
+				}
+			}
+
+		_updateProgress: (percent, message) ->
+			if not percent and not message
+				percent = message = null
+
+			@setState =>
+				isLoading: true
+				installProgress: {percent, message}
+
+			console.log "Updated progress:", percent, message
+
+		_install: ->
+			if @state.password isnt @state.passwordConfirmation
+				Bootbox.alert "Passwords do not match"
+				return
+
+			systemAccount = null
+			adminPassword = @state.password
+
+			@_updateProgress()
+
+			Async.series [
+				(cb) =>
+					@_updateProgress 0, "Setting up database directory"
+
+					# Set up data directory, with subfolders from dataModels
+					Persist.setUpDataDirectory Config.dataDirectory, (err) =>
+						if err
+							cb err
+							return
+
+						cb()
+				(cb) =>
+					@_updateProgress 25, "Configuring accounts system \n(this may take a while...)"
+
+					# Generate mock "_system" admin user
+					Persist.Users.Account.setUp Config.dataDirectory, (err, result) =>
+						if err
+							cb err
+							return
+
+						systemAccount = result
+						cb()
+				(cb) =>
+					@_updateProgress 75, "Creating your \"admin\" user . . ."
+					# Create admin user account using systemAccount
+					Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
+						if err
+							if err instanceof Persist.Users.UserNameTakenError
+								Bootbox.alert "An admin #{Term 'user account'} already exists."
+								process.exit(1)
+								return
+
+							cb err
+							return
+
+						cb()
+			], (err) =>
+				if err
+					CrashHandler.handle err
+					return
+
+				@_updateProgress 100, "Successfully installed #{Config.productName}!"
+
+				setTimeout(=>
+					@setState {isLoading: false}, -> @props.onSuccess()
+				, 1000)
+
+
+	return NewInstallationPage
+
+module.exports = {load}
