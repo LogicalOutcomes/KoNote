@@ -24,7 +24,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 						cb new UnknownUserNameError()
 						return
 
-					cb new IOError err
+					cb err
 					return
 
 				# Find the highest (i.e. most recent) account key ID
@@ -39,7 +39,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 		(cb) ->
 			Fs.readFile Path.join(userDir, "account-key-#{accountKeyId}"), (err, buf) ->
 				if err
-					cb new IOError err
+					cb err
 					return
 
 				accountKeyInfo = JSON.parse buf
@@ -69,7 +69,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 		(cb) =>
 			Fs.readFile Path.join(userDir, 'private-info'), (err, buf) ->
 				if err
-					cb new IOError err
+					cb err
 					return
 
 				privateInfo = JSON.parse accountKey.decrypt buf
@@ -130,7 +130,6 @@ module.exports = {
 									return
 
 								progNoteDirs = result
-								console.log "progNoteDirs", progNoteDirs
 								
 								cb()
 						(cb) =>
@@ -144,9 +143,6 @@ module.exports = {
 								progNoteFolders = null
 
 								progNoteDir = Path.join(progNotesDir, progNote)
-								console.log "Added directory name to path + ", progNote
-
-								console.log "progNoteDir", progNoteDir
 
 								Async.series [
 									(cb) =>
@@ -158,14 +154,13 @@ module.exports = {
 												return
 
 											progNoteFiles = result
-											# console.log "progNoteFiles", progNoteFiles
 											cb()
 									(cb) =>
 										console.log "About to loop through progNote files, which are: ", progNoteFiles
 
 										# Check to see if there's only 1 progNoteFile, deliver error if > 1 or 0
 										
-										if progNoteFiles.length is not 1
+										unless progNoteFiles.length is 1
 											console.log "error, expect 1 prognote per directory. are you sure you are migrating from 1.3.1?"
 											return
 
@@ -173,8 +168,6 @@ module.exports = {
 										Async.eachSeries progNoteFiles, (progNoteFile, cb) ->
 
 											progNoteFilePath = Path.join(progNoteDir, progNoteFile)
-
-											console.log "progNoteFilePath : : ", progNoteFilePath
 											
 											newBuf = null
 
@@ -184,53 +177,32 @@ module.exports = {
 													# read file
 													Fs.readFile progNoteFilePath, (err, buf) ->
 														if err
-															cb new IOError err
+															cb err
 															return
 														note = JSON.parse globalEncryptionKey.decrypt buf
-														console.log "backdate: ", note.backdate
-
 														note.backdate = ''
-
 														newBuf = globalEncryptionKey.encrypt JSON.stringify note
 														cb()
 												(cb) ->
 													#write file 
 													Fs.writeFile progNoteFilePath, newBuf, (err) ->
 														if err
-															cb new IOError err
+															cb err
 															return
-														console.log "file saved"
 														cb()
 												(cb) ->
-													# rename directory (add index)
-
-													console.log "prognote folder: ", progNote
-													console.log "prognote parent folder: ", progNotesDir
-													
+													# rename directory (add index)		
 													tempProgNote = progNote.replace(".", "..")
-													
 													newProgNoteDir = Path.join(progNotesDir, tempProgNote)
-													
-													#progNoteParent = progNotesDir
-													#newProgNoteDir = tempProgNoteDir.splice(-1, '')
-													#console.log "new dir: ", newProgNoteDir
-													#newProgNotePath = newProgNoteDir.join
-													
 													
 													Fs.rename progNoteDir, newProgNoteDir, (err) ->
 														if err
 															cb err
-															console.log "Error renaming directory: ", err
+															console.error "Error renaming directory: ", err
 															return
-														console.log "directory renamed"
 														cb()
 											], cb
 
-											# obj = JSON.parse globalEncryptionKey.decrypt result
-											# obj.backdate = ''
-											# newBuf = globalEncryptionKey.encrypt JSON.stringify obj
-											# save
-											# {}
 										, cb
 								], cb
 							, cb
