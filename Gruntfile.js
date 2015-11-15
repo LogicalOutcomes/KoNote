@@ -216,6 +216,7 @@ module.exports = function(grunt) {
 			if (griffin) {
 				// do win griffin build
 				grunt.task.run('copy:main:win-griffin');
+				grunt.task.run('copy:griffin:win-griffin');
 				grunt.task.run('nwjs:win:win-griffin');
 				grunt.task.run('exec:zip:win-griffin');
 			}
