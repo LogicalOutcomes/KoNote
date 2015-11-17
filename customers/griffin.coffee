@@ -14,6 +14,14 @@ module.exports = {
 		label: "CR#"
 	}
 
+	# Specify data directory
+	dataDirectory: 'data'
+
+	analysis: {
+		# Minimum days of data (metrics/events/treatments) required to enable chart
+		minDaysOfData: 3
+	} 
+
 	# Set total timeout in (minutes),
 	# and how many mins before timeout to show warning
 	timeout: {
@@ -45,6 +53,7 @@ module.exports = {
 		'plan': "plan"
 		'target': "goal"
 		'plan target': "plan goal"
+		'treatment plan': "treatment plan"
 
 		'progress note': "progress note"
 		'quick note': "quick note"
@@ -58,5 +67,4 @@ module.exports = {
 
 	# useTemplate: 'initialAssessment'
 	useTemplate: 'clientLog'
-
 }
