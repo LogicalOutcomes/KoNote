@@ -166,7 +166,7 @@ dataModelDefinitions = [
 		schema: Joi.object().keys({
 			name: Joi.string()
 			description: Joi.string()
-			colorHex: Joi.string().regex(/^#[A-Fa-f0-9]{6}/)
+			colorKeyHSL: Joi.array().items(Joi.number()).length(3)
 		})
 	}
 
@@ -175,12 +175,10 @@ dataModelDefinitions = [
 		name: 'clientFileProgramLink'
 		collectionName: 'clientFileProgramLinks'
 		isMutable: true
-		indexes: [['clientFileId', 'programIds']]
+		indexes: [['clientFileId', 'programId']]
 		schema: Joi.object().keys({
 			clientFileId: IdSchema
-			programIds: Joi.array().items(
-				IdSchema
-			)
+			programId: IdSchema
 		})
 	}
 ]
