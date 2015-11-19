@@ -276,29 +276,28 @@ load = (win) ->
 						switch section.get('type')
 							when 'basic'
 								R.div({className: 'basic section', key: section.get('id')},
-									R.h1({
-										className: 'name'
-										onClick: @_selectBasicSection.bind null, section
-									},
-										section.get('name')
-									)
-									R.div({className: "empty #{showWhen section.get('notes').length is 0}"},
-										'(blank)'
-									)
+									if section.get('notes').length > 0
+										R.h1({
+											className: 'name'
+											onClick: @_selectBasicSection.bind null, section
+										},
+											section.get('name')
+										)
 									R.div({className: 'notes'},
 										renderLineBreaks section.get('notes')
 									)
-									R.div({className: 'metrics'},
-										(section.get('metrics').map (metric) =>
-											MetricWidget({
-												isEditable: false
-												key: metric.get('id')
-												name: metric.get('name')
-												definition: metric.get('definition')
-												value: metric.get('value')
-											})
-										).toJS()...
-									)
+									if section.get('notes').length > 0
+										R.div({className: 'metrics'},
+											(section.get('metrics').map (metric) =>
+												MetricWidget({
+													isEditable: false
+													key: metric.get('id')
+													name: metric.get('name')
+													definition: metric.get('definition')
+													value: metric.get('value')
+												})
+											).toJS()...
+										)
 								)
 							when 'plan'
 								R.div({className: 'plan section', key: section.get('id')},
