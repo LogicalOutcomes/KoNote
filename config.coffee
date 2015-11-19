@@ -68,7 +68,7 @@ module.exports = {
 	}		
 
 	# useTemplate: 'initialAssessment'
-	useTemplate: 'clientLog'
+	useTemplate: 'simpleDemoTemplate'
 
 	# David's demo templates:
 	# useTemplate: 'simpleDemoTemplate'
