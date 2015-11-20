@@ -26,12 +26,11 @@ load = (win) ->
 				data: Imm.List()				
 				columns: Imm.List()
 				rowKey: ['id']
-				rowStyle: -> return {}
 				rowIsVisible: -> return true
 			}
 
 		getInitialState: ->
-			firstColumn = @props.columns.first().dataPath
+			firstColumn = @props.columns[0].dataPath
 
 			return {
 				sortByData: firstColumn
@@ -39,7 +38,7 @@ load = (win) ->
 			}
 
 		render: ->
-			data = @props.data
+			data = @props.tableData
 			.sortBy (dataPoint) => dataPoint.getIn(@state.sortByData).toLowerCase()
 			.filter (dataPoint) => @props.rowIsVisible(dataPoint)
 
@@ -66,10 +65,7 @@ load = (win) ->
 				)
 				R.tbody({},
 					(data.map (dataPoint) =>
-						R.tr({
-							key: dataPoint.getIn(@props.rowKey)
-							style: @props.rowStyle(dataPoint)
-						},
+						R.tr({key: dataPoint.getIn(@props.rowKey)},
 							(@props.columns.map (column) =>
 								R.td({
 									key: column.name
@@ -96,7 +92,12 @@ load = (win) ->
 										R.div({className: 'btn-group'},
 											column.buttons.map (button) =>
 												if button.dialog?
-													button.data = dataPoint
+
+													if button.data?
+														button.data.rowData = dataPoint
+													else
+														button.data = dataPoint
+
 													OpenDialogButton(button)
 												else
 													R.button({

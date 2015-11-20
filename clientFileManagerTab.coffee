@@ -33,9 +33,9 @@ load = (win) ->
 				)
 				R.div({className: 'main'},
 					OrderableTable({
-						data: Imm.List @props.clientFileHeaders
-						rowKey: ['id']
-						columns: Imm.List [
+						tableData: @props.clientFileHeaders
+						sortBy: ['clientName', 'last']
+						columns: [
 							{
 								name: "Last Name"
 								dataPath: ['clientName', 'last']

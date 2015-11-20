@@ -32,6 +32,44 @@ load = (win) ->
 				userAccounts: Imm.List()
 			}
 
+		componentDidMount: ->
+			# Load Users' publicInfo, since it's not passed down from clientSelectionPage
+			userNames = null
+			userAccounts = null
+
+			Async.series [
+				(cb) =>
+					Persist.Users.listUserNames Config.dataDirectory, (err, result) =>
+						if err
+							cb err
+							return
+
+						userNames = result
+						cb()
+				(cb) =>
+					Async.map userNames.toArray(), (userName, cb) =>
+
+						Persist.Users.Account.read Config.dataDirectory, userName, (err, result) =>
+							if err
+								cb err
+								return
+
+							# Build object with only userName and publicInfo
+							userAccountObject = @_buildUserAccountObject(result)
+						
+							cb null, userAccountObject
+
+					, (err, results) =>
+						userAccounts = Imm.List(results)
+						cb()
+
+			], (err) =>
+				if err
+					CrashHandler.handle err
+					return
+
+				@setState {userAccounts}
+
 		render: ->
 			return R.div({
 				className: 'accountManagerTab'
@@ -41,11 +79,11 @@ load = (win) ->
 				)
 				R.div({className: 'main'},
 					OrderableTable({
-						data: Imm.List @state.userAccounts
+						tableData: @state.userAccounts
 						rowKey: ['userName']
 						rowIsVisible: (row) =>
 							return row.getIn(['publicInfo', 'isActive'])
-						columns: Imm.List [
+						columns: [
 							{
 								name: "User Name"
 								dataPath: ['userName']
@@ -97,47 +135,7 @@ load = (win) ->
 							@setState {userAccounts}
 					})
 				)
-			)
-
-		componentDidMount: ->
-			# Load Users publicInfo
-			userNames = null
-			userAccounts = null
-
-			Async.series [
-				(cb) =>
-					Persist.Users.listUserNames Config.dataDirectory, (err, result) =>
-						if err
-							cb err
-							return
-
-						userNames = result
-						cb()
-				(cb) =>
-					Async.map userNames.toArray(), (userName, cb) =>
-
-						Persist.Users.Account.read Config.dataDirectory, userName, (err, result) =>
-							if err
-								cb err
-								return
-
-							# Build object with only userName and publicInfo
-							userAccountObject = @_buildUserAccountObject(result)
-						
-							cb null, userAccountObject
-
-					, (err, results) =>
-						userAccounts = Imm.List(results)
-						cb()
-
-			], (err) =>
-				if err
-					CrashHandler.handle err
-					return
-
-				@setState {
-					userAccounts
-				}
+			)		
 
 		_buildUserAccountObject: (userAccount) ->
 			return Imm.fromJS {
@@ -307,7 +305,7 @@ load = (win) ->
 				confirmPassword: ''
 			}
 		render: ->
-			Dialog({
+			return Dialog({
 				title: "Reset user password"
 				onClose: @_cancel
 			},
@@ -359,7 +357,7 @@ load = (win) ->
 				Bootbox.alert "Passwords do not match!"
 				return
 
-			userName = @props.userName
+			userName = @props.data.get('userName')
 			password = @state.password
 
 			@setState {isLoading: true}

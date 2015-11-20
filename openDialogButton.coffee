@@ -18,6 +18,7 @@ load = (win) ->
 		getDefaultProps: ->
 			return {
 				onSuccess: ->
+				data: null
 			}
 
 		getInitialState: ->
@@ -50,7 +51,7 @@ load = (win) ->
 					@props.onSuccess(arg)
 					@setState {isOpen: false}
 					
-				data: @props.data if @props.data?
+				data: @props.data
 			})
 
 	return OpenDialogButton

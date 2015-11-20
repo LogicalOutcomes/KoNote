@@ -34,22 +34,15 @@ load = (win) ->
 			}
 
 		render: ->
-			# noData = @props.programs.size is 0
-
-			console.log "@props.programs", @props.programs
-
 			return R.div({className: 'programManagerTab'},
 				R.div({className: 'header'},
 					R.h1({}, Term 'Programs')
 				)
 				R.div({className: 'main'},
 					OrderableTable({
-						data: Imm.List @props.programs
-						rowStyle: (row) =>
-							return {
-								background: row.get('colorHex')
-							}
-						columns: Imm.List [
+						tableData: @props.programs
+						sortBy: ['name']
+						columns: [
 							{
 								name: "Program Name"
 								dataPath: ['name']
@@ -66,6 +59,9 @@ load = (win) ->
 										className: 'btn btn-default'
 										text: "Modify"
 										dialog: EditProgramDialog
+										data: {
+											clientFileProgramLinks: @props.clientFileProgramLinks
+										}
 									}
 								]
 							}
