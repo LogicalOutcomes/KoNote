@@ -175,10 +175,11 @@ dataModelDefinitions = [
 		name: 'clientFileProgramLink'
 		collectionName: 'clientFileProgramLinks'
 		isMutable: true
-		indexes: [['clientFileId', 'programId']]
+		indexes: [['clientFileId'], ['programId'], ['isActive']]
 		schema: Joi.object().keys({
 			clientFileId: IdSchema
 			programId: IdSchema
+			isActive: Joi.boolean()
 		})
 	}
 ]
