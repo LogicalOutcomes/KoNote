@@ -32,6 +32,7 @@ load = (win) ->
 				isLoading: true
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
+				clientFileProgramLinks: Imm.List()
 			}
 
 		init: ->
@@ -97,7 +98,7 @@ load = (win) ->
 						clientFileProgramLinkHeaders = result
 						cb()
 				(cb) =>
-					Async.map clientFileProgramLinks.toArray(), (linkHeader, cb) =>
+					Async.map clientFileProgramLinkHeaders.toArray(), (linkHeader, cb) =>
 						linkId = linkHeader.get('id')
 
 						ActiveSession.persist.clientFileProgramLinks.readLatestRevisions linkId, 1, cb
@@ -119,7 +120,7 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				# Data loaded successfully, fill up state
+				# Data loaded successfully, load into state
 				@setState {
 					isLoading: false
 					programs
