@@ -136,6 +136,7 @@ load = (win) ->
 									ProgEventsWidget({
 										format: 'small'
 										data: progEvent
+										key: progEvent.get('id')
 									})
 							)
 						)

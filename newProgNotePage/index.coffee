@@ -200,9 +200,9 @@ load = (win, {clientFileId}) ->
 
 				# Done loading data, we can generate the prognote now
 				@setState {						
-						isLoading: false
-						progNote
-					}
+					isLoading: false
+					progNote
+				}
 
 		_createProgNoteFromTemplate: (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
