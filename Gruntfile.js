@@ -88,6 +88,7 @@ module.exports = function(grunt) {
 							'!.git/**',
 							'!data/**',
 							'!customers/**',
+							'!config-dev.coffee',
 							'!README.md'
 						],
 						dest: '../konote-builds/<%= grunt.task.current.args[0] %>/',
@@ -158,7 +159,7 @@ module.exports = function(grunt) {
     	},
 		// format the osx folder icon for the dmg, zip windows build, cleanup tmp files
 		exec: {
-			prep: "mv ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/osx64 ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/KoNote",
+			prep: "mv ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/osx64 ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote",
 			append: "Rez -append icon.rsrc -o ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/$'Icon\r'",
 			set: "SetFile -a C ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote",
 			hide: "SetFile -a V $'../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/Icon\r'",
@@ -177,7 +178,7 @@ module.exports = function(grunt) {
 					icon: 'icon.icns',
 					background: 'background.tiff', 'icon-size': 104,
 					contents: [
-						{x: 130, y: 150, type: 'file', path: '../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote'},
+						{x: 130, y: 150, type: 'file', path: '../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},
 						{x: 320, y: 150, type: 'link', path: '/Applications'}
 					]
 				},
@@ -216,6 +217,7 @@ module.exports = function(grunt) {
 			if (griffin) {
 				// do win griffin build
 				grunt.task.run('copy:main:win-griffin');
+				grunt.task.run('copy:griffin:win-griffin');
 				grunt.task.run('nwjs:win:win-griffin');
 				grunt.task.run('exec:zip:win-griffin');
 			}
@@ -224,12 +226,12 @@ module.exports = function(grunt) {
 			if (generic) {
 				// do mac generic build
 				grunt.task.run('copy:main:mac-generic');
-				grunt.task.run('copy:osx:mac-generic');
+				//grunt.task.run('copy:osx:mac-generic');
 				grunt.task.run('nwjs:mac:mac-generic');
-				grunt.task.run('exec:prep:mac-generic');
-				grunt.task.run('exec:append:mac-generic');
-				grunt.task.run('exec:set:mac-generic');
-				grunt.task.run('exec:hide:mac-generic');
+				//grunt.task.run('exec:prep:mac-generic');
+				//grunt.task.run('exec:append:mac-generic');
+				//grunt.task.run('exec:set:mac-generic');
+				//grunt.task.run('exec:hide:mac-generic');
 				if (process.platform == 'darwin') {
 					grunt.task.run('appdmg:main:mac-generic');
 				}

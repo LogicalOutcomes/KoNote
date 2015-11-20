@@ -40,13 +40,14 @@ We merge our release branch to master, tag it, and delete the release branch. Wh
 2. `git pull --rebase` / `g plr`
 3. `git merge --no-ff release-vX.X.X` / `g m release-vX.X.X`
 4. `npm version X.X.X` (updates package.json version, commits and tags)
-5. `git push --tags` (pushes all tags to remote)
-6. `git branch -d release-vX.X.X` / `g b -d release-vX.X.X`
-7. `git push origin :release-vX.X.X` (deletes branch from remote)
-8. `git checkout develop` / `g dv`
-9. `git merge --no-ff master` / `g m master`
-10. `git push` (push everything else)
-11. Celebrate!
+5. `git push`
+6. `git push --tags` (pushes all tags to remote)
+7. `git branch -d release-vX.X.X` / `g b -d release-vX.X.X`
+8. `git push origin :release-vX.X.X` (deletes branch from remote)
+9. `git checkout develop` / `g dv`
+10. `git merge --no-ff master` / `g m master`
+11. `git push` (push everything else)
+12. Celebrate!
 
 ### Packaging for Distribution
 

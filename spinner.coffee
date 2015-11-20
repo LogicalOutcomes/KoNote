@@ -13,10 +13,25 @@ load = (win) ->
 
 	Spinner = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+
+		componentDidChange: (oldProps, oldState) ->
+			# Inform console about loading progress
+			
+			if oldProps.message isnt @props.message
+				console.log "Message:", @props.message
+
+			if oldProps.percent isnt @props.percent
+				console.log "Percent", @props.percent + "%"
+
 		render: ->
 			isVisible = @props.isVisible isnt false
 
-			spinner = R.div({className: "spinnerComponent #{showWhen isVisible}"},
+			spinner = R.div({
+				className: [
+					"spinnerComponent #{showWhen isVisible}"
+					'animated fadeOut' if @props.percent? and @props.percent >= 100
+				].join ' '
+			},
 				R.div({className: 'inner'},
 					R.div({className: 'container container1'},
 						R.div({className: 'circle circle1'})
@@ -37,6 +52,30 @@ load = (win) ->
 						R.div({className: 'circle circle4'})
 					)
 				)
+
+				R.div({
+					className: [
+						'infoContainer'
+						# 'animated flash' if @props.percent? and @props.percent >= 100
+					].join ' '
+				},
+					if @props.message?
+						R.div({className: 'message'}, @props.message)
+
+					if @props.percent?
+						R.div({className: 'progress'}, 
+							R.div({
+								className: [
+									'progress-bar progress-bar-striped active'
+									'progress-bar-success' if @props.percent >= 100
+								].join ' '
+								style: {
+									width: @props.percent + "%"
+								}
+							})
+						)
+				)				
+
 			)
 
 			unless @props.isOverlay

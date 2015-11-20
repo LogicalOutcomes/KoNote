@@ -28,9 +28,11 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				selectedItem: null
+				backdate: ''
 			}
 
 		componentDidMount: ->
+			
 			quickNoteToggle = $('.addQuickNote')
 			quickNoteToggle.data 'isVisible', false
 			quickNoteToggle.popover {
@@ -39,8 +41,9 @@ load = (win) ->
 				trigger: 'manual'
 				content: '''
 					<textarea class="form-control"></textarea>
-					<div class="buttonBar">
-						<button class="cancel btn btn-default"><i class="fa fa-trash"></i> Discard</button>
+					<div class="buttonBar form-inline">
+						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
+						<button class="cancel btn btn-danger"><i class="fa fa-trash"></i> Discard</button>
 						<button class="save btn btn-primary"><i class="fa fa-check"></i> Save</button>
 					</div>
 				'''
@@ -153,7 +156,7 @@ load = (win) ->
 			else
 				openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
 
-		_toggleQuickNotePopover: ->			
+		_toggleQuickNotePopover: ->
 			quickNoteToggle = $('.addQuickNote:not(.hide)')
 
 			if quickNoteToggle.data('isVisible')
@@ -168,7 +171,8 @@ load = (win) ->
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
-					@props.createQuickNote popover.find('textarea').val(), (err) =>
+					@props.createQuickNote popover.find('textarea').val(), @state.backdate, (err) =>
+						@setState {backdate: ''}
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
@@ -182,6 +186,16 @@ load = (win) ->
 						quickNoteToggle.popover('hide')
 						quickNoteToggle.data('isVisible', false)
 
+				popover.find('.backdate.date').datetimepicker({
+					format: 'MMM-DD-YYYY h:mm A'
+					defaultDate: Moment()
+					maxDate: Moment()
+					widgetPositioning: {
+						vertical: 'bottom'
+					}
+				}).on 'dp.change', (e) =>
+					@setState {backdate: Moment(e.date).format(Persist.TimestampFormat)}
+				
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
 					quickNoteToggle.popover('hide')
@@ -200,8 +214,12 @@ load = (win) ->
 			R.div({className: 'basic progNote'},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
-						Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
-						.format 'MMMM D, YYYY [at] HH:mm'
+						if @props.progNote.get('backdate') != ''
+							Moment(@props.progNote.get('backdate'), Persist.TimestampFormat)
+							.format('MMMM D, YYYY') + " (late entry)"
+						else
+							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							.format 'MMMM D, YYYY [at] HH:mm'
 					)
 					R.div({className: 'author'},
 						' by '
@@ -230,8 +248,12 @@ load = (win) ->
 			R.div({className: 'full progNote'},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
-						Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
-						.format 'MMMM D, YYYY [at] HH:mm'
+						if @props.progNote.get('backdate') != ''
+							Moment(@props.progNote.get('backdate'), Persist.TimestampFormat)
+							.format('MMMM D, YYYY') + " (late entry)"
+						else
+							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							.format 'MMMM D, YYYY [at] HH:mm'
 					)
 					R.div({className: 'author'},
 						' by '
@@ -254,29 +276,28 @@ load = (win) ->
 						switch section.get('type')
 							when 'basic'
 								R.div({className: 'basic section', key: section.get('id')},
-									R.h1({
-										className: 'name'
-										onClick: @_selectBasicSection.bind null, section
-									},
-										section.get('name')
-									)
-									R.div({className: "empty #{showWhen section.get('notes').length is 0}"},
-										'(blank)'
-									)
+									if section.get('notes').length > 0
+										R.h1({
+											className: 'name'
+											onClick: @_selectBasicSection.bind null, section
+										},
+											section.get('name')
+										)
 									R.div({className: 'notes'},
 										renderLineBreaks section.get('notes')
 									)
-									R.div({className: 'metrics'},
-										(section.get('metrics').map (metric) =>
-											MetricWidget({
-												isEditable: false
-												key: metric.get('id')
-												name: metric.get('name')
-												definition: metric.get('definition')
-												value: metric.get('value')
-											})
-										).toJS()...
-									)
+									if section.get('notes').length > 0
+										R.div({className: 'metrics'},
+											(section.get('metrics').map (metric) =>
+												MetricWidget({
+													isEditable: false
+													key: metric.get('id')
+													name: metric.get('name')
+													definition: metric.get('definition')
+													value: metric.get('value')
+												})
+											).toJS()...
+										)
 								)
 							when 'plan'
 								R.div({className: 'plan section', key: section.get('id')},

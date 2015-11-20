@@ -85,6 +85,8 @@ load = (win) ->
 				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat metricValues.map (metric) ->
 				Moment(metric.get('timestamp'), Persist.TimestampFormat).startOf('day').valueOf()
+			.concat metricValues.map (metric) ->
+				Moment(metric.get('backdate'), Persist.TimestampFormat).startOf('day').valueOf()
 			# Filter to unique days, and sort
 			.toOrderedSet().sort()
 
@@ -139,7 +141,7 @@ load = (win) ->
 							})
 							R.div({className: 'valueDisplay'},
 								(@state.timeSpan.map (index) =>
-									date = Moment(@state.xTicks.get(index)).format('dddd - Do MMMM - YYYY')
+									date = Moment(@state.xTicks.get(index)).format('MMM Do - YYYY')
 									return R.div({key: index},
 										R.span({}, date)
 									)
@@ -616,7 +618,10 @@ load = (win) ->
 				return Imm.List()
 			when 'full'
 				return progNote.get('sections').flatMap (section) ->
-					return extractMetricsFromProgNoteSection section, progNote.get('timestamp')
+					if progNote.get('backdate') != ''
+						return extractMetricsFromProgNoteSection section, progNote.get('backdate')
+					else
+						return extractMetricsFromProgNoteSection section, progNote.get('timestamp')
 			else
 				throw new Error "unknown prognote type: #{JSON.stringify progNote.get('type')}"
 

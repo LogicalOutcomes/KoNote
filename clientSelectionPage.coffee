@@ -191,8 +191,11 @@ load = (win) ->
 		componentDidUpdate: (oldProps, oldState) ->
 			# If loading just finished
 			if oldProps.isLoading and not @props.isLoading
+
 				setTimeout(=>
-					@refs.searchBox.getDOMNode().focus()
+					$searchBox = $(@refs.searchBox.getDOMNode())
+					$searchBox.focus()
+					@_attachKeyBindings($searchBox)
 				, 100)
 
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
@@ -205,67 +208,22 @@ load = (win) ->
 			@_refreshResults()
 			@_attachKeyBindings()
 
-		_attachKeyBindings: ->
-			searchBox = @refs.searchBox.getDOMNode()
-
-			_attachKeyBindings: ->
-			searchBox = @refs.searchBox.getDOMNode()
-
-			# Key-bindings for searchBox
-			$(searchBox).on 'keydown', (event) =>
-				# Don't need to see this unless in full search view
-				return if not @state.isSmallHeaderSet
-
-				switch event.which
-					when 40 # Down arrow
-						event.preventDefault()
-						@_shiftHoverClientId(1)
-					when 38 # Up arrow
-						event.preventDefault()
-						@_shiftHoverClientId(-1)
-					when 27 # Esc
-						@setState hoverClientId: null
-					when 13 # Enter
-						$('.hover')[0].click()
-						return false
-
-		_shiftHoverClientId: (modifier) ->
-			hoverClientId = null
-			queryResults = @state.queryResults
-
-			# Get our current index position
-			currentResultIndex = queryResults.findIndex (result) =>
-				return result.get('id') is @state.hoverClientId
-
-			nextIndex = currentResultIndex + modifier
-
-			# Skip to first/last if first-run or next is non-existent
-			if not queryResults.get(nextIndex)? or not @state.hoverClientId?
-				if modifier > 0
-					hoverClientId = queryResults.first().get('id')
-				else
-					hoverClientId = queryResults.last().get('id')
-
-				@setState {hoverClientId}
-				return
-
-			# No wacky skip behaviour needed, move to next/previous result
-			hoverClientId = queryResults.get(nextIndex).get('id')
-			@setState {hoverClientId}
 
 		render: ->
-			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
-
-			return R.div({
-					id: 'clientSelectionPage'
-					className: if @state.menuIsOpen then 'openMenu' else ''
-				},
-				(if @props.isLoading
+			if @props.isLoading
+				return R.div({id: 'clientSelectionPage'},
 					Spinner {
 						isOverlay: true
 						isVisible: true
 					}
 				)
+
+			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet			
+
+			return R.div({
+					id: 'clientSelectionPage'
+					className: if @state.menuIsOpen then 'openMenu' else ''
+				},
 				R.a({
 					id: 'expandMenuButton'
 					className: showWhen not @state.managerLayer?
@@ -382,6 +340,52 @@ load = (win) ->
 					)
 				)
 			)
+
+
+		_attachKeyBindings: ($searchBox) ->
+			# Key-bindings for searchBox
+			$searchBox.on 'keydown', (event) =>
+				# Don't need to see this unless in full search view
+				return if not @state.isSmallHeaderSet
+
+				switch event.which
+					when 40 # Down arrow
+						event.preventDefault()
+						@_shiftHoverClientId(1)
+					when 38 # Up arrow
+						event.preventDefault()
+						@_shiftHoverClientId(-1)
+					when 27 # Esc
+						@setState hoverClientId: null
+					when 13 # Enter
+						$active = $('.active')
+						return unless $active.length
+						$active[0].click()
+						return false
+
+		_shiftHoverClientId: (modifier) ->
+			hoverClientId = null
+			queryResults = @state.queryResults
+
+			# Get our current index position
+			currentResultIndex = queryResults.findIndex (result) =>
+				return result.get('id') is @state.hoverClientId
+
+			nextIndex = currentResultIndex + modifier
+
+			# Skip to first/last if first-run or next is non-existent
+			if not queryResults.get(nextIndex)? or not @state.hoverClientId?
+				if modifier > 0
+					hoverClientId = queryResults.first().get('id')
+				else
+					hoverClientId = queryResults.last().get('id')
+
+				@setState {hoverClientId}
+				return
+
+			# No wacky skip behaviour needed, move to next/previous result
+			hoverClientId = queryResults.get(nextIndex).get('id')
+			@setState {hoverClientId}
 
 		_renderUserMenuList: (isAdmin) ->
 			return R.ul({},

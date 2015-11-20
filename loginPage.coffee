@@ -16,6 +16,8 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	NewInstallationPage = require('./newInstallationPage').load(win)
+
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
 	Dialog = require('./dialog').load(win)
@@ -28,6 +30,7 @@ load = (win) ->
 			return {
 				isLoading: true
 				isSetUp: false
+				isNewInstallation: false
 			}
 
 		init: ->			
@@ -47,98 +50,43 @@ load = (win) ->
 			@props.closeWindow()
 
 		render: ->
+			unless @state.isSetUp
+				return NewInstallationPage({
+					onSuccess: =>
+						@setState {isSetUp: true}
+				})
+
 			return new LoginPageUi({
 				ref: 'ui'
 				isLoading: @state.isLoading
 				isSetUp: @state.isSetUp
+				isNewInstallation: @state.isNewInstallation
 				login: @_login
 			})
 
 		_checkSetUp: ->
-			adminPassword = null
-			systemAccount = null
+			console.log "Probing setup..."
 
-			Async.series [
-				(cb) =>
-					Persist.Users.isAccountSystemSetUp Config.dataDirectory, (err, isSetUp) =>
-						@setState {isLoading: false}
+			# Check to make sure the dataDir exists and has an account system
+			Persist.Users.isAccountSystemSetUp Config.dataDirectory, (err, isSetUp) =>
+				@setState {isLoading: false}
 
-						if err
-							cb err
-							return
-
-						if isSetUp
-							# Already set up, no need to continue here
-							@setState {isSetUp: true}, =>
-								@refs.ui.isSetUp()
-							return
-
-						# Data directory hasn't been set up yet.
-						cb()
-				(cb) =>
-					# TODO: Move to ui
-					Bootbox.confirm """
-						#{Config.productName} could not find any data.  Unless this is your first
-						time using #{Config.productName}, this may indicate a problem.  Would you
-						like to set up #{Config.productName} from scratch?
-					""", (result) =>
-						unless result
-							process.exit(0)
-							return
-
-						cb()
-				(cb) =>
-					containerElem = $('#container')[0]
-
-					React.render NewInstallationDialog({
-						onSuccess: (password) ->
-							adminPassword = password
-							cb()
-					}), containerElem
-
-				(cb) =>
-					@setState {isLoading: true}
-					Persist.setUpDataDirectory Config.dataDirectory, (err) =>
-						@setState {isLoading: false}
-
-						if err
-							cb err
-							return
-
-						cb()
-				(cb) =>
-					@setState {isLoading: true}
-					Persist.Users.Account.setUp Config.dataDirectory, (err, result) =>
-						@setState {isLoading: false}
-
-						if err
-							cb err
-							return
-
-						systemAccount = result
-						cb()
-				(cb) =>
-					@setState {isLoading: true}
-					Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
-						@setState {isLoading: false}
-
-						if err
-							if err instanceof Persist.Users.UserNameTakenError
-								Bootbox.alert "An admin #{Term 'user account'} already exists."
-								process.exit(1)
-								return
-
-							cb err
-							return
-
-						cb()
-			], (err) =>
 				if err
 					CrashHandler.handle err
 					return
 
-				@refs.ui.prepareForAdmin()
-				@setState {isSetUp: true}
+				if isSetUp					
+					# Already set up, no need to continue here
+					console.log "Set up confirmed..."
+					@setState {isSetUp: true}
+					return
+
+				# Falsy isSetUp triggers NewInstallationPage
+				console.log "Not set up, redirecting to installation page..."				
+				@setState {
+					isSetUp: false
+					isNewInstallation: true
+				}
 
 		_login: (userName, password) ->			
 			@setState => isLoading: true
@@ -178,25 +126,37 @@ load = (win) ->
 				password: ''
 			}
 
-		prepareForAdmin: ->
-			@setState {userName: 'admin'}
-			@refs.passwordField.getDOMNode().focus()
-
-		isSetUp: ->
-			unless Config.autoLogin?
+		componentDidMount: ->
+			unless Config.autoLogin? or (@props.isSetUp and @props.isNewInstallation)
 				setTimeout(=>
 					@refs.userNameField.getDOMNode().focus()
 				, 100)
 
+			if @props.isNewInstallation
+				@setState {
+					userName: 'admin'
+				}, ->
+					@refs.passwordField.getDOMNode().focus()
+
 		onLoginError: (type) ->
 			switch type
 				when 'UnknownUserNameError'
-					Bootbox.alert "Unknown user name.  Please try again."
+					Bootbox.alert "Unknown user name.  Please try again.", =>
+						setTimeout(=>
+							@refs.userNameField.getDOMNode().focus()
+						, 100)
 				when 'IncorrectPasswordError'
-					Bootbox.alert "Incorrect password.  Please try again."
-					@setState {password: ''}
+					Bootbox.alert "Incorrect password.  Please try again.", =>
+						@setState {password: ''}
+						setTimeout(=>
+							@refs.passwordField.getDOMNode().focus()
+						, 100)
 				when 'DeactivatedAccountError'
-					Bootbox.alert "This user account has been deactivated."
+					Bootbox.alert "This user account has been deactivated.", =>
+						@refs.userNameField.getDOMNode().focus()
+						setTimeout(=>
+							@refs.userNameField.getDOMNode().focus()
+						, 100)
 				else
 					throw new Error "Invalid Login Error"
 
@@ -213,7 +173,7 @@ load = (win) ->
 				})
 				R.form({className: "loginForm #{showWhen @props.isSetUp}"},
 					R.div({className: 'form-group'},
-						R.label({}, "User name")
+						R.label({}, "Username")
 						R.input({
 							className: 'form-control'
 							ref: 'userNameField'
@@ -249,57 +209,6 @@ load = (win) ->
 			@setState {userName: event.target.value}
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
-
-	NewInstallationDialog = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]
-		getInitialState: ->
-			return {
-				adminPassword: ''
-				adminPasswordConfirm: ''
-			}
-
-		render: ->
-			return Dialog({
-				title: "Create Administrator Account"
-				disableBackgroundClick: true
-			},
-				R.div({className: 'newInstallationDialog'},
-					R.div({className: 'form-group'},
-						R.label({},
-							"Set password"						
-							R.input({
-								type: 'password'
-								className: 'form-control'
-								onChange: @_updateAdminPassword
-							})
-						)
-					)
-					R.div({className: 'form-group'},
-						R.label({},
-							"Confirm password"						
-							R.input({
-								type: 'password'
-								className: 'form-control'
-								onChange: @_updateAdminPasswordConfirm
-							})
-						)
-					)
-					R.div({className: 'btn-toolbar'},
-						R.button({
-							className: 'btn btn-success'
-							disabled: @state.adminPassword.length is 0 or @state.adminPassword isnt @state.adminPasswordConfirm
-						},
-							"Finish Installation"
-						)
-					)
-				)
-			)
-
-		_updateAdminPassword: (event) ->
-			@setState {adminPassword: event.target.value}
-
-		_updateAdminPasswordConfirm: (event) ->
-			@setState {adminPasswordConfirm: event.target.value}
 
 
 	return LoginPage

@@ -92,16 +92,16 @@ load = (win, {clientFileId}) ->
 			console.log "Renewing all data......"
 
 			# Sync check
-			fileIsUnsync =
+			fileIsUnsync = null
 			# File data
-			clientFile =
-			planTargetsById =
-			planTargetHeaders =
-			progNoteHeaders =
-			progressNotes =
-			progEventHeaders =
-			progressEvents =
-			metricHeaders =
+			clientFile = null
+			planTargetsById = null
+			planTargetHeaders = null
+			progNoteHeaders = null
+			progressNotes = null
+			progEventHeaders = null
+			progressEvents = null
+			metricHeaders = null
 			metricsById = null
 
 			checkFileSync = (newData, oldData) => 
@@ -167,7 +167,16 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						progressNotes = Imm.List results
+						# sort by date (backdate if present)
+						# datetimeformat converted to int for safe sorting
+						Async.sortBy results, ((item, callback) ->
+							if item.get('backdate') != ''
+								sortDate = item.get('backdate').replace(/[^\d]/g, '')
+							else
+								sortDate = item.get('timestamp').replace(/[^\d]/g, '')
+							callback err, sortDate
+						), (err, results) ->
+							progressNotes = Imm.List results
 
 						# checkFileSync progressNotes, @state.progressNotes
 						cb()
@@ -392,22 +401,24 @@ load = (win, {clientFileId}) ->
 				# Persist operations will automatically trigger event listeners
 				# that update the UI.
 
-		_createQuickNote: (notes, cb) ->
-			note = Imm.fromJS {
-				type: 'basic'
-				clientFileId
-				notes
-			}
+		_createQuickNote: (notes, backdate, cb) ->
+			if notes != ''
+				note = Imm.fromJS {
+					type: 'basic'
+					clientFileId
+					notes
+					backdate
+				}
 
-			@setState (state) => {isLoading: true}
-			global.ActiveSession.persist.progNotes.create note, (err) =>
-				@setState (state) => {isLoading: false}
+				@setState (state) => {isLoading: true}
+				global.ActiveSession.persist.progNotes.create note, (err) =>
+					@setState (state) => {isLoading: false}
 
-				if err
-					cb err
-					return
+					if err
+						cb err
+						return
 
-				cb()
+					cb()
 
 		getPageListeners: ->
 			return {

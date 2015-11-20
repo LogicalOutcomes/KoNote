@@ -45,6 +45,7 @@ load = (win) ->
 							className: 'form-control'
 							onChange: @_updateFirstName
 							value: @state.firstName
+							onKeyDown: @_onEnterKeyDown
 						})
 					)
 					R.div({className: 'form-group'},
@@ -62,6 +63,7 @@ load = (win) ->
 							className: 'form-control'
 							onChange: @_updateLastName
 							value: @state.lastName
+							onKeyDown: @_onEnterKeyDown
 						})
 					)
 					if Config.clientFileRecordId.isEnabled
@@ -72,6 +74,7 @@ load = (win) ->
 								onChange: @_updateRecordId
 								value: @state.recordNumber
 								placeholder: "(optional)"
+								onKeyDown: @_onEnterKeyDown
 							})
 						)
 					R.div({className: 'btn-toolbar'},
@@ -97,6 +100,9 @@ load = (win) ->
 			@setState {lastName: event.target.value}
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
+		_onEnterKeyDown: (event) ->
+			if event.which is 13 and @state.firstName and @state.lastName
+				@_submit()
 		_submit: ->
 			first = @state.firstName
 			middle = @state.middleName
