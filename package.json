@@ -53,7 +53,6 @@
     "string.prototype.includes": "^1.0.0",
     "string.prototype.startswith": "^0.2.0",
     "stylus": "^0.50.0",
-    "tinycolor2": "^1.1.2",
     "typeahead.js": "^0.10.5",
     "underscore": "^1.8.3"
   },
