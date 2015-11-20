@@ -49,6 +49,7 @@ load = (win) ->
 			return ClientSelectionPageUi({
 				isLoading: @state.isLoading
 				clientFileHeaders: @state.clientFileHeaders
+				clientFileProgramLinks: @state.clientFileProgramLinks
 				programs: @state.programs
 			})
 
@@ -56,6 +57,8 @@ load = (win) ->
 			clientFileHeaders = null
 			programHeaders = null
 			programs = null
+			clientFileProgramLinkHeaders = null
+			clientFileProgramLinks = null
 
 			Async.series [
 				(cb) =>
@@ -86,6 +89,25 @@ load = (win) ->
 
 						programs = Imm.List(results).map (program) -> stripMetadata program.get(0)
 						cb()
+				(cb) =>
+					ActiveSession.persist.clientFileProgramLinks.list (err, result) =>
+						if err
+							cb err
+							return
+						clientFileProgramLinkHeaders = result
+						cb()
+				(cb) =>
+					Async.map clientFileProgramLinks.toArray(), (linkHeader, cb) =>
+						linkId = linkHeader.get('id')
+
+						ActiveSession.persist.clientFileProgramLinks.readLatestRevisions linkId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
+						cb()
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -102,10 +124,12 @@ load = (win) ->
 					isLoading: false
 					programs
 					clientFileHeaders
+					clientFileProgramLinks
 				}
 
 		getPageListeners: ->
 			return {
+
 				'create:clientFile': (newFile) =>
 					clientFileHeaders = @state.clientFileHeaders.push newFile
 					@setState {clientFileHeaders}, =>
@@ -113,13 +137,16 @@ load = (win) ->
 							page: 'clientFile'
 							clientFileId: newFile.get('id')
 						}
+
+				# TODO: Create a function for this kind of listening/updating
+
 				'create:program createRevision:program': (newRev) =>
 					programId = newRev.get('id')
-					# Updating or creating new program?
-					existingProgram = @state.programs.find (program) =>
-						program.get('id') is programId
+					# Updating or creating program?
+					existingProgram = @state.programs
+					.find (program) -> program.get('id') is programId
 
-					@setState (state) =>
+					@setState (state) ->
 						if existingProgram?
 							programIndex = state.programs.indexOf existingProgram
 							programs = state.programs.set programIndex, newRev
@@ -127,6 +154,22 @@ load = (win) ->
 							programs = state.programs.push newRev
 
 						return {programs}
+
+				'create:clientFileProgramLink createRevision:clientFileProgramLink': (newRev) =>
+					linkId = newRev.get('id')
+					# Updating or creating link?
+					existingLink = @state.clientFileProgramLinks
+					.find (link) -> link.get('id') is linkId
+
+					@setState (state) ->
+						if existingLink?
+							linkIndex = state.clientFileProgramLinks.indexOf existingLink
+							links = state.links.set linkIndex, newRev
+						else
+							links = state.links.push newRev
+
+						return {links}
+
 			}
 
 	ClientSelectionPageUi = React.createFactory React.createClass
@@ -234,10 +277,13 @@ load = (win) ->
 				},
 					(if @state.managerLayer?
 						ManagerLayer({
+							# Settings
 							name: @state.managerLayer
-							clientFileHeaders: @props.clientFileHeaders
-							programs: @props.programs
 							onClose: @_updateManagerLayer.bind null, null
+							# Data
+							clientFileHeaders: @props.clientFileHeaders							
+							programs: @props.programs
+							clientFileProgramLinks: @props.clientFileProgramLinks							
 						})
 					)
 					R.div({
