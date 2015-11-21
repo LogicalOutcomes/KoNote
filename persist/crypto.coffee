@@ -445,7 +445,15 @@ class PublicKey
 		# END NW.js v0.12+ code
 
 generateSalt = ->
+	# 128-bit salt
+	# probably overkill
 	return Crypto.randomBytes(16).toString('hex')
+
+generatePassword = ->
+	# 96 bits of entropy
+	# Uses uppercase and lowercase alphanumeric, underscore (_) and hyphen (-)
+	# Warning: this method is not constant-time
+	return Base64url.encode Crypto.randomBytes(12)
 
 # A hard-coded key for obfuscating data
 # WARNING: do not use this for sensitive data!
@@ -506,6 +514,7 @@ module.exports = {
 	PrivateKey
 	PublicKey
 	generateSalt
+	generatePassword
 	obfuscate
 	deobfuscate
 }
