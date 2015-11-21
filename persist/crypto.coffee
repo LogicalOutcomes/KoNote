@@ -162,7 +162,6 @@ class SymmetricEncryptionKey
 			decipher.final()
 		]
 
-# TODO security review still needed for PrivateKey and PublicKey
 class PrivateKey
 	# PRIVATE CONSTRUCTOR
 	# Do not call this directly.
