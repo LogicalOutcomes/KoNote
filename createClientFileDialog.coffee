@@ -125,6 +125,7 @@ load = (win) ->
 
 				if err
 					if err instanceof Persist.IOError
+						console.error err
 						Bootbox.alert """
 							Please check your network connection and try again.
 						"""
