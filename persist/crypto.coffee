@@ -5,6 +5,8 @@
 # This module defines all cryptographic operations (encryption, digital
 # signatures, etc) used in this project.
 #
+# Full API documentation is available on the wiki.
+#
 # WARNING: This code is delicate.  I strongly recommend avoiding changing this
 # code if possible.  Ask Tim McLean <tim@timmclean.net> to review any and all
 # changes, even refactors.
