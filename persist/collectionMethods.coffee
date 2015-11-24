@@ -3,6 +3,8 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Async = require 'async'
+Base64url = require 'base64url'
+BufferEq = require 'buffer-equal-constant-time'
 Fs = require 'fs'
 Joi = require 'joi'
 Imm = require 'immutable'
@@ -84,10 +86,12 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 						cb err
 						return
 
+					fileName = createObjectFileName(obj, modelDef.indexes)
+					encryptedFileName = Base64url.encode session.globalEncryptionKey.encrypt fileName
 					destObjDir = Path.join(
 						parentDir
 						modelDef.collectionName
-						createObjectFileName(obj, modelDef.indexes)
+						encryptedFileName
 					)
 					cb()
 			(cb) ->
@@ -113,8 +117,12 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 						cb()
 				, cb
 			(cb) ->
-				revFile = Path.join(objDir, createRevisionFileName(obj))
-				writeObjectFile obj, revFile, cb
+				revFileName = createRevisionFileName(obj)
+				encryptedRevFileName = Base64url.encode session.globalEncryptionKey.encrypt revFileName
+
+				revFilePath = Path.join(objDir, encryptedRevFileName)
+
+				writeObjectFile obj, revFilePath, cb
 			(cb) ->
 				objDirOp.commit cb
 		], (err) ->
@@ -162,7 +170,10 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 			result = Imm.List(fileNames)
 				.map (fileName) ->
-					[indexValues..., id] = decodeFileName(fileName, modelDef.indexes.length + 1)
+					decryptedFileName = session.globalEncryptionKey.decrypt(
+						Base64url.toBuffer fileName
+					)
+					[indexValues..., id] = decodeFileName(decryptedFileName, modelDef.indexes.length + 1)
 
 					result = Imm.Map({id, _dirPath: Path.join(collectionDir, fileName)})
 
@@ -227,24 +238,33 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					objDir = result
 					cb()
 			(cb) ->
-				revFile = Path.join(objDir, createRevisionFileName(obj))
-				writeObjectFile obj, revFile, cb
+				revFileName = createRevisionFileName(obj)
+				encryptedRevFileName = Base64url.encode session.globalEncryptionKey.encrypt revFileName
+
+				revFilePath = Path.join(objDir, encryptedRevFileName)
+
+				writeObjectFile obj, revFilePath, cb
 			(cb) ->
 				# When an indexed property changes, we need to rename the dir
-				expectedDirName = createObjectFileName(obj, modelDef.indexes)
-				actualDirName = Path.basename objDir
 				parentDirPath = Path.dirname objDir
+				expectedDecryptedDirName = createObjectFileName(obj, modelDef.indexes)
 
-				if expectedDirName is actualDirName
+				currentEncryptedDirName = Path.basename objDir
+				currentDecryptedDirName = session.globalEncryptionKey.decrypt(
+					Base64url.toBuffer currentEncryptedDirName
+				)
+
+				if BufferEq(expectedDecryptedDirName, currentDecryptedDirName)
 					cb()
 					return
 
 				# But sometimes expectations don't meet reality
-				actualDirPath = Path.join(parentDirPath, actualDirName)
-				expectedDirPath = Path.join(parentDirPath, expectedDirName)
+				currentDirPath = Path.join(parentDirPath, currentEncryptedDirName)
+				newDirName = Base64url.encode session.globalEncryptionKey.encrypt expectedDecryptedDirName
+				newDirPath = Path.join(parentDirPath, newDirName)
 
-				objDir = expectedDirPath
-				Fs.rename actualDirPath, expectedDirPath, (err) ->
+				objDir = newDirPath
+				Fs.rename currentDirPath, newDirPath, (err) ->
 					if err
 						cb new IOError err
 						return
@@ -287,12 +307,14 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					revisions = Imm.List(fileNames)
 					.filter (fileName) ->
 						return not childCollectionNames.contains(fileName)
-					.map(parseRevisionFileName)
-					.map (rev) ->
-						return rev.set '_filePath', Path.join(
-							objDir
-							rev.get('_fileName')
+					.map (fileName) ->
+						decryptedFileName = session.globalEncryptionKey.decrypt(
+							Base64url.toBuffer fileName
 						)
+						revision = parseRevisionFileName(decryptedFileName)
+							.set('_fileName', fileName)
+							.set('_filePath', Path.join(objDir, fileName))
+						return revision
 					.sortBy (rev) -> Moment(rev.timestamp, TimestampFormat)
 
 					cb()
@@ -496,10 +518,10 @@ createObjectFileName = (obj, indexes) ->
 
 	return encodeFileName components
 
-parseRevisionFileName = (revFileName) ->
-	[timestamp, revisionId] = decodeFileName(revFileName, 2)
+parseRevisionFileName = (decryptedFileName) ->
+	[timestamp, revisionId] = decodeFileName(decryptedFileName, 2)
 
-	return Imm.Map({timestamp, revisionId, _fileName: revFileName})
+	return Imm.Map({timestamp, revisionId})
 
 createRevisionFileName = (obj) ->
 	return encodeFileName [
@@ -507,44 +529,111 @@ createRevisionFileName = (obj) ->
 		obj.get('revisionId')
 	]
 
+# Since we want to include multiple strings in a single file name, an encoding
+# is needed.  Ideally, we would use JSON, but JSON is rather verbose.  Since
+# the file name will be encrypted, we're able to use arbitrary bytes.  We will
+# use an encoding with the following rules:
+# - The strings are first encoded as bytes as per UTF-8
+# - All byte values (0x00 - 0xFF) except 0x2E (i.e. an ascii dot) are output
+#   unchanged.
+# - 0x2E is encoded as 0x2E4C (i.e. an ascii dot followed by an ascii uppercase
+#   L).  "L" is a mnemonic for "Literal".
+# - The encoded strings are delimited by 0x2E53 (i.e. an ascii dot followed by
+#   an ascii uppercase S).  "S" is a mnemonic for "Separator".
+#
+# This ensures that any string (or even any binary string) can be encoded and
+# decoded unambiguously.
+
 encodeFileName = (components) ->
-	return (encodeFileNameComponent(c) for c in components).join('.')
+	delimiter = new Buffer([0x2E, 0x53]) # ".S"
+
+	result = []
+
+	for c, i in components
+		if i > 0
+			result.push delimiter
+
+		encodedComp = encodeFileNameComponent(c)
+		result.push encodedComp
+
+	return Buffer.concat result
 
 decodeFileName = (fileName, componentCount) ->
-	comps = fileName.split('.')
+	comps = []
 
-	if comps.length isnt componentCount
-		throw new Error "expected #{componentCount} parts in file name #{JSON.stringify fileName}"
+	nextComp = createZeroedBuffer(fileName.length)
+	nextCompOffset = 0
+	i = 0
+	while i < fileName.length
+		# If the next byte is a special sequence
+		if fileName[i] is 0x2E
+			# If no more bytes in the file name
+			if i is (fileName.length - 1)
+				# There must always be another byte following a dot
+				throw new Error "file name ended early: #{fileName.toJSON()}"
 
-	return (decodeFileNameComponent(c) for c in comps)
+			switch fileName[i+1]
+				when 0x4C # "L"
+					# Add literal dot to component
+					nextComp[nextCompOffset] = 0x2E # "."
+					nextCompOffset += 1
+				when 0x53 # "S"
+					# Found a separator, time to start on the next component
 
-# Windows is super strict about file names, so we need to encode things aggressively.
+					# Add this component to result list
+					comps.push nextComp.slice(0, nextCompOffset)
+
+					# Reset for next component
+					nextComp = createZeroedBuffer(fileName.length)
+					nextCompOffset = 0
+				else
+					throw new Error "unexpected byte sequence at #{i} in file name: #{fileName.toJSON()}"
+
+			# Skip over the next byte, since we already handled it
+			i += 2
+			continue
+
+		nextComp[nextCompOffset] = fileName[i]
+		nextCompOffset += 1
+
+		i += 1
+
+	# Add the last component to the result list
+	comps.push nextComp.slice(0, nextCompOffset)
+
+	compStrings = (c.toString() for c in comps)
+
+	if compStrings.length isnt componentCount
+		console.log fileName
+		throw new Error "expected #{componentCount} parts in file name #{JSON.stringify compStrings}"
+
+	return compStrings
+
 encodeFileNameComponent = (s) ->
-	# Percent encode all character except for a few safe characters
-	return s.replace /[^a-zA-Z0-9 $#&_\-]/g, (c) ->
-		charInHex = c.charCodeAt(0).toString(16)
+	literalDot = new Buffer([0x2E, 0x4C]) # ".L"
 
-		if charInHex.length is 1
-			return '%0' + charInHex
+	asBytes = new Buffer(s, 'utf8')
 
-		if charInHex.length is 2
-			return '%' + charInHex
+	result = []
 
-		if charInHex.length is 3
-			return '%%0' + charInHex
+	for i in [0...asBytes.length]
+		# If the byte needs to be encoded specially
+		if asBytes[i] is 0x2E # "."
+			result.push literalDot
+			continue
 
-		if charInHex.length is 4
-			return '%%' + charInHex
+		# This is probably pretty inefficient...
+		result.push asBytes.slice(i, i+1)
 
-		throw new Error "unexpected character: \\u#{charInHex}"
+	return Buffer.concat result
 
-decodeFileNameComponent = (s) ->
-	s = s.replace /%%([a-fA-F0-9]{4})/g, (match, hex) ->
-		return String.fromCharCode parseInt(hex, 16)
-	s = s.replace /%([a-fA-F0-9]{2})/g, (match, hex) ->
-		return String.fromCharCode parseInt(hex, 16)
-	return s
+createZeroedBuffer = (bufferSize) ->
+	result = new Buffer(bufferSize)
 
+	for i in [0...bufferSize]
+		result[i] = 0
+
+	return result
 
 module.exports = {
 	createCollectionApi
