@@ -70,10 +70,7 @@ dataModelDefinitions = [
 				name: 'progNote'
 				collectionName: 'progNotes'
 				isMutable: false
-				indexes: [
-					['timestamp'],
-					['backdate']
-				]
+				indexes: [['timestamp'], ['backdate']]
 				schema: [
 					Joi.object().keys({
 						type: 'basic' # aka "Quick Notes"
@@ -167,11 +164,11 @@ dataModelDefinitions = [
 		name: 'program'
 		collectionName: 'programs'
 		isMutable: true
-		indexes: [['name'], ['colorHex']]
+		indexes: [['name'], ['colorKeyHex']]
 		schema: Joi.object().keys({
 			name: Joi.string()
 			description: Joi.string()
-			colorKeyHSL: Joi.array().items(Joi.number()).length(3)
+			colorKeyHex: Joi.string().regex(/^#[A-Fa-f0-9]{6}/)
 		})
 	}
 
@@ -180,11 +177,12 @@ dataModelDefinitions = [
 		name: 'clientFileProgramLink'
 		collectionName: 'clientFileProgramLinks'
 		isMutable: true
-		indexes: [['clientFileId'], ['programId'], ['isActive']]
+		indexes: [['clientFileId'], ['programId'], ['status']]
 		schema: Joi.object().keys({
 			clientFileId: IdSchema
 			programId: IdSchema
-			isActive: Joi.boolean()
+			status: Joi.string().allow('') # TODO: Can only be "enrolled" or "graduated"
+			notes: Joi.string().allow('')
 		})
 	}
 ]

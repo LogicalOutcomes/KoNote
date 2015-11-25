@@ -50,6 +50,7 @@
     "pluralize": "^1.1.2",
     "react": "^0.13.3",
     "rimraf": "^2.3.4",
+    "spectrum-colorpicker": "^1.7.1",
     "string.prototype.endswith": "^0.2.0",
     "string.prototype.includes": "^1.0.0",
     "string.prototype.startswith": "^0.2.0",

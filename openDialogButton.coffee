@@ -2,6 +2,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Button that manages layering for opening up a custom dialog
+_ = require 'underscore'
 
 load = (win) ->
 	$ = win.jQuery
@@ -14,12 +15,6 @@ load = (win) ->
 
 	OpenDialogButton = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin, LayeredComponentMixin]
-
-		getDefaultProps: ->
-			return {
-				onSuccess: ->
-				data: null
-			}
 
 		getInitialState: ->
 			return {
@@ -42,17 +37,18 @@ load = (win) ->
 			unless @state.isOpen
 				return R.div()
 
-			return @props.dialog({
+			defaultProps = {
 				onClose: =>
 					@setState {isOpen: false}
 				onCancel: =>
 					@setState {isOpen: false}
-				onSuccess: (arg) =>
-					@props.onSuccess(arg)
+				onSuccess: =>
 					@setState {isOpen: false}
-					
-				data: @props.data
-			})
+			}
+
+			props = _.extend(defaultProps, @props)
+
+			return @props.dialog(props)
 
 	return OpenDialogButton
 

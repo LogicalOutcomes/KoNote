@@ -1,42 +1,38 @@
-.programManagerDialog	
+.programManagerTab
 	
-	.noData
-		width 250px
-		text-align center
+	.options
+		text-align right !important
+		padding 15px
 		
-		> span
-			font-size 16px
-			padding 15px
-			display block
-				
-	.hasData
-		width 500px
+	.btn > .badge
+		margin-left 5px
 		
-		.options
-			text-align right !important
-			padding 15px
-			
-		.btn > .badge
-			margin-left 5px
-			
-		table
-			margin-bottom 0px
-			
-			tbody 
-				> tr > td
-					padding 5px 15px
-					
-					&:first-child
-						width auto
-						
+	table
+		margin-bottom 0px
+		
+		tbody 
+			> tr
+				&:hover .optionsCell .btn-group
+					visibility visible !important
+
+				> td
 					&:last-child
 						text-align right
 						
-					.programName
-						&:hover
-							cursor pointer
+					&.colorKeyCell > span
+						display block
+						width 25px
+						height 25px
+						border-radius 12.5px
+						
+					&.numberClientsCell
 						.fa
-							font-weight normal
-							margin-right 10px
-			
-			
+							float left
+							margin-right 5px
+							margin-top 3px
+							
+					&.optionsCell .btn-group
+						visibility hidden
+						
+						.fa
+							margin-left 5px

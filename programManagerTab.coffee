@@ -3,7 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 Imm = require 'immutable'
 Async = require 'async'	
-TinyColor = require 'tinycolor2'
+_ = require 'underscore'
 
 Persist = require './persist'
 Config = require './config'
@@ -18,7 +18,6 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
-	Slider = require('./slider').load(win)
 	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogButton = require('./openDialogButton').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
@@ -34,34 +33,66 @@ load = (win) ->
 			}
 
 		render: ->
+			# Inject number of clients into each program
+			programs = @props.programs.map (program) ->
+				newProgram = program.set 'numberClients', 999
+				console.info "new Program", newProgram.toJS()
+				return newProgram
+
 			return R.div({className: 'programManagerTab'},
 				R.div({className: 'header'},
 					R.h1({}, Term 'Programs')
 				)
 				R.div({className: 'main'},
 					OrderableTable({
-						tableData: @props.programs
+						tableData: programs
 						sortBy: ['name']
 						columns: [
 							{
+								name: "Color Key"
+								nameIsVisible: false
+								dataPath: ['colorKeyHex']								
+								cellClass: 'colorKeyCell'
+								valueStyle: (dataPoint) ->
+									return {
+										background: dataPoint.get('colorKeyHex')
+									}
+								hideValue: true
+							}
+							{
 								name: "Program Name"
 								dataPath: ['name']
+								cellClass: 'nameCell'
 							}
 							{
 								name: "Description"
 								dataPath: ['description']
 							}
 							{
+								name: Term 'Clients'
+								cellClass: 'numberClientsCell'
+								buttons: [{
+									className: 'btn btn-default'
+									dataPath: ['numberClients']
+									icon: 'user'
+									dialog: ManageProgramClientsDialog
+									data:
+										clientFileHeaders: @props.clientFileHeaders
+										clientFileProgramLinks: @props.clientFileProgramLinks
+								}]
+							}
+							{
 								name: "Options"
 								nameIsVisible: false
+								cellClass: 'optionsCell'
 								buttons: [
 									{
-										className: 'btn btn-default'
+										className: 'btn btn-warning'
 										text: "Modify"
-										dialog: EditProgramDialog
-										data: {
+										icon: 'wrench'
+										dialog: CreateProgramDialog
+										data: 
 											clientFileProgramLinks: @props.clientFileProgramLinks
-										}
 									}
 								]
 							}
@@ -74,48 +105,72 @@ load = (win) ->
 						text: "New #{Term 'Program'} "
 						icon: 'plus'
 						dialog: CreateProgramDialog
+						data: {
+							clientFileHeaders: @props.clientFileHeaders
+						}
 					})
 				)
 			)	
 
 	CreateProgramDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				name: ''
+				colorKeyHex: null
 				description: ''
-				colorHuePercent: 0
-				isLoading: false
 			}
 
 		componentDidMount: ->
 			@refs.programName.getDOMNode().focus()
 
+			# Set up color picker
+			$colorPicker = $(@refs.colorPicker.getDOMNode())
+			$colorPicker.spectrum(
+				showPalette: true
+				palette: [
+					['YellowGreen', 'Tan', 'Violet']
+					['Teal', 'Sienna', 'RebeccaPurple']
+					['Maroon', 'Cyan', 'LightSlateGray']
+				]
+				move: (color) =>
+					colorKeyHex = color.toHexString()
+					@setState {colorKeyHex}
+			)
+
 		render: ->
 			return Dialog({
 				title: "Create New #{Term 'Program'}"
 				onClose: @props.onCancel
-				containerClasses: ['noPadding']
 			},
-				R.div({
-					className: 'createProgramDialog'
-					style: {
-						background: if @state.colorHuePercent?
-							"hsl(#{(@state.colorHuePercent / 100) * 360},100%,90%)"
-					}
-				},
-					Spinner({
-						isVisible: @state.isLoading
-						isOverlay: true
-					})
-					R.div({className: 'form-group'},
-						R.label({}, "#{Term 'Program'} Name")
-						R.input({
-							ref: 'programName'
-							className: 'form-control'
-							value: @state.name
-							onChange: @_updateName
-						})
+				R.div({className: 'createProgramDialog'},
+					R.div({className: 'form-group'},						
+						R.label({}, "Name and Color Key")
+						R.div({className: 'input-group'},
+							R.input({
+								className: 'form-control'
+								ref: 'programName'
+								value: @state.name
+								onChange: @_updateName
+								style:
+									borderColor: @state.colorKeyHex
+							})
+							R.div({
+								className: 'input-group-addon'
+								id: 'colorPicker'
+								ref: 'colorPicker'
+								style:
+									background: @state.colorKeyHex
+									borderColor: @state.colorKeyHex
+							},
+								R.span({
+									className: 'hasColor' if @state.colorKeyHex?
+								},
+									FaIcon 'eyedropper'
+								)
+							)
+						)
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
@@ -125,19 +180,7 @@ load = (win) ->
 							onChange: @_updateDescription
 							rows: 3
 						})
-					)
-					R.div({className: 'form-group'},
-						R.label({}, "Choose a color key")
-						Slider({
-							isEnabled: true
-							tooltip: false
-							isRange: false
-							minValue: 0
-							maxValue: 99
-							defaultValue: 0
-							onSlide: @_updateColorHuePercent
-						})
-					)
+					)					
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -146,37 +189,31 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-success'
 							disabled: not @state.name or not @state.description
-							onClick: @_submit
-						}, "Create #{Term 'Program'}")
+							onClick: @_createProgram
+						}, 
+							"Create #{Term 'Program'}"
+						)
 					)
 				)
 			)
 
 		_updateName: (event) ->
 			@setState {name: event.target.value}
+
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
-		_updateColorHuePercent: (event) ->
-			colorHuePercent = event.target.value
-			@setState {colorHuePercent}
 
-		_submit: (event) ->
-			event.preventDefault()
-
-			hueDegrees = (@state.colorHuePercent / 100) * 360
-			colorHex = TinyColor({
-				h: hueDegrees
-				s: 100
-				l: 90
-			}).toHexString()
-
-			console.log "colorHex", colorHex
-
-			newProgram = Imm.fromJS({
+		_buildProgramObject: ->
+			return Imm.fromJS({
 				name: @state.name
 				description: @state.description
-				colorHex
+				colorKeyHex: @state.colorKeyHex
 			})
+
+		_createProgram: (event) ->
+			event.preventDefault()
+
+			newProgram = @_buildProgramObject()
 
 			# Create the new program, and close
 			ActiveSession.persist.programs.create newProgram, (err, newProgram) =>
@@ -185,122 +222,6 @@ load = (win) ->
 					return
 
 				console.log "Added new program:", newProgram
-				@props.onSuccess()
-
-
-	EditProgramDialog = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]
-		getInitialState: ->
-			return {
-				id: @props.data.get('id')
-				name: @props.data.get('name')
-				description: @props.data.get('description')
-				colorHuePercent: @_convertToHuePercent @props.data.get('colorHex')
-				isLoading: false
-			}		
-
-		componentDidMount: ->
-			@refs.programName.getDOMNode().focus()
-
-		render: ->
-			return Dialog({
-				title: "Editing #{Term 'Program'}"
-				onClose: @props.onCancel
-				containerClasses: ['noPadding']
-			},
-				R.div({
-					className: 'createProgramDialog'
-					style: {
-						background: if @state.colorHuePercent?
-							"hsl(#{(@state.colorHuePercent / 100) * 360},100%,90%)"
-					}
-				},
-					Spinner({
-						isVisible: @state.isLoading
-						isOverlay: true
-					})
-					R.div({className: 'form-group'},
-						R.label({}, "#{Term 'Program'} Name")
-						R.input({
-							ref: 'programName'
-							className: 'form-control'
-							value: @state.name
-							onChange: @_updateName
-						})
-					)
-					R.div({className: 'form-group'},
-						R.label({}, "Description")
-						R.textarea({
-							className: 'form-control'
-							value: @state.description
-							onChange: @_updateDescription
-							rows: 3
-						})
-					)
-					R.div({className: 'form-group'},
-						R.label({}, "Choose a color key")
-						Slider({
-							isEnabled: true
-							tooltip: false
-							isRange: false
-							minValue: 0
-							maxValue: 99
-							onSlide: @_updateColorHuePercent
-							defaultValue: @state.colorHuePercent
-						})
-					)
-					R.div({className: 'btn-toolbar'},
-						R.button({
-							className: 'btn btn-default'
-							onClick: @props.onCancel
-						}, "Cancel")
-						R.button({
-							className: 'btn btn-success'
-							disabled: not @state.name or not @state.description
-							onClick: @_submit
-						}, "Modify #{Term 'Program'}")
-					)
-				)
-			)
-
-		_updateName: (event) ->
-			@setState {name: event.target.value}
-		_updateDescription: (event) ->
-			@setState {description: event.target.value}
-		_updateColorHuePercent: (event) ->
-			colorHuePercent = event.target.value
-			@setState {colorHuePercent}
-
-		_convertToHuePercent: (hex) ->
-			hsl = TinyColor(hex).toHsl()
-			huePercent = (hsl.h / 360) * 100
-			return huePercent
-
-		_submit: (event) ->
-			event.preventDefault()
-
-			hueDegrees = (@state.colorHuePercent / 100) * 360
-			colorHex = TinyColor({
-				h: hueDegrees
-				s: 100
-				l: 90
-			}).toHexString()
-
-			console.log "colorHex", colorHex
-
-			editedProgram = Imm.fromJS({
-				id: @props.data.get('id')
-				name: @state.name
-				description: @state.description
-				colorHex
-			})
-
-			# Create new revision for program, and close
-			ActiveSession.persist.programs.createRevision editedProgram, (err, updatedProgram) =>
-				if err
-					CrashHandler.handle.err
-					return
-
 				@props.onSuccess()
 
 
@@ -319,7 +240,7 @@ load = (win) ->
 			searchResults = @_getResultsList()
 
 			return Dialog({
-				title: "Manage #{Term 'Program'} #{Term 'Clients'}"
+				title: "Managing #{Term 'Clients'} in \"#{@props.rowData.get('name')}\""
 				onClose: @props.onClose
 			},
 				R.div({className: 'manageProgramClientsDialog'},
@@ -389,7 +310,7 @@ load = (win) ->
 							R.h3({className: 'panel-title'},
 								if not @state.selectedClientIds.isEmpty()
 									R.span({className: 'badge'}, @state.selectedClientIds.size)
-								@props.data.program.get('name')
+								@props.rowData.get('name')
 							)
 						)
 						(if @state.selectedClientIds.isEmpty()
@@ -434,6 +355,21 @@ load = (win) ->
 						)
 					)
 				)
+				R.div({className: 'btn-toolbar'},
+					R.button({
+						className: 'btn btn-default'
+						onClick: @props.onCancel
+					},
+						"Cancel"
+					)
+					R.button({
+						className: 'btn btn-success btn-large'
+						# onClick: @_submit
+					}, 
+						"Finished"
+						FaIcon('check')
+					)
+				)
 			)		
 
 		_addClientId: (clientId) ->
@@ -444,7 +380,7 @@ load = (win) ->
 			selectedClientIds = @state.selectedClientIds.delete listIndex
 			@setState {selectedClientIds}
 		_findClientById: (clientId) ->
-			@props.data.clientFileHeaders.find (client) -> client.get('id') is clientId
+			@props.clientFileHeaders.find (client) -> client.get('id') is clientId
 
 		_updateSearchQuery: (event) ->
 			@setState {searchQuery: event.target.value}
@@ -453,7 +389,7 @@ load = (win) ->
 			queryParts = Imm.fromJS(@state.searchQuery.split(' '))
 			.map (p) -> p.toLowerCase()
 
-			return @props.data.clientFileHeaders
+			return @props.clientFileHeaders
 			.filter (clientFile) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
 				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()

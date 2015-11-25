@@ -33,7 +33,7 @@ load = (win) ->
 			firstColumn = @props.columns[0].dataPath
 
 			return {
-				sortByData: firstColumn
+				sortByData: if @props.sortByData? then @props.sortByData else firstColumn
 				isSortAsc: null
 			}
 
@@ -45,7 +45,7 @@ load = (win) ->
 			if @state.isSortAsc
 				data = data.reverse()
 
-			return R.table({className: 'table table-striped orderableTable'},
+			return R.table({className: 'table table-striped table-hover orderableTable'},
 				R.thead({},
 					R.tr({},
 						(@props.columns.map (column) =>
@@ -69,15 +69,23 @@ load = (win) ->
 							(@props.columns.map (column) =>
 								R.td({
 									key: column.name
-									className: 'hasButtons' if column.buttons?
+									className: [
+										'hasButtons' if column.buttons?
+										column.cellClass if column.cellClass?
+									].join ' '									
 								},
-									
-									hasDataValue = column.dataPath? and dataPoint.getIn(column.dataPath).length > 0
-									hasExtraDataValue = column.extraPath? and dataPoint.getIn(column.extraPath).length > 0
+									hasDataValue = column.dataPath? and dataPoint.getIn(column.dataPath).toString().length > 0
+									hasExtraDataValue = column.extraPath? and dataPoint.getIn(column.extraPath).toString().length > 0
 
-									R.span({className: "dataValue #{'noValue' if not hasDataValue}"},
+									R.span({
+										className: [
+											'dataValue'
+											'noValue' if not hasDataValue
+										].join ' '
+										style: column.valueStyle(dataPoint) if column.valueStyle?
+									},
 										(if hasDataValue
-											dataPoint.getIn(column.dataPath)
+											dataPoint.getIn(column.dataPath) unless column.hideValue? and column.hideValue
 										else if column.defaultValue?
 											(column.defaultValue)
 										)
@@ -92,13 +100,17 @@ load = (win) ->
 										R.div({className: 'btn-group'},
 											column.buttons.map (button) =>
 												if button.dialog?
+													# Flatten props from orderableTable API for OpenDialogButton
+													props = {}
+													_.extend(props, button.data, {
+														className: button.className
+														text: button.text or dataPoint.getIn(button.dataPath)
+														icon: button.icon
+														dialog: button.dialog
+														rowData: dataPoint
+													})
 
-													if button.data?
-														button.data.rowData = dataPoint
-													else
-														button.data = dataPoint
-
-													OpenDialogButton(button)
+													OpenDialogButton(props)
 												else
 													R.button({
 														className: button.className
