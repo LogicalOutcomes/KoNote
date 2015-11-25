@@ -17,15 +17,19 @@ load = (win) ->
 
 	Dialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+		getDefaultProps: ->
+			return {
+				containerClasses: []
+			}
 		render: ->
 			return R.div({
 				className: [
 					'dialogContainer'
-					if @props.containerClasses then @props.containerClasses.join(' ')
+					@props.containerClasses.join(' ')
 				].join(' ')
 				onClick: unless @props.disableCancel or @props.disableBackgroundClick then @_onBackgroundClick
 			},
-				R.div({className: 'dialog panel panel-primary'},
+				R.div({className: 'dialog panel panel-primary animated fadeInUp'},
 					R.div({className: 'panel-heading'},
 						R.h3({className: 'panel-title'}, @props.title)
 						(unless @props.disableCancel
