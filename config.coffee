@@ -21,7 +21,7 @@ module.exports = {
 
 	analysis: {
 		# Minimum days of data (metrics/events/treatments) required to enable chart
-		minDaysOfData: 3
+		minDaysOfData: 0
 	} 
 
 	# Set total timeout in (minutes),
