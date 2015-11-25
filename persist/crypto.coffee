@@ -165,6 +165,14 @@ class SymmetricEncryptionKey
 		]
 
 class PrivateKey
+	# Implementation notes:
+	# - Signing not yet implemented, except for key generation
+	# - Encryption is hybrid encryption using RSA and AES-GCM
+	# - RSA-OAEP with a 3072-bit modulus and MGF1+SHA256 (e=65537)
+	# - AES-GCM uses a new random key for each message
+	# - See SymmetricEncryptionKey for AES-GCM implementation notes
+	# - Underlying primitives are from Web Crypto until we upgrade NW.js
+
 	# PRIVATE CONSTRUCTOR
 	# Do not call this directly.
 	# Use generate or import instead.
