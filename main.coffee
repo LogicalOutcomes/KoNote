@@ -75,6 +75,9 @@ init = (win) ->
 		# Load the page module
 		pageComponentClass = require(pageModulePath).load(win, requestedPage)
 
+		console.timeEnd('initLoad')
+		console.time('renderPage')
+
 		# Render page in window
 		pageComponent = React.render pageComponentClass({
 			navigateTo: (pageParams) =>
@@ -103,6 +106,8 @@ init = (win) ->
 				nwWin.title = newTitle
 
 		}), containerElem
+
+		console.timeEnd('renderPage')
 
 	initPage = =>
 		# Make sure up this page has the required methods

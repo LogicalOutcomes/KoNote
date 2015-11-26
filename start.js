@@ -3,6 +3,8 @@
 // that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 (function () {
+	console.time('initLoad')
+
 	var Stylus = require('stylus');
 	var Fs = require('fs');
 
