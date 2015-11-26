@@ -288,7 +288,7 @@ class Lock
 			cb null, result
 
 	@_readMetadata: (lockDir, cb) ->
-		Fs.readFile lockDir+"/metadata", (err, data) ->
+		Fs.readFile Path.join(lockDir, "metadata"), (err, data) ->
 			if err
 				# TODO: Figure out Windows errors to handle
 				if err.code in ['ENOENT']
