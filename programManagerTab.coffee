@@ -88,7 +88,7 @@ load = (win) ->
 								buttons: [
 									{
 										className: 'btn btn-warning'
-										text: "Modify"
+										text: null
 										icon: 'wrench'
 										dialog: CreateProgramDialog
 										data: 

@@ -104,7 +104,11 @@ load = (win) ->
 													props = {}
 													_.extend(props, button.data, {
 														className: button.className
-														text: button.text or dataPoint.getIn(button.dataPath)
+														text: if button.dataPath?
+															dataPoint.getIn(button.dataPath)
+														else
+															button.text
+															
 														icon: button.icon
 														dialog: button.dialog
 														rowData: dataPoint
