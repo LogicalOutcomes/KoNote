@@ -104,6 +104,12 @@ class Lock
 			return isCancelled or newLock
 		(callback) =>
 			@acquire session, lockId, (err, lock) ->
+				if err
+					console.error "Failed to obtain lock:"
+					console.error err
+					console.error err.stack
+					console.error "Ignoring error and retrying..."
+
 				if lock
 					newLock = lock
 					callback()
