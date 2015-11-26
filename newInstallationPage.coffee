@@ -236,7 +236,16 @@ load = (win) ->
 
 						cb()
 				(cb) =>
-					@_updateProgress 25, "Configuring accounts system \n(this may take a while...)"
+					# @_updateProgress 25, "Configuring accounts system \n(this may take a while...)"
+					@_updateProgress 25, "Generating secure encryption keys (this may take a while...)"
+
+										
+					isDone = false
+					# Only fires if async setUp
+					setTimeout(=>
+						unless isDone
+							@_updateProgress 50, "Setting up user account system (this may take a while...)"
+					, 3000)
 
 					# Generate mock "_system" admin user
 					Persist.Users.Account.setUp Config.dataDirectory, (err, result) =>
@@ -245,6 +254,7 @@ load = (win) ->
 							return
 
 						systemAccount = result
+						isDone = true
 						cb()
 				(cb) =>
 					@_updateProgress 75, "Creating your \"admin\" user . . ."
