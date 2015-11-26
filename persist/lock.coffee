@@ -253,7 +253,6 @@ class Lock
 		Fs.readdir lockDir, (err, fileNames) ->
 			if err
 				# LockDir has been deleted during operation
-				# TODO: Figure out Windows errors to handle
 				if err.code in ['ENOENT']
 					cb new LockDeletedError()
 					return
@@ -290,7 +289,6 @@ class Lock
 	@_readMetadata: (lockDir, cb) ->
 		Fs.readFile Path.join(lockDir, "metadata"), (err, data) ->
 			if err
-				# TODO: Figure out Windows errors to handle
 				if err.code in ['ENOENT']
 					cb new LockDeletedError()
 					return
