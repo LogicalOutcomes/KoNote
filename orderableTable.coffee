@@ -32,16 +32,12 @@ load = (win) ->
 		getInitialState: ->
 			firstColumn = @props.columns[0].dataPath
 
-			console.info "@props.sortBy", @props.sortBy
-
 			return {
 				sortBy: if @props.sortBy? then @props.sortBy else firstColumn
 				isSortAsc: null
 			}
 
 		render: ->
-			console.info "State:", @state.sortBy
-
 			data = @props.tableData
 			.sortBy (dataPoint) => dataPoint.getIn(@state.sortBy).toLowerCase()
 			.filter (dataPoint) => @props.rowIsVisible(dataPoint)
