@@ -36,7 +36,6 @@ load = (win) ->
 			# Inject number of clients into each program
 			programs = @props.programs.map (program) ->
 				newProgram = program.set 'numberClients', 999
-				console.info "new Program", newProgram.toJS()
 				return newProgram
 
 			return R.div({className: 'programManagerTab'},
@@ -125,8 +124,7 @@ load = (win) ->
 		componentDidMount: ->
 			@refs.programName.getDOMNode().focus()
 
-			$colorPicker = @refs.colorPicker.getDOMNode()
-			_initColorPicker($colorPicker)
+			initColorPicker @refs.colorPicker.getDOMNode()
 
 		render: ->
 			return Dialog({
@@ -226,8 +224,7 @@ load = (win) ->
 		componentDidMount: ->
 			@refs.programName.getDOMNode().focus()
 
-			$colorPicker = @refs.colorPicker.getDOMNode()
-			_initColorPicker($colorPicker)
+			initColorPicker @refs.colorPicker.getDOMNode()
 
 		render: ->
 			return Dialog({
@@ -311,12 +308,11 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				console.log "Added new program:", newProgram
 				@props.onSuccess()
 
-	_initColorPicker: ($colorPicker) ->
+	initColorPicker = (colorPicker) ->
 		# Set up color picker
-		$colorPicker.spectrum(
+		$(colorPicker).spectrum(
 			showPalette: true
 			palette: [
 				['YellowGreen', 'Tan', 'Violet']
