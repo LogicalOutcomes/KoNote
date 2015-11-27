@@ -181,8 +181,7 @@ dataModelDefinitions = [
 		schema: Joi.object().keys({
 			clientFileId: IdSchema
 			programId: IdSchema
-			status: Joi.string().allow('') # TODO: Can only be "enrolled" or "graduated"
-			notes: Joi.string().allow('')
+			status: ['enrolled', 'unenrolled']
 		})
 	}
 ]
