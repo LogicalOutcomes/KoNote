@@ -123,8 +123,7 @@ load = (win) ->
 
 		componentDidMount: ->
 			@refs.programName.getDOMNode().focus()
-
-			initColorPicker @refs.colorPicker.getDOMNode()
+			@_initColorPicker @refs.colorPicker.getDOMNode()
 
 		render: ->
 			return Dialog({
@@ -175,13 +174,27 @@ load = (win) ->
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-success'
-							disabled: not @state.name or not @state.description
+							disabled: not @state.name or not @state.description or not @state.colorKeyHex
 							onClick: @_createProgram
 						}, 
 							"Create #{Term 'Program'}"
 						)
 					)
 				)
+			)
+
+		_initColorPicker: (colorPicker) ->
+			# Set up color picker
+			$(colorPicker).spectrum(
+				showPalette: true
+				palette: [
+					['YellowGreen', 'Tan', 'Violet']
+					['Teal', 'Sienna', 'RebeccaPurple']
+					['Maroon', 'Cyan', 'LightSlateGray']
+				]
+				move: (color) =>
+					colorKeyHex = color.toHexString()
+					@setState {colorKeyHex}
 			)
 
 		_updateName: (event) ->
@@ -223,8 +236,7 @@ load = (win) ->
 
 		componentDidMount: ->
 			@refs.programName.getDOMNode().focus()
-
-			initColorPicker @refs.colorPicker.getDOMNode()
+			@_initColorPicker @refs.colorPicker.getDOMNode()
 
 		render: ->
 			return Dialog({
@@ -275,13 +287,27 @@ load = (win) ->
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-success'
-							disabled: not @state.name or not @state.description
-							onClick: @_createProgram
+							disabled: not @state.name or not @state.description or not @state.colorKeyHex
+							onClick: @_modifyProgram
 						}, 
 							"Create #{Term 'Program'}"
 						)
 					)
 				)
+			)
+
+		_initColorPicker: (colorPicker) ->
+			# Set up color picker
+			$(colorPicker).spectrum(
+				showPalette: true
+				palette: [
+					['YellowGreen', 'Tan', 'Violet']
+					['Teal', 'Sienna', 'RebeccaPurple']
+					['Maroon', 'Cyan', 'LightSlateGray']
+				]
+				move: (color) =>
+					colorKeyHex = color.toHexString()
+					@setState {colorKeyHex}
 			)
 
 		_updateName: (event) ->
@@ -297,32 +323,22 @@ load = (win) ->
 				colorKeyHex: @state.colorKeyHex
 			})
 
-		_createProgram: (event) ->
+		_modifyProgram: (event) ->
 			event.preventDefault()
 
 			newProgram = @_buildProgramObject()
 
-			# Create the new program, and close
-			ActiveSession.persist.programs.create newProgram, (err, newProgram) =>
-				if err
-					CrashHandler.handle err
-					return
+			originalObject = @props.rowData
+			console.info "originalObject", originalObject
 
-				@props.onSuccess()
+			# Modify the program, and close
+			# ActiveSession.persist.programs.createRevision newProgram, (err, newProgram) =>
+			# 	if err
+			# 		CrashHandler.handle err
+			# 		return
 
-	initColorPicker = (colorPicker) ->
-		# Set up color picker
-		$(colorPicker).spectrum(
-			showPalette: true
-			palette: [
-				['YellowGreen', 'Tan', 'Violet']
-				['Teal', 'Sienna', 'RebeccaPurple']
-				['Maroon', 'Cyan', 'LightSlateGray']
-			]
-			move: (color) =>
-				colorKeyHex = color.toHexString()
-				@setState {colorKeyHex}
-		)
+			# 	@props.onSuccess()
+
 
 	ManageProgramClientsDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
