@@ -23,7 +23,7 @@ load = (win) ->
 
 		getDefaultProps: ->
 			return {
-				data: Imm.List()				
+				data: Imm.List()
 				columns: Imm.List()
 				rowKey: ['id']
 				rowIsVisible: -> return true
@@ -32,14 +32,18 @@ load = (win) ->
 		getInitialState: ->
 			firstColumn = @props.columns[0].dataPath
 
+			console.info "@props.sortBy", @props.sortBy
+
 			return {
-				sortByData: if @props.sortByData? then @props.sortByData else firstColumn
+				sortBy: if @props.sortBy? then @props.sortBy else firstColumn
 				isSortAsc: null
 			}
 
 		render: ->
+			console.info "State:", @state.sortBy
+
 			data = @props.tableData
-			.sortBy (dataPoint) => dataPoint.getIn(@state.sortByData).toLowerCase()
+			.sortBy (dataPoint) => dataPoint.getIn(@state.sortBy).toLowerCase()
 			.filter (dataPoint) => @props.rowIsVisible(dataPoint)
 
 			if @state.isSortAsc
@@ -54,7 +58,8 @@ load = (win) ->
 									onClick: @_sortBy.bind null, column.dataPath
 								}, 
 									column.name unless column.nameIsVisible? and not column.nameIsVisible
-									if @state.sortByData is column.dataPath
+
+									if column.dataPath? and _.isEqual(@state.sortBy, column.dataPath)
 										(FaIcon("chevron-#{
 											if @state.isSortAsc then 'up' else 'down'
 										}"))
@@ -134,11 +139,11 @@ load = (win) ->
 
 		_sortBy: (sortByData) ->
 			# Flip ordering if same sorting as before
-			if sortByData is @state.sortByData
+			if sortBy is @state.sortBy
 				@setState {isSortAsc: not @state.isSortAsc}
 			else
 				@setState {
-					sortByData
+					sortBy
 					isSortAsc: false
 				}
 
