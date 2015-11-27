@@ -125,19 +125,8 @@ load = (win) ->
 		componentDidMount: ->
 			@refs.programName.getDOMNode().focus()
 
-			# Set up color picker
-			$colorPicker = $(@refs.colorPicker.getDOMNode())
-			$colorPicker.spectrum(
-				showPalette: true
-				palette: [
-					['YellowGreen', 'Tan', 'Violet']
-					['Teal', 'Sienna', 'RebeccaPurple']
-					['Maroon', 'Cyan', 'LightSlateGray']
-				]
-				move: (color) =>
-					colorKeyHex = color.toHexString()
-					@setState {colorKeyHex}
-			)
+			$colorPicker = @refs.colorPicker.getDOMNode()
+			_initColorPicker($colorPicker)
 
 		render: ->
 			return Dialog({
@@ -224,6 +213,120 @@ load = (win) ->
 				console.log "Added new program:", newProgram
 				@props.onSuccess()
 
+	ModifyProgramDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			return {
+				name: @props.rowData.name
+				colorKeyHex: @props.rowData.colorHexKey
+				description: @props.rowData.description
+			}
+
+		componentDidMount: ->
+			@refs.programName.getDOMNode().focus()
+
+			$colorPicker = @refs.colorPicker.getDOMNode()
+			_initColorPicker($colorPicker)
+
+		render: ->
+			return Dialog({
+				title: "Create New #{Term 'Program'}"
+				onClose: @props.onCancel
+			},
+				R.div({className: 'createProgramDialog'},
+					R.div({className: 'form-group'},						
+						R.label({}, "Name and Color Key")
+						R.div({className: 'input-group'},
+							R.input({
+								className: 'form-control'
+								ref: 'programName'
+								value: @state.name
+								onChange: @_updateName
+								style:
+									borderColor: @state.colorKeyHex
+							})
+							R.div({
+								className: 'input-group-addon'
+								id: 'colorPicker'
+								ref: 'colorPicker'
+								style:
+									background: @state.colorKeyHex
+									borderColor: @state.colorKeyHex
+							},
+								R.span({
+									className: 'hasColor' if @state.colorKeyHex?
+								},
+									FaIcon 'eyedropper'
+								)
+							)
+						)
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Description")
+						R.textarea({
+							className: 'form-control'
+							value: @state.description
+							onChange: @_updateDescription
+							rows: 3
+						})
+					)					
+					R.div({className: 'btn-toolbar'},
+						R.button({
+							className: 'btn btn-default'
+							onClick: @props.onCancel
+						}, "Cancel")
+						R.button({
+							className: 'btn btn-success'
+							disabled: not @state.name or not @state.description
+							onClick: @_createProgram
+						}, 
+							"Create #{Term 'Program'}"
+						)
+					)
+				)
+			)
+
+		_updateName: (event) ->
+			@setState {name: event.target.value}
+
+		_updateDescription: (event) ->
+			@setState {description: event.target.value}
+
+		_buildProgramObject: ->
+			return Imm.fromJS({
+				name: @state.name
+				description: @state.description
+				colorKeyHex: @state.colorKeyHex
+			})
+
+		_createProgram: (event) ->
+			event.preventDefault()
+
+			newProgram = @_buildProgramObject()
+
+			# Create the new program, and close
+			ActiveSession.persist.programs.create newProgram, (err, newProgram) =>
+				if err
+					CrashHandler.handle err
+					return
+
+				console.log "Added new program:", newProgram
+				@props.onSuccess()
+
+	_initColorPicker: ($colorPicker) ->
+		# Set up color picker
+		$colorPicker.spectrum(
+			showPalette: true
+			palette: [
+				['YellowGreen', 'Tan', 'Violet']
+				['Teal', 'Sienna', 'RebeccaPurple']
+				['Maroon', 'Cyan', 'LightSlateGray']
+			]
+			move: (color) =>
+				colorKeyHex = color.toHexString()
+				@setState {colorKeyHex}
+		)
 
 	ManageProgramClientsDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
