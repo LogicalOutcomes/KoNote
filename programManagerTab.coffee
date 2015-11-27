@@ -89,7 +89,7 @@ load = (win) ->
 										className: 'btn btn-warning'
 										text: null
 										icon: 'wrench'
-										dialog: CreateProgramDialog
+										dialog: ModifyProgramDialog
 										data: 
 											clientFileProgramLinks: @props.clientFileProgramLinks
 									}
@@ -229,9 +229,10 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				name: @props.rowData.name
-				colorKeyHex: @props.rowData.colorHexKey
-				description: @props.rowData.description
+				id: @props.rowData.get('id')
+				name: @props.rowData.get('name')
+				colorKeyHex: @props.rowData.get('colorKeyHex')
+				description: @props.rowData.get('description')
 			}
 
 		componentDidMount: ->
@@ -240,7 +241,7 @@ load = (win) ->
 
 		render: ->
 			return Dialog({
-				title: "Create New #{Term 'Program'}"
+				title: "Modifying #{Term 'Program'}"
 				onClose: @props.onCancel
 			},
 				R.div({className: 'createProgramDialog'},
@@ -287,10 +288,12 @@ load = (win) ->
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-success'
-							disabled: not @state.name or not @state.description or not @state.colorKeyHex
+							disabled: (
+								@state.name or not @state.description or not @state.colorKeyHex
+							) and @_hasChanges()
 							onClick: @_modifyProgram
 						}, 
-							"Create #{Term 'Program'}"
+							"Finished"
 						)
 					)
 				)
@@ -300,6 +303,7 @@ load = (win) ->
 			# Set up color picker
 			$(colorPicker).spectrum(
 				showPalette: true
+				color: @state.colorKeyHex
 				palette: [
 					['YellowGreen', 'Tan', 'Violet']
 					['Teal', 'Sienna', 'RebeccaPurple']
@@ -316,28 +320,36 @@ load = (win) ->
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
 
-		_buildProgramObject: ->
+		_buildModifiedProgramObject: ->
 			return Imm.fromJS({
+				id: @state.id
 				name: @state.name
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex
 			})
 
+		_buildOriginalProgramObject: ->
+			# Explicitly remove numberClients for diff-ing,
+			# since it's not a part of the original DB object
+			return @props.rowData.remove('numberClients')
+
+		_hasChanges: ->
+			originalProgramObject = @_buildOriginalProgramObject()
+			modifiedProgramObject = @_buildModifiedProgramObject()
+			return Imm.is originalProgramObject, modifiedProgramObject
+
 		_modifyProgram: (event) ->
 			event.preventDefault()
 
-			newProgram = @_buildProgramObject()
-
-			originalObject = @props.rowData
-			console.info "originalObject", originalObject
+			modifiedProgram = @_buildModifiedProgramObject()
 
 			# Modify the program, and close
-			# ActiveSession.persist.programs.createRevision newProgram, (err, newProgram) =>
-			# 	if err
-			# 		CrashHandler.handle err
-			# 		return
+			ActiveSession.persist.programs.createRevision modifiedProgram, (err, modifiedProgram) =>
+				if err
+					CrashHandler.handle err
+					return
 
-			# 	@props.onSuccess()
+				@props.onSuccess()
 
 
 	ManageProgramClientsDialog = React.createFactory React.createClass
