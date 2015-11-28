@@ -1,0 +1,15 @@
+<script>
+var gui = require('nw.gui');
+var rimraf = require('rimraf');
+
+var path = require('path');
+var nwPath = process.execPath;
+var nwDir = path.dirname(nwPath);
+var dataDir = nwDir + '/data';
+
+rimraf(dataDir, function(err) {
+  if (err) { throw err; }
+  gui.App.quit();
+})
+
+</script>
