@@ -24,6 +24,7 @@ load = (win) ->
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
 	BrandWidget = require('./brandWidget').load(win)	
+	OrderableTable = require('./orderableTable').load(win)
 	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
 
 	ClientSelectionPage = React.createFactory React.createClass
@@ -208,7 +209,21 @@ load = (win) ->
 			@_refreshResults()
 
 		render: ->			
-			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet			
+			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet	
+
+			# Add in all program objects this clientFile's a member of
+			queryResults = @state.queryResults.map (clientFile) =>
+				clientFileId = clientFile.get('id')
+
+				programMemberships = @props.clientFileProgramLinks
+				.filter (link) =>
+					link.get('clientFileId') is clientFileId and link.get('status') is "enrolled"
+				.map (link) =>
+					@props.programs.find (program) -> program.get('id') is link.get('programId')
+
+				console.info "programMemberships", programMemberships.toJS()
+
+				clientFile.set('programs', programMemberships)
 
 			return R.div({
 					id: 'clientSelectionPage'
@@ -306,22 +321,65 @@ load = (win) ->
 								showWhen not @props.isLoading
 							].join ' '
 						},
-							(@state.queryResults.map (result) =>
-								R.div({
-									key: "result-" + result.get('id')
-									className: [
-										"result"
-										"active" if @state.hoverClientId is result.get('id')
-									].join ' '
-									onClick: @_onResultSelection.bind(null, result.get('id'))
-								}
-									R.span({className: 'recordId'}, 
-										if result.has('recordId') and result.get('recordId').length > 0
-											Config.clientFileRecordId.label + " #{result.get('recordId')}"
-									)
-									renderName result.get('clientName')
-								)
-							).toJS()
+							# (queryResults.map (result) =>
+							# 	programMemberships = result.get('programs')
+
+							# 	R.div({
+							# 		key: result.get('id')
+							# 		className: [
+							# 			"result"
+							# 			"active" if @state.hoverClientId is result.get('id')
+							# 		].join ' '
+							# 		onClick: @_onResultSelection.bind(null, result.get('id'))
+							# 	}
+							# 		(unless programMemberships.isEmpty()
+							# 			R.div({className: 'programBubble'},
+							# 				(programMemberships.map (program) =>
+							# 					R.div({
+							# 						style:
+							# 							background: program.get('colorKeyHex')
+							# 					})
+							# 				)
+							# 			)
+							# 		)
+							# 		R.div({}, renderName result.get('clientName'))
+
+							# 		if Config.clientFileRecordId?
+							# 			R.span({className: 'recordId'}, 
+							# 				if result.has('recordId') and result.get('recordId').length > 0
+							# 					Config.clientFileRecordId.label + " #{result.get('recordId')}"
+							# 			)
+							# 	)
+							# ).toJS()
+							OrderableTable({
+								tableData: queryResults
+								sortByData: ['clientName']
+								columns: [
+									{
+										name: "Programs"
+										dataPath: ['programs']
+										nameIsVisible: false
+										value: (dataPoint) ->
+											# return dataPoint.get('programs')
+											return R.div({className: 'programsBubble'},
+												(dataPoint.get('programs').map (program) ->
+													R.div({
+														style:
+															background: program.get('colorKeyHex')
+													})
+												)
+											)
+									}
+									{
+										name: "#{Term 'Client'} Name"
+										dataPath: ['clientName']
+									}
+									{
+										name: Config.clientFileRecordId.label
+										dataPath: ['recordId']
+									}
+								]
+							})
 						)
 					)
 				)
@@ -416,10 +474,11 @@ load = (win) ->
 				@setState {queryResults: @props.clientFileHeaders}
 				return
 
-			# Calculate query parts & results
+			# Split into query parts
 			queryParts = Imm.fromJS(@state.queryText.split(' '))
 			.map (p) -> p.toLowerCase()
 
+			# Calculate query results
 			queryResults = @props.clientFileHeaders
 			.filter (clientFile) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
@@ -432,7 +491,7 @@ load = (win) ->
 					return firstName.includes(part) or
 						middleName.includes(part) or
 						lastName.includes(part) or
-						recordId.includes(part)
+						recordId.includes(part)			
 
 			@setState {queryResults}
 
