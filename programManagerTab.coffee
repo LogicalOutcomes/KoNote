@@ -33,9 +33,14 @@ load = (win) ->
 			}
 
 		render: ->
-			# Inject number of clients into each program
-			programs = @props.programs.map (program) ->
-				newProgram = program.set 'numberClients', 999
+			# Inject numberClients into each program
+			programs = @props.programs.map (program) =>
+				programId = program.get('id')
+				numberClients = @props.clientFileProgramLinks
+				.filter (link) -> link.get('programId') is programId and link.get('status') is "enrolled"
+				.size
+
+				newProgram = program.set 'numberClients', numberClients
 				return newProgram
 
 			return R.div({className: 'programManagerTab'},
@@ -221,7 +226,6 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				console.log "Added new program:", newProgram
 				@props.onSuccess()
 
 	ModifyProgramDialog = React.createFactory React.createClass
@@ -343,7 +347,7 @@ load = (win) ->
 
 			modifiedProgram = @_buildModifiedProgramObject()
 
-			# Modify the program, and close
+			# Update program revision, and close
 			ActiveSession.persist.programs.createRevision modifiedProgram, (err, modifiedProgram) =>
 				if err
 					CrashHandler.handle err
@@ -354,10 +358,19 @@ load = (win) ->
 
 	ManageProgramClientsDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				searchQuery: ''
-				selectedClientIds: Imm.List()
+				clientFileProgramLinks: @_originalLinks()
+			}
+
+		_originalLinks: ->
+			return @props.clientFileProgramLinks
+			.filter (link) => link.get('programId') is @props.rowData.get('id')
+			.map (link) => return Imm.fromJS {
+				clientFileId: link.get('clientFileId')
+				status: link.get('status')
 			}
 
 		componentDidMount: ->
@@ -365,6 +378,9 @@ load = (win) ->
 
 		render: ->
 			searchResults = @_getResultsList()
+
+			enrolledLinks = @state.clientFileProgramLinks.filter (link) ->
+				link.get('status') is "enrolled"
 
 			return Dialog({
 				title: "Managing #{Term 'Clients'} in \"#{@props.rowData.get('name')}\""
@@ -391,15 +407,18 @@ load = (win) ->
 								R.thead({},
 									R.tr({},
 										R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
-										R.td({colspan: 2}, "#{Term 'Client'} Name")
+										R.td({colSpan: 2}, "#{Term 'Client'} Name")
 									)
 								)
 								R.tbody({},
 									(searchResults.map (result) =>
-										clientId = result.get('id')
+										clientFileId = result.get('id')
 										recordId = result.get('recordId')
 
-										R.tr({key: "result-" + clientId},
+										clientIsEnrolled = enrolledLinks.find (link) ->													
+											link.get('clientFileId') is clientFileId
+
+										R.tr({key: clientFileId},
 											if Config.clientFileRecordId?
 												R.td({}, 
 													(if recordId.length > 0
@@ -410,17 +429,17 @@ load = (win) ->
 												)
 											R.td({}, renderName result.get('clientName'))
 											R.td({},
-												(if @state.selectedClientIds.includes clientId											
+												(if clientIsEnrolled?											
 													R.button({
 														className: 'btn btn-danger btn-sm'
-														onClick: @_removeClientId.bind null, clientId
+														onClick: @_unenrollClient.bind null, clientFileId
 													},
 														FaIcon('minus')
 													)
 												else
 													R.button({
 														className: 'btn btn-default btn-sm'
-														onClick: @_addClientId.bind null, clientId
+														onClick: @_enrollClient.bind null, clientFileId
 													},
 														FaIcon('plus')
 													)
@@ -435,12 +454,12 @@ load = (win) ->
 					R.div({className: 'programClients panel panel-default'},
 						R.div({className: 'panel-heading'}, 
 							R.h3({className: 'panel-title'},
-								if not @state.selectedClientIds.isEmpty()
-									R.span({className: 'badge'}, @state.selectedClientIds.size)
+								if not enrolledLinks.isEmpty()
+									R.span({className: 'badge'}, enrolledLinks.size)
 								@props.rowData.get('name')
 							)
 						)
-						(if @state.selectedClientIds.isEmpty()
+						(if enrolledLinks.isEmpty()
 							R.div({className: 'panel-body noData'},
 								"This #{Term 'program'} has no members yet."
 							)
@@ -449,15 +468,16 @@ load = (win) ->
 								R.thead({},
 									R.tr({},
 										R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
-										R.td({colspan: 2}, "#{Term 'Client'} Name")
+										R.td({colSpan: 2}, "#{Term 'Client'} Name")
 									)
 								)
 								R.tbody({},
-									(@state.selectedClientIds.map (clientId) =>
-										client = @_findClientById clientId
+									(enrolledLinks.map (link) =>
+										clientFileId = link.get('clientFileId')
+										client = @_findClientById clientFileId
 										recordId = client.get('recordId')
 
-										R.tr({key: "selected-" + clientId},
+										R.tr({key: clientFileId},
 											if Config.clientFileRecordId?
 												R.td({}, 
 													(if recordId.length > 0
@@ -470,7 +490,7 @@ load = (win) ->
 											R.td({}, 
 												R.button({
 													className: 'btn btn-danger btn-sm'
-													onClick: @_removeClientId.bind null, clientId
+													onClick: @_unenrollClient.bind null, clientFileId
 												},
 													FaIcon('minus')
 												)
@@ -491,23 +511,65 @@ load = (win) ->
 					)
 					R.button({
 						className: 'btn btn-success btn-large'
-						# onClick: @_submit
+						onClick: @_submit
 					}, 
 						"Finished"
 						FaIcon('check')
 					)
 				)
-			)		
+			)
 
-		_addClientId: (clientId) ->
-			selectedClientIds = @state.selectedClientIds.push clientId
-			@setState {selectedClientIds}
-		_removeClientId: (clientId) ->
-			listIndex = @state.selectedClientIds.indexOf clientId
-			selectedClientIds = @state.selectedClientIds.delete listIndex
-			@setState {selectedClientIds}
-		_findClientById: (clientId) ->
-			@props.clientFileHeaders.find (client) -> client.get('id') is clientId
+		_enrollClient: (clientFileId) ->
+			newLink = Imm.fromJS {
+				clientFileId
+				status: "enrolled"
+			}
+
+			existingLink = @state.clientFileProgramLinks.find (link) ->
+				link.get('clientFileId') is clientFileId
+
+			if existingLink?
+				if existingLink.get('status') isnt "enrolled"
+					# Link exists, but isn't enrolled. Let's enroll him/her/...it
+					linkIndex = @state.clientFileProgramLinks.indexOf existingLink
+					clientFileProgramLinks = @state.clientFileProgramLinks.set(linkIndex, newLink)
+					@setState {clientFileProgramLinks}
+				else
+					# Client is already enrolled. This shouldn't happen.
+					console.warn "Tried to enroll already-enrolled clientFileId:", clientFileId
+			else
+				# Link doesn't exist, so just push in the new one
+				clientFileProgramLinks = @state.clientFileProgramLinks.push newLink
+				@setState {clientFileProgramLinks}
+
+
+
+		_unenrollClient: (clientFileId) ->
+			newLink = Imm.fromJS {
+				clientFileId
+				status: "unenrolled"
+			}
+
+			existingLink = @state.clientFileProgramLinks.find (link) ->
+				link.get('clientFileId') is clientFileId
+
+			if existingLink?
+				if existingLink.get('status') is "enrolled"
+					# Link exists, but is enrolled. Let's unenroll him/her/...it
+					linkIndex = @state.clientFileProgramLinks.indexOf existingLink
+					clientFileProgramLinks = @state.clientFileProgramLinks.set(linkIndex, newLink)
+					@setState {clientFileProgramLinks}
+				else
+					# Client is already unenrolled. This shouldn't happen.
+					console.warn "Tried to UNenroll already-UNenrolled clientFileId:", clientFileId
+			else
+				# Link doesn't exist, so just push in the new one
+				clientFileProgramLinks = @state.clientFileProgramLinks.push newLink
+				@setState {clientFileProgramLinks}
+
+
+		_findClientById: (clientFileId) ->
+			@props.clientFileHeaders.find (client) -> client.get('id') is clientFileId
 
 		_updateSearchQuery: (event) ->
 			@setState {searchQuery: event.target.value}
@@ -529,6 +591,52 @@ load = (win) ->
 						middleName.includes(part) or
 						lastName.includes(part) or
 						recordId.includes(part)
+
+
+		_submit: (event) ->
+			event.preventDefault()
+
+			programId = @props.rowData.get('id')
+
+			Async.map @state.clientFileProgramLinks.toArray(), (newLink, cb) =>
+
+				existingLink = @props.clientFileProgramLinks.find (originalLink) =>
+					originalLink.get('clientFileId') is newLink.get('clientFileId')
+
+				if existingLink?
+					# Pull out the full link object from props
+					linkIndex = @props.clientFileProgramLinks.indexOf existingLink
+					clientFileProgramLink = @props.clientFileProgramLinks.get linkIndex
+					# Update its status
+					revisedLink = clientFileProgramLink.set 'status', newLink.get('status')
+
+					# Create the revision on DB
+					ActiveSession.persist.clientFileProgramLinks.createRevision revisedLink, (err, updatedLink) ->
+						if err
+							cb err
+							return
+
+						cb()
+
+				else
+					# Build our brand new link object
+					newLink = Imm.fromJS(newLink)
+					.set 'programId', programId
+
+					ActiveSession.persist.clientFileProgramLinks.create newLink, (err, createdLink) ->
+						if err
+							cb err
+							return
+
+						cb()
+
+			, (err) =>
+				if err
+					CrashHandler.handle err
+					return
+
+				@props.onSuccess()
+
 
 	return ProgramManagerTab
 
