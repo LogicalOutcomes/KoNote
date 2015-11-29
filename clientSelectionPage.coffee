@@ -165,11 +165,11 @@ load = (win) ->
 					@setState (state) ->
 						if existingLink?
 							linkIndex = state.clientFileProgramLinks.indexOf existingLink
-							links = state.links.set linkIndex, newRev
+							clientFileProgramLinks = state.clientFileProgramLinks.set linkIndex, newRev
 						else
-							links = state.links.push newRev
+							clientFileProgramLinks = state.clientFileProgramLinks.push newRev
 
-						return {links}
+						return {clientFileProgramLinks}					
 
 			}
 
