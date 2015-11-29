@@ -316,7 +316,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 							.set('_fileName', fileName)
 							.set('_filePath', Path.join(objDir, fileName))
 						return revision
-					.sortBy (rev) -> Moment(rev.timestamp, TimestampFormat)
+					.sortBy (rev) -> Moment(rev.get('timestamp'), TimestampFormat)
 
 					cb()
 		], (err) ->
