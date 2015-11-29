@@ -41,7 +41,7 @@ load = (win) ->
 			data = @props.tableData
 			.sortBy (dataPoint) => 
 				value = dataPoint.getIn(@state.sortByData)
-				if typeof value isnt 'number' then value.toLowerCase() else value
+				if typeof value is 'string' then value.toLowerCase() else value
 			.filter (dataPoint) => @props.rowIsVisible(dataPoint)
 
 			if @state.isSortAsc
@@ -88,9 +88,12 @@ load = (win) ->
 										style: column.valueStyle(dataPoint) if column.valueStyle?
 									},
 										(if hasDataValue
-											dataPoint.getIn(column.dataPath) unless column.hideValue? and column.hideValue
+											if column.value?
+												executeIfFunction column.value dataPoint
+											else if not column.hideValue? and not column.hideValue
+												dataPoint.getIn(column.dataPath)
 										else if column.defaultValue?
-											(column.defaultValue)
+											(column.defaultValue)										
 										)
 									)
 									(if hasExtraDataValue
