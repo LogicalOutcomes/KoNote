@@ -32,6 +32,16 @@ load = (win) ->
 	R = React.DOM
 	Gui = win.require 'nw.gui'
 
+	# Execute variable as a function if it is one
+	executeIfFunction = (variable, arg) ->
+		if typeof variable is 'function'
+			if arg?
+				return variable arg
+			else
+				return variable()
+		else
+			return variable
+
 	# Shortcut for using Font Awesome icons in React
 	FaIcon = (name, customProps) ->
 		properties = {className: "fa fa-#{name}"}
@@ -121,6 +131,7 @@ load = (win) ->
 
 	return {
 		CustomError
+		executeIfFunction
 		FaIcon
 		openWindow
 		renderLineBreaks

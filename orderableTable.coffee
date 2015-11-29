@@ -16,7 +16,7 @@ load = (win) ->
 	R = React.DOM
 
 	OpenDialogButton = require('./openDialogButton').load(win)
-	{FaIcon, showWhen} = require('./utils').load(win)
+	{FaIcon, showWhen, executeIfFunction} = require('./utils').load(win)
 
 	OrderableTable = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -108,7 +108,7 @@ load = (win) ->
 														text: if button.dataPath?
 															dataPoint.getIn(button.dataPath)
 														else
-															button.text
+															executeIfFunction button.text, dataPoint
 															
 														icon: button.icon
 														dialog: button.dialog
