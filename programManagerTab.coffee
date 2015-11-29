@@ -598,15 +598,18 @@ load = (win) ->
 
 			programId = @props.rowData.get('id')
 
+			programLinks = @props.clientFileProgramLinks.filter (link) ->
+				link.get('programId') is programId
+
 			Async.map @state.clientFileProgramLinks.toArray(), (newLink, cb) =>
 
-				existingLink = @props.clientFileProgramLinks.find (originalLink) =>
+				existingLink = programLinks.find (originalLink) =>
 					originalLink.get('clientFileId') is newLink.get('clientFileId')
 
 				if existingLink?
 					# Pull out the full link object from props
-					linkIndex = @props.clientFileProgramLinks.indexOf existingLink
-					clientFileProgramLink = @props.clientFileProgramLinks.get linkIndex
+					linkIndex = programLinks.indexOf existingLink
+					clientFileProgramLink = programLinks.get linkIndex
 					# Update its status
 					revisedLink = clientFileProgramLink.set 'status', newLink.get('status')
 
@@ -623,6 +626,7 @@ load = (win) ->
 					newLink = Imm.fromJS(newLink)
 					.set 'programId', programId
 
+					# Create new link object on DB
 					ActiveSession.persist.clientFileProgramLinks.create newLink, (err, createdLink) ->
 						if err
 							cb err
