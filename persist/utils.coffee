@@ -11,9 +11,10 @@ Joi = require 'joi'
 
 # Generate a unique ID.
 # Outputs a string containing only a-z, A-Z, 0-9, "-", and "_".
-# Guaranteed to be unique with overwhelming probability.
+# Expected to be unique until 2^60 IDs have been generated.
+# To avoid collisions, create fewer than 2^40 IDs.
 generateId = ->
-	return Base64url.encode(Crypto.randomBytes(32))
+	return Base64url.encode(Crypto.randomBytes(15))
 
 # All object IDs match this pattern
 IdSchema = Joi.string().regex(/^[a-zA-Z0-9_-]+$/)

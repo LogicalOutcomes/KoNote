@@ -3,8 +3,14 @@
 // that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 (function () {
+	console.time('initLoad')
+
+	console.time('requireStyl/Fs')
 	var Stylus = require('stylus');
 	var Fs = require('fs');
+	console.timeEnd('requireStyl/Fs')
+
+	console.time('checkVersion')
 
 	// Ensure package.json NW dependancy and installed NW are the same version
 	var pkg = JSON.parse(Fs.readFileSync('package.json', 'utf8'))
@@ -25,6 +31,10 @@
 		return;
 	}
 
+	console.timeEnd('checkVersion')
+
+	console.time('compileStylus')
+
 	// In order to avoid the need for Grunt or a similar build system,
 	// we'll compile the Stylus code at runtime.
 	var mainStylusCode = Fs.readFileSync('main.styl', {encoding: 'utf-8'});
@@ -38,13 +48,21 @@
 			return;
 		}
 
+		console.timeEnd('compileStylus')
+
+		console.time('injectCSS')
 		// Inject the compiled CSS into the page
 		window.document.getElementById('main-css').innerHTML = compiledCss;
+		console.timeEnd('injectCSS')
 
+		console.time('registerCoffeescriptCompiler')
 		// Register the CoffeeScript compiler
 		require('coffee-script/register');
+		console.timeEnd('registerCoffeescriptCompiler')
 
 		// Run the app
+		console.time('initApp')
 		require('./main').init(window);
+		console.timeEnd('initApp')
 	});
 })();

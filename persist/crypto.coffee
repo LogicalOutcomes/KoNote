@@ -5,6 +5,8 @@
 # This module defines all cryptographic operations (encryption, digital
 # signatures, etc) used in this project.
 #
+# Full API documentation is available on the wiki.
+#
 # WARNING: This code is delicate.  I strongly recommend avoiding changing this
 # code if possible.  Ask Tim McLean <tim@timmclean.net> to review any and all
 # changes, even refactors.
@@ -163,6 +165,14 @@ class SymmetricEncryptionKey
 		]
 
 class PrivateKey
+	# Implementation notes:
+	# - Signing not yet implemented, except for key generation
+	# - Encryption is hybrid encryption using RSA and AES-GCM
+	# - RSA-OAEP with a 3072-bit modulus and MGF1+SHA256 (e=65537)
+	# - AES-GCM uses a new random key for each message
+	# - See SymmetricEncryptionKey for AES-GCM implementation notes
+	# - Underlying primitives are from Web Crypto until we upgrade NW.js
+
 	# PRIVATE CONSTRUCTOR
 	# Do not call this directly.
 	# Use generate or import instead.

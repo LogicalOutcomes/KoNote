@@ -104,6 +104,12 @@ class Lock
 			return isCancelled or newLock
 		(callback) =>
 			@acquire session, lockId, (err, lock) ->
+				if err
+					console.error "Failed to obtain lock:"
+					console.error err
+					console.error err.stack
+					console.error "Ignoring error and retrying..."
+
 				if lock
 					newLock = lock
 					callback()
@@ -247,7 +253,6 @@ class Lock
 		Fs.readdir lockDir, (err, fileNames) ->
 			if err
 				# LockDir has been deleted during operation
-				# TODO: Figure out Windows errors to handle
 				if err.code in ['ENOENT']
 					cb new LockDeletedError()
 					return
@@ -282,9 +287,8 @@ class Lock
 			cb null, result
 
 	@_readMetadata: (lockDir, cb) ->
-		Fs.readFile lockDir+"/metadata", (err, data) ->
+		Fs.readFile Path.join(lockDir, "metadata"), (err, data) ->
 			if err
-				# TODO: Figure out Windows errors to handle
 				if err.code in ['ENOENT']
 					cb new LockDeletedError()
 					return
