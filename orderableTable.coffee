@@ -33,13 +33,15 @@ load = (win) ->
 			firstColumn = @props.columns[0].dataPath
 
 			return {
-				sortBy: if @props.sortBy? then @props.sortBy else firstColumn
+				sortByData: if @props.sortByData? then @props.sortByData else firstColumn
 				isSortAsc: null
 			}
 
 		render: ->
 			data = @props.tableData
-			.sortBy (dataPoint) => dataPoint.getIn(@state.sortBy).toLowerCase()
+			.sortBy (dataPoint) => 
+				value = dataPoint.getIn(@state.sortByData)
+				if typeof value isnt 'number' then value.toLowerCase() else value
 			.filter (dataPoint) => @props.rowIsVisible(dataPoint)
 
 			if @state.isSortAsc
@@ -51,11 +53,11 @@ load = (win) ->
 						(@props.columns.map (column) =>
 							R.th({}, 
 								R.span({
-									onClick: @_sortBy.bind null, column.dataPath
+									onClick: @_sortByData.bind null, column.dataPath
 								}, 
 									column.name unless column.nameIsVisible? and not column.nameIsVisible
 
-									if column.dataPath? and _.isEqual(@state.sortBy, column.dataPath)
+									if column.dataPath? and _.isEqual(@state.sortByData, column.dataPath)
 										(FaIcon("chevron-#{
 											if @state.isSortAsc then 'up' else 'down'
 										}"))
@@ -103,6 +105,7 @@ load = (win) ->
 												if button.dialog?
 													# Flatten props from orderableTable API for OpenDialogButton
 													props = {}
+
 													_.extend(props, button.data, {
 														className: button.className
 														text: if button.dataPath?
@@ -133,14 +136,13 @@ load = (win) ->
 				)
 			)
 
-		_sortBy: (sortByData) ->
+		_sortByData: (sortByData) ->
 			# Flip ordering if same sorting as before
-			if sortBy is @state.sortBy
+			if sortByData is @state.sortByData
 				@setState {isSortAsc: not @state.isSortAsc}
 			else
 				@setState {
-					sortBy
-					isSortAsc: false
+					sortByData
 				}
 
 	return OrderableTable

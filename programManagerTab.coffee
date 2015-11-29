@@ -50,7 +50,7 @@ load = (win) ->
 				R.div({className: 'main'},
 					OrderableTable({
 						tableData: programs
-						sortBy: ['name']
+						sortByData: ['name']
 						columns: [
 							{
 								name: "Color Key"
@@ -75,10 +75,12 @@ load = (win) ->
 							{
 								name: Term 'Clients'
 								cellClass: 'numberClientsCell'
+								dataPath: ['numberClients']
+								hideValue: true
 								buttons: [{
 									className: 'btn btn-default'
 									dataPath: ['numberClients']
-									icon: 'user'
+									icon: 'users'
 									dialog: ManageProgramClientsDialog
 									data:
 										clientFileHeaders: @props.clientFileHeaders
