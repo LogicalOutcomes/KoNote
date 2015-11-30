@@ -179,10 +179,13 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					)
 					[indexValues..., id] = decodeFileName(decryptedFileName, modelDef.indexes.length + 1)
 
-					result = Imm.Map({id, _dirPath: Path.join(collectionDir, fileName)})
+					result = Imm.Map({
+						id: Base64url.encode id
+						_dirPath: Path.join(collectionDir, fileName)
+					})
 
 					for indexedProp, i in modelDef.indexes
-						result = result.setIn indexedProp, indexValues[i]
+						result = result.setIn indexedProp, indexValues[i].toString()
 
 					return result
 
@@ -560,22 +563,27 @@ createObjectFileName = (obj, indexes) ->
 
 	for index in indexes
 		indexValue = obj.getIn(index, '').toString()
-		components.push indexValue
+		components.push new Buffer(indexValue, 'utf8')
 
 	# ID is always indexed
-	components.push obj.get('id')
+	# For space efficiency, we'll take advantage of the fact that IDs are
+	# essentially base64url.
+	components.push Base64url.toBuffer obj.get('id')
 
 	return encodeFileName components
 
 parseRevisionFileName = (decryptedFileName) ->
 	[timestamp, revisionId] = decodeFileName(decryptedFileName, 2)
 
-	return Imm.Map({timestamp, revisionId})
+	return Imm.Map({
+		timestamp: timestamp.toString()
+		revisionId: Base64url.encode revisionId
+	})
 
 createRevisionFileName = (obj) ->
 	return encodeFileName [
-		obj.get('timestamp')
-		obj.get('revisionId')
+		new Buffer(obj.get('timestamp'), 'utf8')
+		Base64url.toBuffer obj.get('revisionId')
 	]
 
 # Since we want to include multiple strings in a single file name, an encoding
@@ -583,18 +591,17 @@ createRevisionFileName = (obj) ->
 # the file name will be encrypted, we're able to use arbitrary bytes.  We will
 # use an encoding with the following rules:
 # - The strings are first encoded as bytes as per UTF-8
-# - All byte values (0x00 - 0xFF) except 0x2E (i.e. an ascii dot) are output
-#   unchanged.
-# - 0x2E is encoded as 0x2E4C (i.e. an ascii dot followed by an ascii uppercase
-#   L).  "L" is a mnemonic for "Literal".
-# - The encoded strings are delimited by 0x2E53 (i.e. an ascii dot followed by
-#   an ascii uppercase S).  "S" is a mnemonic for "Separator".
+# - All byte values (0x00 - 0xFF) except 0x00 are output unchanged.
+# - 0x00 is encoded as 0x004C (i.e. a NUL byte followed by an ascii uppercase L).
+#   "L" is a mnemonic for "Literal".
+# - The encoded strings are delimited by 0x0053 (i.e. a NUL byte followed by an
+#   ascii uppercase S).  "S" is a mnemonic for "Separator".
 #
 # This ensures that any string (or even any binary string) can be encoded and
 # decoded unambiguously.
 
 encodeFileName = (components) ->
-	delimiter = new Buffer([0x2E, 0x53]) # ".S"
+	delimiter = new Buffer([0x00, 0x53])
 
 	result = []
 
@@ -615,7 +622,7 @@ decodeFileName = (fileName, componentCount) ->
 	i = 0
 	while i < fileName.length
 		# If the next byte is a special sequence
-		if fileName[i] is 0x2E
+		if fileName[i] is 0x00
 			# If no more bytes in the file name
 			if i is (fileName.length - 1)
 				# There must always be another byte following a dot
@@ -623,8 +630,8 @@ decodeFileName = (fileName, componentCount) ->
 
 			switch fileName[i+1]
 				when 0x4C # "L"
-					# Add literal dot to component
-					nextComp[nextCompOffset] = 0x2E # "."
+					# Add literal NUL byte to component
+					nextComp[nextCompOffset] = 0x00
 					nextCompOffset += 1
 				when 0x53 # "S"
 					# Found a separator, time to start on the next component
@@ -650,29 +657,28 @@ decodeFileName = (fileName, componentCount) ->
 	# Add the last component to the result list
 	comps.push nextComp.slice(0, nextCompOffset)
 
-	compStrings = (c.toString() for c in comps)
-
-	if compStrings.length isnt componentCount
+	if comps.length isnt componentCount
 		console.log fileName
-		throw new Error "expected #{componentCount} parts in file name #{JSON.stringify compStrings}"
+		throw new Error "expected #{componentCount} parts in file name #{JSON.stringify comps}"
 
-	return compStrings
+	return comps
 
-encodeFileNameComponent = (s) ->
-	literalDot = new Buffer([0x2E, 0x4C]) # ".L"
+encodeFileNameComponent = (comp) ->
+	unless Buffer.isBuffer comp
+		throw new Error "expected file name component to be a buffer"
 
-	asBytes = new Buffer(s, 'utf8')
+	literalNulByte = new Buffer([0x00, 0x4C])
 
 	result = []
 
-	for i in [0...asBytes.length]
+	for i in [0...comp.length]
 		# If the byte needs to be encoded specially
-		if asBytes[i] is 0x2E # "."
-			result.push literalDot
+		if comp[i] is 0x00
+			result.push literalNulByte
 			continue
 
 		# This is probably pretty inefficient...
-		result.push asBytes.slice(i, i+1)
+		result.push comp.slice(i, i+1)
 
 	return Buffer.concat result
 
