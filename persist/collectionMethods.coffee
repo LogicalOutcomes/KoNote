@@ -13,6 +13,7 @@ Moment = require 'moment'
 Path = require 'path'
 
 Atomic = require './atomic'
+Crypto = require './crypto'
 
 {
 	IOError
@@ -76,6 +77,8 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		.set 'author', session.userName
 		.set 'timestamp', Moment().format(TimestampFormat)
 
+		fileNameEncryptionKey = getFileNameEncryptionKey()
+
 		destObjDir = null
 		objDir = null
 		objDirOp = null
@@ -88,7 +91,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 						return
 
 					fileName = createObjectFileName(obj, modelDef.indexes)
-					encryptedFileName = Base64url.encode session.globalEncryptionKey.encrypt fileName
+					encryptedFileName = Base64url.encode fileNameEncryptionKey.encrypt fileName
 					destObjDir = Path.join(
 						parentDir
 						modelDef.collectionName
@@ -119,7 +122,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				, cb
 			(cb) ->
 				revFileName = createRevisionFileName(obj)
-				encryptedRevFileName = Base64url.encode session.globalEncryptionKey.encrypt revFileName
+				encryptedRevFileName = Base64url.encode fileNameEncryptionKey.encrypt revFileName
 
 				revFilePath = Path.join(objDir, encryptedRevFileName)
 
@@ -171,7 +174,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 			result = Imm.List(fileNames)
 				.map (fileName) ->
-					decryptedFileName = session.globalEncryptionKey.decrypt(
+					decryptedFileName = getFileNameEncryptionKey().decrypt(
 						Base64url.toBuffer fileName
 					)
 					[indexValues..., id] = decodeFileName(decryptedFileName, modelDef.indexes.length + 1)
@@ -228,6 +231,8 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		.set 'author', session.userName
 		.set 'timestamp', Moment().format(TimestampFormat)
 
+		fileNameEncryptionKey = getFileNameEncryptionKey()
+
 		objDir = null
 		Async.series [
 			(cb) ->
@@ -240,7 +245,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					cb()
 			(cb) ->
 				revFileName = createRevisionFileName(obj)
-				encryptedRevFileName = Base64url.encode session.globalEncryptionKey.encrypt revFileName
+				encryptedRevFileName = Base64url.encode fileNameEncryptionKey.encrypt revFileName
 
 				revFilePath = Path.join(objDir, encryptedRevFileName)
 
@@ -251,7 +256,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				expectedDecryptedDirName = createObjectFileName(obj, modelDef.indexes)
 
 				currentEncryptedDirName = Path.basename objDir
-				currentDecryptedDirName = session.globalEncryptionKey.decrypt(
+				currentDecryptedDirName = fileNameEncryptionKey.decrypt(
 					Base64url.toBuffer currentEncryptedDirName
 				)
 
@@ -261,7 +266,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 				# But sometimes expectations don't meet reality
 				currentDirPath = Path.join(parentDirPath, currentEncryptedDirName)
-				newDirName = Base64url.encode session.globalEncryptionKey.encrypt expectedDecryptedDirName
+				newDirName = Base64url.encode fileNameEncryptionKey.encrypt expectedDecryptedDirName
 				newDirPath = Path.join(parentDirPath, newDirName)
 
 				objDir = newDirPath
@@ -286,6 +291,8 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			cb new Error "wrong number of arguments"
 			return
 
+		fileNameEncryptionKey = getFileNameEncryptionKey()
+
 		objDir = null
 		revisions = null
 		revObjs = null
@@ -309,7 +316,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					.filter (fileName) ->
 						return not childCollectionNames.contains(fileName)
 					.map (fileName) ->
-						decryptedFileName = session.globalEncryptionKey.decrypt(
+						decryptedFileName = fileNameEncryptionKey.decrypt(
 							Base64url.toBuffer fileName
 						)
 						revision = parseRevisionFileName(decryptedFileName)
@@ -504,6 +511,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				return
 
 			cb null, obj
+
+	getFileNameEncryptionKey = ->
+		return new Crypto.WeakSymmetricEncryptionKey(session.globalEncryptionKey, 4)
 
 	result = {
 		create,
