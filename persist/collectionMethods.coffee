@@ -516,7 +516,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			cb null, obj
 
 	getFileNameEncryptionKey = ->
-		return new Crypto.WeakSymmetricEncryptionKey(session.globalEncryptionKey, 4)
+		return new Crypto.WeakSymmetricEncryptionKey(session.globalEncryptionKey, 5)
 
 	result = {
 		create,
