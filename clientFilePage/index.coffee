@@ -167,18 +167,7 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						# sort by date (backdate if present)
-						# datetimeformat converted to int for safe sorting
-						Async.sortBy results, ((item, callback) ->
-							if item.get('backdate') != ''
-								sortDate = item.get('backdate').replace(/[^\d]/g, '')
-							else
-								sortDate = item.get('timestamp').replace(/[^\d]/g, '')
-							callback err, sortDate
-						), (err, results) ->
-							progressNotes = Imm.List results
-
-						# checkFileSync progressNotes, @state.progressNotes
+						progressNotes = Imm.List results
 						cb()
 				(cb) =>
 					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
@@ -197,8 +186,6 @@ load = (win, {clientFileId}) ->
 							return
 
 						progressEvents = Imm.List results
-
-						# checkFileSync progressEvents, @state.progressEvents
 						cb()
 				(cb) =>
 					ActiveSession.persist.metrics.list (err, results) =>
@@ -221,7 +208,7 @@ load = (win, {clientFileId}) ->
 							return [metric.get('id'), metric]
 						.fromEntrySeq().toMap()
 
-						# checkFileSync metricsById, @state.metricsById
+						checkFileSync metricsById, @state.metricsById
 						cb()
 			], (err) =>
 				if err
@@ -541,6 +528,13 @@ load = (win, {clientFileId}) ->
 			recordId = @props.clientFile.get('recordId')
 			@props.setWindowTitle "#{clientName} - KoNote"
 
+			# Sort progNotes by timestamp unixMs (backdate if exists)
+			sortedProgNotes = @props.progressNotes
+			.sortBy (progNote) ->
+				timestampChoice = if progNote.get('backdate') then 'backdate' else 'timestamp'
+				return +Moment progNote.get(timestampChoice), Persist.TimestampFormat
+			.reverse()
+
 			return R.div({className: 'clientFilePage'},
 				Spinner({isOverlay: true, isVisible: @props.isLoading})
 
@@ -571,7 +565,7 @@ load = (win, {clientFileId}) ->
 						isVisible: activeTabId is 'progressNotes'
 						clientFileId
 						clientFile: @props.clientFile
-						progNotes: @props.progressNotes
+						progNotes: sortedProgNotes
 						progEvents: @props.progressEvents
 						metricsById: @props.metricsById
 						isReadOnly
@@ -583,7 +577,7 @@ load = (win, {clientFileId}) ->
 					AnalysisTab.AnalysisView({
 						isVisible: activeTabId is 'analysis'
 						clientFileId
-						progNotes: @props.progressNotes
+						progNotes: sortedProgNotes
 						progEvents: @props.progressEvents
 						metricsById: @props.metricsById
 						isReadOnly

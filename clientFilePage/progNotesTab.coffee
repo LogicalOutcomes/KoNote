@@ -93,7 +93,7 @@ load = (win) ->
 								"Add #{Term 'quick note'}"
 							)
 						)
-						(@props.progNotes.reverse().map (progNote) =>
+						(@props.progNotes.map (progNote) =>
 							# Filter out only events for this progNote
 							progEvents = @props.progEvents.filter (progEvent) =>
 								return progEvent.get('relatedProgNoteId') is progNote.get('id')
