@@ -89,7 +89,8 @@ module.exports = function(grunt) {
 							'!data/**',
 							'!customers/**',
 							'!config-dev.coffee',
-							'!README.md'
+							'!README.md',
+							'!uninstaller/**'
 						],
 						dest: '../konote-builds/<%= grunt.task.current.args[0] %>/',
 						filter: 'isFile',
@@ -120,6 +121,16 @@ module.exports = function(grunt) {
 							'customers/griffin.coffee'
 						],
 						dest: '../konote-builds/<%= grunt.task.current.args[0] %>/config-customer.coffee'
+					}
+				]
+			},
+			generic: {
+				files: [
+					{
+						src: [
+							'uninstaller/uninstall.exe'
+						],
+						dest: '../konote-builds/<%= grunt.task.current.args[0] %>/uninstall.exe'
 					}
 				]
 			}
@@ -211,6 +222,7 @@ module.exports = function(grunt) {
 			if (generic) {
 				// do win generic build
 				grunt.task.run('copy:main:win-generic');
+				grunt.task.run('copy:generic:win-generic');
 				grunt.task.run('nwjs:win:win-generic');
 				grunt.task.run('exec:zip:win-generic');
 			}
@@ -240,10 +252,10 @@ module.exports = function(grunt) {
 				// do mac griffin build
 				grunt.task.run('copy:main:mac-griffin');
 				grunt.task.run('nwjs:mac:mac-griffin');
-				grunt.task.run('exec:prep:mac-griffin');
-				grunt.task.run('exec:append:mac-griffin');
-				grunt.task.run('exec:set:mac-griffin');
-				grunt.task.run('exec:hide:mac-griffin');
+				//grunt.task.run('exec:prep:mac-griffin');
+				//grunt.task.run('exec:append:mac-griffin');
+				//grunt.task.run('exec:set:mac-griffin');
+				//grunt.task.run('exec:hide:mac-griffin');
 				if (process.platform == 'darwin') {
 					grunt.task.run('appdmg:main:mac-griffin');
 				}
