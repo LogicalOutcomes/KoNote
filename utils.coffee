@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Config = require './config'
+_ = require 'underscore'
 
 # This class allows new error types to be created easily without breaking stack
 # traces, toString, etc.
@@ -31,9 +32,24 @@ load = (win) ->
 	R = React.DOM
 	Gui = win.require 'nw.gui'
 
+	# Execute variable as a function if it is one
+	executeIfFunction = (variable, arg) ->
+		if typeof variable is 'function'
+			if arg?
+				return variable arg
+			else
+				return variable()
+		else
+			return variable
+
 	# Shortcut for using Font Awesome icons in React
-	FaIcon = (name) ->
-		return R.i({className: "fa fa-#{name}"})
+	FaIcon = (name, customProps) ->
+		properties = {className: "fa fa-#{name}"}
+		if customProps?
+			# Extend in any custom settings
+			_.extend properties, customProps
+
+		return R.i(properties)
 
 	# A convenience method for opening a new window
 	openWindow = (params) ->
@@ -115,6 +131,7 @@ load = (win) ->
 
 	return {
 		CustomError
+		executeIfFunction
 		FaIcon
 		openWindow
 		renderLineBreaks

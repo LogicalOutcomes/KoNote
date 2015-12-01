@@ -16,9 +16,9 @@ dataModelDefinitions = [
 		collectionName: 'clientFiles'
 		isMutable: true
 		indexes: [
-			['clientName', 'first'], 
-			['clientName', 'middle'], 
-			['clientName', 'last'],
+			['clientName', 'first']
+			['clientName', 'middle']
+			['clientName', 'last']
 			['recordId']
 		]
 		schema: Joi.object().keys({
@@ -70,10 +70,7 @@ dataModelDefinitions = [
 				name: 'progNote'
 				collectionName: 'progNotes'
 				isMutable: false
-				indexes: [
-					['timestamp'],
-					['backdate']
-				]
+				indexes: [['timestamp'], ['backdate']]
 				schema: [
 					Joi.object().keys({
 						type: 'basic' # aka "Quick Notes"
@@ -151,6 +148,7 @@ dataModelDefinitions = [
 			)
 		})
 	}
+
 	{
 		name: 'metric'
 		collectionName: 'metrics'
@@ -160,7 +158,32 @@ dataModelDefinitions = [
 			name: Joi.string()
 			definition: Joi.string()
 		})
-	}	
+	}
+
+	{
+		name: 'program'
+		collectionName: 'programs'
+		isMutable: true
+		indexes: [['name'], ['colorKeyHex']]
+		schema: Joi.object().keys({
+			name: Joi.string()
+			description: Joi.string()
+			colorKeyHex: Joi.string().regex(/^#[A-Fa-f0-9]{6}/)
+		})
+	}
+
+	# Link a clientFileId to 1 or more programIds
+	{
+		name: 'clientFileProgramLink'
+		collectionName: 'clientFileProgramLinks'
+		isMutable: true
+		indexes: [['status'], ['clientFileId'], ['programId']]
+		schema: Joi.object().keys({
+			clientFileId: IdSchema
+			programId: IdSchema
+			status: ["enrolled", "unenrolled"]
+		})
+	}
 ]
 
 getApi = (session) ->

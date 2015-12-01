@@ -200,9 +200,9 @@ load = (win, {clientFileId}) ->
 
 				# Done loading data, we can generate the prognote now
 				@setState {						
-						isLoading: false
-						progNote
-					}
+					isLoading: false
+					progNote
+				}
 
 		_createProgNoteFromTemplate: (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
@@ -550,7 +550,7 @@ load = (win, {clientFileId}) ->
 			@setState {progNote}
 
 		_updateBasicSectionMetric: (sectionId, metricId, newValue) ->
-			return @render() if @_invalidMetricFormat(newValue)
+			return unless @_isValidMetric(newValue)
 
 			sectionIndex = @_getSectionIndex sectionId
 
@@ -577,7 +577,7 @@ load = (win, {clientFileId}) ->
 			}
 
 		_updatePlanSectionMetric: (sectionId, targetId, metricId, newValue) ->
-			return @render() if @_invalidMetricFormat(newValue)
+			return unless @_isValidMetric(newValue)
 
 			sectionIndex = @_getSectionIndex sectionId
 			targetIndex = @_getTargetIndex sectionIndex, targetId
@@ -594,7 +594,7 @@ load = (win, {clientFileId}) ->
 				)
 			}
 
-		_invalidMetricFormat: (value) -> not value.match /^-?\d*\.?\d*$/
+		_isValidMetric: (value) -> value.match /^-?\d*\.?\d*$/
 
 		_save: ->
 			progNoteId = null

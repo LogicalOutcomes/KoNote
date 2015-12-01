@@ -33,8 +33,15 @@ load = (win) ->
 				isNewInstallation: false
 			}
 
-		init: ->
-			@_checkSetUp()			
+		init: ->			
+			if Config.autoLogin?
+				@_autoLogin()
+				return
+
+			@_checkSetUp()
+
+		_autoLogin: ->
+			@_login Config.autoLogin.userName, Config.autoLogin.password
 
 		deinit: (cb=(->)) ->
 			@setState {isLoading: false}, cb
