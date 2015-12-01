@@ -618,7 +618,7 @@ load = (win) ->
 				return Imm.List()
 			when 'full'
 				return progNote.get('sections').flatMap (section) ->
-					if progNote.get('backdate') != ''
+					if progNote.get('backdate')
 						return extractMetricsFromProgNoteSection section, progNote.get('backdate')
 					else
 						return extractMetricsFromProgNoteSection section, progNote.get('timestamp')
