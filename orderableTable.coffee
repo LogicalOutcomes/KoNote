@@ -26,6 +26,7 @@ load = (win) ->
 				data: Imm.List()
 				columns: Imm.List()
 				rowKey: ['id']
+				onClickRow: ->
 				rowIsVisible: -> return true
 			}
 
@@ -68,7 +69,10 @@ load = (win) ->
 				)
 				R.tbody({},
 					(data.map (dataPoint) =>
-						R.tr({key: dataPoint.getIn(@props.rowKey)},
+						R.tr({
+							key: dataPoint.getIn(@props.rowKey)
+							onClick: @props.onClickRow dataPoint
+						},
 							(@props.columns.map (column) =>
 								R.td({
 									key: column.name

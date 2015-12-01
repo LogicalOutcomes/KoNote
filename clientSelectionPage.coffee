@@ -354,6 +354,8 @@ load = (win) ->
 							OrderableTable({
 								tableData: queryResults
 								sortByData: ['clientName']
+								key: ['id']
+								onClickRow: (dataPoint) => @_onResultSelection.bind null, dataPoint.get('id')
 								columns: [
 									{
 										name: "Programs"
