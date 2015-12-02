@@ -81,46 +81,26 @@ module.exports = function(grunt) {
 				files: [
 					{
 						src: [
-							'**',
-							'!node_modules/nodewebkit/**',
-							'!node_modules/nw/**',
-							'!node_modules/grunt*/**',
-							'!.git/**',
-							'!data/**',
-							'!customers/**',
-							'!config-dev.coffee',
-							'!README.md',
-							'!uninstaller/**'
+							'package.json',
+							'src/**',
+							'!src/config-dev.coffee'
 						],
-						dest: '../konote-builds/<%= grunt.task.current.args[0] %>/',
+						dest: 'build/releases/<%= grunt.task.current.args[0] %>/',
 						filter: 'isFile',
 						expand: true
 					}
 				],
 				cwd: '/'
 			},
-			osx: {
-				files: [
-					{
-						src: [
-							'config.coffee'
-						],
-						dest: '../konote-builds/<%= grunt.task.current.args[0] %>/config.coffee'
-					}
-				],
-				options: {
-					process: function (content, srcpath) {
-						return content.replace(/'data'/g,"'../../../../data'");
-					}
-				}
-			},
 			griffin: {
 				files: [
 					{
 						src: [
-							'customers/griffin.coffee'
+							'customers/griffin/config-customer.coffee',
+							'customer-logo-lg_GRIFFIN.png',
+							'customer-logo-sm_GRIFFIN.png'
 						],
-						dest: '../konote-builds/<%= grunt.task.current.args[0] %>/config-customer.coffee'
+						dest: 'build/releases/<%= grunt.task.current.args[0] %>/'
 					}
 				]
 			},
@@ -128,9 +108,9 @@ module.exports = function(grunt) {
 				files: [
 					{
 						src: [
-							'uninstaller/uninstall.exe'
+							'build/uninstaller/uninstall.exe'
 						],
-						dest: '../konote-builds/<%= grunt.task.current.args[0] %>/uninstall.exe'
+						dest: 'build/releases/<%= grunt.task.current.args[0] %>/uninstall.exe'
 					}
 				]
 			}
@@ -147,12 +127,12 @@ module.exports = function(grunt) {
 					version: '<%= pkg.dependencies.nodewebkit %>', //nwjs version to download
 					platforms: ['osx64'],
 					buildType: 'default',
-					buildDir: '../konote-releases/temp/<%= grunt.task.current.args[0] %>',
-					cacheDir: '../konote-builds/<%= grunt.task.current.args[0] %>/cache',
+					buildDir: 'build/releases/temp/<%= grunt.task.current.args[0] %>',
+					cacheDir: 'build/releases/cache/<%= grunt.task.current.args[0] %>',
 					macZip: false,
 					forceDownload: true
 				},
-				src: ['../konote-builds/<%= grunt.task.current.args[0] %>/**']
+				src: ['build/releases/<%= grunt.task.current.args[0] %>/**']
 			},
 			win: {
 				options: {
@@ -160,12 +140,12 @@ module.exports = function(grunt) {
 					version: '<%= pkg.dependencies.nodewebkit %>', //nwjs version to download
 					platforms: ['win32'],
 					buildType: 'default',
-					buildDir: '../konote-releases/temp/<%= grunt.task.current.args[0] %>',
-					cacheDir: '../konote-builds/<%= grunt.task.current.args[0] %>/cache',
+					buildDir: 'build/releases/temp/<%= grunt.task.current.args[0] %>',
+					cacheDir: 'build/releases/cache/<%= grunt.task.current.args[0] %>',
 					winZip: false,
 					forceDownload: true
 				},
-				src: ['../konote-builds/<%= grunt.task.current.args[0] %>/**']
+				src: ['build/releases/<%= grunt.task.current.args[0] %>/**']
 			}
     	},
 		// format the osx folder icon for the dmg, zip windows build, cleanup tmp files
@@ -175,10 +155,10 @@ module.exports = function(grunt) {
 			set: "SetFile -a C ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote",
 			hide: "SetFile -a V $'../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/Icon\r'",
 			zip: {
-				cwd: '../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/win32',
+				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/KoNote/win32',
 				cmd: 'zip -r --quiet ../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
 			},
-			clean: 'rm -rf ../konote-builds ../konote-releases/temp'
+			clean: 'rm -rf builds/releases/cache builds/releases/temp'
 		},
 		// build pretty .dmg
 		appdmg: {
@@ -189,11 +169,11 @@ module.exports = function(grunt) {
 					icon: 'icon.icns',
 					background: 'background.tiff', 'icon-size': 104,
 					contents: [
-						{x: 130, y: 150, type: 'file', path: '../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},
+						{x: 130, y: 150, type: 'file', path: 'builds/releases/temp/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},
 						{x: 320, y: 150, type: 'link', path: '/Applications'}
 					]
 				},
-				dest: '../konote-releases/konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.dmg'
+				dest: 'builds/releases/konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.dmg'
 			}
 		}
 	});

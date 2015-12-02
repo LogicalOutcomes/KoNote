@@ -2,7 +2,7 @@
   "name": "konote",
   "displayName": "KoNote",
   "version": "1.4.0",
-  "main": "main.html",
+  "main": "src/main.html",
   "window": {
     "icon": "icon.png",
     "title": "KoNote",
