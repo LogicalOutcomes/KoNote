@@ -83,9 +83,12 @@ module.exports = function(grunt) {
 						src: [
 							'package.json',
 							'src/**',
+							'node_modules/**',
+							'!node_modules/nw/**',
+							'!node_modules/nodewebkit/**
 							'!src/config-dev.coffee'
 						],
-						dest: 'build/releases/<%= grunt.task.current.args[0] %>/',
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/',
 						filter: 'isFile',
 						expand: true
 					}
@@ -100,7 +103,7 @@ module.exports = function(grunt) {
 							'customer-logo-lg_GRIFFIN.png',
 							'customer-logo-sm_GRIFFIN.png'
 						],
-						dest: 'build/releases/<%= grunt.task.current.args[0] %>/'
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/'
 					}
 				]
 			},
@@ -110,7 +113,7 @@ module.exports = function(grunt) {
 						src: [
 							'build/uninstaller/uninstall.exe'
 						],
-						dest: 'build/releases/<%= grunt.task.current.args[0] %>/uninstall.exe'
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/uninstall.exe'
 					}
 				]
 			}
@@ -123,16 +126,16 @@ module.exports = function(grunt) {
 				options: {
 					appName: '<%= pkg.displayName %>',
 					//macCredits: 'path-to-file',
-					macIcns: 'build/releases/<%= grunt.task.current.args[0] %>/src/icon.icns',
+					macIcns: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/icon.icns',
 					version: '<%= pkg.dependencies.nodewebkit %>', //nwjs version to download
 					platforms: ['osx64'],
 					buildType: 'default',
-					buildDir: 'build/releases/temp/<%= grunt.task.current.args[0] %>',
-					cacheDir: 'build/releases/cache/<%= grunt.task.current.args[0] %>',
+					buildDir: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>',
+					cacheDir: 'build/releases/temp/cache/<%= grunt.task.current.args[0] %>',
 					macZip: false,
 					forceDownload: true
 				},
-				src: ['build/releases/<%= grunt.task.current.args[0] %>/**']
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/**']
 			},
 			win: {
 				options: {
@@ -140,12 +143,12 @@ module.exports = function(grunt) {
 					version: '<%= pkg.dependencies.nodewebkit %>', //nwjs version to download
 					platforms: ['win32'],
 					buildType: 'default',
-					buildDir: 'build/releases/temp/<%= grunt.task.current.args[0] %>',
-					cacheDir: 'build/releases/cache/<%= grunt.task.current.args[0] %>',
+					buildDir: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>',
+					cacheDir: 'build/releases/temp/cache/<%= grunt.task.current.args[0] %>',
 					winZip: false,
 					forceDownload: true
 				},
-				src: ['build/releases/<%= grunt.task.current.args[0] %>/**']
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/**']
 			}
     	},
 		// format the osx folder icon for the dmg, zip windows build, cleanup tmp files
@@ -158,7 +161,8 @@ module.exports = function(grunt) {
 				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/KoNote/win32',
 				cmd: 'zip -r --quiet ../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
 			},
-			clean: 'rm -rf builds/releases/cache builds/releases/temp'
+			//cleanCoffee: "rm -rf builds/releases/temp/<%= grunt.task.current.args[0] %>/*.coffee",
+			clean: 'rm -rf build/releases/temp'
 		},
 		// build pretty .dmg
 		appdmg: {
@@ -179,7 +183,7 @@ module.exports = function(grunt) {
 		stylus: {
 			compile: {
 				files: {
-					'src/main.css': 'src/main.styl'
+					'build/releases/temp/<%= grunt.task.current.args[0] %>/src/main.css': 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/main.styl'
 				}
 			}
 		},
@@ -194,7 +198,7 @@ module.exports = function(grunt) {
 			},
 			compileMultiple: {
 				expand: true,
-				cwd: 'src',
+				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/',
 				src: ['**/*.coffee'],
 				dest: 'src/',
 				ext: '.js'
@@ -229,6 +233,9 @@ module.exports = function(grunt) {
 				// do win generic build
 				grunt.task.run('copy:main:win-generic');
 				grunt.task.run('copy:generic:win-generic');
+				grunt.task.run('stylus:compile:win-generic');
+				grunt.task.run('coffee:compileMultiple:win-generic');
+				//grunt.task.run('exec:cleanCoffee:win-generic');
 				grunt.task.run('nwjs:win:win-generic');
 				grunt.task.run('exec:zip:win-generic');
 			}
@@ -236,6 +243,8 @@ module.exports = function(grunt) {
 				// do win griffin build
 				grunt.task.run('copy:main:win-griffin');
 				grunt.task.run('copy:griffin:win-griffin');
+				grunt.task.run('stylus:compile:win-griffin');
+				grunt.task.run('coffee:compileMultiple:win-generic');
 				grunt.task.run('nwjs:win:win-griffin');
 				grunt.task.run('exec:zip:win-griffin');
 			}
@@ -244,6 +253,8 @@ module.exports = function(grunt) {
 			if (generic) {
 				// do mac generic build
 				grunt.task.run('copy:main:mac-generic');
+				grunt.task.run('stylus:compile:mac-generic');
+				grunt.task.run('coffee:compileMultiple:win-generic');
 				//grunt.task.run('copy:osx:mac-generic');
 				grunt.task.run('nwjs:mac:mac-generic');
 				//grunt.task.run('exec:prep:mac-generic');
@@ -257,6 +268,8 @@ module.exports = function(grunt) {
 			if (griffin) {
 				// do mac griffin build
 				grunt.task.run('copy:main:mac-griffin');
+				grunt.task.run('stylus:compile:mac-generic');
+				grunt.task.run('coffee:compileMultiple:win-generic');
 				grunt.task.run('nwjs:mac:mac-griffin');
 				//grunt.task.run('exec:prep:mac-griffin');
 				//grunt.task.run('exec:append:mac-griffin');
