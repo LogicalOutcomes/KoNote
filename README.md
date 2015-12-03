@@ -55,7 +55,7 @@ We merge our release branch to master, tag it, and delete the release branch. Wh
 
 1. Clone repo: `git clone git@github.com:konode001/konote.git`
 2. Open repo: `cd konote`
-3. Run `npm install`
+3. Run `npm install -production` (does not install optional dependencies)
 4. Run `grunt build`
 5. A *releases* directory is created inside the builds directory
 

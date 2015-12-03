@@ -182,6 +182,23 @@ module.exports = function(grunt) {
 					'src/main.css': 'src/main.styl'
 				}
 			}
+		},
+		coffee: {
+			compileWithMaps: {
+				options: {
+					sourceMap: true
+				},
+				files: {
+					'path/to/result.js': 'path/to/source.coffee'
+				}
+			},
+			compileMultiple: {
+				expand: true,
+				cwd: 'src',
+				src: ['**/*.coffee'],
+				dest: 'src/',
+				ext: '.js'
+			}
 		}
 	});
 	
@@ -191,6 +208,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-prompt');
 	grunt.loadNpmTasks('grunt-contrib-stylus');
+	grunt.loadNpmTasks('grunt-contrib-coffee');
 	
 	// if on osx, we can use appdmg
 	if (process.platform == 'darwin') {
