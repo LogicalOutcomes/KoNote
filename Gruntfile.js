@@ -123,7 +123,7 @@ module.exports = function(grunt) {
 				options: {
 					appName: '<%= pkg.displayName %>',
 					//macCredits: 'path-to-file',
-					macIcns: './icon.icns',
+					macIcns: 'build/releases/<%= grunt.task.current.args[0] %>/src/icon.icns',
 					version: '<%= pkg.dependencies.nodewebkit %>', //nwjs version to download
 					platforms: ['osx64'],
 					buildType: 'default',
@@ -169,11 +169,11 @@ module.exports = function(grunt) {
 					icon: 'icon.icns',
 					background: 'background.tiff', 'icon-size': 104,
 					contents: [
-						{x: 130, y: 150, type: 'file', path: 'builds/releases/temp/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},
+						{x: 130, y: 150, type: 'file', path: 'build/releases/temp/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},
 						{x: 320, y: 150, type: 'link', path: '/Applications'}
 					]
 				},
-				dest: 'builds/releases/konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.dmg'
+				dest: 'build/releases/konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.dmg'
 			}
 		}
 	});
