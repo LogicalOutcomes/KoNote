@@ -77,6 +77,5 @@ We merge our release branch to master, tag it, and delete the release branch. Wh
 https://github.com/nwjs/nw.js/wiki/how-to-package-and-distribute-your-apps#step-1-make-a-package
 
 ##### NWJS builds are available here:
-Recent Versions: https://github.com/nwjs/nw.js
-
-Old Versions: https://github.com/nwjs/nw.js/wiki/Downloads-of-old-versions
+- Recent versions: https://github.com/nwjs/nw.js
+- Old versions: https://github.com/nwjs/nw.js/wiki/Downloads-of-old-versions
