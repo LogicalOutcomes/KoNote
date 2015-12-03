@@ -175,6 +175,13 @@ module.exports = function(grunt) {
 				},
 				dest: 'build/releases/konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.dmg'
 			}
+		},
+		stylus: {
+			compile: {
+				files: {
+					'src/main.css': 'src/main.styl'
+				}
+			}
 		}
 	});
 	
@@ -183,6 +190,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-exec');
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-prompt');
+	grunt.loadNpmTasks('grunt-contrib-stylus');
 	
 	// if on osx, we can use appdmg
 	if (process.platform == 'darwin') {
