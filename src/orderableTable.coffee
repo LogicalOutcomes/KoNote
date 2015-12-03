@@ -54,7 +54,7 @@ load = (win) ->
 						(@props.columns.map (column) =>
 							R.th({}, 
 								R.span({
-									onClick: @_sortByData.bind null, column.dataPath
+									onClick: @_sortByData.bind(null, column.dataPath) unless column.isNotOrderable
 								}, 
 									column.name unless column.nameIsVisible? and not column.nameIsVisible
 
