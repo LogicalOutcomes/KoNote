@@ -78,5 +78,5 @@ https://github.com/nwjs/nw.js/wiki/how-to-package-and-distribute-your-apps#step-
 
 ##### NWJS builds are available here:
 Recent Versions: https://github.com/nwjs/nw.js
-Old Versions: https://github.com/nwjs/nw.js/wiki/Downloads-of-old-versions
 
+Old Versions: https://github.com/nwjs/nw.js/wiki/Downloads-of-old-versions
