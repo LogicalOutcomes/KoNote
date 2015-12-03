@@ -221,8 +221,6 @@ load = (win) ->
 				.map (link) =>
 					@props.programs.find (program) -> program.get('id') is link.get('programId')
 
-				console.info "programMemberships", programMemberships.toJS()
-
 				clientFile.set('programs', programMemberships)
 
 			return R.div({
@@ -353,28 +351,36 @@ load = (win) ->
 							# ).toJS()
 							OrderableTable({
 								tableData: queryResults
-								sortByData: ['clientName']
+								sortByData: ['clientName', 'last']
 								key: ['id']
-								onClickRow: (dataPoint) => @_onResultSelection.bind null, dataPoint.get('id')
+								onClickRow: (dataPoint) =>
+									@_onResultSelection.bind null, dataPoint.get('id')
+
 								columns: [
 									{
-										name: "Programs"
+										name: Term 'Programs'
 										dataPath: ['programs']
+										cellClass: 'programsCell'
+										isNotOrderable: true
 										nameIsVisible: false
+
 										value: (dataPoint) ->
-											# return dataPoint.get('programs')
-											return R.div({className: 'programsBubble'},
-												(dataPoint.get('programs').map (program) ->
-													R.div({
-														style:
-															background: program.get('colorKeyHex')
-													})
+											programs = dataPoint.get('programs')
+
+											return R.div({className: 'programBubbles'}, 
+												(programs.map (program) ->
+													ProgramBubble({program})
 												)
 											)
 									}
 									{
-										name: "#{Term 'Client'} Name"
-										dataPath: ['clientName']
+										name: "Last Name"
+										dataPath: ['clientName', 'last']
+									}
+									{
+										name: "Given Name(s)"
+										dataPath: ['clientName', 'first']
+										extraPath: ['clientName', 'middle']
 									}
 									{
 										name: Config.clientFileRecordId.label
@@ -462,6 +468,12 @@ load = (win) ->
 					icon: 'key'
 					onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
 				})
+				UserMenuItem({
+					isVisible: isAdmin
+					title: "Export Data"
+					icon: 'download'
+					onClick: @_updateManagerLayer.bind null, 'exportManagerTab'
+				})
 			)
 
 		_updateManagerLayer: (managerLayer) ->
@@ -536,6 +548,24 @@ load = (win) ->
 					@props.title
 				)
 			)
+
+	ProgramBubble = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
+		componentDidMount: ->
+			$(@refs.bubble.getDOMNode()).popover {
+				trigger: 'hover'
+				placement: 'right'
+				title: @props.program.get('name')
+				content: @props.program.get('description')
+			}
+		render: ->
+			return R.div({
+				className: 'programBubble'
+				ref: 'bubble'
+				style:
+					background: @props.program.get('colorKeyHex')
+			})
 
 
 	return ClientSelectionPage
