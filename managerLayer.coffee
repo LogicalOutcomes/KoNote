@@ -14,6 +14,7 @@ load = (win) ->
 	ClientFileManagerTab = require('./clientFileManagerTab').load(win)
 	ProgramManagerTab = require('./programManagerTab').load(win)
 	AccountManagerTab = require('./accountManagerTab').load(win)
+	ExportManagerTab = require('./exportManagerTab').load(win)
 
 	{FaIcon} = require('./utils').load(win)
 
@@ -28,6 +29,8 @@ load = (win) ->
 					ProgramManagerTab
 				when 'accountManagerTab'
 					AccountManagerTab
+				when 'exportManagerTab'
+					ExportManagerTab
 
 			return R.div({className: 'managerLayer'},
 				R.div({className: 'managerLayerContainer'},
