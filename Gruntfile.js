@@ -85,7 +85,7 @@ module.exports = function(grunt) {
 							'src/**',
 							'node_modules/**',
 							'!node_modules/nw/**',
-							'!node_modules/nodewebkit/**
+							'!node_modules/nodewebkit/**',
 							'!src/config-dev.coffee'
 						],
 						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/',
@@ -158,8 +158,8 @@ module.exports = function(grunt) {
 			set: "SetFile -a C ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote",
 			hide: "SetFile -a V $'../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/Icon\r'",
 			zip: {
-				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/KoNote/win32',
-				cmd: 'zip -r --quiet ../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
+				cwd: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/win32',
+				cmd: 'zip -r --quiet ../../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
 			},
 			//cleanCoffee: "rm -rf builds/releases/temp/<%= grunt.task.current.args[0] %>/*.coffee",
 			clean: 'rm -rf build/releases/temp'
@@ -198,9 +198,9 @@ module.exports = function(grunt) {
 			},
 			compileMultiple: {
 				expand: true,
-				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/',
+				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
 				src: ['**/*.coffee'],
-				dest: 'src/',
+				dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
 				ext: '.js'
 			}
 		}
