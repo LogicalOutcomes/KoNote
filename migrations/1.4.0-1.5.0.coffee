@@ -7,7 +7,10 @@ Path = require 'path'
 
 {SymmetricEncryptionKey, PrivateKey, PublicKey} = require '../persist/crypto'
 
-# BEGIN utility functions
+
+
+# /////////////////// Generic Utilities ///////////////////
+
 
 loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 	userDir = Path.join(dataDir, '_users', userName)
@@ -114,27 +117,21 @@ forEachFile = (parentDir, loopBody, cb) ->
 
 		cb()
 
-# END utility functions
+createEmptyDirectory: (parentPath, dirName, cb) ->
+	newDirPath = Path.join parentPath, dirName
 
-# BEGIN version-specific code
+	Fs.mkdir newDirPath, (err) ->
+		if err
+			cb err
+			return
 
-module.exports = {
-	run: (dataDir, userName, password, cb) ->
-		globalEncryptionKey = null
+		console.log "Created new directory '#{dirName}' at: #{newDirPath}"
+		cb()
 
-		Async.series [
-			(cb) ->
-				loadGlobalEncryptionKey dataDir, userName, password, (err, result) ->
-					if err
-						cb err
-						return
 
-					globalEncryptionKey = result
-					cb()
-			(cb) ->
-				addContextFieldsToAllObjects dataDir, globalEncryptionKey, cb
-		], cb
-}
+
+# //////////////// Version-Specific Utilities /////////////////
+
 
 addContextFieldsToAllObjects = (dataDir, globalEncryptionKey, cb) ->
 	Async.series [
@@ -238,4 +235,37 @@ addContextFieldsToObject = (objFilePath, dataDir, globalEncryptionKey, cb) ->
 			Fs.writeFile objFilePath, encryptedObj, cb
 	], cb
 
-# END version-specific code
+
+
+# ////////////////////// Migration Series //////////////////////
+
+module.exports = {
+	run: (dataDir, userName, password, cb) ->
+		globalEncryptionKey = null
+
+		Async.series [
+			
+			# Global Encryption Key
+			(cb) ->				
+				loadGlobalEncryptionKey dataDir, userName, password, (err, result) ->
+					if err
+						cb err
+						return
+
+					globalEncryptionKey = result
+					cb()
+
+			# Add Context Fields to all objects
+			(cb) ->				
+				addContextFieldsToAllObjects dataDir, globalEncryptionKey, cb
+
+			# New Directory: 'programs'
+			(cb) ->				
+				createEmptyDirectory dataDir, 'programs', cb
+
+			# New Directory: 'clientFileProgramLinks'
+			(cb) ->				
+				createEmptyDirectory dataDir, 'clientFileProgramLinks', cb
+
+		], cb
+}

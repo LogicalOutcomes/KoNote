@@ -30,6 +30,10 @@ init = (win) ->
 	Backbone = require 'backbone'
 	QueryString = require 'querystring'
 	Imm = require 'immutable'
+
+	Fs = require 'fs'
+	Stylus = require 'stylus'
+	isRefreshing = null
 	
 	Config = require('./config')
 
@@ -158,9 +162,23 @@ init = (win) ->
 				# If Ctrl-R
 				if event.ctrlKey and (not event.shiftKey) and event.which is 82
 					doHotCodeReplace()
-			, false		
+			, false
 
-	doHotCodeReplace = =>
+			# Live-Refresh
+			Fs.watch './', (event, filename) ->
+				if filename?
+					fileExtension = filename.split('.').splice(-1)[0]
+
+					if fileExtension is "styl"
+						refreshCSS()
+						return
+
+				unless isRefreshing
+					isRefreshing = true
+					doHotCodeReplace()
+
+
+	doHotCodeReplace = =>		
 		# Save the entire page state into a global var
 		global.HCRSavedState = HotCodeReplace.takeSnapshot pageComponent
 
@@ -179,6 +197,24 @@ init = (win) ->
 
 		# Reload HTML page
 		win.location.reload(true)
+
+	refreshCSS = =>
+		mainStylusCode = Fs.readFileSync 'main.styl', {encoding: 'utf-8'}
+
+		stylusOpts = {
+			filename: 'main.styl'
+			sourcemap: {inline: true}
+		}
+
+		Stylus.render mainStylusCode, stylusOpts, (err, compiledCss) ->
+			if err
+				console.error err
+				if err.stack
+					console.error err.stack
+				return
+
+			# Inject the compiled CSS into the page
+			win.document.getElementById('main-css').innerHTML = compiledCss;
 
 	registerPageListeners = =>
 		pageListeners = Imm.fromJS(pageComponent.getPageListeners()).entrySeq()

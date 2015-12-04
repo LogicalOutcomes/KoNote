@@ -27,7 +27,8 @@ load = (win) ->
 				columns: Imm.List()
 				rowKey: ['id']
 				onClickRow: ->
-				rowIsVisible: -> return true
+				rowClass: ->
+				rowIsVisible: -> return true				
 			}
 
 		getInitialState: ->
@@ -70,6 +71,7 @@ load = (win) ->
 				R.tbody({},
 					(data.map (dataPoint) =>
 						R.tr({
+							className: executeIfFunction @props.rowClass(dataPoint)
 							key: dataPoint.getIn(@props.rowKey)
 							onClick: @props.onClickRow dataPoint
 						},

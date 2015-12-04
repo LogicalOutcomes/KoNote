@@ -80,6 +80,7 @@ load = (win, {clientFileId}) ->
 				progressEvents: @state.progressEvents
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
+				programs: @state.programs
 
 				closeWindow: @props.closeWindow
 				maximizeWindow: @props.maximizeWindow
@@ -103,9 +104,13 @@ load = (win, {clientFileId}) ->
 			progressEvents = null
 			metricHeaders = null
 			metricsById = null
+			clientFileProgramLinkHeaders = null
+			programHeaders = null
+			programs = null
 
 			checkFileSync = (newData, oldData) => 
-				unless fileIsUnsync then fileIsUnsync = not Imm.is oldData, newData
+				unless fileIsUnsync
+					fileIsUnsync = not Imm.is oldData, newData
 
 			# Begin the clientFile data load process
 			@setState (state) => {isLoading: true}
@@ -115,6 +120,7 @@ load = (win, {clientFileId}) ->
 						@_acquireLock cb
 					else
 						cb()
+
 				(cb) =>
 					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
 						if err
@@ -122,8 +128,10 @@ load = (win, {clientFileId}) ->
 							return
 
 						clientFile = stripMetadata revisions.get(0)
-						# checkFileSync clientFile, @state.clientFile
+
+						checkFileSync clientFile, @state.clientFile
 						cb()
+
 				(cb) =>
 					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
 						if err
@@ -132,6 +140,7 @@ load = (win, {clientFileId}) ->
 
 						planTargetHeaders = results
 						cb()
+
 				(cb) =>
 					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
 						targetId = planTargetHeader.get('id')
@@ -151,6 +160,7 @@ load = (win, {clientFileId}) ->
 
 						checkFileSync planTargetsById, @state.planTargetsById
 						cb()
+
 				(cb) =>
 					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
 						if err
@@ -159,6 +169,7 @@ load = (win, {clientFileId}) ->
 
 						progNoteHeaders = results
 						cb()
+
 				(cb) =>
 					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
 						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
@@ -168,7 +179,10 @@ load = (win, {clientFileId}) ->
 							return
 
 						progressNotes = Imm.List results
+
+						checkFileSync progressNotes, @state.progressNotes
 						cb()
+
 				(cb) =>
 					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
 						if err
@@ -177,6 +191,7 @@ load = (win, {clientFileId}) ->
 
 						progEventHeaders = results
 						cb()
+
 				(cb) =>
 					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
 						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
@@ -186,7 +201,10 @@ load = (win, {clientFileId}) ->
 							return
 
 						progressEvents = Imm.List results
+
+						checkFileSync progressEvents, @state.progressEvents
 						cb()
+
 				(cb) =>
 					ActiveSession.persist.metrics.list (err, results) =>
 						if err
@@ -195,6 +213,7 @@ load = (win, {clientFileId}) ->
 
 						metricHeaders = results
 						cb()
+
 				(cb) =>
 					Async.map metricHeaders.toArray(), (metricHeader, cb) =>
 						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
@@ -209,7 +228,51 @@ load = (win, {clientFileId}) ->
 						.fromEntrySeq().toMap()
 
 						checkFileSync metricsById, @state.metricsById
+						cb()				
+
+				(cb) =>
+					ActiveSession.persist.clientFileProgramLinks.list (err, results) =>
+						if err
+							cb err
+							return
+
+						clientFileProgramLinkHeaders = results
+						.filter (link) ->
+							link.get('clientFileId') is clientFileId and
+							link.get('status') is "enrolled"
+						.map (link) ->
+							link.get('programId')
+
 						cb()
+
+				(cb) =>
+					ActiveSession.persist.programs.list (err, results) =>
+						if err
+							cb err
+							return
+
+						programHeaders = results
+						.filter (program) -> 
+							thisProgramId = program.get('id')
+							clientFileProgramLinkHeaders.contains thisProgramId
+
+						cb()
+
+				(cb) =>
+					Async.map programHeaders.toArray(), (programHeader, cb) =>
+						console.log programHeader.get('id')
+						ActiveSession.persist.programs.readLatestRevisions programHeader.get('id'), 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						programs = Imm.List(results)
+						.map (program) -> stripMetadata program.get(0)
+
+						checkFileSync programs, @state.programs
+						cb()
+
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -220,11 +283,6 @@ load = (win, {clientFileId}) ->
 
 					CrashHandler.handle err
 					return
-
-				console.log "@state.clientFile?", @state.clientFile?
-				if !!@refs.ui
-					console.log "@refs.ui.hasChanges()", @refs.ui.hasChanges()
-				console.log "fileIsUnsync", fileIsUnsync
 
 				# Trigger readOnly mode when hasChanges and unsynced
 				if @state.clientFile? and @refs.ui.hasChanges() and fileIsUnsync
@@ -258,13 +316,15 @@ load = (win, {clientFileId}) ->
 						}
 				else
 					# OK, load in clientFile state data!
-					console.log "Restored clientFile data to @state"
+					console.log "Injected load data into @state"
+					console.info "programs", programs.toJS()
 					@setState {
 						clientFile						
 						progressNotes
 						progressEvents
 						metricsById
 						planTargetsById
+						programs
 
 						isLoading: false
 						status: 'ready'
@@ -548,6 +608,7 @@ load = (win, {clientFileId}) ->
 						activeTabId
 						onTabChange: @_changeTab
 						isReadOnly
+						programs: @props.programs
 					})
 					PlanTab.PlanView({
 						ref: 'planTab'
@@ -601,6 +662,16 @@ load = (win, {clientFileId}) ->
 				)
 				R.div({className: 'clientName'},
 					@props.clientName
+				)
+				R.div({className: 'programs'},
+					@props.programs.map (program) ->
+						R.span({
+							key: program.get('id')
+							style:
+								borderBottomColor: program.get('colorKeyHex')
+						},
+							program.get('name')
+						)
 				)
 				R.div({className: 'recordId'},
 					R.span({}, renderFileId @props.recordId, true)

@@ -208,7 +208,8 @@ load = (win) ->
 		componentDidMount: ->
 			@_refreshResults()
 
-		render: ->			
+		render: ->
+			isAdmin = global.ActiveSession.isAdmin()
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet	
 
 			# Add in all program objects this clientFile's a member of
@@ -226,7 +227,7 @@ load = (win) ->
 			return R.div({
 					id: 'clientSelectionPage'
 					className: if @state.menuIsOpen then 'openMenu' else ''
-				},
+			},
 				if @props.isLoading
 					R.div({id: 'clientSelectionPage'},
 						Spinner {
@@ -238,7 +239,7 @@ load = (win) ->
 					id: 'expandMenuButton'
 					className: showWhen not @state.managerLayer?
 					onClick: @_toggleUserMenu
-				}, 
+				},					
 					FaIcon 'bars'
 				)
 				R.div({
@@ -319,40 +320,12 @@ load = (win) ->
 								showWhen not @props.isLoading
 							].join ' '
 						},
-							# (queryResults.map (result) =>
-							# 	programMemberships = result.get('programs')
-
-							# 	R.div({
-							# 		key: result.get('id')
-							# 		className: [
-							# 			"result"
-							# 			"active" if @state.hoverClientId is result.get('id')
-							# 		].join ' '
-							# 		onClick: @_onResultSelection.bind(null, result.get('id'))
-							# 	}
-							# 		(unless programMemberships.isEmpty()
-							# 			R.div({className: 'programBubble'},
-							# 				(programMemberships.map (program) =>
-							# 					R.div({
-							# 						style:
-							# 							background: program.get('colorKeyHex')
-							# 					})
-							# 				)
-							# 			)
-							# 		)
-							# 		R.div({}, renderName result.get('clientName'))
-
-							# 		if Config.clientFileRecordId?
-							# 			R.span({className: 'recordId'}, 
-							# 				if result.has('recordId') and result.get('recordId').length > 0
-							# 					Config.clientFileRecordId.label + " #{result.get('recordId')}"
-							# 			)
-							# 	)
-							# ).toJS()
 							OrderableTable({
 								tableData: queryResults
 								sortByData: ['clientName', 'last']
 								key: ['id']
+								rowClass: (dataPoint) =>
+									'active' if @state.hoverClientId is dataPoint.get('id')
 								onClickRow: (dataPoint) =>
 									@_onResultSelection.bind null, dataPoint.get('id')
 
@@ -368,8 +341,13 @@ load = (win) ->
 											programs = dataPoint.get('programs')
 
 											return R.div({className: 'programBubbles'}, 
-												(programs.map (program) ->
-													ProgramBubble({program})
+												(programs
+													.sortBy (program) -> program.get('name').toLowerCase()
+													.map (program) -> 
+														ProgramBubble({
+															program
+															key: program.get('id')
+														})
 												)
 											)
 									}
@@ -391,15 +369,42 @@ load = (win) ->
 						)
 					)
 				)
-				R.aside({
-					id: 'menuContainer'
-					ref: 'userMenu'
-					className: if @state.menuIsOpen then 'isOpen' else ''
-				}
-					R.div({id: 'menuContent'}
-						R.div({id: 'avatar'}, FaIcon('user'))
-						R.h3({}, global.ActiveSession.userName)
-						@_renderUserMenuList(global.ActiveSession.isAdmin())
+
+				(if @state.menuIsOpen
+					R.aside({
+						id: 'menuContainer'
+						ref: 'userMenu'
+						className: 'menuIsOpen animated fadeInRight'
+					},
+						R.div({id: 'menuContent'},
+							R.div({id: 'avatar'}, FaIcon('user'))
+							R.h3({}, global.ActiveSession.userName)
+							R.ul({},
+								UserMenuItem({
+									title: Term 'Client Files'
+									icon: 'folder-open'
+									onClick: @_updateManagerLayer.bind null, 'clientFileManagerTab'
+								})				
+								UserMenuItem({
+									isVisible: isAdmin
+									title: Term 'Programs'
+									icon: 'users'
+									onClick: @_updateManagerLayer.bind null, 'programManagerTab'
+								})
+								UserMenuItem({
+									isVisible: isAdmin
+									title: "User #{Term 'Accounts'}"
+									icon: 'key'
+									onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
+								})
+								UserMenuItem({
+									isVisible: isAdmin
+									title: "Export Data"
+									icon: 'download'
+									onClick: @_updateManagerLayer.bind null, 'exportManagerTab'
+								})
+							)
+						)
 					)
 				)
 			)
@@ -449,38 +454,18 @@ load = (win) ->
 			hoverClientId = queryResults.get(nextIndex).get('id')
 			@setState {hoverClientId}
 
-		_renderUserMenuList: (isAdmin) ->
-			return R.ul({},
-				UserMenuItem({
-					title: Term 'Client Files'
-					icon: 'folder-open'
-					onClick: @_updateManagerLayer.bind null, 'clientFileManagerTab'
-				})				
-				UserMenuItem({
-					isVisible: isAdmin
-					title: Term 'Programs'
-					icon: 'users'
-					onClick: @_updateManagerLayer.bind null, 'programManagerTab'
-				})
-				UserMenuItem({
-					isVisible: isAdmin
-					title: "User #{Term 'Accounts'}"
-					icon: 'key'
-					onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
-				})
-				UserMenuItem({
-					isVisible: isAdmin
-					title: "Export Data"
-					icon: 'download'
-					onClick: @_updateManagerLayer.bind null, 'exportManagerTab'
-				})
-			)
-
 		_updateManagerLayer: (managerLayer) ->
 			@setState {managerLayer}
 
 		_toggleUserMenu: ->
-			@setState {menuIsOpen: not @state.menuIsOpen}
+			if @state.menuIsOpen
+				$(@refs.userMenu.getDOMNode()).addClass('slideOutRight')
+
+				setTimeout(=>
+					@setState {menuIsOpen: not @state.menuIsOpen}
+				, 400)
+			else
+				@setState {menuIsOpen: not @state.menuIsOpen}
 
 		_refreshResults: ->
 			# Return all results if search query is empty
@@ -562,7 +547,7 @@ load = (win) ->
 		render: ->
 			return R.div({
 				className: 'programBubble'
-				ref: 'bubble'
+				ref: 'bubble'				
 				style:
 					background: @props.program.get('colorKeyHex')
 			})
