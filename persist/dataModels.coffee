@@ -81,7 +81,7 @@ dataModelDefinitions = [
 						type: 'full'
 						templateId: IdSchema
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
-						sections: Joi.array().items(
+						plans: Joi.array().items(
 							[
 								Joi.object().keys({
 									id: IdSchema
