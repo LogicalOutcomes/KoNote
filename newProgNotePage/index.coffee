@@ -198,7 +198,9 @@ load = (win, {clientFileId}) ->
 					metricsById
 				)
 
-				# Done loading data, we can generate the prognote now
+				console.info "progNote", progNote.toJS()
+
+				# Done loading data, we can load in the empty progNote object
 				@setState {						
 					isLoading: false
 					progNote
@@ -219,36 +221,46 @@ load = (win, {clientFileId}) ->
 								name: section.get 'name'
 								notes: ''
 								metrics: section.get('metricIds').map (metricId) =>
-									m = metricsById.get(metricId)
+									metric = metricsById.get metricId
 									return Imm.fromJS {
-										id: m.get('id')
-										name: m.get('name')
-										definition: m.get('definition')
+										id: metric.get 'id'
+										name: metric.get 'name'
+										definition: metric.get 'definition'
 										value: ''
 									}
 							}
 						when 'plan'
+							console.info "clientFile.getIn(['plan', 'sections'])", clientFile.getIn(['plan', 'sections']).toJS()
 							return Imm.fromJS {
 								type: 'plan'
 								id: section.get 'id'
 								name: section.get 'name'
-								targets: clientFile.getIn(['plan', 'sections']).flatMap (section) =>
-									section.get('targetIds').map (targetId) =>
-										target = planTargetsById.get(targetId)
-										lastRev = target.last()
-										return Imm.fromJS {
-											id: lastRev.get 'id'
-											name: lastRev.get 'name'
-											notes: ''
-											metrics: lastRev.get('metricIds').map (metricId) =>
-												m = metricsById.get(metricId)
-												return Imm.fromJS {
-													id: m.get('id')
-													name: m.get('name')
-													definition: m.get('definition')
-													value: ''
-												}
-										}
+								sections: clientFile.getIn(['plan', 'sections']).flatMap (section) =>
+
+									section = Imm.fromJS {
+										id: section.get 'id'
+										name: section.get 'name'
+										targets: section.get('targetIds').map (targetId) =>
+											target = planTargetsById.get targetId
+											lastRev = target.last()
+											return Imm.fromJS {
+												id: lastRev.get 'id'
+												name: lastRev.get 'name'
+												notes: ''
+												metrics: lastRev.get('metricIds').map (metricId) =>
+													metric = metricsById.get metricId
+													return Imm.fromJS {
+														id: metric.get 'id'
+														name: metrics.get 'name'
+														definition: metric.get 'definition'
+														value: ''
+													}
+											}
+									}
+
+									console.info "section", section.toJS()
+
+									return section
 							}
 			}	
 
