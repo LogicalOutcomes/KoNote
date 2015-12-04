@@ -4,16 +4,12 @@ This source code is subject to the terms of the Mozilla Public License, v. 2.0
 that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 grunt task for release builds of konote
+creates a 'releases' folder inside the builds directory containing compiled mac dmg and windows zip files.
 
-creates a 'konote-builds' folder beside the project directory containing a mac .dmg and windows .zip
-
-as a final build step on windows, the KoNote.exe icon can be replaced with Resource Hacker:
-ResHacker.exe -modify "KoNote.exe", "KoNote.exe", "icon.ico", ICONGROUP, MAINICON, 0
-
-note: requires forked nw-builder module (disables merging win build with the nw exe)
+note[1]: requires forked nw-builder module (disables merging win build with the nw exe):
 https://github.com/speedskater/node-webkit-builder
 
-it is recommended to build on native OS: building for win from mac/linux will not customize application icon or codesign exe; building for mac from windows/linux will not create dmg installer or codesign .app
+note[2]: mainly tested on OSX; nwjs recommends building on native OS, so ymmv
 */
 
 // TODO:
@@ -100,10 +96,10 @@ module.exports = function(grunt) {
 					{
 						src: [
 							'customers/griffin/config-customer.coffee',
-							'customer-logo-lg_GRIFFIN.png',
-							'customer-logo-sm_GRIFFIN.png'
+							'customers/griffin/customer-logo-lg_GRIFFIN.png',
+							'customers/griffin/customer-logo-sm_GRIFFIN.png'
 						],
-						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/'
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src'
 					}
 				]
 			},
@@ -118,16 +114,13 @@ module.exports = function(grunt) {
 				]
 			}
 		},
-		
-		
-		// downloads nwjs binaries and bundles w project
 		nwjs: {
 			mac: {
 				options: {
 					appName: '<%= pkg.displayName %>',
 					//macCredits: 'path-to-file',
 					macIcns: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/icon.icns',
-					version: '<%= pkg.dependencies.nodewebkit %>', //nwjs version to download
+					version: '<%= pkg.dependencies.nodewebkit %>',
 					platforms: ['osx64'],
 					buildType: 'default',
 					buildDir: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>',
@@ -140,7 +133,7 @@ module.exports = function(grunt) {
 			win: {
 				options: {
 					appName: '<%= pkg.displayName %>',
-					version: '<%= pkg.dependencies.nodewebkit %>', //nwjs version to download
+					version: '<%= pkg.dependencies.nodewebkit %>',
 					platforms: ['win32'],
 					buildType: 'default',
 					buildDir: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>',
@@ -151,29 +144,21 @@ module.exports = function(grunt) {
 				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/**']
 			}
     	},
-		// format the osx folder icon for the dmg, zip windows build, cleanup tmp files
 		exec: {
-			prep: "mv ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/osx64 ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote",
-			append: "Rez -append icon.rsrc -o ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/$'Icon\r'",
-			set: "SetFile -a C ../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote",
-			hide: "SetFile -a V $'../konote-releases/temp/<%= grunt.task.current.args[0] %>/KoNote/Icon\r'",
 			zip: {
 				cwd: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/win32',
 				cmd: 'zip -r --quiet ../../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
-			},
-			cleanCoffee: "rm -rf builds/releases/temp/<%= grunt.task.current.args[0] %>/*.coffee",
-			clean: 'rm -rf build/releases/temp'
+			}
 		},
-		// build pretty .dmg
 		appdmg: {
 			main: {
 				options: {
-					basepath: './',
+					basepath: 'build/releases/temp/<%= grunt.task.current.args[0] %>',
 					title: 'KoNote-<%= pkg.version %>',
 					icon: 'icon.icns',
 					background: 'background.tiff', 'icon-size': 104,
 					contents: [
-						{x: 130, y: 150, type: 'file', path: 'build/releases/temp/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},
+						{x: 130, y: 150, type: 'file', path: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},
 						{x: 320, y: 150, type: 'link', path: '/Applications'}
 					]
 				},
@@ -229,8 +214,7 @@ module.exports = function(grunt) {
 	});
 	
 	grunt.registerTask('release', function() {
-		
-		grunt.task.run('exec:clean');
+		grunt.task.run('clean:temp');
 		
 		if (win) {
 			if (generic) {
@@ -240,7 +224,6 @@ module.exports = function(grunt) {
 				grunt.task.run('stylus:compile:win-generic');
 				grunt.task.run('coffee:compileMultiple:win-generic');
 				grunt.task.run('clean:coffee:win-generic');
-				//grunt.task.run('exec:cleanCoffee:win-generic');
 				grunt.task.run('nwjs:win:win-generic');
 				grunt.task.run('exec:zip:win-generic');
 			}
@@ -249,7 +232,8 @@ module.exports = function(grunt) {
 				grunt.task.run('copy:main:win-griffin');
 				grunt.task.run('copy:griffin:win-griffin');
 				grunt.task.run('stylus:compile:win-griffin');
-				grunt.task.run('coffee:compileMultiple:win-generic');
+				grunt.task.run('coffee:compileMultiple:win-griffin');
+				grunt.task.run('clean:coffee:win-griffin');
 				grunt.task.run('nwjs:win:win-griffin');
 				grunt.task.run('exec:zip:win-griffin');
 			}
@@ -259,13 +243,9 @@ module.exports = function(grunt) {
 				// do mac generic build
 				grunt.task.run('copy:main:mac-generic');
 				grunt.task.run('stylus:compile:mac-generic');
-				grunt.task.run('coffee:compileMultiple:win-generic');
-				//grunt.task.run('copy:osx:mac-generic');
+				grunt.task.run('coffee:compileMultiple:mac-generic');
+				grunt.task.run('clean:coffee:mac-generic');
 				grunt.task.run('nwjs:mac:mac-generic');
-				//grunt.task.run('exec:prep:mac-generic');
-				//grunt.task.run('exec:append:mac-generic');
-				//grunt.task.run('exec:set:mac-generic');
-				//grunt.task.run('exec:hide:mac-generic');
 				if (process.platform == 'darwin') {
 					grunt.task.run('appdmg:main:mac-generic');
 				}
@@ -273,19 +253,15 @@ module.exports = function(grunt) {
 			if (griffin) {
 				// do mac griffin build
 				grunt.task.run('copy:main:mac-griffin');
-				grunt.task.run('stylus:compile:mac-generic');
-				grunt.task.run('coffee:compileMultiple:win-generic');
+				grunt.task.run('stylus:compile:mac-griffin');
+				grunt.task.run('coffee:compileMultiple:mac-griffin');
+				grunt.task.run('clean:coffee:mac-griffin');
 				grunt.task.run('nwjs:mac:mac-griffin');
-				//grunt.task.run('exec:prep:mac-griffin');
-				//grunt.task.run('exec:append:mac-griffin');
-				//grunt.task.run('exec:set:mac-griffin');
-				//grunt.task.run('exec:hide:mac-griffin');
 				if (process.platform == 'darwin') {
 					grunt.task.run('appdmg:main:mac-griffin');
 				}
 			}
 		}
-		//grunt.task.run('exec:clean');
 		grunt.task.run('clean:temp');
 	});
 	
