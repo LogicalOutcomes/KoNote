@@ -10,7 +10,10 @@ Rimraf = require 'rimraf'
 
 {buildApi} = require '../../persist/apiBuilder'
 {SymmetricEncryptionKey} = require '../../persist/crypto'
-{TimestampFormat} = require '../../persist/utils'
+{
+	ObjectNotFoundError
+	TimestampFormat
+} = require '../../persist/utils'
 
 dataDir = Path.join process.cwd(), 'testData'
 
@@ -24,9 +27,14 @@ s = {
 
 setUpDataDirectory = (dataModelDefinitions, cb) ->
 	# Set up top-level directories
-	Async.each dataModelDefinitions, (modelDef, cb) ->
-		Mkdirp Path.join(dataDir, modelDef.collectionName), cb
-	, cb
+	Async.series [
+		(cb) ->
+			Async.each dataModelDefinitions, (modelDef, cb) ->
+				Mkdirp Path.join(dataDir, modelDef.collectionName), cb
+			, cb
+		(cb) ->
+			Fs.mkdir Path.join(dataDir, '_tmp'), cb
+	], cb
 
 describe 'ApiBuilder', ->
 	describe '.buildApi', ->
@@ -44,7 +52,6 @@ describe 'ApiBuilder', ->
 			api = buildApi(s, [])
 			Assert.deepEqual api, {
 				eventBus: api.eventBus
-				ObjectNotFoundError: api.ObjectNotFoundError
 			}
 
 		it 'refuses to allow a collection named `eventBus`', ->
@@ -96,6 +103,13 @@ describe 'ApiBuilder', ->
 			}
 			api = buildApi s, [immutablePersonDataModel]
 
+			defaultNestedValue = Imm.Map({
+				a: Imm.Map({
+					b: 'default'
+					c: 'default'
+				})
+			})
+
 			beforeEach (cb) ->
 				setUpDataDirectory [immutablePersonDataModel], cb
 
@@ -103,6 +117,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -110,7 +125,7 @@ describe 'ApiBuilder', ->
 
 					now = Moment()
 
-					Assert.strictEqual result.keySeq().size, 6
+					Assert.strictEqual result.keySeq().size, 7
 
 					Assert.strictEqual typeof result.get('id'), 'string'
 					Assert.strictEqual typeof result.get('revisionId'), 'string'
@@ -120,6 +135,7 @@ describe 'ApiBuilder', ->
 
 					Assert.strictEqual result.get('name'), 'John Smith'
 					Assert.strictEqual result.get('age'), 30
+					Assert Imm.is(result.get('nested'), defaultNestedValue)
 
 					cb()
 
@@ -128,6 +144,7 @@ describe 'ApiBuilder', ->
 					id: 'badid'
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					Assert err
 					Assert not result
@@ -191,6 +208,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -210,7 +228,7 @@ describe 'ApiBuilder', ->
 			it 'read fails with ObjectNotFoundError for an unknown ID', (cb) ->
 				api.people.read 'unknownId', (err, obj) ->
 					Assert err
-					Assert err instanceof api.ObjectNotFoundError
+					Assert err instanceof ObjectNotFoundError
 					Assert not obj
 
 					cb()
@@ -247,6 +265,13 @@ describe 'ApiBuilder', ->
 			}
 			api = buildApi s, [mutablePersonDataModel]
 
+			defaultNestedValue = Imm.Map({
+				a: Imm.Map({
+					b: 'default'
+					c: 'default'
+				})
+			})
+
 			beforeEach (cb) ->
 				setUpDataDirectory [mutablePersonDataModel], cb
 
@@ -254,6 +279,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -261,7 +287,7 @@ describe 'ApiBuilder', ->
 
 					now = Moment()
 
-					Assert.strictEqual result.keySeq().size, 6
+					Assert.strictEqual result.keySeq().size, 7
 
 					Assert.strictEqual typeof result.get('id'), 'string'
 					Assert.strictEqual typeof result.get('revisionId'), 'string'
@@ -271,6 +297,7 @@ describe 'ApiBuilder', ->
 
 					Assert.strictEqual result.get('name'), 'John Smith'
 					Assert.strictEqual result.get('age'), 30
+					Assert Imm.is(result.get('nested'), defaultNestedValue)
 
 					cb()
 
@@ -324,6 +351,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -335,6 +363,7 @@ describe 'ApiBuilder', ->
 						id: johnSmithId
 						name: 'John Wells'
 						age: 30
+						nested: defaultNestedValue
 					}), (err, result) ->
 						if err
 							cb err
@@ -350,10 +379,12 @@ describe 'ApiBuilder', ->
 							Assert.strictEqual results.getIn([0, 'name']), 'John Wells'
 
 							cb()
+
 			it 'provides a createRevision method', (cb) ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -366,6 +397,7 @@ describe 'ApiBuilder', ->
 						id: johnSmithId
 						name: 'John Smith'
 						age: 31
+						nested: defaultNestedValue
 					}), (err, result) ->
 						if err
 							cb err
@@ -400,7 +432,7 @@ describe 'ApiBuilder', ->
 					age: 35
 				}), (err, result) ->
 					Assert err
-					Assert err instanceof api.ObjectNotFoundError
+					Assert err instanceof ObjectNotFoundError
 					Assert not result
 
 					cb()
@@ -409,6 +441,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -419,6 +452,7 @@ describe 'ApiBuilder', ->
 					api.people.createRevision Imm.Map({
 						id: johnSmithId
 						name: 'John Smith'
+						nested: defaultNestedValue
 						xxx: 31
 					}), (err, result) ->
 						Assert err
@@ -431,6 +465,7 @@ describe 'ApiBuilder', ->
 				api.people.create Imm.Map({
 					name: 'John Smith'
 					age: 30
+					nested: defaultNestedValue
 				}), (err, result) ->
 					if err
 						cb err
@@ -443,6 +478,7 @@ describe 'ApiBuilder', ->
 						id: johnSmithId
 						name: 'John Smith'
 						age: 31
+						nested: defaultNestedValue
 					}), (err, result) ->
 						if err
 							cb err
@@ -482,7 +518,7 @@ describe 'ApiBuilder', ->
 			it 'readRevisions fails with ObjectNotFoundError when ID unknown', (cb) ->
 				api.people.readRevisions 'unknownId', (err, result) ->
 					Assert err
-					Assert err instanceof api.ObjectNotFoundError
+					Assert err instanceof ObjectNotFoundError
 					Assert not result
 
 					cb()
@@ -491,11 +527,13 @@ describe 'ApiBuilder', ->
 				johnSmithId = null
 				firstRevisionId = null
 				secondRevisionId = null
+
 				Async.series [
 					(cb) ->
 						api.people.create Imm.Map({
 							name: 'John Smith'
 							age: 30
+							nested: defaultNestedValue
 						}), (err, result) ->
 							if err
 								cb err
@@ -515,6 +553,7 @@ describe 'ApiBuilder', ->
 							id: johnSmithId
 							name: 'John Smith'
 							age: 31
+							nested: defaultNestedValue
 						}), (err, result) ->
 							if err
 								cb err
@@ -546,7 +585,7 @@ describe 'ApiBuilder', ->
 			it 'readLatestRevisions fails with ObjectNotFoundError when ID unknown', (cb) ->
 				api.people.readLatestRevisions 'unknownId', 1, (err, result) ->
 					Assert err
-					Assert err instanceof api.ObjectNotFoundError
+					Assert err instanceof ObjectNotFoundError
 					Assert not result
 
 					cb()

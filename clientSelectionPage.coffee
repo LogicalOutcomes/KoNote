@@ -1,7 +1,15 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # Libraries from Node.js context
 Imm = require 'immutable'
+Async = require 'async'
+_ = require 'underscore'
 
 Config = require './config'
+Term = require './term'
+Persist = require './persist'
 
 load = (win) ->
 	# Libraries from browser context
@@ -9,110 +17,261 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	Gui = win.require 'nw.gui'
 
-	AccountManagerDialog = require('./accountManagerDialog').load(win)
+	ManagerLayer = require('./managerLayer').load(win)	
 	CrashHandler = require('./crashHandler').load(win)
-	CreateClientFileDialog = require('./createClientFileDialog').load(win)
-	Dialog = require('./dialog').load(win)
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
-	BrandWidget = require('./brandWidget').load(win)
-	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
-
-	do ->
-		clientFileList = null
-
-		init = ->
-			render()
-			loadData()
-			registerListeners()
-
-		process.nextTick init
-
-		render = ->
-			React.render new ClientSelectionPage({
-				clientFileList
-			}), $('#container')[0]
-
-			$('.searchBox').focus()
-
-		loadData = ->
-			ActiveSession.persist.clientFiles.list (err, result) ->
-				if err
-					CrashHandler.handle err
-					return
-
-				clientFileList = result
-				render()
-
-		registerListeners = ->
-			global.ActiveSession.persist.eventBus.on 'create:clientFile', (newFile) ->
-				targetId = newFile.get('id')
-
-				unless clientFileList.has(targetId)
-					clientFileList = clientFileList.push newFile
-
-				render()
-			
-			global.ActiveSession.persist.eventBus.on 'createRevision:clientFile', (newRev) ->
-				targetId = newRev.get('id')
-
-				# This looks right... but I can't test it
-				unless clientFileList.get(targetId) is newRev
-					return
-
-				# I need to replace the original object's information with newRev's
-				clientFileList = clientFileList.map (clientFile) ->
-					if clientFile.has(targetId)
-						clientFile = newRev
-
-					return clientFile
-
-				render()
+	BrandWidget = require('./brandWidget').load(win)	
+	OrderableTable = require('./orderableTable').load(win)
+	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
 
 	ClientSelectionPage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
-				isSmallHeaderSet: false
-				queryText: ''
-				menuIsOpen: false
+				isLoading: true
+				clientFileHeaders: Imm.List()
+				programs: Imm.List()
+				clientFileProgramLinks: Imm.List()
 			}
-		_isLoading: ->
-			return @props.clientFileList is null
-		render: ->
-			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
 
-			results = null
-			unless @_isLoading()
-				results = @_getResultsList()
+		init: ->
+			console.log "Starting load"
+			@_loadData()
+
+		deinit: (cb=(->)) ->
+			# Nothing need be done
+			cb()
+
+		suggestClose: ->
+			@props.closeWindow()
+
+		render: ->
+			return ClientSelectionPageUi({
+				isLoading: @state.isLoading
+				clientFileHeaders: @state.clientFileHeaders
+				clientFileProgramLinks: @state.clientFileProgramLinks
+				programs: @state.programs
+			})
+
+		_loadData: ->
+			clientFileHeaders = null
+			programHeaders = null
+			programs = null
+			clientFileProgramLinkHeaders = null
+			clientFileProgramLinks = null
+
+			Async.series [
+				(cb) =>
+					ActiveSession.persist.clientFiles.list (err, result) =>
+						if err
+							cb err
+							return
+
+						clientFileHeaders = result
+						cb()
+				(cb) =>
+					ActiveSession.persist.programs.list (err, result) =>
+						if err
+							cb err
+							return
+
+						programHeaders = result
+						cb()
+				(cb) =>
+					Async.map programHeaders.toArray(), (programHeader, cb) =>
+						progId = programHeader.get('id')
+
+						ActiveSession.persist.programs.readLatestRevisions progId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						programs = Imm.List(results).map (program) -> stripMetadata program.get(0)
+						cb()
+				(cb) =>
+					ActiveSession.persist.clientFileProgramLinks.list (err, result) =>
+						if err
+							cb err
+							return
+						clientFileProgramLinkHeaders = result
+						cb()
+				(cb) =>
+					Async.map clientFileProgramLinkHeaders.toArray(), (linkHeader, cb) =>
+						linkId = linkHeader.get('id')
+
+						ActiveSession.persist.clientFileProgramLinks.readLatestRevisions linkId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
+						cb()
+			], (err) =>
+				if err
+					if err instanceof Persist.IOError
+						console.error err
+						console.error err.stack
+						@setState {loadErrorType: 'io-error'}
+						return
+
+					CrashHandler.handle err
+					return
+
+				# Data loaded successfully, load into state
+				@setState {
+					isLoading: false
+					programs
+					clientFileHeaders
+					clientFileProgramLinks
+				}
+
+		getPageListeners: ->
+			return {
+
+				'create:clientFile': (newFile) =>
+					clientFileHeaders = @state.clientFileHeaders.push newFile
+					@setState {clientFileHeaders}, =>
+						openWindow {
+							page: 'clientFile'
+							clientFileId: newFile.get('id')
+						}
+
+				# TODO: Create a function for this kind of listening/updating
+
+				'create:program createRevision:program': (newRev) =>
+					programId = newRev.get('id')
+					# Updating or creating program?
+					existingProgram = @state.programs
+					.find (program) -> program.get('id') is programId
+
+					@setState (state) ->
+						if existingProgram?
+							programIndex = state.programs.indexOf existingProgram
+							programs = state.programs.set programIndex, newRev
+						else
+							programs = state.programs.push newRev
+
+						return {programs}
+
+				'create:clientFileProgramLink createRevision:clientFileProgramLink': (newRev) =>
+					linkId = newRev.get('id')
+					# Updating or creating link?
+					existingLink = @state.clientFileProgramLinks
+					.find (link) -> link.get('id') is linkId
+
+					@setState (state) ->
+						if existingLink?
+							linkIndex = state.clientFileProgramLinks.indexOf existingLink
+							clientFileProgramLinks = state.clientFileProgramLinks.set linkIndex, newRev
+						else
+							clientFileProgramLinks = state.clientFileProgramLinks.push newRev
+
+						return {clientFileProgramLinks}					
+
+			}
+
+	ClientSelectionPageUi = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			return {
+				isSmallHeaderSet: false
+				menuIsOpen: false
+
+				queryText: ''
+				queryResults: Imm.List()				
+				hoverClientId: null
+
+				managerLayer: null
+			}
+
+		componentDidUpdate: (oldProps, oldState) ->
+			# If loading just finished
+			if oldProps.isLoading and not @props.isLoading
+
+				setTimeout(=>
+					$searchBox = $(@refs.searchBox.getDOMNode())
+					$searchBox.focus()
+					@_attachKeyBindings($searchBox)
+				, 100)
+
+			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
+				@_refreshResults()
+
+			if @state.queryText isnt oldState.queryText
+				@_refreshResults()
+
+		componentDidMount: ->
+			@_refreshResults()
+
+		render: ->
+			isAdmin = global.ActiveSession.isAdmin()
+			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet	
+
+			# Add in all program objects this clientFile's a member of
+			queryResults = @state.queryResults.map (clientFile) =>
+				clientFileId = clientFile.get('id')
+
+				programMemberships = @props.clientFileProgramLinks
+				.filter (link) =>
+					link.get('clientFileId') is clientFileId and link.get('status') is "enrolled"
+				.map (link) =>
+					@props.programs.find (program) -> program.get('id') is link.get('programId')
+
+				clientFile.set('programs', programMemberships)
 
 			return R.div({
 					id: 'clientSelectionPage'
 					className: if @state.menuIsOpen then 'openMenu' else ''
-				},
+			},
+				if @props.isLoading
+					R.div({id: 'clientSelectionPage'},
+						Spinner {
+							isOverlay: true
+							isVisible: true
+						}
+					)
 				R.a({
 					id: 'expandMenuButton'
+					className: showWhen not @state.managerLayer?
 					onClick: @_toggleUserMenu
-				}, 
+				},					
 					FaIcon 'bars'
 				)
 				R.div({
-					id: 'mainContainer'
-					onClick: if @state.menuIsOpen then @_toggleUserMenu
-				},					
-					R.div({id: 'main'},
+					id: 'mainContainer'					
+				},
+					(if @state.managerLayer?
+						ManagerLayer({
+							# Settings
+							name: @state.managerLayer
+							onClose: @_updateManagerLayer.bind null, null
+							# Data
+							clientFileHeaders: @props.clientFileHeaders							
+							programs: @props.programs
+							clientFileProgramLinks: @props.clientFileProgramLinks							
+						})
+					)
+					R.div({
+						id: 'main'
+						onClick: if @state.menuIsOpen then @_toggleUserMenu
+					},
 						Spinner({
-							isVisible: @_isLoading()
+							isVisible: @props.isLoading
 							isOverlay: true
 						})						
 						R.header({
 							className: [
 								if smallHeader then 'small' else ''
-								showWhen not @_isLoading()
+								showWhen not @props.isLoading
 							].join ' '
 						},								
 							R.div({className: 'logoContainer'},
-								R.img({src: 'customer-logo-lg.png'})
+								R.img({src: Config.customerLogoLg})
 								R.div({
 									className: 'subtitle'
 									style: {color: Config.logoSubtitleColor}
@@ -120,103 +279,206 @@ load = (win) ->
 									Config.logoSubtitle
 								)
 							)
-							R.div({className: 'searchBoxContainer'},
+							R.div({className: 'searchBoxContainer input-group'},
 								R.input({
 									className: 'searchBox form-control'
 									ref: 'searchBox'
 									type: 'text'
 									onChange: @_updateQueryText
-									onBlur: @_onSearchBoxBlur
-									placeholder: "Search for a client's profile..."
-								})
+									placeholder: "Search for a #{Term 'client'}'s profile..."
+									value: @state.queryText
+								}
+									R.span({
+										className: 'input-group-btn'
+									},
+										R.button({
+											className: "btn btn-default"
+											onClick: @_showAll
+										},
+											'Show All'
+										)
+									)
+								)
 							)
 						)
 						R.div({
 							className: [
 								'smallHeaderLogo'
 								if smallHeader then 'show' else 'hidden'
-								showWhen not @_isLoading()
+								showWhen not @props.isLoading
 							].join ' '
 						},
-							R.img({src: 'customer-logo-lg.png'})
+							R.img({
+								src: Config.customerLogoLg
+								onClick: @_home
+							})
 						)
 						R.div({
 							className: [
 								'results'
 								if smallHeader then 'show' else 'hidden'
-								showWhen not @_isLoading()
+								showWhen not @props.isLoading
 							].join ' '
 						},
-							(if results?
-								(results.map (result) =>
-									R.div({
-										className: 'result'
-										onClick: @_onResultSelection.bind(null, result.get('id'))
+							OrderableTable({
+								tableData: queryResults
+								sortByData: ['clientName', 'last']
+								key: ['id']
+								rowClass: (dataPoint) =>
+									'active' if @state.hoverClientId is dataPoint.get('id')
+								onClickRow: (dataPoint) =>
+									@_onResultSelection.bind null, dataPoint.get('id')
+
+								columns: [
+									{
+										name: Term 'Programs'
+										dataPath: ['programs']
+										cellClass: 'programsCell'
+										isNotOrderable: true
+										nameIsVisible: false
+
+										value: (dataPoint) ->
+											programs = dataPoint.get('programs')
+
+											return R.div({className: 'programBubbles'}, 
+												(programs
+													.sortBy (program) -> program.get('name').toLowerCase()
+													.map (program) -> 
+														ProgramBubble({
+															program
+															key: program.get('id')
+														})
+												)
+											)
 									}
-										R.span({
-											className: 'recordId'
-										}, if result.has('recordId') and result.get('recordId').length > 0 then "ID# #{result.get('recordId')}"),
-									renderName result.get('clientName')
-									)
-								).toJS()
-							else
-								[]
-							)...
+									{
+										name: "Last Name"
+										dataPath: ['clientName', 'last']
+									}
+									{
+										name: "Given Name(s)"
+										dataPath: ['clientName', 'first']
+										extraPath: ['clientName', 'middle']
+									}
+									{
+										name: Config.clientFileRecordId.label
+										dataPath: ['recordId']
+									}
+								]
+							})
 						)
 					)
 				)
-				R.aside({
-					id: 'menuContainer'
-					ref: 'userMenu'
-					className: if @state.menuIsOpen then 'isOpen' else ''
-				}
-					R.div({id: 'menuContent'}
-						R.div({id: 'avatar'}, FaIcon('user'))
-						# TODO: Get name/username of logged in user
-						R.h3({}, global.ActiveSession.userName)
-						@_renderUserMenuList(global.ActiveSession.isAdmin())
+
+				(if @state.menuIsOpen
+					R.aside({
+						id: 'menuContainer'
+						ref: 'userMenu'
+						className: 'menuIsOpen animated fadeInRight'
+					},
+						R.div({id: 'menuContent'},
+							R.div({id: 'avatar'}, FaIcon('user'))
+							R.h3({}, global.ActiveSession.userName)
+							R.ul({},
+								UserMenuItem({
+									title: Term 'Client Files'
+									icon: 'folder-open'
+									onClick: @_updateManagerLayer.bind null, 'clientFileManagerTab'
+								})				
+								UserMenuItem({
+									isVisible: isAdmin
+									title: Term 'Programs'
+									icon: 'users'
+									onClick: @_updateManagerLayer.bind null, 'programManagerTab'
+								})
+								UserMenuItem({
+									isVisible: isAdmin
+									title: "User #{Term 'Accounts'}"
+									icon: 'key'
+									onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
+								})
+								UserMenuItem({
+									isVisible: isAdmin
+									title: "Export Data"
+									icon: 'download'
+									onClick: @_updateManagerLayer.bind null, 'exportManagerTab'
+								})
+							)
+						)
 					)
 				)
 			)
 
-		_renderUserMenuList: (isAdmin) ->
-			itemsList = [{
-				title: "Client Files"
-				dialog: CreateClientFileDialog
-				icon: 'folder-open'}
-			# {
-			# 	title: "Sign Out"
-			# 	# TODO: Call dialog to confirm win.close
-			# 	dialog: null
-			# 	icon: 'times-circle'}
-			]
+		_attachKeyBindings: ($searchBox) ->
+			# Key-bindings for searchBox
+			$searchBox.on 'keydown', (event) =>
+				# Don't need to see this unless in full search view
+				return if not @state.isSmallHeaderSet
 
-			if isAdmin
-				itemsList.push {
-					title: "User Accounts"
-					dialog: AccountManagerDialog
-					icon: 'user-plus'
-				}
+				switch event.which
+					when 40 # Down arrow
+						event.preventDefault()
+						@_shiftHoverClientId(1)
+					when 38 # Up arrow
+						event.preventDefault()
+						@_shiftHoverClientId(-1)
+					when 27 # Esc
+						@setState hoverClientId: null
+					when 13 # Enter
+						$active = $('.active')
+						return unless $active.length
+						$active[0].click()
+						return false
 
-			menuItems = itemsList.map (item) ->
-				return UserMenuItem({
-					title: item.title
-					dialog: item.dialog
-					icon: item.icon
-				})
+		_shiftHoverClientId: (modifier) ->
+			hoverClientId = null
+			queryResults = @state.queryResults
 
-			return R.ul({}, menuItems)
+			# Get our current index position
+			currentResultIndex = queryResults.findIndex (result) =>
+				return result.get('id') is @state.hoverClientId
+
+			nextIndex = currentResultIndex + modifier
+
+			# Skip to first/last if first-run or next is non-existent
+			if not queryResults.get(nextIndex)? or not @state.hoverClientId?
+				if modifier > 0
+					hoverClientId = queryResults.first().get('id')
+				else
+					hoverClientId = queryResults.last().get('id')
+
+				@setState {hoverClientId}
+				return
+
+			# No wacky skip behaviour needed, move to next/previous result
+			hoverClientId = queryResults.get(nextIndex).get('id')
+			@setState {hoverClientId}
+
+		_updateManagerLayer: (managerLayer) ->
+			@setState {managerLayer}
 
 		_toggleUserMenu: ->
-			@setState {menuIsOpen: !@state.menuIsOpen}		
-		_getResultsList: ->
-			if @state.queryText.trim() is ''
-				return Imm.List()
+			if @state.menuIsOpen
+				$(@refs.userMenu.getDOMNode()).addClass('slideOutRight')
 
+				setTimeout(=>
+					@setState {menuIsOpen: not @state.menuIsOpen}
+				, 400)
+			else
+				@setState {menuIsOpen: not @state.menuIsOpen}
+
+		_refreshResults: ->
+			# Return all results if search query is empty
+			if @state.queryText.trim().length is 0
+				@setState {queryResults: @props.clientFileHeaders}
+				return
+
+			# Split into query parts
 			queryParts = Imm.fromJS(@state.queryText.split(' '))
 			.map (p) -> p.toLowerCase()
 
-			return @props.clientFileList
+			# Calculate query results
+			queryResults = @props.clientFileHeaders
 			.filter (clientFile) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
 				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
@@ -225,58 +487,72 @@ load = (win) ->
 
 				return queryParts
 				.every (part) ->
-					return firstName.includes(part) or middleName.includes(part) or lastName.includes(part) or recordId.includes(part)
+					return firstName.includes(part) or
+						middleName.includes(part) or
+						lastName.includes(part) or
+						recordId.includes(part)			
+
+			@setState {queryResults}
+
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
-		_onSearchBoxBlur: (event) ->
-			if @state.queryText is ''
-				@setState {isSmallHeaderSet: false}
+
+		_showAll: ->
+			@setState {isSmallHeaderSet: true, queryText: ''}
+		_home: ->
+			@setState {isSmallHeaderSet: false, queryText: ''}
 		_onResultSelection: (clientFileId, event) ->
 			openWindow {
 				page: 'clientFile'
 				clientFileId
-			}
+			}	
 
 
 	UserMenuItem = React.createFactory React.createClass
-		mixins: [LayeredComponentMixin]
+		mixins: [React.addons.PureRenderMixin]
+
+		getDefaultProps: ->
+			return {
+				isVisible: true
+			}
+
 		getInitialState: ->
 			return {
 				isOpen: false
 			}
+
 		render: ->
-			return R.li({}, 				
+			return R.li({className: showWhen @props.isVisible},
 				R.div({
-					onClick: @_open
+					onClick: @props.onClick.bind null, @props.module
 				}, 
 					FaIcon(@props.icon)
 					@props.title
 				)
 			)
-		renderLayer: ->
-			unless @state.isOpen
-				return R.div()
 
-			return @props.dialog({
-				onClose: =>
-					@setState {isOpen: false}
-				onCancel: =>
-					@setState {isOpen: false}
-				onSuccess: (clientFileId) =>
-					@setState {isOpen: false}					
-					if clientFileId
-						openWindow {
-							page: 'clientFile'
-							clientFileId
-						}
+	ProgramBubble = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
+		componentDidMount: ->
+			$(@refs.bubble.getDOMNode()).popover {
+				trigger: 'hover'
+				placement: 'right'
+				title: @props.program.get('name')
+				content: @props.program.get('description')
+			}
+		render: ->
+			return R.div({
+				className: 'programBubble'
+				ref: 'bubble'				
+				style:
+					background: @props.program.get('colorKeyHex')
 			})
-		_open: ->
-			@setState {isOpen: true}
-		_cancel: ->
-			@setState {isOpen: false}
 
+
+	return ClientSelectionPage
 
 module.exports = {load}

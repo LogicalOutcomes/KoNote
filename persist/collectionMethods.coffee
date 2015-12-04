@@ -1,3 +1,8 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
+Assert = require 'assert'
 Async = require 'async'
 Fs = require 'fs'
 Joi = require 'joi'
@@ -5,7 +10,24 @@ Imm = require 'immutable'
 Moment = require 'moment'
 Path = require 'path'
 
-{IdSchema, generateId, ObjectNotFoundError, TimestampFormat} = require './utils'
+Atomic = require './atomic'
+
+{
+	IOError
+	IdSchema
+	ObjectNotFoundError
+	TimestampFormat
+	generateId
+} = require './utils'
+
+joiValidationOptions = Object.freeze {
+	# I would like to set this to false, but Joi doesn't seem to support date
+	# string validation without convert: true
+	convert: true
+
+	# Any properties that are not required must be explicitly marked optional.
+	presence: 'required'
+}
 
 # Create an API based on the specified model definition.
 #
@@ -24,6 +46,8 @@ Path = require 'path'
 createCollectionApi = (session, eventBus, context, modelDef) ->
 	childCollectionNames = Imm.List(modelDef.children).map (childDef) ->
 		return childDef.collectionName
+
+	tmpDirPath = Path.join(session.dataDirectory, '_tmp')
 
 	create = (obj, cb) ->
 		if obj.has('id')
@@ -50,7 +74,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		.set 'author', session.userName
 		.set 'timestamp', Moment().format(TimestampFormat)
 
+		destObjDir = null
 		objDir = null
+		objDirOp = null
 
 		Async.series [
 			(cb) ->
@@ -59,23 +85,39 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 						cb err
 						return
 
-					objDir = Path.join(
+					destObjDir = Path.join(
 						parentDir
 						modelDef.collectionName
 						createObjectFileName(obj, modelDef.indexes)
 					)
 					cb()
 			(cb) ->
-				Fs.mkdir objDir, cb
+				# In order to make the operation atomic, we write to a
+				# temporary object directory first, then commit it later.
+				Atomic.writeDirectory destObjDir, tmpDirPath, (err, tmpObjDir, op) ->
+					if err
+						cb new IOError err
+						return
+
+					objDir = tmpObjDir
+					objDirOp = op
+					cb()
 			(cb) ->
 				# Create subdirs for subcollection
 				Async.each modelDef.children, (child, cb) ->
 					childDir = Path.join(objDir, child.collectionName)
-					Fs.mkdir childDir, cb
+					Fs.mkdir childDir, (err) ->
+						if err
+							cb new IOError err
+							return
+
+						cb()
 				, cb
 			(cb) ->
 				revFile = Path.join(objDir, createRevisionFileName(obj))
-				writeObjectFile obj, revFile, cb
+				writeObjectFile obj, revFile, contextualIds, cb
+			(cb) ->
+				objDirOp.commit cb
 		], (err) ->
 			if err
 				cb err
@@ -109,15 +151,17 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			(cb) ->
 				Fs.readdir collectionDir, (err, results) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					fileNames = results
 					cb()
 		], (err) ->
+			if err
+				cb err
+				return
+
 			result = Imm.List(fileNames)
-				.filter (fileName) ->
-					return not childCollectionNames.contains(fileName)
 				.map (fileName) ->
 					[indexValues..., id] = decodeFileName(fileName, modelDef.indexes.length + 1)
 
@@ -142,7 +186,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 			Fs.readdir objDir, (err, revisionFiles) ->
 				if err
-					cb err
+					cb new IOError err
 					return
 
 				revisionFiles = revisionFiles.filter (fileName) ->
@@ -159,7 +203,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				revisionFile = revisionFiles[0]
 				revisionFilePath = Path.join(objDir, revisionFile)
 
-				readObjectFile revisionFilePath, cb
+				readObjectFile revisionFilePath, contextualIds, id, cb
 
 	createRevision = (obj, cb) ->
 		unless obj.has('id')
@@ -184,6 +228,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					objDir = result
 					cb()
 			(cb) ->
+				revFile = Path.join(objDir, createRevisionFileName(obj))
+				writeObjectFile obj, revFile, contextualIds, cb
+			(cb) ->
 				# When an indexed property changes, we need to rename the dir
 				expectedDirName = createObjectFileName(obj, modelDef.indexes)
 				actualDirName = Path.basename objDir
@@ -198,10 +245,12 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				expectedDirPath = Path.join(parentDirPath, expectedDirName)
 
 				objDir = expectedDirPath
-				Fs.rename actualDirPath, expectedDirPath, cb
-			(cb) ->
-				revFile = Path.join(objDir, createRevisionFileName(obj))
-				writeObjectFile obj, revFile, cb
+				Fs.rename actualDirPath, expectedDirPath, (err) ->
+					if err
+						cb new IOError err
+						return
+
+					cb()
 		], (err) ->
 			if err
 				cb err
@@ -233,7 +282,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			(cb) ->
 				Fs.readdir objDir, (err, fileNames) ->
 					if err
-						cb err
+						cb new IOError err
 						return
 
 					revisions = Imm.List(fileNames)
@@ -270,7 +319,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				return
 
 			Async.map revisions.toArray(), (rev, cb) ->
-				readObjectFile rev.get('_filePath'), cb
+				readObjectFile rev.get('_filePath'), contextualIds, id, cb
 			, (err, results) ->
 				if err
 					cb err
@@ -302,7 +351,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			revisions = revisions.takeLast maxRevisionCount
 
 			Async.map revisions.toArray(), (rev, cb) ->
-				readObjectFile rev.get('_filePath'), cb
+				readObjectFile rev.get('_filePath'), contextualIds, id, cb
 			, (err, results) ->
 				if err
 					cb err
@@ -357,18 +406,44 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 			cb null, match.get('_dirPath')
 
-	readObjectFile = (path, cb) ->
+	readObjectFile = (path, contextualIds, id, cb) ->
 		schema = prepareSchema modelDef.schema, context
 
 		Fs.readFile path, (err, encryptedObj) ->
 			if err
-				cb err
+				cb new IOError err
 				return
 
+			# Decrypt and parse JSON
 			decryptedJson = session.globalEncryptionKey.decrypt encryptedObj
-			obj = JSON.parse decryptedJson
+			obj = Imm.fromJS JSON.parse decryptedJson
 
-			validation = Joi.validate obj, schema
+			# Check that this object is where it should be
+			# This is a security feature to prevent tampering
+			Assert Imm.is(
+				obj.get('_contextCollectionNames'),
+				context.map(
+					(c) -> c.get('definition').collectionName
+				)
+			), "found object of wrong type in collection #{modelDef.collectionName}"
+			Assert Imm.is(
+				obj.get('_contextIds'),
+				Imm.fromJS(contextualIds)
+			), "found object in wrong parent in collection #{modelDef.collectionName}"
+			Assert Imm.is(
+				obj.get('_collectionName'),
+				modelDef.collectionName
+			), "found an object from #{obj.get('_collectionName')} inside #{modelDef.collectionName}"
+			Assert Imm.is(
+				obj.get('id'),
+				id
+			), "object with ID=#{id} actually had ID=#{obj.get('id')}"
+			obj = obj.delete('_contextCollectionNames')
+				.delete('_contextIds')
+				.delete('_collectionName')
+
+			# Validate against the collection's schema
+			validation = Joi.validate obj.toJS(), schema, joiValidationOptions
 
 			if validation.error?
 				cb validation.error
@@ -376,22 +451,34 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 			cb null, Imm.fromJS validation.value
 
-	writeObjectFile = (obj, path, cb) ->
+	writeObjectFile = (obj, path, contextualIds, cb) ->
 		schema = prepareSchema modelDef.schema, context
 
-		validation = Joi.validate obj.toJS(), schema
+		# Validate against the collection's schema
+		validation = Joi.validate obj.toJS(), schema, joiValidationOptions
 
 		if validation.error?
 			process.nextTick ->
 				cb validation.error
 			return
 
-		objJson = JSON.stringify validation.value
+		# Specify where this object belongs
+		# This is a security feature to prevent tampering
+		validatedObjWithContext = Imm.fromJS(validation.value)
+			.set('_contextCollectionNames', context.map(
+				(c) -> c.get('definition').collectionName
+			))
+			.set('_contextIds', contextualIds)
+			.set('_collectionName', modelDef.collectionName)
+			.toJS()
+
+		# Encode as JSON and encrypt
+		objJson = JSON.stringify validatedObjWithContext
 		encryptedObj = session.globalEncryptionKey.encrypt objJson
 
-		Fs.writeFile path, encryptedObj, (err) ->
+		Atomic.writeBufferToFile path, tmpDirPath, encryptedObj, (err) ->
 			if err
-				cb err
+				cb new IOError err
 				return
 
 			cb null, obj
@@ -496,6 +583,7 @@ decodeFileNameComponent = (s) ->
 	s = s.replace /%([a-fA-F0-9]{2})/g, (match, hex) ->
 		return String.fromCharCode parseInt(hex, 16)
 	return s
+
 
 module.exports = {
 	createCollectionApi

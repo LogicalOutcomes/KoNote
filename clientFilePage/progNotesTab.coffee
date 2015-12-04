@@ -1,7 +1,12 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require '../config'
+Term = require '../term'
 Persist = require '../persist'
 
 load = (win) ->
@@ -12,15 +17,22 @@ load = (win) ->
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	ProgEventsWidget = require('../progEventsWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
+	PrintButton = require('../printButton').load(win)
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				selectedItem: null
+				backdate: ''
 			}
+
 		componentDidMount: ->
+			
 			quickNoteToggle = $('.addQuickNote')
 			quickNoteToggle.data 'isVisible', false
 			quickNoteToggle.popover {
@@ -29,28 +41,32 @@ load = (win) ->
 				trigger: 'manual'
 				content: '''
 					<textarea class="form-control"></textarea>
-					<div class="buttonBar">
-						<button class="cancel btn btn-default"><i class="fa fa-trash"></i> Discard</button>
+					<div class="buttonBar form-inline">
+						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
+						<button class="cancel btn btn-danger"><i class="fa fa-trash"></i> Discard</button>
 						<button class="save btn btn-primary"><i class="fa fa-check"></i> Save</button>
 					</div>
 				'''
 			}
+
 		render: ->
 			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
 				R.div({className: "toolbar #{showWhen @props.progNotes.size > 0}"},
 					R.button({
 						className: 'newProgNote btn btn-primary'
 						onClick: @_openNewProgNote
+						disabled: @props.isReadOnly
 					},
 						FaIcon 'file'
-						"New progress note"
+						"New #{Term 'progress note'}"
 					)
 					R.button({
 						className: "addQuickNote btn btn-default #{showWhen @props.progNotes.size > 0}"						
 						onClick: @_toggleQuickNotePopover
+						disabled: @props.isReadOnly
 					},
 						FaIcon 'plus'
-						"Add quick note"
+						"Add #{Term 'quick note'}"
 					)
 				)
 				R.div({className: 'panes'},
@@ -58,33 +74,42 @@ load = (win) ->
 						R.div({
 							className: "empty #{showWhen @props.progNotes.size is 0}"},
 							R.div({className: 'message'},
-								"This client does not currently have any progress notes."
+								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
 							)
 							R.button({
 								className: 'newProgNote btn btn-primary btn-lg'
 								onClick: @_openNewProgNote
+								disabled: @props.isReadOnly
 							},
 								FaIcon 'file'
-								"New progress note"
+								"New #{Term 'progress note'}"
 							)
 							R.button({
 								className: "addQuickNote btn btn-default btn-lg #{showWhen @props.progNotes.size is 0}"								
 								onClick: @_toggleQuickNotePopover
+								disabled: @props.isReadOnly
 							},
 								FaIcon 'plus'
-								"Add quick note"
+								"Add #{Term 'quick note'}"
 							)
 						)
-						(@props.progNotes.reverse().map (progNote) =>
+						(@props.progNotes.map (progNote) =>
+							# Filter out only events for this progNote
+							progEvents = @props.progEvents.filter (progEvent) =>
+								return progEvent.get('relatedProgNoteId') is progNote.get('id')
+
 							switch progNote.get('type')
 								when 'basic'
 									BasicProgNoteView({
 										progNote
+										clientFile: @props.clientFile
 										key: progNote.get('id')
 									})
 								when 'full'
 									FullProgNoteView({
 										progNote
+										progEvents
+										clientFile: @props.clientFile
 										key: progNote.get('id')
 										setSelectedItem: @_setSelectedItem
 									})
@@ -95,12 +120,43 @@ load = (win) ->
 					ProgNoteDetailView({
 						item: @state.selectedItem
 						progNotes: @props.progNotes
+						progEvents: @props.progEvents
 					})
 				)
 			)
 		_openNewProgNote: ->
-			openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
-		_toggleQuickNotePopover: ->			
+			if @props.hasChanges()
+				Bootbox.dialog {
+					title: "Unsaved Changes to #{Term 'Plan'}"
+					message: """
+						You have unsaved changes in the #{Term 'plan'} that will not be reflected in this
+						#{Term 'progress note'}. How would you like to proceed?
+					"""
+					buttons: {
+						default: {
+							label: "Cancel"
+							className: "btn-default"
+							callback: => Bootbox.hideAll()
+						}
+						danger: {
+							label: "Ignore"
+							className: "btn-danger"
+							callback: => 
+								openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
+						}
+						success: {
+							label: "View #{Term 'Plan'}"
+							className: "btn-success"
+							callback: => 
+								Bootbox.hideAll()
+								@props.onTabChange 'plan'
+						}
+					}
+				}
+			else
+				openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
+
+		_toggleQuickNotePopover: ->
 			quickNoteToggle = $('.addQuickNote:not(.hide)')
 
 			if quickNoteToggle.data('isVisible')
@@ -114,61 +170,90 @@ load = (win) ->
 				popover = quickNoteToggle.siblings('.popover')
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
-					@_createQuickNote popover.find('textarea').val(), quickNoteToggle
 
+					@props.createQuickNote popover.find('textarea').val(), @state.backdate, (err) =>
+						@setState {backdate: ''}
+						if err
+							if err instanceof Persist.IOError
+								Bootbox.alert """
+									An error occurred.  Please check your network connection and try again.
+								"""
+								return
+
+							CrashHandler.handle err
+							return
+
+						quickNoteToggle.popover('hide')
+						quickNoteToggle.data('isVisible', false)
+
+				popover.find('.backdate.date').datetimepicker({
+					format: 'MMM-DD-YYYY h:mm A'
+					defaultDate: Moment()
+					maxDate: Moment()
+					widgetPositioning: {
+						vertical: 'bottom'
+					}
+				}).on 'dp.change', (e) =>
+					@setState {backdate: Moment(e.date).format(Persist.TimestampFormat)}
+				
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
 					quickNoteToggle.popover('hide')
-					allQuickNoteToggle.data('isVisible', false)
+					quickNoteToggle.data('isVisible', false)
 
 				popover.find('textarea').focus()
-		_createQuickNote: (notes, quickNoteToggle) ->
-			note = Imm.fromJS {
-				type: 'basic'
-				clientFileId: @props.clientFileId
-				notes
-			}
-
-			@props.registerTask 'quickNote-save'
-			global.ActiveSession.persist.progNotes.create note, (err) =>
-				if err
-					CrashHandler.handle err
-					return
-
-				@props.unregisterTask 'quickNote-save'
-
-				quickNoteToggle.popover('hide')
-				quickNoteToggle.data('isVisible', false)
 
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
 
 	# These are called 'quick notes' in the UI
 	BasicProgNoteView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			R.div({className: 'basic progNote'},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
-						Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
-						.format 'MMMM D, YYYY [at] HH:mm'
+						if @props.progNote.get('backdate') != ''
+							Moment(@props.progNote.get('backdate'), Persist.TimestampFormat)
+							.format('MMMM D, YYYY') + " (late entry)"
+						else
+							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							.format 'MMMM D, YYYY [at] HH:mm'
 					)
 					R.div({className: 'author'},
 						' by '
 						@props.progNote.get('author')
-					)
+					)					
 				)
 				R.div({className: 'notes'},
+					PrintButton({
+						dataSet: [
+							{
+								format: 'progNote'
+								data: @props.progNote
+								clientFile: @props.clientFile
+							}
+						]
+						isVisible: true
+					})
 					renderLineBreaks @props.progNote.get('notes')
 				)
 			)
 
 	FullProgNoteView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			R.div({className: 'full progNote'},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
-						Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
-						.format 'MMMM D, YYYY [at] HH:mm'
+						if @props.progNote.get('backdate') != ''
+							Moment(@props.progNote.get('backdate'), Persist.TimestampFormat)
+							.format('MMMM D, YYYY') + " (late entry)"
+						else
+							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							.format 'MMMM D, YYYY [at] HH:mm'
 					)
 					R.div({className: 'author'},
 						' by '
@@ -176,33 +261,43 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'sections'},
+					PrintButton({
+						dataSet: [
+							{
+								format: 'progNote'
+								data: @props.progNote
+								progEvents: @props.progEvents
+								clientFile: @props.clientFile
+							}
+						]
+						isVisible: true
+					})
 					(@props.progNote.get('sections').map (section) =>
 						switch section.get('type')
 							when 'basic'
 								R.div({className: 'basic section', key: section.get('id')},
-									R.h1({
-										className: 'name'
-										onClick: @_selectBasicSection.bind null, section
-									},
-										section.get('name')
-									)
-									R.div({className: "empty #{showWhen section.get('notes').length is 0}"},
-										'(blank)'
-									)
+									if section.get('notes').length > 0
+										R.h1({
+											className: 'name'
+											onClick: @_selectBasicSection.bind null, section
+										},
+											section.get('name')
+										)
 									R.div({className: 'notes'},
 										renderLineBreaks section.get('notes')
 									)
-									R.div({className: 'metrics'},
-										(section.get('metrics').map (metric) =>
-											MetricWidget({
-												isEditable: false
-												key: metric.get('id')
-												name: metric.get('name')
-												definition: metric.get('definition')
-												value: metric.get('value')
-											})
-										).toJS()...
-									)
+									if section.get('notes').length > 0
+										R.div({className: 'metrics'},
+											(section.get('metrics').map (metric) =>
+												MetricWidget({
+													isEditable: false
+													key: metric.get('id')
+													name: metric.get('name')
+													definition: metric.get('definition')
+													value: metric.get('value')
+												})
+											).toJS()...
+										)
 								)
 							when 'plan'
 								R.div({className: 'plan section', key: section.get('id')},
@@ -210,7 +305,7 @@ load = (win) ->
 										section.get('name')
 									)
 									R.div({className: "empty #{showWhen section.get('targets') is ''}"},
-										"This section is empty because the client has no plan targets."
+										"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
 									)
 									R.div({className: 'targets'},
 										(section.get('targets').map (target) =>
@@ -242,9 +337,20 @@ load = (win) ->
 												)
 											)
 										).toJS()...
-									)
+									)									
 								)
 					).toJS()...
+
+					unless @props.progEvents.isEmpty()
+						R.div({className: 'progEvents'}
+							R.h3({}, Term 'Events')
+							(@props.progEvents.map (progEvent) =>								
+								ProgEventsWidget({
+									format: 'large'
+									data: progEvent
+								})
+							).toJS()...
+						)						
 				)
 			)
 		_selectBasicSection: (section) ->

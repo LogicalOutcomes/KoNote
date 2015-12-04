@@ -38,6 +38,8 @@
  * });
  */
 
+Assert = require('assert')
+
 module.exports = {
 	load: function (win) {
 		// Explicitly access all page globals via the window object
@@ -69,6 +71,7 @@ module.exports = {
 				// componentDidUpdate(), you're effectively creating a "wormhole" that
 				// funnels React's hierarchical updates through to a DOM node on an
 				// entirely different part of the page.
+				Assert(this.renderLayer, "missing this.renderLayer() in component")
 
 				var layerElement = this.renderLayer();
 				// Renders can return null, but React.render() doesn't like being asked

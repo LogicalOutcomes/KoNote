@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Async = require 'async'
 Backbone = require 'backbone'
 Fs = require 'fs'
@@ -6,15 +10,12 @@ Path = require 'path'
 
 CollectionMethods = require './collectionMethods'
 
-{ObjectNotFoundError} = require './utils'
-
 buildApi = (session, dataModelDefinitions) ->
 	eventBus = Object.create Backbone.Events
 
 	result = processModels(session, eventBus, dataModelDefinitions).toJS()
 
 	result.eventBus = eventBus
-	result.ObjectNotFoundError = ObjectNotFoundError
 
 	return result
 

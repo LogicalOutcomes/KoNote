@@ -1,10 +1,14 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Async = require 'async'
 Joi = require 'joi'
 Mkdirp = require 'mkdirp'
 Path = require 'path'
 
 ApiBuilder = require './apiBuilder'
-{IdSchema} = require './utils'
+{IdSchema, TimestampFormat} = require './utils'
 
 dataModelDefinitions = [
 	{
@@ -12,9 +16,9 @@ dataModelDefinitions = [
 		collectionName: 'clientFiles'
 		isMutable: true
 		indexes: [
-			['clientName', 'first'], 
-			['clientName', 'middle'], 
-			['clientName', 'last'],
+			['clientName', 'first']
+			['clientName', 'middle']
+			['clientName', 'last']
 			['recordId']
 		]
 		schema: Joi.object().keys({
@@ -38,6 +42,19 @@ dataModelDefinitions = [
 		})
 		children: [
 			{
+				name: 'progEvent'
+				collectionName: 'progEvents'
+				isMutable: false
+				indexes: [['relatedProgNoteId']]
+				schema: Joi.object().keys({
+					relatedProgNoteId: IdSchema
+					title: Joi.string()
+					description: Joi.string().allow('')			
+					startTimestamp: Joi.date().format(TimestampFormat).raw()
+					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+				})
+			}
+			{
 				name: 'planTarget'
 				collectionName: 'planTargets'
 				isMutable: true
@@ -53,15 +70,17 @@ dataModelDefinitions = [
 				name: 'progNote'
 				collectionName: 'progNotes'
 				isMutable: false
-				indexes: [['timestamp']]
+				indexes: [['timestamp'], ['backdate']]
 				schema: [
 					Joi.object().keys({
 						type: 'basic' # aka "Quick Notes"
 						notes: Joi.string()
+						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 					})
 					Joi.object().keys({
 						type: 'full'
 						templateId: IdSchema
+						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						sections: Joi.array().items(
 							[
 								Joi.object().keys({
@@ -135,6 +154,7 @@ dataModelDefinitions = [
 			)
 		})
 	}
+
 	{
 		name: 'metric'
 		collectionName: 'metrics'
@@ -145,19 +165,29 @@ dataModelDefinitions = [
 			definition: Joi.string()
 		})
 	}
+
 	{
-		name: 'progEvent'
-		collectionName: 'progEvents'
-		isMutable: false
-		indexes: []
+		name: 'program'
+		collectionName: 'programs'
+		isMutable: true
+		indexes: [['name'], ['colorKeyHex']]
 		schema: Joi.object().keys({
-			title: Joi.string()
-			description: Joi.string().allow('')
-			# TODO: Event Categories
-			# categoryId: IdSchema
-			relatedProgNoteId: IdSchema			
-			startDate: Joi.date().format('YYYYMMDD').raw()
-			endDate: Joi.date().format('YYYYMMDD').raw().allow('')
+			name: Joi.string()
+			description: Joi.string()
+			colorKeyHex: Joi.string().regex(/^#[A-Fa-f0-9]{6}/)
+		})
+	}
+
+	# Link a clientFileId to 1 or more programIds
+	{
+		name: 'clientFileProgramLink'
+		collectionName: 'clientFileProgramLinks'
+		isMutable: true
+		indexes: [['status'], ['clientFileId'], ['programId']]
+		schema: Joi.object().keys({
+			clientFileId: IdSchema
+			programId: IdSchema
+			status: ["enrolled", "unenrolled"]
 		})
 	}
 ]
@@ -165,6 +195,7 @@ dataModelDefinitions = [
 getApi = (session) ->
 	ApiBuilder.buildApi session, dataModelDefinitions
 
+# TODO This shouldn't be here, since it's derived from the data model, not part of it
 setUpDataDirectory = (dataDir, cb) ->
 	# Set up top-level directories
 	Async.series [
@@ -172,6 +203,8 @@ setUpDataDirectory = (dataDir, cb) ->
 			Async.each dataModelDefinitions, (modelDef, cb) ->
 				Mkdirp Path.join(dataDir, modelDef.collectionName), cb
 			, cb
+		(cb) ->
+			Mkdirp Path.join(dataDir, '_tmp'), cb
 		(cb) ->
 			Mkdirp Path.join(dataDir, '_users'), cb
 		(cb) ->

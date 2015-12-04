@@ -7,7 +7,8 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 #container > #clientSelectionPage
 	display flex
-	height 100%
+	overflow hidden
+	height 100%	
 	
 	> #expandMenuButton
 		background none
@@ -19,26 +20,44 @@ sidebar-borders = darken(sidebar-bg, 10%)
 		z-index 9999
 		border none
 		font-size 22px
-		opacity 1 !important
+		opacity 1		
 		
-		transition all .5s ease
-		transition-delay .1s
+		transition all .35s ease
+		
+		&:before
+			opacity 1
+			transition all .35s ease
+			display block			
+			position absolute
+			right 100%
+			content "Menu"
+			color #CBCBCB
+			font-size 18px
+			line-height 1.5em
 		
 		> .fa
-			color #686868
-			transition all .5s ease
-			
-		&:hover > .fa
-			color #0075C0
 			font-size 25px
+			color #686868
+			transition all .35s ease
+			
+		&:hover
+			text-decoration none
+			cursor pointer
+			
+			&:before
+				font-size 20px
+				color #818181
+
+			> .fa
+				color #0075C0
+				font-size 30px
 	
 	> #mainContainer
+		flex 4
+		position relative		
 		display flex
-		width 100%
 		height 100%
-		flex-direction column
-		
-		transition width .5s ease		
+		flex-direction column		
 		
 		> #main
 			margin auto 0
@@ -68,11 +87,10 @@ sidebar-borders = darken(sidebar-bg, 10%)
 				transition-duration duration-to-big1
 				transition-delay 0
 				
-				.brandContainer {
+				.brandContainer
 					position absolute
 					bottom 0px
 					right 0px
-				}
 
 				.logoContainer
 					overflow hidden
@@ -91,8 +109,6 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 				&.small
 					height 100px
-
-					border-bottom-color hsla(0, 0%, 90%, 1.0)
 
 					transition-property height, border-bottom-color
 					transition-timing-function ease
@@ -124,6 +140,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 				img
 					max-height 40px
+					cursor pointer
 
 			> .results
 				overflow auto
@@ -135,7 +152,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 					cursor pointer
 					font-weight 600
 
-					&:hover 
+					&:hover, &.active
 						color white
 						background hsl(200, 80%, 80%)
 						
@@ -143,31 +160,86 @@ sidebar-borders = darken(sidebar-bg, 10%)
 							opacity 1
 							color white
 					
+					&.hover
+						background hsl(200, 80%, 85%)
+						
+					&:hover
+						background hsl(200, 80%, 80%)
+					
 					> .recordId
 						float right
 						opacity 0.5
 						font-weight 400
+						
+			.orderableTable
+				thead
+					th
+						border-bottom 0px
+				tbody tr
+					transition background .15s ease-in-out
+					background white					
 					
-	> #menuContainer		
+					&:hover, &.active
+						color hsl(200, 80%, 20%)
+						background hsl(200, 80%, 80%)
+						cursor pointer
+						
+						td
+							border-top-color hsl(200, 80%, 70%)
+						
+					td
+						font-size 1.15em
+						line-height 2.5em
+						
+					td.programsCell
+						width 15%
+						
+						.popover
+							// TODO: More relavent styling to program
+							color black
+				
+						.programBubbles
+							display flex
+							flex-wrap wrap
+
+							.programBubble
+								flex 1
+								border-radius 50%
+								max-width 25px
+								border 2px solid white
+								transition border-color .15s ease
+								
+								margin-left 5px
+								
+								&:hover
+									border-color hsla(0, 0, 0, 0.3)
+								
+								&:before
+									display block
+									content ""
+									padding-top 100%
+								
+								&:first-child
+									margin-left 0px
+					
+	> #menuContainer
+		flex 0		
 		display flex
-		width 100%
 		flex-direction column
 		justify-content center
-		width 0%
 		overflow hidden
-		transition all .5s ease
-		opacity 0
 		color hsl(hue(sidebar-bg), 15%, 35%)
 		background hsl(hue(logo-light-blue), 35%, 94%)
+		border-left 2px solid sidebar-borders
+		
+		transition all 1s ease
+		
+		&.menuIsOpen
+			flex 1
 		
 		> #menuContent
-			opacity 0
-			margin auto 0
 			overflow hidden
 			width auto
-			
-			transition opacity .1s ease-in-out
-			transition-delay .5s
 			
 			> #avatar
 				text-align center				
@@ -208,32 +280,21 @@ sidebar-borders = darken(sidebar-bg, 10%)
 						font-weight 600
 						
 						> .fa
-							padding-right 5px
+							padding-right 10px
 							transition padding-right .25s ease
 						
 						&:hover
-							background darken(sidebar-bg, 5%)
-							
-							> .fa
-								padding-right 10px											
+							background darken(sidebar-bg, 5%)							
 			
 	&.openMenu
 		
 		> #expandMenuButton
 			transform rotate(90deg)	
 			
+			&:before				
+				opacity 0
+			
 			&:hover > .fa
 				color #929292
-				
-		> #mainContainer
-			width 80%
-			border-right 2px solid sidebar-borders
-			
-		> #menuContainer
-			width 20%
-			opacity 1
-			
-			> #menuContent
-				opacity 1
 		
 		

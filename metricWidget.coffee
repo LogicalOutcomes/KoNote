@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # A component for indicating the presence or displaying the value of a metric.
 
 load = (win) ->
@@ -7,6 +11,7 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
 	MetricWidget = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		componentDidMount: ->
 			tooltipContent = R.div({className: 'tooltipContent'},
 				renderLineBreaks @props.definition
@@ -41,7 +46,7 @@ load = (win) ->
 				R.div({className: 'name', ref: 'name'},
 					@props.name
 				)
-				(if allowDeleting
+				(if allowDeleting and not @props.isReadOnly
 					R.div({className: 'delete', onClick: @props.onDelete},
 						FaIcon 'times'
 					)

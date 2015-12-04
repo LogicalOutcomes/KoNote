@@ -92,12 +92,22 @@
 				&.basic
 					> .notes
 						padding 20px 0
+						
+						> .printButton
+							float right
 
 						> br
 							display block
 
 				&.full
 					> .sections
+						position relative
+						
+						> .printButton
+							position absolute
+							top 0
+							right 0
+
 						> .section
 							> .name
 								font-size 24px

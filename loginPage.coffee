@@ -1,7 +1,12 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 Async = require 'async'
 Imm = require 'immutable'
 
 Config = require './config'
+Term = require './term'
 Persist = require './persist'
 
 load = (win) ->
@@ -11,135 +16,170 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	NewInstallationPage = require('./newInstallationPage').load(win)
+
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
+	Dialog = require('./dialog').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
-	do ->
-		init = ->
-			render()
-			loadData()
-			registerListeners()
-
-		process.nextTick init
-
-		render = ->
-			React.render new LoginPage(), $('#container')[0]
-
-		loadData = ->
-			# TODO load teh datas?
-
-		registerListeners = ->
-			# TODO listen for a change?
-
 	LoginPage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
-				showForm: false
-				userName: ''
-				password: ''
 				isLoading: true
+				isSetUp: false
+				isNewInstallation: false
 			}
-		componentDidMount: ->
+
+		init: ->			
+			if Config.autoLogin?
+				@_autoLogin()
+				return
+
 			@_checkSetUp()
 
+		_autoLogin: ->
+			@_login Config.autoLogin.userName, Config.autoLogin.password
+
+		deinit: (cb=(->)) ->
+			@setState {isLoading: false}, cb
+
+		suggestClose: ->
+			@props.closeWindow()
+
+		render: ->
+			unless @state.isSetUp
+				return NewInstallationPage({
+					onSuccess: =>
+						@setState {isSetUp: true}
+				})
+
+			return new LoginPageUi({
+				ref: 'ui'
+				isLoading: @state.isLoading
+				isSetUp: @state.isSetUp
+				isNewInstallation: @state.isNewInstallation
+				login: @_login
+			})
+
 		_checkSetUp: ->
-			adminPassword = null
+			console.log "Probing setup..."
 
-			Async.series [
-				(cb) =>
-					# TODO data dir
-					Persist.Users.isAccountSystemSetUp 'data', (err, isSetUp) =>
-						@setState {isLoading: false}
+			# Check to make sure the dataDir exists and has an account system
+			Persist.Users.isAccountSystemSetUp Config.dataDirectory, (err, isSetUp) =>
+				@setState {isLoading: false}
 
-						if err
-							cb err
-							return
-
-						if isSetUp
-							# Already set up, no need to continue here
-							@setState {showForm: true}
-							@refs.userNameField.getDOMNode().focus()
-							return
-
-						# Data directory hasn't been set up yet.
-						cb()
-				(cb) =>
-					Bootbox.confirm """
-						KoNote could not find any data.  Unless this is your first
-						time using KoNote, this may indicate a problem.  Would you
-						like to set up KoNote from scratch?
-					""", (result) =>
-						unless result
-							process.exit(0)
-							return
-
-						cb()
-				(cb) =>
-					Bootbox.prompt {
-						title: 'Enter password for admin account'
-						inputType: 'password'
-						callback: (result) ->
-							unless result
-								process.exit(0)
-								return
-
-							adminPassword = result
-							cb()
-					}
-				(cb) =>
-					# TODO data dir
-					@setState {isLoading: true}
-					Persist.setUpDataDirectory 'data', (err) =>
-						@setState {isLoading: false}
-
-						if err
-							cb err
-							return
-
-						cb()
-				(cb) =>
-					# TODO data dir
-					@setState {isLoading: true}
-					Persist.Users.createAccount 'data', 'admin', adminPassword, 'admin', (err) =>
-						@setState {isLoading: false}
-
-						if err
-							if err instanceof Persist.Users.UserNameTakenError
-								Bootbox.alert "An admin user account already exists."
-								process.exit(1)
-								return
-
-							cb err
-							return
-
-						cb()
-			], (err) =>
 				if err
 					CrashHandler.handle err
 					return
 
+				if isSetUp					
+					# Already set up, no need to continue here
+					console.log "Set up confirmed..."
+					@setState {isSetUp: true}
+					return
+
+				# Falsy isSetUp triggers NewInstallationPage
+				console.log "Not set up, redirecting to installation page..."				
 				@setState {
-					showForm: true
-					userName: 'admin'
+					isSetUp: false
+					isNewInstallation: true
 				}
 
-				@refs.passwordField.getDOMNode().focus()
+		_login: (userName, password) ->			
+			@setState => isLoading: true
+
+			Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>
+				@setState {isLoading: false}
+				if err
+					if err instanceof Persist.Session.UnknownUserNameError
+						@refs.ui.onLoginError('UnknownUserNameError')
+						return
+
+					if err instanceof Persist.Session.IncorrectPasswordError
+						@refs.ui.onLoginError('IncorrectPasswordError')
+						return
+
+					if err instanceof Persist.Session.DeactivatedAccountError
+						@refs.ui.onLoginError('DeactivatedAccountError')
+						return
+
+					CrashHandler.handle err
+					return
+
+				# Store this session for later use
+				global.ActiveSession = session
+
+				# Proceed to clientSelectionPage
+				@props.navigateTo {
+					page: 'clientSelection'
+				}
+
+
+	LoginPageUi = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				userName: ''
+				password: ''
+			}
+
+		componentDidMount: ->
+			unless Config.autoLogin? or (@props.isSetUp and @props.isNewInstallation)
+				setTimeout(=>
+					@refs.userNameField.getDOMNode().focus()
+				, 100)
+
+			if @props.isNewInstallation
+				@setState {
+					userName: 'admin'
+				}, ->
+					@refs.passwordField.getDOMNode().focus()
+
+		onLoginError: (type) ->
+			switch type
+				when 'UnknownUserNameError'
+					Bootbox.alert "Unknown user name.  Please try again.", =>
+						setTimeout(=>
+							@refs.userNameField.getDOMNode().focus()
+						, 100)
+				when 'IncorrectPasswordError'
+					Bootbox.alert "Incorrect password.  Please try again.", =>
+						@setState {password: ''}
+						setTimeout(=>
+							@refs.passwordField.getDOMNode().focus()
+						, 100)
+				when 'DeactivatedAccountError'
+					Bootbox.alert "This user account has been deactivated.", =>
+						@refs.userNameField.getDOMNode().focus()
+						setTimeout(=>
+							@refs.userNameField.getDOMNode().focus()
+						, 100)
+				else
+					throw new Error "Invalid Login Error"
 
 		render: ->
+			if Config.autoLogin?
+				return R.div({className: 'loginPage'},
+					R.div({className: 'autoLogin'}, "Auto-Login Enabled . . .")
+				)
+
 			return R.div({className: 'loginPage'},
 				Spinner({
-					isVisible: @state.isLoading
+					isVisible: @props.isLoading
 					isOverlay: true
 				})
-				R.form({className: "loginForm #{showWhen @state.showForm}"},
+				R.form({className: "loginForm #{showWhen @props.isSetUp}"},
 					R.div({className: 'form-group'},
-						R.label({}, "User name")
+						R.label({}, "Username")
 						R.input({
 							className: 'form-control'
 							ref: 'userNameField'
 							onChange: @_updateUserName
 							value: @state.userName
+							type: 'text'
 						})
 					)
 					R.div({className: 'form-group'},
@@ -162,37 +202,15 @@ load = (win) ->
 					)
 				)
 			)
+		_login: (event) ->
+			event.preventDefault()
+			@props.login(@state.userName, @state.password)
 		_updateUserName: (event) ->
 			@setState {userName: event.target.value}
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
-		_login: (event) ->
-			# TODO where to get data dir path? config?
-			event.preventDefault()
-			@setState {isLoading: true}
-			Persist.Session.login 'data', @state.userName, @state.password, (err, session) =>
-				@setState {isLoading: false}
-				if err
-					if err instanceof Persist.Session.UnknownUserNameError
-						Bootbox.alert "Unknown user name.  Please try again.", =>
-							@refs.userNameField.getDOMNode().select()
-						return
 
-					if err instanceof Persist.Session.IncorrectPasswordError
-						Bootbox.alert "Incorrect password.  Please try again.", =>
-							pwField = @refs.passwordField.getDOMNode()
-							pwField.value = ''
-							pwField.focus()
-						return
 
-					CrashHandler.handle err
-					return
-
-				# Store this session for later use
-				global.ActiveSession = session
-
-				# Proceed to clientSelectionPage
-				# TODO this should be abstracted similar to openWindow (see utils)
-				win.location.href = 'main.html?page=clientSelection'
+	return LoginPage
 
 module.exports = {load}

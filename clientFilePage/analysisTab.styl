@@ -1,48 +1,245 @@
 .analysisView
+	// height 100%
 	display flex
 	flex-direction column
-
-	> .noData
-		flex 1
-
-		padding 100px 30px
-
-		color hsl(hue(sidebar-bg), 15%, 35%)
-		text-align center
-
-		> h1
-			margin-bottom 20px
-
-	> .controlPanel
-		height 300px
-
-		border-bottom 2px solid sidebar-borders
-
-		padding 20px 30px
-
-		> .heading
-			font-size 24px
-			font-weight 300
-
-	> .chartContainer
+	
+	.noData
 		flex 1
 
 		display flex
+		align-items center
+		justify-content center
+		flex-direction row !important
 
-		padding 20px 30px
+		padding 50px
 
-		> .noData
-			flex 1
-
+		color #AAA
+		font-size 24px
+		font-weight 700
+		text-align center			
+	
+	.timeScaleToolbar
+		flex none
+		flex-basis 85px
+		display flex
+		flex-direction row		
+		
+		// Default styling for slider
+		.slider				
+			width 100%
+			
+			.slider-track
+				border-radius 15px
+				height 16px
+			
+				.slider-track-low, .slider-track-high
+					border-radius 15px
+					background #e4eff5
+					
+				.slider-selection					
+					border-radius 0px
+					box-shadow none
+					background #c8dae4
+				
+				.slider-handle
+					transition background 0.2s ease
+					background #607886
+					margin-top -3px
+					border 3px solid white
+					
+					&:hover
+						background #3b4e59
+						
+			.tooltip
+				margin-top -33px
+				
+				.tooltip-inner
+					background sidebar-borders
+					color #4c5d67
+					font-size 13px
+					padding 4px 10px
+				
+				.tooltip-arrow
+					border-top-color sidebar-borders
+						
+			.slider-tick-label-container
+				margin-left -15% !important
+				margin-right -15% !important
+				
+				> .slider-tick-label
+					width 25% !important
+					text-align center !important
+		
+		> .timeSpanContainer
+			flex 5
+			display block
+			position relative
+			padding 35px 30px 0px 30px
+			
+			> .valueDisplay
+				position absolute
+				left 0
+				right 0
+				width 100%
+				display flex
+				padding 20px
+				
+				> div
+					flex 1					
+					
+					&:last-child
+						text-align right
+						
+					> span
+						background #fff
+						padding 5px 10px
+						border-radius 5px
+						border 1px solid sidebar-borders
+						
+						font-weight 400
+						color #5c5c5c
+			
+		> .granularContainer
+			flex 2
 			display flex
 			align-items center
-			justify-content center
+			padding 0px 30px
+			
+			// Slider style variation
+			.slider-track-low, .slider-track-high
+				background #e4f5e4
+				
+			.slider-selection
+				background #bfe0bf
+				
+			.slider-handle
+				background #557b55
+				
+				&:hover
+					background #374e37
+	
+	.mainWrapper
+		flex 1
+		display flex
+		flex-direction row
+		align-items stetch			
 
-			padding 50px
+		.chartContainer
+			flex 5
+			display flex
 
-			color #AAA
-			font-size 24px
-			font-weight 700
+			padding 20px 30px
+			border-top 2px solid sidebar-borders
+			border-right 2px solid sidebar-borders
+			border-top-right-radius 25px
 
-		> .chart
-			flex 1
+			> .chartInner			
+				flex 1
+				
+				display flex
+				align-items center
+				justify-content center
+				
+				> #eventInfo
+					display none
+					z-index 9999
+					position absolute					
+					width 150px
+					margin-left -(@width / 2)
+					
+					background #fff
+					border 1px solid sidebar-borders						
+					
+					> .title
+						font-weight 600 !important
+						background sidebar-borders						
+						padding 5px
+						
+						color #4c5d67
+						font-size 14px
+						
+					> .info
+						
+						> .description
+							font-weight normal
+							padding 5px
+							font-size 12px
+							
+						> .timeSpan
+							font-size 10px
+							
+							> div
+								text-align right
+								background #eee
+								padding 5px
+				
+				.yearLine
+					font-weight bold
+					
+					text
+						// Moves year value to right side of yearLine
+						transform rotate(-90deg) translateY(17px)
+					
+				.chart
+					flex 1
+						
+					.c3-zoom-rect
+						display none !important
+
+					.c3-regions
+						
+						.c3-region 
+							
+							> rect
+								// 10% of original height
+								transform scaleY(0.1) !important
+								fill-opacity 0.7 !important
+								fill sidebar-borders
+								
+								&:hover
+									fill-opacity 1 !important
+									fill #1d6977
+									
+							&.singlePoint > rect
+								fill white
+								stroke sidebar-borders
+								stroke-width 2
+								
+								&:hover
+									stroke #1d6977
+										
+							&.row1 > rect
+								transform scaleY(0.1) translateY(350px) !important
+								
+							&.row2 > rect
+								transform scaleY(0.1) translateY(700px) !important
+								
+							&.row3 > rect
+								transform scaleY(0.1) translateY(1050px) !important
+								
+							&.row4 > rect
+								transform scaleY(0.1) translateY(1400px) !important
+								
+							&.row5 > rect
+								transform scaleY(0.1) translateY(1750px) !important
+
+						
+
+		.selectionPanel
+			flex 2
+			padding-top 25px
+			
+			.dataType				
+
+				> h2
+					font-size 24px
+					font-weight 300
+					margin 0
+					padding 15px
+					border-bottom 1px solid sidebar-borders
+					
+				> .dataOptions
+					padding 15px 15px 25px 15px
+					
+					label
+						color #5c5c5c

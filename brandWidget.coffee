@@ -1,3 +1,7 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # Displays the branding logo etc in a specified corner of the
 
 load = (win) ->
@@ -7,6 +11,7 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
 	BrandWidget = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({
 				className: [

@@ -1,7 +1,13 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
 # A dialog for allowing the user to create a new client file
 
 Persist = require './persist'
 Imm = require 'immutable'
+Config = require './config'
+Term = require './term'
 
 load = (win) ->
 	$ = win.jQuery
@@ -11,10 +17,13 @@ load = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
-	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	Spinner = require('./spinner').load(win)
 
 	CreateClientFileDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		componentDidMount: ->
+			@refs.firstNameField.getDOMNode().focus()
+		
 		getInitialState: ->
 			return {
 				firstName: ''
@@ -25,16 +34,18 @@ load = (win) ->
 			}
 		render: ->
 			Dialog({
-				title: "Create New Client File"
+				title: "Create New #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
 				R.div({className: 'createClientFileDialog'},
 					R.div({className: 'form-group'},
 						R.label({}, "First name"),
 						R.input({
+							ref: 'firstNameField'
 							className: 'form-control'
 							onChange: @_updateFirstName
 							value: @state.firstName
+							onKeyDown: @_onEnterKeyDown
 						})
 					)
 					R.div({className: 'form-group'},
@@ -52,17 +63,20 @@ load = (win) ->
 							className: 'form-control'
 							onChange: @_updateLastName
 							value: @state.lastName
+							onKeyDown: @_onEnterKeyDown
 						})
 					)
-					R.div({className: 'form-group'},
-						R.label({}, "Record ID"),
-						R.input({
-							className: 'form-control'
-							onChange: @_updateRecordId
-							value: @state.recordNumber
-							placeholder: "(optional)"
-						})
-					)
+					if Config.clientFileRecordId.isEnabled
+						R.div({className: 'form-group'},
+							R.label({}, Config.clientFileRecordId.label),
+							R.input({
+								className: 'form-control'
+								onChange: @_updateRecordId
+								value: @state.recordNumber
+								placeholder: "(optional)"
+								onKeyDown: @_onEnterKeyDown
+							})
+						)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -72,7 +86,7 @@ load = (win) ->
 							className: 'btn btn-primary'
 							onClick: @_submit
 							disabled: not @state.firstName or not @state.lastName
-						}, "Create File")
+						}, "Create #{Term 'File'}")
 					)
 				)
 			)
@@ -86,6 +100,9 @@ load = (win) ->
 			@setState {lastName: event.target.value}
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
+		_onEnterKeyDown: (event) ->
+			if event.which is 13 and @state.firstName and @state.lastName
+				@_submit()
 		_submit: ->
 			first = @state.firstName
 			middle = @state.middleName
@@ -106,15 +123,17 @@ load = (win) ->
 				@setState {isLoading: false}
 
 				if err
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
 
-				console.log("Client file created:", obj.get('id'))
-
-				Bootbox.alert
-					message: "New client file created for " + first + ' ' + last + '.'
-					callback: =>
-						@props.onSuccess(obj.get('id'))
+				@props.onSuccess(obj.get('id'))
 
 	return CreateClientFileDialog
 
