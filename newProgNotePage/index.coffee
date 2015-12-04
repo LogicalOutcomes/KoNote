@@ -222,6 +222,7 @@ load = (win, {clientFileId}) ->
 								notes: ''
 								metrics: section.get('metricIds').map (metricId) =>
 									metric = metricsById.get metricId
+
 									return Imm.fromJS {
 										id: metric.get 'id'
 										name: metric.get 'name'
@@ -229,26 +230,27 @@ load = (win, {clientFileId}) ->
 										value: ''
 									}
 							}
-						when 'plan'
-							console.info "clientFile.getIn(['plan', 'sections'])", clientFile.getIn(['plan', 'sections']).toJS()
+						when 'plan'							
 							return Imm.fromJS {
 								type: 'plan'
 								id: section.get 'id'
 								name: section.get 'name'
-								sections: clientFile.getIn(['plan', 'sections']).flatMap (section) =>
+								sections: clientFile.getIn(['plan', 'sections']).map (section) =>
 
-									section = Imm.fromJS {
+									Imm.fromJS {
 										id: section.get 'id'
 										name: section.get 'name'
-										targets: section.get('targetIds').map (targetId) =>
+										targets: section.get('targetIds').map (targetId) =>											
 											target = planTargetsById.get targetId
 											lastRev = target.last()
+
 											return Imm.fromJS {
 												id: lastRev.get 'id'
 												name: lastRev.get 'name'
 												notes: ''
 												metrics: lastRev.get('metricIds').map (metricId) =>
 													metric = metricsById.get metricId
+
 													return Imm.fromJS {
 														id: metric.get 'id'
 														name: metrics.get 'name'
@@ -257,10 +259,6 @@ load = (win, {clientFileId}) ->
 													}
 											}
 									}
-
-									console.info "section", section.toJS()
-
-									return section
 							}
 			}	
 
@@ -366,6 +364,7 @@ load = (win, {clientFileId}) ->
 					R.hr({})
 					R.div({className: 'sections'},
 						(@state.progNote.get('sections').map (section) =>
+
 							switch section.get('type')
 								when 'basic'
 									R.div({className: 'basic section', key: section.get('id')},
@@ -395,43 +394,82 @@ load = (win, {clientFileId}) ->
 										R.h1({className: 'name'},
 											section.get('name')
 										)
-										R.div({className: "empty #{showWhen section.get('targets').size is 0}"},
+										R.div({className: "empty #{showWhen section.get('sections').size is 0}"},
 											"This #{Term 'section'} is empty because 
-											the client has no #{Term 'plan'} #{Term 'targets'}."
+											the client has no #{Term 'plan'} #{Term 'sections'}."
 										)
-										R.div({className: 'targets'},
-											(section.get('targets').map (target) =>
-												R.div({className: 'target', key: target.get('id')},
-													R.h2({className: 'name'},
-														target.get('name')
-													)
-													ExpandingTextArea({
-														value: target.get('notes')
-														onFocus: @_selectPlanSectionTarget.bind(
-															null, section, target
-														)
-														onChange: @_updatePlanSectionNotes.bind(
-															null, section.get('id'), target.get('id')
-														)
-													})
-													R.div({className: 'metrics'},
-														(target.get('metrics').map (metric) =>
-															MetricWidget({
-																key: metric.get('id')
-																name: metric.get('name')
-																definition: metric.get('definition')
-																onFocus: @_selectPlanSectionTarget.bind(
-																	null, section, target
+										R.div({className: 'sections'},
+											(section.get('sections').map (section) =>
+
+												console.info "Rendering section data:", section
+
+												R.div({
+													className: 'section'
+													key: section.get 'id'
+												},
+													R.h1({}, section.get 'name')
+
+													(section.get('targets').map (target) ->
+														console.info "target", target
+
+														R.div({
+															className: 'target'
+															key: target.get 'id'
+														},
+															"Here's a target!"
+															R.h2({}, target.get 'name')
+															ExpandingTextArea {
+																value: target.get 'notes'
+																onFocus: ->
+																onChange: ->
+															}
+															R.div({className: 'metrics'},
+																(target.get('metrics').map (metric) =>
+																	MetricWidget {
+																		key: metric.get 'id'
+																		name: metric.get 'name'
+																		definition: metric.get 'definition'
+																		value: metric.get 'value'
+																		onFocus: ->
+																		onChange: ->
+																	}
 																)
-																onChange: @_updatePlanSectionMetric.bind(
-																	null, section.get('id'),
-																	target.get('id'), metric.get('id')
-																)
-																value: metric.get('value')
-															})
-														).toJS()...
-													)
+															)	
+														)
+													).toJS()...
 												)
+
+												# R.div({className: 'target', key: target.get('id')},
+												# 	R.h2({className: 'name'},
+												# 		target.get('name')
+												# 	)
+												# 	ExpandingTextArea({
+												# 		value: target.get('notes')
+												# 		onFocus: @_selectPlanSectionTarget.bind(
+												# 			null, section, target
+												# 		)
+												# 		onChange: @_updatePlanSectionNotes.bind(
+												# 			null, section.get('id'), target.get('id')
+												# 		)
+												# 	})
+												# 	R.div({className: 'metrics'},
+												# 		(target.get('metrics').map (metric) =>
+												# 			MetricWidget({
+												# 				key: metric.get('id')
+												# 				name: metric.get('name')
+												# 				definition: metric.get('definition')
+												# 				onFocus: @_selectPlanSectionTarget.bind(
+												# 					null, section, target
+												# 				)
+												# 				onChange: @_updatePlanSectionMetric.bind(
+												# 					null, section.get('id'),
+												# 					target.get('id'), metric.get('id')
+												# 				)
+												# 				value: metric.get('value')
+												# 			})
+												# 		).toJS()...
+												# 	)
+												# )
 											).toJS()...
 										)
 									)
