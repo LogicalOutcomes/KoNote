@@ -161,7 +161,7 @@ module.exports = function(grunt) {
 				cwd: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/win32',
 				cmd: 'zip -r --quiet ../../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
 			},
-			//cleanCoffee: "rm -rf builds/releases/temp/<%= grunt.task.current.args[0] %>/*.coffee",
+			cleanCoffee: "rm -rf builds/releases/temp/<%= grunt.task.current.args[0] %>/*.coffee",
 			clean: 'rm -rf build/releases/temp'
 		},
 		// build pretty .dmg
@@ -188,21 +188,24 @@ module.exports = function(grunt) {
 			}
 		},
 		coffee: {
-			compileWithMaps: {
+			compileMultiple: {
 				options: {
 					sourceMap: true
 				},
-				files: {
-					'path/to/result.js': 'path/to/source.coffee'
-				}
-			},
-			compileMultiple: {
 				expand: true,
 				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
 				src: ['**/*.coffee'],
 				dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
 				ext: '.js'
 			}
+		},
+		clean: {
+			coffee: [
+				"build/releases/temp/<%= grunt.task.current.args[0] %>/src/**/*.coffee"
+			],
+			temp: [
+				"build/releases/temp"
+			]
 		}
 	});
 	
@@ -213,6 +216,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-prompt');
 	grunt.loadNpmTasks('grunt-contrib-stylus');
 	grunt.loadNpmTasks('grunt-contrib-coffee');
+	grunt.loadNpmTasks('grunt-contrib-clean');
 	
 	// if on osx, we can use appdmg
 	if (process.platform == 'darwin') {
@@ -235,6 +239,7 @@ module.exports = function(grunt) {
 				grunt.task.run('copy:generic:win-generic');
 				grunt.task.run('stylus:compile:win-generic');
 				grunt.task.run('coffee:compileMultiple:win-generic');
+				grunt.task.run('clean:coffee:win-generic');
 				//grunt.task.run('exec:cleanCoffee:win-generic');
 				grunt.task.run('nwjs:win:win-generic');
 				grunt.task.run('exec:zip:win-generic');
@@ -280,7 +285,8 @@ module.exports = function(grunt) {
 				}
 			}
 		}
-		grunt.task.run('exec:clean');
+		//grunt.task.run('exec:clean');
+		grunt.task.run('clean:temp');
 	});
 	
 };
