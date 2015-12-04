@@ -1,13 +1,13 @@
 # KoNote
 
-# Install & Run via CLI:
+## Install & Run via CLI
 
 -	`cd` to the repo directory
 -	run `npm install` (this will download the right version of NW.js automatically)
 -	run `npm start` (this will start the application)
 
 
-### Release Workflow
+## Release Workflow
 
 #### Feature Freeze (Release - ~1w)
 
@@ -20,8 +20,8 @@ All features (and their corresponding issues) in progress are locked in around 1
 4. `git checkout release-vX.X.X` / `g co release-vX.X.X`
 5. `git push -u origin release-vX.X.X` (pushes new branch to remote)
 
-> Development for release continues on this release branch.
-> If you accidentally commit release code to develop branch, cherry-pick it over to release-x-x-x
+*Development for release continues on this release branch.*
+*If you accidentally commit release code to develop branch, cherry-pick it over to release-x-x-x*
 
 #### Code Freeze (Release - ~2d)
 
@@ -49,53 +49,33 @@ We merge our release branch to master, tag it, and delete the release branch. Wh
 11. `git push` (push everything else)
 12. Celebrate!
 
-### Packaging for Distribution
+## Packaging for Distribution
 
-It might be wise to wait a couple of days before packaging to ensure the given release is stable.
-
-#### the grunt way:
-
-(requires npm3: npm install -g npm@3.3.1)
+#### via Grunt:
 
 1. Clone repo: `git clone git@github.com:konode001/konote.git`
 2. Open repo: `cd konote`
-3. Run `npm install`
+3. Run `npm install -production` (does not install optional dependencies)
 4. Run `grunt build`
-5. *Konote-builds* folder is created beside the repo directory: tasty goodness inside!
+5. A *releases* directory is created inside the builds directory
 
-- On OSX: Mount DMG and drag KoNote to Applications
-- On Windows: Unzip and run KoNote.exe
+##### Windows builds:
+6. Add icon to exe: ResHacker.exe -modify "KoNote.exe", "KoNote.exe", "icon.ico", ICONGROUP, MAINICON, 0
+7. Codesign KoNote.exe with DigiSign utility
+8. Create installer: Run builds/innosetup script
+9. Add icon to installer: ResHacker.exe -modify "KoNote.exe", "KoNote.exe", "icon.ico", ICONGROUP, MAINICON, 0
+10. Codesign installer with DigiSign utility
 
-#### by GUI
+##### Mac builds:
+###### Codesign app (requires Xcode). NOT WORKING WITH NWJS < 0.12:
+6. Find appropriate security certificate: `security-find-identity`
+7. Run `codesign --force --deep --sign "$identity" KoNote.app`
+8. Verify signature: `sudo spctl -a -v "KoNote.app"`
 
-See: https://github.com/jyapayne/Web2Executable
+#### Manually:
 
-#### by CLI
+https://github.com/nwjs/nw.js/wiki/how-to-package-and-distribute-your-apps#step-1-make-a-package
 
-See: https://github.com/nwjs/nw.js/wiki/how-to-package-and-distribute-your-apps#step-1-make-a-package
-
-#### or `The Manual Way`
-
-##### Prepare & Clean Repository
-1. Clone repo: `git clone git@github.com:konode001/konote.git`
-2. Open repo: `cd konote`
-3. Checkout master: git checkout master
-4. Delete `.git` folder inside repo: `rm -rf .git`
-5. Run `npm install`
-6. Delete `node_modules/nw` or `node_modules/node-webkit`: `rm -rf node_modules/X`
-7. Delete this README.md: `rm README.md`
-
-##### Package Raw Version (no specific nwjs OS)
-8. Zip up the repo dir, name as: "**KoNote vX.X.X (Raw)**"
-9. Upload zip file to Google Docs: /KoNode Team/KoNote/
-
-##### Package OS Version (do for each OS)
-10. Download and unzip a copy of NW.js into the repo directory for the appropriate platform (Win/Mac/Linux, 32-/64-bit)
-	- Recent Versions: https://github.com/nwjs/nw.js
-	- Old Versions: https://github.com/nwjs/nw.js/wiki/Downloads-of-old-versions
-11. Zip up the repo dir, name as: "**KoNote vX.X.X Win32/Win64/Mac32/Mac64/Linux32/Linux64**" (switch for OS)
-12. Upload zip file to Google Docs: /KoNode Team/KoNote/Releases/vX.X.X
-
-Ask the user to unzip whole folder and run `nw.exe` or `nw.app`
-(On Mac if the user gets a warning that nw.app is untrusted they can Ctrl-click and open)
-
+##### NWJS builds are available here:
+- Recent versions: https://github.com/nwjs/nw.js
+- Old versions: https://github.com/nwjs/nw.js/wiki/Downloads-of-old-versions

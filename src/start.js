@@ -4,11 +4,8 @@
 
 (function () {
 	console.time('initLoad')
-
-	console.time('requireStyl/Fs')
-	var Stylus = require('stylus');
 	var Fs = require('fs');
-	console.timeEnd('requireStyl/Fs')
+	var Config = require('./config');
 
 	console.time('checkVersion')
 
@@ -33,36 +30,42 @@
 
 	console.timeEnd('checkVersion')
 
-	console.time('compileStylus')
-
 	// In order to avoid the need for Grunt or a similar build system,
 	// we'll compile the Stylus code at runtime.
-	var mainStylusCode = Fs.readFileSync('main.styl', {encoding: 'utf-8'});
-	var stylusOpts = {filename: 'main.styl', sourcemap: {inline: true}};
-	Stylus.render(mainStylusCode, stylusOpts, function (err, compiledCss) {
-		if (err) {
-			console.error(err);
-			if (err.stack) {
-				console.error(err.stack);
+	if (Config.devMode) {
+		console.time('compileStylus')
+		var Stylus = require('stylus');
+		var mainStylusCode = Fs.readFileSync('src/main.styl', {encoding: 'utf-8'});
+		var stylusOpts = {filename: 'src/main.styl', sourcemap: {inline: true}};
+		Stylus.render(mainStylusCode, stylusOpts, function (err, compiledCss) {
+			if (err) {
+				console.error(err);
+				if (err.stack) {
+					console.error(err.stack);
+				}
+				return;
 			}
-			return;
-		}
 
-		console.timeEnd('compileStylus')
+			console.timeEnd('compileStylus')
 
-		console.time('injectCSS')
-		// Inject the compiled CSS into the page
-		window.document.getElementById('main-css').innerHTML = compiledCss;
-		console.timeEnd('injectCSS')
+			console.time('injectCSS')
+			// Inject the compiled CSS into the page
+			window.document.getElementById('main-css').innerHTML = compiledCss;
+			console.timeEnd('injectCSS')
 
-		console.time('registerCoffeescriptCompiler')
-		// Register the CoffeeScript compiler
-		require('coffee-script/register');
-		console.timeEnd('registerCoffeescriptCompiler')
+			console.time('registerCoffeescriptCompiler')
+			// Register the CoffeeScript compiler
+			require('coffee-script/register');
+			console.timeEnd('registerCoffeescriptCompiler')
 
-		// Run the app
+			// Run the app
+			console.time('initApp')
+			require('./main').init(window);
+			console.timeEnd('initApp')
+		});
+	} else {
 		console.time('initApp')
 		require('./main').init(window);
 		console.timeEnd('initApp')
-	});
+	}
 })();
