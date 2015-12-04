@@ -95,11 +95,11 @@ module.exports = function(grunt) {
 				files: [
 					{
 						src: [
-							'customers/griffin/config-customer.coffee',
+							'customers/griffin/*',
 							'customers/griffin/customer-logo-lg_GRIFFIN.png',
 							'customers/griffin/customer-logo-sm_GRIFFIN.png'
 						],
-						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src'
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/'
 					}
 				]
 			},
@@ -153,10 +153,9 @@ module.exports = function(grunt) {
 		appdmg: {
 			main: {
 				options: {
-					basepath: 'build/releases/temp/<%= grunt.task.current.args[0] %>',
 					title: 'KoNote-<%= pkg.version %>',
-					icon: 'icon.icns',
-					background: 'background.tiff', 'icon-size': 104,
+					icon: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/icon.icns',
+					background: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/background.tiff', 'icon-size': 104,
 					contents: [
 						{x: 130, y: 150, type: 'file', path: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},
 						{x: 320, y: 150, type: 'link', path: '/Applications'}
@@ -241,6 +240,7 @@ module.exports = function(grunt) {
 		if (mac) {
 			if (generic) {
 				// do mac generic build
+				console.log(process.cwd());
 				grunt.task.run('copy:main:mac-generic');
 				grunt.task.run('stylus:compile:mac-generic');
 				grunt.task.run('coffee:compileMultiple:mac-generic');

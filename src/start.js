@@ -32,7 +32,7 @@
 
 	// In order to avoid the need for Grunt or a similar build system,
 	// we'll compile the Stylus code at runtime.
-	if Config.devMode {
+	if (Config.devMode) {
 		console.time('compileStylus')
 		var Stylus = require('stylus');
 		var mainStylusCode = Fs.readFileSync('src/main.styl', {encoding: 'utf-8'});
