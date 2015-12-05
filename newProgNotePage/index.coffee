@@ -116,7 +116,7 @@ load = (win, {clientFileId}) ->
 				(cb) =>
 					# Figure out which metrics we need to load
 					requiredMetricIds = Imm.Set()
-					.union template.get('sections').flatMap (section) =>
+					.union template.get('units').flatMap (section) =>
 						switch section.get('type')
 							when 'basic'
 								return section.get('metricIds')
@@ -212,15 +212,15 @@ load = (win, {clientFileId}) ->
 				clientFileId: clientFile.get('id')
 				templateId: template.get('id')
 				backdate: ''
-				sections: template.get('sections').map (section) =>
-					switch section.get('type')
+				units: template.get('units').map (unit) =>
+					switch unit.get('type')
 						when 'basic'
 							return Imm.fromJS {
 								type: 'basic'
-								id: section.get 'id'
-								name: section.get 'name'
+								id: unit.get 'id'
+								name: unit.get 'name'
 								notes: ''
-								metrics: section.get('metricIds').map (metricId) =>
+								metrics: unit.get('metricIds').map (metricId) =>
 									metric = metricsById.get metricId
 
 									return Imm.fromJS {
@@ -233,8 +233,8 @@ load = (win, {clientFileId}) ->
 						when 'plan'							
 							return Imm.fromJS {
 								type: 'plan'
-								id: section.get 'id'
-								name: section.get 'name'
+								id: unit.get 'id'
+								name: unit.get 'name'
 								sections: clientFile.getIn(['plan', 'sections']).map (section) =>
 
 									Imm.fromJS {
@@ -363,26 +363,26 @@ load = (win, {clientFileId}) ->
 
 					R.hr({})
 					R.div({className: 'sections'},
-						(@state.progNote.get('sections').map (section) =>
+						(@state.progNote.get('units').map (unit) =>
 
-							switch section.get('type')
+							switch unit.get('type')
 								when 'basic'
-									R.div({className: 'basic section', key: section.get('id')},
-										R.h1({className: 'name'}, section.get('name'))
+									R.div({className: 'basic section', key: unit.get('id')},
+										R.h1({className: 'name'}, unit.get('name'))
 										ExpandingTextArea({
-											value: section.get('notes')
-											onFocus: @_selectBasicSection.bind null, section
-											onChange: @_updateBasicSectionNotes.bind null, section.get('id')
+											value: unit.get('notes')
+											onFocus: @_selectBasicSection.bind null, unit
+											onChange: @_updateBasicSectionNotes.bind null, unit.get('id')
 										})
 										R.div({className: 'metrics'},
-											(section.get('metrics').map (metric) =>
+											(unit.get('metrics').map (metric) =>
 												MetricWidget({
 													key: metric.get('id')
 													name: metric.get('name')
 													definition: metric.get('definition')
-													onFocus: @_selectBasicSection.bind null, section
+													onFocus: @_selectBasicSection.bind null, unit
 													onChange: @_updateBasicSectionMetric.bind(
-														null, section.get('id'), metric.get('id')
+														null, unit.get('id'), metric.get('id')
 													)
 													value: metric.get('value')
 												})
@@ -390,16 +390,16 @@ load = (win, {clientFileId}) ->
 										)
 									)
 								when 'plan'
-									R.div({className: 'plan section', key: section.get('id')},
+									R.div({className: 'plan section', key: unit.get('id')},
 										R.h1({className: 'name'},
-											section.get('name')
+											unit.get('name')
 										)
-										R.div({className: "empty #{showWhen section.get('sections').size is 0}"},
-											"This #{Term 'section'} is empty because 
+										R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
+											"This is empty because 
 											the client has no #{Term 'plan'} #{Term 'sections'}."
 										)
 										R.div({className: 'sections'},
-											(section.get('sections').map (section) =>
+											(unit.get('sections').map (section) =>
 
 												console.info "Rendering section data:", section
 

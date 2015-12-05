@@ -81,7 +81,7 @@ module.exports = {
 		simpleDemoTemplate: {
 			id: 'simpleDemoTemplate'
 			name: 'Simple Demo Template'
-			sections: [
+			units: [
 				{
 					id: 'goals'
 					type: 'plan'
@@ -98,7 +98,7 @@ module.exports = {
 		sectionedDemoTemplate: {
 			id: 'sectionedDemoTemplate'
 			name: 'Sectioned Demo Template'
-			sections: [
+			units: [
 				{
 					id: 'subjective'
 					type: 'basic'
@@ -123,7 +123,7 @@ module.exports = {
 		initialAssessment: {
 			id: 'initAssessGC'
 			name: 'Client Log - Initial Assessment'
-			sections: [
+			units: [
 				{
 					id: 'peerInt'
 					type: 'basic'
@@ -288,7 +288,7 @@ module.exports = {
 		soap: {
 			id: 'fake-template-lolololol'
 			name: 'Fake Template'
-			sections: [
+			units: [
 				{
 					id: 'section1'
 					type: 'basic'
