@@ -28,7 +28,7 @@ load = (win) ->
 				)
 
 			switch @props.item.get('type')
-				when 'basicSection'
+				when 'basicUnit'
 					sectionId = @props.item.get('sectionId')
 					itemName = @props.item.get('sectionName')
 					entries = @props.progNotes.flatMap (progNote) =>
@@ -53,7 +53,7 @@ load = (win) ->
 									}
 							else
 								throw new Error "unknown prognote type: #{progNote.get('type')}"
-				when 'planSectionTarget'
+				when 'planUnitTarget'
 					sectionId = @props.item.get('sectionId')
 					targetId = @props.item.get('targetId')
 					itemName = @props.item.get('targetName')
