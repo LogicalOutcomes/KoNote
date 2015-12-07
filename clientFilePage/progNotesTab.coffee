@@ -282,7 +282,10 @@ load = (win) ->
 						switch unit.get('type')
 							when 'basic'
 								R.div({
-									className: 'basic unit'
+									className: [
+										'basic unit'
+										'selected' if @props.selectedItem? and @props.selectedItem.get('unitId') is unitId
+									].join ' '
 									key: unitId
 								},
 									if unit.get('notes')
