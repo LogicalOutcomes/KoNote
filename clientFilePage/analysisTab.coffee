@@ -617,31 +617,31 @@ load = (win) ->
 				# Quick notes don't have metrics
 				return Imm.List()
 			when 'full'
-				return progNote.get('sections').flatMap (section) ->
-					if progNote.get('backdate')
-						return extractMetricsFromProgNoteSection section, progNote.get('backdate')
-					else
-						return extractMetricsFromProgNoteSection section, progNote.get('timestamp')
+				return progNote.get('units').flatMap (section) ->
+					# Apply backdate as timestamp if exists
+					timestamp = progNote.get('backdate') or progNote.get('timestamp')
+					return extractMetricsFromProgNoteSection section, timestamp
 			else
-				throw new Error "unknown prognote type: #{JSON.stringify progNote.get('type')}"
+				throw new Error "unknown progNote type: #{JSON.stringify progNote.get('type')}"
 
 	extractMetricsFromProgNoteSection = (section, timestamp) ->
-		switch section.get('type')
+		switch section.get 'type'
 			when 'basic'
 				return section.get('metrics').map (metric) ->
-					return Imm.Map({
-						id: metric.get('id')
+					Imm.Map {
+						id: metric.get 'id'
 						timestamp
-						value: metric.get('value')
-					})
+						value: metric.get 'value'
+					}
 			when 'plan'
-				return section.get('targets').flatMap (target) ->
-					return target.get('metrics').map (metric) ->
-						return Imm.Map({
-							id: metric.get('id')
-							timestamp
-							value: metric.get('value')
-						})
+				return section.get('sections').flatMap (section) ->
+					section.get('targets').flatMap (target) ->
+						target.get('metrics').map (metric) ->
+							Imm.Map {
+								id: metric.get 'id'
+								timestamp
+								value: metric.get 'value'
+							}
 			else
 				throw new Error "unknown prognote section type: #{JSON.stringify section.get('type')}"
 
