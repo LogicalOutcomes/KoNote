@@ -3,14 +3,14 @@
 	.printObj
 		padding 25px
 
-		> .header
-			display flex
+		> header
+			display flex			
 			width 100%
 			padding-bottom 15px
 			border-bottom 3px dotted #eee
 
-			> .leftSide
-				flex-grow 1
+			> .basicInfo
+				flex 1
 				
 				> .title
 					margin-top 0
@@ -25,16 +25,9 @@
 				> .clientRecordId
 					font-weight 500
 
-			> .rightSide
-				flex-grow 1
+			> .authorInfo
+				flex 1
 				text-align right
-				
-				> .logo
-					-webkit-filter grayscale(100%)
-					float right
-					width 100px
-					height auto
-					margin-left 15px
 					
 				> ul
 					list-style none
@@ -59,6 +52,37 @@
 							
 						&:not(.date)
 							text-decoration underline
+							
+			> .brandLogo
+				width 150px
+				display flex
+				justify-content center
+				align-items center
+				
+				> div
+					flex 1
+					text-align center
+				
+				img
+					-webkit-filter grayscale(100%)
+					width 100px
+					height auto
+					margin auto 0px
+							
+		h1
+			font-size 24px
+			margin 15px 0 5px			
+			font-weight 600
+			
+		h2
+			font-size 20px
+			font-weight 100
+			
+		h3
+			color #666
+			font-size 18px
+			font-weight 600
+			
 			
 		> .progNote.basic
 			> .notes
@@ -69,9 +93,9 @@
 
 		> .progNote.full, > .plan
 			
-			> .sections
+			> .units
 				
-				> .section
+				> .unit
 					padding-bottom 15px
 					border-bottom 1px solid #C9C9C9
 					
@@ -87,6 +111,9 @@
 							padding 0 2px
 
 							color #888
+							
+						h3
+							font-size 20px
 
 						> .metrics
 							padding-top 5px
@@ -96,21 +123,12 @@
 							padding 0 2px
 
 							color #888
-
-						> .targets
 							
+						section							
 							> .target
 								display block
 								vertical-align top
 								padding 0 15px
-								
-								> .name
-									margin 15px 0 5px
-
-									color #666
-									cursor pointer
-									font-size 16px
-									font-weight 600
 
 								> .empty
 									padding 0 2px

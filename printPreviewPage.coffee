@@ -53,7 +53,7 @@ load = (win, {dataSet}) ->
 			# Without timeout, print() triggers before DOM renders
 			setTimeout ->
 				win.print()
-			, 500
+			, 1000
 
 		render: ->
 			R.div({className: 'printPreview'},				
@@ -103,8 +103,8 @@ load = (win, {dataSet}) ->
 	PrintHeader = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
-			R.div({className: 'header'},
-				R.div({className: 'leftSide'},
+			R.header({className: 'header'},
+				R.div({className: 'basicInfo'},
 					R.h1({className: 'title'},						
 						FaIcon('pencil-square-o')
 						switch @props.format
@@ -118,11 +118,7 @@ load = (win, {dataSet}) ->
 						renderFileId @props.clientFile.get('recordId')
 					)
 				)
-				R.div({className: 'rightSide'},
-					R.img({
-						className: 'logo'
-						src: Config.customerLogoLg
-					})
+				R.div({className: 'authorInfo'},					
 					(if @props.format isnt 'plan'
 						R.ul({},
 							R.li({}, 
@@ -149,6 +145,14 @@ load = (win, {dataSet}) ->
 						)
 					)
 				)
+				R.div({className: 'brandLogo'},
+					R.div({},
+						R.img({
+							className: 'logo'
+							src: Config.customerLogoLg
+						})
+					)
+				)
 			)
 
 	BasicProgNoteView = React.createFactory React.createClass
@@ -164,24 +168,23 @@ load = (win, {dataSet}) ->
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'full progNote'},
-				R.div({className: 'sections'},
-					(@props.progNote.get('sections').map (section) =>
-						switch section.get('type')
+				R.div({className: 'units'},
+					(@props.progNote.get('units').map (unit) =>
+						switch unit.get('type')
 							when 'basic'
-								R.div({className: 'basic section', key: section.get('id')},
-									R.h1({
-										className: 'name'
-									},
-										section.get('name')
-									)
-									R.div({className: "empty #{showWhen section.get('notes').length is 0}"},
+								R.div({
+									className: 'basic unit'
+									key: unit.get('id')
+								},
+									R.h3({}, unit.get 'name')
+									R.div({className: "empty #{showWhen unit.get('notes').length is 0}"},
 										'(blank)'
 									)
 									R.div({className: 'notes'},
-										renderLineBreaks section.get('notes')
+										renderLineBreaks unit.get('notes')
 									)
 									R.div({className: 'metrics'},
-										(section.get('metrics').map (metric) =>
+										(unit.get('metrics').map (metric) =>
 											MetricWidget({
 												isEditable: false
 												key: metric.get('id')
@@ -193,40 +196,41 @@ load = (win, {dataSet}) ->
 									)
 								)
 							when 'plan'
-								R.div({className: 'plan section', key: section.get('id')},
-									R.h1({className: 'name'},
-										section.get('name')
+								R.div({className: 'plan unit', key: unit.get('id')},
+									R.h1({}, unit.get 'name')
+									R.div({className: "empty #{showWhen unit.get('sections').length is 0}"},
+										"This is empty because this #{Term 'plan'} has no #{Term 'sections'}."
 									)
-									R.div({className: "empty #{showWhen section.get('targets') is ''}"},
-										"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
-									)
-									R.div({className: 'targets'},
-										(section.get('targets').map (target) =>
-											R.div({
-												className: 'target'
-												key: target.get('id')
-											},
-												R.h2({className: 'name'},target.get('name'))
-												R.div({className: "empty #{showWhen target.get('notes') is ''}"},
-													'(blank)'
+									(unit.get('sections').map (section) =>
+										R.section({},
+											R.h2({}, section.get 'name')
+											(section.get('targets').map (target) =>
+												R.div({
+													className: 'target'
+													key: target.get('id')
+												},
+													R.h3({}, target.get('name'))
+													R.div({className: "empty #{showWhen not target.get('notes')}"},
+														'(blank)'
+													)
+													R.div({className: 'notes'},
+														renderLineBreaks target.get('notes')
+													)
+													R.div({className: 'metrics'},
+														(target.get('metrics').map (metric) =>
+															MetricWidget({
+																isEditable: false
+																key: metric.get('id')
+																name: metric.get('name')
+																definition: metric.get('definition')
+																value: metric.get('value')
+															})
+														).toJS()...
+													)
 												)
-												R.div({className: 'notes'},
-													renderLineBreaks target.get('notes')
-												)
-												R.div({className: 'metrics'},
-													(target.get('metrics').map (metric) =>
-														MetricWidget({
-															isEditable: false
-															key: metric.get('id')
-															name: metric.get('name')
-															definition: metric.get('definition')
-															value: metric.get('value')
-														})
-													).toJS()...
-												)
-											)
-										).toJS()...
-									)
+											).toJS()...
+										)
+									).toJS()...
 								)
 					).toJS()...
 				)
