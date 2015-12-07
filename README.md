@@ -63,8 +63,7 @@ We merge our release branch to master, tag it, and delete the release branch. Wh
 6. Add icon to exe: ResHacker.exe -modify "KoNote.exe", "KoNote.exe", "icon.ico", ICONGROUP, MAINICON, 0
 7. Codesign KoNote.exe with DigiSign utility
 8. Create installer: Run builds/innosetup script
-9. Add icon to installer: ResHacker.exe -modify "KoNote.exe", "KoNote.exe", "icon.ico", ICONGROUP, MAINICON, 0
-10. Codesign installer with DigiSign utility
+9. Codesign installer with DigiSign utility
 
 ##### Mac builds:
 ###### Codesign app (requires Xcode). NOT WORKING WITH NWJS < 0.12:
