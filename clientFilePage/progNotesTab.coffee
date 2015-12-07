@@ -101,17 +101,21 @@ load = (win) ->
 							switch progNote.get('type')
 								when 'basic'
 									BasicProgNoteView({
-										progNote
-										clientFile: @props.clientFile
 										key: progNote.get('id')
+
+										progNote
+										clientFile: @props.clientFile									
+										selectedItem: @state.selectedItem
 									})
 								when 'full'
 									FullProgNoteView({
+										key: progNote.get('id')
+
 										progNote
 										progEvents
-										clientFile: @props.clientFile
-										key: progNote.get('id')
+										clientFile: @props.clientFile										
 										setSelectedItem: @_setSelectedItem
+										selectedItem: @state.selectedItem
 									})
 								else
 									throw new Error "unknown prognote type: #{progNote.get('type')}"
@@ -260,7 +264,7 @@ load = (win) ->
 						@props.progNote.get('author')
 					)
 				)
-				R.div({className: 'sections'},
+				R.div({className: 'progNoteList'},
 					PrintButton({
 						dataSet: [
 							{
@@ -272,23 +276,28 @@ load = (win) ->
 						]
 						isVisible: true
 					})
-					(@props.progNote.get('sections').map (section) =>
-						switch section.get('type')
+					(@props.progNote.get('units').map (unit) =>
+						unitId = unit.get 'id'
+
+						switch unit.get('type')
 							when 'basic'
-								R.div({className: 'basic section', key: section.get('id')},
-									if section.get('notes').length > 0
-										R.h1({
-											className: 'name'
-											onClick: @_selectBasicSection.bind null, section
+								R.div({
+									className: 'basic unit'
+									key: unitId
+								},
+									if unit.get('notes')
+										R.h3({
+											onClick: @_selectBasicUnit.bind null, unit
 										},
-											section.get('name')
+											unit.get('name')
+											FaIcon('history')
 										)
 									R.div({className: 'notes'},
-										renderLineBreaks section.get('notes')
+										renderLineBreaks(unit.get('notes'))
 									)
-									if section.get('notes').length > 0
+									unless unit.get('metrics').isEmpty()
 										R.div({className: 'metrics'},
-											(section.get('metrics').map (metric) =>
+											(unit.get('metrics').map (metric) =>
 												MetricWidget({
 													isEditable: false
 													key: metric.get('id')
@@ -300,44 +309,62 @@ load = (win) ->
 										)
 								)
 							when 'plan'
-								R.div({className: 'plan section', key: section.get('id')},
-									R.h1({className: 'name'},
-										section.get('name')
+								R.div({
+									className: 'plan unit'
+									key: unitId
+								},
+									R.h1({},
+										unit.get('name')
 									)
-									R.div({className: "empty #{showWhen section.get('targets') is ''}"},
-										"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
-									)
-									R.div({className: 'targets'},
-										(section.get('targets').map (target) =>
-											R.div({className: 'target', key: target.get('id')},
-												R.h2({
-													className: 'name'
-													onClick: @_selectPlanSectionTarget.bind(
-														null, section, target
-													)
-												},
-													target.get('name')
-												)
-												R.div({className: "empty #{showWhen target.get('notes') is ''}"},
-													'(blank)'
-												)
-												R.div({className: 'notes'},
-													renderLineBreaks target.get('notes')
-												)
-												R.div({className: 'metrics'},
-													(target.get('metrics').map (metric) =>
-														MetricWidget({
-															isEditable: false
-															key: metric.get('id')
-															name: metric.get('name')
-															definition: metric.get('definition')
-															value: metric.get('value')
-														})
-													).toJS()...
-												)
+
+									(unit.get('sections').map (section) =>										
+										R.section({key: section.get('id')},
+											R.div({
+												className: [
+													'empty'
+													showWhen section.get('targets').isEmpty()
+												].join ' '
+											},
+												"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
 											)
-										).toJS()...
-									)									
+											R.h2({}, section.get('name'))
+											(section.get('targets').map (target) =>
+												R.div({
+													key: target.get('id')
+													className: [
+														'target'
+														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is target.get('id')
+													].join ' '
+												},
+													R.h3({
+														onClick: @_selectPlanSectionTarget.bind(
+															null, unit, section, target
+														)
+													},
+														target.get('name')
+														FaIcon('history')
+													)
+													R.div({className: "empty #{showWhen target.get('notes') is ''}"},
+														'(blank)'
+													)
+													R.div({className: 'notes'},
+														renderLineBreaks target.get('notes')
+													)
+													R.div({className: 'metrics'},
+														(target.get('metrics').map (metric) =>
+															MetricWidget({
+																isEditable: false
+																key: metric.get('id')
+																name: metric.get('name')
+																definition: metric.get('definition')
+																value: metric.get('value')
+															})
+														).toJS()...
+													)
+												)
+											).toJS()...
+										)
+									)
 								)
 					).toJS()...
 
@@ -353,15 +380,16 @@ load = (win) ->
 						)						
 				)
 			)
-		_selectBasicSection: (section) ->
+		_selectBasicUnit: (unit) ->
 			@props.setSelectedItem Imm.fromJS {
-				type: 'basicSection'
-				sectionId: section.get('id')
-				sectionName: section.get('name')
+				type: 'basicUnit'
+				unitId: unit.get('id')
+				unitName: unit.get('name')
 			}
-		_selectPlanSectionTarget: (section, target) ->
+		_selectPlanSectionTarget: (unit, section, target) ->
 			@props.setSelectedItem Imm.fromJS {
 				type: 'planSectionTarget'
+				unitId: unit.get('id')				
 				sectionId: section.get('id')
 				targetId: target.get('id')
 				targetName: target.get('name')

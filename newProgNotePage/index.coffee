@@ -583,7 +583,7 @@ load = (win, {clientFileId}) ->
 		_selectPlanTarget: (unit, section, target) ->
 			@setState {
 				selectedItem: Imm.fromJS {
-					type: 'planUnitTarget'
+					type: 'planSectionTarget'
 					unitId: unit.get 'id'
 					unitName: unit.get 'name'
 					sectionId: section.get 'id'

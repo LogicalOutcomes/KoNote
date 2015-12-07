@@ -29,17 +29,18 @@ load = (win) ->
 
 			switch @props.item.get('type')
 				when 'basicUnit'
-					sectionId = @props.item.get('sectionId')
-					itemName = @props.item.get('sectionName')
+					unitId = @props.item.get('unitId')
+					itemName = @props.item.get('unitName')
+
 					entries = @props.progNotes.flatMap (progNote) =>
 						switch progNote.get('type')
 							when 'basic'
 								return Imm.List()
-							when 'full'
-								return progNote.get('sections')
-								.filter (section) => # find relevant sections
-									return section.get('id') is sectionId
-								.map (section) => # turn them into entries
+							when 'full'								
+								return progNote.get('units')
+								.filter (unit) => # find relevant units
+									return unit.get('id') is unitId
+								.map (unit) => # turn them into entries
 									progEvents = @props.progEvents.filter (progEvent) =>
 										return progEvent.get('relatedProgNoteId') is progNote.get('id')
 
@@ -48,40 +49,44 @@ load = (win) ->
 										author: progNote.get('author')
 										timestamp: progNote.get('timestamp')
 										backdate: progNote.get('backdate')
-										notes: section.get('notes')
+										notes: unit.get('notes')
 										progEvents
 									}
 							else
 								throw new Error "unknown prognote type: #{progNote.get('type')}"
-				when 'planUnitTarget'
+
+				when 'planSectionTarget'
+					unitId = @props.item.get('unitId')
 					sectionId = @props.item.get('sectionId')
 					targetId = @props.item.get('targetId')
 					itemName = @props.item.get('targetName')
+
 					entries = @props.progNotes.flatMap (progNote) =>
 						switch progNote.get('type')
 							when 'basic'
 								return Imm.List()
 							when 'full'
-								return progNote.get('sections')
-								.filter (section) => # find relevant sections
-									return section.get('id') is sectionId
-								.flatMap (section) => # turn them into entries
-									return section.get('targets')
-									.filter (target) => # find relevant targets
-										return target.get('id') is targetId
-									.map (target) =>
-										progEvents = @props.progEvents.filter (progEvent) =>
-											return progEvent.get('relatedProgNoteId') is progNote.get('id')
+								return progNote.get('units')
+								.filter (unit) => # find relevant units
+									return unit.get('id') is unitId
+								.flatMap (unit) => # turn them into entries
+									return unit.get('sections').flatMap (section) =>
+										return section.get('targets')
+										.filter (target) => # find relevant targets
+											return target.get('id') is targetId
+										.map (target) =>
+											progEvents = @props.progEvents.filter (progEvent) =>
+												return progEvent.get('relatedProgNoteId') is progNote.get('id')
 
-										return Imm.fromJS {
-											progNoteId: progNote.get('id')
-											author: progNote.get('author')
-											timestamp: progNote.get('timestamp')
-											backdate: progNote.get('backdate')
-											notes: target.get('notes')
-											progEvents
-											metrics: target.get('metrics')
-										}
+											return Imm.fromJS {
+												progNoteId: progNote.get('id')
+												author: progNote.get('author')
+												timestamp: progNote.get('timestamp')
+												backdate: progNote.get('backdate')
+												notes: target.get('notes')
+												progEvents
+												metrics: target.get('metrics')
+											}
 							else
 								throw new Error "unknown prognote type: #{progNote.get('type')}"
 				else
@@ -89,10 +94,9 @@ load = (win) ->
 
 			entries = entries
 			.filter (entry) -> # remove blank entries
-				return entry.get('notes').trim() isnt ''
-			.sortBy (entry) -> # sort by reverse chronological order
-				#return entry.get('timestamp')
-				if entry.get('backdate') != ''
+				return entry.get('notes').trim().length > 0
+			.sortBy (entry) ->
+				if entry.get('backdate')
 					return entry.get('backdate')
 				else
 					return entry.get('timestamp')
