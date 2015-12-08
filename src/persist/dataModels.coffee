@@ -81,7 +81,7 @@ dataModelDefinitions = [
 						type: 'full'
 						templateId: IdSchema
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
-						sections: Joi.array().items(
+						units: Joi.array().items(
 							[
 								Joi.object().keys({
 									id: IdSchema
@@ -101,17 +101,23 @@ dataModelDefinitions = [
 									id: IdSchema
 									type: 'plan'
 									name: Joi.string()
-									targets: Joi.array().items(
+									sections: Joi.array().items(
 										Joi.object().keys({
 											id: IdSchema
 											name: Joi.string()
-											notes: Joi.string().allow('')
-											metrics: Joi.array().items(
+											targets: Joi.array().items(
 												Joi.object().keys({
 													id: IdSchema
 													name: Joi.string()
-													definition: Joi.string()
-													value: Joi.string().allow('')
+													notes: Joi.string().allow('')
+													metrics: Joi.array().items(
+														Joi.object().keys({
+															id: IdSchema
+															name: Joi.string()
+															definition: Joi.string()
+															value: Joi.string().allow('')
+														})
+													)
 												})
 											)
 										})

@@ -116,7 +116,7 @@ load = (win, {clientFileId}) ->
 				(cb) =>
 					# Figure out which metrics we need to load
 					requiredMetricIds = Imm.Set()
-					.union template.get('sections').flatMap (section) =>
+					.union template.get('units').flatMap (section) =>
 						switch section.get('type')
 							when 'basic'
 								return section.get('metricIds')
@@ -198,7 +198,9 @@ load = (win, {clientFileId}) ->
 					metricsById
 				)
 
-				# Done loading data, we can generate the prognote now
+				console.info "progNote", progNote.toJS()
+
+				# Done loading data, we can load in the empty progNote object
 				@setState {						
 					isLoading: false
 					progNote
@@ -210,45 +212,53 @@ load = (win, {clientFileId}) ->
 				clientFileId: clientFile.get('id')
 				templateId: template.get('id')
 				backdate: ''
-				sections: template.get('sections').map (section) =>
-					switch section.get('type')
+				units: template.get('units').map (unit) =>
+					switch unit.get('type')
 						when 'basic'
 							return Imm.fromJS {
 								type: 'basic'
-								id: section.get 'id'
-								name: section.get 'name'
+								id: unit.get 'id'
+								name: unit.get 'name'
 								notes: ''
-								metrics: section.get('metricIds').map (metricId) =>
-									m = metricsById.get(metricId)
+								metrics: unit.get('metricIds').map (metricId) =>
+									metric = metricsById.get metricId
+
 									return Imm.fromJS {
-										id: m.get('id')
-										name: m.get('name')
-										definition: m.get('definition')
+										id: metric.get 'id'
+										name: metric.get 'name'
+										definition: metric.get 'definition'
 										value: ''
 									}
 							}
-						when 'plan'
+						when 'plan'							
 							return Imm.fromJS {
 								type: 'plan'
-								id: section.get 'id'
-								name: section.get 'name'
-								targets: clientFile.getIn(['plan', 'sections']).flatMap (section) =>
-									section.get('targetIds').map (targetId) =>
-										target = planTargetsById.get(targetId)
-										lastRev = target.last()
-										return Imm.fromJS {
-											id: lastRev.get 'id'
-											name: lastRev.get 'name'
-											notes: ''
-											metrics: lastRev.get('metricIds').map (metricId) =>
-												m = metricsById.get(metricId)
-												return Imm.fromJS {
-													id: m.get('id')
-													name: m.get('name')
-													definition: m.get('definition')
-													value: ''
-												}
-										}
+								id: unit.get 'id'
+								name: unit.get 'name'
+								sections: clientFile.getIn(['plan', 'sections']).map (section) =>
+
+									Imm.fromJS {
+										id: section.get 'id'
+										name: section.get 'name'
+										targets: section.get('targetIds').map (targetId) =>											
+											target = planTargetsById.get targetId
+											lastRev = target.last()
+
+											return Imm.fromJS {
+												id: lastRev.get 'id'
+												name: lastRev.get 'name'
+												notes: ''
+												metrics: lastRev.get('metricIds').map (metricId) =>
+													metric = metricsById.get metricId
+
+													return Imm.fromJS {
+														id: metric.get 'id'
+														name: metric.get 'name'
+														definition: metric.get 'definition'
+														value: ''
+													}
+											}
+									}
 							}
 			}	
 
@@ -345,33 +355,43 @@ load = (win, {clientFileId}) ->
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
 
-					BackdateWidget({onChange: @_updateBackdate})
-					if @state.progNote.get('backdate').length > 0
-						R.div({className: 'backdateMessage'},
-							"(back-dated entry)"
-						)
+					R.div({clssName: 'backdate'},
+						BackdateWidget({onChange: @_updateBackdate})
+						if @state.progNote.get('backdate')
+							R.span({}, "(back-dated entry)")
+					)
 
 					R.hr({})
-					R.div({className: 'sections'},
-						(@state.progNote.get('sections').map (section) =>
-							switch section.get('type')
+					R.div({className: 'units'},
+						(@state.progNote.get('units').map (unit) =>
+							unitId = unit.get 'id'
+
+							console.info "unitId", unitId
+
+							switch unit.get('type')
 								when 'basic'
-									R.div({className: 'basic section', key: section.get('id')},
-										R.h1({className: 'name'}, section.get('name'))
+									R.div({
+										className: 'unit basic'
+										key: unitId
+									},
+										R.h1({className: 'name'}, unit.get 'name')
 										ExpandingTextArea({
-											value: section.get('notes')
-											onFocus: @_selectBasicSection.bind null, section
-											onChange: @_updateBasicSectionNotes.bind null, section.get('id')
+											value: unit.get('notes')
+											onFocus: @_selectBasicUnit.bind null, unit
+											onChange: @_updateBasicNotes.bind null, unitId
 										})
 										R.div({className: 'metrics'},
-											(section.get('metrics').map (metric) =>
+											(unit.get('metrics').map (metric) =>
+												metricId = metric.get 'id'
+
 												MetricWidget({
 													key: metric.get('id')
 													name: metric.get('name')
 													definition: metric.get('definition')
-													onFocus: @_selectBasicSection.bind null, section
-													onChange: @_updateBasicSectionMetric.bind(
-														null, section.get('id'), metric.get('id')
+													onFocus: @_selectBasicUnit.bind null, unit
+													onChange: @_updateBasicMetric.bind(
+														null,
+														unitId, metricId
 													)
 													value: metric.get('value')
 												})
@@ -379,49 +399,62 @@ load = (win, {clientFileId}) ->
 										)
 									)
 								when 'plan'
-									R.div({className: 'plan section', key: section.get('id')},
-										R.h1({className: 'name'},
-											section.get('name')
+									R.div({
+										className: 'unit plan'
+										key: unitId
+									},
+										R.h1({}, unit.get 'name')
+										R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
+											"This is empty because 
+											the client has no #{Term 'plan'} #{Term 'sections'}."
 										)
-										R.div({className: "empty #{showWhen section.get('targets').size is 0}"},
-											"This #{Term 'section'} is empty because 
-											the client has no #{Term 'plan'} #{Term 'targets'}."
-										)
-										R.div({className: 'targets'},
-											(section.get('targets').map (target) =>
-												R.div({className: 'target', key: target.get('id')},
-													R.h2({className: 'name'},
-														target.get('name')
+										(unit.get('sections').map (section) =>
+											sectionId = section.get 'id'
+
+											R.section({key: sectionId},
+												R.h2({}, section.get 'name')
+
+												(section.get('targets').map (target) =>														
+													targetId = target.get 'id'
+
+													R.div({
+														className: 'target'
+														key: targetId
+													},
+														R.h3({}, target.get 'name')
+														ExpandingTextArea {
+															value: target.get 'notes'
+															onFocus: @_selectPlanTarget.bind(
+																null, unit, section, target
+															)
+															onChange: @_updatePlanTargetNotes.bind(
+																null, unitId, sectionId, targetId
+															)
+														}
+														R.div({className: 'metrics'},
+															(target.get('metrics').map (metric) =>
+																metricId = metric.get 'id'
+
+																MetricWidget {
+																	key: metricId
+																	name: metric.get 'name'
+																	definition: metric.get 'definition'
+																	value: metric.get 'value'
+																	onFocus: @_selectPlanTarget.bind(
+																		null,
+																		unit, section, target
+																	)
+																	onChange: @_updatePlanTargetMetric.bind(
+																		null,
+																		unitId, sectionId, targetId, metricId
+																	)
+																}
+															)
+														)	
 													)
-													ExpandingTextArea({
-														value: target.get('notes')
-														onFocus: @_selectPlanSectionTarget.bind(
-															null, section, target
-														)
-														onChange: @_updatePlanSectionNotes.bind(
-															null, section.get('id'), target.get('id')
-														)
-													})
-													R.div({className: 'metrics'},
-														(target.get('metrics').map (metric) =>
-															MetricWidget({
-																key: metric.get('id')
-																name: metric.get('name')
-																definition: metric.get('definition')
-																onFocus: @_selectPlanSectionTarget.bind(
-																	null, section, target
-																)
-																onChange: @_updatePlanSectionMetric.bind(
-																	null, section.get('id'),
-																	target.get('id'), metric.get('id')
-																)
-																value: metric.get('value')
-															})
-														).toJS()...
-													)
-												)
-											).toJS()...
-										)
+												).toJS()...
+											)
+										).toJS()...
 									)
 						).toJS()...
 					)
@@ -484,6 +517,7 @@ load = (win, {clientFileId}) ->
 					)
 				)
 			)
+
 		_newEventTab: ->
 			# Add in the new event, select last one
 			@setState {progEvents: @state.progEvents.push {}}, => 
@@ -503,94 +537,146 @@ load = (win, {clientFileId}) ->
 
 			@setState {editingWhichEvent: null}
 
-
 			
-		_getSectionIndex: (sectionId) ->
-			result = @state.progNote.get('sections').findIndex (s) =>
-				return s.get('id') is sectionId
+		_getUnitIndex: (unitId) ->
+			result = @state.progNote.get('units')
+			.findIndex (unit) =>
+				return unit.get('id') is unitId
 
 			if result is -1
-				throw new Error "could not find section with ID #{JSON.stringify sectionId}"
+				throw new Error "could not find unit with ID #{JSON.stringify unitId}"
 
 			return result
-		_getTargetIndex: (sectionIndex, targetId) ->
-			result = @state.progNote.getIn(['sections', sectionIndex, 'targets']).findIndex (t) =>
-				return t.get('id') is targetId
+
+		_getPlanSectionIndex: (unitIndex, sectionId) ->
+			console.info unitIndex, sectionId
+
+			result = @state.progNote.getIn(['units', unitIndex, 'sections'])
+			.findIndex (section) =>
+				return section.get('id') is sectionId
+
+			if result is -1
+				throw new Error "could not find unit with ID #{JSON.stringify sectionId}"
+
+			return result
+
+		_getPlanTargetIndex: (unitIndex, sectionIndex, targetId) ->
+			result = @state.progNote.getIn(['units', unitIndex, 'sections', sectionIndex, 'targets'])
+			.findIndex (target) =>
+				return target.get('id') is targetId
 
 			if result is -1
 				throw new Error "could not find target with ID #{JSON.stringify targetId}"
 
 			return result
-		_selectBasicSection: (section) ->
+
+
+		_selectBasicUnit: (unit) ->
 			@setState {
 				selectedItem: Imm.fromJS {
-					type: 'basicSection'
-					sectionId: section.get('id')
-					sectionName: section.get('name')
+					type: 'basicUnit'
+					unitId: unit.get 'id'
+					unitName: unit.get 'name'
 				}
 			}
-		_selectPlanSectionTarget: (section, target) ->
+
+		_selectPlanTarget: (unit, section, target) ->
 			@setState {
 				selectedItem: Imm.fromJS {
 					type: 'planSectionTarget'
-					sectionId: section.get('id')
-					targetId: target.get('id')
-					targetName: target.get('name')
+					unitId: unit.get 'id'
+					unitName: unit.get 'name'
+					sectionId: section.get 'id'
+					sectionName: section.get 'name'
+					targetId: target.get 'id'
+					targetName: target.get 'name'
 				}
 			}
 
 		_updateBackdate: (event) ->
-			backdate = Moment(event.date).format(Persist.TimestampFormat)
-			progNote = @state.progNote.setIn ['backdate'], backdate
-			@setState {progNote}
+			newBackdate = Moment(event.date).format(Persist.TimestampFormat)
 
-		_updateBasicSectionNotes: (sectionId, event) ->
-			sectionIndex = @_getSectionIndex sectionId
-			progNote = @state.progNote.setIn ['sections', sectionIndex, 'notes'], event.target.value
-			@setState {progNote}
+			@setState {
+				progNote: @state.progNote.setIn ['backdate'], newBackdate
+			}
 
-		_updateBasicSectionMetric: (sectionId, metricId, newValue) ->
-			return unless @_isValidMetric(newValue)
+		_updateBasicNotes: (unitId, event) ->
+			newNotes = event.target.value
 
-			sectionIndex = @_getSectionIndex sectionId
-
-			metricIndex = @state.progNote.getIn(['sections', sectionIndex, 'metrics']).findIndex (m) =>
-				return m.get('id') is metricId
+			unitIndex = @_getUnitIndex unitId
+			progNote = @state.progNote.setIn ['units', unitIndex, 'notes'], event.target.value
 
 			@setState {
 				progNote: @state.progNote.setIn(
-					['sections', sectionIndex, 'metrics', metricIndex, 'value']
-					newValue
+					[
+						'units', unitIndex
+						'notes'
+					]
+					newNotes
 				)
 			}
 
-		_updatePlanSectionNotes: (sectionId, targetId, event) ->
-			sectionIndex = @_getSectionIndex sectionId
-			targetIndex = @state.progNote.getIn(['sections', sectionIndex, 'targets']).findIndex (t) =>
-				return t.get('id') is targetId
+		_updateBasicMetric: (unitId, metricId, newMetricValue) ->
+			return unless @_isValidMetric(newMetricValue)
+
+			unitIndex = @_getUnitIndex unitId
+
+			metricIndex = @state.progNote.getIn(['units', unitIndex, 'metrics'])
+			.findIndex (metric) =>
+				return metric.get('id') is metricId
 
 			@setState {
 				progNote: @state.progNote.setIn(
-					['sections', sectionIndex, 'targets', targetIndex, 'notes'],
-					event.target.value
+					[
+						'units', unitIndex
+						'metrics', metricIndex
+						'value'
+					]
+					newMetricValue
 				)
 			}
 
-		_updatePlanSectionMetric: (sectionId, targetId, metricId, newValue) ->
-			return unless @_isValidMetric(newValue)
+		_updatePlanTargetNotes: (unitId, sectionId, targetId, event) ->
+			newNotes = event.target.value
 
-			sectionIndex = @_getSectionIndex sectionId
-			targetIndex = @_getTargetIndex sectionIndex, targetId
+			unitIndex = @_getUnitIndex unitId
+			sectionIndex = @_getPlanSectionIndex unitIndex, sectionId
+			targetIndex = @_getPlanTargetIndex unitIndex, sectionIndex, targetId
+
+			@setState {
+				progNote: @state.progNote.setIn(
+					[
+						'units', unitIndex
+						'sections', sectionIndex
+						'targets', targetIndex
+						'notes'
+					]
+					newNotes
+				)
+			}
+
+		_updatePlanTargetMetric: (unitId, sectionId, targetId, metricId, newMetricValue) ->
+			return unless @_isValidMetric(newMetricValue)
+
+			unitIndex = @_getUnitIndex unitId
+			sectionIndex = @_getPlanSectionIndex unitIndex, sectionId
+			targetIndex = @_getPlanTargetIndex unitIndex, sectionIndex, targetId
 
 			metricIndex = @state.progNote.getIn(
-				['sections', sectionIndex, 'targets', targetIndex, 'metrics']
-			).findIndex (m) =>
-				return m.get('id') is metricId			
+				['units', unitIndex, 'sections', sectionIndex, 'targets', targetIndex, 'metrics']
+			).findIndex (metric) =>
+				return metric.get('id') is metricId			
 
 			@setState {
 				progNote: @state.progNote.setIn(
-					['sections', sectionIndex, 'targets', targetIndex, 'metrics', metricIndex, 'value']
-					newValue
+					[
+						'units', unitIndex
+						'sections', sectionIndex
+						'targets', targetIndex
+						'metrics', metricIndex
+						'value'
+					]
+					newMetricValue
 				)
 			}
 

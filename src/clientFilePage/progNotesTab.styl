@@ -100,7 +100,7 @@
 							display block
 
 				&.full
-					> .sections
+					> .progNoteList
 						position relative
 						
 						> .printButton
@@ -108,18 +108,54 @@
 							top 0
 							right 0
 
-						> .section
-							> .name
-								font-size 24px
-								font-weight 400
+						> .unit
+							padding-bottom 20px
+							
+							&:last-child
+								padding-bottom 0px
+							
+							h1
+								font-size 26px
+								
+							h2
+								font-size 22px
+								font-weight 100
+								
+							h3
+								font-weight 600
+								font-size 18px
+								color #6B6B6B
+								
+								.fa									
+									font-weight normal
+									opacity 0
+									transition all .2s ease
+									transform rotate(100deg)
+								
+								&:hover
+									cursor pointer
+									
+									.fa
+										opacity 1
+										margin-left 25px
+										display inline-block
+										transform rotate(0deg)
 
 							&.basic
-								> .name
-									cursor pointer
+								h3
+									font-size 22px
+									
+								&.selected, &:hover
+									h3
+										color #337ab7
+										
+										> .fa
+											opacity 1
+											margin-left 25px
+											transform rotate(0deg)
 
 								> .empty
 									padding 0 2px
-
 									color #888
 
 								> .metrics
@@ -128,18 +164,25 @@
 							&.plan
 								> .empty
 									padding 0 2px
-
 									color #888
-
-								> .targets
+									
+								section
 									> .target
-										> .name
-											margin 15px 0 5px
-
-											color #666
-											cursor pointer
-											font-size 16px
-											font-weight 600
+										padding-left 15px
+										border-left 2px solid #eee
+										transition all .15s ease
+										
+										&.selected
+											border-left-color #337ab7
+											padding-left 20px
+											
+											h3
+												color #337ab7
+												
+												> .fa
+													opacity 1
+													margin-left 25px
+													transform rotate(0deg)
 
 										> .empty
 											padding 0 2px

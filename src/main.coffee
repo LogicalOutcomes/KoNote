@@ -173,9 +173,9 @@ init = (win) ->
 						refreshCSS()
 						return
 
-				unless isRefreshing
-					isRefreshing = true
-					doHotCodeReplace()
+					if fileExtension is 'coffee'
+						isRefreshing = true
+						doHotCodeReplace()
 
 
 	doHotCodeReplace = =>		
