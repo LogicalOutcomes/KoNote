@@ -28,6 +28,9 @@ load = (win) ->
 				name: @props.metricQuery
 				definition: ''
 			}
+		componentDidMount: ->
+			React.findDOMNode(this.refs.metricDefinition).focus()
+			
 		render: ->
 			Dialog({
 				title: "Define a new #{Term 'metric'}"
@@ -43,6 +46,7 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
+						ref: 'metricDefinition',
 						R.label({}, "Definition"),
 						ExpandingTextArea({
 							onChange: @_updateDefinition
