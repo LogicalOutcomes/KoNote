@@ -52,7 +52,7 @@
       simpleDemoTemplate: {
         id: 'simpleDemoTemplate',
         name: 'Simple Demo Template',
-        sections: [
+        units: [
           {
             id: 'goals',
             type: 'plan',
@@ -68,7 +68,7 @@
       sectionedDemoTemplate: {
         id: 'sectionedDemoTemplate',
         name: 'Sectioned Demo Template',
-        sections: [
+        units: [
           {
             id: 'subjective',
             type: 'basic',
@@ -90,7 +90,7 @@
       initialAssessment: {
         id: 'initAssessGC',
         name: 'Client Log - Initial Assessment',
-        sections: [
+        units: [
           {
             id: 'peerInt',
             type: 'basic',
@@ -162,7 +162,7 @@
       clientLog: {
         id: 'clientLogGC',
         name: 'Client Log',
-        sections: [
+        units: [
           {
             id: 'goals',
             type: 'plan',
@@ -218,7 +218,7 @@
       soap: {
         id: 'fake-template-lolololol',
         name: 'Fake Template',
-        sections: [
+        units: [
           {
             id: 'section1',
             type: 'basic',
