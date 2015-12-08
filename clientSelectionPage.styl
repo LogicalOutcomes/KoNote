@@ -180,15 +180,16 @@ sidebar-borders = darken(sidebar-bg, 10%)
 					transition background .15s ease-in-out
 					background white					
 					
-					&:hover, &.active
-						color hsl(200, 80%, 20%)
-						background hsl(200, 80%, 80%)
+					&:hover, &.active						
 						cursor pointer
 						
 						td
+							color hsl(200, 80%, 20%)
+							background hsl(200, 80%, 80%)
 							border-top-color hsl(200, 80%, 70%)
 						
 					td
+						transition all .1s ease
 						font-size 1.15em
 						line-height 2.5em
 						
