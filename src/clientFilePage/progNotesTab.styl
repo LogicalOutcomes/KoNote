@@ -1,0 +1,206 @@
+.progNotesView
+	display flex
+	flex-direction column
+
+	> .toolbar
+		border-bottom 2px solid sidebar-borders
+
+		padding 20px
+
+		> .btn
+			margin-right 15px
+
+			> .fa
+				padding-right 8px
+
+		> .popover
+			max-width none
+
+			.popover-content
+				> textarea
+					width 500px
+					height 300px
+
+				> .buttonBar
+					padding 10px 0 0
+
+					text-align right
+
+					> .btn
+						margin-left 5px
+
+	> .panes
+		display flex
+		flex 1
+
+		> .progNotes
+			flex 50%
+			overflow auto
+
+			padding 10px 20px
+			
+			> .empty
+				text-align center
+				
+				> .message
+					padding 100px 80px 50px
+
+					color #888
+					font-size 16px
+
+				> .btn
+					clear both
+					margin 15px
+					
+					> .fa
+						padding-right 10px
+						
+				> .popover
+					max-width none
+
+					.popover-content
+						> textarea
+							width 500px
+							height 300px
+
+						> .buttonBar
+							padding 10px 0 0
+
+							text-align right
+
+							> .btn
+								margin-left 5px
+
+			> .progNote
+				flex 1
+
+				padding-bottom 30px
+
+				> .header
+					display flex
+
+					border-bottom 2px solid sidebar-borders
+
+					padding 5px 0
+
+					font-size 24px
+					font-weight 300
+
+					> .timestamp
+						flex 1
+
+				&.basic
+					> .notes
+						padding 20px 0
+						
+						> .printButton
+							float right
+
+						> br
+							display block
+
+				&.full
+					> .progNoteList
+						position relative
+						
+						> .printButton
+							position absolute
+							top 0
+							right 0
+
+						> .unit
+							padding-bottom 20px
+							
+							&:last-child
+								padding-bottom 0px
+							
+							h1
+								font-size 26px
+								
+							h2
+								font-size 22px
+								font-weight 100
+								
+							h3
+								font-weight 600
+								font-size 18px
+								color #6B6B6B
+								
+								.fa									
+									font-weight normal
+									opacity 0
+									transition all .2s ease
+									transform rotate(100deg)
+								
+								&:hover
+									cursor pointer
+									
+									.fa
+										opacity 1
+										margin-left 25px
+										display inline-block
+										transform rotate(0deg)
+
+							&.basic
+								h3
+									font-size 22px
+									
+								&.selected, &:hover
+									h3
+										color #337ab7
+										
+										> .fa
+											opacity 1
+											margin-left 25px
+											transform rotate(0deg)
+
+								> .empty
+									padding 0 2px
+									color #888
+
+								> .metrics
+									padding-top 5px
+
+							&.plan
+								> .empty
+									padding 0 2px
+									color #888
+									
+								section
+									> .target
+										padding-left 15px
+										border-left 2px solid #eee
+										transition all .15s ease
+										
+										&.selected, &:hover
+											border-left-color #337ab7
+											padding-left 20px
+											
+											h3
+												color #337ab7
+												
+												> .fa
+													opacity 1
+													margin-left 25px
+													transform rotate(0deg)
+
+										> .empty
+											padding 0 2px
+
+											color #888
+
+										> .metrics
+											display flex
+											flex-wrap wrap
+
+											margin -5px
+
+											padding-top 5px
+
+											> .metricWidget
+												margin 5px
+
+		> .progNoteDetailView
+			flex 50%
+
+			border-left 2px solid sidebar-borders

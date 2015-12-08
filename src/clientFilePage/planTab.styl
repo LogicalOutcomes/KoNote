@@ -1,0 +1,250 @@
+.planView
+	display flex
+
+	> .targetList
+		flex 1
+		overflow inherit
+		display flex
+		flex-direction column		
+
+		> .empty
+			text-align center
+
+			> .message
+				padding 100px 80px 50px
+
+				color #888
+				font-size 16px
+
+			> .btn > .fa
+				padding-right 10px
+
+		> .toolbar
+			padding 30px
+			border-bottom 1px solid sidebar-borders
+			display flex
+			flex-wrap wrap
+			
+			> span
+				flex 1
+				
+				&.leftMenu
+					padding-right 5px
+				
+				&.rightMenu
+					text-align right
+			
+				> .btn
+					
+					> .fa
+						margin-right 8px
+				
+				.save
+					width 100%
+					transition all 0.5s ease
+					
+				.canSave
+					width 60%
+					
+			// @media (max-width: 1150px)
+			// 	.btn
+			// 		font-size .95em !important
+					
+			@media (max-width: 1150px)
+				display block
+				
+				
+				> span
+					display block
+					flex none
+					width 100%
+					
+					> .canSave
+						width 100%
+					
+					&.rightMenu
+						margin-top 10px
+						display flex
+						
+						> .btn
+							flex 3
+							
+						> .printButton
+							flex 1
+						
+
+		> .sections
+			overflow-y auto
+			overflow-x hidden
+			flex 1
+			padding 0 30px 10px 30px
+			
+			> .section
+				padding-top 15px
+
+				&:last-child
+					padding-bottom 15px
+
+				> .sectionHeader
+					display flex
+					align-items center
+					justify-content space-between
+
+					border-color sidebar-borders
+					border-style none none solid
+					border-width 3px
+
+					> .sectionName
+						flex 1
+						padding 5px 0
+
+						font-size 24px
+						font-weight 300
+
+					> .btn > .fa
+						padding-right 6px
+
+				> .noTargets
+					padding 25px 0
+
+					color #888
+					text-align center
+
+				> .targets
+					> .target
+						margin-top 20px
+
+						border 1px solid sidebar-borders
+						border-radius 5px
+
+						padding 15px 20px
+
+						transition all 0.15s linear
+
+						&.hasChanges
+							background #EEFFF5
+							border-color #C9FFB2
+							
+						&.active
+							background hsl(202, 35%, 94%)							
+							
+							&.hasChanges
+								background #C9FFB2
+								border-color #A4D291
+								
+						&.blink
+							background #7ecdfc !important
+							border-color #68AAD2 !important
+
+						> .nameContainer, > .notesContainer
+							> div
+								cursor pointer
+
+								&:hover
+									background sidebar-bg
+
+							> .field
+								width 100%
+
+								padding 2px 5px
+
+						> .nameContainer
+							padding-bottom 15px
+
+							font-weight 700
+
+						> .metrics
+							display flex
+							flex-wrap wrap
+
+							margin -5px
+
+							padding-top 15px
+
+							> .metricWidget
+								margin 5px
+
+	> .targetDetail
+		overflow-y auto
+		overflow-x hidden
+		flex 1
+
+		border-left 2px solid sidebar-borders
+
+		padding 0 30px
+
+		> .noSelection
+			padding 100px 0
+
+			color #888
+			text-align center
+
+		> .targetDetailContainer
+			> .metricsSection
+				padding 20px 0
+				
+				.addMetricButton
+					color #939393
+					transition color .15s ease
+					
+					&:hover
+						color #87FF18
+					
+					&:focus
+						background none
+						outline none
+
+				> .header
+					> .text
+						font-size 24px
+						font-weight 300
+
+				> .noMetrics
+					padding 40px
+
+					color #888
+					text-align center
+
+				> .metrics
+					display flex
+					flex-wrap wrap
+					padding 25px 0
+
+					> .metricWidget
+						margin 5px 10px 5px 0px
+
+			> .history
+				padding 20px 0
+
+				> .heading
+					font-size 24px
+					font-weight 300
+
+				> .noRevisions
+					padding 20px
+
+					color #888
+					text-align center
+
+				> .revisions
+					> .revision
+						padding 25px 0
+
+						border-bottom 1px solid sidebar-borders
+
+						&:last-child
+							border-bottom none
+
+						> .nameLine
+							display flex
+
+							padding-bottom 20px
+
+							> .name
+								flex 1
+
+								font-weight 700
+
+							> .tag
+								font-weight 600
+								color #888

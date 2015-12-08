@@ -1,0 +1,30 @@
+.manageProgramClientsDialog
+	width 600px
+	min-height 400px
+	display flex
+	
+	> .panel
+		flex 1
+		
+		&:first-child
+			margin-right 10px
+		&:last-child
+			margin-left 10px
+			
+		> .panel-heading .badge
+			float right
+			
+		> .panel-body
+			
+			&.noData
+				text-align center
+				padding 15px
+				font-style italic
+
+		
+	table > thead
+		font-weight bold
+		
+	table td > .noId
+		text-align center
+		
