@@ -207,6 +207,9 @@ getLatestRevision = (dirPath, globalEncryptionKey, cb) ->
 		cb null, latestRevision
 
 
+
+
+
 # //////////////// Version-Specific Utilities /////////////////
 
 
@@ -270,6 +273,8 @@ addContextFieldsToAllObjects = (dataDir, globalEncryptionKey, cb) ->
 			, cb
 	], cb
 
+
+
 addContextFieldsToObject = (objFilePath, dataDir, globalEncryptionKey, cb) ->
 	# Figure out the object's context
 	objDir = Path.relative(dataDir, Path.dirname objFilePath)
@@ -313,7 +318,107 @@ addContextFieldsToObject = (objFilePath, dataDir, globalEncryptionKey, cb) ->
 	], cb
 
 
-updateProgNoteFormat = (dataDir, globalEncryptionKey, cb) ->
+
+updateProgNote = (dataDir, globalEncryptionKey, progNote, progNotePath, cb) ->
+	# No changes required for Quick Notes, skip!
+	if progNote.get('type') isnt 'full'
+		console.log "Skipping 'basic' progNote (Quick Note)"
+		cb()
+		return
+
+	# Otherwise, looks like we have a 'full' progNote to update :)
+
+	Async.series [
+		# First, change the 'full' progNote key 'sections' to 'units'
+		(cb) ->									
+			progNote = progNote.mapKeys (key) -> 
+				switch key
+					when 'sections'
+						console.log "Changing key name 'sections' to 'units'"
+						return 'units'
+					when 'units'
+						console.warn "progNote already has 'sections' named as 'units'"
+						return key
+					else
+						return key
+
+			console.log "progNote with new key name:", progNote.toJS()
+			cb()
+
+		(cb) ->
+			# Map units over to the new format
+			# -> targets mapped into appropriate sections
+			newUnits = progNote.get('units').map (unit) ->
+				if not unit.has('sections') and unit.get('targets')?
+
+					# Use clientFilePlan sections as our template
+					unitPlanSections = clientFilePlan.get('sections').map (planSection) ->
+						console.log "planSection", planSection.toJS()
+
+						# Push in the appropriate targetNote objects to this section
+						# by cross-referencing against targetIds in the planSection
+						relatedTargets = Imm.List()
+						unit.get('targets').forEach (target) ->
+							if planSection.get('targetIds').contains target.get('id')
+								relatedTargets = relatedTargets.push target
+
+						console.log "relatedTargets", relatedTargets.toJS()
+
+						# Return 'undefined' if no related targets (section didn't exist yet)
+						if relatedTargets.isEmpty()
+							console.warn "No progNote targets found related to this section, skipping!"
+							return
+
+						# Return planSection as a unitPlanSection w/ targets
+						return planSection
+						.delete('targetIds')
+						.set('targets', relatedTargets)
+
+
+					console.log "NEW unitPlanSections", unitPlanSections
+
+					# Filter out any 'undefined' sections
+					unitPlanSections = unitPlanSections.filter (section) -> section?
+
+					# Return unit with new 'sections' property
+					return unit
+					.delete('targets')
+					.set('sections', unitPlanSections)
+
+				else
+					console.log "Skipping progNote unit:", unit.toJS()
+					return unit
+
+			console.info "newUnits:", newUnits.toJS()
+
+			# Apply new units array to progNote
+			progNote = progNote.set('units', newUnits)
+			cb()
+
+		# Encrypt to buffer, save progNote revision
+		(cb) ->
+			newBuffer = globalEncryptionKey.encrypt JSON.stringify progNote
+
+			Fs.writeFile progNotePath, newBuffer, (err) ->
+				if err
+					console.error "Problem writing progNote", err
+					cb err
+					return
+
+				console.log "Wrote updatedProgNote to #{progNotePath}"
+				cb()
+
+	], (err) ->
+		if err
+			cb err
+			return
+
+		console.log "Finished updating 'full' progNote"
+		cb()
+
+
+
+updateAllProgNotes = (dataDir, globalEncryptionKey, cb) ->
 	forEachFile Path.join(dataDir, 'clientFiles'), (clientFileDir, cb) ->
 		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFileDir)
 
@@ -343,12 +448,12 @@ updateProgNoteFormat = (dataDir, globalEncryptionKey, cb) ->
 
 					# Loop through each progNote revision
 					forEachFile progNotesDirPath, (progNoteRevision, cb) ->
-						progNoteRevisionPath = Path.join(progNotesDirPath, progNoteRevision)
+						progNotePath = Path.join(progNotesDirPath, progNoteRevision)
 
 						progNote = null
 
 						# Read progNote
-						readFileData progNoteRevisionPath, globalEncryptionKey, (err, result) ->
+						readFileData progNotePath, globalEncryptionKey, (err, result) ->
 							if err
 								console.error "Problem reading progNote", err
 								cb err
@@ -356,102 +461,10 @@ updateProgNoteFormat = (dataDir, globalEncryptionKey, cb) ->
 
 							progNote = result
 
-							# No changes required for Quick Notes, skip!
-							if progNote.get('type') isnt 'full'
-								console.log "Skipping 'basic' progNote (Quick Note)"
-								cb()
-								return
-
-
-							# Otherwise, looks like we have a 'full' progNote to update :)
-
-							Async.series [
-								# First, change the 'full' progNote key 'sections' to 'units'
-								(cb) ->									
-									progNote = result.mapKeys (key) -> 
-										switch key
-											when 'sections'
-												console.log "Changing key name 'sections' to 'units'"
-												return 'units'
-											when 'units'
-												console.warn "progNote already has 'sections' named as 'units'"
-												return key
-											else
-												return key
-
-									console.log "progNote with new key name:", progNote.toJS()
-									cb()
-
-								(cb) ->
-									# Map units over to the new format
-									# -> targets mapped into appropriate sections
-									newUnits = progNote.get('units').map (unit) ->
-										if not unit.has('sections') and unit.get('targets')?
-
-											# Use clientFilePlan sections as our template
-											unitPlanSections = clientFilePlan.get('sections').map (planSection) ->
-												console.log "planSection", planSection.toJS()
-
-												# Push in the appropriate targetNote objects to this section
-												# by cross-referencing against targetIds in the planSection
-												relatedTargets = Imm.List()
-												unit.get('targets').forEach (target) ->
-													if planSection.get('targetIds').contains target.get('id')
-														relatedTargets = relatedTargets.push target
-
-												console.log "relatedTargets", relatedTargets.toJS()
-
-												# Return 'undefined' if no related targets (section didn't exist yet)
-												if relatedTargets.isEmpty()
-													console.warn "No progNote targets found related to this section, skipping!"
-													return
-
-												# Return planSection as a unitPlanSection w/ targets
-												return planSection
-												.delete('targetIds')
-												.set('targets', relatedTargets)
-
-
-											console.log "NEW unitPlanSections", unitPlanSections
-
-											# Filter out any 'undefined' sections
-											unitPlanSections = unitPlanSections.filter (section) -> section?
-
-											# Return unit with new 'sections' property
-											return unit
-											.delete('targets')
-											.set('sections', unitPlanSections)
-
-										else
-											console.log "Skipping progNote unit:", unit.toJS()
-											return unit
-
-									console.info "newUnits:", newUnits.toJS()
-
-									# Apply new units array to progNote
-									progNote = progNote.set('units', newUnits)
-									cb()
-
-								# Encrypt to buffer, save progNote revision
-								(cb) ->
-									newBuffer = globalEncryptionKey.encrypt JSON.stringify progNote
-
-									Fs.writeFile progNoteRevisionPath, newBuffer, (err) ->
-										if err
-											console.error "Problem writing progNote", err
-											cb err
-											return
-
-										console.log "Wrote updatedProgNote to #{progNoteRevisionPath}"
-										cb()
-
-							], (err) ->
-								if err
-									cb err
-									return
-
-								console.log "Finished updating 'full' progNote"
-								cb()
+							# Update the progNote
+							updateProgNote(
+								dataDir, globalEncryptionKey, progNote, progNotePath, cb
+							)
 
 					, cb
 				, cb
@@ -459,7 +472,11 @@ updateProgNoteFormat = (dataDir, globalEncryptionKey, cb) ->
 	, cb
 
 
+
+
+
 # ////////////////////// Migration Series //////////////////////
+
 
 module.exports = {
 	run: (dataDir, userName, password, cb) ->
@@ -497,7 +514,7 @@ module.exports = {
 			# Improvements for progNote Schema (issue#7)
 			(cb) ->
 				console.info "5. Update progNote format, map plan sections into 'full' units"
-				updateProgNoteFormat dataDir, globalEncryptionKey, cb
+				updateAllProgNotes dataDir, globalEncryptionKey, cb
 
 		], cb
 }
