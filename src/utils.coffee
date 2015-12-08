@@ -86,9 +86,7 @@ load = (win) ->
 
 		return result.join ' '
 
-	# Converts line breaks to React <br> tags
-	# It might make sense to trim the text first to avoid leading or trailing
-	# whitespace.
+	# Converts line breaks to React <br> tags and trims leading or trailing whitespace
 	renderLineBreaks = (text) ->
 		lines = text.trim()
 		.replace(/\r\n/g, '\n') # Windows -> Unix
