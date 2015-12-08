@@ -90,7 +90,7 @@ load = (win) ->
 	# It might make sense to trim the text first to avoid leading or trailing
 	# whitespace.
 	renderLineBreaks = (text) ->
-		lines = text
+		lines = text.trim()
 		.replace(/\r\n/g, '\n') # Windows -> Unix
 		.replace(/\r/g, '\n') # old Mac -> Unix
 		.split('\n')
