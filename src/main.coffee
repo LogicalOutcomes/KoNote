@@ -111,6 +111,8 @@ init = (win) ->
 
 		}), containerElem
 
+		console.info "pageComponent loaded:", pageComponent
+
 		console.timeEnd('renderPage')
 
 	initPage = =>
@@ -150,8 +152,11 @@ init = (win) ->
 				event.preventDefault()
 		, false
 
-		# Hotkeys for devMode only
+
+		# DevMode Utilities
 		if Config.devMode
+			console.info "*** Developer Mode ***"
+
 			# Set up keyboard shortcuts
 			win.document.addEventListener 'keyup', (event) ->
 				# If Ctrl-Shift-J
@@ -164,25 +169,35 @@ init = (win) ->
 					doHotCodeReplace()
 			, false
 
-			# Live-Refresh
-			Fs.watch './', (event, filename) ->
-				if filename?
-					fileExtension = filename.split('.').splice(-1)[0]
+			try
+				Chokidar = require 'chokidar'
+			catch err
+				console.warn "Live-refresh disabled, I bet you're running a production build", err
+			
+			if Chokidar?
+				Chokidar
+				.watch './src'
+				.on 'change', (filePath) =>
+					fileExtension = filePath.split('.').splice(-1)[0]
+					
 
-					if fileExtension is "styl"
-						refreshCSS()
-						return
+					switch fileExtension
+						when 'styl'
+							refreshCSS()
+						when 'coffee' or 'js' 
+							console.log "chok pageComponent", pageComponent
+							doHotCodeReplace()
 
-					if fileExtension is 'coffee'
-						isRefreshing = true
-						doHotCodeReplace()
 
+	doHotCodeReplace = =>
+		console.info "Hot Reloading..."
 
-	doHotCodeReplace = =>		
+		console.log "pageComponent", pageComponent
+
 		# Save the entire page state into a global var
 		global.HCRSavedState = HotCodeReplace.takeSnapshot pageComponent
 
-		# Unregister page listeners
+		# Unregister page listener
 		unregisterPageListeners() if isLoggedIn
 
 		# Unmount components normally, but with no deinit
@@ -199,15 +214,16 @@ init = (win) ->
 		win.location.reload(true)
 
 	refreshCSS = =>
-		mainStylusCode = Fs.readFileSync 'main.styl', {encoding: 'utf-8'}
+		mainStylusCode = Fs.readFileSync './src/main.styl', {encoding: 'utf-8'} 
 
 		stylusOpts = {
-			filename: 'main.styl'
+			filename: './src/main.styl'
 			sourcemap: {inline: true}
 		}
 
 		Stylus.render mainStylusCode, stylusOpts, (err, compiledCss) ->
 			if err
+				console.error "Problem compiling CSS"
 				console.error err
 				if err.stack
 					console.error err.stack
@@ -215,6 +231,7 @@ init = (win) ->
 
 			# Inject the compiled CSS into the page
 			win.document.getElementById('main-css').innerHTML = compiledCss;
+			console.info "Injected CSS"
 
 	registerPageListeners = =>
 		pageListeners = Imm.fromJS(pageComponent.getPageListeners()).entrySeq()
