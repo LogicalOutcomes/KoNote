@@ -96,7 +96,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 		cb null, globalEncryptionKey
 
 forEachFileIn = (parentDir, loopBody, cb) ->
-	console.log("For each file in #{JSON.stringify parentDir}:")
+	console.group("For each file in #{JSON.stringify parentDir}:")
 
 	fileNames = null
 
@@ -111,16 +111,23 @@ forEachFileIn = (parentDir, loopBody, cb) ->
 				cb()
 		(cb) ->
 			Async.eachSeries fileNames, (fileName, cb) ->
-				console.log("Processing #{JSON.stringify Path.join(parentDir, fileName)}.")
+				console.group "Process #{JSON.stringify Path.join(parentDir, fileName)}:"
 
-				loopBody fileName, cb
+				loopBody fileName, (err) ->
+					if err
+						cb err
+						return
+
+					console.groupEnd()
+
+					cb()
 			, cb
 	], (err) ->
 		if err
 			cb err
 			return
 
-		console.log("Done iterating files in #{JSON.stringify parentDir}.")
+		console.groupEnd()
 
 		cb()
 
@@ -711,7 +718,7 @@ module.exports = {
 
 			# Global Encryption Key
 			(cb) ->
-				console.info "1. Load global encryption key..."
+				console.groupCollapsed "1. Load global encryption key"
 				loadGlobalEncryptionKey dataDir, userName, password, (err, result) ->
 					if err
 						console.error "Problem loading encryption key", err
@@ -723,28 +730,39 @@ module.exports = {
 
 			# Add Context Fields to all objects (issue#191)
 			(cb) ->
-				console.info "2. Add context fields to all objects..."
+				console.groupEnd()
+				console.groupCollapsed "2. Add context fields to all objects"
 				addContextFieldsToAllObjects dataDir, globalEncryptionKey, cb
 
 			# New Directory: 'programs'
 			(cb) ->
-				console.info "3. Create 'programs' directory"
+				console.groupEnd()
+				console.groupCollapsed "3. Create 'programs' directory"
 				createEmptyDirectory dataDir, 'programs', cb
 
 			# New Directory: 'clientFileProgramLinks'
 			(cb) ->
-				console.info "4. Create 'clientFileProgramLinks' directory"
+				console.groupEnd()
+				console.groupCollapsed "4. Create 'clientFileProgramLinks' directory"
 				createEmptyDirectory dataDir, 'clientFileProgramLinks', cb
 
 			# Improvements for progNote Schema (issue#7)
 			(cb) ->
-				console.info "5. Update progNote format, map plan sections into 'full' units"
+				console.groupEnd()
+				console.groupCollapsed "5. Update progNote format, map plan sections into 'full' units"
 				updateAllProgNotes dataDir, globalEncryptionKey, cb
 
 			# Encrypt indexed fields (issue#309)
 			(cb) ->
-				console.info "6. Encrypt indexed fields"
+				console.groupEnd()
+				console.groupCollapsed "6. Encrypt indexed fields"
 				encryptAllFileNames dataDir, globalEncryptionKey, cb
 
-		], cb
+		], (err) ->
+			if err
+				cb err
+				return
+
+			console.groupEnd()
+			cb()
 }

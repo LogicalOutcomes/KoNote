@@ -34,9 +34,21 @@ Path = require 'path'
 runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 	migrate dataDir, fromVersion, toVersion, userName, password, (err) ->
 		if err
+			console.error "Migration error."
+
+			# Close any currently open logging groups to make sure the error is seen
+			# Yeah, this sucks.
+			for i in [0...1000]
+				console.groupEnd()
+
 			console.error "Migration failed:"
 			console.error err
 			console.error err.stack
+
+			if err.cause
+				console.error "Caused by:"
+				console.error err.cause.stack
+
 			return
 
 		console.log "Migration complete."
@@ -47,7 +59,7 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, cb) ->
 
 	# TODO: Grab full list of migrations, handle multi-step migrations
 
-	console.log "Running migration step #{fromVersion} -> #{toVersion}..."
+	console.group "Run migration step #{fromVersion} -> #{toVersion}"
 
 	try
 		migrationStep = require("./#{fromVersion}-#{toVersion}.coffee")
@@ -57,10 +69,12 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, cb) ->
 
 	migrationStep.run dataDir, userName, password, (err) ->
 		if err
-			cb new Error "Could not run migration #{fromVersion}-#{toVersion}"
+			wrappedErr = new Error "Could not run migration #{fromVersion}-#{toVersion}"
+			wrappedErr.cause = err
+			cb wrappedErr
 			return
 
-		console.log "Done migration step #{fromVersion} -> #{toVersion}."
+		console.groupEnd()
 		cb()
 
 module.exports = {runMigration, migrate}
