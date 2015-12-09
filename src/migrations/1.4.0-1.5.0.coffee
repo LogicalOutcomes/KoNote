@@ -6,7 +6,10 @@ Imm = require 'immutable'
 Path = require 'path'
 Moment = require 'moment'
 
-{SymmetricEncryptionKey, PrivateKey, PublicKey} = require '../persist/crypto'
+{
+	SymmetricEncryptionKey
+	WeakSymmetricEncryptionKey
+} = require '../persist/crypto'
 {TimestampFormat} = require '../persist/utils'
 
 
@@ -92,7 +95,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 		globalEncryptionKey = SymmetricEncryptionKey.import privateInfo.globalEncryptionKey
 		cb null, globalEncryptionKey
 
-forEachFile = (parentDir, loopBody, cb) ->
+forEachFileIn = (parentDir, loopBody, cb) ->
 	console.log("For each file in #{JSON.stringify parentDir}:")
 
 	fileNames = null
@@ -206,7 +209,120 @@ getLatestRevision = (dirPath, globalEncryptionKey, cb) ->
 		latestRevision = results.last()
 		cb null, latestRevision
 
+# Encrypts the specified file name components, and returns a suitable file name.
+# components should be an array of strings, consisting of the indexed field
+# values, followed by the object's ID.
+encryptFileName = (components, globalEncryptionKey) ->
+	encodeFileName = (components) ->
+		delimiter = new Buffer([0x00, 0x53])
 
+		result = []
+
+		for c, i in components
+			if i > 0
+				result.push delimiter
+
+			encodedComp = encodeFileNameComponent(c)
+			result.push encodedComp
+
+		return Buffer.concat result
+
+	encodeFileNameComponent = (comp) ->
+		unless Buffer.isBuffer comp
+			throw new Error "expected file name component to be a buffer"
+
+		literalNulByte = new Buffer([0x00, 0x4C])
+
+		result = []
+
+		for i in [0...comp.length]
+			# If the byte needs to be encoded specially
+			if comp[i] is 0x00
+				result.push literalNulByte
+				continue
+
+			# This is probably pretty inefficient...
+			result.push comp.slice(i, i+1)
+
+		return Buffer.concat result
+
+	key = new WeakSymmetricEncryptionKey globalEncryptionKey, 5
+
+	encodedFileName = encodeFileName(
+		components.map (comp, compIndex) ->
+			if compIndex is (components.length - 1)
+				return Base64url.toBuffer comp
+
+			return new Buffer(comp, 'utf8')
+	)
+	return Base64url.encode key.encrypt encodedFileName
+
+# Decrypts the specified file name into the specified number of components.
+# componentCount should equal the number of indexed fields + 1.
+# Returns an array of strings.
+# A typical return value might look like: [indexedField1, indexedField2, id]
+decryptFileName = (encryptedFileName, componentCount, globalEncryptionKey) ->
+	createZeroedBuffer = (bufferSize) ->
+		result = new Buffer(bufferSize)
+
+		for i in [0...bufferSize]
+			result[i] = 0
+
+		return result
+
+	key = new WeakSymmetricEncryptionKey globalEncryptionKey, 5
+	fileName = key.decrypt Base64url.toBuffer encryptedFileName
+
+	comps = []
+
+	nextComp = createZeroedBuffer(fileName.length)
+	nextCompOffset = 0
+	i = 0
+	while i < fileName.length
+		# If the next byte is a special sequence
+		if fileName[i] is 0x00
+			# If no more bytes in the file name
+			if i is (fileName.length - 1)
+				# There must always be another byte following a dot
+				throw new Error "file name ended early: #{fileName.toJSON()}"
+
+			switch fileName[i+1]
+				when 0x4C # "L"
+					# Add literal NUL byte to component
+					nextComp[nextCompOffset] = 0x00
+					nextCompOffset += 1
+				when 0x53 # "S"
+					# Found a separator, time to start on the next component
+
+					# Add this component to result list
+					comps.push nextComp.slice(0, nextCompOffset)
+
+					# Reset for next component
+					nextComp = createZeroedBuffer(fileName.length)
+					nextCompOffset = 0
+				else
+					throw new Error "unexpected byte sequence at #{i} in file name: #{fileName.toJSON()}"
+
+			# Skip over the next byte, since we already handled it
+			i += 2
+			continue
+
+		nextComp[nextCompOffset] = fileName[i]
+		nextCompOffset += 1
+
+		i += 1
+
+	# Add the last component to the result list
+	comps.push nextComp.slice(0, nextCompOffset)
+
+	if comps.length isnt componentCount
+		console.log fileName
+		throw new Error "expected #{componentCount} parts in file name #{JSON.stringify comps}"
+
+	[indexedFields..., id] = comps
+	indexedFields = indexedFields.map (buf) -> buf.toString()
+	id = Base64url.encode id
+	return [indexedFields..., id]
 
 
 
@@ -216,15 +332,15 @@ getLatestRevision = (dirPath, globalEncryptionKey, cb) ->
 addContextFieldsToAllObjects = (dataDir, globalEncryptionKey, cb) ->
 	Async.series [
 		(cb) ->
-			forEachFile Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+			forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
 				clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
 
-				forEachFile clientFilePath, (clientFileRev, cb) ->
+				forEachFileIn clientFilePath, (clientFileRev, cb) ->
 					if clientFileRev is 'planTargets'
-						forEachFile Path.join(clientFilePath, 'planTargets'), (planTarget, cb) ->
+						forEachFileIn Path.join(clientFilePath, 'planTargets'), (planTarget, cb) ->
 							planTargetPath = Path.join(clientFilePath, 'planTargets', planTarget)
 
-							forEachFile planTargetPath, (planTargetRev, cb) ->
+							forEachFileIn planTargetPath, (planTargetRev, cb) ->
 								objPath = Path.join(planTargetPath, planTargetRev)
 
 								addContextFieldsToObject objPath, dataDir, globalEncryptionKey, cb
@@ -233,10 +349,10 @@ addContextFieldsToAllObjects = (dataDir, globalEncryptionKey, cb) ->
 						return
 
 					if clientFileRev is 'progEvents'
-						forEachFile Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+						forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
 							progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
 
-							forEachFile progEventPath, (progEventRev, cb) ->
+							forEachFileIn progEventPath, (progEventRev, cb) ->
 								objPath = Path.join(progEventPath, progEventRev)
 
 								addContextFieldsToObject objPath, dataDir, globalEncryptionKey, cb
@@ -245,10 +361,10 @@ addContextFieldsToAllObjects = (dataDir, globalEncryptionKey, cb) ->
 						return
 
 					if clientFileRev is 'progNotes'
-						forEachFile Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+						forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
 							progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
 
-							forEachFile progNotePath, (progNoteRev, cb) ->
+							forEachFileIn progNotePath, (progNoteRev, cb) ->
 								objPath = Path.join(progNotePath, progNoteRev)
 
 								addContextFieldsToObject objPath, dataDir, globalEncryptionKey, cb
@@ -262,10 +378,10 @@ addContextFieldsToAllObjects = (dataDir, globalEncryptionKey, cb) ->
 				, cb
 			, cb
 		(cb) ->
-			forEachFile Path.join(dataDir, 'metrics'), (metric, cb) ->
+			forEachFileIn Path.join(dataDir, 'metrics'), (metric, cb) ->
 				metricPath = Path.join(dataDir, 'metrics', metric)
 
-				forEachFile metricPath, (metricRev, cb) ->
+				forEachFileIn metricPath, (metricRev, cb) ->
 					objPath = Path.join(metricPath, metricRev)
 
 					addContextFieldsToObject objPath, dataDir, globalEncryptionKey, cb
@@ -319,7 +435,7 @@ addContextFieldsToObject = (objFilePath, dataDir, globalEncryptionKey, cb) ->
 
 
 
-updateProgNote = (dataDir, globalEncryptionKey, progNote, progNotePath, cb) ->
+updateProgNote = (dataDir, globalEncryptionKey, clientFilePlan, progNote, progNotePath, cb) ->
 	# No changes required for Quick Notes, skip!
 	if progNote.get('type') isnt 'full'
 		console.log "Skipping 'basic' progNote (Quick Note)"
@@ -419,7 +535,7 @@ updateProgNote = (dataDir, globalEncryptionKey, progNote, progNotePath, cb) ->
 
 
 updateAllProgNotes = (dataDir, globalEncryptionKey, cb) ->
-	forEachFile Path.join(dataDir, 'clientFiles'), (clientFileDir, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFileDir, cb) ->
 		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFileDir)
 
 		clientFilePlan = null
@@ -443,11 +559,11 @@ updateAllProgNotes = (dataDir, globalEncryptionKey, cb) ->
 				progNotesParentDirPath = Path.join(clientFileDirPath, 'progNotes')
 
 				# Loop through directories in progNotes container
-				forEachFile progNotesParentDirPath, (progNotesDir, cb) ->
+				forEachFileIn progNotesParentDirPath, (progNotesDir, cb) ->
 					progNotesDirPath = Path.join(progNotesParentDirPath, progNotesDir)
 
 					# Loop through each progNote revision
-					forEachFile progNotesDirPath, (progNoteRevision, cb) ->
+					forEachFileIn progNotesDirPath, (progNoteRevision, cb) ->
 						progNotePath = Path.join(progNotesDirPath, progNoteRevision)
 
 						progNote = null
@@ -463,7 +579,8 @@ updateAllProgNotes = (dataDir, globalEncryptionKey, cb) ->
 
 							# Update the progNote
 							updateProgNote(
-								dataDir, globalEncryptionKey, progNote, progNotePath, cb
+								dataDir, globalEncryptionKey, clientFilePlan,
+								progNote, progNotePath, cb
 							)
 
 					, cb
@@ -471,7 +588,115 @@ updateAllProgNotes = (dataDir, globalEncryptionKey, cb) ->
 		], cb
 	, cb
 
+encryptAndUpdateFileName = (oldFilePath, globalEncryptionKey, cb) ->
+	decodeOldStyleFileNameComponent = (s) ->
+		s = s.replace /%%([a-fA-F0-9]{4})/g, (match, hex) ->
+			return String.fromCharCode parseInt(hex, 16)
+		s = s.replace /%([a-fA-F0-9]{2})/g, (match, hex) ->
+			return String.fromCharCode parseInt(hex, 16)
+		return s
 
+	parentDirPath = Path.dirname oldFilePath
+	oldFileName = Path.basename oldFilePath
+
+	fileNameComps = (decodeOldStyleFileNameComponent(c) for c in oldFileName.split('.'))
+	newFileName = encryptFileName fileNameComps, globalEncryptionKey
+
+	newFilePath = Path.join(parentDirPath, newFileName)
+
+	Fs.rename oldFilePath, newFilePath, cb
+
+encryptAllFileNames = (dataDir, globalEncryptionKey, cb) ->
+	key = new WeakSymmetricEncryptionKey globalEncryptionKey, 5
+
+	Async.series [
+		(cb) ->
+			forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+				clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+				Async.series [
+					(cb) ->
+						forEachFileIn clientFilePath, (clientFileRev, cb) ->
+							if clientFileRev is 'planTargets'
+								forEachFileIn Path.join(clientFilePath, 'planTargets'), (planTarget, cb) ->
+									planTargetPath = Path.join(clientFilePath, 'planTargets', planTarget)
+
+									Async.series [
+										(cb) ->
+											forEachFileIn planTargetPath, (planTargetRev, cb) ->
+												encryptAndUpdateFileName(
+													Path.join(planTargetPath, planTargetRev),
+													globalEncryptionKey, cb
+												)
+											, cb
+										(cb) ->
+											encryptAndUpdateFileName planTargetPath, globalEncryptionKey, cb
+									], cb
+								, cb
+								return
+
+							if clientFileRev is 'progEvents'
+								forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+									progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
+
+									Async.series [
+										(cb) ->
+											forEachFileIn progEventPath, (progEventRev, cb) ->
+												encryptAndUpdateFileName(
+													Path.join(progEventPath, progEventRev),
+													globalEncryptionKey, cb
+												)
+											, cb
+										(cb) ->
+											encryptAndUpdateFileName progEventPath, globalEncryptionKey, cb
+									], cb
+								, cb
+								return
+
+							if clientFileRev is 'progNotes'
+								forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+									progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
+
+									Async.series [
+										(cb) ->
+											forEachFileIn progNotePath, (progNoteRev, cb) ->
+												encryptAndUpdateFileName(
+													Path.join(progNotePath, progNoteRev),
+													globalEncryptionKey, cb
+												)
+											, cb
+										(cb) ->
+											encryptAndUpdateFileName progNotePath, globalEncryptionKey, cb
+									], cb
+								, cb
+								return
+
+							encryptAndUpdateFileName(
+								Path.join(clientFilePath, clientFileRev),
+								globalEncryptionKey, cb
+							)
+						, cb
+					(cb) ->
+						encryptAndUpdateFileName clientFilePath, globalEncryptionKey, cb
+				], cb
+			, cb
+		(cb) ->
+			forEachFileIn Path.join(dataDir, 'metrics'), (metric, cb) ->
+				metricPath = Path.join(dataDir, 'metrics', metric)
+
+				Async.series [
+					(cb) ->
+						forEachFileIn metricPath, (metricRev, cb) ->
+							encryptAndUpdateFileName(
+								Path.join(metricPath, metricRev),
+								globalEncryptionKey, cb
+							)
+						, cb
+					(cb) ->
+						encryptAndUpdateFileName metricPath, globalEncryptionKey, cb
+				], cb
+			, cb
+	], cb
 
 
 
@@ -496,7 +721,7 @@ module.exports = {
 					globalEncryptionKey = result
 					cb()
 
-			# Add Context Fields to all objects
+			# Add Context Fields to all objects (issue#191)
 			(cb) ->
 				console.info "2. Add context fields to all objects..."
 				addContextFieldsToAllObjects dataDir, globalEncryptionKey, cb
@@ -515,6 +740,11 @@ module.exports = {
 			(cb) ->
 				console.info "5. Update progNote format, map plan sections into 'full' units"
 				updateAllProgNotes dataDir, globalEncryptionKey, cb
+
+			# Encrypt indexed fields (issue#309)
+			(cb) ->
+				console.info "6. Encrypt indexed fields"
+				encryptAllFileNames dataDir, globalEncryptionKey, cb
 
 		], cb
 }

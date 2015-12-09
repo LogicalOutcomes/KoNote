@@ -164,6 +164,111 @@ class SymmetricEncryptionKey
 			decipher.final()
 		]
 
+class WeakSymmetricEncryptionKey
+	# Weakened in order to produce shorter ciphertexts.
+	# Whenever possible, use SymmetricEncryptionKey instead.
+	#
+	# The encryption scheme is mostly as described here:
+	# https://crypto.stackexchange.com/questions/30905/using-hmac-as-a-nonce-with-aes-ctr-encrypt-and-mac
+	#
+	# In this implementation:
+	# - A single key is used for both AES-CTR and HMAC
+	# - The HMAC output is truncated to a configurable value `tagLength`
+	#
+	# tagLength values can range 0-32 bytes.  A tagLength of 16 or more is
+	# essentially "full security", while a tagLength of 0 is approximately no
+	# security.
+	#
+	# tagLength impacts security in two ways.  First, the length of the tag
+	# determines the probability that an attacker is able to forge (i.e. tamper
+	# with) a message.  This probability is 2^(-8*tagLength), which means that,
+	# with tagLength=1, the attacker should succeed after about 256 attempts.
+	#
+	# Second, tagLength determines the probability that the same nonce is used
+	# to encrypt more than one message.  When a nonce is reused, an attacker
+	# can usually crack the encryption on those two encrypted messages.  The
+	# first nonce reuse is expected to occur after about 2^(4*tagLength)
+	# unique messages are encrypted.  Thus, it is important to choose tagLength
+	# based on how many messages are expected to be encrypted.
+
+	constructor: (symmKey, tagLength) ->
+		unless symmKey instanceof SymmetricEncryptionKey
+			throw new Error "expected symmKey to be a SymmetricEncryptionKey"
+
+		unless typeof tagLength is 'number'
+			throw new Error "expected tagLength to be a number"
+
+		if tagLength > 32
+			throw new Error "tagLength must be <= 32"
+
+		if tagLength < 0
+			throw new Error "tagLength must be >= 0"
+
+		# Derive a separate key just for this class
+		# This avoids the same key being used for multiple algorithms
+		# New key is HMAC-SHA256(symmKey, "new key for weak encryption")
+		kdf = Crypto.createHmac('sha256', symmKey._rawKeyMaterial)
+		kdf.update new Buffer('new key for weak encryption', 'utf8')
+		@_rawKeyMaterial = kdf.digest()
+
+		@_tagLength = tagLength
+
+	encrypt: (msg) ->
+		if typeof msg is 'string'
+			msg = new Buffer(msg, 'utf8')
+
+		unless Buffer.isBuffer msg
+			throw new Error "expected msg to be a string or Buffer"
+
+		# Compute HMAC-SHA256(key, msg)
+		hmac = Crypto.createHmac('sha256', @_rawKeyMaterial)
+		hmac.update msg
+		fullHmacTag = hmac.digest()
+
+		# Truncate HMAC tag to specified security level
+		tag = fullHmacTag.slice(0, @_tagLength)
+
+		# Encrypt plaintext with AES256-CTR, using tag as nonce
+		outputBuffers = []
+		paddedTag = padBufferRight(tag.slice(0, 16), 0, 16)
+		cipher = Crypto.createCipheriv('aes-256-ctr', @_rawKeyMaterial, paddedTag)
+		outputBuffers.push cipher.update msg
+		outputBuffers.push cipher.final()
+
+		outputBuffers.push tag
+
+		# Return ciphertext + tag
+		return Buffer.concat outputBuffers
+
+	decrypt: (encryptedMsg) ->
+		unless Buffer.isBuffer encryptedMsg
+			throw new Error "expected encryptedMsg to be a Buffer"
+
+		if encryptedMsg.length < @_tagLength
+			throw new Error "encryptedMsg is too short"
+
+		# Separate out ciphertext and auth tag
+		ciphertext = encryptedMsg.slice(0, -@_tagLength)
+		tag = encryptedMsg.slice(-@_tagLength)
+
+		# Decrypt ciphertext
+		plaintextBuffers = []
+		paddedTag = padBufferRight(tag.slice(0, 16), 0, 16)
+		decipher = Crypto.createDecipheriv('aes-256-ctr', @_rawKeyMaterial, paddedTag)
+		plaintextBuffers.push decipher.update ciphertext
+		plaintextBuffers.push decipher.final()
+		plaintext = Buffer.concat plaintextBuffers
+
+		# Check tag
+		hmac = Crypto.createHmac('sha256', @_rawKeyMaterial)
+		hmac.update plaintext
+		expectedTag = hmac.digest().slice(0, @_tagLength)
+
+		unless BufferEq(tag, expectedTag)
+			throw new Error "tampering detected"
+
+		return plaintext
+
 class PrivateKey
 	# Implementation notes:
 	# - Signing not yet implemented, except for key generation
@@ -477,6 +582,18 @@ obfuscate = (buf) ->
 deobfuscate = (buf) ->
 	return obfuscationKey.decrypt buf
 
+# Pad the end of the buffer with padByte up to length
+padBufferRight = (buf, padByte, length) ->
+	if buf.length > length
+		throw new Error "input buffer already exceeds desired length"
+
+	result = new Buffer(length)
+	result.fill padByte
+
+	buf.copy result
+
+	return result
+
 usePromise = (promise, cb) ->
 	promise.catch (err) ->
 		cb err
@@ -521,6 +638,7 @@ toUint8Array = (buf) ->
 
 module.exports = {
 	SymmetricEncryptionKey
+	WeakSymmetricEncryptionKey
 	PrivateKey
 	PublicKey
 	generateSalt
