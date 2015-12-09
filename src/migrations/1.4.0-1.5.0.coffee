@@ -319,7 +319,7 @@ addContextFieldsToObject = (objFilePath, dataDir, globalEncryptionKey, cb) ->
 
 
 
-updateProgNote = (dataDir, globalEncryptionKey, progNote, progNotePath, cb) ->
+updateProgNote = (dataDir, globalEncryptionKey, clientFilePlan, progNote, progNotePath, cb) ->
 	# No changes required for Quick Notes, skip!
 	if progNote.get('type') isnt 'full'
 		console.log "Skipping 'basic' progNote (Quick Note)"
@@ -463,7 +463,8 @@ updateAllProgNotes = (dataDir, globalEncryptionKey, cb) ->
 
 							# Update the progNote
 							updateProgNote(
-								dataDir, globalEncryptionKey, progNote, progNotePath, cb
+								dataDir, globalEncryptionKey, clientFilePlan,
+								progNote, progNotePath, cb
 							)
 
 					, cb
