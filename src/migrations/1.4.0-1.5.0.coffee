@@ -95,7 +95,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 		globalEncryptionKey = SymmetricEncryptionKey.import privateInfo.globalEncryptionKey
 		cb null, globalEncryptionKey
 
-forEachFile = (parentDir, loopBody, cb) ->
+forEachFileIn = (parentDir, loopBody, cb) ->
 	console.log("For each file in #{JSON.stringify parentDir}:")
 
 	fileNames = null
@@ -332,15 +332,15 @@ decryptFileName = (encryptedFileName, componentCount, globalEncryptionKey) ->
 addContextFieldsToAllObjects = (dataDir, globalEncryptionKey, cb) ->
 	Async.series [
 		(cb) ->
-			forEachFile Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+			forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
 				clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
 
-				forEachFile clientFilePath, (clientFileRev, cb) ->
+				forEachFileIn clientFilePath, (clientFileRev, cb) ->
 					if clientFileRev is 'planTargets'
-						forEachFile Path.join(clientFilePath, 'planTargets'), (planTarget, cb) ->
+						forEachFileIn Path.join(clientFilePath, 'planTargets'), (planTarget, cb) ->
 							planTargetPath = Path.join(clientFilePath, 'planTargets', planTarget)
 
-							forEachFile planTargetPath, (planTargetRev, cb) ->
+							forEachFileIn planTargetPath, (planTargetRev, cb) ->
 								objPath = Path.join(planTargetPath, planTargetRev)
 
 								addContextFieldsToObject objPath, dataDir, globalEncryptionKey, cb
@@ -349,10 +349,10 @@ addContextFieldsToAllObjects = (dataDir, globalEncryptionKey, cb) ->
 						return
 
 					if clientFileRev is 'progEvents'
-						forEachFile Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+						forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
 							progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
 
-							forEachFile progEventPath, (progEventRev, cb) ->
+							forEachFileIn progEventPath, (progEventRev, cb) ->
 								objPath = Path.join(progEventPath, progEventRev)
 
 								addContextFieldsToObject objPath, dataDir, globalEncryptionKey, cb
@@ -361,10 +361,10 @@ addContextFieldsToAllObjects = (dataDir, globalEncryptionKey, cb) ->
 						return
 
 					if clientFileRev is 'progNotes'
-						forEachFile Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+						forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
 							progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
 
-							forEachFile progNotePath, (progNoteRev, cb) ->
+							forEachFileIn progNotePath, (progNoteRev, cb) ->
 								objPath = Path.join(progNotePath, progNoteRev)
 
 								addContextFieldsToObject objPath, dataDir, globalEncryptionKey, cb
@@ -378,10 +378,10 @@ addContextFieldsToAllObjects = (dataDir, globalEncryptionKey, cb) ->
 				, cb
 			, cb
 		(cb) ->
-			forEachFile Path.join(dataDir, 'metrics'), (metric, cb) ->
+			forEachFileIn Path.join(dataDir, 'metrics'), (metric, cb) ->
 				metricPath = Path.join(dataDir, 'metrics', metric)
 
-				forEachFile metricPath, (metricRev, cb) ->
+				forEachFileIn metricPath, (metricRev, cb) ->
 					objPath = Path.join(metricPath, metricRev)
 
 					addContextFieldsToObject objPath, dataDir, globalEncryptionKey, cb
@@ -535,7 +535,7 @@ updateProgNote = (dataDir, globalEncryptionKey, clientFilePlan, progNote, progNo
 
 
 updateAllProgNotes = (dataDir, globalEncryptionKey, cb) ->
-	forEachFile Path.join(dataDir, 'clientFiles'), (clientFileDir, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFileDir, cb) ->
 		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFileDir)
 
 		clientFilePlan = null
@@ -559,11 +559,11 @@ updateAllProgNotes = (dataDir, globalEncryptionKey, cb) ->
 				progNotesParentDirPath = Path.join(clientFileDirPath, 'progNotes')
 
 				# Loop through directories in progNotes container
-				forEachFile progNotesParentDirPath, (progNotesDir, cb) ->
+				forEachFileIn progNotesParentDirPath, (progNotesDir, cb) ->
 					progNotesDirPath = Path.join(progNotesParentDirPath, progNotesDir)
 
 					# Loop through each progNote revision
-					forEachFile progNotesDirPath, (progNoteRevision, cb) ->
+					forEachFileIn progNotesDirPath, (progNoteRevision, cb) ->
 						progNotePath = Path.join(progNotesDirPath, progNoteRevision)
 
 						progNote = null
@@ -611,19 +611,19 @@ encryptAllFileNames = (dataDir, globalEncryptionKey, cb) ->
 
 	Async.series [
 		(cb) ->
-			forEachFile Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+			forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
 				clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
 
 				Async.series [
 					(cb) ->
-						forEachFile clientFilePath, (clientFileRev, cb) ->
+						forEachFileIn clientFilePath, (clientFileRev, cb) ->
 							if clientFileRev is 'planTargets'
-								forEachFile Path.join(clientFilePath, 'planTargets'), (planTarget, cb) ->
+								forEachFileIn Path.join(clientFilePath, 'planTargets'), (planTarget, cb) ->
 									planTargetPath = Path.join(clientFilePath, 'planTargets', planTarget)
 
 									Async.series [
 										(cb) ->
-											forEachFile planTargetPath, (planTargetRev, cb) ->
+											forEachFileIn planTargetPath, (planTargetRev, cb) ->
 												encryptAndUpdateFileName(
 													Path.join(planTargetPath, planTargetRev),
 													globalEncryptionKey, cb
@@ -636,12 +636,12 @@ encryptAllFileNames = (dataDir, globalEncryptionKey, cb) ->
 								return
 
 							if clientFileRev is 'progEvents'
-								forEachFile Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+								forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
 									progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
 
 									Async.series [
 										(cb) ->
-											forEachFile progEventPath, (progEventRev, cb) ->
+											forEachFileIn progEventPath, (progEventRev, cb) ->
 												encryptAndUpdateFileName(
 													Path.join(progEventPath, progEventRev),
 													globalEncryptionKey, cb
@@ -654,12 +654,12 @@ encryptAllFileNames = (dataDir, globalEncryptionKey, cb) ->
 								return
 
 							if clientFileRev is 'progNotes'
-								forEachFile Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+								forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
 									progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
 
 									Async.series [
 										(cb) ->
-											forEachFile progNotePath, (progNoteRev, cb) ->
+											forEachFileIn progNotePath, (progNoteRev, cb) ->
 												encryptAndUpdateFileName(
 													Path.join(progNotePath, progNoteRev),
 													globalEncryptionKey, cb
@@ -681,12 +681,12 @@ encryptAllFileNames = (dataDir, globalEncryptionKey, cb) ->
 				], cb
 			, cb
 		(cb) ->
-			forEachFile Path.join(dataDir, 'metrics'), (metric, cb) ->
+			forEachFileIn Path.join(dataDir, 'metrics'), (metric, cb) ->
 				metricPath = Path.join(dataDir, 'metrics', metric)
 
 				Async.series [
 					(cb) ->
-						forEachFile metricPath, (metricRev, cb) ->
+						forEachFileIn metricPath, (metricRev, cb) ->
 							encryptAndUpdateFileName(
 								Path.join(metricPath, metricRev),
 								globalEncryptionKey, cb
