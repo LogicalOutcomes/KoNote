@@ -18,7 +18,7 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	OrderableTable = require('./orderableTable').load(win)
-	OpenDialogButton = require('./openDialogButton').load(win)
+	OpenDialogLink = require('./openDialogLink').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	Spinner = require('./spinner').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
@@ -59,12 +59,14 @@ load = (win) ->
 					})
 				)
 				R.div({className: 'optionsMenu'},
-					OpenDialogButton({
+					OpenDialogLink({
 						className: 'btn btn-lg btn-primary'
-						text: "New #{Term 'Client File'} "
-						icon: 'plus'
 						dialog: CreateClientFileDialog
-					})
+					},
+						FaIcon('plus')
+						' '
+						"New #{Term 'Client File'} "
+					)
 				)
 			)
 

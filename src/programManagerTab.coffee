@@ -1,8 +1,9 @@
 # Copyright (c) Konode. All rights reserved.
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
-Imm = require 'immutable'
+
 Async = require 'async'	
+Imm = require 'immutable'
 _ = require 'underscore'
 
 Persist = require './persist'
@@ -19,7 +20,7 @@ load = (win) ->
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
 	OrderableTable = require('./orderableTable').load(win)
-	OpenDialogButton = require('./openDialogButton').load(win)
+	OpenDialogLink = require('./openDialogLink').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
@@ -106,15 +107,17 @@ load = (win) ->
 					})
 				)
 				R.div({className: 'optionsMenu'},
-					OpenDialogButton({
+					OpenDialogLink({
 						className: 'btn btn-lg btn-primary'
-						text: "New #{Term 'Program'} "
-						icon: 'plus'
 						dialog: CreateProgramDialog
 						data: {
 							clientFileHeaders: @props.clientFileHeaders
 						}
-					})
+					},
+						FaIcon('plus')
+						' '
+						"New #{Term 'Program'} "
+					)
 				)
 			)	
 

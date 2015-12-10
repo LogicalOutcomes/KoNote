@@ -18,7 +18,7 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	OrderableTable = require('./orderableTable').load(win)
-	OpenDialogButton = require('./openDialogButton').load(win)
+	OpenDialogLink = require('./openDialogLink').load(win)
 	Spinner = require('./spinner').load(win)	
 	{FaIcon, showWhen} = require('./utils').load(win)
 
@@ -122,10 +122,8 @@ load = (win) ->
 					})
 				)
 				R.div({className: 'optionsMenu'},
-					OpenDialogButton({
+					OpenDialogLink({
 						className: 'btn btn-lg btn-primary'
-						text: "New #{Term 'Account'} "
-						icon: 'plus'
 						dialog: CreateAccountDialog
 						onSuccess: (userAccount) =>
 							# Push in new userAccount manually,
@@ -133,7 +131,11 @@ load = (win) ->
 							newAccount = @_buildUserAccountObject(userAccount)
 							userAccounts = @state.userAccounts.push newAccount
 							@setState {userAccounts}
-					})
+					},
+						FaIcon('plus')
+						' '
+						"New #{Term 'Account'} "
+					)
 				)
 			)		
 

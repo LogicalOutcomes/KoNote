@@ -15,7 +15,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
-	OpenDialogButton = require('./openDialogButton').load(win)
+	OpenDialogLink = require('./openDialogLink').load(win)
 	{FaIcon, showWhen, executeIfFunction} = require('./utils').load(win)
 
 	OrderableTable = React.createFactory React.createClass
@@ -112,22 +112,24 @@ load = (win) ->
 										R.div({className: 'btn-group'},
 											column.buttons.map (button) =>
 												if button.dialog?
-													# Flatten props from orderableTable API for OpenDialogButton
+													# Flatten props from orderableTable API for OpenDialogLink
 													props = {}
 
 													_.extend(props, button.data, {
 														className: button.className
-														text: if button.dataPath?
-															dataPoint.getIn(button.dataPath)
-														else
-															executeIfFunction button.text, dataPoint
-															
-														icon: button.icon
 														dialog: button.dialog
 														rowData: dataPoint
 													})
 
-													OpenDialogButton(props)
+													OpenDialogLink(props,
+														FaIcon(button.icon) if button.icon
+														' '
+														(if button.dataPath?
+															dataPoint.getIn(button.dataPath)
+														else
+															executeIfFunction button.text, dataPoint
+														)
+													)
 												else
 													R.button({
 														className: button.className
