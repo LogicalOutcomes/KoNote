@@ -2,7 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# A dialog for allowing the user to create a new client file
+# A dialog for allowing the user to rename a client file
 
 Persist = require './persist'
 Imm = require 'immutable'
@@ -19,7 +19,7 @@ load = (win) ->
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
 
-	CreateClientFileDialog = React.createFactory React.createClass
+	RenameClientFileDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
@@ -27,18 +27,18 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				firstName: ''
-				middleName: ''
-				lastName: ''
-				recordId: ''
+				firstName: @props.clientFile.getIn(['clientName', 'first'])
+				middleName: @props.clientFile.getIn(['clientName', 'middle'])
+				lastName: @props.clientFile.getIn(['clientName', 'last'])
+				recordId: @props.clientFile.get('recordId')
 			}
 
 		render: ->
 			Dialog({
-				title: "Create New #{Term 'Client File'}"
+				title: "Rename #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
-				R.div({className: 'createClientFileDialog'},
+				R.div({className: 'renameClientFileDialog'},
 					R.div({className: 'form-group'},
 						R.label({}, "First name"),
 						R.input({
@@ -87,45 +87,46 @@ load = (win) ->
 							className: 'btn btn-primary'
 							onClick: @_submit
 							disabled: not @state.firstName or not @state.lastName
-						}, "Create #{Term 'File'}")
+						}, "Save changes")
 					)
 				)
 			)
+
 		_cancel: ->
 			@props.onCancel()
+
 		_updateFirstName: (event) ->
 			@setState {firstName: event.target.value}
+
 		_updateMiddleName: (event) ->
 			@setState {middleName: event.target.value}
+
 		_updateLastName: (event) ->
 			@setState {lastName: event.target.value}
+
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
+
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
-		_submit: ->
-			first = @state.firstName
-			middle = @state.middleName
-			last = @state.lastName
-			recordId = @state.recordId
 
+		_submit: ->
 			@setState {isLoading: true}
 
-			clientFile = Imm.fromJS {
-			  clientName: {first, middle, last}
-			  recordId: recordId
-			  plan: {
-			    sections: []
-			  }
-			}
+			updatedClientFile = @props.clientFile
+			.setIn(['clientName', 'first'], @state.firstName)
+			.setIn(['clientName', 'middle'], @state.middleName)
+			.setIn(['clientName', 'last'], @state.lastName)
+			.set('recordId', @state.recordId)
 
-			global.ActiveSession.persist.clientFiles.create clientFile, (err, obj) =>
+			global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
 				@setState {isLoading: false}
 
 				if err
 					if err instanceof Persist.IOError
 						console.error err
+						console.error err.stack
 						Bootbox.alert """
 							Please check your network connection and try again.
 						"""
@@ -134,8 +135,8 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@props.onSuccess(obj.get('id'))
+				@props.onSuccess()
 
-	return CreateClientFileDialog
+	return RenameClientFileDialog
 
 module.exports = {load}

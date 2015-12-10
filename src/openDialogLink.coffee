@@ -1,8 +1,9 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Button that manages layering for opening up a custom dialog
-# See also: openDialogLink
+# Link that manages layering for opening up a custom dialog.
+# This component wraps around whatever you want to be clickable.
+# See also: openDialogButton
 _ = require 'underscore'
 
 load = (win) ->
@@ -14,7 +15,7 @@ load = (win) ->
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	{FaIcon} = require('./utils').load(win)
 
-	OpenDialogButton = React.createFactory React.createClass
+	OpenDialogLink = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin, LayeredComponentMixin]
 
 		getInitialState: ->
@@ -23,16 +24,16 @@ load = (win) ->
 			}
 
 		render: ->
-			return R.button({
+			return R.a({
 				className: @props.className
 				onClick: @_openDialog
 			},
-				FaIcon(@props.icon)
-				' '
-				@props.text
+				@props.children
 			)
 
-		_openDialog: ->
+		_openDialog: (event) ->
+			event.preventDefault()
+
 			@setState {isOpen: true}
 
 		renderLayer: ->
@@ -52,6 +53,6 @@ load = (win) ->
 
 			return @props.dialog(props)
 
-	return OpenDialogButton
+	return OpenDialogLink
 
 module.exports = {load}

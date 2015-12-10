@@ -36,6 +36,8 @@ load = (win, {clientFileId}) ->
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
+	OpenDialogLink = require('../openDialogLink').load(win)
+	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
 	{FaIcon, renderName, renderFileId, showWhen, stripMetadata} = require('../utils').load(win)
 
 	ClientFilePage = React.createFactory React.createClass
@@ -601,8 +603,9 @@ load = (win, {clientFileId}) ->
 				(if isReadOnly
 					ReadOnlyNotice {data: @props.readOnlyData}
 				)
-				R.div({className: 'wrapper'},					
-					Sidebar({						
+				R.div({className: 'wrapper'},
+					Sidebar({
+						clientFile: @props.clientFile
 						clientName
 						recordId
 						activeTabId
@@ -661,7 +664,12 @@ load = (win, {clientFileId}) ->
 					Config.logoSubtitle
 				)
 				R.div({className: 'clientName'},
-					@props.clientName
+					OpenDialogLink({
+						dialog: RenameClientFileDialog
+						clientFile: @props.clientFile
+					},
+						@props.clientName
+					)
 				)
 				R.div({className: 'programs'},
 					@props.programs.map (program) ->
