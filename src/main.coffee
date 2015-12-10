@@ -34,6 +34,11 @@ init = (win) ->
 	Fs = require 'fs'
 	Stylus = require 'stylus'
 	isRefreshing = null
+
+	try
+		Chokidar = require 'chokidar'
+	catch err
+		console.warn "Live-refresh disabled, I bet you're running a production build", err
 	
 	Config = require('./config')
 
@@ -63,8 +68,9 @@ init = (win) ->
 
 	containerElem = document.getElementById('container')
 
-	pageComponent =
-	isLoggedIn =
+	pageComponent = null
+	isLoggedIn = null
+	chokidarListeners = null
 	allListeners = null
 
 	process.nextTick =>
@@ -110,8 +116,6 @@ init = (win) ->
 				nwWin.title = newTitle
 
 		}), containerElem
-
-		console.info "pageComponent loaded:", pageComponent
 
 		console.timeEnd('renderPage')
 
@@ -166,39 +170,33 @@ init = (win) ->
 			win.document.addEventListener 'keyup', (event) ->
 				# If Ctrl-R
 				if event.ctrlKey and (not event.shiftKey) and event.which is 82
+					console.log "Replace!"
 					doHotCodeReplace()
-			, false
-
-			try
-				Chokidar = require 'chokidar'
-			catch err
-				console.warn "Live-refresh disabled, I bet you're running a production build", err
+			, false			
 			
 			if Chokidar?
-				Chokidar
+				chokidarListeners = Chokidar
 				.watch './src'
 				.on 'change', (filePath) =>
 					fileExtension = filePath.split('.').splice(-1)[0]
 					
-
 					switch fileExtension
 						when 'styl'
 							refreshCSS()
 						when 'coffee' or 'js' 
-							console.log "chok pageComponent", pageComponent
 							doHotCodeReplace()
 
 
 	doHotCodeReplace = =>
-		console.info "Hot Reloading..."
-
-		console.log "pageComponent", pageComponent
-
 		# Save the entire page state into a global var
 		global.HCRSavedState = HotCodeReplace.takeSnapshot pageComponent
 
 		# Unregister page listener
 		unregisterPageListeners() if isLoggedIn
+
+		# Unregister Chokidar watch on ./src
+		if chokidarListeners?
+			chokidarListeners.close()
 
 		# Unmount components normally, but with no deinit
 		React.unmountComponentAtNode containerElem
