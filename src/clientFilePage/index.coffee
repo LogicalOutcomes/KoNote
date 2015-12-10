@@ -664,10 +664,14 @@ load = (win, {clientFileId}) ->
 					Config.logoSubtitle
 				)
 				R.div({className: 'clientName'},
-					OpenDialogLink({
-						dialog: RenameClientFileDialog
-						clientFile: @props.clientFile
-					},
+					(if ActiveSession.accountType is 'admin'
+						OpenDialogLink({
+							dialog: RenameClientFileDialog
+							clientFile: @props.clientFile
+						},
+							@props.clientName
+						)
+					else
 						@props.clientName
 					)
 				)
