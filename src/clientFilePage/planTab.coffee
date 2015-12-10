@@ -131,13 +131,22 @@ load = (win) ->
 									R.div({className: 'sectionName'},
 										section.get('name')
 									)
-									R.button({
-										className: 'addTarget btn btn-sm btn-primary'
-										onClick: @_addTargetToSection.bind null, section.get('id')
-										disabled: @props.isReadOnly
-									},
-										FaIcon('plus')
-										"Add #{Term 'target'}"
+									R.div({className: 'btn-group btn-group-sm'},
+										R.button({
+											className: 'renameSection btn btn-default'
+											onClick: @_renameSection.bind null, section.get('id')
+											disabled: @props.isReadOnly
+										},
+											"Rename"
+										)
+										R.button({
+											className: 'addTarget btn btn-primary'
+											onClick: @_addTargetToSection.bind null, section.get('id')
+											disabled: @props.isReadOnly
+										},
+											FaIcon('plus')
+											"Add #{Term 'target'}"
+										)
 									)
 								)
 								(if section.get('targetIds').size is 0
@@ -404,6 +413,18 @@ load = (win) ->
 
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
+		_renameSection: (sectionId) ->
+			sectionIndex = @_getSectionIndex sectionId
+			sectionName = @state.plan.getIn ['sections', sectionIndex, 'name']
+
+			Bootbox.prompt 'Enter a new name for "' + sectionName + '"', (newSectionName) =>
+				newSectionName = newSectionName?.trim()
+
+				unless newSectionName
+					return
+
+				newPlan = @state.plan.setIn ['sections', sectionIndex, 'name'], newSectionName
+				@setState {plan: newPlan}
 		_addTargetToSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
 
