@@ -6,5 +6,4 @@ npm-debug.log
 data/
 node_modules/
 build/releases/
-src/config-dev.coffee
-src/config-dev.js
+src/develop.json
