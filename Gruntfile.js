@@ -82,7 +82,8 @@ module.exports = function(grunt) {
 							'node_modules/**',
 							'!node_modules/nw/**',
 							'!node_modules/nodewebkit/**',
-							'!src/config-dev.coffee'
+							'!node_modules/grunt*/**',
+							'!src/config/develop.json'
 						],
 						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/',
 						filter: 'isFile',
@@ -91,25 +92,26 @@ module.exports = function(grunt) {
 				],
 				cwd: '/'
 			},
+			production: {
+				src: 'build/production.json',
+				dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/production.json'
+			},
+			generic: {
+				src: 'build/uninstaller/uninstall.exe',
+				dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/uninstall.exe'
+			},
 			griffin: {
 				files: [
 					{
+						src: 'customers/griffin/customer.json',
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/'
+					},
+					{
 						src: [
-							'customers/griffin/*',
 							'customers/griffin/customer-logo-lg_GRIFFIN.png',
 							'customers/griffin/customer-logo-sm_GRIFFIN.png'
 						],
 						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/'
-					}
-				]
-			},
-			generic: {
-				files: [
-					{
-						src: [
-							'build/uninstaller/uninstall.exe'
-						],
-						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/uninstall.exe'
 					}
 				]
 			}
@@ -219,6 +221,7 @@ module.exports = function(grunt) {
 			if (generic) {
 				// do win generic build
 				grunt.task.run('copy:main:win-generic');
+				grunt.task.run('copy:production:win-generic');
 				grunt.task.run('copy:generic:win-generic');
 				grunt.task.run('stylus:compile:win-generic');
 				grunt.task.run('coffee:compileMultiple:win-generic');
@@ -229,6 +232,7 @@ module.exports = function(grunt) {
 			if (griffin) {
 				// do win griffin build
 				grunt.task.run('copy:main:win-griffin');
+				grunt.task.run('copy:production:win-griffin');
 				grunt.task.run('copy:griffin:win-griffin');
 				grunt.task.run('stylus:compile:win-griffin');
 				grunt.task.run('coffee:compileMultiple:win-griffin');
@@ -242,6 +246,7 @@ module.exports = function(grunt) {
 				// do mac generic build
 				console.log(process.cwd());
 				grunt.task.run('copy:main:mac-generic');
+				grunt.task.run('copy:production:mac-generic');
 				grunt.task.run('stylus:compile:mac-generic');
 				grunt.task.run('coffee:compileMultiple:mac-generic');
 				grunt.task.run('clean:coffee:mac-generic');
@@ -253,6 +258,7 @@ module.exports = function(grunt) {
 			if (griffin) {
 				// do mac griffin build
 				grunt.task.run('copy:main:mac-griffin');
+				grunt.task.run('copy:production:mac-griffin');
 				grunt.task.run('stylus:compile:mac-griffin');
 				grunt.task.run('coffee:compileMultiple:mac-griffin');
 				grunt.task.run('clean:coffee:mac-griffin');

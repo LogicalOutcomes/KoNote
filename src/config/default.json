@@ -1,0 +1,78 @@
+{	
+	"productName": "KoNote",
+	"customerLogoLg": "customer-logo-lg.png",
+	"customerLogoSm": "customer-logo-sm.png",
+	"logoSubtitle": "beta",
+	"logoSubtitleColor": "hsl(205, 78%, 47%)",
+	
+	"clientFileRecordId": {
+		"isEnabled": true,
+		"label": "ID#"
+	},
+	
+	"dataDirectory": "data",
+
+	"analysis": {
+		"minDaysOfData": 1
+	},
+	
+	"timeout": {
+		"duration": 25,
+		"warnings": {
+			"initial": 10,
+			"final": 1
+		}
+	},
+
+	"clientFilePing": {
+		"acquireLock": 0.5
+	},
+
+	"terminology": {
+		"user": "user",
+		"account": "account",
+		"user account": "user account",
+
+		"client": "client",
+		"file": "file",
+		"client file": "client file",
+
+		"section": "section",
+		"plan": "plan",
+		"target": "goal",
+		"plan target": "plan goal",
+		"treatment plan": "treatment plan",
+
+		"progress note": "progress note",
+		"quick note": "quick note",
+
+		"metric": "indicator",
+		"event": "event",
+		"program": "program",
+
+		"analysis": "analysis",
+		"analyze": "analyze"
+	},
+
+	"useTemplate": "simpleDemoTemplate",
+
+	"templates": {
+		"simpleDemoTemplate": {
+			"id": "simpleDemoTemplate",
+			"name": "Simple Demo Template",
+			"units": [
+				{
+					"id": "goals",
+					"type": "plan",
+					"name": "Client Goals"
+				},
+				{
+					"id": "notes",
+					"type": "basic",
+					"name": "Notes",
+					"metricIds": []
+				}
+			]
+		}
+	}
+}

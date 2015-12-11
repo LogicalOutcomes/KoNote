@@ -1,0 +1,51 @@
+{
+	"productName": "KoNote",
+	"customerLogoLg": "customer-logo-lg_GRIFFIN.png",
+	"customerLogoSm": "customer-logo-sm_GRIFFIN.png",
+	"logoSubtitle": "DSSS",
+	"logoSubtitleColor": "hsl(205, 78%, 47%)",
+
+	"clientFileRecordId": {
+		"isEnabled": true,
+		"label": "CR#"
+	},
+
+	"analysis": {
+		"minDaysOfData": 3
+	},
+
+	"timeout": {
+		"duration": 25,
+		"warnings": {
+			"initial": 10,
+			"final": 1
+		}
+	},
+
+	"terminology": {
+		"user": "user",
+		"account": "account",
+		"user account": "user account",
+
+		"client": "client",
+		"file": "file",
+		"client file": "client file",
+
+		"section": "section",
+		"plan": "plan",
+		"target": "goal",
+		"plan target": "plan goal",
+		"treatment plan": "treatment plan",
+
+		"progress note": "progress note",
+		"quick note": "quick note",
+
+		"metric": "indicator",
+		"event": "event",
+
+		"analysis": "analysis",
+		"analyze": "analyze",
+	},
+
+	"useTemplate": "clientLog"
+}
