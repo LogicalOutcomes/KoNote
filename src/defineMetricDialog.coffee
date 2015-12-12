@@ -29,7 +29,7 @@ load = (win) ->
 				definition: ''
 			}
 		componentDidMount: ->
-			React.findDOMNode(this.refs.metricDefinition).focus()
+			React.findDOMNode(@refs.metricDefinition).focus()
 			
 		render: ->
 			Dialog({
