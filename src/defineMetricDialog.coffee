@@ -29,7 +29,7 @@ load = (win) ->
 				definition: ''
 			}
 		componentDidMount: ->
-			$(@refs.metricDefinition.getDOMNode()).focus()
+			React.findDOMNode(this.refs.metricDefinition).focus()
 			
 		render: ->
 			Dialog({
@@ -45,14 +45,12 @@ load = (win) ->
 							value: @state.name
 						})
 					)
-					R.div({
-						className: 'form-group'
-						ref: 'metricDefinition'
-					},
+					R.div({className: 'form-group'},
 						R.label({}, "Definition"),
 						ExpandingTextArea({
 							onChange: @_updateDefinition
 							value: @state.definition
+							ref: 'metricDefinition'
 						})
 					)
 					R.div({className: 'alert alert-warning'},
