@@ -16,6 +16,7 @@ load = (win) ->
 	R = React.DOM
 	Moment = require 'moment'
 
+	Config = require('./config')
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)	
 	{FaIcon} = require('./utils').load(win)
@@ -154,7 +155,7 @@ load = (win) ->
 
 				archive.pipe(output);
 				archive.bulk([
-					{ expand: true, cwd: 'data', src: ['**/*'], dest: 'backup'}
+					{ expand: true, cwd: Config.dataDirectory, src: ['**/*'], dest: 'data'}
 				])
 			
 				archive.finalize()
