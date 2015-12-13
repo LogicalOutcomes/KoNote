@@ -152,11 +152,14 @@ load = (win) ->
 					backupSize = (archive.pointer()/1000).toFixed(2)
 					if backupSize > 1
 						Bootbox.alert {
-							title: "Backup Saved! (#{backupSize}KB)"
+							title: "Backup Successful (#{backupSize}KB)"
 							message: "Saved to: #{path}"
 						}
 					else
-						Bootbox.alert "Error: File size " + backupSize + "KB!"
+						Bootbox.alert {
+							title: "Error"
+							message: "Saved file size less than expected (#{backupSize}KB)."
+						}
 				.on 'error', (err) ->
 					CrashHandler.handle err
 
