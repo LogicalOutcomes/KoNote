@@ -25,10 +25,13 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 		
 		componentDidMount: ->
+			# Register listeners for full data backup
+			timestamp = Moment().format('YYYY-MM-DD')
+			fileName = "konote-backup-#{timestamp}.zip"
+
 			$chooser = $(@refs.inputDialog.getDOMNode())
-			$chooser.attr("nwsaveas","konote-backup-"+Moment().format('YYYY-MM-DD')+".zip")
-			$chooser.on 'change', (evt) =>
-				@_saveData(evt.target.value)
+			.attr("nwsaveas", fileName)
+			.on('change', (event) => @_saveDataDirectory event.target.value)
 		
 		render: ->
 			return R.div({className: 'exportManagerTab'},
@@ -49,13 +52,12 @@ load = (win) ->
 				R.div({className: 'main'},
 					R.button({
 						className: 'btn btn-primary btn-lg'
-						onClick: @_exportData
+						onClick: @_exportDataDirectory
 					}, "Backup Data")
 				)
 			)
 
 		_exportMetrics: ->
-
 			metrics = null
 
 			# Map over client files
@@ -137,11 +139,11 @@ load = (win) ->
 
 				console.info "Done!"
 				
-		_exportData: ->
+		_exportDataDirectory: ->
 			chooser = React.findDOMNode(@refs.inputDialog)
-			chooser.click();
+			chooser.click()
 			
-		_saveData: (path) ->
+		_saveDataDirectory: (path) ->
 			if path.length > 1
 				output = Fs.createWriteStream(path);
 				archive = Archiver('zip');
@@ -149,18 +151,25 @@ load = (win) ->
 				output.on 'close', ->
 					backupSize = (archive.pointer()/1000).toFixed(2)
 					if backupSize > 1
-						Bootbox.alert "Backup complete. (" + backupSize + "KB)"
+						Bootbox.alert {
+							title: "Backup Saved! (#{backupSize}KB)"
+							message: "Saved to: #{path}"
+						}
 					else
-						Bootbox.alert "Error: file size " + backupSize + "KB!"
-				output.on 'error', (err) ->
+						Bootbox.alert "Error: File size " + backupSize + "KB!"
+				.on 'error', (err) ->
 					CrashHandler.handle err
+
 				archive.on 'error', (err) ->
 					CrashHandler.handle err
 
-				archive.pipe(output);
-				archive.bulk([
-					{ expand: true, cwd: Config.dataDirectory, src: ['**/*'], dest: 'data'}
-				])
+				archive.pipe(output)
+				archive.bulk [{
+					expand: true
+					cwd: Config.dataDirectory
+					src: ['**/*']
+					dest: 'data'
+				}]
 			
 				archive.finalize()
 
