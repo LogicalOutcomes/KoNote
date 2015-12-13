@@ -173,30 +173,14 @@ init = (win) ->
 					console.log "Replace!"
 					doHotCodeReplace()
 			, false			
-			
-			if Chokidar?
-				chokidarListeners = Chokidar
-				.watch './src'
-				.on 'change', (filePath) =>
-					fileExtension = filePath.split('.').splice(-1)[0]
-					
-					switch fileExtension
-						when 'styl'
-							refreshCSS()
-						when 'coffee' or 'js' 
-							doHotCodeReplace()
 
 
 	doHotCodeReplace = =>
 		# Save the entire page state into a global var
 		global.HCRSavedState = HotCodeReplace.takeSnapshot pageComponent
 
-		# Unregister page listener
-		unregisterPageListeners() if isLoggedIn
-
-		# Unregister Chokidar watch on ./src
-		if chokidarListeners?
-			chokidarListeners.close()
+		# Unregister page listeners
+		unregisterPageListeners() if isLoggedIn		
 
 		# Unmount components normally, but with no deinit
 		React.unmountComponentAtNode containerElem
@@ -243,9 +227,25 @@ init = (win) ->
 			global.ActiveSession.persist.eventBus.on name, action
 
 		# Make sure everything is reset
-		global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
+		global.ActiveSession.persist.eventBus.trigger 'timeout:reset' 
+
+		# Register Chokidar if we have devDependencies
+		if Chokidar?
+			chokidarListeners = Chokidar
+			.watch './src'
+			.on 'change', (filePath) =>
+				fileExtension = filePath.split('.').splice(-1)[0]				
+				switch fileExtension
+					when 'styl'
+						refreshCSS()
+					when 'coffee' or 'js' 
+						doHotCodeReplace()  
 
 	unregisterPageListeners = =>
+		# Unregister Chokidar
+		chokidarListeners.close() if chokidarListeners?			
+
+		# Unregister all page listeners
 		allListeners.forEach ([name, action]) =>
 			global.ActiveSession.persist.eventBus.off name, action
 
