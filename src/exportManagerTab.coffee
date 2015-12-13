@@ -147,7 +147,11 @@ load = (win) ->
 				archive = Archiver('zip');
 
 				output.on 'close', ->
-					console.log archive.pointer()/1000 + 'KB file saved to ' + path
+					backupSize = (archive.pointer()/1000).toFixed(2)
+					if backupSize > 1
+						Bootbox.alert "Backup complete. (" + backupSize + "KB)"
+					else
+						Bootbox.alert "Error: file size " + backupSize + "KB!"
 				output.on 'error', (err) ->
 					CrashHandler.handle err
 				archive.on 'error', (err) ->
