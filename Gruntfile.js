@@ -83,6 +83,7 @@ module.exports = function(grunt) {
 							'!node_modules/nw/**',
 							'!node_modules/nodewebkit/**',
 							'!node_modules/grunt*/**',
+							'!node_modules/chokidar*/**',
 							'!src/config/develop.json'
 						],
 						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/',
