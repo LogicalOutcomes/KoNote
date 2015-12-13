@@ -6,12 +6,15 @@ Async = require 'async'
 _ = require 'underscore'
 Imm = require 'immutable'
 Persist = require './persist'
+Fs = require 'fs'
+Archiver = require 'archiver'
 
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	Moment = require 'moment'
 
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)	
@@ -19,7 +22,13 @@ load = (win) ->
 
 	ExportManagerTab = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
-
+		
+		componentDidMount: ->
+			$chooser = $(@refs.inputDialog.getDOMNode())
+			$chooser.attr("nwsaveas","konote-backup-"+Moment().format('YYYY-MM-DD')+".zip")
+			$chooser.on 'change', (evt) =>
+				@_saveData(evt.target.value)
+		
 		render: ->
 			return R.div({className: 'exportManagerTab'},
 				R.div({className: 'header'},
@@ -30,6 +39,17 @@ load = (win) ->
 						className: 'btn btn-primary btn-lg'
 						onClick: @_exportMetrics
 					}, "Export Metrics")
+				)
+				R.input({
+					className: 'hidden'
+					type: 'file'
+					ref: 'inputDialog'
+				})
+				R.div({className: 'main'},
+					R.button({
+						className: 'btn btn-primary btn-lg'
+						onClick: @_exportData
+					}, "Backup Data")
 				)
 			)
 
@@ -115,6 +135,29 @@ load = (win) ->
 					return
 
 				console.info "Done!"
+				
+		_exportData: ->
+			chooser = React.findDOMNode(@refs.inputDialog)
+			chooser.click();
+			
+		_saveData: (path) ->
+			if path.length > 1
+				output = Fs.createWriteStream(path);
+				archive = Archiver('zip');
+
+				output.on 'close', ->
+					console.log archive.pointer()/1000 + 'KB file saved to ' + path
+				output.on 'error', (err) ->
+					CrashHandler.handle err
+				archive.on 'error', (err) ->
+					CrashHandler.handle err
+
+				archive.pipe(output);
+				archive.bulk([
+					{ expand: true, cwd: 'data', src: ['**/*'], dest: 'backup'}
+				])
+			
+				archive.finalize()
 
 	return ExportManagerTab
 
