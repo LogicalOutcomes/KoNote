@@ -124,53 +124,19 @@ load = (win) ->
 							})					
 						)
 					)
-					R.div({className: 'sections'},
-						(plan.get('sections').map (section) =>
-							R.div({className: 'section', key: section.get('id')},
-								R.div({className: 'sectionHeader'},
-									R.div({className: 'sectionName'},
-										section.get('name')
-									)
-									R.div({className: 'btn-group btn-group-sm'},
-										R.button({
-											className: 'renameSection btn btn-default'
-											onClick: @_renameSection.bind null, section.get('id')
-											disabled: @props.isReadOnly
-										},
-											"Rename"
-										)
-										R.button({
-											className: 'addTarget btn btn-primary'
-											onClick: @_addTargetToSection.bind null, section.get('id')
-											disabled: @props.isReadOnly
-										},
-											FaIcon('plus')
-											"Add #{Term 'target'}"
-										)
-									)
-								)
-								(if section.get('targetIds').size is 0
-									R.div({className: 'noTargets'},
-										"This #{Term 'section'} is empty."
-									)
-								)
-								R.div({className: 'targets'},
-									(section.get('targetIds').map (targetId) =>
-										PlanTarget({
-											currentRevision: @state.currentTargetRevisionsById.get targetId
-											metricsById: @props.metricsById
-											hasTargetChanged: @_hasTargetChanged targetId
-											key: targetId
-											isActive: targetId is @state.selectedTargetId
-											isReadOnly: @props.isReadOnly
-											onTargetUpdate: @_updateTarget.bind null, targetId
-											onTargetSelection: @_setSelectedTarget.bind null, targetId
-										})
-									).toJS()...
-								)
-							)
-						).toJS()...
-					)
+					SectionsView({
+						plan: @state.plan
+						metricsById: @props.metricsById
+						currentTargetRevisionsById: @state.currentTargetRevisionsById
+						selectedTargetId: @state.selectedTargetId
+						isReadOnly: @props.isReadOnly
+
+						renameSection: @_renameSection
+						addTargetToSection: @_addTargetToSection
+						hasTargetChanged: @_hasTargetChanged
+						updateTarget: @_updateTarget
+						setSelectedTarget: @_setSelectedTarget
+					})
 				)
 				R.div({className: 'targetDetail'},
 					(if selectedTarget is null
@@ -482,6 +448,70 @@ load = (win) ->
 						return metricIds.filter (id) ->
 							return id isnt metricId
 			}
+
+	SectionsView = React.createFactory React.createClass
+		render: ->
+			{
+				plan
+				metricsById
+				currentTargetRevisionsById
+				selectedTargetId
+				isReadOnly
+
+				renameSection
+				addTargetToSection
+				hasTargetChanged
+				updateTarget
+				setSelectedTarget
+			} = @props
+
+			return R.div({className: 'sections', ref: 'sections'},
+				(plan.get('sections').map (section) =>
+					R.div({className: 'section', key: section.get('id')},
+						R.div({className: 'sectionHeader'},
+							R.div({className: 'sectionName'},
+								section.get('name')
+							)
+							R.div({className: 'btn-group btn-group-sm'},
+								R.button({
+									className: 'renameSection btn btn-default'
+									onClick: renameSection.bind null, section.get('id')
+									disabled: isReadOnly
+								},
+									"Rename"
+								)
+								R.button({
+									className: 'addTarget btn btn-primary'
+									onClick: addTargetToSection.bind null, section.get('id')
+									disabled: isReadOnly
+								},
+									FaIcon('plus')
+									"Add #{Term 'target'}"
+								)
+							)
+						)
+						(if section.get('targetIds').size is 0
+							R.div({className: 'noTargets'},
+								"This #{Term 'section'} is empty."
+							)
+						)
+						R.div({className: 'targets'},
+							(section.get('targetIds').map (targetId) =>
+								PlanTarget({
+									currentRevision: currentTargetRevisionsById.get targetId
+									metricsById
+									hasTargetChanged: hasTargetChanged targetId
+									key: targetId
+									isActive: targetId is selectedTargetId
+									isReadOnly
+									onTargetUpdate: updateTarget.bind null, targetId
+									onTargetSelection: setSelectedTarget.bind null, targetId
+								})
+							).toJS()...
+						)
+					)
+				).toJS()...
+			)
 
 	PlanTarget = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
