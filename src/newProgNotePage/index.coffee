@@ -595,10 +595,10 @@ load = (win, {clientFileId}) ->
 
 		_updateBackdate: (event) ->
 			newBackdate = Moment(event.date).format(Persist.TimestampFormat)
-
-			@setState {
-				progNote: @state.progNote.setIn ['backdate'], newBackdate
-			}
+			if Moment(event.date).format('YYYY-MM-DD-HH') is Moment().format('YYYY-MM-DD-HH')
+				@setState {progNote: @state.progNote.setIn ['backdate'], ''}
+			else
+				@setState {progNote: @state.progNote.setIn ['backdate'], newBackdate}
 
 		_updateBasicNotes: (unitId, event) ->
 			newNotes = event.target.value

@@ -198,10 +198,14 @@ load = (win) ->
 						vertical: 'bottom'
 					}
 				}).on 'dp.change', (e) =>
-					@setState {backdate: Moment(e.date).format(Persist.TimestampFormat)}
+					if Moment(e.date).format('YYYY-MM-DD-HH') is Moment().format('YYYY-MM-DD-HH')
+						@setState {backdate: ''}
+					else
+						@setState {backdate: Moment(e.date).format(Persist.TimestampFormat)}
 				
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
+					@setState {backdate: ''}
 					quickNoteToggle.popover('hide')
 					quickNoteToggle.data('isVisible', false)
 
