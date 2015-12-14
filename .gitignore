@@ -3,7 +3,7 @@
 .DS_Store
 npm-debug.log
 
-data/
-node_modules/
-build/releases/
-src/config/develop.json
+/data/
+/node_modules/
+/build/releases/
+/src/config/develop.json
