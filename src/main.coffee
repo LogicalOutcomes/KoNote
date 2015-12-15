@@ -10,6 +10,8 @@
 # It seems that only code that was included via a <script> tag can rely on
 # `window` being set correctly.
 
+_ = require 'underscore'
+
 # ES6 polyfills
 # These can be removed once we're back to NW.js 0.12+
 require 'string.prototype.endswith'
@@ -35,11 +37,6 @@ init = (win) ->
 	Stylus = require 'stylus'
 	isRefreshing = null
 
-	try
-		Chokidar = require 'chokidar'
-	catch err
-		console.warn "Live-refresh disabled, I bet you're running a production build", err
-	
 	Config = require('./config')
 
 	document = win.document
@@ -70,10 +67,14 @@ init = (win) ->
 
 	pageComponent = null
 	isLoggedIn = null
-	chokidarListeners = null
+	chokidarListener = null
 	allListeners = null
 
 	process.nextTick =>
+		# Configure if application is just starting
+		global.HCRSavedState ||= {}
+
+		# Render and setup page
 		renderPage QueryString.parse(win.location.search.substr(1))
 		initPage()
 
@@ -127,16 +128,17 @@ init = (win) ->
 		if global.ActiveSession
 			Assert pageComponent.getPageListeners, "missing page.getPageListeners"
 
-		# Are we in the middle of a hot code replace?
-		if global.HCRSavedState?
+		# Are we in the middle of a hot code replace for this page?
+		hcrState = global.HCRSavedState[win.location.href]
+		if hcrState
 			try
 				# Inject state from prior to reload
-				HotCodeReplace.restoreSnapshot pageComponent, global.HCRSavedState
+				HotCodeReplace.restoreSnapshot pageComponent, hcrState
 			catch err
 				# HCR is risky, so hope that it wasn't too bad
 				console.error "HCR: #{err.toString()}"
 
-			global.HCRSavedState = null
+			delete global.HCRSavedState[win.location.href]
 		else
 			# No HCR, so just a normal init
 			pageComponent.init()
@@ -174,10 +176,9 @@ init = (win) ->
 					doHotCodeReplace()
 			, false			
 
-
 	doHotCodeReplace = =>
 		# Save the entire page state into a global var
-		global.HCRSavedState = HotCodeReplace.takeSnapshot pageComponent
+		global.HCRSavedState[win.location.href] = HotCodeReplace.takeSnapshot pageComponent
 
 		# Unregister page listeners
 		unregisterPageListeners() if isLoggedIn		
@@ -230,8 +231,10 @@ init = (win) ->
 		global.ActiveSession.persist.eventBus.trigger 'timeout:reset' 
 
 		# Register Chokidar if we have devDependencies
-		if Chokidar?
-			chokidarListeners = Chokidar
+		if Config.devMode
+			Chokidar = require 'chokidar'
+
+			chokidarListener = Chokidar
 			.watch './src'
 			.on 'change', (filePath) =>
 				fileExtension = filePath.split('.').splice(-1)[0]				
@@ -243,7 +246,7 @@ init = (win) ->
 
 	unregisterPageListeners = =>
 		# Unregister Chokidar
-		chokidarListeners.close() if chokidarListeners?			
+		chokidarListener.close() if chokidarListener?
 
 		# Unregister all page listeners
 		allListeners.forEach ([name, action]) =>
