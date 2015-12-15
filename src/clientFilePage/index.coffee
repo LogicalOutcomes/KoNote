@@ -60,6 +60,8 @@ load = (win, {clientFileId}) ->
 			}
 
 		init: ->
+			@props.maximizeWindow()
+
 			@_renewAllData()
 
 		deinit: (cb=(->)) ->
@@ -85,7 +87,6 @@ load = (win, {clientFileId}) ->
 				programs: @state.programs
 
 				closeWindow: @props.closeWindow
-				maximizeWindow: @props.maximizeWindow
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
 				createQuickNote: @_createQuickNote
@@ -514,9 +515,6 @@ load = (win, {clientFileId}) ->
 			return {
 				activeTabId: 'plan'
 			}
-
-		componentWillMount: ->
-			@props.maximizeWindow()
 
 		hasChanges: ->
 			# Eventually this will cover more
