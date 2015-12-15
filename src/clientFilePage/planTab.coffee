@@ -450,6 +450,36 @@ load = (win) ->
 			}
 
 	SectionsView = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			return {
+				sectionsScrollTop: 0
+				sectionOffsets: null
+			}
+
+		componentDidMount: ->
+			sectionsDom = React.findDOMNode(@refs.sections)
+			sectionsDom.addEventListener 'scroll', (event) =>
+				@_recalculateOffsets()
+
+		_recalculateOffsets: ->
+			sectionsDom = React.findDOMNode(@refs.sections)
+			sectionsScrollTop = sectionsDom.scrollTop
+
+			sectionOffsets = @props.plan.get('sections').map (section) =>
+				sectionDom = React.findDOMNode(@refs['section-' + section.get('id')])
+
+				offset = Imm.Map({
+					top: sectionDom.offsetTop
+					height: sectionDom.offsetHeight
+				})
+
+				return [section.get('id'), offset]
+			.fromEntrySeq().toMap()
+
+			@setState (s) -> {sectionsScrollTop, sectionOffsets}
+
 		render: ->
 			{
 				plan
@@ -467,29 +497,45 @@ load = (win) ->
 
 			return R.div({className: 'sections', ref: 'sections'},
 				(plan.get('sections').map (section) =>
-					R.div({className: 'section', key: section.get('id')},
-						R.div({className: 'sectionHeader'},
-							R.div({className: 'sectionName'},
-								section.get('name')
-							)
-							R.div({className: 'btn-group btn-group-sm'},
-								R.button({
-									className: 'renameSection btn btn-default'
-									onClick: renameSection.bind null, section.get('id')
-									disabled: isReadOnly
-								},
-									"Rename"
-								)
-								R.button({
-									className: 'addTarget btn btn-primary'
-									onClick: addTargetToSection.bind null, section.get('id')
-									disabled: isReadOnly
-								},
-									FaIcon('plus')
-									"Add #{Term 'target'}"
-								)
-							)
-						)
+					headerState = 'inline'
+
+					if @state.sectionOffsets
+						scrollTop = @state.sectionsScrollTop
+						sectionOffset = @state.sectionOffsets.get(section.get('id'))
+
+						headerHeight = 60
+						minSticky = sectionOffset.get('top')
+						maxSticky = sectionOffset.get('top') + sectionOffset.get('height') - headerHeight
+
+						if scrollTop >= minSticky and scrollTop < maxSticky
+							headerState = 'sticky'
+
+					return R.div({
+						className: 'section'
+						key: section.get('id')
+						ref: 'section-' + section.get('id')
+					},
+						SectionHeader({
+							type: 'inline'
+							visible: headerState is 'inline'
+
+							section
+							isReadOnly
+
+							renameSection
+							addTargetToSection
+						})
+						SectionHeader({
+							type: 'sticky'
+							visible: headerState is 'sticky'
+							scrollTop: @state.sectionsScrollTop
+
+							section
+							isReadOnly
+
+							renameSection
+							addTargetToSection
+						})
 						(if section.get('targetIds').size is 0
 							R.div({className: 'noTargets'},
 								"This #{Term 'section'} is empty."
@@ -511,6 +557,53 @@ load = (win) ->
 						)
 					)
 				).toJS()...
+			)
+
+	SectionHeader = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
+		render: ->
+			{
+				type
+				visible
+				scrollTop
+				section
+				isReadOnly
+
+				renameSection
+				addTargetToSection
+			} = @props
+
+			return R.div({
+				className: [
+					'sectionHeader'
+					type
+					'invisible' unless visible
+				].join(' ')
+				style: {
+					top: "#{scrollTop}px" if type is 'sticky'
+				}
+			},
+				R.div({className: 'sectionName'},
+					section.get('name')
+				)
+				R.div({className: 'btn-group btn-group-sm'},
+					R.button({
+						className: 'renameSection btn btn-default'
+						onClick: renameSection.bind null, section.get('id')
+						disabled: isReadOnly
+					},
+						"Rename"
+					)
+					R.button({
+						className: 'addTarget btn btn-primary'
+						onClick: addTargetToSection.bind null, section.get('id')
+						disabled: isReadOnly
+					},
+						FaIcon('plus')
+						"Add #{Term 'target'}"
+					)
+				)
 			)
 
 	PlanTarget = React.createFactory React.createClass

@@ -52,8 +52,7 @@
 					
 			@media (max-width: 1150px)
 				display block
-				
-				
+
 				> span
 					display block
 					flex none
@@ -71,17 +70,16 @@
 							
 						> .printButton
 							flex 1
-						
 
 		> .sections
+			position relative
+
+			flex 1
 			overflow-y auto
 			overflow-x hidden
-			flex 1
 			padding 0 30px 10px 30px
-			
-			> .section
-				padding-top 15px
 
+			> .section
 				&:last-child
 					padding-bottom 15px
 
@@ -92,7 +90,26 @@
 
 					border-color sidebar-borders
 					border-style none none solid
-					border-width 3px
+					border-width 1px
+
+					padding 10px 30px 5px
+
+					&.inline
+						margin 0 -30px
+
+						&.invisible
+							opacity 0
+
+					&.sticky
+						position absolute
+						top 0
+						left 0
+						right 0
+
+						background hsla(0, 0%, 100%, 0.8)
+
+						&.invisible
+							display none
 
 					> .sectionName
 						flex 1
