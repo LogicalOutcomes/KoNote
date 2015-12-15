@@ -19,7 +19,8 @@ load = (win) ->
 	Config = require('./config')
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)	
-	{FaIcon} = require('./utils').load(win)
+	{FaIcon, renderName} = require('./utils').load(win)
+	{TimestampFormat} = require('./persist/utils')
 
 	ExportManagerTab = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -61,7 +62,7 @@ load = (win) ->
 			metrics = null
 
 			# Map over client files
-			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) ->
+			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
 
 				metricsResult = Imm.List()
 
@@ -70,6 +71,7 @@ load = (win) ->
 				progNoteHeaders = null
 				progNotes = null				
 				clientFileId = clientFile.get('id')
+				metricsList = null
 
 				Async.series [
 					# List metric definition headers
@@ -117,19 +119,80 @@ load = (win) ->
 							console.info "progNotes", progNotes.toJS()
 							cb()
 
-					# Filter out metrics, apply definitions
+					# Filter out full list of metrics
 					(cb) =>
-						Async.map progNotes.toArray(), (progNote, cb) ->
-							progNote.get('sections').map (note) ->
+						fullProgNotes = progNotes.filter (progNote) =>
+							progNote.get('type') is 'full'
 
-							cb null, progNote
+						console.info "fullProgNotes", fullProgNotes
+
+						Async.map fullProgNotes.toArray(), (progNote, cb) =>
+							console.info "progNote", progNote.toJS()							
+							
+							progNoteMetrics = progNote.get('units').flatMap (unit) =>
+								unitType = unit.get('type')
+
+								switch unitType
+									when 'basic'
+										metrics = unit.get('metrics')
+									when 'plan'
+										metrics = unit.get('sections').flatMap (section) ->
+											section.get('targets').flatMap (target) ->
+												target.get('metrics')
+									else
+										cb new Error "Unknown unit type: #{unitType}"
+
+								return metrics
+
+							# Get backdate or timestamp from parent progNote
+							progNoteTimestamp = if progNote.get('backdate')
+								progNote.get('backdate')
+							else
+								progNote.get('timestamp')
+
+							# Apply timestamp with custom format
+							timestamp = Moment(progNoteTimestamp, TimestampFormat)
+							.format('YYYY-MM-DD HH:mm:ss')
+
+							# Get clientFile's full name
+							clientFileId = progNote.get('clientFileId')
+							clientFileName = renderName(
+								@props.clientFileHeaders
+								.find (clientFile) -> clientFile.get('id') is clientFileId
+								.get('clientName')
+							)
+
+							# Model output format of metric object
+							progNoteMetrics = progNoteMetrics.map (metric) ->
+								return {
+									timestamp
+									authorUsername: progNote.get('author')
+									clientFileId
+									clientFileName									
+									metricId: metric.get('id')
+									metricName: metric.get('name')									
+									metricDefinition: metric.get('definition')
+									metricValue: metric.get('value')
+								}
+
+							console.info "progNoteMetrics", progNoteMetrics.toJS()
+							cb null, progNoteMetrics
+
 						, (err, results) ->
 							if err
 								cb err
 								return
 
-							console.info "Results", results
+							metricsList = Imm.fromJS(results).flatten(true)
+
+							console.info "metricsList", metricsList.toJS()
 							cb()
+					
+					(cb) =>
+						
+
+						cb()
+
 						
 				], cb
 			, (err) ->
