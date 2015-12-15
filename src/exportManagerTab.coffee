@@ -8,6 +8,7 @@ Imm = require 'immutable'
 Persist = require './persist'
 Fs = require 'fs'
 Archiver = require 'archiver'
+CSVConverter = require 'json-2-csv'
 
 load = (win) ->
 	$ = win.jQuery
@@ -72,6 +73,7 @@ load = (win) ->
 				progNotes = null				
 				clientFileId = clientFile.get('id')
 				metricsList = null
+				csv = null
 
 				Async.series [
 					# List metric definition headers
@@ -188,11 +190,11 @@ load = (win) ->
 							console.info "metricsList", metricsList.toJS()
 							cb()
 					
+					# Convert to CSV
 					(cb) =>
-						
-
-						cb()
-
+						CSVConverter.json2csv metricsList.toJS(), (err, result) ->
+							csv = result
+							cb()
 						
 				], cb
 			, (err) ->
@@ -200,6 +202,7 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
+				console.info "CSV Data:", csv
 				console.info "Done!"
 				
 		_exportDataDirectory: ->
