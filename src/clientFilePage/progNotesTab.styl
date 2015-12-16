@@ -92,8 +92,8 @@
 				&.basic
 					> .notes
 						padding 20px 0
-						
-						> .printButton
+
+						> .progNoteToolbar
 							float right
 
 						> br
@@ -102,11 +102,24 @@
 				&.full
 					> .progNoteList
 						position relative
-						
-						> .printButton
+
+						> .progNoteToolbar
 							position absolute
 							top 0
 							right 0
+
+							display flex
+
+							> .cancel
+								display inline-block
+
+								padding 0 0 5px
+
+								color black
+								cursor pointer
+
+								&:hover
+									color #286090
 
 						> .unit
 							padding-bottom 20px
