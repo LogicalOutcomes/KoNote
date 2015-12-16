@@ -29,11 +29,14 @@ load = (win) ->
 		componentDidMount: ->
 			# Register listeners for full data backup
 			timestamp = Moment().format('YYYY-MM-DD')
-			fileName = "konote-backup-#{timestamp}.zip"
 
-			$chooser = $(@refs.inputDialog.getDOMNode())
-			.attr("nwsaveas", fileName)
-			.on('change', (event) => @_saveDataDirectory event.target.value)
+			$backupChooser = $(@refs.backupFileDialog.getDOMNode())
+			.attr("nwsaveas", "konote-backup-#{timestamp}.zip")
+			.on('change', (event) => @_saveBackup event.target.value)
+			
+			$metricsChooser = $(@refs.metricsFileDialog.getDOMNode())
+			.attr("nwsaveas", "konote-metrics-#{timestamp}.csv")
+			.on('change', (event) => @_saveMetrics event.target.value)
 		
 		render: ->
 			return R.div({className: 'exportManagerTab'},
@@ -43,13 +46,18 @@ load = (win) ->
 				R.div({className: 'main'},
 					R.button({
 						className: 'btn btn-primary btn-lg'
-						onClick: @_exportMetrics
+						onClick: @_exportMetricsDirectory
 					}, "Export Metrics")
 				)
 				R.input({
 					className: 'hidden'
 					type: 'file'
-					ref: 'inputDialog'
+					ref: 'backupFileDialog'
+				})
+				R.input({
+					className: 'hidden'
+					type: 'file'
+					ref: 'metricsFileDialog'
 				})
 				R.div({className: 'main'},
 					R.button({
@@ -59,7 +67,7 @@ load = (win) ->
 				)
 			)
 
-		_exportMetrics: ->
+		_saveMetrics: (path) ->
 			metrics = null
 
 			# Map over client files
@@ -192,27 +200,36 @@ load = (win) ->
 					
 					# Convert to CSV
 					(cb) =>
-						CSVConverter.json2csv metricsList.toJS(), (err, result) ->
-							csv = result
-							cb()
+						CSVConverter.json2csv metricsList.toJS(), (err, csv) ->
+							console.log "PATH", path
+							Fs.writeFile path, csv, (err) ->
+								if err
+									CrashHandler.handle err
+									return
+								Bootbox.alert {
+									title: "Save Successful"
+									message: "Metrics exported to: #{path}"
+								}
+						cb()
 						
 				], cb
 			, (err) ->
 				if err
 					CrashHandler.handle err
 					return
-
-				console.info "CSV Data:", csv
-				console.info "Done!"
 				
+		_exportMetricsDirectory: ->
+			metricsFileChooser = React.findDOMNode(@refs.metricsFileDialog)
+			metricsFileChooser.click()
+		
 		_exportDataDirectory: ->
-			chooser = React.findDOMNode(@refs.inputDialog)
+			chooser = React.findDOMNode(@refs.backupFileDialog)
 			chooser.click()
 			
-		_saveDataDirectory: (path) ->
+		_saveBackup: (path) ->
 			if path.length > 1
-				output = Fs.createWriteStream(path);
-				archive = Archiver('zip');
+				output = Fs.createWriteStream(path)
+				archive = Archiver('zip')
 
 				output.on 'close', ->
 					backupSize = (archive.pointer()/1000).toFixed(2)
