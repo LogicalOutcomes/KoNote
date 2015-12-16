@@ -197,7 +197,7 @@ load = (win) ->
 					$searchBox = $(@refs.searchBox.getDOMNode())
 					$searchBox.focus()
 					@_attachKeyBindings($searchBox)
-				, 100)
+				, 500)
 
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
 				@_refreshResults()
