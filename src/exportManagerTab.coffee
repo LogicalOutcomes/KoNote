@@ -32,10 +32,12 @@ load = (win) ->
 
 			$backupChooser = $(@refs.backupFileDialog.getDOMNode())
 			.attr("nwsaveas", "konote-backup-#{timestamp}")
+			.attr("accept", ".zip")
 			.on('change', (event) => @_saveBackup event.target.value)
 			
 			$metricsChooser = $(@refs.metricsFileDialog.getDOMNode())
 			.attr("nwsaveas", "konote-metrics-#{timestamp}")
+			.attr("accept", ".csv")
 			.on('change', (event) => @_saveMetrics event.target.value)
 		
 		render: ->
@@ -213,12 +215,6 @@ load = (win) ->
 
 					# Destination path must exist in order to save
 					if path.length > 1
-
-						# nwsaveas sometimes doesn't include extension on Mac (See #370)
-						# so we're tacking it on just before we write the file
-						# Unfortunately this does hard-code the extension.
-						path = path + '.csv'
-
 						Fs.writeFile path, csv, (err) ->
 							if err
 								CrashHandler.handle err
@@ -242,12 +238,6 @@ load = (win) ->
 		_saveBackup: (path) ->
 			# Destination path must exist in order to save
 			if path.length > 1
-
-				# nwsaveas sometimes doesn't include extension on Mac (See #370)
-				# so we're tacking it on just before we write the file
-				# Unfortunately this does hard-code the extension.
-				path = path + '.zip'
-
 				output = Fs.createWriteStream(path)
 				archive = Archiver('zip')
 
