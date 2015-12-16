@@ -196,14 +196,13 @@ load = (win) ->
 							csv = result
 							cb()
 						
-				], cb
-			, (err) ->
-				if err
-					CrashHandler.handle err
-					return
+				], (err) ->
+					if err
+						CrashHandler.handle err
+						return
 
-				console.info "CSV Data:", csv
-				console.info "Done!"
+					console.info "CSV Data:", csv
+					console.info "Done!"
 				
 		_exportDataDirectory: ->
 			chooser = React.findDOMNode(@refs.inputDialog)
