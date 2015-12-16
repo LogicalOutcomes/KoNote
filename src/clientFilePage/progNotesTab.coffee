@@ -20,6 +20,7 @@ load = (win) ->
 	ProgEventsWidget = require('../progEventsWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	PrintButton = require('../printButton').load(win)
+	WithTooltip = require('../withTooltip').load(win)
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
@@ -32,7 +33,6 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			
 			quickNoteToggle = $('.addQuickNote')
 			quickNoteToggle.data 'isVisible', false
 			quickNoteToggle.popover {
@@ -235,16 +235,20 @@ load = (win) ->
 					)					
 				)
 				R.div({className: 'notes'},
-					PrintButton({
-						dataSet: [
-							{
-								format: 'progNote'
-								data: @props.progNote
-								clientFile: @props.clientFile
-							}
-						]
-						isVisible: true
-					})
+					R.div({className: 'progNoteToolbar'},
+						PrintButton({
+							dataSet: [
+								{
+									format: 'progNote'
+									data: @props.progNote
+									clientFile: @props.clientFile
+								}
+							]
+							isVisible: true
+							iconOnly: true
+							tooltip: {show: true}
+						})
+					)
 					renderLineBreaks @props.progNote.get('notes')
 				)
 			)
@@ -269,17 +273,26 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'progNoteList'},
-					PrintButton({
-						dataSet: [
-							{
-								format: 'progNote'
-								data: @props.progNote
-								progEvents: @props.progEvents
-								clientFile: @props.clientFile
-							}
-						]
-						isVisible: true
-					})
+					R.div({className: 'progNoteToolbar'},
+						PrintButton({
+							dataSet: [
+								{
+									format: 'progNote'
+									data: @props.progNote
+									progEvents: @props.progEvents
+									clientFile: @props.clientFile
+								}
+							]
+							isVisible: true
+							iconOnly: true
+							tooltip: {show: true}
+						})
+						WithTooltip({title: "Cancel", placement: 'top'},
+							R.a({className: 'cancel', onClick: @_cancel},
+								FaIcon 'ban'
+							)
+						)
+					)
 					(@props.progNote.get('units').map (unit) =>
 						unitId = unit.get 'id'
 
