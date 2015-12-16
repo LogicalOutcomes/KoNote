@@ -236,11 +236,10 @@ load = (win) ->
 						}
 					)
 				R.a({
-					id: 'expandMenuButton'
-					className: showWhen not @state.managerLayer?
+					id: 'expandMenuButton'					
 					onClick: @_toggleUserMenu
 				},					
-					FaIcon 'bars'
+					FaIcon(if @state.managerLayer? then 'times' else 'bars')
 				)
 				R.div({
 					id: 'mainContainer'					
@@ -249,7 +248,6 @@ load = (win) ->
 						ManagerLayer({
 							# Settings
 							name: @state.managerLayer
-							onClose: @_updateManagerLayer.bind null, null
 							# Data
 							clientFileHeaders: @props.clientFileHeaders							
 							programs: @props.programs
@@ -380,28 +378,32 @@ load = (win) ->
 							R.div({id: 'avatar'}, FaIcon('user'))
 							R.h3({}, global.ActiveSession.userName)
 							R.ul({},
-								UserMenuItem({
+								UserMenuItem({									
 									title: Term 'Client Files'
 									icon: 'folder-open'
 									onClick: @_updateManagerLayer.bind null, 'clientFileManagerTab'
+									isActive: @state.managerLayer is 'clientFileManagerTab'
 								})				
-								UserMenuItem({
+								UserMenuItem({									
 									isVisible: isAdmin
 									title: Term 'Programs'
 									icon: 'users'
 									onClick: @_updateManagerLayer.bind null, 'programManagerTab'
+									isActive: @state.managerLayer is 'programManagerTab'
 								})
 								UserMenuItem({
 									isVisible: isAdmin
 									title: "User #{Term 'Accounts'}"
 									icon: 'key'
 									onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
+									isActive: @state.managerLayer is 'accountManagerTab'
 								})
 								UserMenuItem({
 									isVisible: isAdmin
 									title: "Export Data"
 									icon: 'download'
 									onClick: @_updateManagerLayer.bind null, 'exportManagerTab'
+									isActive: @state.managerLayer is 'exportManagerTab'
 								})
 							)
 						)
@@ -461,11 +463,15 @@ load = (win) ->
 			if @state.menuIsOpen
 				$(@refs.userMenu.getDOMNode()).addClass('slideOutRight')
 
+				@setState {managerLayer: null}
+
 				setTimeout(=>
-					@setState {menuIsOpen: not @state.menuIsOpen}
+					@setState {
+						menuIsOpen: false						
+					}
 				, 400)
 			else
-				@setState {menuIsOpen: not @state.menuIsOpen}
+				@setState {menuIsOpen: true}
 
 		_refreshResults: ->
 			# Return all results if search query is empty
@@ -517,18 +523,17 @@ load = (win) ->
 		getDefaultProps: ->
 			return {
 				isVisible: true
-			}
-
-		getInitialState: ->
-			return {
-				isOpen: false
+				isActive: false
 			}
 
 		render: ->
-			return R.li({className: showWhen @props.isVisible},
-				R.div({
-					onClick: @props.onClick.bind null, @props.module
-				}, 
+			return R.li({
+				className: [
+					'active' if @props.isActive
+					showWhen @props.isVisible
+				].join ' '
+			},
+				R.div({onClick: @props.onClick.bind null, @props.module}, 
 					FaIcon(@props.icon)
 					@props.title
 				)

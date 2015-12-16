@@ -34,11 +34,6 @@ load = (win) ->
 
 			return R.div({className: 'managerLayer'},
 				R.div({className: 'managerLayerContainer'},
-					R.a({
-						className: 'closeManagerButton'
-						onClick: @props.onClose
-					}, FaIcon 'times')
-
 					Module @props
 				)
 			)

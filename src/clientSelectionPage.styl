@@ -274,6 +274,9 @@ sidebar-borders = darken(sidebar-bg, 10%)
 				> li
 					line-height 2em
 					
+					&.active, &:hover
+						background darken(sidebar-bg, 5%)
+					
 					> div
 						display block
 						padding 15px 20px
@@ -284,9 +287,6 @@ sidebar-borders = darken(sidebar-bg, 10%)
 						> .fa
 							padding-right 10px
 							transition padding-right .25s ease
-						
-						&:hover
-							background darken(sidebar-bg, 5%)							
 			
 	&.openMenu
 		
