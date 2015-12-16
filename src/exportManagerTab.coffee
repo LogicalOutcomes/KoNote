@@ -201,15 +201,15 @@ load = (win) ->
 					# Convert to CSV
 					(cb) =>
 						CSVConverter.json2csv metricsList.toJS(), (err, csv) ->
-							console.log "PATH", path
-							Fs.writeFile path, csv, (err) ->
-								if err
-									CrashHandler.handle err
-									return
-								Bootbox.alert {
-									title: "Save Successful"
-									message: "Metrics exported to: #{path}"
-								}
+							if path.length > 1
+								Fs.writeFile path, csv, (err) ->
+									if err
+										CrashHandler.handle err
+										return
+									Bootbox.alert {
+										title: "Save Successful"
+										message: "Metrics exported to: #{path}"
+									}
 						cb()
 						
 				], (err) ->
