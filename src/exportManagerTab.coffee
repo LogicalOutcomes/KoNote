@@ -31,11 +31,11 @@ load = (win) ->
 			timestamp = Moment().format('YYYY-MM-DD')
 
 			$backupChooser = $(@refs.backupFileDialog.getDOMNode())
-			.attr("nwsaveas", "konote-backup-#{timestamp}.zip")
+			.attr("nwsaveas", "konote-backup-#{timestamp}")
 			.on('change', (event) => @_saveBackup event.target.value)
 			
 			$metricsChooser = $(@refs.metricsFileDialog.getDOMNode())
-			.attr("nwsaveas", "konote-metrics-#{timestamp}.csv")
+			.attr("nwsaveas", "konote-metrics-#{timestamp}")
 			.on('change', (event) => @_saveMetrics event.target.value)
 		
 		render: ->
@@ -200,25 +200,36 @@ load = (win) ->
 					
 					# Convert to CSV
 					(cb) =>
-						CSVConverter.json2csv metricsList.toJS(), (err, csv) ->
-							if path.length > 1
-								Fs.writeFile path, csv, (err) ->
-									if err
-										CrashHandler.handle err
-										return
-									Bootbox.alert {
-										title: "Save Successful"
-										message: "Metrics exported to: #{path}"
-									}
-						cb()
+						CSVConverter.json2csv metricsList.toJS(), (err, result) ->
+							csv = result
+							cb()
 						
 				], (err) ->
 					if err
 						CrashHandler.handle err
 						return
 
-					console.info "CSV Data:", csv
-					console.info "Done!"
+					console.info "CSV Metric Data:", csv
+
+					# Destination path must exist in order to save
+					if path.length > 1
+
+						# nwsaveas sometimes doesn't include extension on Mac (See #370)
+						# so we're tacking it on just before we write the file
+						# Unfortunately this does hard-code the extension.
+						path = path + '.csv'
+
+						Fs.writeFile path, csv, (err) ->
+							if err
+								CrashHandler.handle err
+								return
+
+							console.info "Destination Path:", path
+
+							Bootbox.alert {
+								title: "Save Successful"
+								message: "Metrics exported to: #{path}"
+							}					
 				
 		_exportMetricsDirectory: ->
 			metricsFileChooser = React.findDOMNode(@refs.metricsFileDialog)
@@ -229,7 +240,14 @@ load = (win) ->
 			chooser.click()
 			
 		_saveBackup: (path) ->
+			# Destination path must exist in order to save
 			if path.length > 1
+
+				# nwsaveas sometimes doesn't include extension on Mac (See #370)
+				# so we're tacking it on just before we write the file
+				# Unfortunately this does hard-code the extension.
+				path = path + '.zip'
+
 				output = Fs.createWriteStream(path)
 				archive = Archiver('zip')
 
