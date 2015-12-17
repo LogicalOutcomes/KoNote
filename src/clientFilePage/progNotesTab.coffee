@@ -339,6 +339,7 @@ load = (win) ->
 
 									(unit.get('sections').map (section) =>										
 										R.section({key: section.get('id')},
+											R.h2({}, section.get('name'))
 											R.div({
 												className: [
 													'empty'
@@ -347,7 +348,6 @@ load = (win) ->
 											},
 												"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
 											)
-											R.h2({}, section.get('name'))
 											(section.get('targets').map (target) =>
 												R.div({
 													key: target.get('id')
