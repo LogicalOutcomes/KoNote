@@ -214,6 +214,10 @@ load = (win) ->
 				isAdmin: false
 				isLoading: false
 			}
+
+		componentDidMount: ->
+			@refs.userNameField.getDOMNode().focus()
+
 		render: ->
 			Dialog({
 				title: "Create new #{Term 'account'}"
@@ -227,6 +231,7 @@ load = (win) ->
 					R.div({className: 'form-group'},
 						R.label({}, "User name"),
 						R.input({
+							ref: 'userNameField'
 							className: 'form-control'
 							onChange: @_updateUserName
 							value: @state.userName
