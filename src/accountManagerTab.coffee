@@ -364,7 +364,7 @@ load = (win) ->
 				Bootbox.alert "Passwords do not match!"
 				return
 
-			userName = @props.data.get('userName')
+			userName = @props.rowData.get('userName')
 			password = @state.password
 
 			@setState {isLoading: true}
