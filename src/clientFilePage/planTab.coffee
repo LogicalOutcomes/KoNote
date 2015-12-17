@@ -615,7 +615,7 @@ load = (win) ->
 			return R.div({
 				className: [
 					'target'
-					"target-#{@props.key}"
+					"target-#{currentRevision.get('id')}"
 					if @props.isActive then 'active' else ''
 					if @props.hasTargetChanged then 'hasChanges' else ''
 				].join ' '
