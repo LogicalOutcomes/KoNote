@@ -51,7 +51,7 @@ load = (win, {clientFileId}) ->
 				readOnlyData: null
 				lockOperation: null
 
-				progressNotes: null
+				progressNoteHistories: null
 				progressEvents: null
 				planTargetsById: Imm.Map()
 				metricsById: Imm.Map()
@@ -80,7 +80,7 @@ load = (win, {clientFileId}) ->
 				loadErrorType: @state.loadErrorType
 
 				clientFile: @state.clientFile
-				progressNotes: @state.progressNotes
+				progressNoteHistories: @state.progressNoteHistories
 				progressEvents: @state.progressEvents
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
@@ -102,7 +102,7 @@ load = (win, {clientFileId}) ->
 			planTargetsById = null
 			planTargetHeaders = null
 			progNoteHeaders = null
-			progressNotes = null
+			progressNoteHistories = null
 			progEventHeaders = null
 			progressEvents = null
 			metricHeaders = null
@@ -175,15 +175,15 @@ load = (win, {clientFileId}) ->
 
 				(cb) =>
 					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
-						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
+						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
 					, (err, results) =>
 						if err
 							cb err
 							return
 
-						progressNotes = Imm.List results
+						progressNoteHistories = Imm.List(results)
 
-						checkFileSync progressNotes, @state.progressNotes
+						checkFileSync progressNoteHistories, @state.progressNoteHistories
 						cb()
 
 				(cb) =>
@@ -323,7 +323,7 @@ load = (win, {clientFileId}) ->
 					console.info "programs", programs.toJS()
 					@setState {
 						clientFile						
-						progressNotes
+						progressNoteHistories
 						progressEvents
 						metricsById
 						planTargetsById
@@ -455,6 +455,7 @@ load = (win, {clientFileId}) ->
 			if notes != ''
 				note = Imm.fromJS {
 					type: 'basic'
+					status: 'default'
 					clientFileId
 					notes
 					backdate
@@ -492,7 +493,23 @@ load = (win, {clientFileId}) ->
 
 				'create:progNote': (newProgNote) =>
 					unless newProgNote.get('clientFileId') is clientFileId then return
-					@setState (state) => progressNotes: state.progressNotes.push newProgNote
+
+					@setState (state) =>
+						return {
+							progressNoteHistories: state.progressNoteHistories.push Imm.List([newProgNote])
+						}
+
+				'createRevision:progNote': (newProgNoteRev) =>
+					unless newProgNoteRev.get('clientFileId') is clientFileId then return
+
+					@setState (state) =>
+						return {
+							progressNoteHistories: state.progressNoteHistories.map (progNoteHist) =>
+								if progNoteHist.first().get('id') is newProgNoteRev.get('id')
+									return progNoteHist.push newProgNoteRev
+
+								return progNoteHist
+						}
 
 				'create:progEvent': (newProgEvent) =>
 					unless newProgEvent.get('clientFileId') is clientFileId then return
@@ -589,10 +606,10 @@ load = (win, {clientFileId}) ->
 			@props.setWindowTitle "#{clientName} - KoNote"
 
 			# Sort progNotes by timestamp unixMs (backdate if exists)
-			sortedProgNotes = @props.progressNotes
-			.sortBy (progNote) ->
-				timestampChoice = if progNote.get('backdate') then 'backdate' else 'timestamp'
-				return +Moment progNote.get(timestampChoice), Persist.TimestampFormat
+			sortedProgNoteHistories = @props.progressNoteHistories
+			.sortBy (progNoteHist) ->
+				createdAt = progNoteHist.last().get('backdate') or progNoteHist.first().get('timestamp')
+				return Moment createdAt, Persist.TimestampFormat
 			.reverse()
 
 			return R.div({className: 'clientFilePage'},
@@ -627,7 +644,7 @@ load = (win, {clientFileId}) ->
 						isVisible: activeTabId is 'progressNotes'
 						clientFileId
 						clientFile: @props.clientFile
-						progNotes: sortedProgNotes
+						progNoteHistories: sortedProgNoteHistories
 						progEvents: @props.progressEvents
 						metricsById: @props.metricsById
 						isReadOnly
@@ -639,7 +656,7 @@ load = (win, {clientFileId}) ->
 					AnalysisTab.AnalysisView({
 						isVisible: activeTabId is 'analysis'
 						clientFileId
-						progNotes: sortedProgNotes
+						progNoteHistories: sortedProgNoteHistories
 						progEvents: @props.progressEvents
 						metricsById: @props.metricsById
 						isReadOnly

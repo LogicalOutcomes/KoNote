@@ -55,15 +55,25 @@ load = (win) ->
 			unless Imm.is oldProps.progEvents, @props.progEvents
 				@_generateAnalysis()
 
-			unless Imm.is oldProps.progNotes, @props.progNotes
+			unless Imm.is oldProps.progNoteHistories, @props.progNoteHistories
 				@_generateAnalysis()
 
 		_generateAnalysis: ->			
 			console.log "Generating Analysis...."
 
 			# All non-empty metric values
-			metricValues = @props.progNotes.flatMap (progNote) ->
-				return extractMetricsFromProgNote progNote
+			metricValues = @props.progNoteHistories
+			.filter (progNoteHist) ->
+				# Ignore data from cancelled prognotes
+				switch progNoteHist.last().get('status')
+					when 'default'
+						return true
+					when 'cancelled'
+						return false
+					else
+						throw new Error "unknown prognote status: #{progNoteHist.last().get('status')}"
+			.flatMap (progNoteHist) ->
+				return extractMetricsFromProgNoteHistory progNoteHist
 			.filter (metricValue) -> # remove blank metrics
 				return metricValue.get('value').trim().length > 0
 
@@ -611,7 +621,10 @@ load = (win) ->
 
 
 
-	extractMetricsFromProgNote = (progNote) ->
+	extractMetricsFromProgNoteHistory = (progNoteHist) ->
+		createdAt = progNoteHist.first().get('timestamp')
+		progNote = progNoteHist.last()
+
 		switch progNote.get('type')
 			when 'basic'
 				# Quick notes don't have metrics
@@ -619,7 +632,7 @@ load = (win) ->
 			when 'full'
 				return progNote.get('units').flatMap (section) ->
 					# Apply backdate as timestamp if exists
-					timestamp = progNote.get('backdate') or progNote.get('timestamp')
+					timestamp = progNote.get('backdate') or createdAt
 					return extractMetricsFromProgNoteSection section, timestamp
 			else
 				throw new Error "unknown progNote type: #{JSON.stringify progNote.get('type')}"

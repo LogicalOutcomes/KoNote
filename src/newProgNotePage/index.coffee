@@ -43,7 +43,7 @@ load = (win, {clientFileId}) ->
 				loadErrorType: null
 				progNote: null
 				clientFile: null
-				progNotes: null
+				progNoteHistories: null
 			}
 
 		init: ->
@@ -66,7 +66,7 @@ load = (win, {clientFileId}) ->
 				loadErrorType: @state.loadErrorType
 				progNote: @state.progNote
 				clientFile: @state.clientFile
-				progNotes: @state.progNotes
+				progNoteHistories: @state.progNoteHistories
 				progEvents: @state.progEvents
 
 				closeWindow: @props.closeWindow
@@ -148,14 +148,14 @@ load = (win, {clientFileId}) ->
 						cb null
 				(cb) =>
 					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
-						ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
+						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
 					, (err, results) =>
 						if err
 							cb err
 							return
 
 						@setState (state) =>
-							return {progNotes: Imm.List(results)}
+							return {progNoteHistories: Imm.List(results)}
 
 						cb null
 				(cb) =>
@@ -202,7 +202,7 @@ load = (win, {clientFileId}) ->
 				console.info "progNote", progNote.toJS()
 
 				# Done loading data, we can load in the empty progNote object
-				@setState {						
+				@setState {
 					isLoading: false
 					progNote
 				}
@@ -210,6 +210,7 @@ load = (win, {clientFileId}) ->
 		_createProgNoteFromTemplate: (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
 				type: 'full'
+				status: 'default'
 				clientFileId: clientFile.get('id')
 				templateId: template.get('id')
 				backdate: ''
@@ -473,7 +474,7 @@ load = (win, {clientFileId}) ->
 				)
 				ProgNoteDetailView({
 					item: @state.selectedItem
-					progNotes: @props.progNotes
+					progNoteHistories: @props.progNoteHistories
 					progEvents: @props.progEvents
 				})
 				R.div({className: 'eventsPanel'},

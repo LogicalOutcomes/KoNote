@@ -69,16 +69,20 @@ dataModelDefinitions = [
 			{
 				name: 'progNote'
 				collectionName: 'progNotes'
-				isMutable: false
+				isMutable: true
 				indexes: [['timestamp'], ['backdate']]
 				schema: [
 					Joi.object().keys({
 						type: 'basic' # aka "Quick Notes"
+						status: ['default', 'cancelled']
+						statusReason: Joi.string().optional()
 						notes: Joi.string()
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 					})
 					Joi.object().keys({
 						type: 'full'
+						status: ['default', 'cancelled']
+						statusReason: Joi.string().optional()
 						templateId: IdSchema
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						units: Joi.array().items(

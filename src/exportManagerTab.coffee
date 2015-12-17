@@ -214,13 +214,17 @@ load = (win) ->
 					# Retrieve progNotes
 					(cb) =>
 						Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
-							ActiveSession.persist.progNotes.read clientFileId, progNoteHeader.get('id'), cb
+							ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
 						, (err, results) ->
 							if err
 								cb err
 								return
 
-							progNotes = Imm.List results
+							progNotes = Imm.List(results)
+							.map (progNoteHist) ->
+								# Throw away history, just grab latest revision
+								# TODO keep history for use in export?
+								return progNoteHist.last()
 							console.info "progNotes", progNotes.toJS()
 							cb()
 
@@ -253,6 +257,8 @@ load = (win) ->
 							progNoteTimestamp = if progNote.get('backdate')
 								progNote.get('backdate')
 							else
+								# TODO should this use original creation
+								# timestamp instead of last modified at?
 								progNote.get('timestamp')
 
 							# Apply timestamp with custom format

@@ -21,7 +21,7 @@ load = (win) ->
 		render: ->
 			unless @props.item
 				return R.div({className: 'progNoteDetailView'},
-					if @props.progNotes.size > 0
+					if @props.progNoteHistories.size > 0
 						R.div({className: 'noSelection'},
 							"Select an entry on the left to see more information about it here."
 						)
@@ -32,7 +32,11 @@ load = (win) ->
 					unitId = @props.item.get('unitId')
 					itemName = @props.item.get('unitName')
 
-					entries = @props.progNotes.flatMap (progNote) =>
+					entries = @props.progNoteHistories.flatMap (progNoteHistory) =>
+						initialAuthor = progNoteHistory.first().get('author')
+						createdAt = progNoteHistory.first().get('timestamp')
+						progNote = progNoteHistory.last()
+
 						switch progNote.get('type')
 							when 'basic'
 								return Imm.List()
@@ -45,9 +49,10 @@ load = (win) ->
 										return progEvent.get('relatedProgNoteId') is progNote.get('id')
 
 									return Imm.fromJS {
+										status: progNote.get('status')
 										progNoteId: progNote.get('id')
-										author: progNote.get('author')
-										timestamp: progNote.get('timestamp')
+										author: initialAuthor
+										timestamp: createdAt
 										backdate: progNote.get('backdate')
 										notes: unit.get('notes')
 										progEvents
@@ -61,7 +66,11 @@ load = (win) ->
 					targetId = @props.item.get('targetId')
 					itemName = @props.item.get('targetName')
 
-					entries = @props.progNotes.flatMap (progNote) =>
+					entries = @props.progNoteHistories.flatMap (progNoteHistory) =>
+						initialAuthor = progNoteHistory.first().get('author')
+						createdAt = progNoteHistory.first().get('timestamp')
+						progNote = progNoteHistory.last()
+
 						switch progNote.get('type')
 							when 'basic'
 								return Imm.List()
@@ -79,8 +88,9 @@ load = (win) ->
 												return progEvent.get('relatedProgNoteId') is progNote.get('id')
 
 											return Imm.fromJS {
+												status: progNote.get('status')
 												progNoteId: progNote.get('id')
-												author: progNote.get('author')
+												author: initialAuthor
 												timestamp: progNote.get('timestamp')
 												backdate: progNote.get('backdate')
 												notes: target.get('notes')
@@ -95,6 +105,14 @@ load = (win) ->
 			entries = entries
 			.filter (entry) -> # remove blank entries
 				return entry.get('notes').trim().length > 0
+			.filter (entry) -> # remove cancelled entries
+				switch entry.get('status')
+					when 'default'
+						return true
+					when 'cancelled'
+						return false
+					else
+						throw new Error "unknown prognote status: #{entry.get('status')}"
 			.sortBy (entry) ->
 				if entry.get('backdate')
 					return entry.get('backdate')

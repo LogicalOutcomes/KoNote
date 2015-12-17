@@ -728,6 +728,44 @@ encryptAllFileNames = (dataDir, globalEncryptionKey, cb) ->
 				, cb
 		], cb
 
+addProgNoteStatusFields = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+			progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
+
+			progNoteObjectFilePath = null
+			progNoteObject = null
+
+			Async.series [
+				(cb) ->
+					Fs.readdir progNotePath, (err, revisions) ->
+						if err
+							cb err
+							return
+
+						Assert.equal revisions.length, 1, 'should always be exactly one prognote revision'
+						progNoteObjectFilePath = revisions[0]
+
+						cb()
+				(cb) ->
+					Fs.readFile progNoteObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
+
+						progNoteObject = JSON.parse globalEncryptionKey.decrypt result
+
+						cb()
+				(cb) ->
+					progNoteObject.status = 'default'
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progNoteObject
+
+					Fs.writeFile progNoteObjectFilePath, encryptedObj, cb
+			], cb
+		, cb
+	, cb
 
 
 # ////////////////////// Migration Series //////////////////////
@@ -780,6 +818,12 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "6. Encrypt indexed fields"
 				encryptAllFileNames dataDir, globalEncryptionKey, cb
+
+			# Add status fields to prognotes
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "7. Add status fields to progress notes"
+				addProgNoteStatusFields dataDir, globalEncryptionKey, cb
 
 		], (err) ->
 			if err

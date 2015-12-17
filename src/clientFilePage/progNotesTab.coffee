@@ -2,6 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+Assert = require 'assert'
 Imm = require 'immutable'
 Moment = require 'moment'
 
@@ -14,9 +15,11 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	CancelProgNoteDialog = require('./cancelProgNoteDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	OpenDialogLink = require('../openDialogLink').load(win)
 	ProgEventsWidget = require('../progEventsWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	PrintButton = require('../printButton').load(win)
@@ -51,7 +54,7 @@ load = (win) ->
 
 		render: ->
 			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
-				R.div({className: "toolbar #{showWhen @props.progNotes.size > 0}"},
+				R.div({className: "toolbar #{showWhen @props.progNoteHistories.size > 0}"},
 					R.button({
 						className: 'newProgNote btn btn-primary'
 						onClick: @_openNewProgNote
@@ -61,7 +64,7 @@ load = (win) ->
 						"New #{Term 'progress note'}"
 					)
 					R.button({
-						className: "addQuickNote btn btn-default #{showWhen @props.progNotes.size > 0}"						
+						className: "addQuickNote btn btn-default #{showWhen @props.progNoteHistories.size > 0}"						
 						onClick: @_toggleQuickNotePopover
 						disabled: @props.isReadOnly
 					},
@@ -72,7 +75,7 @@ load = (win) ->
 				R.div({className: 'panes'},
 					R.div({className: 'progNotes'},
 						R.div({
-							className: "empty #{showWhen @props.progNotes.size is 0}"},
+							className: "empty #{showWhen @props.progNoteHistories.size is 0}"},
 							R.div({className: 'message'},
 								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
 							)
@@ -85,7 +88,7 @@ load = (win) ->
 								"New #{Term 'progress note'}"
 							)
 							R.button({
-								className: "addQuickNote btn btn-default btn-lg #{showWhen @props.progNotes.size is 0}"								
+								className: "addQuickNote btn btn-default btn-lg #{showWhen @props.progNoteHistories.size is 0}"								
 								onClick: @_toggleQuickNotePopover
 								disabled: @props.isReadOnly
 							},
@@ -93,7 +96,17 @@ load = (win) ->
 								"Add #{Term 'quick note'}"
 							)
 						)
-						(@props.progNotes.map (progNote) =>
+						(@props.progNoteHistories.map (progNoteHistory) =>
+							progNote = progNoteHistory.last()
+
+							if progNote.get('status') is 'cancelled'
+								return CancelledProgNoteView({
+									key: progNote.get('id')
+									progNoteHistory
+								})
+
+							Assert.equal progNote.get('status'), 'default'
+
 							# Filter out only events for this progNote
 							progEvents = @props.progEvents.filter (progEvent) =>
 								return progEvent.get('relatedProgNoteId') is progNote.get('id')
@@ -113,7 +126,7 @@ load = (win) ->
 
 										progNote
 										progEvents
-										clientFile: @props.clientFile										
+										clientFile: @props.clientFile
 										setSelectedItem: @_setSelectedItem
 										selectedItem: @state.selectedItem
 									})
@@ -123,7 +136,7 @@ load = (win) ->
 					)
 					ProgNoteDetailView({
 						item: @state.selectedItem
-						progNotes: @props.progNotes
+						progNoteHistories: @props.progNoteHistories
 						progEvents: @props.progEvents
 					})
 				)
@@ -248,6 +261,16 @@ load = (win) ->
 							iconOnly: true
 							tooltip: {show: true}
 						})
+						WithTooltip({title: "Cancel", placement: 'top'},
+							OpenDialogLink({
+								dialog: CancelProgNoteDialog
+								progNote: @props.progNote
+							},
+								R.a({className: 'cancel'},
+									FaIcon 'ban'
+								)
+							)
+						)
 					)
 					renderLineBreaks @props.progNote.get('notes')
 				)
@@ -288,8 +311,13 @@ load = (win) ->
 							tooltip: {show: true}
 						})
 						WithTooltip({title: "Cancel", placement: 'top'},
-							R.a({className: 'cancel', onClick: @_cancel},
-								FaIcon 'ban'
+							OpenDialogLink({
+								dialog: CancelProgNoteDialog
+								progNote: @props.progNote
+							},
+								R.a({className: 'cancel'},
+									FaIcon 'ban'
+								)
 							)
 						)
 					)
@@ -414,6 +442,28 @@ load = (win) ->
 				targetId: target.get('id')
 				targetName: target.get('name')
 			}
+
+	CancelledProgNoteView = React.createFactory React.createClass
+		render: ->
+			return R.div({className: 'cancelStub'},
+				R.strong({},
+					"Cancelled #{Term 'progress note'} from ",
+
+					if @props.progNoteHistory.last().get('backdate')
+						Moment(@props.progNoteHistory.last().get('backdate'), Persist.TimestampFormat)
+						.format('MMMM D, YYYY') + " (late entry)"
+					else
+						Moment(@props.progNoteHistory.first().get('timestamp'), Persist.TimestampFormat)
+						.format 'MMMM D, YYYY [at] HH:mm'
+				)
+				R.br()
+
+				"Reason for cancellation: ",
+
+				R.div({className: 'reason'},
+					@props.progNoteHistory.last().get('statusReason')
+				)
+			)
 
 	return {ProgNotesView}
 

@@ -71,6 +71,19 @@
 							> .btn
 								margin-left 5px
 
+			> .cancelStub
+				margin 0 0 20px
+
+				border 1px solid sidebar-borders
+				border-radius 3px
+
+				background sidebar-bg
+
+				padding 5px
+
+				> .reason
+					padding 0 6px
+
 			> .progNote
 				flex 1
 
@@ -96,6 +109,19 @@
 						> .progNoteToolbar
 							float right
 
+							display flex
+
+							> .cancel
+								display inline-block
+
+								padding 0 0 5px
+
+								color black
+								cursor pointer
+
+								&:hover
+									color red
+
 						> br
 							display block
 
@@ -119,7 +145,7 @@
 								cursor pointer
 
 								&:hover
-									color #286090
+									color red
 
 						> .unit
 							padding-bottom 20px
