@@ -237,7 +237,10 @@ load = (win) ->
 					)
 				R.a({
 					id: 'expandMenuButton'					
-					onClick: @_toggleUserMenu
+					onClick: =>
+						@_toggleUserMenu()
+						@refs.searchBox.getDOMNode().focus() if @state.menuIsOpen
+
 				},					
 					FaIcon(if @state.managerLayer? then 'times' else 'bars')
 				)
@@ -256,7 +259,9 @@ load = (win) ->
 					)
 					R.div({
 						id: 'main'
-						onClick: if @state.menuIsOpen then @_toggleUserMenu
+						onClick: =>
+							@_toggleUserMenu() if @state.menuIsOpen
+							@refs.searchBox.getDOMNode().focus()
 					},
 						Spinner({
 							isVisible: @props.isLoading
