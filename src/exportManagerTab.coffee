@@ -39,6 +39,11 @@ load = (win) ->
 			.attr("nwsaveas", "konote-metrics-#{timestamp}")
 			.attr("accept", ".csv")
 			.on('change', (event) => @_saveMetrics event.target.value)
+			
+			$eventsChooser = $(@refs.eventsFileDialog.getDOMNode())
+			.attr("nwsaveas", "konote-events-#{timestamp}")
+			.attr("accept", ".csv")
+			.on('change', (event) => @_saveEvents event.target.value)
 		
 		render: ->
 			return R.div({className: 'exportManagerTab'},
@@ -54,12 +59,18 @@ load = (win) ->
 				R.input({
 					className: 'hidden'
 					type: 'file'
-					ref: 'backupFileDialog'
+					ref: 'metricsFileDialog'
 				})
+				R.div({className: 'main'},
+					R.button({
+						className: 'btn btn-primary btn-lg'
+						onClick: @_exportEventsDirectory
+					}, "Export Events")
+				)
 				R.input({
 					className: 'hidden'
 					type: 'file'
-					ref: 'metricsFileDialog'
+					ref: 'eventsFileDialog'
 				})
 				R.div({className: 'main'},
 					R.button({
@@ -67,8 +78,90 @@ load = (win) ->
 						onClick: @_exportDataDirectory
 					}, "Backup Data")
 				)
+				R.input({
+					className: 'hidden'
+					type: 'file'
+					ref: 'backupFileDialog'
+				})
 			)
+		
+		_saveEvents: (path) ->
+			# Map over client files
+			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
+				progEventsHeaders = null
+				progEvents = null
+				progEventsList = null
+				clientFileId = clientFile.get('id')
+				clientName = renderName clientFile.get('clientName')
+				csv = null
 
+				Async.series [
+					# get event headers
+					(cb) =>
+						ActiveSession.persist.progEvents.list clientFileId, (err, results) ->
+							if err
+								cb err
+								return
+
+							progEventsHeaders = results
+							cb()
+
+					# read each event
+					(cb) =>
+						Async.map progEventsHeaders.toArray(), (progEvent, cb) ->
+							ActiveSession.persist.progEvents.read clientFileId, progEvent.get('id'), cb
+						, (err, results) ->
+							if err
+								cb err
+								return
+
+							progEvents = Imm.List results
+							cb()
+							
+					# csv format: id, timestamp, username, title, description, start time, end time
+					(cb) =>
+						progEvents = progEvents.map (event) ->
+							return {
+								id: event.get('id')
+								timestamp: Moment(event.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
+								author: event.get('author')
+								clientName
+								title: event.get('title')
+								description: event.get('description')
+								startDate: Moment(event.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
+								endDate: Moment(event.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
+							}
+						cb null, progEvents
+						, (err, results) ->
+							if err
+								cb err
+								return
+							progEvents = Imm.List results
+							cb()
+					
+					# convert to csv
+					(cb) =>
+						CSVConverter.json2csv progEvents.toJS(), (err, result) ->
+							csv = result
+							cb()
+					
+				], (err) ->
+					if err
+						CrashHandler.handle err
+						return
+
+					# destination path must exist in order to save
+					if path.length > 1
+						Fs.writeFile path, csv, (err) ->
+							if err
+								CrashHandler.handle err
+								return
+
+							Bootbox.alert {
+								title: "Save Successful"
+								message: "Events exported to: #{path}"
+							}
+	
 		_saveMetrics: (path) ->
 			metrics = null
 
@@ -229,6 +322,10 @@ load = (win) ->
 				
 		_exportMetricsDirectory: ->
 			metricsFileChooser = React.findDOMNode(@refs.metricsFileDialog)
+			metricsFileChooser.click()
+			
+		_exportEventsDirectory: ->
+			metricsFileChooser = React.findDOMNode(@refs.eventsFileDialog)
 			metricsFileChooser.click()
 		
 		_exportDataDirectory: ->
