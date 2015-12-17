@@ -152,7 +152,7 @@ load = (win) ->
 						R.div({className: 'targetDetailContainer'},
 							R.div({className: 'metricsSection'},
 								R.div({className: 'header'},
-									R.div({className: 'text'}, 'Metrics')
+									R.div({className: 'text'}, Term('Metrics'))
 								)
 								(if metricDefs.size is 0
 									R.div({className: 'noMetrics'},
