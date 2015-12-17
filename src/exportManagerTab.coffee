@@ -24,26 +24,7 @@ load = (win) ->
 	{TimestampFormat} = require('./persist/utils')
 
 	ExportManagerTab = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]
-		
-		componentDidMount: ->
-			# Register listeners for full data backup
-			timestamp = Moment().format('YYYY-MM-DD')
-
-			$backupChooser = $(@refs.backupFileDialog.getDOMNode())
-			.attr("nwsaveas", "konote-backup-#{timestamp}")
-			.attr("accept", ".zip")
-			.on('change', (event) => @_saveBackup event.target.value)
-			
-			$metricsChooser = $(@refs.metricsFileDialog.getDOMNode())
-			.attr("nwsaveas", "konote-metrics-#{timestamp}")
-			.attr("accept", ".csv")
-			.on('change', (event) => @_saveMetrics event.target.value)
-			
-			$eventsChooser = $(@refs.eventsFileDialog.getDOMNode())
-			.attr("nwsaveas", "konote-events-#{timestamp}")
-			.attr("accept", ".csv")
-			.on('change', (event) => @_saveEvents event.target.value)
+		mixins: [React.addons.PureRenderMixin]	
 		
 		render: ->
 			return R.div({className: 'exportManagerTab'},
@@ -51,39 +32,51 @@ load = (win) ->
 					R.h1({}, "Export Data")
 				)
 				R.div({className: 'main'},
+					# Hidden input for handling file saving
+					R.input({
+						ref: 'nwsaveas'
+						className: 'hidden'
+						type: 'file'
+					})
+
 					R.button({
 						className: 'btn btn-primary btn-lg'
-						onClick: @_exportMetricsDirectory
+						onClick: @_export.bind null, {
+							defaultName: "konote-metrics"
+							extension: 'csv'
+							runExport: @_saveMetrics
+						}
 					}, "Export Metrics")
-				)
-				R.input({
-					className: 'hidden'
-					type: 'file'
-					ref: 'metricsFileDialog'
-				})
-				R.div({className: 'main'},
 					R.button({
 						className: 'btn btn-primary btn-lg'
-						onClick: @_exportEventsDirectory
+						onClick: @_export.bind null, {
+							defaultName: "konote-events"
+							extension: 'csv'
+							runExport: @_saveEvents
+						}
 					}, "Export Events")
-				)
-				R.input({
-					className: 'hidden'
-					type: 'file'
-					ref: 'eventsFileDialog'
-				})
-				R.div({className: 'main'},
 					R.button({
 						className: 'btn btn-primary btn-lg'
-						onClick: @_exportDataDirectory
+						onClick: @_export.bind null, {
+							defaultName: "konote-backup"
+							extension: 'zip'
+							runExport: @_saveBackup
+						}
 					}, "Backup Data")
 				)
-				R.input({
-					className: 'hidden'
-					type: 'file'
-					ref: 'backupFileDialog'
-				})
 			)
+
+		_export: ({defaultName, extension, runExport}) ->
+			timestamp = Moment().format('YYYY-MM-DD')
+			# Configures hidden file inputs with custom attributes, and clicks it
+			$nwsaveasInput = $(@refs.nwsaveas.getDOMNode())
+
+			$nwsaveasInput
+			.off()
+			.attr('nwsaveas', "#{defaultName}-#{timestamp}")
+			.attr('accept', ".#{extension}")			
+			.on('change', (event) => runExport event.target.value)
+			.click()
 		
 		_saveEvents: (path) ->
 			# Map over client files
@@ -324,21 +317,11 @@ load = (win) ->
 							Bootbox.alert {
 								title: "Save Successful"
 								message: "Metrics exported to: #{path}"
-							}					
-				
-		_exportMetricsDirectory: ->
-			metricsFileChooser = React.findDOMNode(@refs.metricsFileDialog)
-			metricsFileChooser.click()
-			
-		_exportEventsDirectory: ->
-			metricsFileChooser = React.findDOMNode(@refs.eventsFileDialog)
-			metricsFileChooser.click()
-		
-		_exportDataDirectory: ->
-			chooser = React.findDOMNode(@refs.backupFileDialog)
-			chooser.click()
+							}
 			
 		_saveBackup: (path) ->
+			console.log "Running save backup!"
+
 			# Destination path must exist in order to save
 			if path.length > 1
 				output = Fs.createWriteStream(path)
