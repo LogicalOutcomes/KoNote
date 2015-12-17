@@ -32,7 +32,7 @@ load = (win, {clientFileId}) ->
 	Spinner = require('../spinner').load(win)
 	{FaIcon, renderName, showWhen} = require('../utils').load(win)
 
-	myTemplate = Imm.fromJS Config.templates[Config.useTemplate]
+	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
 	NewProgNotePage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -74,7 +74,8 @@ load = (win, {clientFileId}) ->
 			})
 
 		_loadData: ->
-			template = myTemplate # TODO
+			template = progNoteTemplate
+
 			planTargetsById = null
 			metricsById = null
 			planTargetHeaders = null
