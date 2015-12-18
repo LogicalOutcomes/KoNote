@@ -399,6 +399,12 @@ load = (win, {clientFileId}) ->
 												})
 											).toJS()...
 										)
+										R.div({
+											className: 'events'
+											onClick: @_newEventTab.bind null, {unitId}
+										},
+											
+										)
 									)
 								when 'plan'
 									R.div({
@@ -504,6 +510,7 @@ load = (win, {clientFileId}) ->
 								EventTabView({
 									data: thisEvent
 									atIndex: index
+									progNote: @state.progNote
 									save: @_saveEventData
 									cancel: @_cancelEditing
 									editMode: @state.editingWhichEvent?
@@ -520,9 +527,10 @@ load = (win, {clientFileId}) ->
 				)
 			)
 
-		_newEventTab: ->
+		_newEventTab: (relatedId) ->			
+			newProgEvent = if relatedId? then {relatedId} else {}
 			# Add in the new event, select last one
-			@setState {progEvents: @state.progEvents.push {}}, => 
+			@setState {progEvents: @state.progEvents.push newProgEvent}, => 
 				@setState {editingWhichEvent: @state.progEvents.size - 1}
 
 		_editEventTab: (index) ->

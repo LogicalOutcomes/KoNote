@@ -113,6 +113,28 @@ load = (win) ->
 							placeholder: "Describe details (optional)"
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "Plan Relation")
+						R.select({},
+							R.option({}, "No Relation")
+							(@props.progNote.get('units').map (unit) =>
+								switch unit.get('type')
+									when 'basic'
+										R.option({}, unit.get('name'))
+									when 'plan'
+										R.optgroup({label: unit.get('name')},
+											(unit.get('sections').map (section) =>
+												R.option({},
+													section.get('name')
+													(section.get('targets').map (target) =>
+														R.option({}, "- #{target.get('name')}")
+													)
+												)
+											)
+										)
+							)
+						)
+					)
 					R.div({className: "dateGroup"},
 						R.div({className: 'form-group date'},
 							R.label({}, if @state.isDateSpan then "Start Date" else "Date")
