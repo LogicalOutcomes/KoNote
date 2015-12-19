@@ -84,6 +84,7 @@ load = (win) ->
 			}).on 'dp.change', (thisInput) =>
 				@setState {endTime: thisInput.date}
 
+
 		render: ->
 			return R.div({
 				className: "eventView #{showWhen @props.isBeingEdited or not @props.editMode}"
@@ -120,7 +121,7 @@ load = (win) ->
 							(@props.progNote.get('units').map (unit) =>
 								switch unit.get('type')
 									when 'basic'
-										R.option({}, unit.get('name'))
+										R.option({}}, unit.get('name'))
 									when 'plan'
 										R.optgroup({label: unit.get('name')},
 											(unit.get('sections').map (section) =>
@@ -133,6 +134,9 @@ load = (win) ->
 											)
 										)
 							)
+						)
+						R.div({},
+							R.a({onClick: @_toggleEventRelationMode}, "Select from plan")
 						)
 					)
 					R.div({className: "dateGroup"},
@@ -270,6 +274,12 @@ load = (win) ->
 
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
+
+		_toggleEventRelationMode: ->
+			if @props.selectedEventRelation?				
+				@props.selectEventRelation null # Cancels eventRelationMode
+			else
+				@props.selectEventRelation false # Instantiates it
 
 		_closeForm: (event) ->
 			event.preventDefault()

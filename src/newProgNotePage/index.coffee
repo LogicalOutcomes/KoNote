@@ -273,8 +273,10 @@ load = (win, {clientFileId}) ->
 
 				progEvents: Imm.List()
 				editingWhichEvent: null
+				selectedEventRelation: null
+
 				success: false
-				showExitAlert: false
+				showExitAlert: false				
 			}
 
 		suggestClose: ->
@@ -364,7 +366,12 @@ load = (win, {clientFileId}) ->
 					)
 
 					R.hr({})
-					R.div({className: 'units'},
+					R.div({
+						className: [
+							'units'
+							'eventRelationMode' if @state.selectedEventRelation?
+						].join ' '
+					},
 						(@state.progNote.get('units').map (unit) =>
 							unitId = unit.get 'id'
 
@@ -426,8 +433,12 @@ load = (win, {clientFileId}) ->
 													targetId = target.get 'id'
 
 													R.div({
-														className: 'target'
+														className: [
+															'target'
+															'selectedEventRelation' if Imm.is target, @state.selectedEventRelation
+														].join ' '
 														key: targetId
+														onClick: @_selectEventRelation.bind(null, target) if @state.selectedEventRelation?
 													},
 														R.h3({}, target.get 'name')
 														ExpandingTextArea {
@@ -515,6 +526,8 @@ load = (win, {clientFileId}) ->
 									cancel: @_cancelEditing
 									editMode: @state.editingWhichEvent?
 									isBeingEdited
+									selectedEventRelation: @state.selectedEventRelation
+									selectEventRelation: @_selectEventRelation
 								})
 							)
 						)
@@ -546,6 +559,10 @@ load = (win, {clientFileId}) ->
 				@setState {progEvents: @state.progEvents.delete(index)}
 
 			@setState {editingWhichEvent: null}
+
+		_selectEventRelation: (selectedEventRelation) ->
+			console.log "Selecting eventRelation", selectedEventRelation
+			@setState {selectedEventRelation}
 
 			
 		_getUnitIndex: (unitId) ->
