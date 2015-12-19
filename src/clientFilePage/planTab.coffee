@@ -662,7 +662,7 @@ load = (win) ->
 			@props.onTargetUpdate newValue
 		_onTargetClick: (event) ->
 			unless event.target.classList.contains 'field'
-				@refs.nameField.getDOMNode().focus()
+				@refs.nameField.focus()
 
 	return {PlanView}
 

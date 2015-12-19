@@ -129,33 +129,33 @@ load = (win) ->
 		componentDidMount: ->
 			unless Config.autoLogin? or (@props.isSetUp and @props.isNewInstallation)
 				setTimeout(=>
-					@refs.userNameField.getDOMNode().focus()
+					@refs.userNameField.focus()
 				, 100)
 
 			if @props.isNewInstallation
 				@setState {
 					userName: 'admin'
 				}, ->
-					@refs.passwordField.getDOMNode().focus()
+					@refs.passwordField.focus()
 
 		onLoginError: (type) ->
 			switch type
 				when 'UnknownUserNameError'
 					Bootbox.alert "Unknown user name.  Please try again.", =>
 						setTimeout(=>
-							@refs.userNameField.getDOMNode().focus()
+							@refs.userNameField.focus()
 						, 100)
 				when 'IncorrectPasswordError'
 					Bootbox.alert "Incorrect password.  Please try again.", =>
 						@setState {password: ''}
 						setTimeout(=>
-							@refs.passwordField.getDOMNode().focus()
+							@refs.passwordField.focus()
 						, 100)
 				when 'DeactivatedAccountError'
 					Bootbox.alert "This user account has been deactivated.", =>
-						@refs.userNameField.getDOMNode().focus()
+						@refs.userNameField.focus()
 						setTimeout(=>
-							@refs.userNameField.getDOMNode().focus()
+							@refs.userNameField.focus()
 						, 100)
 				else
 					throw new Error "Invalid Login Error"

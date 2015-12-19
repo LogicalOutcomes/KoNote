@@ -425,7 +425,7 @@ load = (win) ->
 
 			# Generate and bind the chart
 			@_chart = C3.generate {						
-					bindto: @refs.chartDiv.getDOMNode()
+					bindto: @refs.chartDiv
 					grid: {
 						x: {
 							lines: newYearLines.toJS()

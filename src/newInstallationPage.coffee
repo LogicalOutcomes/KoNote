@@ -37,7 +37,7 @@ load = (win) ->
 			# Detech tab change to createAdmin
 			if @state.openTab isnt oldState.openTab and @state.openTab is 'createAdmin'
 				# Focus first password input
-				$password = $(@refs.password.getDOMNode())
+				$password = $(@refs.password)
 				$password.focus()
 
 		render: ->
@@ -177,13 +177,13 @@ load = (win) ->
 			onDirection = if isIndex then 'Right' else 'Left'
 
 			# Transition out oldTab
-			$oldTab = $(@refs[openTab].getDOMNode())
+			$oldTab = $(@refs[openTab])
 			$oldTab.attr 'class', ('animated fadeOut' + offDirection)
 
 			# Wait (.75 of anim default) and transition in the newTab
 			setTimeout(=>
 				@setState {openTab: newTab}, =>
-					$newTab = $(@refs[newTab].getDOMNode())
+					$newTab = $(@refs[newTab])
 					$newTab.attr 'class', ('animated fadeIn' + onDirection)
 			, 500)
 

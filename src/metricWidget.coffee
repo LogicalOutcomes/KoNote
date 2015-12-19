@@ -16,7 +16,7 @@ load = (win) ->
 			tooltipContent = R.div({className: 'tooltipContent'},
 				renderLineBreaks @props.definition
 			)
-			$(@refs.name.getDOMNode()).tooltip {
+			$(@refs.name).tooltip {
 				html: true
 				title: React.renderToString tooltipContent
 			}

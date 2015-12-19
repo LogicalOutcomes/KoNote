@@ -34,7 +34,7 @@ load = (win) ->
 				isDefineMetricDialogVisible: false
 			}
 		componentDidMount: ->
-			lookupField = $(@refs.lookupField.getDOMNode())
+			lookupField = $(@refs.lookupField)
 
 			lookupField.typeahead {
 				highlight: true
@@ -101,13 +101,13 @@ load = (win) ->
 				return R.div()
 
 			return DefineMetricDialog({
-				metricQuery: $(@refs.lookupField.getDOMNode()).val()
+				metricQuery: $(@refs.lookupField).val()
 				onCancel: =>
 					@setState {isDefineMetricDialogVisible: false}
 				onSuccess: (newMetricId) =>
 					@setState {isDefineMetricDialogVisible: false}
 
-					lookupField = $(@refs.lookupField.getDOMNode())
+					lookupField = $(@refs.lookupField)
 					lookupField.typeahead 'val', ''
 					lookupField.focus()
 
