@@ -10,8 +10,8 @@ load = (win) ->
 	# Libraries from browser context
 	$ = win.jQuery
 	React = win.React
-	Bootbox = win.bootbox
 	R = React.DOM
+	Bootbox = win.bootbox	
 
 	Spinner = require('./spinner').load(win)	
 	{FaIcon} = require('./utils').load(win)

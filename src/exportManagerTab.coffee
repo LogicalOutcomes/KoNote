@@ -327,16 +327,13 @@ load = (win) ->
 							}					
 				
 		_exportMetricsDirectory: ->
-			metricsFileChooser = React.findDOMNode(@refs.metricsFileDialog)
-			metricsFileChooser.click()
+			@refs.metricsFileDialog.click()
 			
 		_exportEventsDirectory: ->
-			metricsFileChooser = React.findDOMNode(@refs.eventsFileDialog)
-			metricsFileChooser.click()
+			@refs.eventsFileDialog.click()
 		
 		_exportDataDirectory: ->
-			chooser = React.findDOMNode(@refs.backupFileDialog)
-			chooser.click()
+			@refs.backupFileDialog.click()
 			
 		_saveBackup: (path) ->
 			# Destination path must exist in order to save

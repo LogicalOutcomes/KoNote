@@ -10,6 +10,7 @@ Persist = require './persist'
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
+	ReactDOM = win.ReactDOM
 	R = React.DOM
 	Bootbox = win.bootbox
 	Gui = win.require 'nw.gui'
@@ -61,7 +62,7 @@ load = (win) ->
 
 		_focusPasswordField: ->
 			setTimeout(=>
-				@refs.passwordField.getDOMNode().focus()
+				@refs.passwordField.focus()
 			, 50)
 
 		showTimeoutMessage: ->
@@ -168,7 +169,7 @@ load = (win) ->
 		timeoutContainer.id = 'timeoutContainer'
 		win.document.body.appendChild timeoutContainer
 
-		timeoutComponent = React.render TimeoutWarning({}), timeoutContainer
+		timeoutComponent = ReactDOM.render TimeoutWarning({}), timeoutContainer
 
 		$('body').bind "mousemove mousedown keypress scroll", ->
 			global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
