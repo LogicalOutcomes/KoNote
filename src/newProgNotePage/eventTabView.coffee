@@ -9,6 +9,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	Bootbox = win.bootbox	
+	{DropdownButton, MenuItem} = win.ReactBootstrap
 
 	Moment = require 'moment'
 	_ = require 'underscore'
@@ -115,28 +116,57 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Plan Relation")
-						R.select({},
-							R.option({}, "No Relation")
+						R.label({}, "Relationship to Plan")
+						DropdownButton({
+							title: (
+								if @props.selectedEventPlanRelation
+									@props.selectedEventPlanRelation.get('name')
+								else 
+									"No Relationship"
+							)
+							onToggle: @props.updateEventPlanRelationMode
+						},
+							# Enable cancel option if something's been selected
+							if @props.selectedEventPlanRelation
+								([
+									MenuItem({
+										onClick: @props.selectEventPlanRelation.bind null, null									
+									}, 
+										"None "
+										FaIcon('ban')
+									)
+									MenuItem({divider: true})
+								])
+
 							(@props.progNote.get('units').map (unit) =>
 								switch unit.get('type')
 									when 'basic'
-										R.option({}, unit.get('name'))
+										MenuItem({
+											key: unit.get('id')
+											onClick: @props.selectEventPlanRelation.bind null, unit											
+										}, unit.get('name'))
 									when 'plan'
-										R.optgroup({label: unit.get('name')},
+										([
+											MenuItem({
+												header: true
+											}, unit.get('name'))
 											(unit.get('sections').map (section) =>
-												R.option({},
-													section.get('name')
+												([
+													MenuItem({
+														key: section.get('id')
+														onClick: @props.selectEventPlanRelation.bind null, section
+													}, section.get('name'))
 													(section.get('targets').map (target) =>
-														R.option({}, "- #{target.get('name')}")
+														MenuItem({
+															key: target.get('id')
+															onClick: @props.selectEventPlanRelation.bind null, target
+														}, target.get('name'))
 													)
-												)
+												])
 											)
-										)
+											MenuItem({divider: true})
+										])
 							)
-						)
-						R.div({},
-							R.a({onClick: @_toggleEventRelationMode}, "Select from plan")
 						)
 					)
 					R.div({className: "dateGroup"},
@@ -274,12 +304,6 @@ load = (win) ->
 
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
-
-		_toggleEventRelationMode: ->
-			if @props.selectedEventRelation?				
-				@props.selectEventRelation null # Cancels eventRelationMode
-			else
-				@props.selectEventRelation false # Instantiates it
 
 		_closeForm: (event) ->
 			event.preventDefault()

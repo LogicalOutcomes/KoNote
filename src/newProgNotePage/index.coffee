@@ -199,8 +199,6 @@ load = (win, {clientFileId}) ->
 					metricsById
 				)
 
-				console.info "progNote", progNote.toJS()
-
 				# Done loading data, we can load in the empty progNote object
 				@setState {
 					isLoading: false
@@ -273,7 +271,10 @@ load = (win, {clientFileId}) ->
 
 				progEvents: Imm.List()
 				editingWhichEvent: null
-				selectedEventRelation: null
+
+				isEventPlanRelationMode: null
+				selectedEventPlanRelation: null
+				hoveredEventPlanRelation: null
 
 				success: false
 				showExitAlert: false				
@@ -369,23 +370,21 @@ load = (win, {clientFileId}) ->
 					R.div({
 						className: [
 							'units'
-							'eventRelationMode' if @state.selectedEventRelation?
+							'eventPlanRelationMode' if @state.isEventPlanRelationMode
 						].join ' '
 					},
 						(@state.progNote.get('units').map (unit) =>
 							unitId = unit.get 'id'
-
-							console.info "unitId", unitId
 
 							switch unit.get('type')
 								when 'basic'
 									R.div({
 										key: unitId
 										className: [
-											'unit basic'
-											'selectedEventRelation' if Imm.is unit, @state.selectedEventRelation
+											'unit basic isEventRelatable'											
+											'selectedEventPlanRelation' if Imm.is unit, @state.selectedEventPlanRelation
 										].join ' '										
-										onClick: @_selectEventRelation.bind(null, unit) if @state.selectedEventRelation?
+										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.selectedEventPlanRelation?
 									},
 										R.h1({className: 'name'}, unit.get 'name')
 										ExpandingTextArea({
@@ -431,9 +430,15 @@ load = (win, {clientFileId}) ->
 											sectionId = section.get 'id'
 
 											R.section({
-												key: sectionId
-												className: 'selectedEventRelation' if Imm.is section, @state.selectedEventRelation												
-												onClick: @_selectEventRelation.bind(null, section) if @state.selectedEventRelation?
+												key: sectionId												
+												className: [
+													'isEventPlanRelatable'
+													'hoveredEventPlanRelation' if Imm.is section, @state.hoveredEventPlanRelation
+													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
+												].join ' '
+												onMouseOver: @_hoverEventPlanRelation.bind(null, section)
+												onMouseOut: @_hoverEventPlanRelation.bind(null, null)
+												onClick: @_selectEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
 											},
 												R.h2({}, section.get 'name')
 
@@ -443,10 +448,13 @@ load = (win, {clientFileId}) ->
 													R.div({
 														key: targetId
 														className: [
-															'target'
-															'selectedEventRelation' if Imm.is target, @state.selectedEventRelation
-														].join ' '														
-														onClick: @_selectEventRelation.bind(null, target) if @state.selectedEventRelation?
+															'target isEventPlanRelatable'
+															'hoveredEventPlanRelation' if Imm.is target, @state.hoveredEventPlanRelation
+															'selectedEventPlanRelation' if Imm.is target, @state.selectedEventPlanRelation
+														].join ' '
+														onMouseOver: @_hoverEventPlanRelation.bind(null, target)
+														onMouseOut: @_hoverEventPlanRelation.bind(null, null)
+														onClick: @_selectEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
 													},
 														R.h3({}, target.get 'name')
 														ExpandingTextArea {
@@ -534,8 +542,9 @@ load = (win, {clientFileId}) ->
 									cancel: @_cancelEditing
 									editMode: @state.editingWhichEvent?
 									isBeingEdited
-									selectedEventRelation: @state.selectedEventRelation
-									selectEventRelation: @_selectEventRelation
+									updateEventPlanRelationMode: @_updateEventPlanRelationMode
+									selectedEventPlanRelation: @state.selectedEventPlanRelation
+									selectEventPlanRelation: @_selectEventPlanRelation
 								})
 							)
 						)
@@ -568,11 +577,25 @@ load = (win, {clientFileId}) ->
 
 			@setState {editingWhichEvent: null}
 
-		_selectEventRelation: (selectedEventRelation, event) ->
+		_selectEventPlanRelation: (selectedEventPlanRelation, event) ->
 			event.stopPropagation() if event?
-			console.log "Selecting eventRelation", selectedEventRelation
-			@setState {selectedEventRelation}
 
+			# Enable eventPlanRelationMode if not already on
+			unless @state.isEventPlanRelationMode
+				@setState {isEventPlanRelationMode: true}
+
+			# Disable when chooses "No Relation" (null)
+			unless selectedEventPlanRelation?
+				@setState {isEventPlanRelationMode: false}
+
+			@setState {selectedEventPlanRelation}
+
+		_hoverEventPlanRelation: (hoveredEventPlanRelation, event) ->
+			event.stopPropagation() if event?
+			@setState {hoveredEventPlanRelation}
+
+		_updateEventPlanRelationMode: (isEventPlanRelationMode) ->
+			@setState {isEventPlanRelationMode}
 			
 		_getUnitIndex: (unitId) ->
 			result = @state.progNote.get('units')
@@ -585,8 +608,6 @@ load = (win, {clientFileId}) ->
 			return result
 
 		_getPlanSectionIndex: (unitIndex, sectionId) ->
-			console.info unitIndex, sectionId
-
 			result = @state.progNote.getIn(['units', unitIndex, 'sections'])
 			.findIndex (section) =>
 				return section.get('id') is sectionId
