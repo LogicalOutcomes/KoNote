@@ -290,16 +290,15 @@ load = (win) ->
 									onChange: @_updateQueryText
 									placeholder: "Search for a #{Term 'client'}'s profile..."
 									value: @state.queryText
-								}
-									R.span({
-										className: 'input-group-btn'
+								})
+								R.span({
+									className: 'input-group-btn'
+								},
+									R.button({
+										className: "btn btn-default"
+										onClick: @_showAll
 									},
-										R.button({
-											className: "btn btn-default"
-											onClick: @_showAll
-										},
-											'Show All'
-										)
+										'Show All'
 									)
 								)
 							)
