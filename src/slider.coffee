@@ -23,7 +23,7 @@ load = (win) ->
 
 		componentDidMount: ->
 			@setState {
-				slider: $(@refs.slider.getDOMNode()).slider({
+				slider: $(@refs.slider).slider({
 					enabled: @props.isEnabled
 					tooltip: if @props.tooltip then 'show' else 'hide'
 					range: @props.isRange or false

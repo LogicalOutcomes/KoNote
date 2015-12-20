@@ -753,7 +753,7 @@ load = (win, {clientFileId}) ->
 	BackdateWidget = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		componentDidMount: ->
-			$(@refs.backdate.getDOMNode()).datetimepicker({
+			$(@refs.backdate).datetimepicker({
 				format: 'MMM-DD-YYYY h:mm A'
 				defaultDate: Moment()
 				maxDate: Moment()

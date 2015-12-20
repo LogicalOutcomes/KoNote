@@ -459,16 +459,16 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			sectionsDom = React.findDOMNode(@refs.sections)
+			sectionsDom = @refs.sections
 			sectionsDom.addEventListener 'scroll', (event) =>
 				@_recalculateOffsets()
 
 		_recalculateOffsets: ->
-			sectionsDom = React.findDOMNode(@refs.sections)
+			sectionsDom = @refs.sections
 			sectionsScrollTop = sectionsDom.scrollTop
 
 			sectionOffsets = @props.plan.get('sections').map (section) =>
-				sectionDom = React.findDOMNode(@refs['section-' + section.get('id')])
+				sectionDom = @refs['section-' + section.get('id')]
 
 				offset = Imm.Map({
 					top: sectionDom.offsetTop
@@ -662,7 +662,7 @@ load = (win) ->
 			@props.onTargetUpdate newValue
 		_onTargetClick: (event) ->
 			unless event.target.classList.contains 'field'
-				@refs.nameField.getDOMNode().focus()
+				@refs.nameField.focus()
 
 	return {PlanView}
 

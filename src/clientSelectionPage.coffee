@@ -194,7 +194,7 @@ load = (win) ->
 			if oldProps.isLoading and not @props.isLoading
 
 				setTimeout(=>
-					$searchBox = $(@refs.searchBox.getDOMNode())
+					$searchBox = $(@refs.searchBox)
 					$searchBox.focus()
 					@_attachKeyBindings($searchBox)
 				, 500)
@@ -239,7 +239,7 @@ load = (win) ->
 					id: 'expandMenuButton'					
 					onClick: =>
 						@_toggleUserMenu()
-						@refs.searchBox.getDOMNode().focus() if @state.menuIsOpen
+						@refs.searchBox.focus() if @state.menuIsOpen
 
 				},					
 					FaIcon(if @state.managerLayer? then 'times' else 'bars')
@@ -261,7 +261,7 @@ load = (win) ->
 						id: 'main'
 						onClick: =>
 							@_toggleUserMenu() if @state.menuIsOpen
-							@refs.searchBox.getDOMNode().focus()
+							@refs.searchBox.focus()
 					},
 						Spinner({
 							isVisible: @props.isLoading
@@ -290,16 +290,15 @@ load = (win) ->
 									onChange: @_updateQueryText
 									placeholder: "Search for a #{Term 'client'}'s profile..."
 									value: @state.queryText
-								}
-									R.span({
-										className: 'input-group-btn'
+								})
+								R.span({
+									className: 'input-group-btn'
+								},
+									R.button({
+										className: "btn btn-default"
+										onClick: @_showAll
 									},
-										R.button({
-											className: "btn btn-default"
-											onClick: @_showAll
-										},
-											'Show All'
-										)
+										'Show All'
 									)
 								)
 							)
@@ -466,7 +465,7 @@ load = (win) ->
 
 		_toggleUserMenu: ->
 			if @state.menuIsOpen
-				$(@refs.userMenu.getDOMNode()).addClass('slideOutRight')
+				$(@refs.userMenu).addClass('slideOutRight')
 
 				@setState {managerLayer: null}
 
@@ -548,7 +547,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
-			$(@refs.bubble.getDOMNode()).popover {
+			$(@refs.bubble).popover {
 				trigger: 'hover'
 				placement: 'right'
 				title: @props.program.get('name')

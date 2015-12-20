@@ -7,7 +7,7 @@
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
-	R = React.DOM
+	ReactDOM = win.ReactDOM
 	{showWhen} = require('./utils').load(win)
 
 	WithTooltip = React.createFactory React.createClass
@@ -24,12 +24,12 @@ load = (win) ->
 
 		_configureTooltip: ->
 			if @props.showTooltip is undefined or @props.showTooltip is true
-				$(React.findDOMNode(@)).tooltip {
+				$(ReactDOM.findDOMNode(@)).tooltip {
 					placement: @props.placement
 					title: @props.title
 				}
 			else
-				$(React.findDOMNode(@)).tooltip 'destroy'
+				$(ReactDOM.findDOMNode(@)).tooltip 'destroy'
 
 	return WithTooltip
 

@@ -22,7 +22,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
-			@refs.reasonField.getDOMNode().focus()
+			@refs.reasonField.focus()
 
 		getInitialState: ->
 			return {
@@ -37,8 +37,9 @@ load = (win) ->
 				R.div({className: 'cancelProgNoteDialog'},
 					R.div({className: 'form-group'},
 						R.label({}, "Reason for cancelling this entry:"),
-						R.input({
+						R.textarea({
 							className: 'form-control'
+							style: {minWidth: 350, minHeight: 100}
 							ref: 'reasonField'
 							onChange: @_updateReason
 							value: @state.reason

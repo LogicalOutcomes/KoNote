@@ -31,7 +31,7 @@ load = (win) ->
 			)
 
 			if @props.format is 'small'
-				$widget = $(@refs.widget.getDOMNode())
+				$widget = $(@refs.widget)
 
 				$widget.tooltip {
 					html: true

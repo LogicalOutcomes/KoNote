@@ -34,7 +34,8 @@ load = (win) ->
 		_openDialog: (event) ->
 			event.preventDefault()
 
-			@setState {isOpen: true}
+			if @props.disabled is false or @props.disabled is undefined
+				@setState {isOpen: true}
 
 		renderLayer: ->
 			unless @state.isOpen

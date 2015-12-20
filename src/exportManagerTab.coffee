@@ -30,17 +30,17 @@ load = (win) ->
 			# Register listeners for full data backup
 			timestamp = Moment().format('YYYY-MM-DD')
 
-			$backupChooser = $(@refs.backupFileDialog.getDOMNode())
+			$backupChooser = $(@refs.backupFileDialog)
 			.attr("nwsaveas", "konote-backup-#{timestamp}")
 			.attr("accept", ".zip")
 			.on('change', (event) => @_saveBackup event.target.value)
 			
-			$metricsChooser = $(@refs.metricsFileDialog.getDOMNode())
+			$metricsChooser = $(@refs.metricsFileDialog)
 			.attr("nwsaveas", "konote-metrics-#{timestamp}")
 			.attr("accept", ".csv")
 			.on('change', (event) => @_saveMetrics event.target.value)
 			
-			$eventsChooser = $(@refs.eventsFileDialog.getDOMNode())
+			$eventsChooser = $(@refs.eventsFileDialog)
 			.attr("nwsaveas", "konote-events-#{timestamp}")
 			.attr("accept", ".csv")
 			.on('change', (event) => @_saveEvents event.target.value)
@@ -327,16 +327,13 @@ load = (win) ->
 							}					
 				
 		_exportMetricsDirectory: ->
-			metricsFileChooser = React.findDOMNode(@refs.metricsFileDialog)
-			metricsFileChooser.click()
+			@refs.metricsFileDialog.click()
 			
 		_exportEventsDirectory: ->
-			metricsFileChooser = React.findDOMNode(@refs.eventsFileDialog)
-			metricsFileChooser.click()
+			@refs.eventsFileDialog.click()
 		
 		_exportDataDirectory: ->
-			chooser = React.findDOMNode(@refs.backupFileDialog)
-			chooser.click()
+			@refs.backupFileDialog.click()
 			
 		_saveBackup: (path) ->
 			# Destination path must exist in order to save

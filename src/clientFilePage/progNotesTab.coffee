@@ -99,17 +99,21 @@ load = (win) ->
 						(@props.progNoteHistories.map (progNoteHistory) =>
 							progNote = progNoteHistory.last()
 
+							# Filter out only events for this progNote
+							progEvents = @props.progEvents.filter (progEvent) =>
+								return progEvent.get('relatedProgNoteId') is progNote.get('id')
+
 							if progNote.get('status') is 'cancelled'
 								return CancelledProgNoteView({
 									key: progNote.get('id')
 									progNoteHistory
+									progEvents
+									clientFile: @props.clientFile
+									setSelectedItem: @_setSelectedItem
+									selectedItem: @state.selectedItem
 								})
 
 							Assert.equal progNote.get('status'), 'default'
-
-							# Filter out only events for this progNote
-							progEvents = @props.progEvents.filter (progEvent) =>
-								return progEvent.get('relatedProgNoteId') is progNote.get('id')
 
 							switch progNote.get('type')
 								when 'basic'
@@ -119,6 +123,7 @@ load = (win) ->
 										progNote
 										clientFile: @props.clientFile									
 										selectedItem: @state.selectedItem
+										isReadOnly: @props.isReadOnly
 									})
 								when 'full'
 									FullProgNoteView({
@@ -129,6 +134,7 @@ load = (win) ->
 										clientFile: @props.clientFile
 										setSelectedItem: @_setSelectedItem
 										selectedItem: @state.selectedItem
+										isReadOnly: @props.isReadOnly
 									})
 								else
 									throw new Error "unknown prognote type: #{progNote.get('type')}"
@@ -265,6 +271,7 @@ load = (win) ->
 							OpenDialogLink({
 								dialog: CancelProgNoteDialog
 								progNote: @props.progNote
+								disabled: @props.isReadOnly
 							},
 								R.a({className: 'cancel'},
 									FaIcon 'ban'
@@ -314,6 +321,7 @@ load = (win) ->
 							OpenDialogLink({
 								dialog: CancelProgNoteDialog
 								progNote: @props.progNote
+								disabled: @props.isReadOnly
 							},
 								R.a({className: 'cancel'},
 									FaIcon 'ban'
@@ -420,9 +428,10 @@ load = (win) ->
 						R.div({className: 'progEvents'}
 							R.h3({}, Term 'Events')
 							(@props.progEvents.map (progEvent) =>								
-								ProgEventsWidget({
+								ProgEventsWidget({									
 									format: 'large'
 									data: progEvent
+									key: progEvent.get('id')
 								})
 							).toJS()...
 						)						
@@ -444,26 +453,81 @@ load = (win) ->
 			}
 
 	CancelledProgNoteView = React.createFactory React.createClass
-		render: ->
-			return R.div({className: 'cancelStub'},
-				R.strong({},
-					"Cancelled #{Term 'progress note'} from ",
+		getInitialState: ->
+			return {
+				isExpanded: false
+			}
 
-					if @props.progNoteHistory.last().get('backdate')
-						Moment(@props.progNoteHistory.last().get('backdate'), Persist.TimestampFormat)
+		render: ->
+			# Here, we assume that the latest revision was the one that
+			# changed the status.  This assumption may become invalid
+			# when full prognote editing becomes supported.
+			statusChangeRev = @props.progNoteHistory.last()
+			latestRev = @props.progNoteHistory.last()
+
+			return R.div({className: 'cancelStub'},
+				R.button({
+					className: 'toggleDetails btn btn-default'
+					onClick: @_toggleDetails
+				},
+					FaIcon 'chevron-down'
+					" Show details"
+				)
+
+				R.h3({},
+					statusChangeRev.get('author')
+
+					" cancelled a #{Term 'progress note'} from ",
+
+					if latestRev.get('backdate')
+						Moment(latestRev.get('backdate'), Persist.TimestampFormat)
 						.format('MMMM D, YYYY') + " (late entry)"
 					else
 						Moment(@props.progNoteHistory.first().get('timestamp'), Persist.TimestampFormat)
-						.format 'MMMM D, YYYY [at] HH:mm'
-				)
-				R.br()
+						.format 'MMMM D, YYYY, HH:mm'
 
-				"Reason for cancellation: ",
+					"."
+				),
 
-				R.div({className: 'reason'},
-					@props.progNoteHistory.last().get('statusReason')
+				R.div({},
+					"Cancelled on ",
+
+					Moment(statusChangeRev.get('timestamp'), Persist.TimestampFormat)
+					.format 'MMMM D, YYYY [at] HH:mm'
+
+					"."
+				),
+
+				R.div({className: "details #{showWhen @state.isExpanded}"},
+					R.h4({}, "Reason for cancellation:"),
+					R.div({className: 'reason'},
+						renderLineBreaks latestRev.get('statusReason')
+					)
+
+					switch latestRev.get('type')
+						when 'basic'
+							BasicProgNoteView({
+								progNote: latestRev
+								clientFile: @props.clientFile									
+								selectedItem: @props.selectedItem
+								isReadOnly: true
+							})
+						when 'full'
+							FullProgNoteView({
+								progNote: latestRev
+								progEvents: @props.progEvents
+								clientFile: @props.clientFile
+								setSelectedItem: @props.setSelectedItem
+								selectedItem: @props.selectedItem
+								isReadOnly: true
+							})
+						else
+							throw new Error "unknown prognote type: #{progNote.get('type')}"
 				)
 			)
+
+		_toggleDetails: (event) ->
+			@setState (s) -> {isExpanded: not s.isExpanded}
 
 	return {ProgNotesView}
 

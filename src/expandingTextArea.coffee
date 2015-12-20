@@ -15,7 +15,7 @@ load = (win) ->
 		componentDidMount: ->
 			@_resize()
 		_resize: ->
-			textareaDom = @refs.textarea.getDOMNode()
+			textareaDom = @refs.textarea
 
 			# Reset height to 0
 			textareaDom.style.height = '0px'
