@@ -41,6 +41,7 @@ init = (win) ->
 
 	document = win.document
 	React = win.React
+	ReactDOM = win.ReactDOM
 
 	CrashHandler = require('./crashHandler').load(win)
 	HotCodeReplace = require('./hotCodeReplace').load(win)
@@ -90,24 +91,24 @@ init = (win) ->
 		console.time('renderPage')
 
 		# Render page in window
-		pageComponent = React.render pageComponentClass({
+		pageComponent = ReactDOM.render pageComponentClass({
 			navigateTo: (pageParams) =>
 				pageComponent.deinit ->
 					unregisterPageListeners() if isLoggedIn
-					React.unmountComponentAtNode containerElem
+					ReactDOM.unmountComponentAtNode containerElem
 					win.location.href = "main.html?" + QueryString.stringify(pageParams)
 
 			closeWindow: =>
 				pageComponent.deinit =>
 					unregisterPageListeners() if isLoggedIn
-					React.unmountComponentAtNode containerElem
+					ReactDOM.unmountComponentAtNode containerElem
 					nwWin.close true
 
 			refreshWindow: =>
 				pageComponent.deinit =>
 					unregisterPageListeners() if isLoggedIn
 					nwWin.removeListener 'close', onWindowCloseEvent
-					React.unmountComponentAtNode containerElem
+					ReactDOM.unmountComponentAtNode containerElem
 					nwWin.reloadIgnoringCache()
 
 			maximizeWindow: =>

@@ -38,10 +38,10 @@ load = (win) ->
 			# Initialize datepickers, bind to @state
 
 			# Grab jQ contexts
-			$startDate = $(@refs.startDate.getDOMNode())
-			$startTime = $(@refs.startTime.getDOMNode())
-			$endDate = $(@refs.endDate.getDOMNode())
-			$endTime = $(@refs.endTime.getDOMNode())
+			$startDate = $(@refs.startDate)
+			$startTime = $(@refs.startTime)
+			$endDate = $(@refs.endDate)
+			$endTime = $(@refs.endTime)
 
 			$startDate.datetimepicker({
 				useCurrent: false
@@ -226,7 +226,7 @@ load = (win) ->
 			@setState {usesTimeOfDay: not @state.usesTimeOfDay}, =>
 				# Focus timeInput if enabling
 				# if @state.usesTimeOfDay
-				# 	@refs[timeInput].getDOMNode().focus()
+				# 	@refs[timeInput].focus()
 
 		_showTimestamp: (timestamp) ->
 			moment = Moment(timestamp, TimestampFormat)
@@ -241,7 +241,7 @@ load = (win) ->
 			@setState {isDateSpan: not @state.isDateSpan}, =>
 				# Focus endDate if enabling
 				if @state.isDateSpan
-					@refs.endDate.getDOMNode().focus()
+					@refs.endDate.focus()
 
 		_updateTitle: (event) ->
 			@setState {title: event.target.value}

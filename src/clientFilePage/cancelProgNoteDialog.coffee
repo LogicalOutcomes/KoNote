@@ -22,7 +22,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
-			@refs.reasonField.getDOMNode().focus()
+			@refs.reasonField.focus()
 
 		getInitialState: ->
 			return {

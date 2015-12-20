@@ -45,6 +45,8 @@ module.exports = {
 		// Explicitly access all page globals via the window object
 		// (required for NW.js compatibility)
 		var React = win.React;
+		var ReactDOM = win.ReactDOM;
+
 		var document = win.document;
 
 		var LayeredComponentMixin = {
@@ -74,14 +76,14 @@ module.exports = {
 				Assert(this.renderLayer, "missing this.renderLayer() in component")
 
 				var layerElement = this.renderLayer();
-				// Renders can return null, but React.render() doesn't like being asked
+				// Renders can return null, but R.render() doesn't like being asked
 				// to render null. If we get null back from renderLayer(), just render
 				// a noscript element, like React does when an element's render returns
 				// null.
 				if (layerElement === null) {
-					React.render(React.createElement("noscript", null), this._layer);
+					ReactDOM.render(React.createElement("noscript", null), this._layer);
 				} else {
-					React.render(layerElement, this._layer);
+					ReactDOM.render(layerElement, this._layer);
 				}
 
 				if (this.layerDidMount) {
@@ -94,7 +96,7 @@ module.exports = {
 					this.layerWillUnmount(this._layer);
 				}
 
-				React.unmountComponentAtNode(this._layer);
+				ReactDOM.unmountComponentAtNode(this._layer);
 			}
 		};
 

@@ -215,7 +215,10 @@ load = (win) ->
 								(@state.metricIdsWithData.map (metricId) =>
 									metric = @props.metricsById.get(metricId)
 
-									R.div({className: 'checkbox'},
+									R.div({
+										className: 'checkbox'
+										key: metricId
+									},
 										R.label({},
 											R.input({
 												ref: metric.get 'id'
@@ -425,7 +428,7 @@ load = (win) ->
 
 			# Generate and bind the chart
 			@_chart = C3.generate {						
-					bindto: @refs.chartDiv.getDOMNode()
+					bindto: @refs.chartDiv
 					grid: {
 						x: {
 							lines: newYearLines.toJS()

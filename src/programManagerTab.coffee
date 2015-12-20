@@ -132,8 +132,8 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			@refs.programName.getDOMNode().focus()
-			@_initColorPicker @refs.colorPicker.getDOMNode()
+			@refs.programName.focus()
+			@_initColorPicker @refs.colorPicker
 
 		render: ->
 			return Dialog({
@@ -245,8 +245,8 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			@refs.programName.getDOMNode().focus()
-			@_initColorPicker @refs.colorPicker.getDOMNode()
+			@refs.programName.focus()
+			@_initColorPicker @refs.colorPicker
 
 		render: ->
 			return Dialog({
@@ -379,7 +379,7 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			@refs.clientSearchBox.getDOMNode().focus()
+			@refs.clientSearchBox.focus()
 
 		render: ->
 			searchResults = @_getResultsList()

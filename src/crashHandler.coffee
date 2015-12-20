@@ -14,6 +14,7 @@ Moment = require 'moment'
 
 load = (win) ->
 	React = win.React
+	ReactDOM = win.ReactDOM
 	R = React.DOM
 
 	Gui = win.require 'nw.gui'
@@ -26,7 +27,7 @@ load = (win) ->
 		# obscure what caused an error.
 		handlerStackTrace = new Error('handler call stack tracer').stack
 
-		# React freaks out if you call React.render inside a component's render
+		# React freaks out if you call R.render inside a component's render
 		# method.  nextTick works around this.
 		process.nextTick ->
 			try
@@ -60,7 +61,7 @@ load = (win) ->
 				# Show crash screen to user
 				containerDiv = win.document.createElement 'div'
 				win.document.body.appendChild containerDiv
-				React.render CrashOverlay({crash}), containerDiv
+				ReactDOM.render CrashOverlay({crash}), containerDiv
 			catch err2
 				try
 					console.error "CrashHandler has crashed."
@@ -108,7 +109,7 @@ load = (win) ->
 			clipboard.set JSON.stringify @props.crash
 
 		_selectDebugInfo: ->
-			React.findDOMNode(@refs.debugInfo).select()
+			@refs.debugInfo.select()
 		_close: ->
 			nwWin.close true
 

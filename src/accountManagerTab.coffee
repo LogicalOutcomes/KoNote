@@ -216,7 +216,7 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			@refs.userNameField.getDOMNode().focus()
+			@refs.userNameField.focus()
 
 		render: ->
 			Dialog({
