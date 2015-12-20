@@ -121,7 +121,7 @@ load = (win) ->
 							(@props.progNote.get('units').map (unit) =>
 								switch unit.get('type')
 									when 'basic'
-										R.option({}}, unit.get('name'))
+										R.option({}, unit.get('name'))
 									when 'plan'
 										R.optgroup({label: unit.get('name')},
 											(unit.get('sections').map (section) =>
