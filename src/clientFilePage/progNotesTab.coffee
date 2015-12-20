@@ -420,9 +420,10 @@ load = (win) ->
 						R.div({className: 'progEvents'}
 							R.h3({}, Term 'Events')
 							(@props.progEvents.map (progEvent) =>								
-								ProgEventsWidget({
+								ProgEventsWidget({									
 									format: 'large'
 									data: progEvent
+									key: progEvent.get('id')
 								})
 							).toJS()...
 						)						

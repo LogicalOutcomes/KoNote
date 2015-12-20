@@ -45,7 +45,7 @@ module.exports = {
 		// Explicitly access all page globals via the window object
 		// (required for NW.js compatibility)
 		var React = win.React;
-		var ReactDOM = React.DOM;
+		var ReactDOM = win.ReactDOM;
 
 		var document = win.document;
 
