@@ -380,8 +380,12 @@ load = (win, {clientFileId}) ->
 							switch unit.get('type')
 								when 'basic'
 									R.div({
-										className: 'unit basic'
 										key: unitId
+										className: [
+											'unit basic'
+											'selectedEventRelation' if Imm.is unit, @state.selectedEventRelation
+										].join ' '										
+										onClick: @_selectEventRelation.bind(null, unit) if @state.selectedEventRelation?
 									},
 										R.h1({className: 'name'}, unit.get 'name')
 										ExpandingTextArea({
@@ -426,18 +430,22 @@ load = (win, {clientFileId}) ->
 										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
 
-											R.section({key: sectionId},
+											R.section({
+												key: sectionId
+												className: 'selectedEventRelation' if Imm.is section, @state.selectedEventRelation												
+												onClick: @_selectEventRelation.bind(null, section) if @state.selectedEventRelation?
+											},
 												R.h2({}, section.get 'name')
 
 												(section.get('targets').map (target) =>														
 													targetId = target.get 'id'
 
 													R.div({
+														key: targetId
 														className: [
 															'target'
 															'selectedEventRelation' if Imm.is target, @state.selectedEventRelation
-														].join ' '
-														key: targetId
+														].join ' '														
 														onClick: @_selectEventRelation.bind(null, target) if @state.selectedEventRelation?
 													},
 														R.h3({}, target.get 'name')
@@ -560,7 +568,8 @@ load = (win, {clientFileId}) ->
 
 			@setState {editingWhichEvent: null}
 
-		_selectEventRelation: (selectedEventRelation) ->
+		_selectEventRelation: (selectedEventRelation, event) ->
+			event.stopPropagation() if event?
 			console.log "Selecting eventRelation", selectedEventRelation
 			@setState {selectedEventRelation}
 
