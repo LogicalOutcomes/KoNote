@@ -48,10 +48,11 @@ dataModelDefinitions = [
 				indexes: [['relatedProgNoteId']]
 				schema: Joi.object().keys({
 					relatedProgNoteId: IdSchema
+					typeId: IdSchema.allow('')
 					title: Joi.string()
 					description: Joi.string().allow('')			
 					startTimestamp: Joi.date().format(TimestampFormat).raw()
-					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')					
 				})
 			}
 			{
@@ -175,6 +176,17 @@ dataModelDefinitions = [
 		collectionName: 'programs'
 		isMutable: true
 		indexes: [['name'], ['colorKeyHex']]
+		schema: Joi.object().keys({
+			name: Joi.string()
+			description: Joi.string()
+			colorKeyHex: Joi.string().regex(/^#[A-Fa-f0-9]{6}/)
+		})
+	}
+
+	{
+		name: 'eventType'
+		collectionName: 'eventType'
+		isMutable: true
 		schema: Joi.object().keys({
 			name: Joi.string()
 			description: Joi.string()
