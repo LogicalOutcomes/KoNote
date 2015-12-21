@@ -53,7 +53,7 @@ dataModelDefinitions = [
 					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 					relatedProgNoteId: IdSchema
 					relatedElement: Joi.object().keys({
-						type: ['unit', 'section', 'target']
+						type: ['progNoteUnit', 'planSection', 'planTarget']
 						id: IdSchema
 					}).allow('')
 				})
