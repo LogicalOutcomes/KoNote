@@ -27,12 +27,6 @@ load = (win) ->
 	ProgramManagerTab = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: ->
-			return {
-				openDialogId: null
-				expandedMemberLists: Imm.List()
-			}
-
 		render: ->
 			# Inject numberClients into each program
 			programs = @props.programs.map (program) =>
