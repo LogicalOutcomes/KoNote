@@ -46,8 +46,9 @@
 		"progress note": "progress note",
 		"quick note": "quick note",
 
-		"metric": "indicator",
+		"metric": "metric",
 		"event": "event",
+		"event type": "event type",
 		"program": "program",
 
 		"analysis": "analysis",
