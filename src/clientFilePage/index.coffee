@@ -85,6 +85,7 @@ load = (win, {clientFileId}) ->
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
 				programs: @state.programs
+				eventTypes: @state.eventTypes
 
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
@@ -653,8 +654,7 @@ load = (win, {clientFileId}) ->
 						clientName
 						recordId
 						activeTabId
-						onTabChange: @_changeTab
-						isReadOnly
+						onTabChange: @_changeTab						
 						programs: @props.programs
 					})
 					PlanTab.PlanView({
@@ -665,9 +665,8 @@ load = (win, {clientFileId}) ->
 						plan: @props.clientFile.get('plan')
 						planTargetsById: @props.planTargetsById
 						metricsById: @props.metricsById
-						isReadOnly
-
 						updatePlan: @props.updatePlan
+						isReadOnly
 					})
 					ProgNotesTab.ProgNotesView({
 						isVisible: activeTabId is 'progressNotes'
@@ -675,18 +674,21 @@ load = (win, {clientFileId}) ->
 						clientFile: @props.clientFile
 						progNoteHistories: sortedProgNoteHistories
 						progEvents: @props.progressEvents
+						eventTypes: @props.eventTypes
 						metricsById: @props.metricsById
-						isReadOnly
+						
 						hasChanges: @hasChanges
 						onTabChange: @_changeTab
 
 						createQuickNote: @props.createQuickNote
+						isReadOnly
 					})
 					AnalysisTab.AnalysisView({
 						isVisible: activeTabId is 'analysis'
 						clientFileId
 						progNoteHistories: sortedProgNoteHistories
 						progEvents: @props.progressEvents
+						eventTypes: @props.eventTypes
 						metricsById: @props.metricsById
 						isReadOnly
 					})
