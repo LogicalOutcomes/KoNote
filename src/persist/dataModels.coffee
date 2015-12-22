@@ -185,12 +185,13 @@ dataModelDefinitions = [
 
 	{
 		name: 'eventType'
-		collectionName: 'eventType'
+		collectionName: 'eventTypes'
 		isMutable: true
 		schema: Joi.object().keys({
 			name: Joi.string()
 			description: Joi.string()
 			colorKeyHex: Joi.string().regex(/^#[A-Fa-f0-9]{6}/)
+			status: ['default', 'cancelled']
 		})
 	}
 
@@ -203,7 +204,7 @@ dataModelDefinitions = [
 		schema: Joi.object().keys({
 			clientFileId: IdSchema
 			programId: IdSchema
-			status: ["enrolled", "unenrolled"]
+			status: ['enrolled', 'unenrolled']
 		})
 	}
 ]

@@ -397,6 +397,13 @@ load = (win) ->
 								})
 								UserMenuItem({
 									isVisible: isAdmin
+									title: "Event Types"
+									icon: 'calendar-o'
+									onClick: @_updateManagerLayer.bind null, 'eventTypeManagerTab'
+									isActive: @state.managerLayer is 'eventTypeManagerTab'
+								})
+								UserMenuItem({
+									isVisible: isAdmin
 									title: "User #{Term 'Accounts'}"
 									icon: 'key'
 									onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
