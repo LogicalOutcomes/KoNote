@@ -767,6 +767,17 @@ addProgNoteStatusFields = (dataDir, globalEncryptionKey, cb) ->
 		, cb
 	, cb
 
+addTypeIdFieldToProgEvents = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+			progNotePath = Path.join(clientFilePath, 'progEvents', progEvent)
+
+			progEventObjectFilePath = null
+			progEventObject = null
+
+
 
 # ////////////////////// Migration Series //////////////////////
 
@@ -824,6 +835,12 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "7. Add status fields to progress notes"
 				addProgNoteStatusFields dataDir, globalEncryptionKey, cb
+
+			# New Directory: 'eventTypes' (issue#347)
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "8. Create 'eventTypes' directory"
+				createEmptyDirectory dataDir, 'eventTypes', cb
 
 		], (err) ->
 			if err
