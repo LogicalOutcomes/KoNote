@@ -347,6 +347,7 @@ load = (win, {clientFileId}) ->
 						metricsById
 						planTargetsById
 						programs
+						eventTypes
 
 						isLoading: false
 						status: 'ready'

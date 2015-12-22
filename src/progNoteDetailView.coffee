@@ -159,6 +159,7 @@ load = (win) ->
 										format: 'small'
 										data: progEvent
 										key: progEvent.get('id')
+										eventTypes: @props.eventTypes
 									})
 							)
 						)
