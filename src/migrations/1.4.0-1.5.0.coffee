@@ -746,7 +746,7 @@ addProgNoteStatusFields = (dataDir, globalEncryptionKey, cb) ->
 							return
 
 						Assert.equal revisions.length, 1, 'should always be exactly one progNote revision'
-						progNoteObjectFilePath = revisions[0]
+						progNoteObjectFilePath = Path.join(progNotePath, revisions[0])
 
 						cb()
 				(cb) ->
@@ -764,6 +764,7 @@ addProgNoteStatusFields = (dataDir, globalEncryptionKey, cb) ->
 
 					Fs.writeFile progNoteObjectFilePath, encryptedObj, cb
 			], cb
+			
 		, cb
 	, cb
 
@@ -772,7 +773,7 @@ addProgEventTypeIdField = (dataDir, globalEncryptionKey, cb) ->
 		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
 
 		forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
-			progNotePath = Path.join(clientFilePath, 'progEvents', progEvent)
+			progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
 
 			progEventObjectFilePath = null
 			progEventObject = null
@@ -785,7 +786,7 @@ addProgEventTypeIdField = (dataDir, globalEncryptionKey, cb) ->
 							return
 
 						Assert.equal revisions.length, 1, 'should always be exactly one progEvent revision'
-						progEventObjectFilePath = revisions[0]
+						progEventObjectFilePath = Path.join(progEventPath, revisions[0])
 
 						cb()
 				(cb) =>
@@ -803,6 +804,7 @@ addProgEventTypeIdField = (dataDir, globalEncryptionKey, cb) ->
 
 					Fs.writeFile progEventObjectFilePath, encryptedObj, cb
 			], cb
+
 		, cb
 	, cb
 
