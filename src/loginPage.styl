@@ -1,11 +1,18 @@
 .loginPage
 	display flex
-	flex-direction column
+	flex-direction row
 	align-items center
 	justify-content center
 
 	height 100%
+	background radial-gradient(circle, #1EA1F5, #3175AA)
+	color white
 	
+	>.loginLogo
+		flex 1
+		padding 5% 1% 5% 26%
+		width 250px
+
 	> .autoLogin
 		display flex
 		flex 1
@@ -14,7 +21,8 @@
 		font-size 18px
 
 	> .loginForm
-		width 350px
+		flex 2
+		padding 5% 26% 5% 1%
 
 		> .btn-toolbar
 			text-align center	

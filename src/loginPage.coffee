@@ -171,34 +171,43 @@ load = (win) ->
 					isVisible: @props.isLoading
 					isOverlay: true
 				})
+				R.img({
+					className: 'loginLogo animated fadeInLeft'
+					src: 'customer-logo-sm-white.png'
+				})
 				R.form({className: "loginForm #{showWhen @props.isSetUp}"},
-					R.div({className: 'form-group'},
-						R.label({}, "Username")
+					R.div({className: 'form-group animated fadeInUp'},
 						R.input({
 							className: 'form-control'
 							ref: 'userNameField'
 							onChange: @_updateUserName
 							value: @state.userName
 							type: 'text'
+							placeholder: 'Username'
 						})
 					)
-					R.div({className: 'form-group'},
-						R.label({}, "Password")
+					R.div({className: 'form-group animated fadeInUp'},
 						R.input({
 							className: 'form-control'
 							type: 'password'
 							ref: 'passwordField'
 							onChange: @_updatePassword
 							value: @state.password
+							placeholder: 'Password'
 						})
 					)
-					R.div({className: 'btn-toolbar'},
+					R.div({className: 'btn-toolbar animated fadeInDown'},
 						R.button({
 							className: 'btn btn-primary'
 							type: 'submit'
 							disabled: not @state.userName or not @state.password
 							onClick: @_login
 						}, "Sign in")
+						R.button({
+							className: 'btn btn-link'
+							type: 'submit'
+							onClick: @_forgotPassword
+						}, "Forgot Password?")
 					)
 				)
 			)
