@@ -745,7 +745,7 @@ addProgNoteStatusFields = (dataDir, globalEncryptionKey, cb) ->
 							cb err
 							return
 
-						Assert.equal revisions.length, 1, 'should always be exactly one prognote revision'
+						Assert.equal revisions.length, 1, 'should always be exactly one progNote revision'
 						progNoteObjectFilePath = revisions[0]
 
 						cb()
@@ -767,7 +767,7 @@ addProgNoteStatusFields = (dataDir, globalEncryptionKey, cb) ->
 		, cb
 	, cb
 
-addTypeIdFieldToProgEvents = (dataDir, globalEncryptionKey, cb) ->
+addProgEventTypeIdField = (dataDir, globalEncryptionKey, cb) ->
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
 		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
 
@@ -776,6 +776,35 @@ addTypeIdFieldToProgEvents = (dataDir, globalEncryptionKey, cb) ->
 
 			progEventObjectFilePath = null
 			progEventObject = null
+
+			Async.series [
+				(cb) =>
+					Fs.readdir progEventPath, (err, revisions) ->
+						if err
+							cb err
+							return
+
+						Assert.equal revisions.length, 1, 'should always be exactly one progEvent revision'
+						progEventObjectFilePath = revisions[0]
+
+						cb()
+				(cb) =>
+					Fs.readFile progEventObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
+
+						progEventObject = JSON.parse globalEncryptionKey.decrypt result
+
+						cb()
+				(cb) =>
+					progEventObject.typeId = ''
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progEventObject
+
+					Fs.writeFile progEventObjectFilePath, encryptedObj, cb
+			], cb
+		, cb
+	, cb
 
 
 
@@ -830,10 +859,10 @@ module.exports = {
 				console.groupCollapsed "6. Encrypt indexed fields"
 				encryptAllFileNames dataDir, globalEncryptionKey, cb
 
-			# Add status fields to prognotes
+			# Add status fields to progNotes
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "7. Add status fields to progress notes"
+				console.groupCollapsed "7. Add 'status' field to progress notes"
 				addProgNoteStatusFields dataDir, globalEncryptionKey, cb
 
 			# New Directory: 'eventTypes' (issue#347)
@@ -841,6 +870,12 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "8. Create 'eventTypes' directory"
 				createEmptyDirectory dataDir, 'eventTypes', cb
+
+			# Add typeId field to progEvents
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "9. Add 'typeId' field to progress events"
+				addProgEventTypeIdField dataDir, globalEncryptionKey, cb
 
 		], (err) ->
 			if err
