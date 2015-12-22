@@ -110,6 +110,8 @@ load = (win, {clientFileId}) ->
 			clientFileProgramLinkHeaders = null
 			programHeaders = null
 			programs = null
+			eventTypes = null
+			eventTypeHeaders = null
 
 			checkFileSync = (newData, oldData) => 
 				unless fileIsUnsync
@@ -143,7 +145,6 @@ load = (win, {clientFileId}) ->
 
 						planTargetHeaders = results
 						cb()
-
 				(cb) =>
 					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
 						targetId = planTargetHeader.get('id')
@@ -172,7 +173,6 @@ load = (win, {clientFileId}) ->
 
 						progNoteHeaders = results
 						cb()
-
 				(cb) =>
 					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
 						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
@@ -194,7 +194,6 @@ load = (win, {clientFileId}) ->
 
 						progEventHeaders = results
 						cb()
-
 				(cb) =>
 					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
 						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
@@ -216,7 +215,6 @@ load = (win, {clientFileId}) ->
 
 						metricHeaders = results
 						cb()
-
 				(cb) =>
 					Async.map metricHeaders.toArray(), (metricHeader, cb) =>
 						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
@@ -260,7 +258,6 @@ load = (win, {clientFileId}) ->
 							clientFileProgramLinkHeaders.contains thisProgramId
 
 						cb()
-
 				(cb) =>
 					Async.map programHeaders.toArray(), (programHeader, cb) =>
 						console.log programHeader.get('id')
@@ -274,6 +271,27 @@ load = (win, {clientFileId}) ->
 						.map (program) -> stripMetadata program.get(0)
 
 						checkFileSync programs, @state.programs
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.eventTypes.list (err, result) =>
+						if err
+							cb err
+							return
+
+						eventTypeHeaders = result
+						cb()
+				(cb) =>
+					Async.map eventTypeHeaders.toArray(), (eventTypeheader, cb) =>
+						eventTypeId = eventTypeheader.get('id')
+
+						ActiveSession.persist.eventTypes.readLatestRevisions eventTypeId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						eventTypes = Imm.List(results).map (eventType) -> stripMetadata eventType.get(0)
 						cb()
 
 			], (err) =>
@@ -474,11 +492,11 @@ load = (win, {clientFileId}) ->
 		getPageListeners: ->
 			return {
 				'createRevision:clientFile': (newRev) =>
-					unless newRev.get('id') is clientFileId then return
+					return unless newRev.get('id') is clientFileId
 					@setState {clientFile: newRev}
 
 				'create:planTarget createRevision:planTarget': (newRev) =>
-					unless newRev.get('clientFileId') is clientFileId then return
+					return unless newRev.get('clientFileId') is clientFileId
 					@setState (state) =>
 						targetId = newRev.get('id')
 						if state.planTargetsById.has targetId
@@ -492,7 +510,7 @@ load = (win, {clientFileId}) ->
 						return {planTargetsById}
 
 				'create:progNote': (newProgNote) =>
-					unless newProgNote.get('clientFileId') is clientFileId then return
+					return unless newProgNote.get('clientFileId') is clientFileId
 
 					@setState (state) =>
 						return {
@@ -500,7 +518,7 @@ load = (win, {clientFileId}) ->
 						}
 
 				'createRevision:progNote': (newProgNoteRev) =>
-					unless newProgNoteRev.get('clientFileId') is clientFileId then return
+					return unless newProgNoteRev.get('clientFileId') is clientFileId
 
 					@setState (state) =>
 						return {
@@ -512,11 +530,19 @@ load = (win, {clientFileId}) ->
 						}
 
 				'create:progEvent': (newProgEvent) =>
-					unless newProgEvent.get('clientFileId') is clientFileId then return
+					return unless newProgEvent.get('clientFileId') is clientFileId
 					@setState (state) => progressEvents: state.progressEvents.push newProgEvent
 
 				'create:metric': (newMetric) =>
 					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
+
+				'createRevision:eventType': (newEventTypeRev) =>
+					originalEventType = @state.eventTypes
+					.find (eventType) -> eventType.get('id') is newEventTypeRev.get('id')
+					
+					eventTypeIndex = @state.eventTypes.indexOf originalEventType
+
+					@setState {eventTypes: @state.eventTypes.set(eventTypeIndex, newEventTypeRev)}
 
 				'timeout:timedOut': =>
 					@_killLocks Bootbox.hideAll

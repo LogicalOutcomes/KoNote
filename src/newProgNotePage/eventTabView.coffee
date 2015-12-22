@@ -24,6 +24,7 @@ load = (win) ->
 			return {
 				title: ''
 				description: ''
+				typeId: ''
 
 				startDate: Moment()
 				startTime: ''
@@ -112,6 +113,27 @@ load = (win) ->
 							onChange: @_updateDescription
 							placeholder: "Describe details (optional)"
 						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Select #{Term 'Event Type'}")
+						R.ul({},
+							if @state.typeId
+								R.li({
+									onClick: @_updateTypeId.bind null, ''
+								}, "None")
+								
+							(@props.eventTypes.map (eventType) =>
+								R.li({
+									key: eventType.get('id')
+									onClick: @_updateTypeId.bind null, eventType.get('id')
+									style:
+										borderBottom: "1px solid #{eventType.get('colorKeyHex')}"
+								},
+									eventType.get('name')
+									FaIcon('check') if @state.typeId is eventType.get('id')										
+								)
+							)
+						)
 					)
 					R.div({className: "dateGroup"},
 						R.div({className: 'form-group date'},
@@ -249,6 +271,10 @@ load = (win) ->
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
 
+		_updateTypeId: (typeId) ->
+			console.info "Updating typeId to #{typeId}"
+			@setState {typeId}
+
 		_closeForm: (event) ->
 			event.preventDefault()
 
@@ -289,6 +315,7 @@ load = (win) ->
 			return {	
 				title: @state.title
 				description: @state.description
+				typeId: @state.typeId
 				startTimestamp: startTimestamp.format(TimestampFormat)
 				endTimestamp: if @state.isDateSpan or isOneFullDay then endTimestamp.format(TimestampFormat) else ''
 			}

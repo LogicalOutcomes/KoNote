@@ -232,7 +232,6 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				id: @props.rowData.get('id')
 				name: @props.rowData.get('name')
 				colorKeyHex: @props.rowData.get('colorKeyHex')
 				description: @props.rowData.get('description')
@@ -325,7 +324,7 @@ load = (win) ->
 
 		_buildModifiedProgramObject: ->
 			return Imm.fromJS({
-				id: @state.id
+				id: @props.rowData.get('id')
 				name: @state.name
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex

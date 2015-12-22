@@ -30,7 +30,7 @@ load = (win, {clientFileId}) ->
 	Dialog = require('../dialog').load(win)
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
-	{FaIcon, renderName, showWhen} = require('../utils').load(win)
+	{FaIcon, renderName, showWhen, stripMetadata} = require('../utils').load(win)
 
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
@@ -68,6 +68,7 @@ load = (win, {clientFileId}) ->
 				clientFile: @state.clientFile
 				progNoteHistories: @state.progNoteHistories
 				progEvents: @state.progEvents
+				eventTypes: @state.eventTypes
 
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
@@ -81,6 +82,8 @@ load = (win, {clientFileId}) ->
 			planTargetHeaders = null
 			progNoteHeaders = null
 			progEventHeaders = null
+			eventTypeHeaders = null
+			eventTypes = null			
 
 			Async.series [
 				(cb) =>
@@ -178,6 +181,26 @@ load = (win, {clientFileId}) ->
 						@setState {
 							progEvents: Imm.List(results)
 						}, cb
+				(cb) =>
+					ActiveSession.persist.eventTypes.list (err, result) =>
+						if err
+							cb err
+							return
+
+						eventTypeHeaders = result
+						cb()
+				(cb) =>
+					Async.map eventTypeHeaders.toArray(), (eventTypeheader, cb) =>
+						eventTypeId = eventTypeheader.get('id')
+
+						ActiveSession.persist.eventTypes.readLatestRevisions eventTypeId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						eventTypes = Imm.List(results).map (eventType) -> stripMetadata eventType.get(0)
+						cb()
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -192,6 +215,7 @@ load = (win, {clientFileId}) ->
 					CrashHandler.handle err
 					return
 
+				# Build progNote with template
 				progNote = @_createProgNoteFromTemplate(
 					template
 					@state.clientFile
@@ -199,12 +223,11 @@ load = (win, {clientFileId}) ->
 					metricsById
 				)
 
-				console.info "progNote", progNote.toJS()
-
 				# Done loading data, we can load in the empty progNote object
 				@setState {
 					isLoading: false
 					progNote
+					eventTypes
 				}
 
 		_createProgNoteFromTemplate: (template, clientFile, planTargetsById, metricsById) ->
@@ -368,8 +391,6 @@ load = (win, {clientFileId}) ->
 						(@state.progNote.get('units').map (unit) =>
 							unitId = unit.get 'id'
 
-							console.info "unitId", unitId
-
 							switch unit.get('type')
 								when 'basic'
 									R.div({
@@ -503,6 +524,7 @@ load = (win, {clientFileId}) ->
 								)
 								EventTabView({
 									data: thisEvent
+									eventTypes: @props.eventTypes
 									atIndex: index
 									save: @_saveEventData
 									cancel: @_cancelEditing
@@ -551,8 +573,6 @@ load = (win, {clientFileId}) ->
 			return result
 
 		_getPlanSectionIndex: (unitIndex, sectionId) ->
-			console.info unitIndex, sectionId
-
 			result = @state.progNote.getIn(['units', unitIndex, 'sections'])
 			.findIndex (section) =>
 				return section.get('id') is sectionId
