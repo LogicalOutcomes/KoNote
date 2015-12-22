@@ -536,6 +536,9 @@ load = (win, {clientFileId}) ->
 				'create:metric': (newMetric) =>
 					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
 
+				'create:eventType': (newEventType) =>
+					@setState (state) => eventTypes: state.eventTypes.push newEventType
+
 				'createRevision:eventType': (newEventTypeRev) =>
 					originalEventType = @state.eventTypes
 					.find (eventType) -> eventType.get('id') is newEventTypeRev.get('id')
