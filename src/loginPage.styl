@@ -1,29 +1,34 @@
 .loginPage
+	height 100%
 	display flex
-	flex-direction row
 	align-items center
 	justify-content center
-
-	height 100%
 	background radial-gradient(circle, #1EA1F5, #3175AA)
+
 	color white
+	border 2px solid rgba(255,255,255,0.25)
 	
-	>.loginLogo
+	.loginForm
 		flex 1
-		padding 5% 1% 5% 26%
-		width 250px
-		-webkit-filter brightness(100)
-
-	> .autoLogin
-		display flex
-		flex 1
+		margin 15%
 		text-align center
-		align-items center
-		font-size 18px
+	
+	.logo
+		margin 20% 15%
+		width 40%
+		height auto
+		-webkit-user-select none
 
-	> .loginForm
-		flex 2
-		padding 5% 26% 5% 1%
-
-		> .btn-toolbar
-			text-align center	
+	.btn-toolbar
+		display flex
+		
+		.btn-link
+			font-size .9em
+			color white
+			opacity .8
+			
+		button[type=submit]
+			transition all .15s ease
+		
+		> button
+			flex 1

@@ -7,8 +7,9 @@
     "icon": "icon.png",
     "title": "KoNote",
     "toolbar": false,
-    "width": 1000,
-    "height": 700,
+    "width": 400,
+    "height": 500,
+    "show": false,
     "position": "center"
   },
   "private": true,

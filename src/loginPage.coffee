@@ -15,6 +15,8 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	Gui = win.require 'nw.gui'
+	Window = Gui.Window.get()
 
 	NewInstallationPage = require('./newInstallationPage').load(win)
 
@@ -127,6 +129,9 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
+			Window.show()
+			Window.focus()
+
 			unless Config.autoLogin? or (@props.isSetUp and @props.isNewInstallation)
 				setTimeout(=>
 					@refs.userNameField.focus()
@@ -136,7 +141,7 @@ load = (win) ->
 				@setState {
 					userName: 'admin'
 				}, ->
-					@refs.passwordField.focus()
+					@refs.passwordField.focus()			
 
 		onLoginError: (type) ->
 			switch type
@@ -166,21 +171,22 @@ load = (win) ->
 					R.div({className: 'autoLogin'}, "Auto-Login Enabled . . .")
 				)
 
-			return R.div({className: 'loginPage'},
+			return R.div({className: 'loginPage animated fadeIn'},
 				Spinner({
 					isVisible: @props.isLoading
 					isOverlay: true
-				})
-				R.img({
-					className: 'loginLogo animated fadeIn'
-					src: Config.customerLogoSm
-				})
-				R.form({className: "loginForm #{showWhen @props.isSetUp}"},
+				})				
+				R.div({className: "loginForm #{showWhen @props.isSetUp}"},
+					R.img({
+						className: 'animated rotateIn logo'
+						src: './assets/brand/kn.png'
+					})
 					R.div({className: 'form-group animated fadeInUp'},
 						R.input({
 							className: 'form-control'
 							ref: 'userNameField'
 							onChange: @_updateUserName
+							onKeyDown: @_onEnterKeyDown
 							value: @state.userName
 							type: 'text'
 							placeholder: 'Username'
@@ -192,32 +198,43 @@ load = (win) ->
 							type: 'password'
 							ref: 'passwordField'
 							onChange: @_updatePassword
+							onKeyDown: @_onEnterKeyDown
 							value: @state.password
 							placeholder: 'Password'
 						})
 					)
-					R.div({className: 'btn-toolbar animated fadeInDown'},
-						R.button({
-							className: 'btn btn-primary'
-							type: 'submit'
-							disabled: not @state.userName or not @state.password
-							onClick: @_login
-						}, "Sign in")
+					R.div({className: 'btn-toolbar animated fadeInUp'},
 						R.button({
 							className: 'btn btn-link'
-							type: 'submit'
 							onClick: @_forgotPassword
 						}, "Forgot Password?")
-					)
+						R.button({
+							className: [
+								'btn'
+								if @_formIsInvalid() then 'btn-primary' else 'btn-success animated pulse'
+							].join ' '
+							type: 'submit'
+							disabled: @_formIsInvalid()
+							onClick: @_login
+						}, "Sign in")						
+					)					
 				)
 			)
-		_login: (event) ->
-			event.preventDefault()
-			@props.login(@state.userName, @state.password)
+		
 		_updateUserName: (event) ->
 			@setState {userName: event.target.value}
+
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
+
+		_onEnterKeyDown: (event) ->
+			@_login() if event.which is 13 and not @_formIsInvalid()				
+		
+		_formIsInvalid: ->
+			not @state.userName or not @state.password
+
+		_login: (event) ->
+			@props.login(@state.userName, @state.password)		
 
 
 	return LoginPage

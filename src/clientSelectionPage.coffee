@@ -18,6 +18,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	Gui = win.require 'nw.gui'
+	Window = Gui.Window.get()
 
 	ManagerLayer = require('./managerLayer').load(win)	
 	CrashHandler = require('./crashHandler').load(win)
@@ -36,8 +37,9 @@ load = (win) ->
 				clientFileProgramLinks: Imm.List()
 			}
 
-		init: ->
-			console.log "Starting load"
+		init: ->			
+			Window.resizeBy 600, 200
+			Window.setPosition 'center'
 			@_loadData()
 
 		deinit: (cb=(->)) ->
