@@ -15,12 +15,20 @@ load = (win) ->
 	R = React.DOM
 	{FaIcon} = require('./utils').load(win)
 
+	Spinner = require('./spinner').load(win)
+
 	Dialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				isLoading: false
+			}
+
 		getDefaultProps: ->
 			return {
 				containerClasses: []
 			}
+
 		render: ->
 			return R.div({
 				className: [
@@ -29,6 +37,10 @@ load = (win) ->
 				].join(' ')
 				onClick: unless @props.disableCancel or @props.disableBackgroundClick then @_onBackgroundClick
 			},
+				Spinner({
+					isVisible: @state.isLoading
+					isOverlay: true
+				})
 				R.div({className: 'dialog panel panel-primary animated fadeInUp'},
 					R.div({className: 'panel-heading'},
 						R.h3({className: 'panel-title'}, @props.title)
@@ -43,7 +55,13 @@ load = (win) ->
 						@props.children
 					)
 				)
-			)
+			)	
+
+		setIsLoading: (newState) ->
+			@setState {isLoading: newState}
+
+		isLoading: -> @state.isLoading
+
 		_onBackgroundClick: (event) ->
 			# If click was on background, not the dialog itself
 			if event.target.classList.contains 'dialogContainer'

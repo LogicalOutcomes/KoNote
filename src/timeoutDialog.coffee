@@ -31,7 +31,6 @@ load = (win) ->
 				isFinalWarning: false
 				isTimedOut: false
 				password: null
-				isLoading: false
 			}
 
 		_recalculateSeconds: ->
@@ -74,10 +73,10 @@ load = (win) ->
 		_confirmPassword: (event) ->
 			event.preventDefault()
 
-			@setState => isLoading: true
+			@refs.dialog.setIsLoading true
 
 			global.ActiveSession.confirmPassword @state.password, (err, result) =>
-				@setState => isLoading: false
+				@refs.dialog.setIsLoading false
 
 				if err
 					if err instanceof Persist.Session.DeactivatedAccountError
@@ -110,18 +109,15 @@ load = (win) ->
 			countMoment = Moment.utc(@state.countSeconds * 1000)
 
 			return Dialog({
+				ref: 'dialog'
 				title: if @state.isTimedOut then "Your Session Has Timed Out" else "Inactivity Warning"
 				disableBackgroundClick: true
 				containerClasses: [
 					'timedOut' if @state.isTimedOut
 					'warning' if @state.isFinalWarning
 				]				
-			},
-				R.div({className: 'timeoutDialog'},
-					Spinner({
-						isVisible: @state.isLoading
-						isOverlay: true
-					})
+			},				
+				R.div({className: 'timeoutDialog'},					
 					(if @state.isTimedOut						
 						R.div({className: 'message'},							
 							"Please confirm your password for user \"#{global.ActiveSession.userName}\"

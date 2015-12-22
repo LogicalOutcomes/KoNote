@@ -35,6 +35,7 @@ load = (win) ->
 
 		render: ->
 			Dialog({
+				ref: 'dialog'
 				title: "Create New #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
@@ -110,7 +111,7 @@ load = (win) ->
 			last = @state.lastName
 			recordId = @state.recordId
 
-			@setState {isLoading: true}
+			@refs.dialog.setIsLoading true
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
@@ -121,7 +122,7 @@ load = (win) ->
 			}
 
 			global.ActiveSession.persist.clientFiles.create clientFile, (err, obj) =>
-				@setState {isLoading: false}
+				@refs.dialog.setIsLoading false
 
 				if err
 					if err instanceof Persist.IOError

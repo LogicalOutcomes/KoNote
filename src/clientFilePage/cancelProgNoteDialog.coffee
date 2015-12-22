@@ -31,6 +31,7 @@ load = (win) ->
 
 		render: ->
 			Dialog({
+				ref: 'dialog'
 				title: "Rename #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
@@ -71,13 +72,15 @@ load = (win) ->
 				@_submit()
 
 		_submit: ->
-			@setState {isLoading: true}
+			@refs.dialog.setIsLoading true
 
 			updatedProgNote = @props.progNote
 			.set('status', 'cancelled')
 			.set('statusReason', @state.reason)
 
 			ActiveSession.persist.progNotes.createRevision updatedProgNote, (err) ->
+				@refs.dialog.setIsLoading false
+
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """

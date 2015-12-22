@@ -35,6 +35,7 @@ load = (win) ->
 
 		render: ->
 			Dialog({
+				ref: 'dialog'
 				title: "Rename #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
@@ -112,7 +113,7 @@ load = (win) ->
 				@_submit()
 
 		_submit: ->
-			@setState {isLoading: true}
+			@refs.dialog.setIsLoading true
 
 			updatedClientFile = @props.clientFile
 			.setIn(['clientName', 'first'], @state.firstName)
@@ -121,7 +122,7 @@ load = (win) ->
 			.set('recordId', @state.recordId)
 
 			global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
-				@setState {isLoading: false}
+				@refs.dialog.setIsLoading false
 
 				if err
 					if err instanceof Persist.IOError
