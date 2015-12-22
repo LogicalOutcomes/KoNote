@@ -172,7 +172,7 @@ load = (win) ->
 					isOverlay: true
 				})
 				R.img({
-					className: 'loginLogo animated fadeInLeft'
+					className: 'loginLogo animated fadeIn'
 					src: Config.customerLogoSm
 				})
 				R.form({className: "loginForm #{showWhen @props.isSetUp}"},
