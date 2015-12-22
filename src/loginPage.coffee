@@ -173,7 +173,7 @@ load = (win) ->
 				})
 				R.img({
 					className: 'loginLogo animated fadeInLeft'
-					src: 'customer-logo-sm-white.png'
+					src: Config.customerLogoSm
 				})
 				R.form({className: "loginForm #{showWhen @props.isSetUp}"},
 					R.div({className: 'form-group animated fadeInUp'},
