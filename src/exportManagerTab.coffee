@@ -69,7 +69,7 @@ load = (win) ->
 		_export: ({defaultName, extension, runExport}) ->
 			timestamp = Moment().format('YYYY-MM-DD')
 			# Configures hidden file inputs with custom attributes, and clicks it
-			$nwsaveasInput = $(@refs.nwsaveas.getDOMNode())
+			$nwsaveasInput = $(@refs.nwsaveas)
 
 			$nwsaveasInput
 			.off()
