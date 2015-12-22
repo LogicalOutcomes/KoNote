@@ -73,6 +73,7 @@ load = (win) ->
 
 			$nwsaveasInput
 			.off()
+			.val('')
 			.attr('nwsaveas', "#{defaultName}-#{timestamp}")
 			.attr('accept', ".#{extension}")			
 			.on('change', (event) => runExport event.target.value)
