@@ -186,7 +186,7 @@ init = (win) ->
 		unregisterPageListeners() if isLoggedIn		
 
 		# Unmount components normally, but with no deinit
-		React.unmountComponentAtNode containerElem
+		ReactDOM.unmountComponentAtNode containerElem
 
 		# Remove window listener (a new one will be added after the reload)
 		nwWin.removeListener 'close', onWindowCloseEvent
