@@ -25,6 +25,7 @@ pageModulePathsById = {
 	clientFile: './clientFilePage'
 	newProgNote: './newProgNotePage'
 	printPreview: './printPreviewPage'
+	newInstallation: './newInstallationPage'
 }
 
 init = (win) ->

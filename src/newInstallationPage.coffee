@@ -11,12 +11,32 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
-	Bootbox = win.bootbox	
+	Bootbox = win.bootbox
+
+	Gui = win.require 'nw.gui'
+	Window = Gui.Window.get()
 
 	Spinner = require('./spinner').load(win)	
 	{FaIcon} = require('./utils').load(win)
 
 	NewInstallationPage = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
+		init: -> # Nothing yet
+
+		deinit: (cb=(->)) ->
+			cb()
+
+		suggestClose: ->
+			@refs.ui.suggestClose()
+
+		render: ->
+			return NewInstallationPageUi({
+				ref: 'ui'
+				closeWindow: @props.closeWindow
+			})
+
+	NewInstallationPageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -39,6 +59,26 @@ load = (win) ->
 				# Focus first password input
 				$password = $(@refs.password)
 				$password.focus()
+
+		suggestClose: ->
+			if global.isSetUp
+				@props.closeWindow()
+			else
+				Bootbox.dialog {
+					message: "Are you sure you want to cancel installation?"
+					buttons: {
+						cancel: {
+							label: "No"
+							className: 'btn-default'							
+						}
+						discard: {
+							label: "Yes"
+							className: 'btn-primary'
+							callback: =>
+								@props.closeWindow()
+						}
+					}
+				}
 
 		render: ->
 			# TODO: Extract this to UI component
@@ -278,8 +318,10 @@ load = (win) ->
 				@_updateProgress 100, "Successfully installed #{Config.productName}!"
 
 				setTimeout(=>
-					@setState {isLoading: false}, -> @props.onSuccess()
+					global.isSetUp = true
+					win.close(true)
 				, 1000)
+
 
 
 	return NewInstallationPage

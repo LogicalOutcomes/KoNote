@@ -30,9 +30,10 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				isLoading: true
-				isSetUp: false
-				isNewInstallation: false
+				isSetUp: null
+				isNewSetUp: null
+
+				newInstallationWindow: null
 			}
 
 		init: ->			
@@ -51,18 +52,21 @@ load = (win) ->
 		suggestClose: ->
 			@props.closeWindow()
 
+		_activateWindow: ->
+			@setState {isSetUp: true}
+			Window.show()
+			Window.focus()
+
 		render: ->
 			unless @state.isSetUp
-				return NewInstallationPage({
-					onSuccess: =>
-						@setState {isSetUp: true}
-				})
+				return R.div({})
 
-			return new LoginPageUi({
+			LoginPageUi({
 				ref: 'ui'
 				isLoading: @state.isLoading
 				isSetUp: @state.isSetUp
-				isNewInstallation: @state.isNewInstallation
+				isNewSetUp: @state.isNewSetUp
+				activateWindow: @_activateWindow
 				login: @_login
 			})
 
@@ -85,10 +89,24 @@ load = (win) ->
 
 				# Falsy isSetUp triggers NewInstallationPage
 				console.log "Not set up, redirecting to installation page..."				
+				@setState {isSetUp: false}
+
 				@setState {
-					isSetUp: false
-					isNewInstallation: true
-				}
+					newInstallationWindow: openWindow {
+						page: 'newInstallation'
+					}
+				}, =>
+					@state.newInstallationWindow.on 'close', (event) =>
+						if global.isNewSetUp
+							# Successfully installed, show login with isNewSetUp
+							@setState {
+								isSetUp: true
+								isNewSetUp: true
+							}
+						else
+							# Didn't complete installation, so close
+							win.close(true)
+
 
 		_login: (userName, password) ->			
 			@setState => isLoading: true
@@ -115,9 +133,13 @@ load = (win) ->
 				global.ActiveSession = session
 
 				# Proceed to clientSelectionPage
-				@props.navigateTo {
+				openWindow {
 					page: 'clientSelection'
 				}
+
+				# Don't need login window anymore, close it
+				# TODO: Make this hidden, show when all other windows closed
+				Window.close()
 
 
 	LoginPageUi = React.createFactory React.createClass
@@ -129,19 +151,17 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			Window.show()
-			Window.focus()
+			@props.activateWindow()
 
-			unless Config.autoLogin? or (@props.isSetUp and @props.isNewInstallation)
+			if @props.isNewSetUp
+				@setState {userName: 'admin'}
+				setTimeout(=>
+					@refs.passwordField.focus()
+				, 100)
+			else
 				setTimeout(=>
 					@refs.userNameField.focus()
 				, 100)
-
-			if @props.isNewInstallation
-				@setState {
-					userName: 'admin'
-				}, ->
-					@refs.passwordField.focus()			
 
 		onLoginError: (type) ->
 			switch type
@@ -175,51 +195,68 @@ load = (win) ->
 				Spinner({
 					isVisible: @props.isLoading
 					isOverlay: true
-				})				
-				R.div({className: "loginForm #{showWhen @props.isSetUp}"},
-					R.img({
-						className: 'animated rotateIn logo'
-						src: './assets/brand/kn.png'
-					})
-					R.div({className: 'form-group animated fadeInUp'},
-						R.input({
-							className: 'form-control'
-							ref: 'userNameField'
-							onChange: @_updateUserName
-							onKeyDown: @_onEnterKeyDown
-							value: @state.userName
-							type: 'text'
-							placeholder: 'Username'
+				})
+				FaIcon('times', {
+					id: 'quitIcon'
+					onClick: @_quit					
+				})
+				R.div({id: "loginForm"},
+					R.div({
+						id: 'logoContainer'
+						className: 'animated fadeInDown'
+					},
+						R.img({
+							className: 'animated rotateIn'
+							src: './assets/brand/kn.png'
 						})
 					)
-					R.div({className: 'form-group animated fadeInUp'},
-						R.input({
-							className: 'form-control'
-							type: 'password'
-							ref: 'passwordField'
-							onChange: @_updatePassword
-							onKeyDown: @_onEnterKeyDown
-							value: @state.password
-							placeholder: 'Password'
-						})
+					R.div({
+						id: 'formContainer'
+						className: 'animated fadeInUp'
+					},
+						R.div({className: 'form-group'},
+							R.input({
+								className: 'form-control'
+								ref: 'userNameField'
+								onChange: @_updateUserName
+								onKeyDown: @_onEnterKeyDown
+								value: @state.userName
+								type: 'text'
+								placeholder: 'Username'
+							})
+						)
+						R.div({className: 'form-group'},
+							R.input({
+								className: 'form-control'
+								type: 'password'
+								ref: 'passwordField'
+								onChange: @_updatePassword
+								onKeyDown: @_onEnterKeyDown
+								value: @state.password
+								placeholder: 'Password'
+							})
+						)
+						R.div({className: 'btn-toolbar'},
+							R.button({
+								className: 'btn btn-link'
+								onClick: @_forgotPassword
+							}, "Forgot Password?")
+							R.button({
+								className: [
+									'btn'
+									if @_formIsInvalid() then 'btn-primary' else 'btn-success animated pulse'
+								].join ' '
+								type: 'submit'
+								disabled: @_formIsInvalid()
+								onClick: @_login
+							}, "Sign in")
+						)
 					)
-					R.div({className: 'btn-toolbar animated fadeInUp'},
-						R.button({
-							className: 'btn btn-link'
-							onClick: @_forgotPassword
-						}, "Forgot Password?")
-						R.button({
-							className: [
-								'btn'
-								if @_formIsInvalid() then 'btn-primary' else 'btn-success animated pulse'
-							].join ' '
-							type: 'submit'
-							disabled: @_formIsInvalid()
-							onClick: @_login
-						}, "Sign in")						
-					)					
 				)
 			)
+
+		_quit: ->
+			win.close(true)
 		
 		_updateUserName: (event) ->
 			@setState {userName: event.target.value}

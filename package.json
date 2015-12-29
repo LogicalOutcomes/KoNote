@@ -10,7 +10,9 @@
     "width": 400,
     "height": 500,
     "show": false,
-    "position": "center"
+    "frame": false,
+    "transparent": true,
+    "position": "center"    
   },
   "private": true,
   "license": "MPL-2.0",

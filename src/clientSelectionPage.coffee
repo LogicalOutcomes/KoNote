@@ -37,9 +37,7 @@ load = (win) ->
 				clientFileProgramLinks: Imm.List()
 			}
 
-		init: ->			
-			Window.resizeBy 600, 200
-			Window.setPosition 'center'
+		init: ->
 			@_loadData()
 
 		deinit: (cb=(->)) ->
@@ -228,7 +226,10 @@ load = (win) ->
 
 			return R.div({
 					id: 'clientSelectionPage'
-					className: if @state.menuIsOpen then 'openMenu' else ''
+					className: [
+						'animated fadeIn'
+						if @state.menuIsOpen then 'openMenu' else ''
+					].join ' '
 			},
 				if @props.isLoading
 					R.div({id: 'clientSelectionPage'},
