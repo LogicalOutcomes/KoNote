@@ -133,8 +133,7 @@ load = (win) ->
 							@setState {userAccounts}
 					},
 						FaIcon('plus')
-						' '
-						"New #{Term 'Account'} "
+						" New #{Term 'Account'}"
 					)
 				)
 			)		
@@ -146,12 +145,12 @@ load = (win) ->
 			}
 
 		_openCreateAccountDialog: ->
-			@setState (s) -> {
+			@setState {
 				openDialogId: 'createAccount'
 			}
 
 		_openResetPasswordDialog: (userName) ->
-			@setState (s) -> {
+			@setState {
 				openDialogId: 'resetPassword'
 				selectedUserName: userName
 			}
@@ -165,7 +164,7 @@ load = (win) ->
 				unless result is true
 					return
 
-				@setState (s) -> {mode: 'working'}
+				@setState {mode: 'working'}
 
 				Persist.Users.Account.read Config.dataDirectory, userName, (err, acc) =>
 					if err
@@ -177,7 +176,7 @@ load = (win) ->
 						return
 
 					acc.deactivate (err) =>
-						@setState (s) -> {mode: 'ready'}
+						@setState {mode: 'ready'}
 
 						if err
 							if err instanceof Persist.Users.DeactivatedAccountError
@@ -200,7 +199,7 @@ load = (win) ->
 						Bootbox.alert "The account #{userName} has been deactivated."
 
 		_closeDialog: ->
-			@setState (s) -> {
+			@setState {
 				openDialogId: null
 				selectedUserName: null
 			}
