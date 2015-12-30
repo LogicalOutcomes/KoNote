@@ -24,7 +24,7 @@ load = (win) ->
 			}
 
 		render: ->
-			return R.a({
+			return R.div({
 				className: @props.className
 				onClick: @_openDialog
 			},

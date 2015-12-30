@@ -20,12 +20,15 @@ load = (win) ->
 	Gui = win.require 'nw.gui'
 	Window = Gui.Window.get()
 
-	ManagerLayer = require('./managerLayer').load(win)	
-	CrashHandler = require('./crashHandler').load(win)
-	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
+	ManagerLayer = require('./managerLayer').load(win)		
 	Spinner = require('./spinner').load(win)
 	BrandWidget = require('./brandWidget').load(win)	
 	OrderableTable = require('./orderableTable').load(win)
+	OpenDialogLink = require('./openDialogLink').load(win)
+
+	CreateClientFileDialog = require('./createClientFileDialog').load(win)
+
+	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
 
 	ClientSelectionPage = React.createFactory React.createClass
@@ -386,31 +389,37 @@ load = (win) ->
 							R.h3({}, global.ActiveSession.userName)
 							R.ul({},
 								UserMenuItem({									
-									title: Term 'Client Files'
+									title: "New #{Term 'Client File'}"
 									icon: 'folder-open'
-									onClick: @_updateManagerLayer.bind null, 'clientFileManagerTab'
-									isActive: @state.managerLayer is 'clientFileManagerTab'
-								})				
+									dialog: CreateClientFileDialog
+									onClick: @_updateManagerLayer.bind null, null
+								})
 								UserMenuItem({									
 									isVisible: isAdmin
 									title: Term 'Programs'
 									icon: 'users'
 									onClick: @_updateManagerLayer.bind null, 'programManagerTab'
 									isActive: @state.managerLayer is 'programManagerTab'
-								})
+								})								
 								UserMenuItem({
 									isVisible: isAdmin
 									title: "User #{Term 'Accounts'}"
 									icon: 'key'
 									onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
 									isActive: @state.managerLayer is 'accountManagerTab'
-								})
+								})								
 								UserMenuItem({
 									isVisible: isAdmin
 									title: "Export Data"
-									icon: 'download'
+									icon: 'upload'
 									onClick: @_updateManagerLayer.bind null, 'exportManagerTab'
 									isActive: @state.managerLayer is 'exportManagerTab'
+								})
+								UserMenuItem({
+									title: "My #{Term 'Account'}"
+									icon: 'cog'
+									onClick: @_updateManagerLayer.bind null, 'myAccountManagerTab'
+									isActive: @state.managerLayer is 'myAccountManagerTab'
 								})
 							)
 						)
@@ -531,6 +540,8 @@ load = (win) ->
 			return {
 				isVisible: true
 				isActive: false
+				onClick: ->
+				dialog: null
 			}
 
 		render: ->
@@ -539,11 +550,18 @@ load = (win) ->
 					'active' if @props.isActive
 					showWhen @props.isVisible
 				].join ' '
+				onClick: @props.onClick
 			},
-				R.div({onClick: @props.onClick.bind null, @props.module}, 
-					FaIcon(@props.icon)
-					@props.title
-				)
+				if @props.dialog?
+					OpenDialogLink({dialog: @props.dialog},
+						FaIcon(@props.icon)
+						@props.title
+					)
+				else
+					R.div({},
+						FaIcon(@props.icon)
+						@props.title
+					)
 			)
 
 	ProgramBubble = React.createFactory React.createClass

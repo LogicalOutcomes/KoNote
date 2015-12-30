@@ -11,10 +11,10 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
-	ClientFileManagerTab = require('./clientFileManagerTab').load(win)
 	ProgramManagerTab = require('./programManagerTab').load(win)
 	AccountManagerTab = require('./accountManagerTab').load(win)
 	ExportManagerTab = require('./exportManagerTab').load(win)
+	MyAccountManagerTab = require('./myAccountManagerTab').load(win)
 
 	{FaIcon} = require('./utils').load(win)
 
@@ -22,15 +22,15 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			Module = switch @props.name
-				when 'clientFileManagerTab'
-					ClientFileManagerTab
+			Module = switch @props.name				
 				when 'programManagerTab'
 					ProgramManagerTab
 				when 'accountManagerTab'
 					AccountManagerTab
 				when 'exportManagerTab'
 					ExportManagerTab
+				when 'myAccountManagerTab'
+					MyAccountManagerTab
 
 			return R.div({className: 'managerLayer'},
 				R.div({className: 'managerLayerContainer'},
