@@ -54,8 +54,8 @@ load = (win) ->
 
 		_activateWindow: ->
 			@setState {isSetUp: true}
-			Window.show()
 			Window.focus()
+			Window.show()
 
 		render: ->
 			unless @state.isSetUp
