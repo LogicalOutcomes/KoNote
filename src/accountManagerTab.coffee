@@ -210,6 +210,8 @@ load = (win) ->
 			return {
 				userName: ''
 				password: ''
+				passwordConfirm: ''
+
 				isAdmin: false
 				isLoading: false
 			}
@@ -219,14 +221,11 @@ load = (win) ->
 
 		render: ->
 			Dialog({
+				ref: 'dialog'
 				title: "Create new #{Term 'account'}"
 				onClose: @_cancel
 			},
-				R.div({className: 'createAccountDialog'},
-					Spinner({
-						isVisible: @state.isLoading
-						isOverlay: true
-					})
+				R.div({id: 'createAccountDialog'},
 					R.div({className: 'form-group'},
 						R.label({}, "User name"),
 						R.input({
@@ -236,14 +235,38 @@ load = (win) ->
 							value: @state.userName
 						})
 					)
-					R.div({className: 'form-group'},
-						R.label({}, "Password"),
+					R.div({
+						className: [
+							'form-group'
+							'has-success has-feedback' if @state.password
+						].join ' '
+					},
+						R.label({}, "Set Password")
 						R.input({
 							className: 'form-control'
 							type: 'password'
 							onChange: @_updatePassword
 							value: @state.password
 						})
+						R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
+					)
+					R.div({
+						className: [
+							'form-group'
+							'has-success has-feedback' if (
+								@state.passwordConfirm and
+								@state.passwordConfirm is @state.password
+							)
+						].join ' '
+					},
+						R.label({}, "Confirm Password")
+						R.input({
+							className: 'form-control'
+							type: 'password'
+							onChange: @_updatePasswordConfirm
+							value: @state.passwordConfirm
+						})
+						R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
 					)
 					R.div({className: 'checkbox'},
 						R.label({},
@@ -263,7 +286,12 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-							disabled: not @state.userName or not @state.password
+							disabled: (
+								not @state.userName or
+								not @state.password or
+								not @state.passwordConfirm or
+								@state.password isnt @state.passwordConfirm
+							)
 						}, "Create #{Term 'Account'}")
 					)
 				)
@@ -272,6 +300,8 @@ load = (win) ->
 			@setState {userName: event.target.value}
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
+		_updatePasswordConfirm: (event) ->
+			@setState {passwordConfirm: event.target.value}
 		_updateIsAdmin: (event) ->
 			@setState {isAdmin: event.target.checked}
 			
@@ -286,10 +316,10 @@ load = (win) ->
 			password = @state.password
 			accountType = if @state.isAdmin then 'admin' else 'normal'
 
-			@setState {isLoading: true}
+			@refs.dialog.setIsLoading true
 
 			Persist.Users.Account.create global.ActiveSession.account, userName, password, accountType, (err, result) =>
-				@setState {isLoading: false}
+				@refs.dialog.setIsLoading false
 
 				if err
 					if err instanceof Persist.Users.UserNameTakenError
