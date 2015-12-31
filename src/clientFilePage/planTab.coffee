@@ -379,6 +379,7 @@ load = (win) ->
 
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
+
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
 			sectionName = @state.plan.getIn ['sections', sectionIndex, 'name']
@@ -391,6 +392,7 @@ load = (win) ->
 
 				newPlan = @state.plan.setIn ['sections', sectionIndex, 'name'], newSectionName
 				@setState {plan: newPlan}
+
 		_addTargetToSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
 
@@ -411,14 +413,20 @@ load = (win) ->
 				plan: newPlan
 				currentTargetRevisionsById: newCurrentRevs
 			}, =>
-				$(".target-#{targetId} .name.field").focus()
+				# Temporary until we work out a Bootbox alternative
+				setTimeout(=>
+					$(".target-#{targetId} .name.field").focus()
+				, 250)
+
 		_getSectionIndex: (sectionId) ->
 			return @state.plan.get('sections').findIndex (section) =>
 				return section.get('id') is sectionId
+
 		_updateTarget: (targetId, newValue) ->
 			@setState {
 				currentTargetRevisionsById: @state.currentTargetRevisionsById.set targetId, newValue
 			}
+
 		_setSelectedTarget: (targetId) ->
 			@setState {selectedTargetId: targetId}
 
