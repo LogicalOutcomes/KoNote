@@ -137,11 +137,14 @@ load = (win) ->
 					page: 'clientSelection'
 				}
 
-				# Don't need to close loginPage until new window is loaded
-				# Doing so before causes silent errors for some reason...
+				# Hide once logged in
 				clientSelectionPageWindow.on 'loaded', =>
 					@setState {isLoading: false}
-					# @props.closeWindow()
+					Window.hide()
+
+				# Close once clientSelectionPage is closed
+				clientSelectionPageWindow.on 'closed', =>
+					@props.closeWindow()
 
 
 	LoginPageUi = React.createFactory React.createClass
