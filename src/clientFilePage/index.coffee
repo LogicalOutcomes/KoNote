@@ -637,8 +637,7 @@ load = (win, {clientFileId}) ->
 			clientName = renderName @props.clientFile.get('clientName')
 			recordId = @props.clientFile.get('recordId')
 			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) - 
-				#{clientName}: #{Term 'Client File'}
+				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}
 			"""
 
 			# Sort progNotes by timestamp unixMs (backdate if exists)
