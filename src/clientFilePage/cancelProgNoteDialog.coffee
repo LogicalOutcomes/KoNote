@@ -78,7 +78,7 @@ load = (win) ->
 			.set('status', 'cancelled')
 			.set('statusReason', @state.reason)
 
-			ActiveSession.persist.progNotes.createRevision updatedProgNote, (err) ->
+			ActiveSession.persist.progNotes.createRevision updatedProgNote, (err) =>
 				@refs.dialog.setIsLoading false
 
 				if err
