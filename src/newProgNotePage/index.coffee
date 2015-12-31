@@ -47,6 +47,7 @@ load = (win, {clientFileId}) ->
 			}
 
 		init: ->
+			console.log "Init"
 			@_loadData()
 
 		deinit: (cb=(->)) ->

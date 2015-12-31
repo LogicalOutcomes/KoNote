@@ -99,33 +99,36 @@ init = (win) ->
 		console.time('renderPage')
 
 		# Render page in window
-		pageComponent = ReactDOM.render pageComponentClass({
-			navigateTo: (pageParams) =>
-				pageComponent.deinit ->
-					unregisterPageListeners() if isLoggedIn
-					ReactDOM.unmountComponentAtNode containerElem
-					win.location.href = "main.html?" + QueryString.stringify(pageParams)
+		try
+			pageComponent = ReactDOM.render pageComponentClass({
+				navigateTo: (pageParams) =>
+					pageComponent.deinit ->
+						unregisterPageListeners() if isLoggedIn
+						ReactDOM.unmountComponentAtNode containerElem
+						win.location.href = "main.html?" + QueryString.stringify(pageParams)
 
-			closeWindow: =>
-				pageComponent.deinit =>
-					unregisterPageListeners() if isLoggedIn
-					ReactDOM.unmountComponentAtNode containerElem
-					nwWin.close true
+				closeWindow: =>
+					pageComponent.deinit =>
+						unregisterPageListeners() if isLoggedIn
+						ReactDOM.unmountComponentAtNode containerElem
+						nwWin.close true
 
-			refreshWindow: =>
-				pageComponent.deinit =>
-					unregisterPageListeners() if isLoggedIn
-					nwWin.removeListener 'close', onWindowCloseEvent
-					ReactDOM.unmountComponentAtNode containerElem
-					nwWin.reloadIgnoringCache()
+				refreshWindow: =>
+					pageComponent.deinit =>
+						unregisterPageListeners() if isLoggedIn
+						nwWin.removeListener 'close', onWindowCloseEvent
+						ReactDOM.unmountComponentAtNode containerElem
+						nwWin.reloadIgnoringCache()
 
-			maximizeWindow: =>
-				nwWin.maximize()
+				maximizeWindow: =>
+					nwWin.maximize()
 
-			setWindowTitle: (newTitle) =>
-				nwWin.title = newTitle
+				setWindowTitle: (newTitle) =>
+					nwWin.title = newTitle
 
-		}), containerElem
+			}), containerElem
+		catch err
+			CrashHandler.handle err
 
 		console.timeEnd('renderPage')
 
