@@ -371,6 +371,7 @@ load = (win) ->
 									{
 										name: Config.clientFileRecordId.label
 										dataPath: ['recordId']
+										isDisabled: not Config.clientFileRecordId.isEnabled
 									}
 								]
 							})
