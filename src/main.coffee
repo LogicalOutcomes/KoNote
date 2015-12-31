@@ -186,9 +186,23 @@ init = (win) ->
 				if event.ctrlKey and (not event.shiftKey) and event.which is 82
 					console.log "Replace!"
 					doHotCodeReplace()
-			, false			
+			, false
 
-	doHotCodeReplace = =>
+			# Live-Refresh
+			Fs.watch './', (event, filename) ->
+				if filename?
+					fileExtension = filename.split('.').splice(-1)[0]
+
+					if fileExtension is "styl"
+						refreshCSS()
+						return
+
+				unless isRefreshing
+					isRefreshing = true
+					doHotCodeReplace()
+
+
+	doHotCodeReplace = =>		
 		# Save the entire page state into a global var
 		global.HCRSavedState[win.location.href] = HotCodeReplace.takeSnapshot pageComponent
 
@@ -218,8 +232,7 @@ init = (win) ->
 
 		Stylus.render mainStylusCode, stylusOpts, (err, compiledCss) ->
 			if err
-				console.error "Problem compiling CSS"
-				console.error err
+				console.error "Problem compiling CSS:", err
 				if err.stack
 					console.error err.stack
 				return

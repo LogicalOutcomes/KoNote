@@ -146,6 +146,7 @@ load = (win, {clientFileId}) ->
 
 						planTargetHeaders = results
 						cb()
+
 				(cb) =>
 					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
 						targetId = planTargetHeader.get('id')
@@ -174,6 +175,7 @@ load = (win, {clientFileId}) ->
 
 						progNoteHeaders = results
 						cb()
+
 				(cb) =>
 					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
 						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
@@ -195,6 +197,7 @@ load = (win, {clientFileId}) ->
 
 						progEventHeaders = results
 						cb()
+
 				(cb) =>
 					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
 						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
@@ -216,6 +219,7 @@ load = (win, {clientFileId}) ->
 
 						metricHeaders = results
 						cb()
+
 				(cb) =>
 					Async.map metricHeaders.toArray(), (metricHeader, cb) =>
 						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
@@ -273,7 +277,6 @@ load = (win, {clientFileId}) ->
 
 						checkFileSync programs, @state.programs
 						cb()
-
 				(cb) =>
 					ActiveSession.persist.eventTypes.list (err, result) =>
 						if err
@@ -294,7 +297,6 @@ load = (win, {clientFileId}) ->
 
 						eventTypes = Imm.List(results).map (eventType) -> stripMetadata eventType.get(0)
 						cb()
-
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -658,7 +660,7 @@ load = (win, {clientFileId}) ->
 						clientName
 						recordId
 						activeTabId
-						onTabChange: @_changeTab						
+						onTabChange: @_changeTab
 						programs: @props.programs
 					})
 					PlanTab.PlanView({
@@ -724,6 +726,16 @@ load = (win, {clientFileId}) ->
 					else
 						@props.clientName
 					)
+				)
+				R.div({className: 'programs'},
+					@props.programs.map (program) ->
+						R.span({
+							key: program.get('id')
+							style:
+								borderBottomColor: program.get('colorKeyHex')
+						},
+							program.get('name')
+						)
 				)
 				R.div({className: 'programs'},
 					@props.programs.map (program) ->

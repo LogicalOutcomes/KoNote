@@ -141,7 +141,7 @@ load = (win) ->
 				# Doing so before causes silent errors for some reason...
 				clientSelectionPageWindow.on 'loaded', =>
 					@setState {isLoading: false}
-					@props.closeWindow()
+					# @props.closeWindow()
 
 
 	LoginPageUi = React.createFactory React.createClass

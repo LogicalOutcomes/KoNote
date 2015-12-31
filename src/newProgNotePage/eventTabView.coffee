@@ -167,6 +167,8 @@ load = (win) ->
 											)
 											MenuItem({divider: true})
 										])
+							)
+						)
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Select #{Term 'Event Type'}")

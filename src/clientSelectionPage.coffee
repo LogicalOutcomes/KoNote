@@ -398,7 +398,7 @@ load = (win) ->
 									dialog: CreateClientFileDialog
 									onClick: @_updateManagerLayer.bind null, null
 								})
-								UserMenuItem({									
+								UserMenuItem({
 									isVisible: isAdmin
 									title: Term 'Programs'
 									icon: 'users'
