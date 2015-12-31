@@ -54,7 +54,7 @@ load = (win) ->
 					R.tr({},
 						(@props.columns.map (column) =>
 							return if column.isDisabled
-							R.th({}, 
+							R.th({key: column.name},
 								R.span({
 									onClick: @_sortByData.bind(null, column.dataPath) unless column.isNotOrderable
 								}, 
