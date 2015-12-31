@@ -111,9 +111,9 @@ load = (win) ->
 		_login: (userName, password) ->			
 			@setState => isLoading: true
 
-			Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>
-				@setState {isLoading: false}
+			Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>				
 				if err
+					@setState {isLoading: false}
 					if err instanceof Persist.Session.UnknownUserNameError
 						@refs.ui.onLoginError('UnknownUserNameError')
 						return
@@ -140,6 +140,7 @@ load = (win) ->
 				# Don't need to close loginPage until new window is loaded
 				# Doing so before causes silent errors for some reason...
 				clientSelectionPageWindow.on 'loaded', =>
+					@setState {isLoading: false}
 					@props.closeWindow()
 
 
