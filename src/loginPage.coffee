@@ -36,7 +36,7 @@ load = (win) ->
 				newInstallationWindow: null
 			}
 
-		init: ->			
+		init: ->
 			if Config.autoLogin?
 				@_autoLogin()
 				return
@@ -133,13 +133,14 @@ load = (win) ->
 				global.ActiveSession = session
 
 				# Proceed to clientSelectionPage
-				openWindow {
+				clientSelectionPageWindow = openWindow {
 					page: 'clientSelection'
 				}
 
-				# Don't need login window anymore, close it
-				# TODO: Make this hidden, show when all other windows closed
-				Window.close()
+				# Don't need to close loginPage until new window is loaded
+				# Doing so before causes silent errors for some reason...
+				clientSelectionPageWindow.on 'loaded', =>
+					@props.closeWindow()
 
 
 	LoginPageUi = React.createFactory React.createClass
