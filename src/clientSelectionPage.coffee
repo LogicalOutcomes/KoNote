@@ -41,6 +41,9 @@ load = (win) ->
 			}
 
 		init: ->
+			@props.setWindowTitle """
+				#{Config.productName} (#{global.ActiveSession.userName})
+			"""
 			@_loadData()
 
 		deinit: (cb=(->)) ->
@@ -48,7 +51,7 @@ load = (win) ->
 			cb()
 
 		suggestClose: ->
-			@props.closeWindow()
+			@props.closeWindow()			
 
 		render: ->
 			return ClientSelectionPageUi({

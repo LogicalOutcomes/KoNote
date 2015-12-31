@@ -352,7 +352,10 @@ load = (win, {clientFileId}) ->
 				)
 
 			clientName = renderName @props.clientFile.get('clientName')
-			@props.setWindowTitle "#{clientName}: #{Term 'Progress Note'} - KoNote"
+			@props.setWindowTitle """
+				#{Config.productName} (#{global.ActiveSession.userName}) - 
+				#{clientName}: New #{Term 'Progress Note'}
+			"""
 
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},

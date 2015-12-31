@@ -603,7 +603,10 @@ load = (win, {clientFileId}) ->
 
 			clientName = renderName @props.clientFile.get('clientName')
 			recordId = @props.clientFile.get('recordId')
-			@props.setWindowTitle "#{clientName} - KoNote"
+			@props.setWindowTitle """
+				#{Config.productName} (#{global.ActiveSession.userName}) - 
+				#{clientName}: #{Term 'Client File'}
+			"""
 
 			# Sort progNotes by timestamp unixMs (backdate if exists)
 			sortedProgNoteHistories = @props.progressNoteHistories
@@ -612,7 +615,7 @@ load = (win, {clientFileId}) ->
 				return Moment createdAt, Persist.TimestampFormat
 			.reverse()
 
-			return R.div({className: 'clientFilePage'},
+			return R.div({className: 'clientFilePage animated fadeIn'},
 				Spinner({isOverlay: true, isVisible: @props.isLoading})
 
 				(if isReadOnly
