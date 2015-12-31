@@ -9,6 +9,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	Bootbox = win.bootbox	
+	{DropdownButton, MenuItem} = win.ReactBootstrap
 
 	Moment = require 'moment'
 	_ = require 'underscore'
@@ -84,6 +85,7 @@ load = (win) ->
 			}).on 'dp.change', (thisInput) =>
 				@setState {endTime: thisInput.date}
 
+
 		render: ->
 			return R.div({
 				className: "eventView #{showWhen @props.isBeingEdited or not @props.editMode}"
@@ -112,6 +114,60 @@ load = (win) ->
 							onChange: @_updateDescription
 							placeholder: "Describe details (optional)"
 						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Relationship to Plan")
+						DropdownButton({
+							title: (
+								if @props.selectedEventPlanRelation
+									@props.selectedEventPlanRelation.get('name')
+								else 
+									"No Relationship"
+							)
+							onToggle: @props.updateEventPlanRelationMode
+						},
+							# Enable cancel option if something's been selected
+							if @props.selectedEventPlanRelation
+								([
+									MenuItem({
+										onClick: @props.selectEventPlanRelation.bind null, null									
+									}, 
+										"None "
+										FaIcon('ban')
+									)
+									MenuItem({divider: true})
+								])
+
+							(@props.progNote.get('units').map (unit) =>
+								switch unit.get('type')
+									when 'basic'
+										MenuItem({
+											key: unit.get('id')
+											onClick: @props.selectEventPlanRelation.bind null, unit											
+										}, unit.get('name'))
+									when 'plan'
+										([
+											MenuItem({
+												header: true
+											}, unit.get('name'))
+											(unit.get('sections').map (section) =>
+												([
+													MenuItem({
+														key: section.get('id')
+														onClick: @props.selectEventPlanRelation.bind null, section
+													}, section.get('name'))
+													(section.get('targets').map (target) =>
+														MenuItem({
+															key: target.get('id')
+															onClick: @props.selectEventPlanRelation.bind null, target
+														}, target.get('name'))
+													)
+												])
+											)
+											MenuItem({divider: true})
+										])
+							)
+						)
 					)
 					R.div({className: "dateGroup"},
 						R.div({className: 'form-group date'},

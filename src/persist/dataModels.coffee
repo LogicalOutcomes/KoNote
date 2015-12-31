@@ -46,12 +46,16 @@ dataModelDefinitions = [
 				collectionName: 'progEvents'
 				isMutable: false
 				indexes: [['relatedProgNoteId']]
-				schema: Joi.object().keys({
-					relatedProgNoteId: IdSchema
+				schema: Joi.object().keys({					
 					title: Joi.string()
 					description: Joi.string().allow('')			
 					startTimestamp: Joi.date().format(TimestampFormat).raw()
 					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+					relatedProgNoteId: IdSchema
+					relatedElement: Joi.object().keys({
+						type: ['progNoteUnit', 'planSection', 'planTarget']
+						id: IdSchema
+					}).allow('')
 				})
 			}
 			{

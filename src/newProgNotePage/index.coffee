@@ -199,8 +199,6 @@ load = (win, {clientFileId}) ->
 					metricsById
 				)
 
-				console.info "progNote", progNote.toJS()
-
 				# Done loading data, we can load in the empty progNote object
 				@setState {
 					isLoading: false
@@ -273,8 +271,13 @@ load = (win, {clientFileId}) ->
 
 				progEvents: Imm.List()
 				editingWhichEvent: null
+
+				isEventPlanRelationMode: null
+				selectedEventPlanRelation: null
+				hoveredEventPlanRelation: null
+
 				success: false
-				showExitAlert: false
+				showExitAlert: false				
 			}
 
 		suggestClose: ->
@@ -367,17 +370,24 @@ load = (win, {clientFileId}) ->
 					)
 
 					R.hr({})
-					R.div({className: 'units'},
+					R.div({
+						className: [
+							'units'
+							'eventPlanRelationMode' if @state.isEventPlanRelationMode
+						].join ' '
+					},
 						(@state.progNote.get('units').map (unit) =>
 							unitId = unit.get 'id'
-
-							console.info "unitId", unitId
 
 							switch unit.get('type')
 								when 'basic'
 									R.div({
-										className: 'unit basic'
 										key: unitId
+										className: [
+											'unit basic isEventRelatable'											
+											'selectedEventPlanRelation' if Imm.is unit, @state.selectedEventPlanRelation
+										].join ' '										
+										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.selectedEventPlanRelation?
 									},
 										R.h1({className: 'name'}, unit.get 'name')
 										ExpandingTextArea({
@@ -402,6 +412,12 @@ load = (win, {clientFileId}) ->
 												})
 											).toJS()...
 										)
+										R.div({
+											className: 'events'
+											onClick: @_newEventTab.bind null, {unitId}
+										},
+											
+										)
 									)
 								when 'plan'
 									R.div({
@@ -416,15 +432,32 @@ load = (win, {clientFileId}) ->
 										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
 
-											R.section({key: sectionId},
+											R.section({
+												key: sectionId												
+												className: [
+													'isEventPlanRelatable'
+													'hoveredEventPlanRelation' if Imm.is section, @state.hoveredEventPlanRelation
+													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
+												].join ' '
+												onMouseOver: @_hoverEventPlanRelation.bind(null, section)
+												onMouseOut: @_hoverEventPlanRelation.bind(null, null)
+												onClick: @_selectEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
+											},
 												R.h2({}, section.get 'name')
 
 												(section.get('targets').map (target) =>														
 													targetId = target.get 'id'
 
 													R.div({
-														className: 'target'
 														key: targetId
+														className: [
+															'target isEventPlanRelatable'
+															'hoveredEventPlanRelation' if Imm.is target, @state.hoveredEventPlanRelation
+															'selectedEventPlanRelation' if Imm.is target, @state.selectedEventPlanRelation
+														].join ' '
+														onMouseOver: @_hoverEventPlanRelation.bind(null, target)
+														onMouseOut: @_hoverEventPlanRelation.bind(null, null)
+														onClick: @_selectEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
 													},
 														R.h3({}, target.get 'name')
 														ExpandingTextArea {
@@ -507,10 +540,14 @@ load = (win, {clientFileId}) ->
 								EventTabView({
 									data: thisEvent
 									atIndex: index
+									progNote: @state.progNote
 									save: @_saveEventData
 									cancel: @_cancelEditing
 									editMode: @state.editingWhichEvent?
 									isBeingEdited
+									updateEventPlanRelationMode: @_updateEventPlanRelationMode
+									selectedEventPlanRelation: @state.selectedEventPlanRelation
+									selectEventPlanRelation: @_selectEventPlanRelation
 								})
 							)
 						)
@@ -523,9 +560,10 @@ load = (win, {clientFileId}) ->
 				)
 			)
 
-		_newEventTab: ->
+		_newEventTab: (relatedId) ->			
+			newProgEvent = if relatedId? then {relatedId} else {}
 			# Add in the new event, select last one
-			@setState {progEvents: @state.progEvents.push {}}, => 
+			@setState {progEvents: @state.progEvents.push newProgEvent}, => 
 				@setState {editingWhichEvent: @state.progEvents.size - 1}
 
 		_editEventTab: (index) ->
@@ -542,6 +580,25 @@ load = (win, {clientFileId}) ->
 
 			@setState {editingWhichEvent: null}
 
+		_selectEventPlanRelation: (selectedEventPlanRelation, event) ->
+			event.stopPropagation() if event?
+
+			# Enable eventPlanRelationMode if not already on
+			unless @state.isEventPlanRelationMode
+				@setState {isEventPlanRelationMode: true}
+
+			# Disable when chooses "No Relation" (null)
+			unless selectedEventPlanRelation?
+				@setState {isEventPlanRelationMode: false}
+
+			@setState {selectedEventPlanRelation}
+
+		_hoverEventPlanRelation: (hoveredEventPlanRelation, event) ->
+			event.stopPropagation() if event?
+			@setState {hoveredEventPlanRelation}
+
+		_updateEventPlanRelationMode: (isEventPlanRelationMode) ->
+			@setState {isEventPlanRelationMode}
 			
 		_getUnitIndex: (unitId) ->
 			result = @state.progNote.get('units')
@@ -554,8 +611,6 @@ load = (win, {clientFileId}) ->
 			return result
 
 		_getPlanSectionIndex: (unitIndex, sectionId) ->
-			console.info unitIndex, sectionId
-
 			result = @state.progNote.getIn(['units', unitIndex, 'sections'])
 			.findIndex (section) =>
 				return section.get('id') is sectionId
