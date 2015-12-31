@@ -105,24 +105,28 @@ class Lock
 		(callback) =>
 			@acquire session, lockId, (err, lock) ->
 				if err
-					console.error "Failed to obtain lock:"
-					console.error err
-					console.error err.stack
-					console.error "Ignoring error and retrying..."
+					console.warn "Failed to obtain lock:"
+					console.warn err
+					console.warn err.stack
+					console.warn "Retrying in #{60 * intervalMins}s"
 
 				if lock
 					newLock = lock
 					callback()
 				else
+					# Wait for interval before trying again
 					setTimeout callback, intervalMs
 		(err) ->
 			if isCancelled
+				# End loop when operation cancelled
 				cb null
 			else
+				# Found a new lock, delivered through cb
 				cb null, newLock
 		)
 
 		return {
+			# Provides public operation.cancel(cb) method
 			cancel: (cb=(->)) -> 
 				isCancelled = true
 				cb()
