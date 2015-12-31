@@ -41,6 +41,10 @@ load = (win) ->
 					viewport: $widget
 				}
 		render: ->
+			if @props.data.get('typeId')
+				eventType = @props.eventTypes
+				.find (type) => type.get('id') is @props.data.get('typeId')
+
 			return R.div({
 				className: "progEventsWidget #{@props.format}"
 			},
@@ -57,12 +61,21 @@ load = (win) ->
 							R.div({className: 'description'},
 								renderLineBreaks @state.description
 								R.div({className: 'date'}, @state.eventDate)
-							)
+							)							
+							if eventType?
+								R.div({
+									style:
+										borderBottom: "1px solid #{eventType.get('colorKeyHex')}"
+								},
+									"Type: #{eventType.get('name')}"
+								)
 						)
 					when 'small'
 						R.div({
 							ref: 'widget'
 							className: 'progEventContainer'
+							style:
+								background: eventType.get('colorKeyHex') if eventType?
 						},
 							FaIcon 'calendar'
 							@state.title

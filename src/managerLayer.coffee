@@ -15,8 +15,7 @@ load = (win) ->
 	AccountManagerTab = require('./accountManagerTab').load(win)
 	ExportManagerTab = require('./exportManagerTab').load(win)
 	MyAccountManagerTab = require('./myAccountManagerTab').load(win)
-
-	{FaIcon} = require('./utils').load(win)
+	EventTypeManagerTab = require('./eventTypeManagerTab').load(win)
 
 	ManagerLayer = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -31,6 +30,8 @@ load = (win) ->
 					ExportManagerTab
 				when 'myAccountManagerTab'
 					MyAccountManagerTab
+				when 'eventTypeManagerTab'
+					EventTypeManagerTab
 
 			return R.div({className: 'managerLayer'},
 				R.div({className: 'managerLayerContainer'},

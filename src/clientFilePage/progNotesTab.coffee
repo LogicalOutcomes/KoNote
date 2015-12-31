@@ -53,6 +53,8 @@ load = (win) ->
 			}
 
 		render: ->
+			console.info "@props.eventTypes", @props.eventTypes
+			
 			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
 				R.div({className: "toolbar #{showWhen @props.progNoteHistories.size > 0}"},
 					R.button({
@@ -108,6 +110,7 @@ load = (win) ->
 									key: progNote.get('id')
 									progNoteHistory
 									progEvents
+									eventTypes: @props.eventTypes
 									clientFile: @props.clientFile
 									setSelectedItem: @_setSelectedItem
 									selectedItem: @state.selectedItem
@@ -131,6 +134,7 @@ load = (win) ->
 
 										progNote
 										progEvents
+										eventTypes: @props.eventTypes
 										clientFile: @props.clientFile
 										setSelectedItem: @_setSelectedItem
 										selectedItem: @state.selectedItem
@@ -144,6 +148,7 @@ load = (win) ->
 						item: @state.selectedItem
 						progNoteHistories: @props.progNoteHistories
 						progEvents: @props.progEvents
+						eventTypes: @props.eventTypes
 					})
 				)
 			)
@@ -428,10 +433,11 @@ load = (win) ->
 						R.div({className: 'progEvents'}
 							R.h3({}, Term 'Events')
 							(@props.progEvents.map (progEvent) =>								
-								ProgEventsWidget({									
+								ProgEventsWidget({
+									key: progEvent.get('id')
 									format: 'large'
 									data: progEvent
-									key: progEvent.get('id')
+									eventTypes: @props.eventTypes
 								})
 							).toJS()...
 						)						
@@ -516,6 +522,7 @@ load = (win) ->
 							FullProgNoteView({
 								progNote: latestRev
 								progEvents: @props.progEvents
+								eventTypes: @props.eventTypes
 								clientFile: @props.clientFile
 								setSelectedItem: @props.setSelectedItem
 								selectedItem: @props.selectedItem

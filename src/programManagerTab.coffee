@@ -27,12 +27,6 @@ load = (win) ->
 	ProgramManagerTab = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: ->
-			return {
-				openDialogId: null
-				expandedMemberLists: Imm.List()
-			}
-
 		render: ->
 			# Inject numberClients into each program
 			programs = @props.programs.map (program) =>
@@ -238,7 +232,6 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				id: @props.rowData.get('id')
 				name: @props.rowData.get('name')
 				colorKeyHex: @props.rowData.get('colorKeyHex')
 				description: @props.rowData.get('description')
@@ -331,7 +324,7 @@ load = (win) ->
 
 		_buildModifiedProgramObject: ->
 			return Imm.fromJS({
-				id: @state.id
+				id: @props.rowData.get('id')
 				name: @state.name
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex

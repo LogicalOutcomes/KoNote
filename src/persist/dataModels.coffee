@@ -51,6 +51,7 @@ dataModelDefinitions = [
 					description: Joi.string().allow('')			
 					startTimestamp: Joi.date().format(TimestampFormat).raw()
 					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+					typeId: IdSchema.allow('')
 					relatedProgNoteId: IdSchema
 					relatedElement: Joi.object().keys({
 						type: ['progNoteUnit', 'planSection', 'planTarget']
@@ -186,6 +187,18 @@ dataModelDefinitions = [
 		})
 	}
 
+	{
+		name: 'eventType'
+		collectionName: 'eventTypes'
+		isMutable: true
+		schema: Joi.object().keys({
+			name: Joi.string()
+			description: Joi.string()
+			colorKeyHex: Joi.string().regex(/^#[A-Fa-f0-9]{6}/)
+			status: ['default', 'cancelled']
+		})
+	}
+
 	# Link a clientFileId to 1 or more programIds
 	{
 		name: 'clientFileProgramLink'
@@ -195,7 +208,7 @@ dataModelDefinitions = [
 		schema: Joi.object().keys({
 			clientFileId: IdSchema
 			programId: IdSchema
-			status: ["enrolled", "unenrolled"]
+			status: ['enrolled', 'unenrolled']
 		})
 	}
 ]
