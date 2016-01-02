@@ -199,13 +199,14 @@ load = (win, {clientFileId}) ->
 
 				(cb) =>
 					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
-						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
+						ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEventHeader.get('id'), 1, cb
 					, (err, results) =>
 						if err
 							cb err
 							return
 
-						progressEvents = Imm.List results
+						progressEvents = Imm.List(results)
+						.map (progEvent) -> stripMetadata progEvent.get(0)
 
 						checkFileSync progressEvents, @state.progressEvents
 						cb()

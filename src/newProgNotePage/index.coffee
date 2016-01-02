@@ -93,8 +93,8 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						@setState (state) =>
-							return {clientFile: revisions.first()}
+						clientFile = revisions.first()
+						@setState {clientFile}
 
 						cb null
 				(cb) =>
@@ -173,15 +173,17 @@ load = (win, {clientFileId}) ->
 						cb()
 				(cb) =>
 					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
-						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
+						ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEventHeader.get('id'), 1, cb
 					, (err, results) =>
 						if err
 							cb err
 							return
 
-						@setState {
-							progEvents: Imm.List(results)
-						}, cb
+						progEvents = Imm.List(results)
+						.map (progEvent) -> stripMetadata progEvent.first()
+
+						@setState {progEvents}
+						cb()
 				(cb) =>
 					ActiveSession.persist.eventTypes.list (err, result) =>
 						if err
@@ -787,6 +789,7 @@ load = (win, {clientFileId}) ->
 						progEvent = Imm.fromJS(progEvent)
 						.set('relatedProgNoteId', progNoteId)
 						.set('clientFileId', clientFileId)
+						.set('status', 'default')
 
 						ActiveSession.persist.progEvents.create progEvent, cb
 

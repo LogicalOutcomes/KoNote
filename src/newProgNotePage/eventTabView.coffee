@@ -368,10 +368,31 @@ load = (win) ->
 					isOneFullDay = true
 					endTimestamp = Moment(startTimestamp).endOf('day')
 
+
+			if @props.selectedEventPlanRelation?
+				# Figure out which element type it is
+				relatedElementType = if @props.selectedEventPlanRelation.has('type')
+						'progNoteUnit'
+					else if @props.selectedEventPlanRelation.has('targets')
+						'planSection'
+					else if @props.selectedEventPlanRelation.has('metrics')
+						'planTarget'
+					else
+						null
+						console.error "Unknown relatedElementType:", @props.selectedEventPlanRelation.toJS()
+
+				relatedElement = {
+					id: @props.selectedEventPlanRelation.get('id')
+					type: relatedElementType
+				}
+			else
+				relatedElement = ''
+
 			return {	
 				title: @state.title
 				description: @state.description
 				typeId: @state.typeId
+				relatedElement
 				startTimestamp: startTimestamp.format(TimestampFormat)
 				endTimestamp: if @state.isDateSpan or isOneFullDay then endTimestamp.format(TimestampFormat) else ''
 			}
