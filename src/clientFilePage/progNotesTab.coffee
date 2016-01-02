@@ -53,8 +53,6 @@ load = (win) ->
 			}
 
 		render: ->
-			console.info "@props.eventTypes", @props.eventTypes
-			
 			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
 				R.div({className: "toolbar #{showWhen @props.progNoteHistories.size > 0}"},
 					R.button({

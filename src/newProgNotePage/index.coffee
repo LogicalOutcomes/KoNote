@@ -134,12 +134,12 @@ load = (win, {clientFileId}) ->
 
 					metricsById = Imm.Map()
 					Async.each requiredMetricIds.toArray(), (metricId, cb) =>
-						ActiveSession.persist.metrics.read metricId, (err, result) =>
+						ActiveSession.persist.metrics.readLatestRevisions metricId, 1, (err, result) =>
 							if err
 								cb err
 								return
 
-							metricsById = metricsById.set metricId, result
+							metricsById = metricsById.set metricId, result.first()
 							cb null
 					, cb
 				(cb) =>

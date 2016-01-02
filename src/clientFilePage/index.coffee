@@ -542,7 +542,17 @@ load = (win, {clientFileId}) ->
 
 				'create:progEvent': (newProgEvent) =>
 					return unless newProgEvent.get('clientFileId') is clientFileId
-					@setState (state) => progressEvents: state.progressEvents.push newProgEvent
+					progressEvents = @state.progressEvents.push newProgEvent
+					@setState {progressEvents}
+
+				'createRevision:progEvent': (newProgEventRev) =>
+					return unless newProgEventRev.get('clientFileId') is clientFileId
+					originalProgEvent = @state.progressEvents
+					.find (progEvent) -> progEvent.get('id') is newProgEventRev.get('id')
+
+					progEventIndex = @state.progressEvents.indexOf originalProgEvent
+					progressEvents = @state.progressEvents.set progEventIndex, newProgEventRev
+					@setState {progressEvents}
 
 				'create:metric createRevision:metric': (metricDefinition) =>
 					metricsById = @state.metricsById.set metricDefinition.get('id'), metricDefinition
@@ -655,6 +665,8 @@ load = (win, {clientFileId}) ->
 				createdAt = progNoteHist.last().get('backdate') or progNoteHist.first().get('timestamp')
 				return Moment createdAt, Persist.TimestampFormat
 			.reverse()
+
+			# Filter out cancelled progEvents
 
 			return R.div({className: 'clientFilePage animated fadeIn'},
 				Spinner({isOverlay: true, isVisible: @props.isLoading})

@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
+Async = require 'async'
 
 Config = require '../config'
 Persist = require '../persist'
@@ -32,10 +33,14 @@ load = (win) ->
 		render: ->
 			Dialog({
 				ref: 'dialog'
-				title: "Rename #{Term 'Client File'}"
+				title: "Cancel #{Term 'Progress Note'}"
 				onClose: @props.onClose
 			},
 				R.div({className: 'cancelProgNoteDialog'},
+					R.div({className: 'alert alert-warning'},
+						"This will cancel the #{Term 'progress note'} entry, 
+						including any recorded #{Term 'metrics'}/#{Term 'events'}."
+					)
 					R.div({className: 'form-group'},
 						R.label({}, "Reason for cancelling this entry:"),
 						R.textarea({
@@ -72,7 +77,7 @@ load = (win) ->
 				@_submit()
 
 		_submit: ->
-			@refs.dialog.setIsLoading true
+			# @refs.dialog.setIsLoading true
 
 			# Cancel progNote with reason
 			cancelledProgNote = @props.progNote
@@ -89,16 +94,17 @@ load = (win) ->
 				.set('status', 'cancelled')
 				.set('statusReason', @state.reason)
 
+			console.log "cancelledProgEvents", cancelledProgEvents.toJS()
+
 			Async.series [
 				(cb) =>
 					ActiveSession.persist.progNotes.createRevision cancelledProgNote, cb
 				(cb) =>
 					Async.map cancelledProgEvents.toArray(), (progEvent) =>
-						console.log "Cancelling progEvent:", progEvent
-						ActiveSession.persist.progEvents.createRevision cancelledProgEvent, cb
+						ActiveSession.persist.progEvents.createRevision progEvent, cb
 					, cb
 			], (err) =>
-				@refs.dialog.setIsLoading false
+				# @refs.dialog.setIsLoading false
 
 				if err
 					if err instanceof Persist.IOError

@@ -71,7 +71,7 @@ load = (win) ->
 					when 'cancelled'
 						return false
 					else
-						throw new Error "unknown prognote status: #{progNoteHist.last().get('status')}"
+						throw new Error "unknown progNote status: #{progNoteHist.last().get('status')}"
 			.flatMap (progNoteHist) ->
 				return extractMetricsFromProgNoteHistory progNoteHist
 			.filter (metricValue) -> # remove blank metrics
@@ -82,16 +82,19 @@ load = (win) ->
 			.map (m) -> m.get 'id'
 			.toSet()
 
-			# All event IDs
-			progEventIdsWithData = @props.progEvents
-			.map (e) -> e.get 'id'
+			# Filter out any cancelled progEvents
+			filteredProgEvents = @_filterCancelledProgEvents @props.progEvents			
+
+			# Build set list of progEvent Ids
+			progEventIdsWithData = filteredProgEvents		
+			.map (progEvent) -> progEvent.get 'id'
 			.toSet()
 
 			# Build list of timestamps from progEvents (start & end) & metrics
 			timestampDays = Imm.List()
-			.concat @props.progEvents.map (progEvent) ->
+			.concat filteredProgEvents.map (progEvent) ->
 				Moment(progEvent.get('startTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
-			.concat @props.progEvents.map (progEvent) ->
+			.concat filteredProgEvents.map (progEvent) ->
 				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat metricValues.map (metric) ->
 				Moment(metric.get('timestamp'), Persist.TimestampFormat).startOf('day').valueOf()
@@ -109,7 +112,7 @@ load = (win) ->
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
-			@setState => {
+			@setState {
 				xDays: xTicks
 				daysOfData: timestampDays.size
 				timeSpan: [0, xTicks.size - 1]
@@ -117,6 +120,17 @@ load = (win) ->
 				metricIdsWithData, metricValues
 				progEventIdsWithData
 			}
+
+		_filterCancelledProgEvents: (progEvents) ->
+			return progEvents.filter (progEvent) ->
+				# Ignore data from cancelled progEvents
+				switch progEvent.get('status')
+					when 'default'
+						return true
+					when 'cancelled'
+						return false
+					else
+						throw new Error "unknown progEvent status: #{progEvent.get('status')}"
 
 		render: ->
 			hasEnoughData = @state.daysOfData >= Config.analysis.minDaysOfData
@@ -168,7 +182,7 @@ load = (win) ->
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
-								progEvents: @props.progEvents
+								progEvents: @_filterCancelledProgEvents @props.progEvents
 								metricsById: @props.metricsById
 								metricValues: @state.metricValues
 								xTicks: @state.xTicks
