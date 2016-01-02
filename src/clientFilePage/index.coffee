@@ -61,7 +61,6 @@ load = (win, {clientFileId}) ->
 
 		init: ->
 			@props.maximizeWindow()
-
 			@_renewAllData()
 
 		deinit: (cb=(->)) ->
@@ -404,15 +403,21 @@ load = (win, {clientFileId}) ->
 					}, cb
 
 		_killLocks: (cb=(->)) ->
-			console.log "Killing locks...."
+			console.log "Releasing any active locks/operations...."
+
 			if @state.clientFileLock?
+				console.log "Releasing existing lock..."
 				@state.clientFileLock.release(=>
 					@setState {clientFileLock: null}, =>
-						console.log "Lock killed!"
+						console.log "Lock released!"
 						cb()
 				)
 			else if @state.lockOperation?
+				console.log "Killing lockOperation..."
 				@state.lockOperation.cancel cb
+			else
+				console.log "None to release, closing..."
+				cb()
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
 			@setState (state) => {isLoading: true}
