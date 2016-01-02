@@ -190,16 +190,19 @@ init = (win) ->
 				if filename?
 					fileExtension = filename.split('.').splice(-1)[0]
 
-					if fileExtension is "styl"
-						refreshCSS()
-						return
+					switch fileExtension
+						when "styl"
+							refreshCSS()
+						when "coffee"
+							unless isRefreshing
+								console.log ""
+								isRefreshing = true
+								doHotCodeReplace()
 
-				unless isRefreshing
-					isRefreshing = true
-					doHotCodeReplace()
 
-
-	doHotCodeReplace = =>		
+	doHotCodeReplace = =>
+		console.log "Running HCR Reload..."
+		
 		# Save the entire page state into a global var
 		global.HCRSavedState[win.location.href] = HotCodeReplace.takeSnapshot pageComponent
 

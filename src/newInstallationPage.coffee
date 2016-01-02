@@ -81,8 +81,6 @@ load = (win) ->
 				}
 
 		render: ->
-			# TODO: Extract this to UI component
-
 			if @state.isLoading
 				return R.div({id: 'newInstallationPage'},
 					Spinner {
@@ -92,8 +90,11 @@ load = (win) ->
 						percent: @state.installProgress.percent
 					}
 				)
-
-			return R.div({id: 'newInstallationPage'},
+				
+			return R.div({
+				id: 'newInstallationPage'
+				className: 'animated fadeIn'
+			},
 				R.section({},
 					R.div({
 						id: 'brandContainer'
@@ -248,11 +249,13 @@ load = (win) ->
 			if not percent and not message
 				percent = message = null
 
-			@setState =>
+			console.log "About to update progress..."
+
+			@setState {
 				isLoading: true
 				installProgress: {percent, message}
-
-			console.log "Updated progress:", percent, message
+			}, ->
+				console.log "Updated progress:", percent, message
 
 		_install: ->
 			if @state.password isnt @state.passwordConfirmation
@@ -262,11 +265,9 @@ load = (win) ->
 			systemAccount = null
 			adminPassword = @state.password
 
-			@_updateProgress()
-
 			Async.series [
 				(cb) =>
-					@_updateProgress 0, "Setting up database directory"
+					@_updateProgress 0, "Setting up database..."
 
 					# Set up data directory, with subfolders from dataModels
 					Persist.setUpDataDirectory Config.dataDirectory, (err) =>
@@ -275,10 +276,8 @@ load = (win) ->
 							return
 
 						cb()
-				(cb) =>
-					# @_updateProgress 25, "Configuring accounts system \n(this may take a while...)"
+				(cb) =>					
 					@_updateProgress 25, "Generating secure encryption keys (this may take a while...)"
-
 										
 					isDone = false
 					# Only fires if async setUp
