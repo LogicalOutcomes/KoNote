@@ -97,13 +97,14 @@ load = (win) ->
 					}
 				}, =>
 					@state.newInstallationWindow.on 'close', (event) =>
-						if global.isNewSetUp
+						if global.isSetUp
 							# Successfully installed, show login with isNewSetUp
 							@setState {
 								isSetUp: true
 								isNewSetUp: true
 							}
 						else
+
 							# Didn't complete installation, so close
 							win.close(true)
 
