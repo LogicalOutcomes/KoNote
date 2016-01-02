@@ -37,7 +37,7 @@ load = (win) ->
 		render: ->
 			Dialog({
 				ref: 'dialog'
-				title: "Define a new #{Term 'metric'}"
+				title: "Define New #{Term 'Metric'}"
 				onClose: @_cancel
 			},
 				R.div({className: 'defineMetricDialog'},
@@ -89,12 +89,16 @@ load = (win) ->
 				Bootbox.alert "#{Term 'Metric'} definition is required"
 				return
 
+			@refs.dialog.setIsLoading true
+
 			newMetric = Imm.fromJS {
 				name: @state.name.trim()
 				definition: @state.definition.trim()
 			}
 
 			ActiveSession.persist.metrics.create newMetric, (err, result) =>
+				@refs.dialog.setIsLoading false
+
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """
@@ -106,7 +110,6 @@ load = (win) ->
 					return
 
 				@props.onSuccess result
-				@props.onCancel()
 
 	return DefineMetricDialog
 

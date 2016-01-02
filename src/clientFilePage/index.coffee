@@ -544,19 +544,21 @@ load = (win, {clientFileId}) ->
 					return unless newProgEvent.get('clientFileId') is clientFileId
 					@setState (state) => progressEvents: state.progressEvents.push newProgEvent
 
-				'create:metric': (newMetric) =>
-					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
+				'create:metric createRevision:metric': (metricDefinition) =>
+					metricsById = @state.metricsById.set metricDefinition.get('id'), metricDefinition
+					@setState {metricsById}
 
 				'create:eventType': (newEventType) =>
-					@setState (state) => eventTypes: state.eventTypes.push newEventType
+					eventTypes = @state.eventTypes.push newEventType
+					@setState {eventTypes}
 
 				'createRevision:eventType': (newEventTypeRev) =>
 					originalEventType = @state.eventTypes
 					.find (eventType) -> eventType.get('id') is newEventTypeRev.get('id')
 					
 					eventTypeIndex = @state.eventTypes.indexOf originalEventType
-
-					@setState {eventTypes: @state.eventTypes.set(eventTypeIndex, newEventTypeRev)}
+					eventTypes = @state.eventTypes.set eventTypeIndex, newEventTypeRev
+					@setState {eventTypes}
 
 				'timeout:timedOut': =>
 					@_killLocks Bootbox.hideAll

@@ -28,50 +28,6 @@ load = (win) ->
 	MetricDefinitionManagerTab = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: ->
-			return {
-				metricDefinitions: Imm.List()
-			}
-
-		componentDidMount: ->
-			metricDefinitionHeaders = null
-			metricDefinitions = null
-
-			Async.series [
-				(cb) =>
-					ActiveSession.persist.metrics.list (err, result) =>
-						if err
-							cb err
-							return
-
-						metricDefinitionHeaders = result
-						cb()
-				(cb) =>
-					Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
-						metricDefinitionId = metricDefinitionHeader.get('id')
-						ActiveSession.persist.metrics.readLatestRevisions metricDefinitionId, 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						metricDefinitions = Imm.List(results)
-						.map (metricDefinition) -> stripMetadata metricDefinition.first()
-
-						cb()
-			], (err) =>
-					if err
-						if err instanceof Persist.IOError
-							console.error err
-							console.error err.stack
-							@setState {loadErrorType: 'io-error'}
-							return
-
-						CrashHandler.handle err
-						return
-
-					@setState {metricDefinitions}
-
 		render: ->
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
@@ -79,7 +35,7 @@ load = (win) ->
 				)
 				R.div({className: 'main'},
 					OrderableTable({
-						tableData: @state.metricDefinitions
+						tableData: @props.metricDefinitions
 						sortByData: ['name']
 						columns: [
 							{
@@ -100,10 +56,7 @@ load = (win) ->
 										className: 'btn btn-warning'
 										text: null
 										icon: 'wrench'
-										dialog: DefineMetricDialog
-										data: {
-											onSuccess: @_addNewMetricDefinition
-										}
+										dialog: ModifyMetricDialog
 									}
 								]
 							}
@@ -114,7 +67,6 @@ load = (win) ->
 					OpenDialogLink({
 						className: 'btn btn-lg btn-primary'
 						dialog: DefineMetricDialog
-						onSuccess: @_addNewMetricDefinition
 					},
 						FaIcon('plus')
 						" New #{Term 'Metric'}"
@@ -122,17 +74,96 @@ load = (win) ->
 				)
 			)
 
-		_addNewMetricDefinition: (newMetricDefinition) ->
-			metricDefinitions = @state.metricDefinitions.push newMetricDefinition
-			@setState {metricDefinitions}
+	ModifyMetricDialog = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+		getInitialState: ->
+			return {
+				name: @props.rowData.get('name')
+				definition: @props.rowData.get('definition')
+			}
 
-		# _modifyEventType: (modifiedEventType) ->
-		# 	originalEventType = @state.eventTypes
-		# 	.find (eventType) -> eventType.get('id') is modifiedEventType.get('id')
+		componentDidMount: ->
+			@refs.nameField.focus()
 			
-		# 	eventTypeIndex = @state.eventTypes.indexOf originalEventType
+		render: ->
+			Dialog({
+				ref: 'dialog'
+				title: "Modify #{Term 'Metric'} Definition"
+				onClose: @_cancel
+			},
+				R.div({className: 'defineMetricDialog'},
+					R.div({className: 'form-group'},
+						R.label({}, "Name")
+						R.input({
+							ref: 'nameField'
+							className: 'form-control'
+							onChange: @_updateName
+							value: @state.name
+						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Definition")
+						ExpandingTextArea({
+							ref: 'definitionField'
+							onChange: @_updateDefinition
+							value: @state.definition							
+						})
+					)
+					R.div({className: 'btn-toolbar pull-right'},
+						R.button({
+							className: 'btn btn-default'
+							onClick: @_cancel
+						}, "Cancel"),
+						R.button({
+							className: 'btn btn-primary'
+							onClick: @_submit
+						}, "Modify #{Term 'Metric'}")
+					)
+				)
+			)
 
-		# 	@setState {eventTypes: @state.eventTypes.set(eventTypeIndex, modifiedEventType)}
+		_cancel: ->
+			@props.onCancel()
+
+		_updateName: (event) ->
+			@setState {name: event.target.value}
+
+		_updateDefinition: (event) ->
+			@setState {definition: event.target.value}
+
+		_submit: ->
+			unless @state.name.trim()
+				Bootbox.alert "#{Term 'Metric'} name is required"
+				return
+
+			unless @state.definition.trim()
+				Bootbox.alert "#{Term 'Metric'} definition is required"
+				return
+
+			@refs.dialog.setIsLoading true
+
+			newMetricRevision = Imm.fromJS {
+				id: @props.rowData.get('id')
+				name: @state.name.trim()
+				definition: @state.definition.trim()
+			}
+
+			ActiveSession.persist.metrics.createRevision newMetricRevision, (err, result) =>
+				@refs.dialog.setIsLoading false
+
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
+					CrashHandler.handle err
+					return
+
+				# New revision caught by page listeners
+				@props.onSuccess()
+
 
 	return MetricDefinitionManagerTab
 
