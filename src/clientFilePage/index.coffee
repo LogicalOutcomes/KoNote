@@ -206,7 +206,7 @@ load = (win, {clientFileId}) ->
 							return
 
 						progressEvents = Imm.List(results)
-						.map (progEvent) -> stripMetadata progEvent.get(0)
+						.map (progEvent) -> stripMetadata progEvent.first()
 
 						checkFileSync progressEvents, @state.progressEvents
 						cb()
@@ -222,7 +222,7 @@ load = (win, {clientFileId}) ->
 
 				(cb) =>
 					Async.map metricHeaders.toArray(), (metricHeader, cb) =>
-						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
+						ActiveSession.persist.metrics.readLatestRevisions metricHeader.get('id'), 1, cb
 					, (err, results) =>
 						if err
 							cb err
@@ -230,6 +230,7 @@ load = (win, {clientFileId}) ->
 
 						metricsById = Imm.List(results)
 						.map (metric) =>
+							metric = stripMetadata metric.first()
 							return [metric.get('id'), metric]
 						.fromEntrySeq().toMap()
 

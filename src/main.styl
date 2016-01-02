@@ -17,9 +17,8 @@ textarea
 	// See also: ExpandingTextArea
 	resize none
 
-
+// Components
 @require crashHandler
-@require defineMetricDialog
 @require dialog
 @require metricLookupField
 @require metricWidget
@@ -28,28 +27,36 @@ textarea
 @require brandWidget
 @require timeoutDialog
 @require printButton
+@require orderableTable
+@require managerLayer
+@require progEventsWidget
+@require printPreviewPage
 
+// Pages and Child Components
 @require loginPage
 @require newInstallationPage
+
 @require clientSelectionPage
-@require managerLayer
+
 @require accountManagerTab
-@require programManagerTab
-@require myAccountManagerTab
 @require createAccountDialog
+
+@require myAccountManagerTab
+
 @require eventTypeManagerTab
 @require createEventTypeDialog
+
 @require createClientFileDialog
 @require renameClientFileDialog
+
+@require programManagerTab
 @require createProgramDialog
 @require manageProgramClientsDialog
 
-@require orderableTable
+@require metricDefinitionManagerTab
+@require defineMetricDialog
 
-@require loginPage
 @require clientFilePage
 @require newProgNotePage
 @require 'newProgNotePage/eventTabView'
 @require 'newProgNotePage/newProgNotePage'
-@require progEventsWidget
-@require printPreviewPage

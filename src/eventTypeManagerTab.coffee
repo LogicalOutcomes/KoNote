@@ -70,7 +70,7 @@ load = (win) ->
 					@setState {eventTypes}
 
 		render: ->
-			return R.div({className: 'programManagerTab'},
+			return R.div({className: 'eventTypeManagerTab'},
 				R.div({className: 'header'},
 					R.h1({}, Term 'Event Types')
 				)

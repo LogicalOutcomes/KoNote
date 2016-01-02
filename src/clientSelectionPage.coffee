@@ -400,6 +400,13 @@ load = (win) ->
 								})
 								UserMenuItem({
 									isVisible: isAdmin
+									title: "User #{Term 'Accounts'}"
+									icon: 'key'
+									onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
+									isActive: @state.managerLayer is 'accountManagerTab'
+								})
+								UserMenuItem({
+									isVisible: isAdmin
 									title: Term 'Programs'
 									icon: 'users'
 									onClick: @_updateManagerLayer.bind null, 'programManagerTab'
@@ -407,18 +414,18 @@ load = (win) ->
 								})								
 								UserMenuItem({
 									isVisible: isAdmin
-									title: "Event Types"
+									title: "#{Term 'Event'} Types"
 									icon: 'calendar-o'
 									onClick: @_updateManagerLayer.bind null, 'eventTypeManagerTab'
 									isActive: @state.managerLayer is 'eventTypeManagerTab'
 								})
 								UserMenuItem({
 									isVisible: isAdmin
-									title: "User #{Term 'Accounts'}"
-									icon: 'key'
-									onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
-									isActive: @state.managerLayer is 'accountManagerTab'
-								})								
+									title: Term 'Metrics'
+									icon: 'line-chart'
+									onClick: @_updateManagerLayer.bind null, 'metricDefinitionManagerTab'
+									isActive: @state.managerLayer is 'metricDefinitionManagerTab'
+								})
 								UserMenuItem({
 									isVisible: isAdmin
 									title: "Export Data"

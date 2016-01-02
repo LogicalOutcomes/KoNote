@@ -169,7 +169,7 @@ dataModelDefinitions = [
 	{
 		name: 'metric'
 		collectionName: 'metrics'
-		isMutable: false
+		isMutable: true
 		indexes: [['name']]
 		schema: Joi.object().keys({
 			name: Joi.string()

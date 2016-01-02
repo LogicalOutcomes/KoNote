@@ -13,6 +13,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	ReactDOM = win.ReactDOM
 
 	Config = require('./config')
 	Term = require('./term')
@@ -25,40 +26,39 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
-				name: @props.metricQuery
+				name: @props.metricQuery or ''
 				definition: ''
 			}
+
 		componentDidMount: ->
-			@refs.metricDefinition.focus()
+			refToFocus = if @props.metricQuery? then 'definitionField' else 'nameField'
+			ReactDOM.findDOMNode(@refs[refToFocus]).focus()
 			
 		render: ->
 			Dialog({
+				ref: 'dialog'
 				title: "Define a new #{Term 'metric'}"
 				onClose: @_cancel
 			},
 				R.div({className: 'defineMetricDialog'},
 					R.div({className: 'form-group'},
-						R.label({}, "Name"),
+						R.label({}, "Name")
 						R.input({
+							ref: 'nameField'
 							className: 'form-control'
 							onChange: @_updateName
 							value: @state.name
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Definition"),
+						R.label({}, "Definition")
 						ExpandingTextArea({
+							ref: 'definitionField'
 							onChange: @_updateDefinition
-							value: @state.definition
-							ref: 'metricDefinition'
+							value: @state.definition							
 						})
 					)
-					R.div({className: 'alert alert-warning'},
-						FaIcon('warning'),
-						"The name and definition of a #{Term 'metric'} cannot be changed ",
-						"after it has been created."
-					)
-					R.div({className: 'btn-toolbar'},
+					R.div({className: 'btn-toolbar pull-right'},
 						R.button({
 							className: 'btn btn-default'
 							onClick: @_cancel
@@ -66,16 +66,20 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-						}, "Create #{Term 'metric'}")
+						}, "Create #{Term 'Metric'}")
 					)
 				)
 			)
+
 		_cancel: ->
 			@props.onCancel()
+
 		_updateName: (event) ->
 			@setState {name: event.target.value}
+
 		_updateDefinition: (event) ->
 			@setState {definition: event.target.value}
+
 		_submit: ->
 			unless @state.name.trim()
 				Bootbox.alert "#{Term 'Metric'} name is required"
@@ -101,7 +105,8 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@props.onSuccess result.get('id')
+				@props.onSuccess result
+				@props.onCancel()
 
 	return DefineMetricDialog
 

@@ -104,14 +104,14 @@ load = (win) ->
 				metricQuery: $(@refs.lookupField).val()
 				onCancel: =>
 					@setState {isDefineMetricDialogVisible: false}
-				onSuccess: (newMetricId) =>
+				onSuccess: (newMetric) =>
 					@setState {isDefineMetricDialogVisible: false}
 
 					lookupField = $(@refs.lookupField)
 					lookupField.typeahead 'val', ''
 					lookupField.focus()
 
-					@props.onSelection newMetricId
+					@props.onSelection newMetric.get('id')
 			})
 		_createMetric: ->
 			@setState {isDefineMetricDialogVisible: true}
