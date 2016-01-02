@@ -27,6 +27,9 @@ load = (win) ->
 		deinit: (cb=(->)) ->
 			cb()
 
+		componentDidMount: ->
+			Window.focus()
+
 		suggestClose: ->
 			@refs.ui.suggestClose()
 
@@ -90,7 +93,7 @@ load = (win) ->
 						percent: @state.installProgress.percent
 					}
 				)
-				
+
 			return R.div({
 				id: 'newInstallationPage'
 				className: 'animated fadeIn'
