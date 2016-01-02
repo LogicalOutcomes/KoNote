@@ -74,11 +74,30 @@ load = (win) ->
 		_submit: ->
 			@refs.dialog.setIsLoading true
 
-			updatedProgNote = @props.progNote
+			# Cancel progNote with reason
+			cancelledProgNote = @props.progNote
 			.set('status', 'cancelled')
 			.set('statusReason', @state.reason)
 
-			ActiveSession.persist.progNotes.createRevision updatedProgNote, (err) =>
+			# Cancel progEvents that aren't already cancelled
+			# Attach same reason
+			cancelledProgEvents = @props.progEvents
+			.filter (progEvent) =>
+				progEvent.get('status') is 'default'
+			.map (progEvent) =>
+				progEvent
+				.set('status', 'cancelled')
+				.set('statusReason', @state.reason)
+
+			Async.series [
+				(cb) =>
+					ActiveSession.persist.progNotes.createRevision cancelledProgNote, cb
+				(cb) =>
+					Async.map cancelledProgEvents.toArray(), (progEvent) =>
+						console.log "Cancelling progEvent:", progEvent
+						ActiveSession.persist.progEvents.createRevision cancelledProgEvent, cb
+					, cb
+			], (err) =>
 				@refs.dialog.setIsLoading false
 
 				if err
@@ -92,6 +111,7 @@ load = (win) ->
 					return
 
 				# Persist will trigger an event to update the UI
+				
 
 	return CancelProgNoteDialog
 

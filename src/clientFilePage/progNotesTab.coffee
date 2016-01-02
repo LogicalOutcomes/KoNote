@@ -276,6 +276,7 @@ load = (win) ->
 							OpenDialogLink({
 								dialog: CancelProgNoteDialog
 								progNote: @props.progNote
+								progEvents: @props.progEvents
 								disabled: @props.isReadOnly
 							},
 								R.a({className: 'cancel'},
@@ -326,6 +327,7 @@ load = (win) ->
 							OpenDialogLink({
 								dialog: CancelProgNoteDialog
 								progNote: @props.progNote
+								progEvents: @props.progEvents
 								disabled: @props.isReadOnly
 							},
 								R.a({className: 'cancel'},
