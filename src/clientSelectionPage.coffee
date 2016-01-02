@@ -463,6 +463,8 @@ load = (win) ->
 			hoverClientId = null
 			queryResults = @state.queryResults
 
+			return if @state.queryResults.isEmpty()
+
 			# Get our current index position
 			currentResultIndex = queryResults.findIndex (result) =>
 				return result.get('id') is @state.hoverClientId
