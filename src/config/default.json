@@ -11,10 +11,6 @@
 	},
 	
 	"dataDirectory": "data",
-
-	"analysis": {
-		"minDaysOfData": 1
-	},
 	
 	"timeout": {
 		"duration": 25,

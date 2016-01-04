@@ -135,17 +135,15 @@ load = (win) ->
 						throw new Error "unknown progEvent status: #{progEvent.get('status')}"
 
 		render: ->
-			hasEnoughData = @state.daysOfData >= Config.analysis.minDaysOfData
+			hasEnoughData = @state.daysOfData > 0
 
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
 				R.div({className: "noData #{showWhen not hasEnoughData}"},
 					R.div({},
 						R.h1({}, "More Data Needed")
 						R.div({},
-							"Sorry, #{Config.analysis.minDaysOfData - @state.daysOfData} 
-							more days of #{Term 'progress notes'} containing 
-							#{Term 'metrics'} or #{Term 'events'} 
-							are required before I can chart anything meaningful here."
+							"Analytics will show up here once #{Term 'metrics'} or #{Term 'events'} 
+							have been recorded in a #{Term 'progress note'} for #{@props.clientName}."
 						)
 					)
 				)

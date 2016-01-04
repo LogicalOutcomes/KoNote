@@ -712,6 +712,7 @@ load = (win, {clientFileId}) ->
 					AnalysisTab.AnalysisView({
 						isVisible: activeTabId is 'analysis'
 						clientFileId
+						clientName
 						progNoteHistories: sortedProgNoteHistories
 						progEvents: @props.progressEvents
 						eventTypes: @props.eventTypes
