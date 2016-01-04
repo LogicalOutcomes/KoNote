@@ -713,6 +713,8 @@ load = (win, {clientFileId}) ->
 						isVisible: activeTabId is 'analysis'
 						clientFileId
 						clientName
+						plan: @props.clientFile.get('plan')
+						planTargetsById: @props.planTargetsById
 						progNoteHistories: sortedProgNoteHistories
 						progEvents: @props.progressEvents
 						eventTypes: @props.eventTypes

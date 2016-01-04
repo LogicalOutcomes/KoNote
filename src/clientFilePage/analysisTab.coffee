@@ -264,7 +264,39 @@ load = (win) ->
 									)
 								)
 							)
-						)						
+						)
+						R.div({className: 'dataType plan'},
+							R.h2({}, Term 'Plan')
+							console.log "Plan", @props.plan.toJS()
+							(@props.plan.get('sections').map (section) =>
+								R.section({key: section.get('id')},
+									R.div({className: 'checkbox'},
+										R.label({},
+											R.input({
+												type: 'checkbox'
+												# onChange
+												# checked
+											})
+											section.get('name')
+										)
+									)
+									(section.get('targetIds').map (targetId) =>
+										target = @props.planTargetsById.getIn([targetId, 'revisions']).first()
+
+										R.div({className: 'checkbox'},
+											R.label({},
+												R.input({
+													type: 'checkbox'
+													# onChange
+													# checked
+												})
+												target.get('name')
+											)
+										)
+									)
+								)
+							)
+						)
 					)
 				)
 			)
