@@ -99,7 +99,8 @@ load = (win) ->
 			.concat metricValues.map (metric) ->
 				Moment(metric.get('timestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat metricValues.map (metric) ->
-				Moment(metric.get('backdate'), Persist.TimestampFormat).startOf('day').valueOf()
+				if metric.get('backdate')
+					Moment(metric.get('backdate'), Persist.TimestampFormat).startOf('day').valueOf()
 			# Filter to unique days, and sort
 			.toOrderedSet().sort()
 
@@ -505,8 +506,6 @@ load = (win) ->
 			# Generate c3 regions array
 			progEventRegions = @_generateProgEventRegions()
 
-			console.log 'Regions going into c3:', progEventRegions.toJS()
-
 			# Flush and re-apply regions to c3 chart
 			@_chart.regions.remove()
 			@_chart.regions.add progEventRegions.toJS()
@@ -587,8 +586,6 @@ load = (win) ->
 
 			# Determine regions height
 			chartHeightY = 1 + (eventRows.size * 1/4)
-
-			console.log 'chartHeightY', chartHeightY
 
 			@_chart.axis.max {
 				y: chartHeightY
