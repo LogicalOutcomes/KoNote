@@ -112,7 +112,8 @@ load = (win) ->
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
-			@setState {
+			# Synchronous to ensure this happens before render
+			@setState => {
 				xDays: xTicks
 				daysOfData: timestampDays.size
 				timeSpan: [0, xTicks.size - 1]
