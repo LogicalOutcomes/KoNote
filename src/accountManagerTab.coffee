@@ -331,6 +331,7 @@ load = (win) ->
 
 				newAccount = result
 				@props.onSuccess(newAccount)
+				@props.onCancel()
 
 	ResetPasswordDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
