@@ -82,7 +82,7 @@ load = (win) ->
 				@_submit()
 
 		_submit: ->
-			@refs.dialog.setIsLoading true
+			# @refs.dialog.setIsLoading true
 
 			# Cancel progNote with reason
 			cancelledProgNote = @props.progNote
@@ -109,7 +109,7 @@ load = (win) ->
 						ActiveSession.persist.progEvents.createRevision progEvent, cb
 					, cb
 			], (err) =>
-				@refs.dialog.setIsLoading false
+				# @refs.dialog.setIsLoading false
 
 				if err
 					if err instanceof Persist.IOError
