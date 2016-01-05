@@ -61,10 +61,7 @@ load = (win) ->
 			unless Imm.is oldProps.progNoteHistories, @props.progNoteHistories
 				@_generateAnalysis()
 
-			unless Imm.is oldState.excludedTargetIds, @state.excludedTargetIds
-				@_generateAnalysis()
-
-		_generateAnalysis: ->			
+		_generateAnalysis: ->
 			console.log "Generating Analysis...."
 
 			# Build targets list as targetId:[metricIds]
