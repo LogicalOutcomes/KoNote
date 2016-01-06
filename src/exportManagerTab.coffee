@@ -9,6 +9,7 @@ Persist = require './persist'
 Fs = require 'fs'
 Archiver = require 'archiver'
 CSVConverter = require 'json-2-csv'
+GetSize = require 'get-folder-size'
 
 load = (win) ->
 	$ = win.jQuery
@@ -20,11 +21,18 @@ load = (win) ->
 	Config = require('./config')
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)	
-	{FaIcon, renderName} = require('./utils').load(win)
+	{FaIcon, renderName, showWhen} = require('./utils').load(win)
 	{TimestampFormat} = require('./persist/utils')
 
 	ExportManagerTab = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]	
+		mixins: [React.addons.PureRenderMixin]
+		
+		getInitialState: ->
+			return {
+				progress: 0
+				message: null
+				inProgress: null
+			}
 		
 		render: ->
 			return R.div({className: 'exportManagerTab'},
@@ -32,6 +40,19 @@ load = (win) ->
 					R.h1({}, "Export Data")
 				)
 				R.div({className: 'main'},
+					R.div({
+						className: [
+							'progressSpinner'
+							showWhen @state.inProgress
+						].join ' '
+					},
+						Spinner {
+							isVisible: true
+							isProgressOnly: true
+							message: @state.message
+							percent: @state.progress
+						}
+					)
 					# Hidden input for handling file saving
 					R.input({
 						ref: 'nwsaveas'
@@ -40,29 +61,29 @@ load = (win) ->
 					})
 
 					R.button({
-						className: 'btn btn-primary btn-lg'
+						className: 'btn btn-default btn-lg'
 						onClick: @_export.bind null, {
 							defaultName: "konote-metrics"
 							extension: 'csv'
 							runExport: @_saveMetrics
 						}
-					}, "Export Metrics")
+					}, "Export Metrics to CSV")
 					R.button({
-						className: 'btn btn-primary btn-lg'
+						className: 'btn btn-default btn-lg'
 						onClick: @_export.bind null, {
 							defaultName: "konote-events"
 							extension: 'csv'
 							runExport: @_saveEvents
 						}
-					}, "Export Events")
+					}, "Export Events to CSV")
 					R.button({
-						className: 'btn btn-primary btn-lg'
+						className: 'btn btn-default btn-lg'
 						onClick: @_export.bind null, {
 							defaultName: "konote-backup"
 							extension: 'zip'
 							runExport: @_saveBackup
 						}
-					}, "Backup Data")
+					}, "Backup All Data to ZIP")
 				)
 			)
 
@@ -320,42 +341,114 @@ load = (win) ->
 								message: "Metrics exported to: #{path}"
 							}
 			
+		_prettySize: (bytes) ->
+			if bytes / 1024 > 1024
+				return (bytes/1024/1024).toFixed(2) + "MB"
+			return (bytes/1024).toFixed(2) + "KB"
+		
 		_saveBackup: (path) ->
-			console.log "Running save backup!"
-
+			@setState {
+				progress: 1
+				inProgress: true
+			}
+			totalSize = 0
+			
 			# Destination path must exist in order to save
 			if path.length > 1
+				
+				GetSize 'data', (err, size) ->
+					if err
+						Bootbox.dialog {
+							title: "Error Calculating Filesize"
+							message: """
+								The backup may be incomplete!
+								<br><br>
+								<span class='error'>#{err}</span>
+							"""
+							buttons: {
+								cancel: {
+									label: "Cancel"
+									className: 'btn-default'
+									callback: =>
+										return
+								}
+								proceed: {
+									label: "Continue"
+									className: 'btn-primary'
+								}
+							}
+						}
+						console.error err
+					totalSize = size or 0
+
 				output = Fs.createWriteStream(path)
 				archive = Archiver('zip')
 
-				output.on 'close', ->
-					backupSize = (archive.pointer()/1000).toFixed(2)
-					if backupSize > 1
-						Bootbox.alert {
-							title: "Backup Successful (#{backupSize}KB)"
-							message: "Saved to: #{path}"
-						}
-					else
-						Bootbox.alert {
-							title: "Error"
-							message: "Saved file size less than expected (#{backupSize}KB)."
-						}
-				.on 'error', (err) ->
-					CrashHandler.handle err
+				output.on 'finish', (->
+					clearInterval(progress)
+					@setState {progress: 100}
+					backupSize = @_prettySize output.bytesWritten
+					Bootbox.alert {
+						title: "Backup Complete (#{backupSize})"
+						message: "Saved to: #{path}"
+						callback: =>
+							@setState {inProgress: false}
+					}
+				).bind(this)
+				.on 'error', ((err) ->
+					clearInterval(progress)
+					Bootbox.alert {
+						title: "Error Saving File"
+						message: """
+							<span class='error'>#{err}</span>
+							<br>
+							Please try again.
+						"""
+						callback: =>
+							@setState {
+								inProgress: false
+								progress: 0
+							}
+					}
+					console.error err
+				).bind(this)
 
 				archive.on 'error', (err) ->
-					CrashHandler.handle err
+					Bootbox.alert {
+						title: "Error Saving File"
+						message: """
+							<span class='error'>#{err}</span>
+							<br>
+							Please try again.
+						"""
+						callback: =>
+							output.close()
+							@setState {
+								inProgress: false
+								progress: 0
+							}
+					}
 
-				archive.pipe(output)
 				archive.bulk [{
 					expand: true
 					cwd: Config.dataDirectory
 					src: ['**/*']
 					dest: 'data'
 				}]
-			
+
 				archive.finalize()
 
+				archive.pipe(output)
+				progress = setInterval (->
+					written = archive.pointer()
+					currentProgress = Math.floor((written/totalSize) * 100)
+					messageText = "(" + @_prettySize(written) + " / " + @_prettySize(totalSize) + ")"
+					@setState {
+						progress: currentProgress
+						message: messageText
+					}
+				).bind(this), 100
+			
 	return ExportManagerTab
 
 module.exports = {load}
