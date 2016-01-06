@@ -25,6 +25,7 @@ load = (win) ->
 
 		render: ->
 			isVisible = @props.isVisible isnt false
+			isProgressOnly = @props.isProgressOnly isnt false
 
 			spinner = R.div({
 				className: [
@@ -32,7 +33,12 @@ load = (win) ->
 					'animated fadeOut' if @props.percent? and @props.percent >= 100
 				].join ' '
 			},
-				R.div({className: 'inner'},
+				R.div({
+					className: [
+						'inner'
+						'hide #{showWhen isProgressOnly}'
+					].join ' '
+				},
 					R.div({className: 'container container1'},
 						R.div({className: 'circle circle1'})
 						R.div({className: 'circle circle2'})
