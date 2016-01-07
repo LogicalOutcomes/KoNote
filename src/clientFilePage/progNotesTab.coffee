@@ -351,7 +351,6 @@ load = (win) ->
 											onClick: @_selectBasicUnit.bind null, unit
 										},
 											unit.get('name')
-											FaIcon('history')
 										)
 									R.div({className: 'notes'},
 										renderLineBreaks(unit.get('notes'))
@@ -403,7 +402,6 @@ load = (win) ->
 														)
 													},
 														target.get('name')
-														FaIcon('history')
 													)
 													R.div({className: "empty #{showWhen target.get('notes') is ''}"},
 														'(blank)'
