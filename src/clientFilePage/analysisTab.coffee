@@ -38,7 +38,8 @@ load = (win) ->
 				targetMetricsById: Imm.Map()
 				metricValues: null				
 				selectedMetricIds: Imm.Set()
-				selectedProgEventIds: Imm.Set()
+				filteredProgEvents: Imm.Set()
+				excludedEventTypeIds: Imm.Set()
 				excludedTargetIds: Imm.Set()
 				xTicks: Imm.List()
 				xDays: Imm.List()
@@ -59,6 +60,9 @@ load = (win) ->
 				@_generateAnalysis()
 
 			unless Imm.is oldProps.progNoteHistories, @props.progNoteHistories
+				@_generateAnalysis()
+
+			unless Imm.is oldState.excludedEventTypeIds, @state.excludedEventTypeIds
 				@_generateAnalysis()
 
 		_generateAnalysis: ->
@@ -91,15 +95,28 @@ load = (win) ->
 			# All metric IDs for which this client file has data
 			metricIdsWithData = metricValues
 			.map (m) -> m.get 'id'
-			.toSet()			
-
-			# Filter out any cancelled progEvents
-			filteredProgEvents = @_filterCancelledProgEvents @props.progEvents			
+			.toSet()
 
 			# Build set list of progEvent Ids
-			progEventIdsWithData = filteredProgEvents
+			progEventIdsWithData = @props.progEvents
 			.map (progEvent) -> progEvent.get 'id'
 			.toSet()
+
+			# Filter out progEvents that aren't cancelled or excluded
+			filteredProgEvents = @props.progEvents
+			.filter (progEvent) =>				
+				switch progEvent.get('status')
+					when 'default'
+						return true
+					when 'cancelled'
+						return false
+					else
+						throw new Error "unkown progEvent status: #{progEvent.get('status')}"
+			.filterNot (progEvent) =>
+				if progEvent.get('typeId')
+					@state.excludedEventTypeIds.contains progEvent.get('typeId')
+				else
+					@state.excludedEventTypeIds.contains null
 
 			# Build list of timestamps from progEvents (start & end) & metrics
 			timestampDays = Imm.List()
@@ -108,12 +125,10 @@ load = (win) ->
 			.concat filteredProgEvents.map (progEvent) ->
 				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat metricValues.map (metric) ->
-				if metric.get('backdate')
-					Moment(metric.get('backdate'), Persist.TimestampFormat).startOf('day').valueOf()
-				else
-					Moment(metric.get('timestamp'), Persist.TimestampFormat).startOf('day').valueOf()
-			# Filter to unique days, and sort
-			.toOrderedSet().sort()
+				# Account for backdate, else normal timestamp
+				metricTimestamp = metric.get('backdate') or metric.get('timestamp')
+				return Moment(metricTimestamp, Persist.TimestampFormat).startOf('day').valueOf()
+			.toOrderedSet().sort() # Filter to unique days, and sort
 
 			# Determine earliest & latest days
 			firstDay = Moment timestampDays.first()
@@ -133,24 +148,14 @@ load = (win) ->
 				xTicks
 				metricIdsWithData, metricValues
 				progEventIdsWithData
-			}
-
-		_filterCancelledProgEvents: (progEvents) ->
-			return progEvents.filter (progEvent) ->
-				# Ignore data from cancelled progEvents
-				switch progEvent.get('status')
-					when 'default'
-						return true
-					when 'cancelled'
-						return false
-					else
-						throw new Error "unknown progEvent status: #{progEvent.get('status')}"
+				filteredProgEvents
+			}		
 
 		render: ->
 			hasEnoughData = @state.daysOfData > 0
 
 			# Filter out selectedMetrics that are disabled by excludedTargetIds
-			filteredSelectedMetricIds = @state.selectedMetricIds.filterNot @_metricIsExcluded
+			selectedMetricIds = @state.selectedMetricIds.filterNot @_metricIsExcluded
 
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
 				R.div({className: "noData #{showWhen not hasEnoughData}"},
@@ -193,16 +198,18 @@ load = (win) ->
 				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
 					R.div({className: 'chartContainer'},
 						# Force chart to be re-rendered when tab is opened
-						if @props.isVisible and @_enoughDataToDisplay()
+						if @props.isVisible and (
+							not @state.excludedEventTypeIds.isEmpty() or
+							not selectedMetricIds.isEmpty()
+						)
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
-								progEvents: @_filterCancelledProgEvents @props.progEvents
+								progEvents: @state.filteredProgEvents
 								metricsById: @props.metricsById
 								metricValues: @state.metricValues
 								xTicks: @state.xTicks
-								selectedMetricIds: filteredSelectedMetricIds
-								selectedProgEventIds: @state.selectedProgEventIds
+								selectedMetricIds
 								timeSpan: @state.timeSpan
 							})
 						else
@@ -218,75 +225,52 @@ load = (win) ->
 							)
 					)
 					R.div({className: 'selectionPanel'},
-						R.div({className: 'dataType progEvents'}
-							R.h2({}, Term 'Events')
+						R.div({className: 'dataType progEvents'},
+							console.log "@state.excludedEventTypeIds", @state.excludedEventTypeIds.toJS(), @state.excludedEventTypeIds.isEmpty()
+							allProgEventsSelected = @state.excludedEventTypeIds.isEmpty()
+
+							R.h2({
+								className: 'allSelected' if allProgEventsSelected
+								onClick: @_toggleAllEventTypes.bind null, allProgEventsSelected
+							}, Term 'Event Types')
 
 							R.div({className: 'dataOptions'},
-								R.div({className: 'checkbox selectAll'},
-									allProgEventsSelected = Imm.is(
-										@state.selectedProgEventIds, @state.progEventIdsWithData
-									)
-
-									R.label({},
-										R.input({
-											type: 'checkbox'
-											onChange: @_toggleAllProgEvents.bind null, allProgEventsSelected
-											checked: allProgEventsSelected
-										})
-										"All #{Term 'Events'}"
-									)
-								)
-							)							
-						)	
-						R.div({className: 'dataType metrics'}
-							R.h2({}, Term 'Metrics')
-							R.div({className: 'dataOptions'},
-								(@state.metricIdsWithData.map (metricId) =>
-									metric = @props.metricsById.get(metricId)
-									metricIsExcluded = @_metricIsExcluded metricId
+								(@props.eventTypes.map (eventType) =>
+									eventTypeId = eventType.get('id')
 
 									R.div({
-										className: [
-											'checkbox'
-											'excluded' if metricIsExcluded
-										].join ' '
-										key: metricId
+										className: 'checkbox'
+										key: eventTypeId										
 									},
 										R.label({},
 											R.input({
-												ref: metric.get 'id'
 												type: 'checkbox'
-												onChange: @_updateSelectedMetrics.bind null, metricId
-												checked: filteredSelectedMetricIds.contains metricId
-												disabled: metricIsExcluded
+												checked: not @state.excludedEventTypeIds.contains eventTypeId
+												onChange: @_toggleEventTypeExclusion.bind null, eventTypeId
 											})
-											metric.get('name')
+											eventType.get('name')
 										)
 									)
-								).toJS()...
-								R.div({
-									className: [
-										"checkbox selectAll"
-										showWhen @state.metricIdsWithData.size > 1
-									].join ' '
-								},
-									allMetricsSelected = Imm.is(
-										filteredSelectedMetricIds, @state.metricIdsWithData
-									)
+								)
 
+								R.div({className: 'checkbox'},
 									R.label({},
 										R.input({
 											type: 'checkbox'
-											onChange: @_toggleAllMetrics.bind null, allMetricsSelected
-											checked: allMetricsSelected
+											checked: not @state.excludedEventTypeIds.contains null
+											onChange: @_toggleEventTypeExclusion.bind null, null
 										})
-										"All #{Term 'Metrics'}"
+										"(No #{Term 'event type'})"
 									)
 								)
-							)
+							)							
 						)
+
 						R.div({className: 'dataType plan'},
-							R.h2({}, Term 'Plan')
+							R.h2({
+
+							}, "#{Term 'Plan'} #{Term 'Metrics'}")
+
 							R.div({className: 'dataOptions'},
 								(@props.plan.get('sections').map (section) =>
 									targetIds = section.get('targetIds')
@@ -326,6 +310,43 @@ load = (win) ->
 								)
 							)
 						)
+
+						R.div({className: 'dataType metrics'}
+							allMetricsSelected = Imm.is(
+								selectedMetricIds, @state.metricIdsWithData
+							)
+
+							R.h2({
+								className: 'allSelected' if allMetricsSelected
+								onClick: @_toggleAllMetrics.bind null, allMetricsSelected
+							}, "Other #{Term 'Metrics'}")
+
+							R.div({className: 'dataOptions'},
+								(@state.metricIdsWithData.map (metricId) =>
+									metric = @props.metricsById.get(metricId)
+									metricIsExcluded = @_metricIsExcluded metricId
+
+									R.div({
+										className: [
+											'checkbox'
+											'excluded' if metricIsExcluded
+										].join ' '
+										key: metricId
+									},
+										R.label({},
+											R.input({
+												ref: metric.get 'id'
+												type: 'checkbox'
+												onChange: @_updateSelectedMetrics.bind null, metricId
+												checked: selectedMetricIds.contains metricId
+												disabled: metricIsExcluded
+											})
+											metric.get('name')
+										)
+									)
+								).toJS()...
+							)
+						)
 					)
 				)
 			)
@@ -348,22 +369,31 @@ load = (win) ->
 
 				return {excludedTargetIds}
 
-		_enoughDataToDisplay: ->
-			@state.selectedMetricIds.size > 0 or @state.selectedProgEventIds.size > 0
-
-		_toggleAllProgEvents: (allProgEventsSelected) ->
-			@setState ({selectedProgEventIds}) =>
-				if allProgEventsSelected
-					selectedProgEventIds = @state.selectedProgEventIds.clear()
+		_toggleEventTypeExclusion: (eventTypeId) ->
+			@setState ({excludedEventTypeIds}) =>
+				if excludedEventTypeIds.contains eventTypeId
+					excludedEventTypeIds = excludedEventTypeIds.delete eventTypeId
 				else
-					selectedProgEventIds = @state.progEventIdsWithData
+					excludedEventTypeIds = excludedEventTypeIds.add eventTypeId
 
-				return {selectedProgEventIds}
+				return {excludedEventTypeIds}
+
+		_toggleAllEventTypes: (allEventTypesSelected) ->
+			@setState ({excludedEventTypeIds}) =>
+				if allEventTypesSelected
+					excludedEventTypeIds = @props.eventTypes
+					.map (eventType) -> eventType.get('id') # all evenTypes
+					.push(null) # null = progEvents without an eventType
+					.toSet()
+				else
+					excludedEventTypeIds = excludedEventTypeIds.clear()
+
+				return {excludedEventTypeIds}
 
 		_toggleAllMetrics: (allMetricsSelected) ->
 			@setState ({selectedMetricIds}) =>
 				if allMetricsSelected
-					selectedMetricIds = @state.selectedMetricIds.clear()
+					selectedMetricIds = selectedMetricIds.clear()
 				else
 					selectedMetricIds = @state.metricIdsWithData
 
