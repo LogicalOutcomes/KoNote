@@ -836,15 +836,14 @@ load = (win, {clientFileId}) ->
 					className: 'backdate date btn btn-default'
 				})
 				if @props.message
-					R.span({className: 'text-danger'},
-						'Backdated'
-						R.a({			
-							onClick: =>
-								$(@refs.backdate).val(Moment().format('MMM-DD-YYYY h:mm A'))
-								@props.onChange null
-						},					
-							FaIcon('times')
-						)
+					R.span({
+						className: 'text-danger btn'
+						onClick: =>
+							$(@refs.backdate).val(Moment().format('MMM-DD-YYYY h:mm A'))
+							@props.onChange null
+					},
+						'Backdated '
+						FaIcon('times')
 					)
 			)
 
