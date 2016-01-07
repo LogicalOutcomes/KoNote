@@ -124,27 +124,29 @@ load = (win) ->
 					# read each event
 					(cb) =>
 						Async.map progEventsHeaders.toArray(), (progEvent, cb) ->
-							ActiveSession.persist.progEvents.read clientFileId, progEvent.get('id'), cb
+							ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEvent.get('id'), 1, cb
 						, (err, results) ->
 							if err
 								cb err
 								return
 
-							progEvents = Imm.List results
+							progEvents = Imm.List(results).map (revision) -> revision.last()
 							cb()
 							
 					# csv format: id, timestamp, username, title, description, start time, end time
 					(cb) =>
-						progEvents = progEvents.map (event) ->
+						progEvents = progEvents
+						.filter (progEvent) -> progEvent.get('status') isnt "cancelled"
+						.map (progEvent) ->
 							return {
-								id: event.get('id')
-								timestamp: Moment(event.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
-								author: event.get('author')
+								id: progEvent.get('id')
+								timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
+								author: progEvent.get('author')
 								clientName
-								title: event.get('title')
-								description: event.get('description')
-								startDate: Moment(event.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
-								endDate: Moment(event.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
+								title: progEvent.get('title')
+								description: progEvent.get('description')
+								startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
+								endDate: Moment(progEvent.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 							}
 						cb null, progEvents
 						, (err, results) ->
@@ -207,13 +209,13 @@ load = (win) ->
 					# Retrieve all metric definitions
 					(cb) =>
 						Async.map metricDefinitionHeaders.toArray(), (metricHeader, cb) ->
-							ActiveSession.persist.metrics.read metricHeader.get('id'), cb
+							ActiveSession.persist.metrics.readLatestRevisions metricHeader.get('id'), 1, cb
 						, (err, results) ->
 							if err
 								cb err
 								return
 
-							metricDefinitions = Imm.List results
+							metricDefinitions = Imm.List(results).map (revision) -> revision.last()
 							cb()
 
 					# List progNote headers
@@ -229,29 +231,22 @@ load = (win) ->
 					# Retrieve progNotes
 					(cb) =>
 						Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
-							ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
+							ActiveSession.persist.progNotes.readLatestRevisions clientFileId, progNoteHeader.get('id'), 1, cb
 						, (err, results) ->
 							if err
 								cb err
 								return
 
-							progNotes = Imm.List(results)
-							.map (progNoteHist) ->
-								# Throw away history, just grab latest revision
-								# TODO keep history for use in export?
-								return progNoteHist.last()
-							console.info "progNotes", progNotes.toJS()
+							progNotes = Imm.List(results).map (revision) -> revision.last()
 							cb()
 
 					# Filter out full list of metrics
 					(cb) =>
 						fullProgNotes = progNotes.filter (progNote) =>
-							progNote.get('type') is 'full'
-
-						console.info "fullProgNotes", fullProgNotes
+							progNote.get('type') is "full" and
+							progNote.get('status') isnt "cancelled"
 
 						Async.map fullProgNotes.toArray(), (progNote, cb) =>
-							console.info "progNote", progNote.toJS()							
 							
 							progNoteMetrics = progNote.get('units').flatMap (unit) =>
 								unitType = unit.get('type')
@@ -268,13 +263,7 @@ load = (win) ->
 
 								return metrics
 
-							# Get backdate or timestamp from parent progNote
-							progNoteTimestamp = if progNote.get('backdate')
-								progNote.get('backdate')
-							else
-								# TODO should this use original creation
-								# timestamp instead of last modified at?
-								progNote.get('timestamp')
+							progNoteTimestamp = progNote.get('backdate') or progNote.get('timestamp')
 
 							# Apply timestamp with custom format
 							timestamp = Moment(progNoteTimestamp, TimestampFormat)
@@ -310,8 +299,6 @@ load = (win) ->
 								return
 
 							metricsList = Imm.fromJS(results).flatten(true)
-
-							console.info "metricsList", metricsList.toJS()
 							cb()
 					
 					# Convert to CSV
