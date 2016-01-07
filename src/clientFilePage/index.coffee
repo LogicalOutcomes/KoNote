@@ -342,7 +342,6 @@ load = (win, {clientFileId}) ->
 				else
 					# OK, load in clientFile state data!
 					console.log "Injected load data into @state"
-					console.info "programs", programs.toJS()
 					@setState {
 						clientFile						
 						progressNoteHistories
