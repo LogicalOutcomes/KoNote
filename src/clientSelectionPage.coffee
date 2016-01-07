@@ -290,7 +290,7 @@ load = (win) ->
 					id: 'expandMenuButton'					
 					onClick: =>
 						@_toggleUserMenu()
-						@refs.searchBox.focus() if @state.menuIsOpen
+						@refs.searchBox.focus() if @refs.searchBox? and @state.menuIsOpen
 
 				},					
 					FaIcon(if @state.managerLayer? then 'times' else 'bars')
@@ -313,7 +313,7 @@ load = (win) ->
 						id: 'main'
 						onClick: =>
 							@_toggleUserMenu() if @state.menuIsOpen
-							@refs.searchBox.focus()
+							@refs.searchBox.focus() if @refs.searchBox?
 					},
 						Spinner({
 							isVisible: @props.isLoading
@@ -334,23 +334,41 @@ load = (win) ->
 									Config.logoSubtitle
 								)
 							)
-							R.div({className: 'searchBoxContainer input-group'},
-								R.input({
-									className: 'searchBox form-control'
-									ref: 'searchBox'
-									type: 'text'
-									onChange: @_updateQueryText
-									placeholder: "Search for a #{Term 'client'}'s profile..."
-									value: @state.queryText
-								})
-								R.span({
-									className: 'input-group-btn'
-								},
-									R.button({
-										className: "btn btn-default"
-										onClick: @_showAll
-									},
-										'Show All'
+							R.div({className: 'searchBoxContainer'},
+								noData = @props.clientFileHeaders.isEmpty()
+
+								R.div({className: 'input-group'}
+									R.input({
+										className: 'searchBox form-control'
+										ref: 'searchBox'
+										type: 'text'
+										disabled: noData
+										placeholder:
+											unless noData
+												"Search for a #{Term 'client'}'s profile..."
+											else
+												"No #{Term 'client files'} to search yet..."
+										onChange: @_updateQueryText									
+										value: @state.queryText
+									})
+									R.span({className: 'input-group-btn'},
+										(unless noData
+											R.button({
+												className: 'btn btn-default'
+												onClick: @_showAll
+											}, "Show All")
+										else
+											OpenDialogLink({
+												dialog: CreateClientFileDialog
+											},
+												R.button({
+													className: 'btn btn-success'
+												},
+													"New #{Term 'Client File'} "
+													FaIcon('folder-open')
+												)
+											)
+										)
 									)
 								)
 							)
@@ -598,7 +616,7 @@ load = (win) ->
 			@setState {isSmallHeaderSet: false, queryText: ''}
 		_onResultSelection: (clientFileId, event) ->
 			@setState {hoverClientId: clientFileId}
-			
+
 			openWindow {
 				page: 'clientFile'
 				clientFileId
