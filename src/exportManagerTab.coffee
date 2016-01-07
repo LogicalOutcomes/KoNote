@@ -32,6 +32,10 @@ load = (win) ->
 				progress: 0
 				message: null
 				isLoading: null
+				exportProgress: {
+					percent: null
+					message: null
+				}
 			}
 		
 		render: ->
@@ -40,19 +44,12 @@ load = (win) ->
 					R.h1({}, "Export Data")
 				)
 				R.div({className: 'main'},
-					R.div({
-						className: [
-							'progressSpinner'
-							showWhen @state.isLoading
-						].join ' '
-					},
-						Spinner {
-							isVisible: true
-							isProgressOnly: true
-							message: @state.message
-							percent: @state.progress
-						}
-					)
+					Spinner {
+						isVisible: @state.isLoading
+						isOverlay: true						
+						message: @state.exportProgress.message
+						percent: @state.exportProgress.percent
+					}
 					# Hidden input for handling file saving
 					R.input({
 						ref: 'nwsaveas'
@@ -91,13 +88,19 @@ load = (win) ->
 			if bytes / 1024 > 1024
 				return (bytes/1024/1024).toFixed(2) + "MB"
 			return (bytes/1024).toFixed(2) + "KB"
-		
-		_updateProgress: (percent, msg) ->
-			if percent
-				@setState {progress: percent}
-			if msg
-				@setState {message: msg}
-			@setState {isLoading: true}
+
+		_updateProgress: (percent, message) ->
+			if not percent and not message
+				percent = message = null
+
+			@setState (state) => {
+				isLoading: true
+				exportProgress: {
+					percent
+					message: message or state.exportProgress.message
+				}
+			}
+
 		
 		_export: ({defaultName, extension, runExport}) ->
 			timestamp = Moment().format('YYYY-MM-DD')
@@ -113,7 +116,7 @@ load = (win) ->
 			.click()
 		
 		_saveEvents: (path) ->
-			@_updateProgress 1
+			@_updateProgress 0, "Saving Events to CSV..."
 			# Map over client files
 			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
 				progEventsHeaders = null
@@ -179,14 +182,16 @@ load = (win) ->
 							csv = result
 							cb()
 					
-				], (err) ->
+				], (err) =>
 					if err
 						CrashHandler.handle err
 						return
 
 					# destination path must exist in order to save
 					if path.length > 1
-						Fs.writeFile path, csv, (err) ->
+						Fs.writeFile path, csv, (err) =>
+							@setState {isLoading: false}
+
 							if err
 								CrashHandler.handle err
 								return
@@ -198,7 +203,7 @@ load = (win) ->
 	
 		_saveMetrics: (path) ->
 			metrics = null
-			@_updateProgress 1
+			@_updateProgress 0, "Saving metrics to CSV..."
 
 			# Map over client files
 			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
@@ -331,7 +336,7 @@ load = (win) ->
 							csv = result
 							cb()
 						
-				], (err) ->
+				], (err) =>
 					if err
 						CrashHandler.handle err
 						return
@@ -340,12 +345,13 @@ load = (win) ->
 
 					# Destination path must exist in order to save
 					if path.length > 1
-						Fs.writeFile path, csv, (err) ->
+						Fs.writeFile path, csv, (err) =>
 							if err
 								CrashHandler.handle err
 								return
 
 							console.info "Destination Path:", path
+							@setState {isLoading: false}
 
 							Bootbox.alert {
 								title: "Save Successful"
@@ -354,7 +360,7 @@ load = (win) ->
 			
 		
 		_saveBackup: (path) ->
-			@_updateProgress 1
+			@_updateProgress 0, "Backing up data..."
 			totalSize = 0
 			
 			# Destination path must exist in order to save
@@ -370,14 +376,8 @@ load = (win) ->
 								<span class='error'>#{err}</span>
 							"""
 							buttons: {
-								cancel: {
-									label: "Cancel"
-									className: 'btn-default'
-									callback: =>
-										return
-								}
 								proceed: {
-									label: "Continue"
+									label: "Ok"
 									className: 'btn-primary'
 								}
 							}
@@ -388,36 +388,23 @@ load = (win) ->
 				output = Fs.createWriteStream(path)
 				archive = Archiver('zip')
 
-				output.on 'finish', (->
+				output.on 'finish', (=>
 					clearInterval(progressCheck)
 					@_updateProgress 100
+					@setState {isLoading: false}
+
 					backupSize = @_prettySize output.bytesWritten
 					Bootbox.alert {
 						title: "Backup Complete (#{backupSize})"
 						message: "Saved to: #{path}"
-						callback: =>
-							@setState {isLoading: false}
 					}
-				).bind(this)
-				.on 'error', ((err) ->
-					clearInterval(progress)
-					Bootbox.alert {
-						title: "Error Saving File"
-						message: """
-							<span class='error'>#{err}</span>
-							<br>
-							Please try again.
-						"""
-						callback: =>
-							@setState {
-								isLoading: false
-								progress: 0
-							}
-					}
-					console.error err
 				).bind(this)
 
-				archive.on 'error', (err) ->
+				.on 'error', ((err) =>
+					clearInterval(progress)
+					@setState {isLoading: false}
+
+					console.error err
 					Bootbox.alert {
 						title: "Error Saving File"
 						message: """
@@ -425,12 +412,19 @@ load = (win) ->
 							<br>
 							Please try again.
 						"""
-						callback: =>
-							output.close()
-							@setState {
-								isLoading: false
-								progress: 0
-							}
+					}					
+				).bind(this)
+
+				archive.on 'error', (err) =>
+					@setState {isLoading: false}
+
+					Bootbox.alert {
+						title: "Error Saving File"
+						message: """
+							<span class='error'>#{err}</span>
+							<br>
+							Please try again.
+						"""
 					}
 
 				archive.bulk [{
@@ -441,12 +435,21 @@ load = (win) ->
 				}]
 
 				archive.finalize()
-
 				archive.pipe(output)
-				progressCheck = setInterval (->
+
+				progressCheck = setInterval (=>
 					written = archive.pointer()
-					currentProgress = Math.floor((written/totalSize) * 100)
-					messageText = "(" + @_prettySize(written) + " / " + @_prettySize(totalSize) + ")"
+					writtenProgress = Math.floor((written / totalSize) * 100)
+					console.log written, totalSize
+					console.log "Written progress: #{writtenProgress}"
+					messageText = "Writing Data: (#{@_prettySize(written)} / #{@_prettySize(totalSize)})"
+
+					if writtenProgress is 100
+						messageText = "Zipping data directory..."
+
+					# KB progress only goes up to 75%
+					currentProgress = writtenProgress * 0.75
+
 					@_updateProgress currentProgress, messageText
 				).bind(this), 100
 			
