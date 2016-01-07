@@ -55,14 +55,9 @@ load = (win) ->
 				@_refreshSelectedMetrics()
 
 			# Update selected progEvents?
-			sameSelectedProgEvents = Imm.is @props.selectedProgEventIds, oldProps.selectedProgEventIds
-			unless sameSelectedProgEvents
-				@_refreshSelectedProgEvents()
-
-			# Update selected progNotes?
-			sameMetricValues = Imm.is @props.metricValues, oldProps.metricValues
-			unless sameMetricValues
-				@_refreshSelectedProgEvents()
+			sameProgEvents = Imm.is @props.progEvents, oldProps.progEvents
+			unless sameProgEvents
+				@_refreshProgEvents()
 
 			# Update timeSpan?
 			sameTimeSpan = @props.timeSpan is oldProps.timeSpan
@@ -74,12 +69,13 @@ load = (win) ->
 		componentDidMount: ->			
 			@_generateChart()
 			@_refreshSelectedMetrics()
-			@_refreshSelectedProgEvents()
+			@_refreshProgEvents()
 
 		_generateChart: ->
 			console.log "Generating Chart...."
 			# Create a Map from metric ID to data series,
 			# where each data series is a sequence of [x, y] pairs
+
 			dataSeries = @props.metricValues
 			.groupBy (metricValue) -> # group by metric
 				return metricValue.get('id')
@@ -134,7 +130,6 @@ load = (win) ->
 				return metric.map (dataPoint) ->
 					return dataPoint if isNaN(dataPoint)
 					(dataPoint - min) / scaleFactor
-					
 
 			# YEAR LINES
 			# Build Imm.List of years and timestamps to matching
@@ -213,7 +208,7 @@ load = (win) ->
 			@props.selectedMetricIds.forEach (metricId) =>
 				@_chart.show("y-" + metricId)	
 
-		_refreshSelectedProgEvents: ->
+		_refreshProgEvents: ->
 			# Generate c3 regions array
 			progEventRegions = @_generateProgEventRegions()
 
@@ -227,12 +222,9 @@ load = (win) ->
 			@setState => {progEventRegions}
 
 		_generateProgEventRegions: ->
-			# Filter out progEvents that aren't selected
-			selectedProgEvents = @props.progEvents.filter (progEvent) =>
-				return @props.selectedProgEventIds.contains progEvent.get('id')
-
 			# Build Imm.List of region objects
-			progEventRegions = selectedProgEvents.map (progEvent) =>
+			progEventRegions = @props.progEvents
+			.map (progEvent) =>
 				eventRegion = {
 					start: @_toUnixMs progEvent.get('startTimestamp')
 					class: "progEventRange #{progEvent.get('id')}"
