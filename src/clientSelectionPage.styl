@@ -142,35 +142,6 @@ sidebar-borders = darken(sidebar-bg, 10%)
 				img
 					max-height 40px
 					cursor pointer
-
-			> .results
-				overflow auto
-				flex 1
-
-				> .result
-					padding 20px 25px
-
-					cursor pointer
-					font-weight 600
-
-					&:hover, &.active
-						color white
-						background hsl(200, 80%, 80%)
-						
-						> .recordId
-							opacity 1
-							color white
-					
-					&.hover
-						background hsl(200, 80%, 85%)
-						
-					&:hover
-						background hsl(200, 80%, 80%)
-					
-					> .recordId
-						float right
-						opacity 0.5
-						font-weight 400
 						
 			.orderableTable
 				thead
@@ -180,18 +151,21 @@ sidebar-borders = darken(sidebar-bg, 10%)
 					transition background .15s ease-in-out
 					background white					
 					
-					&:hover, &.active						
+					&.active						
 						cursor pointer
 						
 						td
 							color hsl(200, 80%, 20%)
 							background hsl(200, 80%, 80%)
-							border-top-color hsl(200, 80%, 70%)
+						
+					&:hover
+						background hsl(200, 80%, 90%)
 						
 					td
 						transition all .1s ease
 						font-size 1.15em
 						line-height 2.5em
+						border none
 						
 					td.programsCell
 						width 15%

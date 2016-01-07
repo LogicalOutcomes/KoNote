@@ -597,6 +597,8 @@ load = (win) ->
 		_home: ->
 			@setState {isSmallHeaderSet: false, queryText: ''}
 		_onResultSelection: (clientFileId, event) ->
+			@setState {hoverClientId: clientFileId}
+			
 			openWindow {
 				page: 'clientFile'
 				clientFileId
