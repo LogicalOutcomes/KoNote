@@ -102,20 +102,28 @@ load = (win) ->
 			
 
 			dataSeries = dataSeries.entrySeq().flatMap ([seriesId, dataPoints]) ->
+				# Ensure ordered by earliest-latest
+				orderedDataPoints = dataPoints
+				.sortBy ([x, y]) -> x
+
 				xValues = Imm.List(['x-' + seriesId]).concat(
-					dataPoints.map ([x, y]) -> x
+					orderedDataPoints.map ([x, y]) -> x
 				)
 				yValues = Imm.List(['y-' + seriesId]).concat(
-					dataPoints.map ([x, y]) -> y
+					orderedDataPoints.map ([x, y]) -> y
 				)
 				return Imm.List([xValues, yValues])
 
-			scaledDataSeries = dataSeries.map (metric) ->
+			scaledDataSeries = dataSeries.map (series) ->
+				# Scaling only applies to y series
+				return series if series.first()[0] isnt 'y'
+
 				# Filter out id's to figure out min & max
-				values = metric.flatten().filterNot (y) -> isNaN(y)
+				values = series.flatten()
+				.filterNot (y) -> isNaN(y)
 				.map (val) -> return Number(val)
 
-				# Figure out min and max metric values
+				# Figure out min and max series values
 				min = values.min()
 				max = values.max()
 
@@ -124,12 +132,14 @@ load = (win) ->
 					min -= 1
 					max += 1
 
-				scaleFactor = max - min			
+				scaleFactor = max - min
 
 				# Map scaleFactor on to numerical values
-				return metric.map (dataPoint) ->
-					return dataPoint if isNaN(dataPoint)
-					(dataPoint - min) / scaleFactor
+				return series.map (dataPoint) ->
+					unless isNaN(dataPoint)
+						(dataPoint - min) / scaleFactor
+					else
+						dataPoint
 
 			# YEAR LINES
 			# Build Imm.List of years and timestamps to matching
@@ -181,10 +191,12 @@ load = (win) ->
 					tooltip: {
 						format: {
 							value: (value, ratio, id, index) ->
-								# Filter out dataset from dataSeries with matching id, grab from index
-								return dataSeries.filter((metric) ->
-									return metric.contains id
-								).flatten().get(index + 1)
+								actualValue = dataSeries
+								.find (series) -> series.contains id
+								.get(index + 1)
+
+								return actualValue
+
 							title: (timestamp) ->
 								return Moment(timestamp).format('MMMM D [at] HH:mm')
 						}
