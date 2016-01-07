@@ -376,9 +376,7 @@ load = (win) ->
 						},
 							OrderableTable({
 								tableData: queryResults
-								onSortChange: (orderedQueryResults) => 
-									console.log "Updating query results ordering:", orderedQueryResults.toJS()
-									@setState {orderedQueryResults}
+								onSortChange: (orderedQueryResults) => @setState {orderedQueryResults}
 								sortByData: ['clientName', 'last']
 								key: ['id']
 								rowClass: (dataPoint) =>
