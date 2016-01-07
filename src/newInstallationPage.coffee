@@ -257,8 +257,7 @@ load = (win) ->
 			@setState {
 				isLoading: true
 				installProgress: {percent, message}
-			}, ->
-				console.log "Updated progress:", percent, message
+			}
 
 		_install: ->
 			if @state.password isnt @state.passwordConfirmation
