@@ -404,7 +404,7 @@ load = (win) ->
 							R.table({className: 'panel-body table'},
 								R.thead({},
 									R.tr({},
-										R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
+										R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
 										R.td({colSpan: 2}, "#{Term 'Client'} Name")
 									)
 								)
@@ -465,7 +465,7 @@ load = (win) ->
 							R.table({className: 'panel-body table table-striped'}
 								R.thead({},
 									R.tr({},
-										R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
+										R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
 										R.td({colSpan: 2}, "#{Term 'Client'} Name")
 									)
 								)
