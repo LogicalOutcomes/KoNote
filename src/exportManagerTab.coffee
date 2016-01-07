@@ -31,7 +31,7 @@ load = (win) ->
 			return {
 				progress: 0
 				message: null
-				inProgress: null
+				isLoading: null
 			}
 		
 		render: ->
@@ -43,7 +43,7 @@ load = (win) ->
 					R.div({
 						className: [
 							'progressSpinner'
-							showWhen @state.inProgress
+							showWhen @state.isLoading
 						].join ' '
 					},
 						Spinner {
@@ -87,6 +87,18 @@ load = (win) ->
 				)
 			)
 
+		_prettySize: (bytes) ->
+			if bytes / 1024 > 1024
+				return (bytes/1024/1024).toFixed(2) + "MB"
+			return (bytes/1024).toFixed(2) + "KB"
+		
+		_updateProgress: (percent, msg) ->
+			if percent
+				@setState {progress: percent}
+			if msg
+				@setState {message: msg}
+			@setState {isLoading: true}
+		
 		_export: ({defaultName, extension, runExport}) ->
 			timestamp = Moment().format('YYYY-MM-DD')
 			# Configures hidden file inputs with custom attributes, and clicks it
@@ -101,6 +113,7 @@ load = (win) ->
 			.click()
 		
 		_saveEvents: (path) ->
+			@_updateProgress 1
 			# Map over client files
 			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
 				progEventsHeaders = null
@@ -113,6 +126,7 @@ load = (win) ->
 				Async.series [
 					# get event headers
 					(cb) =>
+						@_updateProgress 10
 						ActiveSession.persist.progEvents.list clientFileId, (err, results) ->
 							if err
 								cb err
@@ -123,6 +137,7 @@ load = (win) ->
 
 					# read each event
 					(cb) =>
+						@_updateProgress 20
 						Async.map progEventsHeaders.toArray(), (progEvent, cb) ->
 							ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEvent.get('id'), 1, cb
 						, (err, results) ->
@@ -135,6 +150,7 @@ load = (win) ->
 							
 					# csv format: id, timestamp, username, title, description, start time, end time
 					(cb) =>
+						@_updateProgress 50
 						progEvents = progEvents
 						.filter (progEvent) -> progEvent.get('status') isnt "cancelled"
 						.map (progEvent) ->
@@ -158,6 +174,7 @@ load = (win) ->
 					
 					# convert to csv
 					(cb) =>
+						@_updateProgress 100
 						CSVConverter.json2csv progEvents.toJS(), (err, result) ->
 							csv = result
 							cb()
@@ -181,6 +198,7 @@ load = (win) ->
 	
 		_saveMetrics: (path) ->
 			metrics = null
+			@_updateProgress 1
 
 			# Map over client files
 			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
@@ -198,6 +216,7 @@ load = (win) ->
 				Async.series [
 					# List metric definition headers
 					(cb) =>
+						@_updateProgress 10
 						ActiveSession.persist.metrics.list (err, results) ->
 							if err
 								cb err
@@ -208,6 +227,7 @@ load = (win) ->
 
 					# Retrieve all metric definitions
 					(cb) =>
+						@_updateProgress 20
 						Async.map metricDefinitionHeaders.toArray(), (metricHeader, cb) ->
 							ActiveSession.persist.metrics.readLatestRevisions metricHeader.get('id'), 1, cb
 						, (err, results) ->
@@ -220,6 +240,7 @@ load = (win) ->
 
 					# List progNote headers
 					(cb) =>
+						@_updateProgress 30
 						ActiveSession.persist.progNotes.list clientFileId, (err, results) ->
 							if err
 								cb err
@@ -230,6 +251,7 @@ load = (win) ->
 
 					# Retrieve progNotes
 					(cb) =>
+						@_updateProgress 40
 						Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
 							ActiveSession.persist.progNotes.readLatestRevisions clientFileId, progNoteHeader.get('id'), 1, cb
 						, (err, results) ->
@@ -242,6 +264,7 @@ load = (win) ->
 
 					# Filter out full list of metrics
 					(cb) =>
+						@_updateProgress 50
 						fullProgNotes = progNotes.filter (progNote) =>
 							progNote.get('type') is "full" and
 							progNote.get('status') isnt "cancelled"
@@ -303,6 +326,7 @@ load = (win) ->
 					
 					# Convert to CSV
 					(cb) =>
+						@_updateProgress 100
 						CSVConverter.json2csv metricsList.toJS(), (err, result) ->
 							csv = result
 							cb()
@@ -328,16 +352,9 @@ load = (win) ->
 								message: "Metrics exported to: #{path}"
 							}
 			
-		_prettySize: (bytes) ->
-			if bytes / 1024 > 1024
-				return (bytes/1024/1024).toFixed(2) + "MB"
-			return (bytes/1024).toFixed(2) + "KB"
 		
 		_saveBackup: (path) ->
-			@setState {
-				progress: 1
-				inProgress: true
-			}
+			@_updateProgress 1
 			totalSize = 0
 			
 			# Destination path must exist in order to save
@@ -372,14 +389,14 @@ load = (win) ->
 				archive = Archiver('zip')
 
 				output.on 'finish', (->
-					clearInterval(progress)
-					@setState {progress: 100}
+					clearInterval(progressCheck)
+					@_updateProgress 100
 					backupSize = @_prettySize output.bytesWritten
 					Bootbox.alert {
 						title: "Backup Complete (#{backupSize})"
 						message: "Saved to: #{path}"
 						callback: =>
-							@setState {inProgress: false}
+							@setState {isLoading: false}
 					}
 				).bind(this)
 				.on 'error', ((err) ->
@@ -393,7 +410,7 @@ load = (win) ->
 						"""
 						callback: =>
 							@setState {
-								inProgress: false
+								isLoading: false
 								progress: 0
 							}
 					}
@@ -411,7 +428,7 @@ load = (win) ->
 						callback: =>
 							output.close()
 							@setState {
-								inProgress: false
+								isLoading: false
 								progress: 0
 							}
 					}
@@ -426,14 +443,11 @@ load = (win) ->
 				archive.finalize()
 
 				archive.pipe(output)
-				progress = setInterval (->
+				progressCheck = setInterval (->
 					written = archive.pointer()
 					currentProgress = Math.floor((written/totalSize) * 100)
 					messageText = "(" + @_prettySize(written) + " / " + @_prettySize(totalSize) + ")"
-					@setState {
-						progress: currentProgress
-						message: messageText
-					}
+					@_updateProgress currentProgress, messageText
 				).bind(this), 100
 			
 	return ExportManagerTab
