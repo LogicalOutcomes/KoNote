@@ -229,7 +229,9 @@ load = (win) ->
 				menuIsOpen: false
 
 				queryText: ''
-				queryResults: Imm.List()				
+				queryResults: Imm.List()
+
+				orderedQueryResults: Imm.List()
 				hoverClientId: null
 
 				managerLayer: null
@@ -237,10 +239,10 @@ load = (win) ->
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# If loading just finished
-			if oldProps.isLoading and not @props.isLoading
+			$searchBox = $(@refs.searchBox)
 
-				setTimeout(=>
-					$searchBox = $(@refs.searchBox)
+			if oldProps.isLoading and not @props.isLoading
+				setTimeout(=>					
 					$searchBox.focus()
 					@_attachKeyBindings($searchBox)
 				, 500)
@@ -374,6 +376,9 @@ load = (win) ->
 						},
 							OrderableTable({
 								tableData: queryResults
+								onSortChange: (orderedQueryResults) => 
+									console.log "Updating query results ordering:", orderedQueryResults.toJS()
+									@setState {orderedQueryResults}
 								sortByData: ['clientName', 'last']
 								key: ['id']
 								rowClass: (dataPoint) =>
@@ -430,56 +435,62 @@ load = (win) ->
 						className: 'menuIsOpen animated fadeInRight'
 					},
 						R.div({id: 'menuContent'},
-							R.div({id: 'avatar'}, FaIcon('user'))
-							R.h3({}, global.ActiveSession.userName)
-							R.ul({},
-								UserMenuItem({									
-									title: "New #{Term 'Client File'}"
-									icon: 'folder-open'
-									dialog: CreateClientFileDialog
-									onClick: @_updateManagerLayer.bind null, null
-								})
-								UserMenuItem({
-									isVisible: isAdmin
-									title: "User #{Term 'Accounts'}"
-									icon: 'key'
-									onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
-									isActive: @state.managerLayer is 'accountManagerTab'
-								})
-								UserMenuItem({
-									isVisible: isAdmin
-									title: Term 'Programs'
-									icon: 'users'
-									onClick: @_updateManagerLayer.bind null, 'programManagerTab'
-									isActive: @state.managerLayer is 'programManagerTab'
-								})								
-								UserMenuItem({
-									isVisible: isAdmin
-									title: "#{Term 'Event'} Types"
-									icon: 'calendar-o'
-									onClick: @_updateManagerLayer.bind null, 'eventTypeManagerTab'
-									isActive: @state.managerLayer is 'eventTypeManagerTab'
-								})
-								UserMenuItem({
-									isVisible: isAdmin
-									title: Term 'Metrics'
-									icon: 'line-chart'
-									onClick: @_updateManagerLayer.bind null, 'metricDefinitionManagerTab'
-									isActive: @state.managerLayer is 'metricDefinitionManagerTab'
-								})
-								UserMenuItem({
-									isVisible: isAdmin
-									title: "Export Data"
-									icon: 'upload'
-									onClick: @_updateManagerLayer.bind null, 'exportManagerTab'
-									isActive: @state.managerLayer is 'exportManagerTab'
-								})
-								UserMenuItem({
-									title: "My #{Term 'Account'}"
-									icon: 'cog'
-									onClick: @_updateManagerLayer.bind null, 'myAccountManagerTab'
-									isActive: @state.managerLayer is 'myAccountManagerTab'
-								})
+							R.div({id: 'userMenu'},
+								R.div({},
+									R.div({id: 'avatar'}, FaIcon('user'))
+									R.h3({}, global.ActiveSession.userName)
+								)
+							)
+							R.div({id: 'featureMenu'},
+								R.ul({},
+									UserMenuItem({									
+										title: "New #{Term 'Client File'}"
+										icon: 'folder-open'
+										dialog: CreateClientFileDialog
+										onClick: @_updateManagerLayer.bind null, null
+									})
+									UserMenuItem({
+										isVisible: isAdmin
+										title: "User #{Term 'Accounts'}"
+										icon: 'key'
+										onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
+										isActive: @state.managerLayer is 'accountManagerTab'
+									})
+									UserMenuItem({
+										isVisible: isAdmin
+										title: Term 'Programs'
+										icon: 'users'
+										onClick: @_updateManagerLayer.bind null, 'programManagerTab'
+										isActive: @state.managerLayer is 'programManagerTab'
+									})								
+									UserMenuItem({
+										isVisible: isAdmin
+										title: "#{Term 'Event'} Types"
+										icon: 'calendar-o'
+										onClick: @_updateManagerLayer.bind null, 'eventTypeManagerTab'
+										isActive: @state.managerLayer is 'eventTypeManagerTab'
+									})
+									UserMenuItem({
+										isVisible: isAdmin
+										title: Term 'Metrics'
+										icon: 'line-chart'
+										onClick: @_updateManagerLayer.bind null, 'metricDefinitionManagerTab'
+										isActive: @state.managerLayer is 'metricDefinitionManagerTab'
+									})
+									UserMenuItem({
+										isVisible: isAdmin
+										title: "Export Data"
+										icon: 'upload'
+										onClick: @_updateManagerLayer.bind null, 'exportManagerTab'
+										isActive: @state.managerLayer is 'exportManagerTab'
+									})
+									UserMenuItem({
+										title: "My #{Term 'Account'}"
+										icon: 'cog'
+										onClick: @_updateManagerLayer.bind null, 'myAccountManagerTab'
+										isActive: @state.managerLayer is 'myAccountManagerTab'
+									})
+								)
 							)
 						)
 					)
@@ -509,9 +520,9 @@ load = (win) ->
 
 		_shiftHoverClientId: (modifier) ->
 			hoverClientId = null
-			queryResults = @state.queryResults
+			queryResults = @state.orderedQueryResults
 
-			return if @state.queryResults.isEmpty()
+			return if queryResults.isEmpty()
 
 			# Get our current index position
 			currentResultIndex = queryResults.findIndex (result) =>
