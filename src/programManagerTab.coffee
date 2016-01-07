@@ -385,6 +385,56 @@ load = (win) ->
 				onClose: @props.onClose
 			},
 				R.div({className: 'manageProgramClientsDialog'},
+					R.div({className: 'programClients'},
+						R.div({className: 'panel-heading'},
+							R.h3({className: 'panel-title'},
+								if not enrolledLinks.isEmpty()
+									R.span({className: 'badge'}, enrolledLinks.size)
+								"Current Members"
+							)
+						)
+						(if enrolledLinks.isEmpty()
+							R.div({className: 'panel-body noData'},
+								"This #{Term 'program'} has no members yet."
+							)
+						else
+							R.table({className: 'panel-body table table-striped'}
+								R.thead({},
+									R.tr({},
+										R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
+										R.td({colSpan: 2}, "#{Term 'Client'} Name")
+									)
+								)
+								R.tbody({},
+									(enrolledLinks.map (link) =>
+										clientFileId = link.get('clientFileId')
+										client = @_findClientById clientFileId
+										recordId = client.get('recordId')
+
+										R.tr({key: clientFileId},
+											if Config.clientFileRecordId?
+												R.td({}, 
+													(if recordId.length > 0
+														recordId
+													else
+														R.div({className: 'noId'}, "n/a")
+													)
+												)
+											R.td({}, renderName client.get('clientName'))
+											R.td({}, 
+												R.button({
+													className: 'btn btn-danger btn-sm'
+													onClick: @_unenrollClient.bind null, clientFileId
+												},
+													FaIcon('minus')
+												)
+											)
+										)
+									)
+								)
+							)
+						)
+					)
 					R.div({className: 'clientPicker panel panel-default'},
 						R.div({className: 'panel-heading'}
 							R.label({}, "Search")
@@ -448,59 +498,9 @@ load = (win) ->
 								)
 							)
 						)
-					)
-					R.div({className: 'programClients panel panel-default'},
-						R.div({className: 'panel-heading'}, 
-							R.h3({className: 'panel-title'},
-								if not enrolledLinks.isEmpty()
-									R.span({className: 'badge'}, enrolledLinks.size)
-								@props.rowData.get('name')
-							)
-						)
-						(if enrolledLinks.isEmpty()
-							R.div({className: 'panel-body noData'},
-								"This #{Term 'program'} has no members yet."
-							)
-						else
-							R.table({className: 'panel-body table table-striped'}
-								R.thead({},
-									R.tr({},
-										R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
-										R.td({colSpan: 2}, "#{Term 'Client'} Name")
-									)
-								)
-								R.tbody({},
-									(enrolledLinks.map (link) =>
-										clientFileId = link.get('clientFileId')
-										client = @_findClientById clientFileId
-										recordId = client.get('recordId')
-
-										R.tr({key: clientFileId},
-											if Config.clientFileRecordId?
-												R.td({}, 
-													(if recordId.length > 0
-														recordId
-													else
-														R.div({className: 'noId'}, "n/a")
-													)
-												)
-											R.td({}, renderName client.get('clientName'))
-											R.td({}, 
-												R.button({
-													className: 'btn btn-danger btn-sm'
-													onClick: @_unenrollClient.bind null, clientFileId
-												},
-													FaIcon('minus')
-												)
-											)
-										)
-									)
-								)
-							)
-						)
-					)
+					)					
 				)
-				R.div({className: 'btn-toolbar'},
+				R.div({className: 'btn-toolbar pull-right'},
 					R.button({
 						className: 'btn btn-default'
 						onClick: @props.onCancel
@@ -511,7 +511,7 @@ load = (win) ->
 						className: 'btn btn-success btn-large'
 						onClick: @_submit
 					}, 
-						"Finished"
+						"Finished "
 						FaIcon('check')
 					)
 				)
