@@ -41,7 +41,7 @@ load = (win) ->
 					viewport: $widget
 				}
 		render: ->
-			if @props.data.get('typeId')
+			if @props.data.get('typeId') and @props.eventTypes?
 				eventType = @props.eventTypes
 				.find (type) => type.get('id') is @props.data.get('typeId')
 
