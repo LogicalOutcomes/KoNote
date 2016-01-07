@@ -319,7 +319,7 @@ load = (win) ->
 			@refs.dialog.setIsLoading true
 
 			Persist.Users.Account.create global.ActiveSession.account, userName, password, accountType, (err, result) =>
-				@refs.dialog.setIsLoading false
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
 					if err instanceof Persist.Users.UserNameTakenError

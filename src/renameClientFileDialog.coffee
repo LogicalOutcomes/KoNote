@@ -122,7 +122,7 @@ load = (win) ->
 			.set('recordId', @state.recordId)
 
 			global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
-				@refs.dialog.setIsLoading false
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
 					if err instanceof Persist.IOError

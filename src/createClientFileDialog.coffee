@@ -111,7 +111,7 @@ load = (win) ->
 			last = @state.lastName
 			recordId = @state.recordId
 
-			@refs.dialog.setIsLoading true
+			@refs.dialog.setIsLoading(true)
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
@@ -122,7 +122,7 @@ load = (win) ->
 			}
 
 			global.ActiveSession.persist.clientFiles.create clientFile, (err, obj) =>
-				@refs.dialog.setIsLoading false
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
 					if err instanceof Persist.IOError

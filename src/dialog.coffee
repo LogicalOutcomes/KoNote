@@ -58,7 +58,7 @@ load = (win) ->
 			)	
 
 		setIsLoading: (newState) ->
-			@setState {isLoading: newState}
+			@setState => {isLoading: newState}
 
 		isLoading: -> @state.isLoading
 

@@ -247,7 +247,7 @@ load = (win) ->
 
 			# Create the new eventType
 			ActiveSession.persist.eventTypes.create newEventType, (err, result) =>
-				@refs.dialog.setIsLoading false
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 				
 				if err
 					CrashHandler.handle err
@@ -373,7 +373,7 @@ load = (win) ->
 
 			# Create the new eventType
 			ActiveSession.persist.eventTypes.createRevision modifiedEventType, (err, result) =>
-				@refs.dialog.setIsLoading false
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 				
 				if err
 					CrashHandler.handle err

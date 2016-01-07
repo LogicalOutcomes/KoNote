@@ -97,7 +97,7 @@ load = (win) ->
 			}
 
 			ActiveSession.persist.metrics.create newMetric, (err, result) =>
-				@refs.dialog.setIsLoading false
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
 					if err instanceof Persist.IOError

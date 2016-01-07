@@ -109,7 +109,7 @@ load = (win) ->
 						ActiveSession.persist.progEvents.createRevision progEvent, cb
 					, cb
 			], (err) =>
-				# @refs.dialog.setIsLoading false
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
 					if err instanceof Persist.IOError
