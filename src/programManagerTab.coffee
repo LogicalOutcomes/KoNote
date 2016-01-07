@@ -477,20 +477,14 @@ load = (win) ->
 												)
 											R.td({}, renderName result.get('clientName'))
 											R.td({},
-												(if clientIsEnrolled?											
-													R.button({
-														className: 'btn btn-danger btn-sm'
-														onClick: @_unenrollClient.bind null, clientFileId
-													},
-														FaIcon('minus')
-													)
-												else
-													R.button({
-														className: 'btn btn-default btn-sm'
-														onClick: @_enrollClient.bind null, clientFileId
-													},
-														FaIcon('plus')
-													)
+												R.button({
+													className: 'btn btn-success btn-sm'
+													style: {
+														visibility: 'hidden' if clientIsEnrolled?
+													}
+													onClick: @_enrollClient.bind null, clientFileId
+												},
+													FaIcon('plus')
 												)
 											)
 										)
