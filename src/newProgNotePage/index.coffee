@@ -392,9 +392,10 @@ load = (win, {clientFileId}) ->
 				R.div({className: 'progNote'},
 
 					R.div({clssName: 'backdate'},
-						BackdateWidget({onChange: @_updateBackdate})
-						if @state.progNote.get('backdate')
-							R.span({}, "(back-dated entry)")
+						BackdateWidget({
+							onChange: @_updateBackdate
+							message: @state.progNote.get('backdate') or false
+						})
 					)
 
 					R.hr({})
@@ -683,11 +684,11 @@ load = (win, {clientFileId}) ->
 			}
 
 		_updateBackdate: (event) ->
-			newBackdate = Moment(event.date).format(Persist.TimestampFormat)
-			if Moment(event.date).format('YYYY-MM-DD-HH') is Moment().format('YYYY-MM-DD-HH')
-				@setState {progNote: @state.progNote.setIn ['backdate'], ''}
-			else
+			if event
+				newBackdate = Moment(event.date).format(Persist.TimestampFormat)
 				@setState {progNote: @state.progNote.setIn ['backdate'], newBackdate}
+			else
+				@setState {progNote: @state.progNote.setIn ['backdate'], ''}
 
 		_updateBasicNotes: (unitId, event) ->
 			newNotes = event.target.value
@@ -820,6 +821,9 @@ load = (win, {clientFileId}) ->
 				format: 'MMM-DD-YYYY h:mm A'
 				defaultDate: Moment()
 				maxDate: Moment()
+				sideBySide: true
+				showClose: true
+				toolbarPlacement: 'bottom'
 				widgetPositioning: {
 					vertical: 'bottom'
 				}
@@ -829,14 +833,20 @@ load = (win, {clientFileId}) ->
 			return R.div({className: 'input-group'},
 				R.input({
 					ref: 'backdate'
-					className: 'form-control backdate date'
-				},
-					R.span({className: 'input-group-addon'}
-						FaIcon('calendar')
+					className: 'backdate date btn btn-default'
+				})
+				if @props.message
+					R.span({className: 'text-danger'},
+						'Backdated'
+						R.a({			
+							onClick: =>
+								$(@refs.backdate).val(Moment().format('MMM-DD-YYYY h:mm A'))
+								@props.onChange null
+						},					
+							FaIcon('times')
+						)
 					)
-				)
 			)
-
 
 	return NewProgNotePage
 
