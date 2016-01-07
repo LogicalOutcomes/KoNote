@@ -108,7 +108,7 @@ load = (win) ->
 								id: 'logoImage'
 								src: './assets/brand/logo.png'
 							})
-							R.div({id: 'version'}, "v1.4.0 Beta")
+							R.div({id: 'version'}, "v1.5.0 Beta")
 						)						
 					)
 					R.div({
