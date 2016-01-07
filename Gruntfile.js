@@ -260,6 +260,7 @@ module.exports = function(grunt) {
 				// do mac griffin build
 				grunt.task.run('copy:main:mac-griffin');
 				grunt.task.run('copy:production:mac-griffin');
+				grunt.task.run('copy:griffin:mac-griffin');
 				grunt.task.run('stylus:compile:mac-griffin');
 				grunt.task.run('coffee:compileMultiple:mac-griffin');
 				grunt.task.run('clean:coffee:mac-griffin');
