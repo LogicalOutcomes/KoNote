@@ -338,6 +338,18 @@ load = (win) ->
 								noData = @props.clientFileHeaders.isEmpty()
 
 								R.div({className: 'input-group'}
+									unless noData
+										OpenDialogLink({
+											className: 'input-group-btn'
+											dialog: CreateClientFileDialog
+										},
+											R.button({
+												className: 'btn btn-default'
+											},
+												R.span({className: 'text-success'}, FaIcon('plus'))
+											)
+										)
+
 									R.input({
 										className: 'searchBox form-control'
 										ref: 'searchBox'
@@ -351,6 +363,7 @@ load = (win) ->
 										onChange: @_updateQueryText									
 										value: @state.queryText
 									})
+
 									R.span({className: 'input-group-btn'},
 										(unless noData
 											R.button({
@@ -359,14 +372,11 @@ load = (win) ->
 											}, "Show All")
 										else
 											OpenDialogLink({
+												className: 'btn btn-success'
 												dialog: CreateClientFileDialog
 											},
-												R.button({
-													className: 'btn btn-success'
-												},
-													"New #{Term 'Client File'} "
-													FaIcon('folder-open')
-												)
+												"New #{Term 'Client File'} "
+												FaIcon('folder-open')
 											)
 										)
 									)
