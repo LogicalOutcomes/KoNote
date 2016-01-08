@@ -750,7 +750,7 @@ load = (win, {clientFileId}) ->
 					)
 				)
 				R.div({className: 'programs'},
-					@props.programs.map (program) ->
+					(@props.programs.map (program) ->
 						R.span({
 							key: program.get('id')
 							style:
@@ -758,16 +758,7 @@ load = (win, {clientFileId}) ->
 						},
 							program.get('name')
 						)
-				)
-				R.div({className: 'programs'},
-					@props.programs.map (program) ->
-						R.span({
-							key: program.get('id')
-							style:
-								borderBottomColor: program.get('colorKeyHex')
-						},
-							program.get('name')
-						)
+					)
 				)
 				R.div({className: 'recordId'},
 					R.span({}, renderFileId @props.recordId, true)
