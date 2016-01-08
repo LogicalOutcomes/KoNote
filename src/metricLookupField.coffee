@@ -14,6 +14,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	Bootbox = win.bootbox
+	ReactDOMServer = win.ReactDOMServer
 
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	DefineMetricDialog = require('./defineMetricDialog').load(win)
@@ -52,7 +53,7 @@ load = (win) ->
 					"""
 					suggestion: (metric) =>
 						suggestionComponent = Suggestion({metric})
-						return React.renderToString(suggestionComponent)
+						return ReactDOMServer.renderToString(suggestionComponent)
 					footer: (query, isEmpty) ->
 						return """
 							<div class="createMetricContainer">

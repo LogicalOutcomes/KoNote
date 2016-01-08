@@ -8,6 +8,8 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+	ReactDOMServer = win.ReactDOMServer
+	
 	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
 	MetricWidget = React.createFactory React.createClass
@@ -18,7 +20,7 @@ load = (win) ->
 			)
 			$(@refs.name).tooltip {
 				html: true
-				title: React.renderToString tooltipContent
+				title: ReactDOMServer.renderToString tooltipContent
 			}
 		render: ->
 			isEditable = @props.isEditable isnt false

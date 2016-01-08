@@ -12,6 +12,8 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+	ReactDOMServer = win.ReactDOMServer
+	
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('./utils').load(win)	
 	
 	progEventsWidget = React.createFactory React.createClass
@@ -35,7 +37,7 @@ load = (win) ->
 
 				$widget.tooltip {
 					html: true
-					title: React.renderToString tooltipContent
+					title: ReactDOMServer.renderToString tooltipContent
 					placement: 'auto'
 					# required to stop tooltip from being obstructed by menu
 					viewport: $widget
