@@ -345,6 +345,7 @@ load = (win) ->
 										},
 											R.button({
 												className: 'btn btn-default'
+												title: "Add new Client File"
 											},
 												R.span({className: 'text-success'}, FaIcon('plus'))
 											)
