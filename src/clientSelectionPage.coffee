@@ -473,7 +473,6 @@ load = (win) ->
 										isActive: @state.managerLayer is 'accountManagerTab'
 									})
 									UserMenuItem({
-										isVisible: isAdmin
 										title: Term 'Programs'
 										icon: 'users'
 										onClick: @_updateManagerLayer.bind null, 'programManagerTab'
@@ -487,7 +486,6 @@ load = (win) ->
 										isActive: @state.managerLayer is 'eventTypeManagerTab'
 									})
 									UserMenuItem({
-										isVisible: isAdmin
 										title: Term 'Metrics'
 										icon: 'line-chart'
 										onClick: @_updateManagerLayer.bind null, 'metricDefinitionManagerTab'

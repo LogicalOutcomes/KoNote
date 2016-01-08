@@ -38,6 +38,8 @@ load = (win) ->
 				newProgram = program.set 'numberClients', numberClients
 				return newProgram
 
+			isAdmin = global.ActiveSession.isAdmin()
+
 			return R.div({className: 'programManagerTab'},
 				R.div({className: 'header'},
 					R.h1({}, Term 'Programs')
@@ -86,6 +88,7 @@ load = (win) ->
 								name: "Options"
 								nameIsVisible: false
 								cellClass: 'optionsCell'
+								isDisabled: not isAdmin
 								buttons: [
 									{
 										className: 'btn btn-warning'
@@ -100,19 +103,20 @@ load = (win) ->
 						]
 					})
 				)
-				R.div({className: 'optionsMenu'},
-					OpenDialogLink({
-						className: 'btn btn-lg btn-primary'
-						dialog: CreateProgramDialog
-						data: {
-							clientFileHeaders: @props.clientFileHeaders
-						}
-					},
-						FaIcon('plus')
-						' '
-						"New #{Term 'Program'} "
+				if isAdmin
+					R.div({className: 'optionsMenu'},
+						OpenDialogLink({
+							className: 'btn btn-lg btn-primary'
+							dialog: CreateProgramDialog
+							data: {
+								clientFileHeaders: @props.clientFileHeaders
+							}
+						},
+							FaIcon('plus')
+							' '
+							"New #{Term 'Program'} "
+						)
 					)
-				)
 			)	
 
 	CreateProgramDialog = React.createFactory React.createClass

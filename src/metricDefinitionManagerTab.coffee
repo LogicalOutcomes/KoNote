@@ -29,6 +29,8 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
+			isAdmin = global.ActiveSession.isAdmin()
+
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
 					R.h1({}, "#{Term 'Metric'} Definitions")
@@ -50,6 +52,7 @@ load = (win) ->
 							{
 								name: "Options"
 								nameIsVisible: false
+								isDisabled: not isAdmin
 								cellClass: 'optionsCell'
 								buttons: [
 									{
@@ -69,7 +72,7 @@ load = (win) ->
 						dialog: DefineMetricDialog
 					},
 						FaIcon('plus')
-						" New #{Term 'Metric'}"
+						" New #{Term 'Metric'} Definition"
 					)
 				)
 			)
