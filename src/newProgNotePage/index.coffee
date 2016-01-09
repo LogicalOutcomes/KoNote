@@ -541,6 +541,7 @@ load = (win, {clientFileId}) ->
 					item: @state.selectedItem
 					progNoteHistories: @props.progNoteHistories
 					progEvents: @props.progEvents
+					eventTypes: @props.eventTypes
 				})
 				R.div({className: 'eventsPanel'},
 					R.span({className: 'title'}, Term "Events")
