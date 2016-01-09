@@ -103,7 +103,14 @@ load = (win, {dataSet}) ->
 	PrintHeader = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
-			R.header({className: 'header'},
+			# Calculate timestamp for backdate if exists
+			timestamp = Moment(
+				@props.data.get('backdate') or @props.data.get('timestamp')
+			, Persist.TimestampFormat).format 'MMMM D, YYYY [at] HH:mm'
+
+			if @props.data.get('backdate') then timestamp  = "(late entry) #{timestamp}"
+
+			return R.header({className: 'header'},
 				R.div({className: 'basicInfo'},
 					R.h1({className: 'title'},						
 						FaIcon('pencil-square-o')
@@ -127,10 +134,7 @@ load = (win, {dataSet}) ->
 								# TODO: Include user's full name + username ("Andrew Appleby (aappleby)")
 								R.span({className: 'author'}, @props.data.get('author'))
 							)
-							R.li({className: 'date'},
-								Moment(@props.data.get('timestamp'), Persist.TimestampFormat)
-								.format 'MMMM D, YYYY [at] HH:mm'
-							)
+							R.li({className: 'date'}, timestamp)
 						)
 					)
 					R.ul({},
