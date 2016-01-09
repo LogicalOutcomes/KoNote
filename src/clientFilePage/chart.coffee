@@ -23,6 +23,7 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				progEventRegions: Imm.List()
+				metricColors: null
 			}
 
 		render: ->
@@ -53,6 +54,7 @@ load = (win) ->
 			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 			unless sameSelectedMetrics
 				@_refreshSelectedMetrics()
+				@_refreshProgEvents()
 
 			# Update selected progEvents?
 			sameProgEvents = Imm.is @props.progEvents, oldProps.progEvents
@@ -159,60 +161,69 @@ load = (win) ->
 
 
 			# Generate and bind the chart
-			@_chart = C3.generate {						
-					bindto: @refs.chartDiv
-					grid: {
-						x: {
-							lines: newYearLines.toJS()
-						}
+			@_chart = C3.generate {
+				bindto: @refs.chartDiv
+				grid: {
+					x: {
+						lines: newYearLines.toJS()
 					}
-					axis: {
-						x: {
-							type: 'timeseries'
-							tick: {
-								fit: false
-								format: '%b %d'
-							}
-							min: @props.xTicks.get @props.timeSpan[0]
-							max: @props.xTicks.get @props.timeSpan[1]
-						}
-						y: {
-							show: false
-							max: 1
-						}
-					}				
-					data: {
-						hide: true
-						xFormat: D3TimestampFormat
-						columns: scaledDataSeries.toJS()
-						xs: xsMap.toJS()
-						names: dataSeriesNames.toJS()
-					}
-					tooltip: {
-						format: {
-							value: (value, ratio, id, index) ->
-								actualValue = dataSeries
-								.find (series) -> series.contains id
-								.get(index + 1)
-
-								return actualValue
-
-							title: (timestamp) ->
-								return Moment(timestamp).format('MMMM D [at] HH:mm')
-						}
-					}
-					legend: {
-						item: {
-							onclick: (id) ->
-								return false
-						}
-					}
-					padding: {
-						left: 25
-						right: 25
-					}
-					onrendered: @_attachKeyBindings
 				}
+				axis: {
+					x: {
+						type: 'timeseries'
+						tick: {
+							fit: false
+							format: '%b %d'
+						}
+						min: @props.xTicks.get @props.timeSpan[0]
+						max: @props.xTicks.get @props.timeSpan[1]
+					}
+					y: {
+						show: false
+						max: 1
+					}
+				}				
+				data: {
+					hide: true
+					xFormat: D3TimestampFormat
+					columns: scaledDataSeries.toJS()
+					xs: xsMap.toJS()
+					names: dataSeriesNames.toJS()
+				}
+				tooltip: {
+					format: {
+						value: (value, ratio, id, index) ->
+							actualValue = dataSeries
+							.find (series) -> series.contains id
+							.get(index + 1)
+
+							return actualValue
+
+						title: (timestamp) ->
+							return Moment(timestamp).format('MMMM D [at] HH:mm')
+					}
+				}
+				legend: {
+					item: {
+						onclick: (id) ->
+							return false
+					}
+				}
+				padding: {
+					left: 25
+					right: 25
+				}
+				onrendered: @_chartHasRendered
+			}
+
+		_chartHasRendered: ->
+			@_attachKeyBindings()
+
+			# Fire metric colors up to analysisTab first render
+			if @_chart? and not @state.metricColors?
+				@setState {metricColors: @_chart.data.colors()}, =>
+					console.log "set colors state:", @state.metricColors
+					@props.updateMetricColors @state.metricColors
 
 		_refreshSelectedMetrics: ->
 			@_chart.hide()
@@ -229,7 +240,7 @@ load = (win) ->
 			@_chart.regions.add progEventRegions.toJS()
 
 			# Bind user interaction events
-			@_attachKeyBindings progEventRegions
+			@_attachKeyBindings()
 
 			@setState => {progEventRegions}
 
@@ -344,6 +355,18 @@ load = (win) ->
 					eventInfo.removeClass('show')
 					$(win.document).off('mousemove')
 				)
+
+				# Fill progEvent region with eventType color if exists
+				if progEvent.get('typeId') and not @props.eventTypes.isEmpty()
+					eventType = @props.eventTypes
+					.find (type) -> type.get('id') is progEvent.get('typeId')
+
+					rect = $('.' + progEvent.get('id')).find('rect')[0]
+					$(rect).attr({
+						style: 
+							"fill: #{eventType.get('colorKeyHex')} !important; 
+							stroke: #{eventType.get('colorKeyHex')} !important;"
+					})
 
 		_toUnixMs: (timestamp) ->
 			# Converts to unix ms
