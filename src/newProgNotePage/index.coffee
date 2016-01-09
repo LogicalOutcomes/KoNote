@@ -841,6 +841,7 @@ load = (win, {clientFileId}) ->
 						onClick: =>
 							$(@refs.backdate).val(Moment().format('MMM-DD-YYYY h:mm A'))
 							@props.onChange null
+						title: 'Remove Backdate'
 					},
 						'Backdated '
 						FaIcon('times')
