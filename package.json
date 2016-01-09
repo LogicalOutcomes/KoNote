@@ -46,7 +46,7 @@
     "clone": "^1.0.2",
     "coffee-script": "^1.9.3",
     "d3": "^3.5.0",
-    "eonasdan-bootstrap-datetimepicker": "^4.15.35",
+    "eonasdan-bootstrap-datetimepicker": "https://github.com/konode001/bootstrap-datetimepicker",
     "font-awesome": "^4.3.0",
     "get-folder-size": "^1.0.0",
     "handlebars": "^3.0.3",
