@@ -293,7 +293,8 @@ load = (win) ->
 						@refs.searchBox.focus() if @refs.searchBox? and @state.menuIsOpen
 
 				},					
-					FaIcon(if @state.managerLayer? then 'times' else 'bars')
+					if @state.menuIsOpen
+						FaIcon('times')
 				)
 				R.div({
 					id: 'mainContainer'					
