@@ -17,39 +17,28 @@ sidebar-borders = darken(sidebar-bg, 10%)
 		top 15px
 		right 15px
 		outline none !important
-		z-index 9999
-		border none
-		font-size 22px
-		opacity 1		
+		z-index 9999		
+		transition all .25s ease
 		
-		transition all .35s ease
+		font-size 19px
+		font-weight 300
+		color #686868
+		border 1px solid #eee
+		border-radius 10px
 		
-		&:before
-			opacity 1
-			transition all .35s ease
-			display block			
-			position absolute
-			right 100%
-			content "Menu"
-			color #CBCBCB
-			font-size 18px
-			font-weight 100
-			line-height 1.5em
+		&:hover
+			cursor pointer
+			text-decoration none
+			border-color sidebar-borders
+			color #0075C0
+			
+		&.menuIsOpen
+			border 0px			
 		
 		> .fa
 			font-size 22px
-			color #686868
+			color #0075C0
 			transition all .35s ease
-			
-		&:hover
-			text-decoration none
-			cursor pointer
-			
-			&:before
-				color #0075C0
-
-			> .fa
-				color #0075C0
 	
 	> #mainContainer
 		flex 4

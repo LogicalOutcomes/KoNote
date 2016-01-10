@@ -287,14 +287,16 @@ load = (win) ->
 						}
 					)
 				R.a({
-					id: 'expandMenuButton'					
+					id: 'expandMenuButton'
+					className: 'menuIsOpen' if @state.menuIsOpen
 					onClick: =>
 						@_toggleUserMenu()
 						@refs.searchBox.focus() if @refs.searchBox? and @state.menuIsOpen
-
-				},					
+				},
 					if @state.menuIsOpen
 						FaIcon('times')
+					else
+						"Menu"
 				)
 				R.div({
 					id: 'mainContainer'					
