@@ -313,14 +313,6 @@ class Account
 	#
 	# (function cb(Error err)) -> undefined
 	deactivate: (cb) =>
-		# BEGIN v1.3.1 migration
-		if Fs.existsSync Path.join(@_userDir, 'auth-params')
-			# This account is in the old format.  To save time, I didn't
-			# implement this method.
-			cb new Error "cannot deactivate accounts in old format"
-			return
-		# END v1.3.1 migration
-
 		publicInfo = null
 		accountKeyFileNames = null
 
