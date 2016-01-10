@@ -231,10 +231,11 @@ load = (win) ->
 							})
 						)
 						R.div({className: 'btn-toolbar'},
-							R.button({
-								className: 'btn btn-link'
-								onClick: @_forgotPassword
-							}, "Forgot Password?")
+							#TODO: password reminder
+#							R.button({
+#								className: 'btn btn-link'
+#								onClick: @_forgotPassword
+#							}, "Forgot Password?")
 							R.button({
 								className: [
 									'btn'
