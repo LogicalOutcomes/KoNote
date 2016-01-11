@@ -116,6 +116,7 @@ load = (win) ->
 			.click()
 		
 		_saveEvents: (path) ->
+			isConfirmClosed = false
 			@_updateProgress 0, "Saving Events to CSV..."
 			# Map over client files
 			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
@@ -196,12 +197,15 @@ load = (win) ->
 								CrashHandler.handle err
 								return
 
-							Bootbox.alert {
-								title: "Save Successful"
-								message: "Events exported to: #{path}"
-							}
+							if isConfirmClosed isnt true
+								Bootbox.alert {
+									title: "Save Successful"
+									message: "Events exported to: #{path}"
+								}
+								isConfirmClosed = true
 	
 		_saveMetrics: (path) ->
+			isConfirmClosed = false
 			metrics = null
 			@_updateProgress 0, "Saving metrics to CSV..."
 
@@ -353,13 +357,16 @@ load = (win) ->
 							console.info "Destination Path:", path
 							@setState {isLoading: false}
 
-							Bootbox.alert {
-								title: "Save Successful"
-								message: "Metrics exported to: #{path}"
-							}
+							if isConfirmClosed isnt true
+								Bootbox.alert {
+									title: "Save Successful"
+									message: "Metrics exported to: #{path}"
+								}
+								isConfirmClosed = true
 			
 		
 		_saveBackup: (path) ->
+			isConfirmClosed = false
 			@_updateProgress 0, "Backing up data..."
 			totalSize = 0
 			
@@ -388,19 +395,19 @@ load = (win) ->
 				output = Fs.createWriteStream(path)
 				archive = Archiver('zip')
 
-				output.on 'finish', (=>
+				output.on 'finish', =>
 					clearInterval(progressCheck)
 					@_updateProgress 100
 					@setState {isLoading: false}
 
 					backupSize = @_prettySize output.bytesWritten
-					Bootbox.alert {
-						title: "Backup Complete (#{backupSize})"
-						message: "Saved to: #{path}"
-					}
-				).bind(this)
-
-				.on 'error', ((err) =>
+					if isConfirmClosed isnt true
+						Bootbox.alert {
+							title: "Backup Complete (#{backupSize})"
+							message: "Saved to: #{path}"
+						}
+						isConfirmClosed = true
+				.on 'error', (err) =>
 					clearInterval(progress)
 					@setState {isLoading: false}
 
@@ -412,8 +419,7 @@ load = (win) ->
 							<br>
 							Please try again.
 						"""
-					}					
-				).bind(this)
+					}
 
 				archive.on 'error', (err) =>
 					@setState {isLoading: false}
@@ -437,7 +443,7 @@ load = (win) ->
 				archive.finalize()
 				archive.pipe(output)
 
-				progressCheck = setInterval (=>
+				progressCheck = setInterval =>
 					written = archive.pointer()
 					writtenProgress = Math.floor((written / totalSize) * 100)
 					console.log written, totalSize
@@ -451,7 +457,7 @@ load = (win) ->
 					currentProgress = writtenProgress * 0.75
 
 					@_updateProgress currentProgress, messageText
-				).bind(this), 100
+				, 100
 			
 	return ExportManagerTab
 
