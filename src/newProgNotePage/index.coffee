@@ -558,6 +558,7 @@ load = (win, {clientFileId}) ->
 								)
 								EventTabView({
 									data: thisEvent
+									backdate: @state.progNote.get('backdate')
 									eventTypes: @props.eventTypes
 									atIndex: index
 									progNote: @state.progNote

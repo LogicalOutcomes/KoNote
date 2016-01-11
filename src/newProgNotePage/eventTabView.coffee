@@ -48,7 +48,12 @@ load = (win) ->
 			$startDate.datetimepicker({
 				useCurrent: false
 				format: 'Do MMM, \'YY'
-				defaultDate: Moment()
+				defaultDate: (
+					if @props.backdate?
+						Moment(@props.backdate, TimestampFormat)
+					else
+						Moment()
+				)
 				widgetPositioning: {
 					horizontal: 'right'
 				}
