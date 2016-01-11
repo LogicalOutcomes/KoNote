@@ -22,12 +22,18 @@ load = (win) ->
 	EventTabView = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
+			# Use backdate instead of current date (if exists)
+			if @props.backdate
+				startDate = Moment(@props.backdate, TimestampFormat)
+			else
+				startDate = Moment()
+
 			return {
 				title: ''
 				description: ''
 				typeId: ''
 
-				startDate: Moment()
+				startDate
 				startTime: ''
 				endDate: ''
 				endTime: ''
@@ -45,16 +51,10 @@ load = (win) ->
 			$endDate = $(@refs.endDate)
 			$endTime = $(@refs.endTime)
 
-			# Use backdate instead of current date (if exists)
-			currentDate = if @props.backdate?
-				Moment(@props.backdate, TimestampFormat).toDate()
-			else
-				Moment().toDate()
-
 			$startDate.datetimepicker({
 				useCurrent: false
 				format: 'Do MMM, \'YY'
-				defaultDate: currentDate
+				defaultDate: @state.startDate.toDate()
 				widgetPositioning: {
 					horizontal: 'right'
 				}
@@ -73,7 +73,7 @@ load = (win) ->
 
 
 			$endDate.datetimepicker({
-				minDate: currentDate
+				minDate: @state.startDate.toDate()
 				useCurrent: false
 				format: 'Do MMM, \'YY'
 				widgetPositioning: {					
