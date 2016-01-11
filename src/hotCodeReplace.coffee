@@ -68,7 +68,7 @@ load = (win) =>
 					])
 
 				if state.get('value')?
-					root.getPublicInstance().replaceState state.get('value')
+					root.getPublicInstance().setState state.get('value')
 
 				return injectState root._renderedComponent, state.get('next')
 			when 'dom'
