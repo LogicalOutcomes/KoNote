@@ -13,9 +13,9 @@ sidebar-borders = darken(sidebar-bg, 10%)
 	> #expandMenuButton
 		background none
 		position fixed
-		padding 10px 15px
+		padding 10px 30px 10px 20px
 		top 15px
-		right 15px
+		right 0px
 		outline none !important
 		z-index 9999		
 		transition all .25s ease
@@ -24,7 +24,9 @@ sidebar-borders = darken(sidebar-bg, 10%)
 		font-weight 300
 		color #686868
 		border 1px solid #eee
-		border-radius 10px
+		border-top-left-radius 10px
+		border-bottom-left-radius 10px
+		border-right 0px
 		
 		&:hover
 			cursor pointer
@@ -32,13 +34,17 @@ sidebar-borders = darken(sidebar-bg, 10%)
 			border-color sidebar-borders
 			color #0075C0
 			
-		&.menuIsOpen
-			border 0px			
-		
 		> .fa
 			font-size 22px
-			color #0075C0
+			color #686868
 			transition all .35s ease
+			
+		&.menuIsOpen
+			border-color transparent
+			
+			&:hover > .fa
+				color #0075C0
+				
 	
 	> #mainContainer
 		flex 4
@@ -261,16 +267,3 @@ sidebar-borders = darken(sidebar-bg, 10%)
 							> .fa
 								padding-right 10px
 								transition padding-right .25s ease
-			
-	&.openMenu
-		
-		> #expandMenuButton
-			transform rotate(90deg)	
-			
-			&:before				
-				opacity 0
-			
-			&:hover > .fa
-				color #0075C0
-		
-		
