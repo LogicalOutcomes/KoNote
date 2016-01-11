@@ -93,6 +93,8 @@ load = (win) ->
 				@props.updateEventPlanRelationMode false
 
 		render: ->
+			selectedEventType = @props.eventTypes.find (type) => type.get('id') is @state.typeId
+
 			return R.div({
 				className: "eventView #{showWhen @props.isBeingEdited or not @props.editMode}"
 			},
@@ -132,7 +134,7 @@ load = (win) ->
 							)
 							onToggle: @props.updateEventPlanRelationMode
 						},
-							(unless @props.selectEventPlanRelation?
+							(if @props.selectedEventPlanRelation?
 								[
 									R.li({
 										onClick: @props.selectEventPlanRelation.bind null, null
@@ -186,27 +188,42 @@ load = (win) ->
 							)
 						)
 					)
-					R.div({className: 'form-group'},
-						R.label({}, "Select #{Term 'Event Type'}")
-						R.ul({},
-							if @state.typeId
-								R.li({
-									onClick: @_updateTypeId.bind null, ''
-								}, "None")
-								
-							(@props.eventTypes.map (eventType) =>
-								R.li({
-									key: eventType.get('id')
-									onClick: @_updateTypeId.bind null, eventType.get('id')
-									style:
-										borderBottom: "1px solid #{eventType.get('colorKeyHex')}"
-								},
-									eventType.get('name')
-									FaIcon('check') if @state.typeId is eventType.get('id')										
+					
+					unless @props.eventTypes.isEmpty()
+						R.div({className: 'form-group eventTypeContainer'},
+							R.label({}, "Select #{Term 'Event Type'}")
+							
+							DropdownButton({
+								title: if selectedEventType? then selectedEventType.get('name') else "No Type"
+							},
+								if selectedEventType?
+									[
+										MenuItem({
+											onClick: @_updateTypeId.bind null, null
+										}, 
+											"None "
+											FaIcon('ban')
+										)
+										MenuItem({divider: true})
+									]
+
+								(@props.eventTypes.map (eventType) =>
+									MenuItem({
+										key: eventType.get('id')
+										onClick: @_updateTypeId.bind null, eventType.get('id')
+									}, 
+										R.div({
+											onClick: @_updateTypeId.bind null, eventType.get('id')
+											style:
+												borderRight: "5px solid #{eventType.get('colorKeyHex')}"
+										},
+											eventType.get('name')
+										)
+									)
 								)
 							)
 						)
-					)
+
 					R.div({className: "dateGroup"},
 						R.div({className: 'form-group date'},
 							R.label({}, if @state.isDateSpan then "Start Date" else "Date")
