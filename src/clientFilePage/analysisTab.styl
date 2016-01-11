@@ -194,7 +194,7 @@
 								// 10% of original height
 								transform scaleY(0.1) !important
 								fill-opacity 0.7 !important
-								fill white
+								fill sidebar-borders
 								stroke sidebar-borders
 								stroke-width 2px
 								
@@ -203,7 +203,7 @@
 									fill sidebar-borders
 									
 							&.singlePoint > rect
-								fill white
+								fill sidebar-borders
 								stroke sidebar-borders
 								stroke-width 2
 								
@@ -229,13 +229,14 @@
 
 		.selectionPanel
 			flex 2
-			display flex
+			// display flex
 			flex-direction column
 			padding-top 25px			
 			overflow-y auto
 			overflow-x hidden
 			
 			.dataType
+				clear both
 
 				h2					
 					font-size 24px
