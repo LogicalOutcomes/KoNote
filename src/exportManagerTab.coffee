@@ -117,92 +117,98 @@ load = (win) ->
 		
 		_saveEvents: (path) ->
 			isConfirmClosed = false
-			@_updateProgress 0, "Saving Events to CSV..."
 			# Map over client files
-			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
-				progEventsHeaders = null
-				progEvents = null
-				progEventsList = null
-				clientFileId = clientFile.get('id')
-				clientName = renderName clientFile.get('clientName')
-				csv = null
+			if @props.clientFileHeaders.size is 0
+				Bootbox.alert {
+					title: "No Events to Export"
+					message: "You must create at least one client file with events before they can be exported!"
+				}
+			else
+				@_updateProgress 0, "Saving Events to CSV..."
+				Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
+					progEventsHeaders = null
+					progEvents = null
+					progEventsList = null
+					clientFileId = clientFile.get('id')
+					clientName = renderName clientFile.get('clientName')
+					csv = null
 
-				Async.series [
-					# get event headers
-					(cb) =>
-						@_updateProgress 10
-						ActiveSession.persist.progEvents.list clientFileId, (err, results) ->
-							if err
-								cb err
-								return
+					Async.series [
+						# get event headers
+						(cb) =>
+							@_updateProgress 10
+							ActiveSession.persist.progEvents.list clientFileId, (err, results) ->
+								if err
+									cb err
+									return
 
-							progEventsHeaders = results
-							cb()
+								progEventsHeaders = results
+								cb()
 
-					# read each event
-					(cb) =>
-						@_updateProgress 20
-						Async.map progEventsHeaders.toArray(), (progEvent, cb) ->
-							ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEvent.get('id'), 1, cb
-						, (err, results) ->
-							if err
-								cb err
-								return
+						# read each event
+						(cb) =>
+							@_updateProgress 20
+							Async.map progEventsHeaders.toArray(), (progEvent, cb) ->
+								ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEvent.get('id'), 1, cb
+							, (err, results) ->
+								if err
+									cb err
+									return
 
-							progEvents = Imm.List(results).map (revision) -> revision.last()
-							cb()
-							
-					# csv format: id, timestamp, username, title, description, start time, end time
-					(cb) =>
-						@_updateProgress 50
-						progEvents = progEvents
-						.filter (progEvent) -> progEvent.get('status') isnt "cancelled"
-						.map (progEvent) ->
-							return {
-								id: progEvent.get('id')
-								timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
-								author: progEvent.get('author')
-								clientName
-								title: progEvent.get('title')
-								description: progEvent.get('description')
-								startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
-								endDate: Moment(progEvent.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
-							}
-						cb null, progEvents
-						, (err, results) ->
-							if err
-								cb err
-								return
-							progEvents = Imm.List results
-							cb()
-					
-					# convert to csv
-					(cb) =>
-						@_updateProgress 100
-						CSVConverter.json2csv progEvents.toJS(), (err, result) ->
-							csv = result
-							cb()
-					
-				], (err) =>
-					if err
-						CrashHandler.handle err
-						return
+								progEvents = Imm.List(results).map (revision) -> revision.last()
+								cb()
 
-					# destination path must exist in order to save
-					if path.length > 1
-						Fs.writeFile path, csv, (err) =>
-							@setState {isLoading: false}
-
-							if err
-								CrashHandler.handle err
-								return
-
-							if isConfirmClosed isnt true
-								Bootbox.alert {
-									title: "Save Successful"
-									message: "Events exported to: #{path}"
+						# csv format: id, timestamp, username, title, description, start time, end time
+						(cb) =>
+							@_updateProgress 50
+							progEvents = progEvents
+							.filter (progEvent) -> progEvent.get('status') isnt "cancelled"
+							.map (progEvent) ->
+								return {
+									id: progEvent.get('id')
+									timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
+									author: progEvent.get('author')
+									clientName
+									title: progEvent.get('title')
+									description: progEvent.get('description')
+									startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
+									endDate: Moment(progEvent.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 								}
-								isConfirmClosed = true
+							cb null, progEvents
+							, (err, results) ->
+								if err
+									cb err
+									return
+								progEvents = Imm.List results
+								cb()
+
+						# convert to csv
+						(cb) =>
+							@_updateProgress 100
+							CSVConverter.json2csv progEvents.toJS(), (err, result) ->
+								csv = result
+								cb()
+
+					], (err) =>
+						if err
+							CrashHandler.handle err
+							return
+
+						# destination path must exist in order to save
+						if path.length > 1
+							Fs.writeFile path, csv, (err) =>
+								@setState {isLoading: false}
+
+								if err
+									CrashHandler.handle err
+									return
+
+								if isConfirmClosed isnt true
+									Bootbox.alert {
+										title: "Save Successful"
+										message: "Events exported to: #{path}"
+									}
+									isConfirmClosed = true
 	
 		_saveMetrics: (path) ->
 			isConfirmClosed = false
