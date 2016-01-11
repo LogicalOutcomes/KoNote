@@ -541,7 +541,6 @@ load = (win, {clientFileId}) ->
 					},						
 						(@state.progEvents.map (thisEvent, index) =>
 							isBeingEdited = @state.editingWhichEvent is index
-							console.log "isBeingEdited", isBeingEdited
 
 							R.div({								
 								className: [
