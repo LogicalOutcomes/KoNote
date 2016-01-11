@@ -45,15 +45,16 @@ load = (win) ->
 			$endDate = $(@refs.endDate)
 			$endTime = $(@refs.endTime)
 
+			# Use backdate instead of current date (if exists)
+			currentDate = if @props.backdate?
+				Moment(@props.backdate, TimestampFormat).toDate()
+			else
+				Moment().toDate()
+
 			$startDate.datetimepicker({
 				useCurrent: false
 				format: 'Do MMM, \'YY'
-				defaultDate: (
-					if @props.backdate?
-						Moment(@props.backdate, TimestampFormat)
-					else
-						Moment()
-				)
+				defaultDate: currentDate
 				widgetPositioning: {
 					horizontal: 'right'
 				}
@@ -72,7 +73,7 @@ load = (win) ->
 
 
 			$endDate.datetimepicker({
-				minDate: Moment()
+				minDate: currentDate
 				useCurrent: false
 				format: 'Do MMM, \'YY'
 				widgetPositioning: {					
