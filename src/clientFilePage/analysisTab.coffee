@@ -34,7 +34,6 @@ load = (win) ->
 			return {
 				hasEnoughData: null
 				daysOfData: null
-
 				targetMetricsById: Imm.Map()
 				metricValues: null				
 				selectedMetricIds: Imm.Set()
@@ -152,7 +151,6 @@ load = (win) ->
 
 			# Synchronous to ensure this happens before render
 			@setState => {
-				targetMetricsById
 				xDays: xTicks
 				daysOfData: timestampDays.size
 				timeSpan: [0, xTicks.size - 1]
@@ -161,6 +159,7 @@ load = (win) ->
 				progEventIdsWithData
 				filteredProgEvents
 				inactiveMetrics
+				targetMetricsById
 			}		
 
 		render: ->
@@ -339,33 +338,38 @@ load = (win) ->
 													key: targetId
 													className: 'target'
 												},
+													console.log "@state.targetMetricsById", @state.targetMetricsById
 
 													R.h5({}, target.get('name'))
-													(@state.targetMetricsById.get(targetId).map (metricId) =>
 
-														metric = @props.metricsById.get(metricId)
+													# TODO Figure out why targetId is occasionally late to the party
+													if @state.targetMetricsById.get(targetId)
+														(@state.targetMetricsById.get(targetId).map (metricId) =>
 
-														R.div({
-															key: metricId
-															className: 'checkbox metric'
-															style:
-																borderRight: (
-																	if @state.metricColors?
-																		chartMetricId = 
-																		metricColor = @state.metricColors["y-#{metric.get('id')}"]
-																		"5px solid #{metricColor}"
+															metric = @props.metricsById.get(metricId)
+
+															R.div({
+																key: metricId
+																className: 'checkbox metric'
+																style:
+																	borderRight: (
+																		if @state.metricColors?
+																			chartMetricId = 
+																			metricColor = @state.metricColors["y-#{metric.get('id')}"]
+																			"5px solid #{metricColor}"
+																	)
+															},
+																R.label({},
+																	R.input({
+																		type: 'checkbox'
+																		onChange: @_updateSelectedMetrics.bind null, metricId
+																		checked: @state.selectedMetricIds.contains metricId
+																	})
+																	metric.get('name')
 																)
-														},
-															R.label({},
-																R.input({
-																	type: 'checkbox'
-																	onChange: @_updateSelectedMetrics.bind null, metricId
-																	checked: @state.selectedMetricIds.contains metricId
-																})
-																metric.get('name')
 															)
 														)
-													)
+
 												)
 											)
 										)
