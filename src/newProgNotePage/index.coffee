@@ -409,9 +409,12 @@ load = (win, {clientFileId}) ->
 										key: unitId
 										className: [
 											'unit basic isEventRelatable'											
+											'hoveredEventPlanRelation' if Imm.is unit, @state.hoveredEventPlanRelation
 											'selectedEventPlanRelation' if Imm.is unit, @state.selectedEventPlanRelation
 										].join ' '										
-										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.selectedEventPlanRelation?
+										onMouseOver: @_hoverEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
+										onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
+										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
 									},
 										R.h1({className: 'unitName'}, unit.get 'name')
 										ExpandingTextArea({
@@ -457,6 +460,7 @@ load = (win, {clientFileId}) ->
 													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
 												].join ' '
 												onMouseOver: @_hoverEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
+
 												onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
 												onClick: @_selectEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
 											},
