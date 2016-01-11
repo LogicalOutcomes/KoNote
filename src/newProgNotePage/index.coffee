@@ -47,7 +47,6 @@ load = (win, {clientFileId}) ->
 			}
 
 		init: ->
-			console.log "Init"
 			@_loadData()
 
 		deinit: (cb=(->)) ->
@@ -309,16 +308,13 @@ load = (win, {clientFileId}) ->
 			}
 
 		suggestClose: ->
-			if @hasChanges() and not @state.showExitAlert
-				@setState {showExitAlert: true}
+			if @hasChanges()
 				Bootbox.dialog {
 					message: "Are you sure you want to cancel this #{Term('progress note')}?"
 					buttons: {						
 						cancel: {
 							label: "Cancel"
 							className: 'btn-default'
-							callback: =>
-								@setState {showExitAlert: false}
 						}
 						discard: {
 							label: "Yes"
@@ -332,9 +328,10 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		hasChanges: ->
-			unless Imm.is @props.progNote, @state.progNote
-				return true
-			return false
+			hasProgNotes = not Imm.is @props.progNote, @state.progNote
+			hasProgEvents = not @state.progEvents.isEmpty()
+
+			return hasProgNotes or hasProgEvents
 		
 		componentWillReceiveProps: (newProps) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
@@ -390,15 +387,13 @@ load = (win, {clientFileId}) ->
 
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
-
-					R.div({clssName: 'backdate'},
+					R.div({className: 'backdateContainer'},
 						BackdateWidget({
 							onChange: @_updateBackdate
 							message: @state.progNote.get('backdate') or false
 						})
 					)
 
-					R.hr({})
 					R.div({
 						className: [
 							'units'
@@ -418,7 +413,7 @@ load = (win, {clientFileId}) ->
 										].join ' '										
 										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.selectedEventPlanRelation?
 									},
-										R.h1({className: 'name'}, unit.get 'name')
+										R.h1({className: 'unitName'}, unit.get 'name')
 										ExpandingTextArea({
 											value: unit.get('notes')
 											onFocus: @_selectBasicUnit.bind null, unit
@@ -441,19 +436,13 @@ load = (win, {clientFileId}) ->
 												})
 											).toJS()...
 										)
-										R.div({
-											className: 'events'
-											onClick: @_newEventTab.bind null, {unitId}
-										},
-											
-										)
 									)
 								when 'plan'
 									R.div({
 										className: 'unit plan'
 										key: unitId
 									},
-										R.h1({}, unit.get 'name')
+										R.h1({className: 'unitName'}, unit.get 'name')
 										R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
 											"This is empty because 
 											the client has no #{Term 'plan'} #{Term 'sections'}."
@@ -464,12 +453,11 @@ load = (win, {clientFileId}) ->
 											R.section({
 												key: sectionId												
 												className: [
-													'isEventPlanRelatable'
 													'hoveredEventPlanRelation' if Imm.is section, @state.hoveredEventPlanRelation
 													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
 												].join ' '
-												onMouseOver: @_hoverEventPlanRelation.bind(null, section)
-												onMouseOut: @_hoverEventPlanRelation.bind(null, null)
+												onMouseOver: @_hoverEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
+												onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
 												onClick: @_selectEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
 											},
 												R.h2({}, section.get 'name')
@@ -480,12 +468,12 @@ load = (win, {clientFileId}) ->
 													R.div({
 														key: targetId
 														className: [
-															'target isEventPlanRelatable'
+															'target'
 															'hoveredEventPlanRelation' if Imm.is target, @state.hoveredEventPlanRelation
 															'selectedEventPlanRelation' if Imm.is target, @state.selectedEventPlanRelation
 														].join ' '
-														onMouseOver: @_hoverEventPlanRelation.bind(null, target)
-														onMouseOut: @_hoverEventPlanRelation.bind(null, null)
+														onMouseOver: @_hoverEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
+														onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
 														onClick: @_selectEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
 													},
 														R.h3({}, target.get 'name')
@@ -553,6 +541,7 @@ load = (win, {clientFileId}) ->
 					},						
 						(@state.progEvents.map (thisEvent, index) =>
 							isBeingEdited = @state.editingWhichEvent is index
+							console.log "isBeingEdited", isBeingEdited
 
 							R.div({								
 								className: [
@@ -579,6 +568,7 @@ load = (win, {clientFileId}) ->
 									updateEventPlanRelationMode: @_updateEventPlanRelationMode
 									selectedEventPlanRelation: @state.selectedEventPlanRelation
 									selectEventPlanRelation: @_selectEventPlanRelation
+									hoverEventPlanRelation: @_hoverEventPlanRelation
 								})
 							)
 						)
@@ -591,8 +581,8 @@ load = (win, {clientFileId}) ->
 				)
 			)
 
-		_newEventTab: (relatedId) ->			
-			newProgEvent = if relatedId? then {relatedId} else {}
+		_newEventTab: ->			
+			newProgEvent = {}
 			# Add in the new event, select last one
 			@setState {progEvents: @state.progEvents.push newProgEvent}, => 
 				@setState {editingWhichEvent: @state.progEvents.size - 1}
@@ -609,7 +599,11 @@ load = (win, {clientFileId}) ->
 			if _.isEmpty @state.progEvents.get(index)
 				@setState {progEvents: @state.progEvents.delete(index)}
 
-			@setState {editingWhichEvent: null}
+			@setState {
+				selectedEventPlanRelation: null
+				hoveredEventPlanRelation: null
+				editingWhichEvent: null
+			}
 
 		_selectEventPlanRelation: (selectedEventPlanRelation, event) ->
 			event.stopPropagation() if event?

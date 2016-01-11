@@ -84,8 +84,14 @@ load = (win) ->
 					horizontal: 'right'
 				}
 			}).on 'dp.change', (thisInput) =>
-				@setState {endTime: thisInput.date}
+				@setState {endTime: thisInput.date}	
 
+		componentDidUpdate: (oldProps, oldState) ->
+			# Provide parent with relatedElement isBeingEdited
+			if oldProps.isBeingEdited isnt @props.isBeingEdited and @props.isBeingEdited and @state.relatedElement
+				console.log "Should load in relatedElement", @state.relatedElement
+				@props.selectEventPlanRelation @state.relatedElement
+				@props.updateEventPlanRelationMode false
 
 		render: ->
 			return R.div({
@@ -116,52 +122,63 @@ load = (win) ->
 							placeholder: "Describe details (optional)"
 						})
 					)
-					R.div({className: 'form-group'},
+					R.div({className: 'form-group planRelationContainer'},
 						R.label({}, "Relationship to Plan")
 						DropdownButton({
 							title: (
-								if @props.selectedEventPlanRelation
+								if @props.selectedEventPlanRelation? and @props.selectedEventPlanRelation.get('name')?
 									@props.selectedEventPlanRelation.get('name')
 								else 
 									"No Relationship"
 							)
 							onToggle: @props.updateEventPlanRelationMode
 						},
-							# Enable cancel option if something's been selected
-							if @props.selectedEventPlanRelation
-								([
-									MenuItem({
-										onClick: @props.selectEventPlanRelation.bind null, null									
+							(unless @props.selectEventPlanRelation?
+								[
+									R.li({
+										onClick: @props.selectEventPlanRelation.bind null, null
+										onMouseOver: @props.hoverEventPlanRelation.bind null, null
 									}, 
-										"None "
-										FaIcon('ban')
+										R.a({},
+											"None "
+											FaIcon('ban')
+										)
 									)
 									MenuItem({divider: true})
-								])
-
+								]
+							)							
 							(@props.progNote.get('units').map (unit) =>
 								switch unit.get('type')
 									when 'basic'
-										MenuItem({
+										R.li({
 											key: unit.get('id')
-											onClick: @props.selectEventPlanRelation.bind null, unit											
-										}, unit.get('name'))
+											onClick: @props.selectEventPlanRelation.bind null, unit
+											onMouseOver: @props.hoverEventPlanRelation.bind null, unit
+										}, 
+											R.a({}, unit.get('name'))
+										)
 									when 'plan'
 										([
-											MenuItem({
-												header: true
-											}, unit.get('name'))
 											(unit.get('sections').map (section) =>
 												([
-													MenuItem({
+													R.li({
+														className: 'section'
 														key: section.get('id')
 														onClick: @props.selectEventPlanRelation.bind null, section
-													}, section.get('name'))
+														onMouseOver: @props.hoverEventPlanRelation.bind null, section
+													},
+														R.a({}, section.get('name'))
+													)
+
 													(section.get('targets').map (target) =>
-														MenuItem({
+														R.li({
+															className: 'target'
 															key: target.get('id')
 															onClick: @props.selectEventPlanRelation.bind null, target
-														}, target.get('name'))
+															onMouseOver: @props.hoverEventPlanRelation.bind null, target
+														},
+															R.a({}, target.get('name'))
+														)
 													)
 												])
 											)
@@ -302,9 +319,6 @@ load = (win) ->
 		_toggleUsesTimeOfDay: (event) ->
 			event.preventDefault()
 			@setState {usesTimeOfDay: not @state.usesTimeOfDay}, =>
-				# Focus timeInput if enabling
-				# if @state.usesTimeOfDay
-				# 	@refs[timeInput].focus()
 
 		_showTimestamp: (timestamp) ->
 			moment = Moment(timestamp, TimestampFormat)
@@ -328,20 +342,23 @@ load = (win) ->
 			@setState {description: event.target.value}
 
 		_updateTypeId: (typeId) ->
-			console.info "Updating typeId to #{typeId}"
 			@setState {typeId}
 
 		_closeForm: (event) ->
 			event.preventDefault()
 
-			if (@state.startDate or @state.endDate or @state.description)
+			if (
+				@state.title or @state.endDate or @state.description or
+				@props.selectedEventPlanRelation or @state.typeId
+			)
+				console.log "State", @state
 				Bootbox.confirm "Cancel #{Term 'event'} editing?", (result) =>
 					if result
 						# Make sure all states are reset, then cancel
-						@replaceState @props.data, =>
+						@setState @props.data, =>
 							@props.cancel @props.atIndex
 			else
-				@replaceState @props.data, =>
+				@setState @props.data, =>
 					@props.cancel @props.atIndex
 
 		_compiledFormData: ->
@@ -385,10 +402,14 @@ load = (win) ->
 					id: @props.selectedEventPlanRelation.get('id')
 					type: relatedElementType
 				}
+
 			else
 				relatedElement = ''
 
-			return {	
+			# Provide relatedElement to local state for later
+			@setState => {relatedElement: @props.selectedEventPlanRelation}
+
+			progEventObject = {	
 				title: @state.title
 				description: @state.description
 				typeId: @state.typeId
@@ -396,6 +417,10 @@ load = (win) ->
 				startTimestamp: startTimestamp.format(TimestampFormat)
 				endTimestamp: if @state.isDateSpan or isOneFullDay then endTimestamp.format(TimestampFormat) else ''
 			}
+
+			console.log "progEventObject", progEventObject
+
+			return progEventObject
 
 		_saveEventData: (event) ->
 			event.preventDefault()
