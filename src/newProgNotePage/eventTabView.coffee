@@ -89,7 +89,6 @@ load = (win) ->
 		componentDidUpdate: (oldProps, oldState) ->
 			# Provide parent with relatedElement isBeingEdited
 			if oldProps.isBeingEdited isnt @props.isBeingEdited and @props.isBeingEdited and @state.relatedElement
-				console.log "Should load in relatedElement", @state.relatedElement
 				@props.selectEventPlanRelation @state.relatedElement
 				@props.updateEventPlanRelationMode false
 
@@ -351,7 +350,6 @@ load = (win) ->
 				@state.title or @state.endDate or @state.description or
 				@props.selectedEventPlanRelation or @state.typeId
 			)
-				console.log "State", @state
 				Bootbox.confirm "Cancel #{Term 'event'} editing?", (result) =>
 					if result
 						# Make sure all states are reset, then cancel
@@ -417,8 +415,6 @@ load = (win) ->
 				startTimestamp: startTimestamp.format(TimestampFormat)
 				endTimestamp: if @state.isDateSpan or isOneFullDay then endTimestamp.format(TimestampFormat) else ''
 			}
-
-			console.log "progEventObject", progEventObject
 
 			return progEventObject
 
