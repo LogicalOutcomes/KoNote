@@ -488,26 +488,6 @@ class Account
 			cb new Error "only admins have access to the system key"
 			return
 
-		# BEGIN v1.3.1 migration
-		if Fs.existsSync Path.join(@_userDir, 'auth-params')
-			# This account is in the old format.
-
-			privateInfo = {
-				globalEncryptionKey: loggedInAccount.privateInfo.globalEncryptionKey
-			}
-			if @publicInfo.accountType is 'admin'
-				privateInfo.systemPrivateKey = loggedInAccount.privateInfo.systemPrivateKey
-
-			accountKey = SymmetricEncryptionKey.generate()
-
-			cb null, new DecryptedAccount(
-				@dataDirectory, @userName,
-				@publicInfo, privateInfo, accountKey,
-				'privateaccess'
-			)
-			return
-		# END v1.3.1 migration
-
 		userDir = @_userDir
 		accountKey = null
 		privateInfo = null
@@ -604,88 +584,6 @@ class DecryptedAccount extends Account
 	#
 	# (string newPassword, function cb(Error err)) -> undefined
 	setPassword: (newPassword, cb) =>
-		# BEGIN v1.3.1 migration
-		if Fs.existsSync Path.join(@_userDir, 'auth-params')
-			# This account is in the old format.
-
-			systemUserDir = Path.join(@dataDirectory, '_users', '_system')
-
-			kdfParams = generateKdfParams()
-			systemPublicKey = null
-			pwEncryptionKey = null
-			accountRecovery = null
-
-			Async.series [
-				(cb) =>
-					Fs.readFile Path.join(systemUserDir, 'public-key'), (err, buf) =>
-						if err
-							cb new IOError err
-							return
-
-						systemPublicKey = PublicKey.import(buf.toString())
-						cb()
-				(cb) =>
-					SymmetricEncryptionKey.derive newPassword, kdfParams, (err, result) =>
-						if err
-							cb err
-							return
-
-						pwEncryptionKey = result
-						cb()
-				(cb) =>
-					accountKeyFile = JSON.stringify {
-						accountKey: Base64url.encode pwEncryptionKey.encrypt(@_accountKey.export())
-						kdfParams
-					}
-
-					Fs.writeFile Path.join(@_userDir, 'account-key-1'), accountKeyFile, (err) =>
-						if err
-							cb new IOError err
-							return
-
-						cb()
-				(cb) =>
-					systemPublicKey.encrypt @_accountKey.export(), (err, result) =>
-						if err
-							cb err
-							return
-
-						accountRecovery = result
-						cb()
-				(cb) =>
-					Fs.writeFile Path.join(@_userDir, 'account-recovery'), accountRecovery, (err) =>
-						if err
-							cb new IOError err
-							return
-
-						cb()
-				(cb) =>
-					privateInfoEncrypted = @_accountKey.encrypt JSON.stringify(@privateInfo)
-
-					Fs.writeFile Path.join(@_userDir, 'private-info'), privateInfoEncrypted, (err) =>
-						if err
-							cb new IOError err
-							return
-
-						cb()
-				(cb) =>
-					Fs.unlink Path.join(@_userDir, 'private-keys'), (err) =>
-						if err
-							cb new IOError err
-							return
-
-						cb()
-				(cb) =>
-					Fs.unlink Path.join(@_userDir, 'auth-params'), (err) =>
-						if err
-							cb new IOError err
-							return
-
-						cb()
-			], cb
-			return
-		# END v1.3.1 migration
-
 		kdfParams = generateKdfParams()
 		nextAccountKeyId = null
 		pwEncryptionKey = null
