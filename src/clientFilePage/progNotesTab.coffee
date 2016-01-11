@@ -369,62 +369,74 @@ load = (win) ->
 											)
 									)
 							when 'plan'
-								R.div({
-									className: 'plan unit'
-									key: unitId
-								},
-									R.h1({},
-										unit.get('name')
-									)
+								showPlanUnit = false
+								unit.get('sections').map (section) =>
+										section.get('targets').map (target) =>
+											if target.get('notes')
+												showPlanUnit = true
+								if showPlanUnit
+									R.div({
+										className: 'plan unit'
+										key: unitId
+									},
+										R.h1({},
+											unit.get('name')
+										)
 
-									(unit.get('sections').map (section) =>										
-										R.section({key: section.get('id')},
-											R.h2({}, section.get('name'))
-											R.div({
-												className: [
-													'empty'
-													showWhen section.get('targets').isEmpty()
-												].join ' '
-											},
-												"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
-											)
-											(section.get('targets').map (target) =>
-												R.div({
-													key: target.get('id')
-													className: [
-														'target'
-														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is target.get('id')
-													].join ' '
-												},
-													R.h3({
-														onClick: @_selectPlanSectionTarget.bind(
-															null, unit, section, target
-														)
+										(unit.get('sections').map (section) =>
+											showSection = false
+											section.get('targets').map (target) =>
+												if target.get('notes')
+													showSection = true
+											if showSection
+												R.section({key: section.get('id')},
+													R.h2({}, section.get('name'))
+													R.div({
+														className: [
+															'empty'
+															showWhen section.get('targets').isEmpty()
+														].join ' '
 													},
-														target.get('name')
+														"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
 													)
-													R.div({className: "empty #{showWhen target.get('notes') is ''}"},
-														'(blank)'
-													)
-													R.div({className: 'notes'},
-														renderLineBreaks target.get('notes')
-													)
-													R.div({className: 'metrics'},
-														(target.get('metrics').map (metric) =>
-															MetricWidget({
-																isEditable: false
-																key: metric.get('id')
-																name: metric.get('name')
-																definition: metric.get('definition')
-																value: metric.get('value')
-															})
-														).toJS()...
-													)
+													(section.get('targets').map (target) =>
+														if target.get('notes')
+															R.div({
+																key: target.get('id')
+																className: [
+																	'target'
+																	'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is target.get('id')
+																].join ' '
+															},
+																R.h3({
+																	onClick: @_selectPlanSectionTarget.bind(
+																		null, unit, section, target
+																	)
+																},
+																	target.get('name')
+																)
+																R.div({className: "empty #{showWhen target.get('notes') is ''}"},
+																	'(blank)'
+																)
+																R.div({className: 'notes'},
+																	renderLineBreaks target.get('notes')
+																)
+																R.div({className: 'metrics'},
+																	(target.get('metrics').map (metric) =>
+																		MetricWidget({
+																			isEditable: false
+																			key: metric.get('id')
+																			name: metric.get('name')
+																			definition: metric.get('definition')
+																			value: metric.get('value')
+																		})
+																	).toJS()...
+																)
+															)
+													).toJS()...
 												)
-											).toJS()...
 										)
 									)
-								)
 					).toJS()...
 
 					unless @props.progEvents.isEmpty()
