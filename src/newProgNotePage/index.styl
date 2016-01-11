@@ -35,8 +35,9 @@
 
 	// Main ProgNote Area	
 
-	> .progNote		
+	> .progNote
 		flex 1
+		position relative
 		overflow auto
 		
 
@@ -72,8 +73,9 @@
 			margin-top 5px
 			font-size 18px
 			
-		.units
+		.units			
 			border-top 1px solid #eee
+			padding-bottom 80px
 			
 			.unit, section, .target
 				border 1px solid transparent // Colored by eventPlanRelation
@@ -122,12 +124,18 @@
 								padding-top 5px
 
 								> .metricWidget
-									margin 3px
-
-		> .buttonRow
-			padding 20px
-
-			text-align center
+									margin 3px	
+			
+		#saveNoteButton
+			position fixed
+			bottom 10px
+			left 15%
+			width 150px
+			border 2px solid white
+			
+			.fa
+				font-size 20px
+				margin-left 10px
 
 	> .progNoteDetailView
 		flex 1

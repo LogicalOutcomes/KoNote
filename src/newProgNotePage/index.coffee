@@ -513,17 +513,17 @@ load = (win, {clientFileId}) ->
 									)
 						).toJS()...
 					)
-					R.div({className: 'buttonRow'},
+
+					if @hasChanges()
 						R.button({
-							className: "save btn btn-primary #{'disabled' if @state.editingWhichEvent? or
-								not @hasChanges()}"
 							id: 'saveNoteButton'
-							onClick: @_save unless @state.editingWhichEvent? or not @hasChanges()
-						},
-							FaIcon 'check'
-							'Save'
+							className: 'btn btn-success btn-lg animated fadeInUp'
+							disabled: @state.editingWhichEvent?							
+							onClick: @_save
+						},							
+							"Save "
+							FaIcon('check')
 						)
-					)
 				)
 				ProgNoteDetailView({
 					item: @state.selectedItem
