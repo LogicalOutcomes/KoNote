@@ -369,7 +369,6 @@ load = (win) ->
 											)
 									)
 							when 'plan'
-								console.log unit.toJS()
 								R.div({
 									className: 'plan unit'
 									key: unitId
