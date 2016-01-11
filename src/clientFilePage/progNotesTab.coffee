@@ -339,36 +339,37 @@ load = (win) ->
 
 						switch unit.get('type')
 							when 'basic'
-								R.div({
-									className: [
-										'basic unit'
-										'selected' if @props.selectedItem? and @props.selectedItem.get('unitId') is unitId
-									].join ' '
-									key: unitId
-								},
-									if unit.get('notes')
+								if unit.get('notes')
+									R.div({
+										className: [
+											'basic unit'
+											'selected' if @props.selectedItem? and @props.selectedItem.get('unitId') is unitId
+										].join ' '
+										key: unitId
+									},
 										R.h3({
 											onClick: @_selectBasicUnit.bind null, unit
 										},
 											unit.get('name')
 										)
-									R.div({className: 'notes'},
-										renderLineBreaks(unit.get('notes'))
-									)
-									unless unit.get('metrics').isEmpty()
-										R.div({className: 'metrics'},
-											(unit.get('metrics').map (metric) =>
-												MetricWidget({
-													isEditable: false
-													key: metric.get('id')
-													name: metric.get('name')
-													definition: metric.get('definition')
-													value: metric.get('value')
-												})
-											).toJS()...
+										R.div({className: 'notes'},
+											renderLineBreaks(unit.get('notes'))
 										)
-								)
+										unless unit.get('metrics').isEmpty()
+											R.div({className: 'metrics'},
+												(unit.get('metrics').map (metric) =>
+													MetricWidget({
+														isEditable: false
+														key: metric.get('id')
+														name: metric.get('name')
+														definition: metric.get('definition')
+														value: metric.get('value')
+													})
+												).toJS()...
+											)
+									)
 							when 'plan'
+								console.log unit.toJS()
 								R.div({
 									className: 'plan unit'
 									key: unitId
