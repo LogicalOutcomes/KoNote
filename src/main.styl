@@ -1,0 +1,63 @@
+@require "fonts.css"
+
+html, body
+	min-height 500px
+	height 100%
+
+#container
+	position relative
+	display block !important
+
+	height 100%
+
+	font-family 'Open Sans', sans-serif
+
+textarea
+	// Allowing resizing usually messes up the layout.
+	// See also: ExpandingTextArea
+	resize none
+
+// Components
+@require crashHandler
+@require dialog
+@require metricLookupField
+@require metricWidget
+@require progNoteDetailView
+@require spinner
+@require brandWidget
+@require timeoutDialog
+@require printButton
+@require orderableTable
+@require managerLayer
+@require progEventsWidget
+@require printPreviewPage
+
+// Pages and Child Components
+@require loginPage
+@require newInstallationPage
+
+@require clientSelectionPage
+
+@require accountManagerTab
+@require createAccountDialog
+
+@require myAccountManagerTab
+
+@require exportManagerTab
+
+@require eventTypeManagerTab
+@require createEventTypeDialog
+
+@require createClientFileDialog
+@require renameClientFileDialog
+
+@require programManagerTab
+@require createProgramDialog
+@require manageProgramClientsDialog
+
+@require metricDefinitionManagerTab
+@require defineMetricDialog
+
+@require clientFilePage
+@require newProgNotePage
+@require 'newProgNotePage/eventTabView'

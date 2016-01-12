@@ -1,0 +1,34 @@
+table.orderableTable
+	th
+		opacity .8
+		
+		&:hover
+			opacity 1
+			
+		> span
+			position relative
+			padding-right 10px
+			
+			&:hover
+				cursor pointer				
+			
+			.fa
+				position absolute
+				right -13px
+				top 3px				
+
+	th:first-child, td:first-child
+		padding-left 25px
+	th:last-child, td:last-child
+		padding-right 25px
+		
+	tbody
+		td
+			vertical-align middle
+
+			> span
+				&.noValue
+					font-weight 300
+					opacity 0.5
+					font-style italic
+					letter-spacing 2px

@@ -1,0 +1,208 @@
+{
+	"productName": "KoNote",
+	"customerLogoLg": "customer-logo-lg_GRIFFIN.png",
+	"customerLogoSm": "customer-logo-sm_GRIFFIN.png",
+	"logoSubtitle": "DSSS",
+	"logoSubtitleColor": "hsl(205, 78%, 47%)",
+
+	"clientFileRecordId": {
+		"isEnabled": true,
+		"label": "CR#"
+	},
+	
+	"terminology": {
+		"user": "user",
+		"account": "account",
+		"user account": "user account",
+
+		"client": "client",
+		"file": "file",
+		"client file": "client file",
+
+		"section": "section",
+		"plan": "plan",
+		"target": "goal",
+		"plan target": "plan goal",
+		"treatment plan": "treatment plan",
+
+		"progress note": "progress note",
+		"quick note": "quick note",
+
+		"metric": "indicator",
+		"event": "event",
+		"program": "program",
+
+		"analysis": "analysis",
+		"analyze": "analyze"
+	},
+	
+	"useTemplate": "clientLog",
+
+	"templates": {
+		"initialAssessment": {
+			"id": "initAssessGC",
+			"name": "Client Log - Initial Assessment",
+			"units": [
+				{
+					"id": "peerInt",
+					"type": "basic",
+					"name": "Peer Interactions",
+					"metricIds": []
+				},
+				{
+					"id": "staffInt",
+					"type": "basic",
+					"name": "Staff Interactions",
+					"metricIds": []
+				},
+				{
+					"id": "partProgramming",
+					"type": "basic",
+					"name": "Participation in Programming",
+					"metricIds": []
+				},
+				{
+					"id": "partAcademics",
+					"type": "basic",
+					"name": "Participation in Academics",
+					"metricIds": []
+				},
+				{
+					"id": "descGenPres",
+					"type": "basic",
+					"name": "Description of General Presentation",
+					"metricIds": []
+				},
+				{
+					"id": "descCoping",
+					"type": "basic",
+					"name": "Description of Coping Skills Exhibited",
+					"metricIds": []
+				},
+				{
+					"id": "staffFamily",
+					"type": "basic",
+					"name": "Staff Contact with Family",
+					"metricIds": []
+				},
+				{
+					"id": "additional",
+					"type": "basic",
+					"name": "Additional Comments Related to Domains / General Comments (including incidents, etc)",
+					"metricIds": []
+				},
+				{
+					"id": "checkin",
+					"type": "basic",
+					"name": "Feedback from Client Check-In",
+					"metricIds": []
+				},
+				{
+					"id": "sr",
+					"type": "basic",
+					"name": "School Readiness",
+					"metricIds": [
+						"sr1",
+						"sr2",
+						"sr3",
+						"sr4"
+					]
+				},
+				{
+					"id": "ss",
+					"type": "basic",
+					"name": "Social Skills",
+					"metricIds": [
+						"ss1",
+						"ss2",
+						"ss3",
+						"ss4"
+					]
+				},
+				{
+					"id": "life",
+					"type": "basic",
+					"name": "Life Skills",
+					"metricIds": [
+						"life1",
+						"life2"
+					]
+				},
+				{
+					"id": "leisure",
+					"type": "basic",
+					"name": "Leisure Skills",
+					"metricIds": [
+						"leisure1",
+						"leisure2"
+					]
+				}
+			]
+		},
+		"clientLog": {
+			"id": "clientLogGC",
+			"name": "Client Log",
+			"units": [
+				{
+					"id": "goals",
+					"type": "plan",
+					"name": "Client Goals"
+				},
+				{
+					"id": "peerInt",
+					"type": "basic",
+					"name": "Peer Interactions",
+					"metricIds": []
+				},
+				{
+					"id": "staffInt",
+					"type": "basic",
+					"name": "Staff Interactions",
+					"metricIds": []
+				},
+				{
+					"id": "partProgramming",
+					"type": "basic",
+					"name": "Participation in Programming",
+					"metricIds": []
+				},
+				{
+					"id": "partAcademics",
+					"type": "basic",
+					"name": "Participation in Academics",
+					"metricIds": []
+				},
+				{
+					"id": "descGenPres",
+					"type": "basic",
+					"name": "Description of General Presentation",
+					"metricIds": []
+				},
+				{
+					"id": "descCoping",
+					"type": "basic",
+					"name": "Description of Coping Skills Exhibited",
+					"metricIds": []
+				},
+				{
+					"id": "staffFamily",
+					"type": "basic",
+					"name": "Staff Contact with Family",
+					"metricIds": []
+				},
+				{
+					"id": "additional",
+					"type": "basic",
+					"name": "Additional Comments",
+					"metricIds": []
+				},
+				{
+					"id": "checkin",
+					"type": "basic",
+					"name": "Feedback from Client Check-In",
+					"metricIds": []
+				}
+			]
+		}
+	}
+}

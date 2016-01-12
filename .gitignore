@@ -1,6 +1,13 @@
 *.swo
 *.swp
+.DS_Store
+npm-debug.log
 
-/config-dev.coffee
-/data
-/node_modules
+/data/
+/node_modules/
+/build/releases/
+/src/config/develop.json
+
+*.csv
+
+*.zip
