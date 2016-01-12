@@ -23,7 +23,6 @@ load = (win) ->
 
 		getDefaultProps: ->
 			return {
-				data: Imm.List()
 				columns: Imm.List()
 				rowKey: ['id']
 				onClickRow: ->
@@ -35,20 +34,37 @@ load = (win) ->
 			firstColumn = @props.columns[0].dataPath
 
 			return {
+				orderedData: Imm.List()
 				sortByData: if @props.sortByData? then @props.sortByData else firstColumn
 				isSortAsc: null
 			}
 
-		render: ->
-			data = @props.tableData
+		componentDidUpdate: (oldProps, oldState) ->
+			@_updateParentData() unless Imm.is oldProps.tableData, @props.tableData				
+
+		componentDidMount: ->
+			@_updateParentData()
+
+		_updateParentData: ->
+			return unless @props.onSortChange?
+			orderedData = @_reorderData(@props.tableData)
+			@props.onSortChange(orderedData)
+
+		_reorderData: (tableData) ->
+			orderedData = tableData
 			.sortBy (dataPoint) => 
 				value = dataPoint.getIn(@state.sortByData)
 				if typeof value is 'string' then value.toLowerCase() else value
-			.filter (dataPoint) => @props.rowIsVisible(dataPoint)
+			.filter (dataPoint) => @props.rowIsVisible(dataPoint)	
 
 			if @state.isSortAsc
-				data = data.reverse()
+				orderedData = orderedData.reverse()
 
+			return orderedData
+
+		render: ->
+			orderedData = @_reorderData(@props.tableData)
+			
 			return R.table({className: 'table table-striped table-hover orderableTable'},
 				R.thead({},
 					R.tr({},
@@ -70,7 +86,7 @@ load = (win) ->
 					)
 				)
 				R.tbody({},
-					(data.map (dataPoint) =>
+					(orderedData.map (dataPoint) =>
 						R.tr({
 							className: executeIfFunction @props.rowClass(dataPoint)
 							key: dataPoint.getIn(@props.rowKey)
@@ -154,9 +170,7 @@ load = (win) ->
 			if sortByData is @state.sortByData
 				@setState {isSortAsc: not @state.isSortAsc}
 			else
-				@setState {
-					sortByData
-				}
+				@setState {sortByData}
 
 	return OrderableTable
 

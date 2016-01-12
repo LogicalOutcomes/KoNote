@@ -59,6 +59,7 @@ load = (win) ->
 				clientFileHeaders: @state.clientFileHeaders
 				clientFileProgramLinks: @state.clientFileProgramLinks
 				programs: @state.programs
+				metricDefinitions: @state.metricDefinitions
 			})
 
 		_loadData: ->
@@ -67,6 +68,8 @@ load = (win) ->
 			programs = null
 			clientFileProgramLinkHeaders = null
 			clientFileProgramLinks = null
+			metricDefinitionHeaders = null
+			metricDefinitions = null
 
 			Async.series [
 				(cb) =>
@@ -116,6 +119,27 @@ load = (win) ->
 
 						clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
 						cb()
+				(cb) =>
+					ActiveSession.persist.metrics.list (err, result) =>
+						if err
+							cb err
+							return
+
+						metricDefinitionHeaders = result
+						cb()
+				(cb) =>
+					Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
+						metricDefinitionId = metricDefinitionHeader.get('id')
+						ActiveSession.persist.metrics.readLatestRevisions metricDefinitionId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						metricDefinitions = Imm.List(results)
+						.map (metricDefinition) -> stripMetadata metricDefinition.first()
+
+						cb()
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -133,6 +157,7 @@ load = (win) ->
 					programs
 					clientFileHeaders
 					clientFileProgramLinks
+					metricDefinitions
 				}
 
 		getPageListeners: ->
@@ -176,7 +201,22 @@ load = (win) ->
 						else
 							clientFileProgramLinks = state.clientFileProgramLinks.push newRev
 
-						return {clientFileProgramLinks}					
+						return {clientFileProgramLinks}
+
+				'create:metric createRevision:metric': (newRev) =>
+					metricDefinitionId = newRev.get('id')
+					# Updating or creating metric?
+					existingMetricDefinition = @state.metricDefinitions
+					.find (metricDefinition) -> metricDefinition.get('id') is metricDefinitionId
+
+					@setState (state) ->
+						if existingMetricDefinition?
+							definitionIndex = state.metricDefinitions.indexOf existingMetricDefinition
+							metricDefinitions = state.metricDefinitions.set definitionIndex, newRev
+						else
+							metricDefinitions = state.metricDefinitions.push newRev
+
+						return {metricDefinitions}
 
 			}
 
@@ -189,7 +229,9 @@ load = (win) ->
 				menuIsOpen: false
 
 				queryText: ''
-				queryResults: Imm.List()				
+				queryResults: Imm.List()
+
+				orderedQueryResults: Imm.List()
 				hoverClientId: null
 
 				managerLayer: null
@@ -197,10 +239,10 @@ load = (win) ->
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# If loading just finished
-			if oldProps.isLoading and not @props.isLoading
+			$searchBox = $(@refs.searchBox)
 
-				setTimeout(=>
-					$searchBox = $(@refs.searchBox)
+			if oldProps.isLoading and not @props.isLoading
+				setTimeout(=>					
 					$searchBox.focus()
 					@_attachKeyBindings($searchBox)
 				, 500)
@@ -245,13 +287,16 @@ load = (win) ->
 						}
 					)
 				R.a({
-					id: 'expandMenuButton'					
+					id: 'expandMenuButton'
+					className: 'menuIsOpen' if @state.menuIsOpen
 					onClick: =>
 						@_toggleUserMenu()
-						@refs.searchBox.focus() if @state.menuIsOpen
-
-				},					
-					FaIcon(if @state.managerLayer? then 'times' else 'bars')
+						@refs.searchBox.focus() if @refs.searchBox? and @state.menuIsOpen
+				},
+					if @state.menuIsOpen
+						FaIcon('times')
+					else
+						"Menu"
 				)
 				R.div({
 					id: 'mainContainer'					
@@ -263,14 +308,15 @@ load = (win) ->
 							# Data
 							clientFileHeaders: @props.clientFileHeaders							
 							programs: @props.programs
-							clientFileProgramLinks: @props.clientFileProgramLinks							
+							clientFileProgramLinks: @props.clientFileProgramLinks
+							metricDefinitions: @props.metricDefinitions
 						})
 					)
 					R.div({
 						id: 'main'
 						onClick: =>
 							@_toggleUserMenu() if @state.menuIsOpen
-							@refs.searchBox.focus()
+							@refs.searchBox.focus() if @refs.searchBox?
 					},
 						Spinner({
 							isVisible: @props.isLoading
@@ -291,23 +337,52 @@ load = (win) ->
 									Config.logoSubtitle
 								)
 							)
-							R.div({className: 'searchBoxContainer input-group'},
-								R.input({
-									className: 'searchBox form-control'
-									ref: 'searchBox'
-									type: 'text'
-									onChange: @_updateQueryText
-									placeholder: "Search for a #{Term 'client'}'s profile..."
-									value: @state.queryText
-								})
-								R.span({
-									className: 'input-group-btn'
-								},
-									R.button({
-										className: "btn btn-default"
-										onClick: @_showAll
-									},
-										'Show All'
+							R.div({className: 'searchBoxContainer'},
+								noData = @props.clientFileHeaders.isEmpty()
+
+								R.div({className: 'input-group'}
+									unless noData
+										OpenDialogLink({
+											className: 'input-group-btn'
+											dialog: CreateClientFileDialog
+										},
+											R.button({
+												className: 'btn btn-default'
+												title: "Add new Client File"
+											},
+												R.span({className: 'text-success'}, FaIcon('plus'))
+											)
+										)
+
+									R.input({
+										className: 'searchBox form-control'
+										ref: 'searchBox'
+										type: 'text'
+										disabled: noData
+										placeholder:
+											unless noData
+												"Search for a #{Term 'client'}'s profile..."
+											else
+												"No #{Term 'client files'} to search yet..."
+										onChange: @_updateQueryText									
+										value: @state.queryText
+									})
+
+									R.span({className: 'input-group-btn'},
+										(unless noData
+											R.button({
+												className: 'btn btn-default'
+												onClick: @_showAll
+											}, "Show All")
+										else
+											OpenDialogLink({
+												className: 'btn btn-success'
+												dialog: CreateClientFileDialog
+											},
+												"New #{Term 'Client File'} "
+												FaIcon('folder-open')
+											)
+										)
 									)
 								)
 							)
@@ -333,6 +408,7 @@ load = (win) ->
 						},
 							OrderableTable({
 								tableData: queryResults
+								onSortChange: (orderedQueryResults) => @setState {orderedQueryResults}
 								sortByData: ['clientName', 'last']
 								key: ['id']
 								rowClass: (dataPoint) =>
@@ -389,49 +465,60 @@ load = (win) ->
 						className: 'menuIsOpen animated fadeInRight'
 					},
 						R.div({id: 'menuContent'},
-							R.div({id: 'avatar'}, FaIcon('user'))
-							R.h3({}, global.ActiveSession.userName)
-							R.ul({},
-								UserMenuItem({									
-									title: "New #{Term 'Client File'}"
-									icon: 'folder-open'
-									dialog: CreateClientFileDialog
-									onClick: @_updateManagerLayer.bind null, null
-								})
-								UserMenuItem({
-									isVisible: isAdmin
-									title: Term 'Programs'
-									icon: 'users'
-									onClick: @_updateManagerLayer.bind null, 'programManagerTab'
-									isActive: @state.managerLayer is 'programManagerTab'
-								})								
-								UserMenuItem({
-									isVisible: isAdmin
-									title: "Event Types"
-									icon: 'calendar-o'
-									onClick: @_updateManagerLayer.bind null, 'eventTypeManagerTab'
-									isActive: @state.managerLayer is 'eventTypeManagerTab'
-								})
-								UserMenuItem({
-									isVisible: isAdmin
-									title: "User #{Term 'Accounts'}"
-									icon: 'key'
-									onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
-									isActive: @state.managerLayer is 'accountManagerTab'
-								})								
-								UserMenuItem({
-									isVisible: isAdmin
-									title: "Export Data"
-									icon: 'upload'
-									onClick: @_updateManagerLayer.bind null, 'exportManagerTab'
-									isActive: @state.managerLayer is 'exportManagerTab'
-								})
-								UserMenuItem({
-									title: "My #{Term 'Account'}"
-									icon: 'cog'
-									onClick: @_updateManagerLayer.bind null, 'myAccountManagerTab'
-									isActive: @state.managerLayer is 'myAccountManagerTab'
-								})
+							R.div({id: 'userMenu'},
+								R.div({},
+									R.div({id: 'avatar'}, FaIcon('user'))
+									R.h3({}, global.ActiveSession.userName)
+								)
+							)
+							R.div({id: 'featureMenu'},
+								R.ul({},
+									UserMenuItem({									
+										title: "New #{Term 'Client File'}"
+										icon: 'folder-open'
+										dialog: CreateClientFileDialog
+										onClick: @_updateManagerLayer.bind null, null
+									})
+									UserMenuItem({
+										isVisible: isAdmin
+										title: "User #{Term 'Accounts'}"
+										icon: 'key'
+										onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
+										isActive: @state.managerLayer is 'accountManagerTab'
+									})
+									UserMenuItem({
+										title: Term 'Programs'
+										icon: 'users'
+										onClick: @_updateManagerLayer.bind null, 'programManagerTab'
+										isActive: @state.managerLayer is 'programManagerTab'
+									})								
+									UserMenuItem({
+										isVisible: isAdmin
+										title: "#{Term 'Event'} Types"
+										icon: 'calendar-o'
+										onClick: @_updateManagerLayer.bind null, 'eventTypeManagerTab'
+										isActive: @state.managerLayer is 'eventTypeManagerTab'
+									})
+									UserMenuItem({
+										title: Term 'Metrics'
+										icon: 'line-chart'
+										onClick: @_updateManagerLayer.bind null, 'metricDefinitionManagerTab'
+										isActive: @state.managerLayer is 'metricDefinitionManagerTab'
+									})
+									UserMenuItem({
+										isVisible: isAdmin
+										title: "Export Data"
+										icon: 'upload'
+										onClick: @_updateManagerLayer.bind null, 'exportManagerTab'
+										isActive: @state.managerLayer is 'exportManagerTab'
+									})
+									UserMenuItem({
+										title: "My #{Term 'Account'}"
+										icon: 'cog'
+										onClick: @_updateManagerLayer.bind null, 'myAccountManagerTab'
+										isActive: @state.managerLayer is 'myAccountManagerTab'
+									})
+								)
 							)
 						)
 					)
@@ -461,7 +548,9 @@ load = (win) ->
 
 		_shiftHoverClientId: (modifier) ->
 			hoverClientId = null
-			queryResults = @state.queryResults
+			queryResults = @state.orderedQueryResults
+
+			return if queryResults.isEmpty()
 
 			# Get our current index position
 			currentResultIndex = queryResults.findIndex (result) =>
@@ -538,6 +627,8 @@ load = (win) ->
 		_home: ->
 			@setState {isSmallHeaderSet: false, queryText: ''}
 		_onResultSelection: (clientFileId, event) ->
+			@setState {hoverClientId: clientFileId}
+
 			openWindow {
 				page: 'clientFile'
 				clientFileId

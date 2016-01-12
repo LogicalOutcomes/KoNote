@@ -61,7 +61,6 @@ load = (win, {clientFileId}) ->
 
 		init: ->
 			@props.maximizeWindow()
-
 			@_renewAllData()
 
 		deinit: (cb=(->)) ->
@@ -200,13 +199,14 @@ load = (win, {clientFileId}) ->
 
 				(cb) =>
 					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
-						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
+						ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEventHeader.get('id'), 1, cb
 					, (err, results) =>
 						if err
 							cb err
 							return
 
-						progressEvents = Imm.List results
+						progressEvents = Imm.List(results)
+						.map (progEvent) -> stripMetadata progEvent.first()
 
 						checkFileSync progressEvents, @state.progressEvents
 						cb()
@@ -222,7 +222,7 @@ load = (win, {clientFileId}) ->
 
 				(cb) =>
 					Async.map metricHeaders.toArray(), (metricHeader, cb) =>
-						ActiveSession.persist.metrics.read metricHeader.get('id'), cb
+						ActiveSession.persist.metrics.readLatestRevisions metricHeader.get('id'), 1, cb
 					, (err, results) =>
 						if err
 							cb err
@@ -230,6 +230,7 @@ load = (win, {clientFileId}) ->
 
 						metricsById = Imm.List(results)
 						.map (metric) =>
+							metric = stripMetadata metric.first()
 							return [metric.get('id'), metric]
 						.fromEntrySeq().toMap()
 
@@ -341,7 +342,6 @@ load = (win, {clientFileId}) ->
 				else
 					# OK, load in clientFile state data!
 					console.log "Injected load data into @state"
-					console.info "programs", programs.toJS()
 					@setState {
 						clientFile						
 						progressNoteHistories
@@ -404,15 +404,21 @@ load = (win, {clientFileId}) ->
 					}, cb
 
 		_killLocks: (cb=(->)) ->
-			console.log "Killing locks...."
+			console.log "Releasing any active locks/operations...."
+
 			if @state.clientFileLock?
+				console.log "Releasing existing lock..."
 				@state.clientFileLock.release(=>
 					@setState {clientFileLock: null}, =>
-						console.log "Lock killed!"
+						console.log "Lock released!"
 						cb()
 				)
 			else if @state.lockOperation?
+				console.log "Killing lockOperation..."
 				@state.lockOperation.cancel cb
+			else
+				console.log "None to release, closing..."
+				cb()
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
 			@setState (state) => {isLoading: true}
@@ -535,21 +541,33 @@ load = (win, {clientFileId}) ->
 
 				'create:progEvent': (newProgEvent) =>
 					return unless newProgEvent.get('clientFileId') is clientFileId
-					@setState (state) => progressEvents: state.progressEvents.push newProgEvent
+					progressEvents = @state.progressEvents.push newProgEvent
+					@setState {progressEvents}
 
-				'create:metric': (newMetric) =>
-					@setState (state) => metricsById: state.metricsById.set newMetric.get('id'), newMetric
+				'createRevision:progEvent': (newProgEventRev) =>
+					return unless newProgEventRev.get('clientFileId') is clientFileId
+					originalProgEvent = @state.progressEvents
+					.find (progEvent) -> progEvent.get('id') is newProgEventRev.get('id')
+
+					progEventIndex = @state.progressEvents.indexOf originalProgEvent
+					progressEvents = @state.progressEvents.set progEventIndex, newProgEventRev
+					@setState {progressEvents}
+
+				'create:metric createRevision:metric': (metricDefinition) =>
+					metricsById = @state.metricsById.set metricDefinition.get('id'), metricDefinition
+					@setState {metricsById}
 
 				'create:eventType': (newEventType) =>
-					@setState (state) => eventTypes: state.eventTypes.push newEventType
+					eventTypes = @state.eventTypes.push newEventType
+					@setState {eventTypes}
 
 				'createRevision:eventType': (newEventTypeRev) =>
 					originalEventType = @state.eventTypes
 					.find (eventType) -> eventType.get('id') is newEventTypeRev.get('id')
 					
 					eventTypeIndex = @state.eventTypes.indexOf originalEventType
-
-					@setState {eventTypes: @state.eventTypes.set(eventTypeIndex, newEventTypeRev)}
+					eventTypes = @state.eventTypes.set eventTypeIndex, newEventTypeRev
+					@setState {eventTypes}
 
 				'timeout:timedOut': =>
 					@_killLocks Bootbox.hideAll
@@ -647,6 +665,8 @@ load = (win, {clientFileId}) ->
 				return Moment createdAt, Persist.TimestampFormat
 			.reverse()
 
+			# Filter out cancelled progEvents
+
 			return R.div({className: 'clientFilePage animated fadeIn'},
 				Spinner({isOverlay: true, isVisible: @props.isLoading})
 
@@ -691,6 +711,9 @@ load = (win, {clientFileId}) ->
 					AnalysisTab.AnalysisView({
 						isVisible: activeTabId is 'analysis'
 						clientFileId
+						clientName
+						plan: @props.clientFile.get('plan')
+						planTargetsById: @props.planTargetsById
 						progNoteHistories: sortedProgNoteHistories
 						progEvents: @props.progressEvents
 						eventTypes: @props.eventTypes
@@ -727,7 +750,7 @@ load = (win, {clientFileId}) ->
 					)
 				)
 				R.div({className: 'programs'},
-					@props.programs.map (program) ->
+					(@props.programs.map (program) ->
 						R.span({
 							key: program.get('id')
 							style:
@@ -735,16 +758,7 @@ load = (win, {clientFileId}) ->
 						},
 							program.get('name')
 						)
-				)
-				R.div({className: 'programs'},
-					@props.programs.map (program) ->
-						R.span({
-							key: program.get('id')
-							style:
-								borderBottomColor: program.get('colorKeyHex')
-						},
-							program.get('name')
-						)
+					)
 				)
 				R.div({className: 'recordId'},
 					R.span({}, renderFileId @props.recordId, true)

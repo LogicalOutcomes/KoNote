@@ -13,7 +13,7 @@ note[2]: mainly tested on OSX; nwjs recommends building on native OS, so ymmv
 */
 
 // TODO:
-// bundle 7zip, resource_hacker, and codesign utility for windows?
+// bundle innosetup, resource_hacker and codesign utility for windows?
 
 var win = null;
 var mac = null;
@@ -151,6 +151,10 @@ module.exports = function(grunt) {
 			zip: {
 				cwd: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/win32',
 				cmd: 'zip -r --quiet ../../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
+			},
+			codesign: {
+				cwd: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/osx64',
+				cmd: '../../../../../../codesign-osx.sh'
 			}
 		},
 		appdmg: {
@@ -252,6 +256,7 @@ module.exports = function(grunt) {
 				grunt.task.run('coffee:compileMultiple:mac-generic');
 				grunt.task.run('clean:coffee:mac-generic');
 				grunt.task.run('nwjs:mac:mac-generic');
+				grunt.task.run('exec:codesign:mac-generic');
 				if (process.platform == 'darwin') {
 					grunt.task.run('appdmg:main:mac-generic');
 				}
@@ -260,10 +265,12 @@ module.exports = function(grunt) {
 				// do mac griffin build
 				grunt.task.run('copy:main:mac-griffin');
 				grunt.task.run('copy:production:mac-griffin');
+				grunt.task.run('copy:griffin:mac-griffin');
 				grunt.task.run('stylus:compile:mac-griffin');
 				grunt.task.run('coffee:compileMultiple:mac-griffin');
 				grunt.task.run('clean:coffee:mac-griffin');
 				grunt.task.run('nwjs:mac:mac-griffin');
+				grunt.task.run('exec:codesign:mac-griffin');
 				if (process.platform == 'darwin') {
 					grunt.task.run('appdmg:main:mac-griffin');
 				}

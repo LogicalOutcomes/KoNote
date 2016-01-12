@@ -129,6 +129,7 @@ class Lock
 			# Provides public operation.cancel(cb) method
 			cancel: (cb=(->)) -> 
 				isCancelled = true
+				console.log "Ended lock operation!"
 				cb()
 		}
 

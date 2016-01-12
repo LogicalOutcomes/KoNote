@@ -53,8 +53,6 @@ load = (win) ->
 			}
 
 		render: ->
-			console.info "@props.eventTypes", @props.eventTypes
-			
 			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
 				R.div({className: "toolbar #{showWhen @props.progNoteHistories.size > 0}"},
 					R.button({
@@ -276,6 +274,7 @@ load = (win) ->
 							OpenDialogLink({
 								dialog: CancelProgNoteDialog
 								progNote: @props.progNote
+								progEvents: @props.progEvents
 								disabled: @props.isReadOnly
 							},
 								R.a({className: 'cancel'},
@@ -326,6 +325,7 @@ load = (win) ->
 							OpenDialogLink({
 								dialog: CancelProgNoteDialog
 								progNote: @props.progNote
+								progEvents: @props.progEvents
 								disabled: @props.isReadOnly
 							},
 								R.a({className: 'cancel'},
@@ -339,36 +339,35 @@ load = (win) ->
 
 						switch unit.get('type')
 							when 'basic'
-								R.div({
-									className: [
-										'basic unit'
-										'selected' if @props.selectedItem? and @props.selectedItem.get('unitId') is unitId
-									].join ' '
-									key: unitId
-								},
-									if unit.get('notes')
+								if unit.get('notes')
+									R.div({
+										className: [
+											'basic unit'
+											'selected' if @props.selectedItem? and @props.selectedItem.get('unitId') is unitId
+										].join ' '
+										key: unitId
+									},
 										R.h3({
 											onClick: @_selectBasicUnit.bind null, unit
 										},
 											unit.get('name')
-											FaIcon('history')
 										)
-									R.div({className: 'notes'},
-										renderLineBreaks(unit.get('notes'))
+										R.div({className: 'notes'},
+											renderLineBreaks(unit.get('notes'))
+										)
+										unless unit.get('metrics').isEmpty()
+											R.div({className: 'metrics'},
+												(unit.get('metrics').map (metric) =>
+													MetricWidget({
+														isEditable: false
+														key: metric.get('id')
+														name: metric.get('name')
+														definition: metric.get('definition')
+														value: metric.get('value')
+													})
+												).toJS()...
+											)
 									)
-									unless unit.get('metrics').isEmpty()
-										R.div({className: 'metrics'},
-											(unit.get('metrics').map (metric) =>
-												MetricWidget({
-													isEditable: false
-													key: metric.get('id')
-													name: metric.get('name')
-													definition: metric.get('definition')
-													value: metric.get('value')
-												})
-											).toJS()...
-										)
-								)
 							when 'plan'
 								R.div({
 									className: 'plan unit'
@@ -403,7 +402,6 @@ load = (win) ->
 														)
 													},
 														target.get('name')
-														FaIcon('history')
 													)
 													R.div({className: "empty #{showWhen target.get('notes') is ''}"},
 														'(blank)'

@@ -47,7 +47,6 @@ load = (win, {clientFileId}) ->
 			}
 
 		init: ->
-			console.log "Init"
 			@_loadData()
 
 		deinit: (cb=(->)) ->
@@ -93,8 +92,8 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						@setState (state) =>
-							return {clientFile: revisions.first()}
+						clientFile = revisions.first()
+						@setState {clientFile}
 
 						cb null
 				(cb) =>
@@ -134,12 +133,12 @@ load = (win, {clientFileId}) ->
 
 					metricsById = Imm.Map()
 					Async.each requiredMetricIds.toArray(), (metricId, cb) =>
-						ActiveSession.persist.metrics.read metricId, (err, result) =>
+						ActiveSession.persist.metrics.readLatestRevisions metricId, 1, (err, result) =>
 							if err
 								cb err
 								return
 
-							metricsById = metricsById.set metricId, result
+							metricsById = metricsById.set metricId, result.first()
 							cb null
 					, cb
 				(cb) =>
@@ -173,15 +172,17 @@ load = (win, {clientFileId}) ->
 						cb()
 				(cb) =>
 					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
-						ActiveSession.persist.progEvents.read clientFileId, progEventHeader.get('id'), cb
+						ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEventHeader.get('id'), 1, cb
 					, (err, results) =>
 						if err
 							cb err
 							return
 
-						@setState {
-							progEvents: Imm.List(results)
-						}, cb
+						progEvents = Imm.List(results)
+						.map (progEvent) -> stripMetadata progEvent.first()
+
+						@setState {progEvents}
+						cb()
 				(cb) =>
 					ActiveSession.persist.eventTypes.list (err, result) =>
 						if err
@@ -307,16 +308,13 @@ load = (win, {clientFileId}) ->
 			}
 
 		suggestClose: ->
-			if @hasChanges() and not @state.showExitAlert
-				@setState {showExitAlert: true}
+			if @hasChanges()
 				Bootbox.dialog {
 					message: "Are you sure you want to cancel this #{Term('progress note')}?"
 					buttons: {						
 						cancel: {
 							label: "Cancel"
 							className: 'btn-default'
-							callback: =>
-								@setState {showExitAlert: false}
 						}
 						discard: {
 							label: "Yes"
@@ -330,9 +328,10 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		hasChanges: ->
-			unless Imm.is @props.progNote, @state.progNote
-				return true
-			return false
+			hasProgNotes = not Imm.is @props.progNote, @state.progNote
+			hasProgEvents = not @state.progEvents.isEmpty()
+
+			return hasProgNotes or hasProgEvents
 		
 		componentWillReceiveProps: (newProps) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
@@ -388,14 +387,13 @@ load = (win, {clientFileId}) ->
 
 			return R.div({className: 'newProgNotePage'},				
 				R.div({className: 'progNote'},
-
-					R.div({clssName: 'backdate'},
-						BackdateWidget({onChange: @_updateBackdate})
-						if @state.progNote.get('backdate')
-							R.span({}, "(back-dated entry)")
+					R.div({className: 'backdateContainer'},
+						BackdateWidget({
+							onChange: @_updateBackdate
+							message: @state.progNote.get('backdate') or false
+						})
 					)
 
-					R.hr({})
 					R.div({
 						className: [
 							'units'
@@ -411,11 +409,14 @@ load = (win, {clientFileId}) ->
 										key: unitId
 										className: [
 											'unit basic isEventRelatable'											
+											'hoveredEventPlanRelation' if Imm.is unit, @state.hoveredEventPlanRelation
 											'selectedEventPlanRelation' if Imm.is unit, @state.selectedEventPlanRelation
 										].join ' '										
-										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.selectedEventPlanRelation?
+										onMouseOver: @_hoverEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
+										onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
+										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
 									},
-										R.h1({className: 'name'}, unit.get 'name')
+										R.h1({className: 'unitName'}, unit.get 'name')
 										ExpandingTextArea({
 											value: unit.get('notes')
 											onFocus: @_selectBasicUnit.bind null, unit
@@ -438,19 +439,13 @@ load = (win, {clientFileId}) ->
 												})
 											).toJS()...
 										)
-										R.div({
-											className: 'events'
-											onClick: @_newEventTab.bind null, {unitId}
-										},
-											
-										)
 									)
 								when 'plan'
 									R.div({
 										className: 'unit plan'
 										key: unitId
 									},
-										R.h1({}, unit.get 'name')
+										R.h1({className: 'unitName'}, unit.get 'name')
 										R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
 											"This is empty because 
 											the client has no #{Term 'plan'} #{Term 'sections'}."
@@ -461,12 +456,12 @@ load = (win, {clientFileId}) ->
 											R.section({
 												key: sectionId												
 												className: [
-													'isEventPlanRelatable'
 													'hoveredEventPlanRelation' if Imm.is section, @state.hoveredEventPlanRelation
 													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
 												].join ' '
-												onMouseOver: @_hoverEventPlanRelation.bind(null, section)
-												onMouseOut: @_hoverEventPlanRelation.bind(null, null)
+												onMouseOver: @_hoverEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
+
+												onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
 												onClick: @_selectEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
 											},
 												R.h2({}, section.get 'name')
@@ -477,12 +472,12 @@ load = (win, {clientFileId}) ->
 													R.div({
 														key: targetId
 														className: [
-															'target isEventPlanRelatable'
+															'target'
 															'hoveredEventPlanRelation' if Imm.is target, @state.hoveredEventPlanRelation
 															'selectedEventPlanRelation' if Imm.is target, @state.selectedEventPlanRelation
 														].join ' '
-														onMouseOver: @_hoverEventPlanRelation.bind(null, target)
-														onMouseOut: @_hoverEventPlanRelation.bind(null, null)
+														onMouseOver: @_hoverEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
+														onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
 														onClick: @_selectEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
 													},
 														R.h3({}, target.get 'name')
@@ -522,22 +517,23 @@ load = (win, {clientFileId}) ->
 									)
 						).toJS()...
 					)
-					R.div({className: 'buttonRow'},
+
+					if @hasChanges()
 						R.button({
-							className: "save btn btn-primary #{'disabled' if @state.editingWhichEvent? or
-								not @hasChanges()}"
 							id: 'saveNoteButton'
-							onClick: @_save unless @state.editingWhichEvent? or not @hasChanges()
-						},
-							FaIcon 'check'
-							'Save'
+							className: 'btn btn-success btn-lg animated fadeInUp'
+							disabled: @state.editingWhichEvent?							
+							onClick: @_save
+						},							
+							"Save "
+							FaIcon('check')
 						)
-					)
 				)
 				ProgNoteDetailView({
 					item: @state.selectedItem
 					progNoteHistories: @props.progNoteHistories
 					progEvents: @props.progEvents
+					eventTypes: @props.eventTypes
 				})
 				R.div({className: 'eventsPanel'},
 					R.span({className: 'title'}, Term "Events")
@@ -565,6 +561,7 @@ load = (win, {clientFileId}) ->
 								)
 								EventTabView({
 									data: thisEvent
+									backdate: @state.progNote.get('backdate')
 									eventTypes: @props.eventTypes
 									atIndex: index
 									progNote: @state.progNote
@@ -575,6 +572,7 @@ load = (win, {clientFileId}) ->
 									updateEventPlanRelationMode: @_updateEventPlanRelationMode
 									selectedEventPlanRelation: @state.selectedEventPlanRelation
 									selectEventPlanRelation: @_selectEventPlanRelation
+									hoverEventPlanRelation: @_hoverEventPlanRelation
 								})
 							)
 						)
@@ -587,8 +585,8 @@ load = (win, {clientFileId}) ->
 				)
 			)
 
-		_newEventTab: (relatedId) ->			
-			newProgEvent = if relatedId? then {relatedId} else {}
+		_newEventTab: ->			
+			newProgEvent = {}
 			# Add in the new event, select last one
 			@setState {progEvents: @state.progEvents.push newProgEvent}, => 
 				@setState {editingWhichEvent: @state.progEvents.size - 1}
@@ -605,7 +603,11 @@ load = (win, {clientFileId}) ->
 			if _.isEmpty @state.progEvents.get(index)
 				@setState {progEvents: @state.progEvents.delete(index)}
 
-			@setState {editingWhichEvent: null}
+			@setState {
+				selectedEventPlanRelation: null
+				hoveredEventPlanRelation: null
+				editingWhichEvent: null
+			}
 
 		_selectEventPlanRelation: (selectedEventPlanRelation, event) ->
 			event.stopPropagation() if event?
@@ -681,11 +683,11 @@ load = (win, {clientFileId}) ->
 			}
 
 		_updateBackdate: (event) ->
-			newBackdate = Moment(event.date).format(Persist.TimestampFormat)
-			if Moment(event.date).format('YYYY-MM-DD-HH') is Moment().format('YYYY-MM-DD-HH')
-				@setState {progNote: @state.progNote.setIn ['backdate'], ''}
-			else
+			if event
+				newBackdate = Moment(event.date).format(Persist.TimestampFormat)
 				@setState {progNote: @state.progNote.setIn ['backdate'], newBackdate}
+			else
+				@setState {progNote: @state.progNote.setIn ['backdate'], ''}
 
 		_updateBasicNotes: (unitId, event) ->
 			newNotes = event.target.value
@@ -787,6 +789,7 @@ load = (win, {clientFileId}) ->
 						progEvent = Imm.fromJS(progEvent)
 						.set('relatedProgNoteId', progNoteId)
 						.set('clientFileId', clientFileId)
+						.set('status', 'default')
 
 						ActiveSession.persist.progEvents.create progEvent, cb
 
@@ -817,6 +820,9 @@ load = (win, {clientFileId}) ->
 				format: 'MMM-DD-YYYY h:mm A'
 				defaultDate: Moment()
 				maxDate: Moment()
+				sideBySide: true
+				showClose: true
+				toolbarPlacement: 'bottom'
 				widgetPositioning: {
 					vertical: 'bottom'
 				}
@@ -826,14 +832,20 @@ load = (win, {clientFileId}) ->
 			return R.div({className: 'input-group'},
 				R.input({
 					ref: 'backdate'
-					className: 'form-control backdate date'
-				},
-					R.span({className: 'input-group-addon'}
-						FaIcon('calendar')
+					className: 'backdate date btn btn-default'
+				})
+				if @props.message
+					R.span({
+						className: 'text-danger btn'
+						onClick: =>
+							$(@refs.backdate).val(Moment().format('MMM-DD-YYYY h:mm A'))
+							@props.onChange null
+						title: 'Remove Backdate'
+					},
+						'Backdated '
+						FaIcon('times')
 					)
-				)
 			)
-
 
 	return NewProgNotePage
 

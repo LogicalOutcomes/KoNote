@@ -11,10 +11,6 @@
 	},
 	
 	"dataDirectory": "data",
-
-	"analysis": {
-		"minDaysOfData": 1
-	},
 	
 	"timeout": {
 		"duration": 25,
@@ -39,8 +35,8 @@
 
 		"section": "section",
 		"plan": "plan",
-		"target": "goal",
-		"plan target": "plan goal",
+		"target": "target",
+		"plan target": "plan target",
 		"treatment plan": "treatment plan",
 
 		"progress note": "progress note",

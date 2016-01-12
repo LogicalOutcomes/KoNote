@@ -38,6 +38,8 @@ load = (win) ->
 				newProgram = program.set 'numberClients', numberClients
 				return newProgram
 
+			isAdmin = global.ActiveSession.isAdmin()
+
 			return R.div({className: 'programManagerTab'},
 				R.div({className: 'header'},
 					R.h1({}, Term 'Programs')
@@ -86,6 +88,7 @@ load = (win) ->
 								name: "Options"
 								nameIsVisible: false
 								cellClass: 'optionsCell'
+								isDisabled: not isAdmin
 								buttons: [
 									{
 										className: 'btn btn-warning'
@@ -100,19 +103,20 @@ load = (win) ->
 						]
 					})
 				)
-				R.div({className: 'optionsMenu'},
-					OpenDialogLink({
-						className: 'btn btn-lg btn-primary'
-						dialog: CreateProgramDialog
-						data: {
-							clientFileHeaders: @props.clientFileHeaders
-						}
-					},
-						FaIcon('plus')
-						' '
-						"New #{Term 'Program'} "
+				if isAdmin
+					R.div({className: 'optionsMenu'},
+						OpenDialogLink({
+							className: 'btn btn-lg btn-primary'
+							dialog: CreateProgramDialog
+							data: {
+								clientFileHeaders: @props.clientFileHeaders
+							}
+						},
+							FaIcon('plus')
+							' '
+							"New #{Term 'Program'} "
+						)
 					)
-				)
 			)	
 
 	CreateProgramDialog = React.createFactory React.createClass
@@ -385,76 +389,12 @@ load = (win) ->
 				onClose: @props.onClose
 			},
 				R.div({className: 'manageProgramClientsDialog'},
-					R.div({className: 'clientPicker panel panel-default'},
-						R.div({className: 'panel-heading'}
-							R.label({}, "Search")
-							R.input({
-								className: 'form-control'
-								placeholder: "by #{Term 'client'} name" + 
-								(" or #{Config.clientFileRecordId.label}" if Config.clientFileRecordId?)
-								onChange: @_updateSearchQuery
-								ref: 'clientSearchBox'
-							})
-						)
-						(if searchResults.isEmpty()
-							R.div({className: 'panel-body noData'}, 
-								"No #{Term 'client'} matches for \"#{@state.searchQuery}\""
-							)
-						else
-							R.table({className: 'panel-body table'},
-								R.thead({},
-									R.tr({},
-										R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
-										R.td({colSpan: 2}, "#{Term 'Client'} Name")
-									)
-								)
-								R.tbody({},
-									(searchResults.map (result) =>
-										clientFileId = result.get('id')
-										recordId = result.get('recordId')
-
-										clientIsEnrolled = enrolledLinks.find (link) ->													
-											link.get('clientFileId') is clientFileId
-
-										R.tr({key: clientFileId},
-											if Config.clientFileRecordId?
-												R.td({}, 
-													(if recordId.length > 0
-														recordId
-													else
-														R.div({className: 'noId'}, "n/a")
-													)
-												)
-											R.td({}, renderName result.get('clientName'))
-											R.td({},
-												(if clientIsEnrolled?											
-													R.button({
-														className: 'btn btn-danger btn-sm'
-														onClick: @_unenrollClient.bind null, clientFileId
-													},
-														FaIcon('minus')
-													)
-												else
-													R.button({
-														className: 'btn btn-default btn-sm'
-														onClick: @_enrollClient.bind null, clientFileId
-													},
-														FaIcon('plus')
-													)
-												)
-											)
-										)
-									)
-								)
-							)
-						)
-					)
-					R.div({className: 'programClients panel panel-default'},
-						R.div({className: 'panel-heading'}, 
+					R.div({className: 'programClients'},
+						R.div({className: 'panel-heading'},
 							R.h3({className: 'panel-title'},
 								if not enrolledLinks.isEmpty()
 									R.span({className: 'badge'}, enrolledLinks.size)
-								@props.rowData.get('name')
+								"Current Members"
 							)
 						)
 						(if enrolledLinks.isEmpty()
@@ -465,7 +405,7 @@ load = (win) ->
 							R.table({className: 'panel-body table table-striped'}
 								R.thead({},
 									R.tr({},
-										R.td({}, Config.clientFileRecordId) if Config.clientFileRecordId?
+										R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
 										R.td({colSpan: 2}, "#{Term 'Client'} Name")
 									)
 								)
@@ -499,8 +439,66 @@ load = (win) ->
 							)
 						)
 					)
+					R.div({className: 'clientPicker panel panel-default'},
+						R.div({className: 'panel-heading'}
+							R.label({}, "Search")
+							R.input({
+								className: 'form-control'
+								placeholder: "by #{Term 'client'} name" + 
+								(" or #{Config.clientFileRecordId.label}" if Config.clientFileRecordId?)
+								onChange: @_updateSearchQuery
+								ref: 'clientSearchBox'
+							})
+						)
+						(if searchResults.isEmpty()
+							R.div({className: 'panel-body noData'}, 
+								"No #{Term 'client'} matches for \"#{@state.searchQuery}\""
+							)
+						else
+							R.table({className: 'panel-body table'},
+								R.thead({},
+									R.tr({},
+										R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
+										R.td({colSpan: 2}, "#{Term 'Client'} Name")
+									)
+								)
+								R.tbody({},
+									(searchResults.map (result) =>
+										clientFileId = result.get('id')
+										recordId = result.get('recordId')
+
+										clientIsEnrolled = enrolledLinks.find (link) ->													
+											link.get('clientFileId') is clientFileId
+
+										R.tr({key: clientFileId},
+											if Config.clientFileRecordId?
+												R.td({}, 
+													(if recordId.length > 0
+														recordId
+													else
+														R.div({className: 'noId'}, "n/a")
+													)
+												)
+											R.td({}, renderName result.get('clientName'))
+											R.td({},
+												R.button({
+													className: 'btn btn-success btn-sm'
+													style: {
+														visibility: 'hidden' if clientIsEnrolled?
+													}
+													onClick: @_enrollClient.bind null, clientFileId
+												},
+													FaIcon('plus')
+												)
+											)
+										)
+									)
+								)
+							)
+						)
+					)					
 				)
-				R.div({className: 'btn-toolbar'},
+				R.div({className: 'btn-toolbar pull-right'},
 					R.button({
 						className: 'btn btn-default'
 						onClick: @props.onCancel
@@ -511,7 +509,7 @@ load = (win) ->
 						className: 'btn btn-success btn-large'
 						onClick: @_submit
 					}, 
-						"Finished"
+						"Finished "
 						FaIcon('check')
 					)
 				)

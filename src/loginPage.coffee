@@ -37,14 +37,7 @@ load = (win) ->
 			}
 
 		init: ->
-			if Config.autoLogin?
-				@_autoLogin()
-				return
-
 			@_checkSetUp()
-
-		_autoLogin: ->
-			@_login Config.autoLogin.userName, Config.autoLogin.password
 
 		deinit: (cb=(->)) ->
 			@setState {isLoading: false}, cb
@@ -97,13 +90,14 @@ load = (win) ->
 					}
 				}, =>
 					@state.newInstallationWindow.on 'close', (event) =>
-						if global.isNewSetUp
+						if global.isSetUp
 							# Successfully installed, show login with isNewSetUp
 							@setState {
 								isSetUp: true
 								isNewSetUp: true
 							}
 						else
+
 							# Didn't complete installation, so close
 							win.close(true)
 
@@ -191,11 +185,6 @@ load = (win) ->
 					throw new Error "Invalid Login Error"
 
 		render: ->
-			if Config.autoLogin?
-				return R.div({className: 'loginPage'},
-					R.div({className: 'autoLogin'}, "Auto-Login Enabled . . .")
-				)
-
 			return R.div({className: 'loginPage animated fadeIn'},
 				Spinner({
 					isVisible: @props.isLoading
@@ -242,10 +231,11 @@ load = (win) ->
 							})
 						)
 						R.div({className: 'btn-toolbar'},
-							R.button({
-								className: 'btn btn-link'
-								onClick: @_forgotPassword
-							}, "Forgot Password?")
+							#TODO: password reminder
+#							R.button({
+#								className: 'btn btn-link'
+#								onClick: @_forgotPassword
+#							}, "Forgot Password?")
 							R.button({
 								className: [
 									'btn'

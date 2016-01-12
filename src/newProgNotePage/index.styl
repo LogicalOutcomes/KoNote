@@ -1,45 +1,92 @@
-#container > .newProgNotePage
+.newProgNotePage
+	
 	display flex
-
 	height 100%
-	
-	.eventPlanRelationMode
-		background #eee
+
+	.bootstrap-datetimepicker-widget
+		&.dropdown-menu
+			&.timepicker-sbs
+				width 30em
+		span
+			width 24px
+
+	.timepicker-hour, .timepicker-minute, .timepicker-second
+		width 24px
 		
-		.hoveredEventPlanRelation
-			background yellow
-	
-		.selectedEventPlanRelation
-			background green !important	
-			
-	.selectedEventPlanRelation
-		color blue !important
+	.backdateMessage
+		text-align center
+		color red
+		padding 15px
+		padding-bottom 0px	
 
 	> .loadError
 		width 100%
-
 		padding 200px
-
+		
 		text-align center
 
 		> div
 			> .btn
 				margin 50px
+				
+	.backdateContainer
+		padding 20px
+		
+
+	// Main ProgNote Area	
 
 	> .progNote
 		flex 1
+		position relative
 		overflow auto
-
-		padding 20px
 		
-		.btn > .fa
-			padding-right 8px
+
+		// Event Relation Selection Mode
 			
-		.units
+		.eventPlanRelationMode
+			// TODO
+			
+			.hoveredEventPlanRelation
+				background #eee !important
+				border-color #D0D0D0 !important
+		
+		.selectedEventPlanRelation
+			background #C1F2C1 !important
+			border-color #A5D3A5 !important
+			
+
+		// Regular ProgNote Styles
+			
+		h1
+			text-align center
+			font-size 26px
+			font-weight 300
+			
+		h2
+			margin-top 0
+			font-size 22px
+			padding-bottom 5px
+			font-weight 600
+			border-bottom 1px solid #eee
+			
+		h3
+			margin-top 5px
+			font-size 18px
+			
+		.units			
+			border-top 1px solid #eee
+			padding-bottom 80px
+			
+			.unit, section, .target
+				border 1px solid transparent // Colored by eventPlanRelation
 			
 			.unit
+				padding-bottom 15px
 
 				&.basic
+					padding-right 15px
+					padding-left 15px
+					
 					> .metrics
 						display flex
 						flex-wrap wrap
@@ -51,13 +98,19 @@
 						> .metricWidget
 							margin 3px
 
-				&.plan
+				&.plan					
+					
 					> .empty
 						padding 0 2px
 						color #888
 						
 					> section
+						padding 20px
+						
 						> .target
+							padding 10px
+							border-radius 5px
+							
 							> .name
 								margin 10px 0 5px
 
@@ -74,12 +127,18 @@
 								padding-top 5px
 
 								> .metricWidget
-									margin 3px
-
-		> .buttonRow
-			padding 20px
-
-			text-align center
+									margin 3px	
+			
+		#saveNoteButton
+			position fixed
+			bottom 10px
+			left 15%
+			width 150px
+			border 2px solid white
+			
+			.fa
+				font-size 20px
+				margin-left 10px
 
 	> .progNoteDetailView
 		flex 1
@@ -142,6 +201,4 @@
 						display block						
 						
 				&:hover > .eventView
-					z-index 9999
-						
-					
+					z-index 1000

@@ -507,7 +507,7 @@ load = (win) ->
 				(plan.get('sections').map (section) =>
 					headerState = 'inline'
 
-					if @state.sectionOffsets
+					if @state.sectionOffsets and @state.sectionOffsets.get(section.get('id'))
 						scrollTop = @state.sectionsScrollTop
 						sectionOffset = @state.sectionOffsets.get(section.get('id'))
 

@@ -76,7 +76,7 @@ load = (win) ->
 			@refs.dialog.setIsLoading true
 
 			global.ActiveSession.confirmPassword @state.password, (err, result) =>
-				@refs.dialog.setIsLoading false
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
 					if err instanceof Persist.Session.DeactivatedAccountError

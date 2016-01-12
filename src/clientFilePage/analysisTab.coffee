@@ -23,6 +23,7 @@ load = (win) ->
 	{TimestampFormat} = require('../persist/utils')
 
 	Slider = require('../slider').load(win)
+	Chart = require('./chart').load(win)
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 	TimeGranularities = ['Day', 'Week', 'Month', 'Year']
@@ -33,10 +34,12 @@ load = (win) ->
 			return {
 				hasEnoughData: null
 				daysOfData: null
-
+				targetMetricsById: Imm.Map()
 				metricValues: null				
 				selectedMetricIds: Imm.Set()
-				selectedProgEventIds: Imm.Set()
+				filteredProgEvents: Imm.Set()
+				selectedEventTypeIds: Imm.Set()
+				excludedTargetIds: Imm.Set()
 				xTicks: Imm.List()
 				xDays: Imm.List()
 				timeSpan: null
@@ -52,14 +55,36 @@ load = (win) ->
 			unless Imm.is oldProps.metricsById, @props.metricsById
 				@_generateAnalysis()
 
+			unless Imm.is oldProps.planTargetsById, @props.planTargetsById
+				console.log "Plan targets, regenerating..."
+				@_generateAnalysis()
+
 			unless Imm.is oldProps.progEvents, @props.progEvents
 				@_generateAnalysis()
 
 			unless Imm.is oldProps.progNoteHistories, @props.progNoteHistories
 				@_generateAnalysis()
 
-		_generateAnalysis: ->			
+			unless Imm.is oldState.selectedEventTypeIds, @state.selectedEventTypeIds
+				@_generateAnalysis()
+
+		_generateAnalysis: ->
 			console.log "Generating Analysis...."
+
+			# Build targets list as targetId:[metricIds]
+			targetMetricsById = @props.plan.get('sections').flatMap (section) =>
+				section.get('targetIds').map (targetId) =>
+					target = @props.planTargetsById.getIn([targetId, 'revisions']).first()
+					return [target.get('id'), target.get('metricIds')]
+				.fromEntrySeq().toMap()
+			.fromEntrySeq().toMap()
+
+			# Figure out metrics not currently part of the plan (inactive)
+			targetMetricsList = targetMetricsById.toList().flatten(true)
+
+			inactiveMetrics = @props.metricsById.filterNot (metric, metricId) =>
+				targetMetricsList.contains metricId
+			.toList()
 
 			# All non-empty metric values
 			metricValues = @props.progNoteHistories
@@ -71,10 +96,10 @@ load = (win) ->
 					when 'cancelled'
 						return false
 					else
-						throw new Error "unknown prognote status: #{progNoteHist.last().get('status')}"
+						throw new Error "unknown progNote status: #{progNoteHist.last().get('status')}"
 			.flatMap (progNoteHist) ->
 				return extractMetricsFromProgNoteHistory progNoteHist
-			.filter (metricValue) -> # remove blank metrics
+			.filter (metricValue) -> # Remove blank metrics
 				return metricValue.get('value').trim().length > 0
 
 			# All metric IDs for which this client file has data
@@ -82,23 +107,38 @@ load = (win) ->
 			.map (m) -> m.get 'id'
 			.toSet()
 
-			# All event IDs
+			# Build set list of progEvent Ids
 			progEventIdsWithData = @props.progEvents
-			.map (e) -> e.get 'id'
+			.map (progEvent) -> progEvent.get 'id'
 			.toSet()
+
+			# Filter out progEvents that aren't cancelled or excluded
+			filteredProgEvents = @props.progEvents
+			.filter (progEvent) =>				
+				switch progEvent.get('status')
+					when 'default'
+						return true
+					when 'cancelled'
+						return false
+					else
+						throw new Error "unkown progEvent status: #{progEvent.get('status')}"
+			.filter (progEvent) =>
+				if progEvent.get('typeId')
+					@state.selectedEventTypeIds.contains progEvent.get('typeId')
+				else
+					@state.selectedEventTypeIds.contains null
 
 			# Build list of timestamps from progEvents (start & end) & metrics
 			timestampDays = Imm.List()
-			.concat @props.progEvents.map (progEvent) ->
+			.concat filteredProgEvents.map (progEvent) ->
 				Moment(progEvent.get('startTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
-			.concat @props.progEvents.map (progEvent) ->
+			.concat filteredProgEvents.map (progEvent) ->
 				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat metricValues.map (metric) ->
-				Moment(metric.get('timestamp'), Persist.TimestampFormat).startOf('day').valueOf()
-			.concat metricValues.map (metric) ->
-				Moment(metric.get('backdate'), Persist.TimestampFormat).startOf('day').valueOf()
-			# Filter to unique days, and sort
-			.toOrderedSet().sort()
+				# Account for backdate, else normal timestamp
+				metricTimestamp = metric.get('backdate') or metric.get('timestamp')
+				return Moment(metricTimestamp, Persist.TimestampFormat).startOf('day').valueOf()
+			.toOrderedSet().sort() # Filter to unique days, and sort
 
 			# Determine earliest & latest days
 			firstDay = Moment timestampDays.first()
@@ -109,6 +149,7 @@ load = (win) ->
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
+			# Synchronous to ensure this happens before render
 			@setState => {
 				xDays: xTicks
 				daysOfData: timestampDays.size
@@ -116,20 +157,22 @@ load = (win) ->
 				xTicks
 				metricIdsWithData, metricValues
 				progEventIdsWithData
-			}
+				filteredProgEvents
+				inactiveMetrics
+				targetMetricsById
+			}		
 
 		render: ->
-			hasEnoughData = @state.daysOfData >= Config.analysis.minDaysOfData
+			hasEnoughData = @state.daysOfData > 0
+			untypedEvents = @props.progEvents.filterNot (progEvent) => progEvent.get('typeId')
 
 			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
 				R.div({className: "noData #{showWhen not hasEnoughData}"},
 					R.div({},
 						R.h1({}, "More Data Needed")
 						R.div({},
-							"Sorry, #{Config.analysis.minDaysOfData - @state.daysOfData} 
-							more days of #{Term 'progress notes'} containing 
-							#{Term 'metrics'} or #{Term 'events'} 
-							are required before I can chart anything meaningful here."
+							"Analytics will show up here once #{Term 'metrics'} or #{Term 'events'} 
+							have been recorded in a #{Term 'progress note'} for #{@props.clientName}."
 						)
 					)
 				)
@@ -164,17 +207,21 @@ load = (win) ->
 				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
 					R.div({className: 'chartContainer'},
 						# Force chart to be re-rendered when tab is opened
-						if @props.isVisible and @_enoughDataToDisplay()
+						if @props.isVisible and (
+							not @state.filteredProgEvents.isEmpty() or
+							not @state.selectedMetricIds.isEmpty()
+						)
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
-								progEvents: @props.progEvents
+								progEvents: @state.filteredProgEvents
+								eventTypes: @props.eventTypes
 								metricsById: @props.metricsById
-								metricValues: @state.metricValues
+								metricValues: @state.metricValues								
 								xTicks: @state.xTicks
-								selectedMetricIds: @state.selectedMetricIds	
-								selectedProgEventIds: @state.selectedProgEventIds
+								selectedMetricIds: @state.selectedMetricIds
 								timeSpan: @state.timeSpan
+								updateMetricColors: @_updateMetricColors
 							})
 						else
 							# Don't render Chart until data points selected
@@ -189,88 +236,227 @@ load = (win) ->
 							)
 					)
 					R.div({className: 'selectionPanel'},
-						R.div({className: 'dataType progEvents'}
-							R.h2({}, Term 'Events')
+						R.div({className: 'dataType progEvents'},							
+							progEventsAreSelected = not @state.selectedEventTypeIds.isEmpty()
+							allEventTypesSelected = @state.selectedEventTypeIds.size is (@props.eventTypes.size + 1)
 
-							R.div({className: 'dataOptions'},
-								R.div({className: 'checkbox selectAll'},
-									allProgEventsSelected = Imm.is(
-										@state.selectedProgEventIds, @state.progEventIdsWithData
-									)
-
-									R.label({},
-										R.input({
-											type: 'checkbox'
-											onChange: @_toggleAllProgEvents.bind null, allProgEventsSelected
-											checked: allProgEventsSelected
-										})
-										"All #{Term 'Events'}"
-									)
+							R.h2({
+								onClick: @_toggleAllEventTypes.bind null, allEventTypesSelected
+							},
+								R.span({className: 'helper'}
+									"Select "
+									if allEventTypesSelected then "None" else "All"
 								)
-							)							
-						)	
-						R.div({className: 'dataType metrics'}
-							R.h2({}, Term 'Metrics')
-							R.div({className: 'dataOptions'},
-								(@state.metricIdsWithData.map (metricId) =>
-									metric = @props.metricsById.get(metricId)
+								R.input({
+									type: 'checkbox'
+									checked: progEventsAreSelected
+								})
+								Term 'Events'
+							)
 
-									R.div({
-										className: 'checkbox'
-										key: metricId
-									},
-										R.label({},
-											R.input({
-												ref: metric.get 'id'
-												type: 'checkbox'
-												onChange: @_updateSelectedMetrics.bind null, metricId
-												checked: @state.selectedMetricIds.contains metricId
-											})
-											metric.get('name')
-										)
-									)
-								).toJS()...
-								R.div({
-									className: [
-										"checkbox selectAll"
-										showWhen @state.metricIdsWithData.size > 1
-									].join ' '
-								},
-									allMetricsSelected = Imm.is(
-										@state.selectedMetricIds, @state.metricIdsWithData
-									)
-
-									R.label({},
-										R.input({
-											type: 'checkbox'
-											onChange: @_toggleAllMetrics.bind null, allMetricsSelected
-											checked: allMetricsSelected
-										})
-										"All #{Term 'Metrics'}"
-									)
+							(if @props.progEvents.isEmpty()
+								R.div({className: 'noData'},
+									"No #{Term 'events'} have been recorded yet."
 								)
 							)
-						)						
+
+							(unless @props.eventTypes.isEmpty()
+								[
+									R.h3({}, Term 'Event Types')
+									R.div({className: 'dataOptions'},
+										(@props.eventTypes.map (eventType) =>
+											eventTypeId = eventType.get('id')
+
+											R.div({
+												className: 'checkbox'
+												key: eventTypeId
+												style:
+													borderRight: "5px solid #{eventType.get('colorKeyHex')}"
+											},
+												R.label({},
+													R.input({
+														type: 'checkbox'
+														checked: @state.selectedEventTypeIds.contains eventTypeId
+														onChange: @_updateSelectedEventTypes.bind null, eventTypeId
+													})
+													eventType.get('name')
+												)
+											)
+										)								
+									)
+								]
+							)							
+
+							(unless untypedEvents.isEmpty()
+								[
+									R.h3({}, "Other")
+									R.div({className: 'dataOptions'},
+										R.div({className: 'checkbox'},
+											R.label({},
+												R.input({
+													type: 'checkbox'
+													checked: @state.selectedEventTypeIds.contains null
+													onChange: @_updateSelectedEventTypes.bind null, null
+												})													
+												"(#{untypedEvents.size}) "
+												Term (if untypedEvents.size is 1 then 'Event' else 'Events')
+											)
+										)
+									)
+								]
+							)
+						)
+
+						R.div({className: 'dataType metrics'},
+							metricsAreSelected = not @state.selectedMetricIds.isEmpty()
+							allMetricsSelected = Imm.is @state.selectedMetricIds, @state.metricIdsWithData
+
+							R.h2({
+								onClick: @_toggleAllMetrics.bind null, allMetricsSelected
+							},
+								R.span({className: 'helper'}
+									"Select "
+									if allMetricsSelected then "None" else "All"
+								)
+								R.input({
+									type: 'checkbox'
+									checked: metricsAreSelected
+								})
+								Term 'Metrics'
+							)
+
+							R.h3({}, "Plan")
+							R.div({className: 'dataOptions'},
+								(@props.plan.get('sections').map (section) =>
+									[
+										R.h4({}, section.get('name'))
+										R.section({key: section.get('id')},
+											(section.get('targetIds').map (targetId) =>
+												target = @props.planTargetsById.getIn([targetId, 'revisions']).first()
+
+												R.div({
+													key: targetId
+													className: 'target'
+												},
+													console.log "@state.targetMetricsById", @state.targetMetricsById
+
+													R.h5({}, target.get('name'))
+
+													# TODO Figure out why targetId is occasionally late to the party
+													if @state.targetMetricsById.get(targetId)
+														(@state.targetMetricsById.get(targetId).map (metricId) =>
+
+															metric = @props.metricsById.get(metricId)
+
+															R.div({
+																key: metricId
+																className: 'checkbox metric'
+																style:
+																	borderRight: (
+																		if @state.metricColors?
+																			chartMetricId = 
+																			metricColor = @state.metricColors["y-#{metric.get('id')}"]
+																			"5px solid #{metricColor}"
+																	)
+															},
+																R.label({},
+																	R.input({
+																		type: 'checkbox'
+																		onChange: @_updateSelectedMetrics.bind null, metricId
+																		checked: @state.selectedMetricIds.contains metricId
+																	})
+																	metric.get('name')
+																)
+															)
+														)
+
+												)
+											)
+										)
+									]
+								)
+							)
+
+							(unless @state.inactiveMetrics.isEmpty()
+								[
+									R.h3({}, "Inactive")
+									R.div({className: 'dataOptions'},
+										(@state.inactiveMetrics.map (metric) =>
+
+											metricId = metric.get('id')
+
+											R.div({
+												className: 'checkbox metric'
+												key: metricId
+												style:
+													borderRight: (
+														if @state.metricColors?
+															chartMetricId = 
+															metricColor = @state.metricColors["y-#{metric.get('id')}"]
+															"5px solid #{metricColor}"
+													)
+											},
+												R.label({},
+													R.input({
+														type: 'checkbox'
+														onChange: @_updateSelectedMetrics.bind null, metricId
+														checked: @state.selectedMetricIds.contains metricId
+													})
+													metric.get('name')
+												)
+											)
+										)
+									)
+								]
+							)
+						)
 					)
 				)
 			)
 
-		_enoughDataToDisplay: ->
-			@state.selectedMetricIds.size > 0 or @state.selectedProgEventIds.size > 0
-
-		_toggleAllProgEvents: (allProgEventsSelected) ->
-			@setState ({selectedProgEventIds}) =>
-				if allProgEventsSelected
-					selectedProgEventIds = @state.selectedProgEventIds.clear()
+		_toggleTargetExclusionById: (targetId) ->
+			@setState ({excludedTargetIds}) =>
+				if excludedTargetIds.contains targetId
+					excludedTargetIds = excludedTargetIds.delete targetId
 				else
-					selectedProgEventIds = @state.progEventIdsWithData
+					excludedTargetIds = excludedTargetIds.add targetId
 
-				return {selectedProgEventIds}
+				return {excludedTargetIds}
+
+		_toggleTargetExclusionBySection: (targetIds, sectionHasTargetExclusions) ->
+			@setState ({excludedTargetIds}) =>
+				if sectionHasTargetExclusions
+					excludedTargetIds = excludedTargetIds.subtract targetIds
+				else
+					excludedTargetIds = excludedTargetIds.union targetIds
+
+				return {excludedTargetIds}
+
+		_updateSelectedEventTypes: (eventTypeId) ->
+			@setState ({selectedEventTypeIds}) =>
+				if selectedEventTypeIds.contains eventTypeId
+					selectedEventTypeIds = selectedEventTypeIds.delete eventTypeId
+				else
+					selectedEventTypeIds = selectedEventTypeIds.add eventTypeId
+
+				return {selectedEventTypeIds}
+
+		_toggleAllEventTypes: (allEventTypesSelected) ->
+			@setState ({selectedEventTypeIds}) =>
+				unless allEventTypesSelected
+					selectedEventTypeIds = @props.eventTypes
+					.map (eventType) -> eventType.get('id') # all evenTypes
+					.push(null) # null = progEvents without an eventType
+					.toSet()
+				else
+					selectedEventTypeIds = selectedEventTypeIds.clear()
+
+				return {selectedEventTypeIds}
 
 		_toggleAllMetrics: (allMetricsSelected) ->
 			@setState ({selectedMetricIds}) =>
 				if allMetricsSelected
-					selectedMetricIds = @state.selectedMetricIds.clear()
+					selectedMetricIds = selectedMetricIds.clear()
 				else
 					selectedMetricIds = @state.metricIdsWithData
 
@@ -285,344 +471,18 @@ load = (win) ->
 
 				return {selectedMetricIds}
 
+		_metricIsExcluded: (metricId) ->
+			targetId = @state.targetMetricsById.findKey (target) =>
+				target.contains metricId
+			
+			return targetId? and @state.excludedTargetIds.contains(targetId)
+
 		_updateTimeSpan: (event) ->
 			timeSpan = event.target.value.split(",")
 			@setState {timeSpan}
 
-
-	Chart = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]
-
-		getInitialState: ->
-			return {
-				progEventRegions: Imm.List()
-			}
-
-		render: ->
-			return R.div({className: 'chartInner'},
-				R.div({
-					id: 'eventInfo'
-					ref: 'eventInfo'
-				},
-					R.div({className: 'title'})
-					R.div({className: 'info'}
-						R.div({className: 'description'})
-						R.div({className: 'timeSpan'},
-							R.div({className: 'start'})
-							R.div({className: 'end'})
-						)
-					)
-				)
-				R.div({
-					className: "chart"
-					ref: 'chartDiv'
-				})
-			)
-
-		componentDidUpdate: (oldProps, oldState) ->
-			# TODO: Sort out repetition here, like parent component
-
-			# Update selected metrics?
-			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
-			unless sameSelectedMetrics
-				@_refreshSelectedMetrics()
-
-			# Update selected progEvents?
-			sameSelectedProgEvents = Imm.is @props.selectedProgEventIds, oldProps.selectedProgEventIds
-			unless sameSelectedProgEvents
-				@_refreshSelectedProgEvents()
-
-			# Update selected progNotes?
-			sameMetricValues = Imm.is @props.metricValues, oldProps.metricValues
-			unless sameMetricValues
-				@_refreshSelectedProgEvents()
-
-			# Update timeSpan?
-			sameTimeSpan = @props.timeSpan is oldProps.timeSpan
-			unless sameTimeSpan
-				@_chart.axis.min {x: @props.xTicks.get @props.timeSpan[0]}
-				@_chart.axis.max {x: @props.xTicks.get @props.timeSpan[1]}
-
-				
-		componentDidMount: ->			
-			@_generateChart()
-			@_refreshSelectedMetrics()
-			@_refreshSelectedProgEvents()
-
-		_generateChart: ->
-			console.log "Generating Chart...."
-			# Create a Map from metric ID to data series,
-			# where each data series is a sequence of [x, y] pairs
-			dataSeries = @props.metricValues
-			.groupBy (metricValue) -> # group by metric
-				return metricValue.get('id')
-			.map (metricValues) -> # for each data series
-				return metricValues.map (metricValue) -> # for each data point
-					# [x, y]
-					return [metricValue.get('timestamp'), metricValue.get('value')]
-
-			seriesNamesById = dataSeries.keySeq().map (metricId) =>
-				return [metricId, @props.metricsById.get(metricId).get('name')]
-			.fromEntrySeq().toMap()
-
-			# Create set to show which x maps to which y
-			xsMap = dataSeries.keySeq()
-			.map (seriesId) ->
-				return ['y-' + seriesId, 'x-' + seriesId]
-			.fromEntrySeq().toMap()
-
-
-			dataSeriesNames = dataSeries.keySeq()
-			.map (seriesId) =>
-				return ['y-' + seriesId, seriesNamesById.get(seriesId)]
-			.fromEntrySeq().toMap()
-			
-
-			dataSeries = dataSeries.entrySeq().flatMap ([seriesId, dataPoints]) ->
-				xValues = Imm.List(['x-' + seriesId]).concat(
-					dataPoints.map ([x, y]) -> x
-				)
-				yValues = Imm.List(['y-' + seriesId]).concat(
-					dataPoints.map ([x, y]) -> y
-				)
-				return Imm.List([xValues, yValues])
-
-			scaledDataSeries = dataSeries.map (metric) ->
-				# Filter out id's to figure out min & max
-				values = metric.flatten().filterNot (y) -> isNaN(y)
-				.map (val) -> return Number(val)
-
-				# Figure out min and max metric values
-				min = values.min()
-				max = values.max()
-
-				# Center the line vertically if constant value
-				if min is max
-					min -= 1
-					max += 1
-
-				scaleFactor = max - min			
-
-				# Map scaleFactor on to numerical values
-				return metric.map (dataPoint) ->
-					return dataPoint if isNaN(dataPoint)
-					(dataPoint - min) / scaleFactor
-					
-
-			# YEAR LINES
-			# Build Imm.List of years and timestamps to matching
-			newYearLines = Imm.List()
-			firstYear = @props.xTicks.first().year()
-			lastYear = @props.xTicks.last().year()
-
-			# Don't bother if only 1 year (doesn't go past calendar year)
-			unless firstYear is lastYear
-				newYearLines = Imm.List([firstYear..lastYear]).map (year) =>
-					return {
-						value: Moment().year(year).startOf('year')
-						text: year
-						position: 'middle'
-						class: 'yearLine'
-					}			
-
-
-			# Generate and bind the chart
-			@_chart = C3.generate {						
-					bindto: @refs.chartDiv
-					grid: {
-						x: {
-							lines: newYearLines.toJS()
-						}
-					}
-					axis: {
-						x: {
-							type: 'timeseries'
-							tick: {
-								fit: false
-								format: '%b %d'
-							}
-							min: @props.xTicks.get @props.timeSpan[0]
-							max: @props.xTicks.get @props.timeSpan[1]
-						}
-						y: {
-							show: false
-							max: 1
-						}
-					}				
-					data: {
-						hide: true
-						xFormat: D3TimestampFormat
-						columns: scaledDataSeries.toJS()
-						xs: xsMap.toJS()
-						names: dataSeriesNames.toJS()
-					}
-					tooltip: {
-						format: {
-							value: (value, ratio, id, index) ->
-								# Filter out dataset from dataSeries with matching id, grab from index
-								return dataSeries.filter((metric) ->
-									return metric.contains id
-								).flatten().get(index + 1)
-							title: (timestamp) ->
-								return Moment(timestamp).format('MMMM D [at] HH:mm')
-						}
-					}
-					legend: {
-						item: {
-							onclick: (id) ->
-								return false
-						}
-					}
-					padding: {
-						left: 25
-						right: 25
-					}
-					onrendered: @_attachKeyBindings
-				}
-
-		_refreshSelectedMetrics: ->
-			@_chart.hide()
-
-			@props.selectedMetricIds.forEach (metricId) =>
-				@_chart.show("y-" + metricId)	
-
-		_refreshSelectedProgEvents: ->
-			# Generate c3 regions array
-			progEventRegions = @_generateProgEventRegions()
-
-			console.log 'Regions going into c3:', progEventRegions.toJS()
-
-			# Flush and re-apply regions to c3 chart
-			@_chart.regions.remove()
-			@_chart.regions.add progEventRegions.toJS()
-
-			# Bind user interaction events
-			@_attachKeyBindings progEventRegions
-
-			@setState => {progEventRegions}
-
-		_generateProgEventRegions: ->
-			# Filter out progEvents that aren't selected
-			selectedProgEvents = @props.progEvents.filter (progEvent) =>
-				return @props.selectedProgEventIds.contains progEvent.get('id')
-
-			# Build Imm.List of region objects
-			progEventRegions = selectedProgEvents.map (progEvent) =>
-				eventRegion = {
-					start: @_toUnixMs progEvent.get('startTimestamp')
-					class: "progEventRange #{progEvent.get('id')}"
-				}
-				if Moment(progEvent.get('endTimestamp'), TimestampFormat).isValid()
-					eventRegion.end = @_toUnixMs progEvent.get('endTimestamp')
-
-				# TODO: Classify singular event
-				return eventRegion
-
-			# Sort regions in order of start timestamp
-			sortedEvents = progEventRegions.sortBy (event) => event['start']
-
-			# Setting up vars for row sorting
-			remainingEvents = sortedEvents
-			eventRows = Imm.List()
-			progEvents = Imm.List()
-			rowIndex = 0
-
-			# Process progEvents for regions while remaining events
-			while remainingEvents.size > 0
-
-				# Init new eventRow
-				eventRows = eventRows.push Imm.List()
-
-				# Loop through events, pluck any with non-conflicting dates
-				remainingEvents.forEach (thisEvent) =>
-
-					thisRow = eventRows.get(rowIndex)
-					# Can't rely on forEach index, because .delete() offsets it
-					liveIndex = remainingEvents.indexOf(thisEvent)
-
-					# Let's pluck this progEvent if no rows or timestamps don't conflict
-					if thisRow.size is 0 or (
-						not thisRow.last().get('end')? or 
-						thisEvent.start >= thisRow.last().get('end')
-					)
-						# Append class with row number
-						progEvent = Imm.fromJS(thisEvent)
-						newClass = progEvent.get('class') + " row#{rowIndex}"				
-
-						# Convert single-point event date to a short span
-						if not progEvent.get('end')
-							startDate = Moment progEvent.get('start')
-							progEvent = progEvent.set 'end', startDate.clone().add(6, 'hours')
-							newClass = newClass + " singlePoint"
-
-						# Update class
-						progEvent = progEvent.set('class', newClass)
-
-						# Update eventRows, remove from remainingEvents
-						updatedRow = eventRows.get(rowIndex).push progEvent
-						eventRows = eventRows.set rowIndex, updatedRow
-						remainingEvents = remainingEvents.delete(liveIndex)
-
-
-				# Cancat to final (flat) output for c3
-				progEvents = progEvents.concat eventRows.get(rowIndex)
-
-				rowIndex++
-
-
-			# Determine regions height
-			chartHeightY = 1 + (eventRows.size * 1/4)
-
-			console.log 'chartHeightY', chartHeightY
-
-			@_chart.axis.max {
-				y: chartHeightY
-			}
-
-			return progEvents
-
-		_attachKeyBindings: ->
-			# Find our hidden eventInfo box
-			eventInfo = $('#eventInfo')
-			dateFormat = 'Do MMM [at] h:mm A'
-
-			@props.progEvents.forEach (progEvent) =>
-				# Attach hover binding to progEvent region
-				$('.' + progEvent.get('id')).hover((event) =>					
-
-					eventInfo.addClass('show')
-					eventInfo.find('.title').text progEvent.get('title')
-					eventInfo.find('.description').text(progEvent.get('description') or "(no description)")
-
-					startTimestamp = new Moment(progEvent.get('startTimestamp'), TimestampFormat)
-					endTimestamp = new Moment(progEvent.get('endTimestamp'), TimestampFormat)
-
-					startText = startTimestamp.format(dateFormat)
-					endText = if endTimestamp.isValid() then endTimestamp.format(dateFormat) else null
-
-					if endText?
-						startText = "From: " + startText
-						endText = "Until: " + endText
-
-					eventInfo.find('.start').text startText
-					eventInfo.find('.end').text endText
-
-					# Make eventInfo follow the mouse
-					$(win.document).on('mousemove', (event) ->
-						eventInfo.css 'top', event.clientY - (eventInfo.outerHeight() + 15)
-						eventInfo.css 'left', event.clientX
-					)
-				, =>
-					# Hide and unbind!
-					eventInfo.removeClass('show')
-					$(win.document).off('mousemove')
-				)
-
-		_toUnixMs: (timestamp) ->
-			# Converts to unix ms
-			return Moment(timestamp, TimestampFormat).valueOf()		
-
-
+		_updateMetricColors: (metricColors) ->
+			@setState {metricColors}
 
 	extractMetricsFromProgNoteHistory = (progNoteHist) ->
 		createdAt = progNoteHist.first().get('timestamp')
@@ -662,9 +522,7 @@ load = (win) ->
 				throw new Error "unknown prognote section type: #{JSON.stringify section.get('type')}"
 
 
+
 	return {AnalysisView}
-
-
-
 
 module.exports = {load}

@@ -14,6 +14,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	Bootbox = win.bootbox
+	ReactDOMServer = win.ReactDOMServer
 
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	DefineMetricDialog = require('./defineMetricDialog').load(win)
@@ -52,7 +53,7 @@ load = (win) ->
 					"""
 					suggestion: (metric) =>
 						suggestionComponent = Suggestion({metric})
-						return React.renderToString(suggestionComponent)
+						return ReactDOMServer.renderToString(suggestionComponent)
 					footer: (query, isEmpty) ->
 						return """
 							<div class="createMetricContainer">
@@ -104,14 +105,14 @@ load = (win) ->
 				metricQuery: $(@refs.lookupField).val()
 				onCancel: =>
 					@setState {isDefineMetricDialogVisible: false}
-				onSuccess: (newMetricId) =>
+				onSuccess: (newMetric) =>
 					@setState {isDefineMetricDialogVisible: false}
 
 					lookupField = $(@refs.lookupField)
 					lookupField.typeahead 'val', ''
 					lookupField.focus()
 
-					@props.onSelection newMetricId
+					@props.onSelection newMetric.get('id')
 			})
 		_createMetric: ->
 			@setState {isDefineMetricDialogVisible: true}

@@ -1,7 +1,7 @@
 {
   "name": "konote",
   "displayName": "KoNote",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "main": "src/main.html",
   "window": {
     "icon": "icon.png",
@@ -12,7 +12,7 @@
     "show": false,
     "frame": false,
     "transparent": true,
-    "position": "center"    
+    "position": "center"
   },
   "private": true,
   "license": "MPL-2.0",
@@ -46,8 +46,9 @@
     "clone": "^1.0.2",
     "coffee-script": "^1.9.3",
     "d3": "^3.5.0",
-    "eonasdan-bootstrap-datetimepicker": "^4.15.35",
+    "eonasdan-bootstrap-datetimepicker": "https://github.com/konode001/bootstrap-datetimepicker",
     "font-awesome": "^4.3.0",
+    "get-folder-size": "^1.0.0",
     "handlebars": "^3.0.3",
     "immutable": "3.7.2",
     "joi": "^6.4.3",

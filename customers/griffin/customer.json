@@ -9,18 +9,6 @@
 		"isEnabled": true,
 		"label": "CR#"
 	},
-
-	"analysis": {
-		"minDaysOfData": 3
-	},
-
-	"timeout": {
-		"duration": 25,
-		"warnings": {
-			"initial": 10,
-			"final": 1
-		}
-	},
 	
 	"terminology": {
 		"user": "user",

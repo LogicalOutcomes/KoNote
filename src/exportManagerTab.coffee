@@ -9,6 +9,7 @@ Persist = require './persist'
 Fs = require 'fs'
 Archiver = require 'archiver'
 CSVConverter = require 'json-2-csv'
+GetSize = require 'get-folder-size'
 
 load = (win) ->
 	$ = win.jQuery
@@ -20,11 +21,22 @@ load = (win) ->
 	Config = require('./config')
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)	
-	{FaIcon, renderName} = require('./utils').load(win)
+	{FaIcon, renderName, showWhen} = require('./utils').load(win)
 	{TimestampFormat} = require('./persist/utils')
 
 	ExportManagerTab = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]	
+		mixins: [React.addons.PureRenderMixin]
+		
+		getInitialState: ->
+			return {
+				progress: 0
+				message: null
+				isLoading: null
+				exportProgress: {
+					percent: null
+					message: null
+				}
+			}
 		
 		render: ->
 			return R.div({className: 'exportManagerTab'},
@@ -32,6 +44,12 @@ load = (win) ->
 					R.h1({}, "Export Data")
 				)
 				R.div({className: 'main'},
+					Spinner {
+						isVisible: @state.isLoading
+						isOverlay: true						
+						message: @state.exportProgress.message
+						percent: @state.exportProgress.percent
+					}
 					# Hidden input for handling file saving
 					R.input({
 						ref: 'nwsaveas'
@@ -40,32 +58,50 @@ load = (win) ->
 					})
 
 					R.button({
-						className: 'btn btn-primary btn-lg'
+						className: 'btn btn-default btn-lg'
 						onClick: @_export.bind null, {
 							defaultName: "konote-metrics"
 							extension: 'csv'
 							runExport: @_saveMetrics
 						}
-					}, "Export Metrics")
+					}, "Export Metrics to CSV")
 					R.button({
-						className: 'btn btn-primary btn-lg'
+						className: 'btn btn-default btn-lg'
 						onClick: @_export.bind null, {
 							defaultName: "konote-events"
 							extension: 'csv'
 							runExport: @_saveEvents
 						}
-					}, "Export Events")
+					}, "Export Events to CSV")
 					R.button({
-						className: 'btn btn-primary btn-lg'
+						className: 'btn btn-default btn-lg'
 						onClick: @_export.bind null, {
 							defaultName: "konote-backup"
 							extension: 'zip'
 							runExport: @_saveBackup
 						}
-					}, "Backup Data")
+					}, "Backup All Data to ZIP")
 				)
 			)
 
+		_prettySize: (bytes) ->
+			if bytes / 1024 > 1024
+				return (bytes/1024/1024).toFixed(2) + "MB"
+			return (bytes/1024).toFixed(2) + "KB"
+
+		_updateProgress: (percent, message) ->
+			if not percent and not message
+				percent = message = null
+
+			@setState (state) => {
+				isLoading: true
+				exportProgress: {
+					percent
+					message: message or state.exportProgress.message
+				}
+			}
+
+		
 		_export: ({defaultName, extension, runExport}) ->
 			timestamp = Moment().format('YYYY-MM-DD')
 			# Configures hidden file inputs with custom attributes, and clicks it
@@ -80,84 +116,104 @@ load = (win) ->
 			.click()
 		
 		_saveEvents: (path) ->
+			isConfirmClosed = false
 			# Map over client files
-			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
-				progEventsHeaders = null
-				progEvents = null
-				progEventsList = null
-				clientFileId = clientFile.get('id')
-				clientName = renderName clientFile.get('clientName')
-				csv = null
+			if @props.clientFileHeaders.size is 0
+				Bootbox.alert {
+					title: "No Events to Export"
+					message: "You must create at least one client file with events before they can be exported!"
+				}
+			else
+				@_updateProgress 0, "Saving Events to CSV..."
+				Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
+					progEventsHeaders = null
+					progEvents = null
+					progEventsList = null
+					clientFileId = clientFile.get('id')
+					clientName = renderName clientFile.get('clientName')
+					csv = null
 
-				Async.series [
-					# get event headers
-					(cb) =>
-						ActiveSession.persist.progEvents.list clientFileId, (err, results) ->
-							if err
-								cb err
-								return
+					Async.series [
+						# get event headers
+						(cb) =>
+							@_updateProgress 10
+							ActiveSession.persist.progEvents.list clientFileId, (err, results) ->
+								if err
+									cb err
+									return
 
-							progEventsHeaders = results
-							cb()
+								progEventsHeaders = results
+								cb()
 
-					# read each event
-					(cb) =>
-						Async.map progEventsHeaders.toArray(), (progEvent, cb) ->
-							ActiveSession.persist.progEvents.read clientFileId, progEvent.get('id'), cb
-						, (err, results) ->
-							if err
-								cb err
-								return
+						# read each event
+						(cb) =>
+							@_updateProgress 20
+							Async.map progEventsHeaders.toArray(), (progEvent, cb) ->
+								ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEvent.get('id'), 1, cb
+							, (err, results) ->
+								if err
+									cb err
+									return
 
-							progEvents = Imm.List results
-							cb()
-							
-					# csv format: id, timestamp, username, title, description, start time, end time
-					(cb) =>
-						progEvents = progEvents.map (event) ->
-							return {
-								id: event.get('id')
-								timestamp: Moment(event.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
-								author: event.get('author')
-								clientName
-								title: event.get('title')
-								description: event.get('description')
-								startDate: Moment(event.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
-								endDate: Moment(event.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
-							}
-						cb null, progEvents
-						, (err, results) ->
-							if err
-								cb err
-								return
-							progEvents = Imm.List results
-							cb()
-					
-					# convert to csv
-					(cb) =>
-						CSVConverter.json2csv progEvents.toJS(), (err, result) ->
-							csv = result
-							cb()
-					
-				], (err) ->
-					if err
-						CrashHandler.handle err
-						return
+								progEvents = Imm.List(results).map (revision) -> revision.last()
+								cb()
 
-					# destination path must exist in order to save
-					if path.length > 1
-						Fs.writeFile path, csv, (err) ->
-							if err
-								CrashHandler.handle err
-								return
+						# csv format: id, timestamp, username, title, description, start time, end time
+						(cb) =>
+							@_updateProgress 50
+							progEvents = progEvents
+							.filter (progEvent) -> progEvent.get('status') isnt "cancelled"
+							.map (progEvent) ->
+								return {
+									id: progEvent.get('id')
+									timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
+									author: progEvent.get('author')
+									clientName
+									title: progEvent.get('title')
+									description: progEvent.get('description')
+									startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
+									endDate: Moment(progEvent.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
+								}
+							cb null, progEvents
+							, (err, results) ->
+								if err
+									cb err
+									return
+								progEvents = Imm.List results
+								cb()
 
-							Bootbox.alert {
-								title: "Save Successful"
-								message: "Events exported to: #{path}"
-							}
+						# convert to csv
+						(cb) =>
+							@_updateProgress 100
+							CSVConverter.json2csv progEvents.toJS(), (err, result) ->
+								csv = result
+								cb()
+
+					], (err) =>
+						if err
+							CrashHandler.handle err
+							return
+
+						# destination path must exist in order to save
+						if path.length > 1
+							Fs.writeFile path, csv, (err) =>
+								@setState {isLoading: false}
+
+								if err
+									CrashHandler.handle err
+									return
+
+								if isConfirmClosed isnt true
+									Bootbox.alert {
+										title: "Save Successful"
+										message: "Events exported to: #{path}"
+									}
+									isConfirmClosed = true
 	
 		_saveMetrics: (path) ->
+			isConfirmClosed = false
 			metrics = null
+			@_updateProgress 0, "Saving metrics to CSV..."
 
 			# Map over client files
 			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
@@ -175,6 +231,7 @@ load = (win) ->
 				Async.series [
 					# List metric definition headers
 					(cb) =>
+						@_updateProgress 10
 						ActiveSession.persist.metrics.list (err, results) ->
 							if err
 								cb err
@@ -185,18 +242,20 @@ load = (win) ->
 
 					# Retrieve all metric definitions
 					(cb) =>
+						@_updateProgress 20
 						Async.map metricDefinitionHeaders.toArray(), (metricHeader, cb) ->
-							ActiveSession.persist.metrics.read metricHeader.get('id'), cb
+							ActiveSession.persist.metrics.readLatestRevisions metricHeader.get('id'), 1, cb
 						, (err, results) ->
 							if err
 								cb err
 								return
 
-							metricDefinitions = Imm.List results
+							metricDefinitions = Imm.List(results).map (revision) -> revision.last()
 							cb()
 
 					# List progNote headers
 					(cb) =>
+						@_updateProgress 30
 						ActiveSession.persist.progNotes.list clientFileId, (err, results) ->
 							if err
 								cb err
@@ -207,30 +266,25 @@ load = (win) ->
 
 					# Retrieve progNotes
 					(cb) =>
+						@_updateProgress 40
 						Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
-							ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
+							ActiveSession.persist.progNotes.readLatestRevisions clientFileId, progNoteHeader.get('id'), 1, cb
 						, (err, results) ->
 							if err
 								cb err
 								return
 
-							progNotes = Imm.List(results)
-							.map (progNoteHist) ->
-								# Throw away history, just grab latest revision
-								# TODO keep history for use in export?
-								return progNoteHist.last()
-							console.info "progNotes", progNotes.toJS()
+							progNotes = Imm.List(results).map (revision) -> revision.last()
 							cb()
 
 					# Filter out full list of metrics
 					(cb) =>
+						@_updateProgress 50
 						fullProgNotes = progNotes.filter (progNote) =>
-							progNote.get('type') is 'full'
-
-						console.info "fullProgNotes", fullProgNotes
+							progNote.get('type') is "full" and
+							progNote.get('status') isnt "cancelled"
 
 						Async.map fullProgNotes.toArray(), (progNote, cb) =>
-							console.info "progNote", progNote.toJS()							
 							
 							progNoteMetrics = progNote.get('units').flatMap (unit) =>
 								unitType = unit.get('type')
@@ -247,13 +301,7 @@ load = (win) ->
 
 								return metrics
 
-							# Get backdate or timestamp from parent progNote
-							progNoteTimestamp = if progNote.get('backdate')
-								progNote.get('backdate')
-							else
-								# TODO should this use original creation
-								# timestamp instead of last modified at?
-								progNote.get('timestamp')
+							progNoteTimestamp = progNote.get('backdate') or progNote.get('timestamp')
 
 							# Apply timestamp with custom format
 							timestamp = Moment(progNoteTimestamp, TimestampFormat)
@@ -289,17 +337,16 @@ load = (win) ->
 								return
 
 							metricsList = Imm.fromJS(results).flatten(true)
-
-							console.info "metricsList", metricsList.toJS()
 							cb()
 					
 					# Convert to CSV
 					(cb) =>
+						@_updateProgress 100
 						CSVConverter.json2csv metricsList.toJS(), (err, result) ->
 							csv = result
 							cb()
 						
-				], (err) ->
+				], (err) =>
 					if err
 						CrashHandler.handle err
 						return
@@ -308,54 +355,116 @@ load = (win) ->
 
 					# Destination path must exist in order to save
 					if path.length > 1
-						Fs.writeFile path, csv, (err) ->
+						Fs.writeFile path, csv, (err) =>
 							if err
 								CrashHandler.handle err
 								return
 
 							console.info "Destination Path:", path
+							@setState {isLoading: false}
 
-							Bootbox.alert {
-								title: "Save Successful"
-								message: "Metrics exported to: #{path}"
-							}
+							if isConfirmClosed isnt true
+								Bootbox.alert {
+									title: "Save Successful"
+									message: "Metrics exported to: #{path}"
+								}
+								isConfirmClosed = true
 			
+		
 		_saveBackup: (path) ->
-			console.log "Running save backup!"
-
+			isConfirmClosed = false
+			@_updateProgress 0, "Backing up data..."
+			totalSize = 0
+			
 			# Destination path must exist in order to save
 			if path.length > 1
+				
+				GetSize 'data', (err, size) ->
+					if err
+						Bootbox.dialog {
+							title: "Error Calculating Filesize"
+							message: """
+								The backup may be incomplete!
+								<br><br>
+								<span class='error'>#{err}</span>
+							"""
+							buttons: {
+								proceed: {
+									label: "Ok"
+									className: 'btn-primary'
+								}
+							}
+						}
+						console.error err
+					totalSize = size or 0
+
 				output = Fs.createWriteStream(path)
 				archive = Archiver('zip')
 
-				output.on 'close', ->
-					backupSize = (archive.pointer()/1000).toFixed(2)
-					if backupSize > 1
+				output.on 'finish', =>
+					clearInterval(progressCheck)
+					@_updateProgress 100
+					@setState {isLoading: false}
+
+					backupSize = @_prettySize output.bytesWritten
+					if isConfirmClosed isnt true
 						Bootbox.alert {
-							title: "Backup Successful (#{backupSize}KB)"
+							title: "Backup Complete (#{backupSize})"
 							message: "Saved to: #{path}"
 						}
-					else
-						Bootbox.alert {
-							title: "Error"
-							message: "Saved file size less than expected (#{backupSize}KB)."
-						}
-				.on 'error', (err) ->
-					CrashHandler.handle err
+						isConfirmClosed = true
+				.on 'error', (err) =>
+					clearInterval(progress)
+					@setState {isLoading: false}
 
-				archive.on 'error', (err) ->
-					CrashHandler.handle err
+					console.error err
+					Bootbox.alert {
+						title: "Error Saving File"
+						message: """
+							<span class='error'>#{err}</span>
+							<br>
+							Please try again.
+						"""
+					}
 
-				archive.pipe(output)
+				archive.on 'error', (err) =>
+					@setState {isLoading: false}
+
+					Bootbox.alert {
+						title: "Error Saving File"
+						message: """
+							<span class='error'>#{err}</span>
+							<br>
+							Please try again.
+						"""
+					}
+
 				archive.bulk [{
 					expand: true
 					cwd: Config.dataDirectory
 					src: ['**/*']
 					dest: 'data'
 				}]
-			
-				archive.finalize()
 
+				archive.finalize()
+				archive.pipe(output)
+
+				progressCheck = setInterval =>
+					written = archive.pointer()
+					writtenProgress = Math.floor((written / totalSize) * 100)
+					console.log written, totalSize
+					console.log "Written progress: #{writtenProgress}"
+					messageText = "Writing Data: (#{@_prettySize(written)} / #{@_prettySize(totalSize)})"
+
+					if writtenProgress is 100
+						messageText = "Zipping data directory..."
+
+					# KB progress only goes up to 75%
+					currentProgress = writtenProgress * 0.75
+
+					@_updateProgress currentProgress, messageText
+				, 100
+			
 	return ExportManagerTab
 
 module.exports = {load}

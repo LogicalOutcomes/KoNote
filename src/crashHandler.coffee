@@ -74,6 +74,7 @@ load = (win) ->
 		render: ->
 			return R.div({className: 'crashOverlay'},
 				R.div({className: 'crashMessage'},
+					R.img({src: './assets/brand/kn.png'})
 					R.h1({}, "Oops, something went wrong.")
 					R.div({}, """
 						KoNote encountered an unexpected error.

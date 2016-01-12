@@ -12,6 +12,8 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+	ReactDOMServer = win.ReactDOMServer
+	
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('./utils').load(win)	
 	
 	progEventsWidget = React.createFactory React.createClass
@@ -35,13 +37,13 @@ load = (win) ->
 
 				$widget.tooltip {
 					html: true
-					title: React.renderToString tooltipContent
+					title: ReactDOMServer.renderToString tooltipContent
 					placement: 'auto'
 					# required to stop tooltip from being obstructed by menu
 					viewport: $widget
 				}
 		render: ->
-			if @props.data.get('typeId')
+			if @props.data.get('typeId') and @props.eventTypes?
 				eventType = @props.eventTypes
 				.find (type) => type.get('id') is @props.data.get('typeId')
 

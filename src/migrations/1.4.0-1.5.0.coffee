@@ -808,6 +808,129 @@ addProgEventTypeIdField = (dataDir, globalEncryptionKey, cb) ->
 		, cb
 	, cb
 
+addProgEventStatusField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+			progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
+
+			progEventObjectFilePath = null
+			progEventObject = null
+
+			Async.series [
+				(cb) =>
+					# Fetch single revision (was immutable)
+					Fs.readdir progEventPath, (err, revisions) ->
+						if err
+							cb err
+							return
+
+						Assert.equal revisions.length, 1, 'should always be exactly one progEvent revision'
+						progEventObjectFilePath = Path.join(progEventPath, revisions[0])
+
+						cb()
+				(cb) =>
+					# Read and decrypt Event Object
+					Fs.readFile progEventObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
+
+						progEventObject = JSON.parse globalEncryptionKey.decrypt result
+
+						cb()
+				(cb) =>
+					# Add 'status' property
+					progEventObject.status = 'default'
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progEventObject
+
+					Fs.writeFile progEventObjectFilePath, encryptedObj, cb				
+			], cb
+
+		, cb
+	, cb
+
+
+addProgEventRelatedElementField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+			progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
+
+			progEventObjectFilePath = null
+			progEventObject = null
+
+			Async.series [
+				(cb) =>
+					Fs.readdir progEventPath, (err, revisions) ->
+						if err
+							cb err
+							return
+
+						Assert.equal revisions.length, 1, 'should always be exactly one progEvent revision'
+						progEventObjectFilePath = Path.join(progEventPath, revisions[0])
+
+						cb()
+				(cb) =>
+					Fs.readFile progEventObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
+
+						progEventObject = JSON.parse globalEncryptionKey.decrypt result
+
+						cb()
+				(cb) =>
+					progEventObject.relatedElement = ''
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progEventObject
+
+					Fs.writeFile progEventObjectFilePath, encryptedObj, cb
+			], cb
+
+		, cb
+	, cb
+
+addProgEventStatusField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+			progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
+
+			progEventObjectFilePath = null
+			progEventObject = null
+
+			Async.series [
+				(cb) =>
+					Fs.readdir progEventPath, (err, revisions) ->
+						if err
+							cb err
+							return
+
+						Assert.equal revisions.length, 1, 'should always be exactly one progEvent revision'
+						progEventObjectFilePath = Path.join(progEventPath, revisions[0])
+
+						cb()
+				(cb) =>
+					Fs.readFile progEventObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
+
+						progEventObject = JSON.parse globalEncryptionKey.decrypt result
+
+						cb()
+				(cb) =>
+					progEventObject.status = 'default'
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progEventObject
+
+					Fs.writeFile progEventObjectFilePath, encryptedObj, cb
+			], cb
+
+		, cb
+	, cb
 
 
 # ////////////////////// Migration Series //////////////////////
@@ -861,10 +984,10 @@ module.exports = {
 				console.groupCollapsed "6. Encrypt indexed fields"
 				encryptAllFileNames dataDir, globalEncryptionKey, cb
 
-			# Add status fields to progNotes
+			# Add status field and index to progNotes
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "7. Add 'status' field to progress notes"
+				console.groupCollapsed "7. Add 'status': 'default' field to progress notes"
 				addProgNoteStatusFields dataDir, globalEncryptionKey, cb
 
 			# New Directory: 'eventTypes' (issue#347)
@@ -878,6 +1001,18 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "9. Add 'typeId' field to progress events"
 				addProgEventTypeIdField dataDir, globalEncryptionKey, cb
+
+			# Add relatedElement field to progEvents
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "10. Add 'relatedElement': '' field to progress events"
+				addProgEventRelatedElementField dataDir, globalEncryptionKey, cb
+
+			# Add status field to progEvents
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "11. Add 'status': 'default' field to progress events"
+				addProgEventStatusField dataDir, globalEncryptionKey, cb	
 
 		], (err) ->
 			if err

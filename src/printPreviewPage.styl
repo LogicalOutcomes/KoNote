@@ -91,70 +91,68 @@
 				> br
 					display block
 
-		> .progNote.full, > .plan
-			
-			> .units
+		> .progNote.full
 				
-				> .unit
-					padding-bottom 15px
-					border-bottom 1px solid #C9C9C9
-					
-					> .name
-						font-size 22px
-						font-weight 400
+		.unit
+			padding-bottom 15px
+			border-bottom 1px solid #C9C9C9
+			
+			> .name
+				font-size 22px
+				font-weight 400
 
-					&.basic
-						> .name
-							cursor pointer
+			&.basic
+				> .name
+					cursor pointer
+
+				> .empty
+					padding 0 2px
+
+					color #888
+					
+				h3
+					font-size 20px
+
+				> .metrics
+					padding-top 5px
+
+			&.plan, &.planTargets
+				> .empty
+					padding 0 2px
+
+					color #888
+					
+				section
+					.target
+						display block
+						vertical-align top
+						padding 0 15px
 
 						> .empty
 							padding 0 2px
 
 							color #888
 							
-						h3
-							font-size 20px
-
 						> .metrics
+							display flex
+							flex-wrap wrap
+
+							margin -5px
+
 							padding-top 5px
 
-					&.plan, &.planTargets
-						> .empty
-							padding 0 2px
-
-							color #888
-							
-						section							
-							> .target
-								display block
-								vertical-align top
-								padding 0 15px
-
-								> .empty
-									padding 0 2px
-
-									color #888
-									
-								> .metrics
-									display flex
-									flex-wrap wrap
-
-									margin -5px
-
-									padding-top 5px
-
-									> .metricWidget
-										margin 5px
-										background none
-										border 1px solid #999999
-										
-										.fa
-											color #9F9F9F
-										
-										> .name
-											color black
-										
-										> .value
-											color black
-											background none
-											border 1px solid #707070
+							> .metricWidget
+								margin 5px
+								background none
+								border 1px solid #999999
+								
+								.fa
+									color #9F9F9F
+								
+								> .name
+									color black
+								
+								> .value
+									color black
+									background none
+									border 1px solid #707070

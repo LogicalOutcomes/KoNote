@@ -2,42 +2,96 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# A dialog for allowing the user to define (i.e. create) a new metric
-
+Async = require 'async'	
 Imm = require 'immutable'
 
 Persist = require './persist'
+Config = require './config'
+Term = require './term'
 
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	R = React.DOM
-	ReactDOM = win.ReactDOM
+	R = React.DOM	
 
-	Config = require('./config')
-	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
+	Spinner = require('./spinner').load(win)
+	OrderableTable = require('./orderableTable').load(win)
+	OpenDialogLink = require('./openDialogLink').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
-	{FaIcon, showWhen} = require('./utils').load(win)
+	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
-	DefineMetricDialog = React.createFactory React.createClass
+	DefineMetricDialog = require('./defineMetricDialog').load(win)
+
+	MetricDefinitionManagerTab = React.createFactory React.createClass
+		mixins: [React.addons.PureRenderMixin]
+
+		render: ->
+			isAdmin = global.ActiveSession.isAdmin()
+
+			return R.div({className: 'metricDefinitionManagerTab'},
+				R.div({className: 'header'},
+					R.h1({}, "#{Term 'Metric'} Definitions")
+				)
+				R.div({className: 'main'},
+					OrderableTable({
+						tableData: @props.metricDefinitions
+						sortByData: ['name']
+						columns: [
+							{
+								name: "Name"
+								dataPath: ['name']
+								cellClass: 'nameCell'
+							}
+							{
+								name: "Definition"
+								dataPath: ['definition']
+							}
+							{
+								name: "Options"
+								nameIsVisible: false
+								isDisabled: not isAdmin
+								cellClass: 'optionsCell'
+								buttons: [
+									{
+										className: 'btn btn-warning'
+										text: null
+										icon: 'wrench'
+										dialog: ModifyMetricDialog
+									}
+								]
+							}
+						]
+					})
+				)
+				R.div({className: 'optionsMenu'},
+					OpenDialogLink({
+						className: 'btn btn-lg btn-primary'
+						dialog: DefineMetricDialog
+					},
+						FaIcon('plus')
+						" New #{Term 'Metric'} Definition"
+					)
+				)
+			)
+
+	ModifyMetricDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
-				name: @props.metricQuery or ''
-				definition: ''
+				name: @props.rowData.get('name')
+				definition: @props.rowData.get('definition')
 			}
 
 		componentDidMount: ->
-			refToFocus = if @props.metricQuery? then 'definitionField' else 'nameField'
-			ReactDOM.findDOMNode(@refs[refToFocus]).focus()
+			@refs.nameField.focus()
 			
 		render: ->
 			Dialog({
 				ref: 'dialog'
-				title: "Define New #{Term 'Metric'}"
+				title: "Modify #{Term 'Metric'} Definition"
 				onClose: @_cancel
 			},
 				R.div({className: 'defineMetricDialog'},
@@ -66,7 +120,7 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-						}, "Create #{Term 'Metric'}")
+						}, "Modify #{Term 'Metric'}")
 					)
 				)
 			)
@@ -91,12 +145,13 @@ load = (win) ->
 
 			@refs.dialog.setIsLoading true
 
-			newMetric = Imm.fromJS {
+			newMetricRevision = Imm.fromJS {
+				id: @props.rowData.get('id')
 				name: @state.name.trim()
 				definition: @state.definition.trim()
 			}
 
-			ActiveSession.persist.metrics.create newMetric, (err, result) =>
+			ActiveSession.persist.metrics.createRevision newMetricRevision, (err, result) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
@@ -109,8 +164,10 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@props.onSuccess result
+				# New revision caught by page listeners
+				@props.onSuccess()
 
-	return DefineMetricDialog
+
+	return MetricDefinitionManagerTab
 
 module.exports = {load}

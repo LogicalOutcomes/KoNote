@@ -16,7 +16,6 @@ load = (win) ->
 
 		componentDidChange: (oldProps, oldState) ->
 			# Inform console about loading progress
-			
 			if oldProps.message isnt @props.message
 				console.log "Message:", @props.message
 
@@ -24,15 +23,16 @@ load = (win) ->
 				console.log "Percent", @props.percent + "%"
 
 		render: ->
-			isVisible = @props.isVisible isnt false
-
 			spinner = R.div({
 				className: [
-					"spinnerComponent #{showWhen isVisible}"
+					"spinnerComponent"
 					'animated fadeOut' if @props.percent? and @props.percent >= 100
+					showWhen @props.isVisible
 				].join ' '
 			},
-				R.div({className: 'inner'},
+				R.div({
+					className: 'inner'
+				},
 					R.div({className: 'container container1'},
 						R.div({className: 'circle circle1'})
 						R.div({className: 'circle circle2'})
@@ -81,7 +81,7 @@ load = (win) ->
 			unless @props.isOverlay
 				return spinner
 
-			return R.div({className: "spinnerOverlay #{showWhen isVisible}"},
+			return R.div({className: "spinnerOverlay #{showWhen @props.isVisible}"},
 				spinner
 			)
 

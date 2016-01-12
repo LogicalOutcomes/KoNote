@@ -103,7 +103,14 @@ load = (win, {dataSet}) ->
 	PrintHeader = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
-			R.header({className: 'header'},
+			# Calculate timestamp for backdate if exists
+			timestamp = Moment(
+				@props.data.get('backdate') or @props.data.get('timestamp')
+			, Persist.TimestampFormat).format 'MMMM D, YYYY [at] HH:mm'
+
+			if @props.data.get('backdate') then timestamp  = "(late entry) #{timestamp}"
+
+			return R.header({className: 'header'},
 				R.div({className: 'basicInfo'},
 					R.h1({className: 'title'},						
 						FaIcon('pencil-square-o')
@@ -127,10 +134,7 @@ load = (win, {dataSet}) ->
 								# TODO: Include user's full name + username ("Andrew Appleby (aappleby)")
 								R.span({className: 'author'}, @props.data.get('author'))
 							)
-							R.li({className: 'date'},
-								Moment(@props.data.get('timestamp'), Persist.TimestampFormat)
-								.format 'MMMM D, YYYY [at] HH:mm'
-							)
+							R.li({className: 'date'}, timestamp)
 						)
 					)
 					R.ul({},
@@ -252,10 +256,10 @@ load = (win, {dataSet}) ->
 	SinglePlanView = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
-			R.div({className: 'plan'},
+			R.div({className: 'plan unit'},
 				R.div({className: 'sections'},
 					(@props.data.get('sections').map (section) =>
-						R.div({className: 'section planTargets', key: section.get('id')},
+						R.section({className: 'section planTargets', key: section.get('id')},
 							R.h2({className: 'name'}, section.get('name'))
 							(if section.get('targetIds').size is 0
 								R.div({className: 'noTargets'},
@@ -286,19 +290,6 @@ load = (win, {dataSet}) ->
 							)
 						)
 					).toJS()...
-				)
-				(unless @props.progEvents.isEmpty()
-					R.div({className: 'progEvents'},
-						R.h3({}, Term 'Events')
-						(@props.progEvents.map (progEvent) =>
-							R.div({}
-								ProgEventsWidget({
-									format: 'print'
-									data: progEvent
-								})
-							)
-						).toJS()...
-					)
 				)
 			)
 

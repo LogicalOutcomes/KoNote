@@ -44,19 +44,21 @@ dataModelDefinitions = [
 			{
 				name: 'progEvent'
 				collectionName: 'progEvents'
-				isMutable: false
+				isMutable: true
 				indexes: [['relatedProgNoteId']]
 				schema: Joi.object().keys({					
-					title: Joi.string()
+					title: Joi.string()					
 					description: Joi.string().allow('')			
 					startTimestamp: Joi.date().format(TimestampFormat).raw()
 					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+					status: ['default', 'cancelled']
+					statusReason: Joi.string().optional()
 					typeId: IdSchema.allow('')
 					relatedProgNoteId: IdSchema
 					relatedElement: Joi.object().keys({
-						type: ['progNoteUnit', 'planSection', 'planTarget']
 						id: IdSchema
-					}).allow('')
+						type: ['progNoteUnit', 'planSection', 'planTarget']						
+					}).allow('')					
 				})
 			}
 			{
@@ -167,7 +169,7 @@ dataModelDefinitions = [
 	{
 		name: 'metric'
 		collectionName: 'metrics'
-		isMutable: false
+		isMutable: true
 		indexes: [['name']]
 		schema: Joi.object().keys({
 			name: Joi.string()
