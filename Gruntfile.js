@@ -153,8 +153,8 @@ module.exports = function(grunt) {
 				cmd: 'zip -r --quiet ../../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
 			},
 			codesign: {
-				cwd: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'
-				cmd: '../../../../../codesign-osx.sh'
+				cwd: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/osx64',
+				cmd: '../../../../../../codesign-osx.sh'
 			}
 		},
 		appdmg: {
