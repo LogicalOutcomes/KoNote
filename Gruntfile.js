@@ -162,7 +162,7 @@ module.exports = function(grunt) {
 			main: {
 				options: {
 					title: 'KoNote-<%= pkg.version %>',
-					icon: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/icon.icns',
+					//icon: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/icon.icns',
 					background: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/background.tiff', 'icon-size': 104,
 					contents: [
 						{x: 130, y: 150, type: 'file', path: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},
