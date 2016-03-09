@@ -29,7 +29,8 @@ load = (win, {clientFileId}) ->
 	React = win.React
 	R = React.DOM
 	Gui = win.require 'nw.gui'
-	nwWin = Gui.Window.get(win)
+	Window = Gui.Window.get(win)
+
 	CrashHandler = require('../crashHandler').load(win)
 	Spinner = require('../spinner').load(win)
 	BrandWidget = require('../brandWidget').load(win)
@@ -38,13 +39,13 @@ load = (win, {clientFileId}) ->
 	AnalysisTab = require('./analysisTab').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
 	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
+
 	{FaIcon, renderName, renderFileId, showWhen, stripMetadata} = require('../utils').load(win)
 
 	ClientFilePage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
 				status: 'init' # Either init or ready
-				isLoading: true
 				
 				clientFile: null
 				clientFileLock: null
@@ -62,6 +63,18 @@ load = (win, {clientFileId}) ->
 		init: ->
 			@props.maximizeWindow()
 			@_renewAllData()
+
+		componentDidUpdate: (oldProps, oldState) ->
+			# Finished loading
+			if @state.status is 'ready' and oldState.status is 'init'
+				@_activateWindow()
+
+		_activateWindow: ->
+			Window.show()
+			Window.focus()
+
+		_setIsLoading: (isLoading) ->
+			@setState {isLoading}
 
 		deinit: (cb=(->)) ->
 			@_killLocks cb
@@ -86,6 +99,7 @@ load = (win, {clientFileId}) ->
 				programs: @state.programs
 				eventTypes: @state.eventTypes
 
+				setIsLoading: @_setIsLoading
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
@@ -118,7 +132,6 @@ load = (win, {clientFileId}) ->
 					fileIsUnsync = not Imm.is oldData, newData
 
 			# Begin the clientFile data load process
-			@setState (state) => {isLoading: true}
 			Async.series [
 				(cb) => 
 					unless @state.clientFileLock?
@@ -314,7 +327,7 @@ load = (win, {clientFileId}) ->
 					console.log "Handling remote changes vs local changes..."
 
 					@setState {
-						isLoading: false
+						status: 'ready'
 						readOnlyData: {
 							message: "Please back up your changes, and click here to reload the file"
 							clickAction: => @props.refreshWindow()
@@ -324,9 +337,9 @@ load = (win, {clientFileId}) ->
 						Bootbox.dialog {
 							title: "Refresh #{Term 'Client File'}?"
 							message: "This #{Term 'client file'} for #{clientName} has been
-							revised since your session timed out. This #{Term 'file'}
-							must be refreshed, and your unsaved changes will be lost! 
-							What would you like to do?"
+								revised since your session timed out. This #{Term 'file'}
+								must be refreshed, and your unsaved changes will be lost! 
+								What would you like to do?"
 							buttons: {
 								cancel: {
 									label: "I'll back up my changes first"
@@ -340,19 +353,17 @@ load = (win, {clientFileId}) ->
 							}
 						}
 				else
-					# OK, load in clientFile state data!
-					console.log "Injected load data into @state"
+					# Load in clientFile data
 					@setState {
+						status: 'ready'
+
 						clientFile						
 						progressNoteHistories
 						progressEvents
 						metricsById
 						planTargetsById
 						programs
-						eventTypes
-
-						isLoading: false
-						status: 'ready'
+						eventTypes						
 					}
 
 		_acquireLock: (cb=(->)) ->
@@ -582,7 +593,7 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				activeTabId: 'plan'
-			}
+			}			
 
 		hasChanges: ->
 			# Eventually this will cover more
@@ -668,7 +679,10 @@ load = (win, {clientFileId}) ->
 			# Filter out cancelled progEvents
 
 			return R.div({className: 'clientFilePage animated fadeIn'},
-				Spinner({isOverlay: true, isVisible: @props.isLoading})
+				Spinner {
+					isOverlay: true
+					isVisible: @props.isLoading
+				}
 
 				(if isReadOnly
 					ReadOnlyNotice {data: @props.readOnlyData}
@@ -706,6 +720,7 @@ load = (win, {clientFileId}) ->
 						onTabChange: @_changeTab
 
 						createQuickNote: @props.createQuickNote
+						setIsLoading: @props.setIsLoading
 						isReadOnly
 					})
 					AnalysisTab.AnalysisView({

@@ -123,7 +123,7 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				# Store this session for later use
+				# Store the new session
 				global.ActiveSession = session
 
 				# Proceed to clientSelectionPage
@@ -131,12 +131,11 @@ load = (win) ->
 					page: 'clientSelection'
 				}
 
-				# Hide once logged in
+				# Close loginPage once logged in
 				clientSelectionPageWindow.on 'loaded', =>
 					@setState {isLoading: false}
 					Window.hide()
 
-				# Close once clientSelectionPage is closed
 				clientSelectionPageWindow.on 'closed', =>
 					@props.closeWindow()
 

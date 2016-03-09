@@ -180,7 +180,12 @@ load = (win) ->
 					}
 				}
 			else
-				openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
+				@props.setIsLoading true
+				newProgNoteWindow = openWindow {
+					page: 'newProgNote', clientFileId: @props.clientFileId
+				}
+				newProgNoteWindow.on 'loaded', =>
+					@props.setIsLoading false
 
 		_toggleQuickNotePopover: ->
 			quickNoteToggle = $('.addQuickNote:not(.hide)')

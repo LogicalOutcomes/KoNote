@@ -17,6 +17,7 @@ load = (win, {dataSet}) ->
 	React = win.React
 	R = React.DOM
 	Gui = win.require 'nw.gui'
+	Window = Gui.Window.get(win)
 
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
@@ -51,6 +52,9 @@ load = (win, {dataSet}) ->
 
 		componentDidMount: ->
 			# Without timeout, print() triggers before DOM renders
+			Window.show()
+			Window.focus()
+			
 			setTimeout ->
 				win.print()
 			, 1000
