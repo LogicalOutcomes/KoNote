@@ -757,6 +757,7 @@ load = (win, {clientFileId}) ->
 						OpenDialogLink({
 							dialog: RenameClientFileDialog
 							clientFile: @props.clientFile
+							className: 'clientNameField'
 						},
 							@props.clientName
 						)
