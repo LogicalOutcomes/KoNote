@@ -216,6 +216,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 			# Decrypt/parse the file names
 			result = Imm.List(fileNames)
+				.filter isValidFileName
 				.map (fileName) ->
 					# Decrypt file name
 					decryptedFileName = getFileNameEncryptionKey().decrypt(
@@ -260,8 +261,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 				# Object directories can also contain other collections,
 				# so we need to filter those out first
+				# Ensure validFileName first
 				revisionFiles = revisionFiles.filter (fileName) ->
-					return not childCollectionNames.contains(fileName)
+					return isValidFileName(fileName) and not childCollectionNames.contains(fileName)
 
 				# The read method is only available to immutable collections
 				if revisionFiles.length > 1
@@ -404,7 +406,8 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					.filter (fileName) ->
 						# Object directories can also contain child collections.
 						# These need to be filtered out.
-						return not childCollectionNames.contains(fileName)
+						# Ensure validFileName first
+						return isValidFileName(fileName) and not childCollectionNames.contains(fileName)
 					.map (fileName) ->
 						# Decrypt the revision file name
 						decryptedFileName = fileNameEncryptionKey.decrypt(
@@ -840,6 +843,10 @@ encodeFileNameComponent = (comp) ->
 		result.push comp.slice(i, i+1)
 
 	return Buffer.concat result
+
+# Check fileName against OS metadata files
+isValidFileName = (fileName) ->
+	return fileName not in ['.DS_Store', 'Thumbs.db']
 
 # A convenience method.  Creates a Buffer filled with 0x00 bytes.
 #
