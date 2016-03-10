@@ -185,7 +185,7 @@ load = (win) ->
 				'create:clientFile': (newFile) =>
 					clientFileHeaders = @state.clientFileHeaders.push newFile
 					@setState {clientFileHeaders}
-					@props.openClientFile(newFile.get('id'))
+					@_openClientFile(newFile.get('id'))
 
 				# TODO: Create a function for this kind of listening/updating
 
