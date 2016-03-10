@@ -36,6 +36,7 @@ load = (win) ->
 			return {
 				status: 'init'
 				isLoading: true
+				loadingMessage: ""
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
 				clientFileProgramLinks: Imm.List()
@@ -61,6 +62,7 @@ load = (win) ->
 
 				status: @state.status				
 				isLoading: @state.isLoading
+				loadingMessage: @state.loadingMessage
 
 				clientFileHeaders: @state.clientFileHeaders
 				clientFileProgramLinks: @state.clientFileProgramLinks
@@ -70,13 +72,19 @@ load = (win) ->
 
 		_openClientFile: (clientFileId) ->
 			console.log "Selected clientFileId", clientFileId
-			@setState {isLoading: true}, =>
+			@setState
+				isLoading: true
+				loadingMessage: "Loading Client File..."
+			, =>
 				clientFileWindow = openWindow {
 					page: 'clientFile'
 					clientFileId
 				}
 				clientFileWindow.on 'loaded', =>
-					@setState {isLoading: false}
+					@setState {
+						isLoading: false
+						loadingMessage: ""
+					}
 
 		_setStatus: (status) ->
 			@setState {status}
@@ -300,6 +308,7 @@ load = (win) ->
 				Spinner {
 					isOverlay: true
 					isVisible: @props.isLoading
+					message: @props.loadingMessage
 				}
 
 				R.a({

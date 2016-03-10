@@ -33,6 +33,9 @@ load = (win) ->
 				isSetUp: null
 				isNewSetUp: null
 
+				isLoading: false
+				loadingMessage: ""
+
 				newInstallationWindow: null
 			}
 
@@ -56,7 +59,10 @@ load = (win) ->
 
 			LoginPageUi({
 				ref: 'ui'
+
 				isLoading: @state.isLoading
+				loadingMessage: @state.loadingMessage
+
 				isSetUp: @state.isSetUp
 				isNewSetUp: @state.isNewSetUp
 				activateWindow: @_activateWindow
@@ -103,11 +109,16 @@ load = (win) ->
 
 
 		_login: (userName, password) ->			
-			@setState => isLoading: true
+			@setState =>
+				isLoading: true
+				loadingMessage: "Logging in..."
 
 			Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>				
 				if err
-					@setState {isLoading: false}
+					@setState
+						isLoading: false
+						loadingMessage: ""
+
 					if err instanceof Persist.Session.UnknownUserNameError
 						@refs.ui.onLoginError('UnknownUserNameError')
 						return
@@ -133,7 +144,10 @@ load = (win) ->
 
 				# Close loginPage once logged in
 				clientSelectionPageWindow.on 'loaded', =>
-					@setState {isLoading: false}
+					@setState 
+						isLoading: false
+						loadingMessage: ""
+
 					Window.hide()
 
 				clientSelectionPageWindow.on 'closed', =>
@@ -188,6 +202,7 @@ load = (win) ->
 				Spinner({
 					isVisible: @props.isLoading
 					isOverlay: true
+					message: @props.loadingMessage
 				})
 				FaIcon('times', {
 					id: 'quitIcon'
