@@ -5,8 +5,8 @@ Mkdirp = require 'mkdirp'
 Path = require 'path'
 Rimraf = require 'rimraf'
 
-Atomic = require '../../persist/atomic'
-{IOError} = require '../../persist'
+Atomic = require '../../src/persist/atomic'
+{IOError} = require '../../src/persist'
 
 dataDir = 'atomicTestData'
 tmpDir = 'atomicTestTmp'
