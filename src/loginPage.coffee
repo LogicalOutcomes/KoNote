@@ -34,7 +34,6 @@ load = (win) ->
 				isNewSetUp: null
 
 				isLoading: false
-				loadingMessage: ""
 
 				newInstallationWindow: null
 			}
@@ -109,9 +108,9 @@ load = (win) ->
 
 
 		_login: (userName, password) ->			
-			@setState =>
+			@setState ->
 				isLoading: true
-				loadingMessage: "Logging in..."
+				loadingMessage: "Authenticating..."
 
 			Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>				
 				if err
@@ -133,6 +132,9 @@ load = (win) ->
 
 					CrashHandler.handle err
 					return
+
+				@setState ->
+					loadingMessage: "Logging in..."
 
 				# Store the new session
 				global.ActiveSession = session
