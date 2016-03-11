@@ -15,6 +15,7 @@ Base64url = require 'base64url'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
+Atomic = require './atomic'
 
 {
 	generateSalt
@@ -23,7 +24,7 @@ Path = require 'path'
 	PublicKey
 } = require './crypto'
 
-{CustomError} = require './utils'
+{CustomError, IOError} = require './utils'
 
 userNameRegex = /^[a-zA-Z0-9_-]+$/
 
@@ -158,10 +159,6 @@ class Account
 		if accountType is 'admin'
 			Assert.strictEqual loggedInAccount.publicInfo.accountType, 'admin', 'only admins can create admins'
 
-		userName = userName.toLowerCase()
-
-		userDir = getUserDir loggedInAccount.dataDirectory, userName
-
 		publicInfo = {accountType, isActive: true}
 		kdfParams = generateKdfParams()
 		accountEncryptionKey = SymmetricEncryptionKey.generate()
@@ -170,9 +167,19 @@ class Account
 		pwEncryptionKey = null
 		encryptedAccountKey = null
 
+		userName = userName.toLowerCase()
+		dataDirectory = loggedInAccount.dataDirectory
+		
+		destUserDir = getUserDir dataDirectory, userName
+		tmpDirPath = Path.join(dataDirectory, '_tmp')
+
+		userDir = null
+		userDirOp = null
+
 		Async.series [
 			(cb) ->
-				publicKeyPath = Path.join(loggedInAccount.dataDirectory, '_users', '_system', 'public-key')
+				# Get system public key
+				publicKeyPath = Path.join(dataDirectory, '_users', '_system', 'public-key')
 
 				Fs.readFile publicKeyPath, (err, buf) ->
 					if err
@@ -182,15 +189,14 @@ class Account
 					systemPublicKey = PublicKey.import(buf.toString())
 					cb()
 			(cb) ->
-				Fs.mkdir userDir, (err) ->
+				# Create temporary user directory
+				Atomic.writeDirectory destUserDir, tmpDirPath, (err, tempUserDir, op) ->
 					if err
-						if err.code is 'EEXIST'
-							cb new UserNameTakenError()
-							return
-
-						cb new IOError err
+						cb err
 						return
 
+					userDir = tempUserDir
+					userDirOp = op
 					cb()
 			(cb) ->
 				SymmetricEncryptionKey.derive password, kdfParams, (err, result) ->
@@ -264,12 +270,24 @@ class Account
 						return
 
 					cb()
+			(cb) ->
+				# Done preparing user, finish the operation atomically
+				userDirOp.commit (err) ->
+					if err
+						if err.code in ['EEXIST', 'ENOTEMPTY']
+							cb new UserNameTakenError()
+							return
+
+						cb new IOError err
+						return
+
+					cb()
 		], (err) ->
 			if err
 				cb err
 				return
 
-			cb null, new Account loggedInAccount.dataDirectory, userName, publicInfo, 'privateaccess'
+			cb null, new Account dataDirectory, userName, publicInfo, 'privateaccess'
 
 	# Read the public information for the account with the specified user name.
 	#

@@ -122,6 +122,10 @@ writeDirectory = (path, tmpDirPath, cb) =>
 		commit = (cb) =>
 			Fs.rename tmpPath, path, (err) =>
 				if err
+					if err.code in ['EEXIST', 'ENOTEMPTY']
+						cb err
+						return
+						
 					cb new IOError err
 					return
 
