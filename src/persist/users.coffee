@@ -274,11 +274,11 @@ class Account
 				# Done preparing user, finish the operation atomically
 				userDirOp.commit (err) ->
 					if err
-						if err.code in ['EEXIST', 'ENOTEMPTY']
+						if err instanceof IOError and err.cause.code in ['EEXIST', 'ENOTEMPTY']
 							cb new UserNameTakenError()
 							return
 
-						cb new IOError err
+						cb err
 						return
 
 					cb()

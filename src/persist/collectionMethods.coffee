@@ -134,7 +134,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				# temporary object directory first, then commit it later.
 				Atomic.writeDirectory destObjDir, tmpDirPath, (err, tmpObjDir, op) ->
 					if err
-						cb new IOError err
+						cb err
 						return
 
 					objDir = tmpObjDir
@@ -656,7 +656,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		# (or corrupted).
 		Atomic.writeBufferToFile path, tmpDirPath, encryptedObj, (err) ->
 			if err
-				cb new IOError err
+				cb err
 				return
 
 			cb null, obj
