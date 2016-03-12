@@ -27,7 +27,6 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				mode: 'loading' # loading, ready, or working
 				openDialogId: null
 				userAccounts: Imm.List()
 			}
@@ -160,34 +159,51 @@ load = (win) ->
 				Bootbox.alert "Accounts cannot deactivate themselves.  Try logging in using a different account."
 				return
 
-			Bootbox.confirm "Permanently deactivate #{userName}?", (result) =>
-				unless result is true
-					return
+			dataDirectory = global.ActiveSession.account.dataDirectory
+			userAccount = null
 
-				@setState {mode: 'working'}
-
-				Persist.Users.Account.read Config.dataDirectory, userName, (err, acc) =>
-					if err
-						if err instanceof Persist.Users.UnknownUserNameError
-							Bootbox.alert "No account exists with this user name."
+			Async.series [
+				(cb) =>
+					Bootbox.confirm "Permanently deactivate #{userName}?", (result) =>
+						if result
+							cb()
+						else
+							return
+				(cb) =>
+					Persist.Users.Account.read dataDirectory, userName, (err, account) =>
+						if err
+							cb err
 							return
 
-						cb err
-						return
-
-					acc.deactivate (err) =>
-						@setState {mode: 'ready'}
-
+						userAccount = account
+						cb()
+				(cb) =>
+					userAccount.deactivate (err) =>							
 						if err
-							if err instanceof Persist.Users.DeactivatedAccountError
-								Bootbox.alert "This account is already deactivated."
-								return
-
-							CrashHandler.handle err
+							cb err
 							return
 
 						cb()
-						Bootbox.alert "The account #{userName} has been deactivated."
+			], (err) =>
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+
+					if err instanceof Persist.Users.UnknownUserNameError
+						Bootbox.alert "No account exists with this user name."
+						return
+
+					if err instanceof Persist.Users.DeactivatedAccountError
+						Bootbox.alert "This account is already deactivated."
+						return
+
+					CrashHandler.handle err
+					return
+
+				# Account deactivated without errors
+				Bootbox.alert "The account #{userName} has been deactivated."
+				cb()
 
 		_closeDialog: ->
 			@setState {
@@ -317,6 +333,13 @@ load = (win) ->
 						Bootbox.alert "That user name is already taken."
 						return
 
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
 
@@ -328,7 +351,6 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
-				isLoading: false
 				password: ''
 				confirmPassword: ''
 			}
@@ -336,12 +358,9 @@ load = (win) ->
 			return Dialog({
 				title: "Reset user password"
 				onClose: @_cancel
+				ref: 'dialog'
 			},
 				R.div({className: 'ResetPasswordDialog'},
-					Spinner({
-						isVisible: @state.isLoading
-						isOverlay: true
-					})
 					R.div({className: 'form-group'},
 						R.label({}, "New password"),
 						R.input({
@@ -379,58 +398,65 @@ load = (win) ->
 			@setState {password: event.target.value}
 		_updateConfirmPassword: (event) ->
 			@setState {confirmPassword: event.target.value}
+
 		_submit: ->
 			# First catch unmatched passwords
 			unless @state.password is @state.confirmPassword
 				Bootbox.alert "Passwords do not match!"
 				return
 
+			# Begin resetting password
+			@refs.dialog.setIsLoading true
+
+			dataDirectory = global.ActiveSession.account.dataDirectory
 			userName = @props.rowData.get('userName')
 			password = @state.password
 
-			@setState {isLoading: true}
-
-			acc = null
-			decryptedAcc = null
+			userAccount = null
+			decryptedUserAccount = null
 
 			Async.series [
 				(cb) =>
-					Persist.Users.Account.read Config.dataDirectory, userName, (err, result) =>
+					Persist.Users.Account.read dataDirectory, userName, (err, result) =>
 						if err
-							if err instanceof Persist.Users.UnknownUserNameError
-								Bootbox.alert "Unknown user! Please check user name and try again"
-								return
-
 							cb err
 							return
 
-						acc = result
+						userAccount = result
 						cb()
 				(cb) =>
-					acc.decryptWithSystemKey global.ActiveSession.account, (err, result) =>
+					userAccount.decryptWithSystemKey global.ActiveSession.account, (err, result) =>
 						if err
-							if err instanceof Persist.Users.DeactivatedAccountError
-								Bootbox.alert "The specified user account has been deactivated."
-								return
-
 							cb err
 							return
 
-						decryptedAcc = result
+						decryptedUserAccount = result
 						cb()
 				(cb) =>
-					decryptedAcc.setPassword password, cb
+					decryptedUserAccount.setPassword password, cb
 			], (err) =>
-				@setState {isLoading: false}
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
+					if err instanceof Persist.Users.UnknownUserNameError
+						Bootbox.alert "Unknown user! Please check user name and try again"
+						return
+
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
+					if err instanceof Persist.Users.DeactivatedAccountError
+						Bootbox.alert "The specified user account has been deactivated."
+						return
+
 					CrashHandler.handle err
 					return
 
-				Bootbox.alert
-					message: "Password reset for \"#{userName}\""
-					callback: =>
-						@props.onSuccess()
+				Bootbox.alert "Password reset for \"#{userName}\"", @props.onSuccess
 
 	return AccountManagerTab
 
