@@ -178,7 +178,7 @@ load = (win) ->
 						userAccount = account
 						cb()
 				(cb) =>
-					userAccount.deactivate (err) =>							
+					userAccount.deactivate (err) =>
 						if err
 							cb err
 							return
