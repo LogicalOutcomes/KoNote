@@ -36,6 +36,7 @@ describe 'Atomic', ->
 				Rimraf tmpDir, cb
 		], cb
 
+
 	describe 'writeFile', ->
 		it 'should work and leave tmp empty', (cb) ->
 			fd = null
@@ -116,6 +117,7 @@ describe 'Atomic', ->
 						cb()
 			], cb
 
+
 	describe 'writeBufferToFile', ->
 		it 'should work and leave tmp empty', (cb) ->
 			Async.series [
@@ -166,6 +168,66 @@ describe 'Atomic', ->
 						Assert.equal data, 'abc'
 						cb()
 			], cb
+
+
+	describe 'writeJSONtoFile', ->
+		it 'should work and leave tmp empty', (cb) ->
+			fileName = 'a'
+			object = {foo: "fa", fum: 5}
+			jsonString = JSON.stringify(object)
+
+			Async.series [
+				(cb) ->
+					path = Path.join(dataDir, fileName)
+					Atomic.writeJSONToFile path, tmpDir, jsonString, cb
+				(cb) ->
+					Fs.readdir dataDir, (err, files) ->
+						if err
+							cb err
+							return
+
+						Assert.deepEqual files, [fileName]
+						cb()
+				(cb) ->
+					Fs.readFile Path.join(dataDir, fileName), 'utf8', (err, data) ->
+						if err
+							cb err
+							return
+
+						Assert.equal data, jsonString
+						cb()
+				(cb) ->
+					Fs.readdir tmpDir, (err, files) ->
+						if err
+							cb err
+							return
+
+						Assert.deepEqual files, []
+						cb()
+			], cb
+
+		it 'should overwrite other files', (cb) ->
+			fileName = 'b'
+			path = Path.join(dataDir, fileName)
+
+			object = {foo: "fa", fum: 5}
+			jsonString = JSON.stringify(object)			
+
+			Async.series [
+				(cb) ->
+					Fs.writeFile path, 'hey', cb
+				(cb) ->
+					Atomic.writeJSONToFile path, tmpDir, jsonString, cb
+				(cb) ->
+					Fs.readFile path, 'utf8', (err, data) ->
+						Assert not err
+
+						console.log {data}
+
+						Assert.equal data, jsonString
+						cb()
+			], cb
+
 
 	describe 'writeDirectory', ->
 		it 'should work and leave tmp empty', (cb) ->
@@ -310,6 +372,7 @@ describe 'Atomic', ->
 
 						cb()
 			], cb
+
 
 	describe 'deleteDirectory', ->
 		it 'should work and leave tmp empty', (cb) ->

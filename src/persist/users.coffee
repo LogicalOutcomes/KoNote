@@ -244,6 +244,7 @@ class Account
 			(cb) ->
 				accountRecoveryPath = Path.join(userDir, 'account-recovery')
 
+				
 				Fs.writeFile accountRecoveryPath, encryptedAccountKey, (err) =>
 					if err
 						cb new IOError err
@@ -271,7 +272,7 @@ class Account
 
 					cb()
 			(cb) ->
-				# Done preparing user, finish the operation atomically
+				# Done preparing user directory, finish the operation atomically
 				userDirOp.commit (err) ->
 					if err
 						if err instanceof IOError and err.cause.code in ['EEXIST', 'ENOTEMPTY']
@@ -334,9 +335,16 @@ class Account
 		publicInfo = null
 		accountKeyFileNames = null
 
+		publicInfoOp = null
+		publicInfoFile = null
+
+		publicInfoPath = Path.join(@_userDir, 'public-info')
+		tmpDirPath = Path.join(@dataDirectory, '_tmp')
+
 		Async.series [
 			(cb) =>
-				Fs.readFile Path.join(@_userDir, 'public-info'), (err, buf) =>
+				# Get existing public-info from user
+				Fs.readFile publicInfoPath, (err, buf) =>
 					if err
 						cb new IOError err
 						return
@@ -349,26 +357,24 @@ class Account
 
 					cb()
 			(cb) =>
+				# Change isActive attribute
 				publicInfo.isActive = false
 
-				Fs.writeFile Path.join(@_userDir, 'public-info'), JSON.stringify(publicInfo), (err) =>
-					if err
-						cb new IOError err
-						return
-
-					cb()
+				# Atomically write publicInfo to file as JSON
+				Atomic.writeJSONToFile publicInfoPath, tmpDirPath, JSON.stringify(publicInfo), cb
 			(cb) =>
+				# Get the full list of 'account-key' files
 				Fs.readdir @_userDir, (err, fileNames) =>
 					if err
 						cb new IOError err
 						return
 
 					accountKeyFileNames = Imm.List(fileNames)
-					.filter (fileName) =>
-						return fileName.startsWith 'account-key-'
+					.filter (fileName) => fileName.startsWith 'account-key-'
 
 					cb()
 			(cb) =>
+				# Delete each of the 'account-key' files
 				Async.each accountKeyFileNames.toArray(), (fileName, cb) =>
 					Fs.unlink Path.join(@_userDir, fileName), (err) =>
 						if err
@@ -592,7 +598,7 @@ class DecryptedAccount extends Account
 			# See Account.decrypt* instead
 			throw new Error "DecryptedAccount constructor should only be used internally"
 
-		@_userDir = getUserDir @dataDirectory, @userName
+		@_userDir = getUserDir @dataDirectory, @userName		
 
 	# Updates this user account's password.
 	#
@@ -605,6 +611,8 @@ class DecryptedAccount extends Account
 		kdfParams = generateKdfParams()
 		nextAccountKeyId = null
 		pwEncryptionKey = null
+		
+		tmpDirPath = Path.join(@dataDirectory, '_tmp')
 
 		Async.series [
 			(cb) =>
@@ -626,13 +634,10 @@ class DecryptedAccount extends Account
 			(cb) =>
 				accountKeyEncoded = Base64url.encode pwEncryptionKey.encrypt(@_accountKey.export())
 				data = {kdfParams, accountKey: accountKeyEncoded}
+				
+				nextAccountKeyPath = Path.join(@_userDir, "account-key-#{nextAccountKeyId}")
 
-				Fs.writeFile Path.join(@_userDir, "account-key-#{nextAccountKeyId}"), JSON.stringify(data), (err) =>
-					if err
-						cb new IOError err
-						return
-
-					cb()
+				Atomic.writeJSONToFile nextAccountKeyPath, tmpDirPath, JSON.stringify(data), cb
 		], cb
 
 generateKdfParams = ->
