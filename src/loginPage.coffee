@@ -206,10 +206,12 @@ load = (win) ->
 					isOverlay: true
 					message: @props.loadingMessage
 				})
-				FaIcon('times', {
-					id: 'quitIcon'
-					onClick: @_quit					
-				})
+				R.div({className: 'header'},
+					FaIcon('times', {
+						id: 'quitIcon'
+						onClick: @_quit					
+					})
+				)
 				R.div({id: "loginForm"},
 					R.div({
 						id: 'logoContainer'
