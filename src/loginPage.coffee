@@ -267,7 +267,7 @@ load = (win) ->
 			)
 
 		_quit: ->
-			Window.close(true)
+			win.close(true)
 		
 		_updateUserName: (event) ->
 			@setState {userName: event.target.value}
