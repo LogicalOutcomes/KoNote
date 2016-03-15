@@ -338,8 +338,6 @@ load = (win) ->
 													key: targetId
 													className: 'target'
 												},
-													console.log "@state.targetMetricsById", @state.targetMetricsById
-
 													R.h5({}, target.get('name'))
 
 													# TODO Figure out why targetId is occasionally late to the party
