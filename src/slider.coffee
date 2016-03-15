@@ -18,8 +18,7 @@ load = (win) ->
 			console.log "@props.value", @props.value
 			@_initSlider()
 
-		_initSlider: ->			
-
+		_initSlider: ->
 			@slider = $(@refs.slider).slider({
 					enabled: true
 					tooltip: 'show'
