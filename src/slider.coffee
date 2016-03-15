@@ -10,6 +10,8 @@
 #   onSlide: ->
 # 	formatter: (value) ->
 
+Imm = require 'immutable'
+
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
@@ -21,9 +23,16 @@ load = (win) ->
 		getInitialState: ->
 			slider: null
 
+		componentDidUpdate: (oldProps, oldState) ->
+			unless oldProps.ticks.length is @props.ticks.length
+				@slider.slider('destroy')
+				@_initSlider()
+
 		componentDidMount: ->
-			@setState {
-				slider: $(@refs.slider).slider({
+			@_initSlider()
+
+		_initSlider: ->
+			@slider = $(@refs.slider).slider({
 					enabled: @props.isEnabled
 					tooltip: if @props.tooltip then 'show' else 'hide'
 					range: @props.isRange or false
@@ -32,16 +41,15 @@ load = (win) ->
 					value: @props.defaultValue
 					formatter: @props.formatter or ((value) -> value)
 				})
-			}, =>
-				# Register events
+			# Register events
 
-				# Handle drop
-				if @props.onChange?
-					@state.slider.on('slideStop', (event) => @props.onChange event)
+			# Handle drop
+			if @props.onChange?
+				@slider.on('slideStop', (event) => @props.onChange event)
 
-				# Handle slide
-				if @props.onSlide?
-					@state.slider.on('slide', (event) => @props.onSlide event)
+			# Handle slide
+			if @props.onSlide?
+				@slider.on('slide', (event) => @props.onSlide event)
 
 		render: ->
 			return R.input({ref: 'slider'})
