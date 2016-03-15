@@ -181,10 +181,8 @@ load = (win) ->
 						R.div({className: 'timeSpanContainer'},
 							Slider({
 								ref: 'timeSpanSlider'
-								isEnabled: true
-								tooltip: true
 								isRange: true
-								defaultValue: [0, @state.xTicks.size]
+								value: @state.timeSpan
 								ticks: @state.xTicks.pop().toJS()
 								onChange: @_updateTimeSpan
 								formatter: ([start, end]) =>
@@ -193,8 +191,8 @@ load = (win) ->
 									return "#{startTime} - #{endTime}"
 							})
 							R.div({className: 'valueDisplay'},
-								(@state.timeSpan.map (index) =>
-									date = Moment(@state.xTicks.get(index)).format('MMM Do - YYYY')
+								(@state.timeSpan.map (time, index) =>
+									date = Moment(@state.xTicks.get(time)).format('MMM Do - YYYY')
 									return R.div({key: index},
 										R.span({}, date)
 									)
