@@ -64,6 +64,13 @@ load = (win) ->
 
 		render: ->
 			orderedData = @_reorderData(@props.tableData)
+
+			if orderedData.size is 0
+				return R.div({
+					className: 'orderableTable noMatchesMessage'
+				},
+					@props.noMatchesMessage or "No data available"
+				)
 			
 			return R.table({className: 'table table-striped table-hover orderableTable'},
 				R.thead({},

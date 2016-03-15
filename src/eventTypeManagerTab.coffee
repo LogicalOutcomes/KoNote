@@ -77,6 +77,7 @@ load = (win) ->
 				R.div({className: 'main'},
 					OrderableTable({
 						tableData: @state.eventTypes
+						noMatchesMessage: "No #{Term 'event'} types defined yet"
 						sortByData: ['name']
 						columns: [
 							{

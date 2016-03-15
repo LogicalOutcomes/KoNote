@@ -426,6 +426,7 @@ load = (win) ->
 						},
 							OrderableTable({
 								tableData: queryResults
+								noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
 								onSortChange: (orderedQueryResults) => @setState {orderedQueryResults}
 								sortByData: ['clientName', 'last']
 								key: ['id']

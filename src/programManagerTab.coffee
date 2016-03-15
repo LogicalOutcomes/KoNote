@@ -47,6 +47,7 @@ load = (win) ->
 				R.div({className: 'main'},
 					OrderableTable({
 						tableData: programs
+						noMatchesMessage: "No #{Term 'programs'} exist yet"
 						sortByData: ['name']
 						columns: [
 							{

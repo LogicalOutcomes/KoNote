@@ -38,6 +38,7 @@ load = (win) ->
 				R.div({className: 'main'},
 					OrderableTable({
 						tableData: @props.metricDefinitions
+						noMatchesMessage: "No #{Term 'metrics'} defined yet"
 						sortByData: ['name']
 						columns: [
 							{
