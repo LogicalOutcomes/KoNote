@@ -108,12 +108,8 @@ module.exports = function(grunt) {
 						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/customer.json'
 					},
 					{
-						src: 'customers/griffin/customer-logo-lg_GRIFFIN.png',
-						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/customer-logo-lg_GRIFFIN.png'
-					},
-					{
-						src: 'customers/griffin/customer-logo-sm_GRIFFIN.png',
-						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/customer-logo-sm_GRIFFIN.png'
+						src: 'customers/griffin/gc-logo.svg',
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/gc-logo.svg'
 					}
 				]
 			}
