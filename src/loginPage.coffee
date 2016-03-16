@@ -48,9 +48,9 @@ load = (win) ->
 			@props.closeWindow()
 
 		_activateWindow: ->
-			@setState {isSetUp: true}
-			Window.focus()
+			@setState {isSetUp: true}			
 			Window.show()
+			Window.focus()
 
 		render: ->
 			unless @state.isSetUp
