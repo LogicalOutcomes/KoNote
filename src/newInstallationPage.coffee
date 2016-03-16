@@ -28,6 +28,7 @@ load = (win) ->
 			cb()
 
 		componentDidMount: ->
+			Window.show()
 			Window.focus()
 
 		suggestClose: ->
