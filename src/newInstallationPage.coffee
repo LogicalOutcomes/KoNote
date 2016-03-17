@@ -16,7 +16,8 @@ load = (win) ->
 	Gui = win.require 'nw.gui'
 	Window = Gui.Window.get()
 
-	Spinner = require('./spinner').load(win)	
+	Spinner = require('./spinner').load(win)
+	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon} = require('./utils').load(win)
 
 	NewInstallationPage = React.createFactory React.createClass
