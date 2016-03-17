@@ -474,6 +474,9 @@ load = (win) ->
 			return targetId? and @state.excludedTargetIds.contains(targetId)
 
 		_updateTimeSpan: (event) ->
+			newTimeSpan = event.target.value
+			return unless newTimeSpan instanceof Array
+
 			timeSpan = event.target.value.split(",")
 			@setState {timeSpan}
 

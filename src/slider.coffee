@@ -19,13 +19,18 @@ load = (win) ->
 			@_initSlider()
 
 		_initSlider: ->
+			sliderValue = if @props.value? and @props.value instanceof Array
+				@props.value
+			else
+				[0, @props.ticks.length]
+
 			@slider = $(@refs.slider).slider({
 					enabled: true
 					tooltip: 'show'
 					range: @props.isRange or false
 					min: 0
 					max: @props.ticks.length
-					value: @props.value or [0, @props.ticks.length]
+					value: sliderValue
 					formatter: @props.formatter or ((value) -> value)
 				})
 
