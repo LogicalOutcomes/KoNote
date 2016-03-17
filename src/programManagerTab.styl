@@ -7,24 +7,22 @@
 	.btn > .badge
 		margin-left 5px
 		
-	table
+	.orderableTable
 		margin-bottom 0px
+			
+		.tableCell
+			&:first-child, &:last-child
+				flex 0.5
 		
-		tbody 
-			> tr
+		.tableBody
+			
+			.tableRow
+				
+				.optionsCell .btn-group
+					visibility hidden
+				
 				&:hover .optionsCell .btn-group
-					visibility visible !important
-
-				> td
-					&:last-child
-						text-align right
-						
-					&.colorKeyCell > span
-						display block
-						width 25px
-						height 25px
-						border-radius 12.5px
-						border 2px solid white
+					visibility visible !important				
 						
 					&.numberClientsCell
 						text-align left

@@ -22,6 +22,8 @@ load = (win) ->
 	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
+	{ProgramBubble} = require('./programBubbles').load(win)
+
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
 	ProgramManagerTab = React.createFactory React.createClass
@@ -55,11 +57,8 @@ load = (win) ->
 								nameIsVisible: false
 								dataPath: ['colorKeyHex']								
 								cellClass: 'colorKeyCell'
-								valueStyle: (dataPoint) ->
-									return {
-										background: dataPoint.get('colorKeyHex')
-									}
-								hideValue: true
+								value: (dataPoint) ->
+									ProgramBubble({colorKeyHex: dataPoint.get('colorKeyHex')})
 							}
 							{
 								name: "Program Name"

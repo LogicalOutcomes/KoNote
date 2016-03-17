@@ -25,6 +25,7 @@ load = (win) ->
 	BrandWidget = require('./brandWidget').load(win)	
 	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
+	{ProgramBubbles} = require('./programBubbles').load(win)
 
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 
@@ -442,20 +443,8 @@ load = (win) ->
 										cellClass: 'programsCell'
 										isNotOrderable: true
 										nameIsVisible: false
-
 										value: (dataPoint) ->
-											programs = dataPoint.get('programs')
-
-											return R.div({className: 'programBubbles'}, 
-												(programs
-													.sortBy (program) -> program.get('name').toLowerCase()
-													.map (program) -> 
-														ProgramBubble({
-															program
-															key: program.get('id')
-														})
-												)
-											)
+											ProgramBubbles({programs: dataPoint.get('programs')})
 									}
 									{
 										name: "Last Name"
@@ -679,25 +668,7 @@ load = (win) ->
 						FaIcon(@props.icon)
 						@props.title
 					)
-			)
-
-	ProgramBubble = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]
-
-		componentDidMount: ->
-			$(@refs.bubble).popover {
-				trigger: 'hover'
-				placement: 'right'
-				title: @props.program.get('name')
-				content: @props.program.get('description')
-			}
-		render: ->
-			return R.div({
-				className: 'programBubble'
-				ref: 'bubble'				
-				style:
-					background: @props.program.get('colorKeyHex')
-			})
+			)	
 
 
 	return ClientSelectionPage

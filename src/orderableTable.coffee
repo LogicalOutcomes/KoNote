@@ -72,13 +72,17 @@ load = (win) ->
 					@props.noMatchesMessage or "No data available"
 				)
 			
-			return R.table({className: 'table table-striped table-hover orderableTable'},
-				R.thead({},
-					R.tr({},
+			return R.div({className: 'orderableTable'},
+				R.div({className: 'tableHead'},
+					R.div({className: 'tableRow'},
 						(@props.columns.map (column) =>
 							return if column.isDisabled
-							R.th({key: column.name},
-								R.span({
+							R.div({
+								className: 'tableCell'
+								key: column.name
+							},
+								R.div({
+									className: 'dataValue'
 									onClick: @_sortByData.bind(null, column.dataPath) unless column.isNotOrderable
 								}, 
 									column.name unless column.nameIsVisible? and not column.nameIsVisible
@@ -92,77 +96,87 @@ load = (win) ->
 						)
 					)
 				)
-				R.tbody({},
-					(orderedData.map (dataPoint) =>
-						R.tr({
-							className: executeIfFunction @props.rowClass(dataPoint)
-							key: dataPoint.getIn(@props.rowKey)
-							onClick: @props.onClickRow dataPoint
-						},
-							(@props.columns.map (column) =>
-								return if column.isDisabled
-								R.td({
-									key: column.name
-									className: [
-										'hasButtons' if column.buttons?
-										column.cellClass if column.cellClass?
-									].join ' '									
-								},
-									hasDataValue = column.dataPath? and dataPoint.getIn(column.dataPath).toString().length > 0
-									hasExtraDataValue = column.extraPath? and dataPoint.getIn(column.extraPath).toString().length > 0
-
-									R.span({
+				R.div({className: 'tableBodyContainer'},
+					R.div({
+						className: 'tableBody'
+					},
+						(orderedData.map (dataPoint) =>
+							R.div({
+								className: [
+									'tableRow'
+									executeIfFunction @props.rowClass(dataPoint)
+								].join ' '
+								key: dataPoint.getIn(@props.rowKey)
+								onClick: @props.onClickRow dataPoint
+							},
+								(@props.columns.map (column) =>
+									return if column.isDisabled
+									R.div({
+										key: column.name
 										className: [
-											'dataValue'
-											'noValue' if not hasDataValue
-										].join ' '
-										style: column.valueStyle(dataPoint) if column.valueStyle?
+											'tableCell'
+											'hasButtons' if column.buttons?
+											column.cellClass if column.cellClass?
+										].join ' '									
 									},
-										(if hasDataValue
-											if column.value?
-												executeIfFunction column.value dataPoint
-											else if not column.hideValue? and not column.hideValue
-												dataPoint.getIn(column.dataPath)
-										else if column.defaultValue?
-											(column.defaultValue)										
-										)
-									)
-									(if hasExtraDataValue
-										R.span({className: 'extraDataValue'},
-											", " + dataPoint.getIn(column.extraPath)
-										)
-									)
+										hasDataValue = column.dataPath? and dataPoint.getIn(column.dataPath).toString().length > 0
+										hasExtraDataValue = column.extraPath? and dataPoint.getIn(column.extraPath).toString().length > 0
 
-									(if column.buttons?
-										R.div({className: 'btn-group'},
-											column.buttons.map (button) =>
-												if button.dialog?
-													# Flatten props from orderableTable API for OpenDialogLink
-													props = {}
+										R.div({
+											className: 'dataValue'
+											style: column.valueStyle(dataPoint) if column.valueStyle?
+										},
+											(if hasDataValue
 
-													_.extend(props, button.data, {
-														className: button.className
-														dialog: button.dialog
-														rowData: dataPoint
-													})
-
-													OpenDialogLink(props,
-														FaIcon(button.icon) if button.icon
-														' '
-														(if button.dataPath?
-															dataPoint.getIn(button.dataPath)
-														else
-															executeIfFunction button.text, dataPoint
-														)
-													)
+												if column.value?
+													executeIfFunction column.value dataPoint
+												else if not column.hideValue? and not column.hideValue
+													[
+														dataPoint.getIn(column.dataPath)
+														if hasExtraDataValue
+															", " + dataPoint.getIn(column.extraPath)
+													]
 												else
-													R.button({
-														className: button.className
-														onClick: button.onClick(dataPoint)
-													}, 
-														button.text if button.text?
-														FaIcon(button.icon) if button.icon?
-													)
+													null
+
+											else if column.defaultValue?
+												(column.defaultValue)
+											else
+												null
+											)
+										)
+
+										(if column.buttons?
+											R.div({className: 'btn-group'},
+												column.buttons.map (button) =>
+													if button.dialog?
+														# Flatten props from orderableTable API for OpenDialogLink
+														props = {}
+
+														_.extend(props, button.data, {
+															className: button.className
+															dialog: button.dialog
+															rowData: dataPoint
+														})
+
+														OpenDialogLink(props,
+															FaIcon(button.icon) if button.icon
+															' '
+															(if button.dataPath?
+																dataPoint.getIn(button.dataPath)
+															else
+																executeIfFunction button.text, dataPoint
+															)
+														)
+													else
+														R.button({
+															className: button.className
+															onClick: button.onClick(dataPoint)
+														}, 
+															button.text if button.text?
+															FaIcon(button.icon) if button.icon?
+														)
+											)
 										)
 									)
 								)
