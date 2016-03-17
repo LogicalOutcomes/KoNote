@@ -107,7 +107,13 @@ load = (win) ->
 							win.close(true)
 
 
-		_login: (userName, password) ->			
+		_login: (userName, password) ->
+			# Run regex check on username first
+			unless Persist.Users.userNameRegex.exec userName
+				@refs.ui.onLoginError('InvalidUserNameError')
+				return
+
+			# Start authentication process
 			@setState ->
 				isLoading: true
 				loadingMessage: "Authenticating..."
@@ -180,18 +186,24 @@ load = (win) ->
 		onLoginError: (type) ->
 			switch type
 				when 'UnknownUserNameError'
-					Bootbox.alert "Unknown user name.  Please try again.", =>
+					Bootbox.alert "Unknown user name. Please try again.", =>
 						setTimeout(=>
 							@refs.userNameField.focus()
 						, 100)
 				when 'IncorrectPasswordError'
-					Bootbox.alert "Incorrect password.  Please try again.", =>
+					Bootbox.alert "Incorrect password. Please try again.", =>
 						@setState {password: ''}
 						setTimeout(=>
 							@refs.passwordField.focus()
 						, 100)
 				when 'DeactivatedAccountError'
 					Bootbox.alert "This user account has been deactivated.", =>
+						@refs.userNameField.focus()
+						setTimeout(=>
+							@refs.userNameField.focus()
+						, 100)
+				when 'InvalidUserNameError'
+					Bootbox.alert "Invalid user name. Please try again.", =>
 						@refs.userNameField.focus()
 						setTimeout(=>
 							@refs.userNameField.focus()

@@ -666,4 +666,5 @@ module.exports = {
 	UnknownUserNameError
 	IncorrectPasswordError
 	DeactivatedAccountError
+	userNameRegex
 }
