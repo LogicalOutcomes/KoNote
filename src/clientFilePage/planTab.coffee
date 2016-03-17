@@ -156,7 +156,7 @@ load = (win) ->
 								)
 								(if metricDefs.size is 0
 									R.div({className: 'noMetrics'},
-										"This #{Term 'target'} has no metrics attached. "
+										"This #{Term 'target'} has no #{Term 'metrics'} attached."
 										(unless @props.isReadOnly
 											R.button({
 												className: 'btn btn-link addMetricButton'
