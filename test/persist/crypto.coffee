@@ -6,7 +6,7 @@ Async = require 'async'
 	PrivateKey
 	PublicKey
 	generateSalt
-} = require '../../persist/crypto'
+} = require '../../src/persist/crypto'
 
 describe 'generateSalt', ->
 	it 'should generate unique salts', ->

@@ -25,6 +25,7 @@ load = (win) ->
 	BrandWidget = require('./brandWidget').load(win)	
 	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
+	{ProgramBubbles} = require('./programBubbles').load(win)
 
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 
@@ -36,6 +37,7 @@ load = (win) ->
 			return {
 				status: 'init'
 				isLoading: true
+				loadingMessage: ""
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
 				clientFileProgramLinks: Imm.List()
@@ -61,6 +63,7 @@ load = (win) ->
 
 				status: @state.status				
 				isLoading: @state.isLoading
+				loadingMessage: @state.loadingMessage
 
 				clientFileHeaders: @state.clientFileHeaders
 				clientFileProgramLinks: @state.clientFileProgramLinks
@@ -70,13 +73,19 @@ load = (win) ->
 
 		_openClientFile: (clientFileId) ->
 			console.log "Selected clientFileId", clientFileId
-			@setState {isLoading: true}, =>
+			@setState
+				isLoading: true
+				loadingMessage: "Loading Client File..."
+			, =>
 				clientFileWindow = openWindow {
 					page: 'clientFile'
 					clientFileId
 				}
 				clientFileWindow.on 'loaded', =>
-					@setState {isLoading: false}
+					@setState {
+						isLoading: false
+						loadingMessage: ""
+					}
 
 		_setStatus: (status) ->
 			@setState {status}
@@ -185,7 +194,7 @@ load = (win) ->
 				'create:clientFile': (newFile) =>
 					clientFileHeaders = @state.clientFileHeaders.push newFile
 					@setState {clientFileHeaders}
-					@props.openClientFile(newFile.get('id'))
+					@_openClientFile(newFile.get('id'))
 
 				# TODO: Create a function for this kind of listening/updating
 
@@ -300,6 +309,7 @@ load = (win) ->
 				Spinner {
 					isOverlay: true
 					isVisible: @props.isLoading
+					message: @props.loadingMessage
 				}
 
 				R.a({
@@ -417,6 +427,7 @@ load = (win) ->
 						},
 							OrderableTable({
 								tableData: queryResults
+								noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
 								onSortChange: (orderedQueryResults) => @setState {orderedQueryResults}
 								sortByData: ['clientName', 'last']
 								key: ['id']
@@ -432,20 +443,8 @@ load = (win) ->
 										cellClass: 'programsCell'
 										isNotOrderable: true
 										nameIsVisible: false
-
 										value: (dataPoint) ->
-											programs = dataPoint.get('programs')
-
-											return R.div({className: 'programBubbles'}, 
-												(programs
-													.sortBy (program) -> program.get('name').toLowerCase()
-													.map (program) -> 
-														ProgramBubble({
-															program
-															key: program.get('id')
-														})
-												)
-											)
+											ProgramBubbles({programs: dataPoint.get('programs')})
 									}
 									{
 										name: "Last Name"
@@ -669,25 +668,7 @@ load = (win) ->
 						FaIcon(@props.icon)
 						@props.title
 					)
-			)
-
-	ProgramBubble = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]
-
-		componentDidMount: ->
-			$(@refs.bubble).popover {
-				trigger: 'hover'
-				placement: 'right'
-				title: @props.program.get('name')
-				content: @props.program.get('description')
-			}
-		render: ->
-			return R.div({
-				className: 'programBubble'
-				ref: 'bubble'				
-				style:
-					background: @props.program.get('colorKeyHex')
-			})
+			)	
 
 
 	return ClientSelectionPage

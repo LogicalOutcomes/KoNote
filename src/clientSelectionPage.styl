@@ -8,7 +8,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 #container > #clientSelectionPage
 	display flex
 	overflow hidden
-	height 100%	
+	height 100%
 	
 	> #expandMenuButton
 		background none
@@ -56,6 +56,9 @@ sidebar-borders = darken(sidebar-bg, 10%)
 		> #main
 			margin auto 0
 			height 100%
+			
+			display flex
+			flex-direction column
 
 			// header animation durations
 			duration-to-small = 0.2s
@@ -64,6 +67,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 			duration-to-big3 = 0.3s
 
 			> header
+				height 200px
 				display flex
 				align-items center
 				flex-direction column
@@ -135,61 +139,46 @@ sidebar-borders = darken(sidebar-bg, 10%)
 				img
 					max-height 40px
 					cursor pointer
+					
+			.results
+				flex 1
+				display flex
 						
 			.orderableTable
-				thead
-					th
-						border-bottom 0px
-				tbody tr
-					transition background .15s ease-in-out
-					background white					
-					
-					&.active						
+				height 550px
+				
+
+				.tableCell
+					&:first-child, &:last-child
+						flex 0.5
+						text-align right !important
+						
+					.dataValue
+						flex 1
+						
+				
+				.tableBody
+						
+					.tableRow
+						transition background .15s ease-in-out
+						background white
 						cursor pointer
 						
-						td
-							color hsl(200, 80%, 20%)
-							background hsl(200, 80%, 80%)
-						
-					&:hover
-						background hsl(200, 80%, 90%)
-						
-					td
-						transition all .1s ease
-						font-size 1.15em
-						line-height 2.5em
-						border none
-						
-					td.programsCell
-						width 15%
-						
-						.popover
-							// TODO: More relavent styling to program
-							color black
-				
-						.programBubbles
-							display flex
-							flex-wrap wrap
+						&.active
+							.tableCell
+								color hsl(200, 80%, 20%) !important
+								background hsl(200, 80%, 80%) !important
+							
+						&:hover
+							background hsl(200, 80%, 90%)
+							
 
-							.programBubble
-								flex 1
-								border-radius 50%
-								max-width 25px
-								border 2px solid white
-								transition border-color .15s ease
+						.tableCell
+							transition all .1s ease
+							
+							.popover
+								color black
 								
-								margin-left 5px
-								
-								&:hover
-									border-color hsla(0, 0, 0, 0.3)
-								
-								&:before
-									display block
-									content ""
-									padding-top 100%
-								
-								&:first-child
-									margin-left 0px
 					
 	> #menuContainer
 		flex 0		

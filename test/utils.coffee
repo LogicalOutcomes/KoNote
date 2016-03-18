@@ -2,7 +2,7 @@ require 'string.prototype.startswith'
 
 Assert = require 'assert'
 
-{CustomError} = require '../utils'
+{CustomError} = require '../src/utils'
 
 class A extends CustomError
 class B extends A

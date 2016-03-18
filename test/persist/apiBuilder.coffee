@@ -8,12 +8,12 @@ Moment = require 'moment'
 Path = require 'path'
 Rimraf = require 'rimraf'
 
-{buildApi} = require '../../persist/apiBuilder'
-{SymmetricEncryptionKey} = require '../../persist/crypto'
+{buildApi} = require '../../src/persist/apiBuilder'
+{SymmetricEncryptionKey} = require '../../src/persist/crypto'
 {
 	ObjectNotFoundError
 	TimestampFormat
-} = require '../../persist/utils'
+} = require '../../src/persist/utils'
 
 dataDir = Path.join process.cwd(), 'testData'
 

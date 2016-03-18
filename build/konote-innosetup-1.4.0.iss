@@ -48,3 +48,19 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 
 [UninstallRun]
 Filename: "{app}\uninstall.exe"; Flags: runhidden
+
+[InstallDelete]
+Type: filesandordirs; Name: "{app}\data"
+
+[Code]
+function InitializeSetup(): Boolean;
+begin
+  if DirExists(ExpandConstant('{userappdata}\{#MyAppName}\data')) then 
+    begin
+    Result := MsgBox('WARNING!' #13#13 'KoNote has detected data from a previous installation. If you continue, this data will be lost. We recommended backing up your data before continuing.' #13#13 'Do you really want to start setup?', mbInformation, MB_YESNO) = idYes;
+    end
+  else
+    begin
+    result := true;
+    end;
+end;

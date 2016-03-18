@@ -19,7 +19,7 @@ Fs = require 'fs'
 Path = require 'path'
 Rimraf = require 'rimraf'
 
-{generateId, IOError} = require './utils'
+{generateId, IOError, isValidJSON} = require './utils'
 
 # Atomically write a file to the specified path.
 #
@@ -82,6 +82,36 @@ writeBufferToFile = (path, tmpDirPath, dataBuf, cb) =>
 				cb()
 		(cb) =>
 			Fs.write fileHandle, dataBuf, 0, dataBuf.length, (err) =>
+				if err
+					cb new IOError err
+					return
+
+				cb()
+		(cb) =>
+			fileOp.commit cb
+	], cb
+
+# Atomically write stringified JSON to a file at the specified path.
+# 
+# This is another convienience method that wraps around `writeFile`.
+writeJSONToFile = (path, tmpDirPath, dataJSON, cb) =>	
+	Assert isValidJSON dataJSON, "dataJSON must be valid JSON"
+
+	fileHandle = null
+	fileOp = null
+
+	Async.series [
+		(cb) =>
+			writeFile path, tmpDirPath, (err, fd, op) =>
+				if err
+					cb err
+					return
+
+				fileHandle = fd
+				fileOp = op
+				cb()
+		(cb) =>
+			Fs.write fileHandle, dataJSON, (err) =>
 				if err
 					cb new IOError err
 					return
@@ -173,6 +203,7 @@ class AtomicOperation
 module.exports = {
 	writeFile
 	writeBufferToFile
+	writeJSONToFile
 	writeDirectory
 	deleteDirectory
 }

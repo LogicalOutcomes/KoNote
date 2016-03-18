@@ -15,6 +15,7 @@ Base64url = require 'base64url'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
+Atomic = require './atomic'
 
 {
 	generateSalt
@@ -23,7 +24,7 @@ Path = require 'path'
 	PublicKey
 } = require './crypto'
 
-{CustomError} = require './utils'
+{CustomError, IOError} = require './utils'
 
 userNameRegex = /^[a-zA-Z0-9_-]+$/
 
@@ -158,10 +159,6 @@ class Account
 		if accountType is 'admin'
 			Assert.strictEqual loggedInAccount.publicInfo.accountType, 'admin', 'only admins can create admins'
 
-		userName = userName.toLowerCase()
-
-		userDir = getUserDir loggedInAccount.dataDirectory, userName
-
 		publicInfo = {accountType, isActive: true}
 		kdfParams = generateKdfParams()
 		accountEncryptionKey = SymmetricEncryptionKey.generate()
@@ -170,9 +167,19 @@ class Account
 		pwEncryptionKey = null
 		encryptedAccountKey = null
 
+		userName = userName.toLowerCase()
+		dataDirectory = loggedInAccount.dataDirectory
+		
+		destUserDir = getUserDir dataDirectory, userName
+		tmpDirPath = Path.join(dataDirectory, '_tmp')
+
+		userDir = null
+		userDirOp = null
+
 		Async.series [
 			(cb) ->
-				publicKeyPath = Path.join(loggedInAccount.dataDirectory, '_users', '_system', 'public-key')
+				# Get system public key
+				publicKeyPath = Path.join(dataDirectory, '_users', '_system', 'public-key')
 
 				Fs.readFile publicKeyPath, (err, buf) ->
 					if err
@@ -182,15 +189,14 @@ class Account
 					systemPublicKey = PublicKey.import(buf.toString())
 					cb()
 			(cb) ->
-				Fs.mkdir userDir, (err) ->
+				# Create temporary user directory
+				Atomic.writeDirectory destUserDir, tmpDirPath, (err, tempUserDir, op) ->
 					if err
-						if err.code is 'EEXIST'
-							cb new UserNameTakenError()
-							return
-
-						cb new IOError err
+						cb err
 						return
 
+					userDir = tempUserDir
+					userDirOp = op
 					cb()
 			(cb) ->
 				SymmetricEncryptionKey.derive password, kdfParams, (err, result) ->
@@ -238,6 +244,7 @@ class Account
 			(cb) ->
 				accountRecoveryPath = Path.join(userDir, 'account-recovery')
 
+				
 				Fs.writeFile accountRecoveryPath, encryptedAccountKey, (err) =>
 					if err
 						cb new IOError err
@@ -264,12 +271,24 @@ class Account
 						return
 
 					cb()
+			(cb) ->
+				# Done preparing user directory, finish the operation atomically
+				userDirOp.commit (err) ->
+					if err
+						if err instanceof IOError and err.cause.code in ['EEXIST', 'ENOTEMPTY']
+							cb new UserNameTakenError()
+							return
+
+						cb err
+						return
+
+					cb()
 		], (err) ->
 			if err
 				cb err
 				return
 
-			cb null, new Account loggedInAccount.dataDirectory, userName, publicInfo, 'privateaccess'
+			cb null, new Account dataDirectory, userName, publicInfo, 'privateaccess'
 
 	# Read the public information for the account with the specified user name.
 	#
@@ -316,9 +335,16 @@ class Account
 		publicInfo = null
 		accountKeyFileNames = null
 
+		publicInfoOp = null
+		publicInfoFile = null
+
+		publicInfoPath = Path.join(@_userDir, 'public-info')
+		tmpDirPath = Path.join(@dataDirectory, '_tmp')
+
 		Async.series [
 			(cb) =>
-				Fs.readFile Path.join(@_userDir, 'public-info'), (err, buf) =>
+				# Get existing public-info from user
+				Fs.readFile publicInfoPath, (err, buf) =>
 					if err
 						cb new IOError err
 						return
@@ -331,26 +357,24 @@ class Account
 
 					cb()
 			(cb) =>
+				# Change isActive attribute
 				publicInfo.isActive = false
 
-				Fs.writeFile Path.join(@_userDir, 'public-info'), JSON.stringify(publicInfo), (err) =>
-					if err
-						cb new IOError err
-						return
-
-					cb()
+				# Atomically write publicInfo to file as JSON
+				Atomic.writeJSONToFile publicInfoPath, tmpDirPath, JSON.stringify(publicInfo), cb
 			(cb) =>
+				# Get the full list of 'account-key' files
 				Fs.readdir @_userDir, (err, fileNames) =>
 					if err
 						cb new IOError err
 						return
 
 					accountKeyFileNames = Imm.List(fileNames)
-					.filter (fileName) =>
-						return fileName.startsWith 'account-key-'
+					.filter (fileName) => fileName.startsWith 'account-key-'
 
 					cb()
 			(cb) =>
+				# Delete each of the 'account-key' files
 				Async.each accountKeyFileNames.toArray(), (fileName, cb) =>
 					Fs.unlink Path.join(@_userDir, fileName), (err) =>
 						if err
@@ -574,7 +598,7 @@ class DecryptedAccount extends Account
 			# See Account.decrypt* instead
 			throw new Error "DecryptedAccount constructor should only be used internally"
 
-		@_userDir = getUserDir @dataDirectory, @userName
+		@_userDir = getUserDir @dataDirectory, @userName		
 
 	# Updates this user account's password.
 	#
@@ -587,6 +611,8 @@ class DecryptedAccount extends Account
 		kdfParams = generateKdfParams()
 		nextAccountKeyId = null
 		pwEncryptionKey = null
+		
+		tmpDirPath = Path.join(@dataDirectory, '_tmp')
 
 		Async.series [
 			(cb) =>
@@ -608,13 +634,10 @@ class DecryptedAccount extends Account
 			(cb) =>
 				accountKeyEncoded = Base64url.encode pwEncryptionKey.encrypt(@_accountKey.export())
 				data = {kdfParams, accountKey: accountKeyEncoded}
+				
+				nextAccountKeyPath = Path.join(@_userDir, "account-key-#{nextAccountKeyId}")
 
-				Fs.writeFile Path.join(@_userDir, "account-key-#{nextAccountKeyId}"), JSON.stringify(data), (err) =>
-					if err
-						cb new IOError err
-						return
-
-					cb()
+				Atomic.writeJSONToFile nextAccountKeyPath, tmpDirPath, JSON.stringify(data), cb
 		], cb
 
 generateKdfParams = ->
@@ -643,4 +666,5 @@ module.exports = {
 	UnknownUserNameError
 	IncorrectPasswordError
 	DeactivatedAccountError
+	userNameRegex
 }

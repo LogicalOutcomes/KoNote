@@ -1,34 +1,75 @@
-table.orderableTable
-	th
-		opacity .8
+.orderableTable
+	display flex
+	flex-direction column
+	overflow hidden
+	border-bottom 1px solid #eee
+	font-size 1.1em
+	
+	&.noMatchesMessage
+		height 200px
+		text-align center
+		font-size 24px
+		padding 50px
+		font-weight 300
+		opacity 0.5
 		
-		&:hover
-			opacity 1
-			
-		> span
-			position relative
-			padding-right 10px
-			
-			&:hover
-				cursor pointer				
-			
-			.fa
-				position absolute
-				right -13px
-				top 3px				
-
-	th:first-child, td:first-child
-		padding-left 25px
-	th:last-child, td:last-child
-		padding-right 25px
+	.tableCell
+		flex 1
+		display flex
+		align-items center
 		
-	tbody
-		td
-			vertical-align middle
+	.tableHead
+		display flex
+		display block
+		border-bottom 1px solid #eee
+		
+		.tableRow
+			display flex
 
-			> span
+			.tableCell
+				height 40px
+				opacity .8
+				cursor pointer
+				
+				.fa
+					padding 5px
+				
+				&:hover
+					opacity 1
+					
+				> span
+					position relative
+					padding-right 10px
+					
+					.fa
+						position absolute
+						right -13px
+						top 3px
+						
+	.tableBodyContainer
+		flex 1
+		overflow-y auto
+		
+	.tableBody
+		width 100%
+		clear both
+		height 100%
+		
+		.tableRow
+			display flex
+		
+			.tableCell		
+				height 50px
+					
 				&.noValue
 					font-weight 300
 					opacity 0.5
 					font-style italic
 					letter-spacing 2px
+					
+						
+	.tableRow .tableCell
+			&:first-child
+				padding-left 25px
+			&:last-child
+				padding-right 25px

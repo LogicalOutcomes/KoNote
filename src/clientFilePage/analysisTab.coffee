@@ -181,10 +181,8 @@ load = (win) ->
 						R.div({className: 'timeSpanContainer'},
 							Slider({
 								ref: 'timeSpanSlider'
-								isEnabled: true
-								tooltip: true
 								isRange: true
-								defaultValue: [0, @state.xTicks.size]
+								value: @state.timeSpan
 								ticks: @state.xTicks.pop().toJS()
 								onChange: @_updateTimeSpan
 								formatter: ([start, end]) =>
@@ -193,8 +191,8 @@ load = (win) ->
 									return "#{startTime} - #{endTime}"
 							})
 							R.div({className: 'valueDisplay'},
-								(@state.timeSpan.map (index) =>
-									date = Moment(@state.xTicks.get(index)).format('MMM Do - YYYY')
+								(@state.timeSpan.map (time, index) =>
+									date = Moment(@state.xTicks.get(time)).format('MMM Do - YYYY')
 									return R.div({key: index},
 										R.span({}, date)
 									)
@@ -338,8 +336,6 @@ load = (win) ->
 													key: targetId
 													className: 'target'
 												},
-													console.log "@state.targetMetricsById", @state.targetMetricsById
-
 													R.h5({}, target.get('name'))
 
 													# TODO Figure out why targetId is occasionally late to the party
@@ -478,6 +474,9 @@ load = (win) ->
 			return targetId? and @state.excludedTargetIds.contains(targetId)
 
 		_updateTimeSpan: (event) ->
+			newTimeSpan = event.target.value
+			return unless newTimeSpan instanceof Array
+
 			timeSpan = event.target.value.split(",")
 			@setState {timeSpan}
 

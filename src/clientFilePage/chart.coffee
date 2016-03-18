@@ -64,8 +64,15 @@ load = (win) ->
 			# Update timeSpan?
 			sameTimeSpan = @props.timeSpan is oldProps.timeSpan
 			unless sameTimeSpan
-				@_chart.axis.min {x: @props.xTicks.get @props.timeSpan[0]}
-				@_chart.axis.max {x: @props.xTicks.get @props.timeSpan[1]}
+				newMin = @props.xTicks.get @props.timeSpan[0]
+				newMax = @props.xTicks.get @props.timeSpan[1]
+
+				# C3 requires there's some kind of span (even if it's 1ms)
+				if newMin is newMax
+					newMax = newMax.clone().endOf 'day'
+
+				@_chart.axis.min {x: newMin}
+				@_chart.axis.max {x: newMax}
 
 				
 		componentDidMount: ->			

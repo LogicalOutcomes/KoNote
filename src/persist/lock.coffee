@@ -105,12 +105,10 @@ class Lock
 		(callback) =>
 			@acquire session, lockId, (err, lock) ->
 				if err
-					console.warn "Failed to obtain lock:"
-					console.warn err
-					console.warn err.stack
-					console.warn "Retrying in #{60 * intervalMins}s"
+					console.warn "Failed to obtain lock. Retrying in #{60 * intervalMins}s"
 
 				if lock
+					console.info "Lock acquired!"
 					newLock = lock
 					callback()
 				else
