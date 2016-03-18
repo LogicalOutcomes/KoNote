@@ -105,14 +105,11 @@ module.exports = function(grunt) {
 				files: [
 					{
 						src: 'customers/griffin/customer.json',
-						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/'
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/customer.json'
 					},
 					{
-						src: [
-							'customers/griffin/customer-logo-lg_GRIFFIN.png',
-							'customers/griffin/customer-logo-sm_GRIFFIN.png'
-						],
-						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/'
+						src: 'customers/griffin/gc-logo.svg',
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/gc-logo.svg'
 					}
 				]
 			}
@@ -161,7 +158,7 @@ module.exports = function(grunt) {
 			main: {
 				options: {
 					title: 'KoNote-<%= pkg.version %>',
-					icon: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/icon.icns',
+					//icon: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/icon.icns',
 					background: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/background.tiff', 'icon-size': 104,
 					contents: [
 						{x: 130, y: 150, type: 'file', path: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},

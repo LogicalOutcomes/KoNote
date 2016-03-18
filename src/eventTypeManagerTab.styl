@@ -7,33 +7,25 @@
 	.btn > .badge
 		margin-left 5px
 		
-	table
-		margin-bottom 0px
-		
-		tbody 
-			> tr
-				&:hover .optionsCell .btn-group
-					visibility visible !important
-
-				> td
-					&:last-child
-						text-align right
+	.orderableTable
+			
+		.tableCell
+			&:first-child, &:last-child
+				flex 0.5
+				
+		.tableBody .tableRow
+			.optionsCell .btn-group
+				visibility hidden
+			
+			&:hover .optionsCell .btn-group
+				visibility visible !important				
+					
+				&.numberClientsCell
+					text-align left
+					.fa
+						float left
+						margin-right 5px
+						margin-top 3px
 						
-					&.colorKeyCell > span
-						display block
-						width 25px
-						height 25px
-						border-radius 12.5px
-						border 2px solid white
-						
-					&.numberClientsCell
-						.fa
-							float left
-							margin-right 5px
-							margin-top 3px
-							
-					&.optionsCell .btn-group
-						visibility hidden
-						
-						// .fa
-						// 	margin-left 5px
+				&.optionsCell
+					text-align right

@@ -1,0 +1,24 @@
+.programBubbles
+	display flex
+	flex-wrap wrap
+
+.programBubble
+	width 30px
+	height auto
+	border-radius 50%
+	max-width 25px
+	border 2px solid white
+	transition border-color .15s ease
+	
+	margin-left 5px
+	
+	&:hover
+		border-color hsla(0, 0, 0, 0.3)
+	
+	&:before
+		display block
+		content ""
+		padding-top 100%
+	
+	&:first-child
+		margin-left 0px

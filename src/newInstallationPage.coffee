@@ -16,7 +16,8 @@ load = (win) ->
 	Gui = win.require 'nw.gui'
 	Window = Gui.Window.get()
 
-	Spinner = require('./spinner').load(win)	
+	Spinner = require('./spinner').load(win)
+	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon} = require('./utils').load(win)
 
 	NewInstallationPage = React.createFactory React.createClass
@@ -28,6 +29,7 @@ load = (win) ->
 			cb()
 
 		componentDidMount: ->
+			Window.show()
 			Window.focus()
 
 		suggestClose: ->
@@ -113,7 +115,7 @@ load = (win) ->
 					)
 					R.div({
 						id: 'contentContainer'
-						className: 'animated fadeInUp'
+						# className: 'animated fadeInUp'
 					},
 						(switch @state.openTab
 							when 'index'

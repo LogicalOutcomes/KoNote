@@ -54,7 +54,8 @@ load = (win) ->
 	# A convenience method for opening a new window
 	openWindow = (params) ->
 		Gui.Window.open 'main.html?' + $.param(params), {
-			focus: true
+			focus: false
+			show: false
 			toolbar: false
 			width: 1000
 			height: 700

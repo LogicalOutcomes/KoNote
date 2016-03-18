@@ -21,6 +21,14 @@ IdSchema = Joi.string().regex(/^[a-zA-Z0-9_-]+$/)
 
 TimestampFormat = 'YYYYMMDDTHHmmssSSSZZ'
 
+isValidJSON = (jsonString) ->
+	try
+		json = JSON.parse jsonString
+		return true if json? and typeof json is "object"
+	catch err
+		console.error "Invalid JSON:", jsonString
+		return false
+
 class ObjectNotFoundError extends CustomError
 	constructor: ->
 		super
@@ -44,4 +52,5 @@ module.exports = {
 	ObjectNotFoundError
 	TimestampFormat
 	generateId
+	isValidJSON
 }

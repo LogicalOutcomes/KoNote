@@ -13,7 +13,7 @@ load = (win) ->
 	R = React.DOM
 	ProgEventsWidget = require('./progEventsWidget').load(win)
 	MetricWidget = require('./metricWidget').load(win)
-	{FaIcon, showWhen} = require('./utils').load(win)
+	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
 	ProgNoteDetailView = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -127,7 +127,7 @@ load = (win) ->
 				R.div({className: 'history'},
 					(entries.map (entry) =>
 						R.div({className: 'entry'},
-							R.div({className: 'header'}								
+							R.div({className: 'header'},
 								R.div({className: 'timestamp'},
 									if entry.get('backdate') != ''
 										Moment(entry.get('backdate'), Persist.TimestampFormat)
@@ -141,7 +141,9 @@ load = (win) ->
 									entry.get('author')
 								)
 							)
-							R.div({className: 'notes'}, entry.get('notes'))
+							R.div({className: 'notes'},
+								renderLineBreaks entry.get('notes')
+							)
 							R.div({className: 'metrics'},
 								if entry.get('metrics')
 									entry.get('metrics').map (metric) =>

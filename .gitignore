@@ -6,8 +6,10 @@ npm-debug.log
 /data/
 /node_modules/
 /build/releases/
-/src/config/develop.json
+develop.json
 
 *.csv
 
 *.zip
+
+src/config/develop.json

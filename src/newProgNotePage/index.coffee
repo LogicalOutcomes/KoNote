@@ -21,6 +21,7 @@ load = (win, {clientFileId}) ->
 	R = React.DOM
 
 	Gui = win.require 'nw.gui'
+	Window = Gui.Window.get(win)
 
 	EventTabView = require('./eventTabView').load(win)
 	CrashHandler = require('../crashHandler').load(win)
@@ -39,7 +40,8 @@ load = (win, {clientFileId}) ->
 
 		getInitialState: ->
 			return {
-				isLoading: true
+				status: 'init'
+
 				loadErrorType: null
 				progNote: null
 				clientFile: null
@@ -61,6 +63,7 @@ load = (win, {clientFileId}) ->
 		render: ->
 			new NewProgNotePageUi({
 				ref: 'ui'
+				status: @state.status
 
 				isLoading: @state.isLoading
 				loadErrorType: @state.loadErrorType
@@ -73,6 +76,15 @@ load = (win, {clientFileId}) ->
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 			})
+
+		componentDidUpdate: (oldProps, oldState) ->
+			# Finished loading
+			if @state.status is 'ready' and oldState.status is 'init'
+				@_activateWindow()
+
+		_activateWindow: ->
+			Window.show()
+			Window.focus()
 
 		_loadData: ->
 			template = progNoteTemplate
@@ -227,7 +239,7 @@ load = (win, {clientFileId}) ->
 
 				# Done loading data, we can load in the empty progNote object
 				@setState {
-					isLoading: false
+					status: 'ready'
 					progNote
 					eventTypes
 				}
@@ -348,7 +360,7 @@ load = (win, {clientFileId}) ->
 				$('#saveNoteButton').tooltip 'destroy'
 
 		render: ->
-			if @props.isLoading
+			if @props.status is 'init'
 				return R.div({className: 'newProgNotePage'},
 					Spinner({
 						isOverlay: true
@@ -385,7 +397,7 @@ load = (win, {clientFileId}) ->
 				#{clientName}: New #{Term 'Progress Note'}
 			"""
 
-			return R.div({className: 'newProgNotePage'},				
+			return R.div({className: 'newProgNotePage animated fadeIn'},				
 				R.div({className: 'progNote'},
 					R.div({className: 'backdateContainer'},
 						BackdateWidget({

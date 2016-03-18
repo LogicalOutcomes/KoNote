@@ -7,8 +7,8 @@ Moment = require 'moment'
 Path = require 'path'
 Rimraf = require 'rimraf'
 
-Lock = require '../../persist/lock'
-{TimestampFormat} = require '../../persist/utils'
+Lock = require '../../src/persist/lock'
+{TimestampFormat} = require '../../src/persist/utils'
 
 dataDir = Path.join process.cwd(), 'testData'
 locksDir = Path.join dataDir, '_locks'

@@ -33,6 +33,8 @@ load = (win) ->
 				isSetUp: null
 				isNewSetUp: null
 
+				isLoading: false
+
 				newInstallationWindow: null
 			}
 
@@ -46,9 +48,9 @@ load = (win) ->
 			@props.closeWindow()
 
 		_activateWindow: ->
-			@setState {isSetUp: true}
-			Window.focus()
+			@setState {isSetUp: true}			
 			Window.show()
+			Window.focus()
 
 		render: ->
 			unless @state.isSetUp
@@ -56,7 +58,10 @@ load = (win) ->
 
 			LoginPageUi({
 				ref: 'ui'
+
 				isLoading: @state.isLoading
+				loadingMessage: @state.loadingMessage
+
 				isSetUp: @state.isSetUp
 				isNewSetUp: @state.isNewSetUp
 				activateWindow: @_activateWindow
@@ -102,12 +107,23 @@ load = (win) ->
 							win.close(true)
 
 
-		_login: (userName, password) ->			
-			@setState => isLoading: true
+		_login: (userName, password) ->
+			# Run regex check on username first
+			unless Persist.Users.userNameRegex.exec userName
+				@refs.ui.onLoginError('InvalidUserNameError')
+				return
+
+			# Start authentication process
+			@setState ->
+				isLoading: true
+				loadingMessage: "Authenticating..."
 
 			Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>				
 				if err
-					@setState {isLoading: false}
+					@setState
+						isLoading: false
+						loadingMessage: ""
+
 					if err instanceof Persist.Session.UnknownUserNameError
 						@refs.ui.onLoginError('UnknownUserNameError')
 						return
@@ -123,7 +139,10 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				# Store this session for later use
+				@setState ->
+					loadingMessage: "Logging in..."
+
+				# Store the new session
 				global.ActiveSession = session
 
 				# Proceed to clientSelectionPage
@@ -131,12 +150,14 @@ load = (win) ->
 					page: 'clientSelection'
 				}
 
-				# Hide once logged in
+				# Close loginPage once logged in
 				clientSelectionPageWindow.on 'loaded', =>
-					@setState {isLoading: false}
+					@setState 
+						isLoading: false
+						loadingMessage: ""
+
 					Window.hide()
 
-				# Close once clientSelectionPage is closed
 				clientSelectionPageWindow.on 'closed', =>
 					@props.closeWindow()
 
@@ -165,18 +186,24 @@ load = (win) ->
 		onLoginError: (type) ->
 			switch type
 				when 'UnknownUserNameError'
-					Bootbox.alert "Unknown user name.  Please try again.", =>
+					Bootbox.alert "Unknown user name. Please try again.", =>
 						setTimeout(=>
 							@refs.userNameField.focus()
 						, 100)
 				when 'IncorrectPasswordError'
-					Bootbox.alert "Incorrect password.  Please try again.", =>
+					Bootbox.alert "Incorrect password. Please try again.", =>
 						@setState {password: ''}
 						setTimeout(=>
 							@refs.passwordField.focus()
 						, 100)
 				when 'DeactivatedAccountError'
 					Bootbox.alert "This user account has been deactivated.", =>
+						@refs.userNameField.focus()
+						setTimeout(=>
+							@refs.userNameField.focus()
+						, 100)
+				when 'InvalidUserNameError'
+					Bootbox.alert "Invalid user name. Please try again.", =>
 						@refs.userNameField.focus()
 						setTimeout(=>
 							@refs.userNameField.focus()
@@ -189,11 +216,14 @@ load = (win) ->
 				Spinner({
 					isVisible: @props.isLoading
 					isOverlay: true
+					message: @props.loadingMessage
 				})
-				FaIcon('times', {
-					id: 'quitIcon'
-					onClick: @_quit					
-				})
+				R.div({className: 'header'},
+					FaIcon('times', {
+						id: 'quitIcon'
+						onClick: @_quit					
+					})
+				)
 				R.div({id: "loginForm"},
 					R.div({
 						id: 'logoContainer'

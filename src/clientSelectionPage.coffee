@@ -25,6 +25,7 @@ load = (win) ->
 	BrandWidget = require('./brandWidget').load(win)	
 	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
+	{ProgramBubbles} = require('./programBubbles').load(win)
 
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 
@@ -34,11 +35,13 @@ load = (win) ->
 	ClientSelectionPage = React.createFactory React.createClass
 		getInitialState: ->
 			return {
+				status: 'init'
 				isLoading: true
+				loadingMessage: ""
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
 				clientFileProgramLinks: Imm.List()
-			}
+			}		
 
 		init: ->
 			@props.setWindowTitle """
@@ -51,16 +54,41 @@ load = (win) ->
 			cb()
 
 		suggestClose: ->
-			@props.closeWindow()			
+			@props.closeWindow()		
 
 		render: ->
-			return ClientSelectionPageUi({
+			return ClientSelectionPageUi {
+				openClientFile: @_openClientFile
+				setStatus: @_setStatus
+
+				status: @state.status				
 				isLoading: @state.isLoading
+				loadingMessage: @state.loadingMessage
+
 				clientFileHeaders: @state.clientFileHeaders
 				clientFileProgramLinks: @state.clientFileProgramLinks
 				programs: @state.programs
 				metricDefinitions: @state.metricDefinitions
-			})
+			}
+
+		_openClientFile: (clientFileId) ->
+			console.log "Selected clientFileId", clientFileId
+			@setState
+				isLoading: true
+				loadingMessage: "Loading Client File..."
+			, =>
+				clientFileWindow = openWindow {
+					page: 'clientFile'
+					clientFileId
+				}
+				clientFileWindow.on 'loaded', =>
+					@setState {
+						isLoading: false
+						loadingMessage: ""
+					}
+
+		_setStatus: (status) ->
+			@setState {status}
 
 		_loadData: ->
 			clientFileHeaders = null
@@ -151,7 +179,7 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				# Data loaded successfully, load into state
+				# Load in data
 				@setState {
 					isLoading: false
 					programs
@@ -165,11 +193,8 @@ load = (win) ->
 
 				'create:clientFile': (newFile) =>
 					clientFileHeaders = @state.clientFileHeaders.push newFile
-					@setState {clientFileHeaders}, =>
-						openWindow {
-							page: 'clientFile'
-							clientFileId: newFile.get('id')
-						}
+					@setState {clientFileHeaders}
+					@_openClientFile(newFile.get('id'))
 
 				# TODO: Create a function for this kind of listening/updating
 
@@ -237,15 +262,17 @@ load = (win) ->
 				managerLayer: null
 			}
 
-		componentDidUpdate: (oldProps, oldState) ->
-			# If loading just finished
-			$searchBox = $(@refs.searchBox)
+		_activatePage: ->
+			Window.show()
+			Window.focus()
+			@_attachKeyBindings()
+			@refs.searchBox.focus()
+			@props.setStatus('ready')
 
-			if oldProps.isLoading and not @props.isLoading
-				setTimeout(=>					
-					$searchBox.focus()
-					@_attachKeyBindings($searchBox)
-				, 500)
+		componentDidUpdate: (oldProps, oldState) ->
+			# Initial loading has finished
+			if @props.status is 'init' and oldProps.isLoading and not @props.isLoading
+				@_activatePage()
 
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
 				@_refreshResults()
@@ -279,13 +306,12 @@ load = (win) ->
 						if @state.menuIsOpen then 'openMenu' else ''
 					].join ' '
 			},
-				if @props.isLoading
-					R.div({id: 'clientSelectionPage'},
-						Spinner {
-							isOverlay: true
-							isVisible: true
-						}
-					)
+				Spinner {
+					isOverlay: true
+					isVisible: @props.isLoading
+					message: @props.loadingMessage
+				}
+
 				R.a({
 					id: 'expandMenuButton'
 					className: 'menuIsOpen' if @state.menuIsOpen
@@ -318,14 +344,9 @@ load = (win) ->
 							@_toggleUserMenu() if @state.menuIsOpen
 							@refs.searchBox.focus() if @refs.searchBox?
 					},
-						Spinner({
-							isVisible: @props.isLoading
-							isOverlay: true
-						})						
 						R.header({
 							className: [
 								if smallHeader then 'small' else ''
-								showWhen not @props.isLoading
 							].join ' '
 						},								
 							R.div({className: 'logoContainer'},
@@ -391,7 +412,6 @@ load = (win) ->
 							className: [
 								'smallHeaderLogo'
 								if smallHeader then 'show' else 'hidden'
-								showWhen not @props.isLoading
 							].join ' '
 						},
 							R.img({
@@ -403,11 +423,11 @@ load = (win) ->
 							className: [
 								'results'
 								if smallHeader then 'show' else 'hidden'
-								showWhen not @props.isLoading
 							].join ' '
 						},
 							OrderableTable({
 								tableData: queryResults
+								noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
 								onSortChange: (orderedQueryResults) => @setState {orderedQueryResults}
 								sortByData: ['clientName', 'last']
 								key: ['id']
@@ -423,20 +443,8 @@ load = (win) ->
 										cellClass: 'programsCell'
 										isNotOrderable: true
 										nameIsVisible: false
-
 										value: (dataPoint) ->
-											programs = dataPoint.get('programs')
-
-											return R.div({className: 'programBubbles'}, 
-												(programs
-													.sortBy (program) -> program.get('name').toLowerCase()
-													.map (program) -> 
-														ProgramBubble({
-															program
-															key: program.get('id')
-														})
-												)
-											)
+											ProgramBubbles({programs: dataPoint.get('programs')})
 									}
 									{
 										name: "Last Name"
@@ -525,9 +533,9 @@ load = (win) ->
 				)
 			)
 
-		_attachKeyBindings: ($searchBox) ->
+		_attachKeyBindings: ->
 			# Key-bindings for searchBox
-			$searchBox.on 'keydown', (event) =>
+			$(@refs.searchBox).on 'keydown', (event) =>
 				# Don't need to see this unless in full search view
 				return if not @state.isSmallHeaderSet
 
@@ -628,11 +636,7 @@ load = (win) ->
 			@setState {isSmallHeaderSet: false, queryText: ''}
 		_onResultSelection: (clientFileId, event) ->
 			@setState {hoverClientId: clientFileId}
-
-			openWindow {
-				page: 'clientFile'
-				clientFileId
-			}	
+			@props.openClientFile(clientFileId)
 
 
 	UserMenuItem = React.createFactory React.createClass
@@ -664,25 +668,7 @@ load = (win) ->
 						FaIcon(@props.icon)
 						@props.title
 					)
-			)
-
-	ProgramBubble = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]
-
-		componentDidMount: ->
-			$(@refs.bubble).popover {
-				trigger: 'hover'
-				placement: 'right'
-				title: @props.program.get('name')
-				content: @props.program.get('description')
-			}
-		render: ->
-			return R.div({
-				className: 'programBubble'
-				ref: 'bubble'				
-				style:
-					background: @props.program.get('colorKeyHex')
-			})
+			)	
 
 
 	return ClientSelectionPage
