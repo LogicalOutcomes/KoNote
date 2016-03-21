@@ -184,12 +184,16 @@ module.exports = function(grunt) {
 				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
 				src: ['**/*.coffee'],
 				dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
+				extDot: 'last',
 				ext: '.js'
 			}
 		},
 		clean: {
 			coffee: [
 				"build/releases/temp/<%= grunt.task.current.args[0] %>/src/**/*.coffee"
+			],
+			styl: [
+				"build/releases/temp/<%= grunt.task.current.args[0] %>/src/**/*.styl"
 			],
 			temp: [
 				"build/releases/temp"
@@ -228,6 +232,7 @@ module.exports = function(grunt) {
 				grunt.task.run('stylus:compile:win-generic');
 				grunt.task.run('coffee:compileMultiple:win-generic');
 				grunt.task.run('clean:coffee:win-generic');
+				grunt.task.run('clean:styl:win-generic');
 				grunt.task.run('nwjs:win:win-generic');
 				grunt.task.run('exec:zip:win-generic');
 			}
@@ -239,6 +244,7 @@ module.exports = function(grunt) {
 				grunt.task.run('stylus:compile:win-griffin');
 				grunt.task.run('coffee:compileMultiple:win-griffin');
 				grunt.task.run('clean:coffee:win-griffin');
+				grunt.task.run('clean:styl:win-griffin');
 				grunt.task.run('nwjs:win:win-griffin');
 				grunt.task.run('exec:zip:win-griffin');
 			}
@@ -252,6 +258,7 @@ module.exports = function(grunt) {
 				grunt.task.run('stylus:compile:mac-generic');
 				grunt.task.run('coffee:compileMultiple:mac-generic');
 				grunt.task.run('clean:coffee:mac-generic');
+				grunt.task.run('clean:styl:mac-generic');
 				grunt.task.run('nwjs:mac:mac-generic');
 				grunt.task.run('exec:codesign:mac-generic');
 				if (process.platform == 'darwin') {
@@ -266,6 +273,7 @@ module.exports = function(grunt) {
 				grunt.task.run('stylus:compile:mac-griffin');
 				grunt.task.run('coffee:compileMultiple:mac-griffin');
 				grunt.task.run('clean:coffee:mac-griffin');
+				grunt.task.run('clean:styl:mac-griffin');
 				grunt.task.run('nwjs:mac:mac-griffin');
 				grunt.task.run('exec:codesign:mac-griffin');
 				if (process.platform == 'darwin') {
