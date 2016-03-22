@@ -71,6 +71,8 @@ load = (win) ->
 		_generateAnalysis: ->
 			console.log "Generating Analysis...."
 
+			#################### Metrics ####################
+
 			# Build targets list as targetId:[metricIds]
 			targetMetricsById = @props.plan.get('sections').flatMap (section) =>
 				section.get('targetIds').map (targetId) =>
@@ -79,12 +81,8 @@ load = (win) ->
 				.fromEntrySeq().toMap()
 			.fromEntrySeq().toMap()
 
-			# Figure out metrics not currently part of the plan (inactive)
-			targetMetricsList = targetMetricsById.toList().flatten(true)
-
-			inactiveMetrics = @props.metricsById.filterNot (metric, metricId) =>
-				targetMetricsList.contains metricId
-			.toList()
+			# Flatten to a single list of targets' metric ids
+			targetMetricIdsList = targetMetricsById.toList().flatten(true)
 
 			# All non-empty metric values
 			metricValues = @props.progNoteHistories
@@ -98,14 +96,23 @@ load = (win) ->
 					else
 						throw new Error "unknown progNote status: #{progNoteHist.last().get('status')}"
 			.flatMap (progNoteHist) ->
+				# Extract metrics
 				return extractMetricsFromProgNoteHistory progNoteHist
-			.filter (metricValue) -> # Remove blank metrics
+			.filter (metricValue) ->
+				# Ignore blank metric values
 				return metricValue.get('value').trim().length > 0
 
 			# All metric IDs for which this client file has data
 			metricIdsWithData = metricValues
 			.map (m) -> m.get 'id'
-			.toSet()
+			.toSet()			
+
+			# Build list of inactive metricIds that have data
+			inactiveMetricIds = metricIdsWithData.filterNot (metricId) ->
+				targetMetricIdsList.contains metricId
+
+
+			#################### ProgEvents ####################
 
 			# Build set list of progEvent Ids
 			progEventIdsWithData = @props.progEvents
@@ -140,6 +147,10 @@ load = (win) ->
 				return Moment(metricTimestamp, Persist.TimestampFormat).startOf('day').valueOf()
 			.toOrderedSet().sort() # Filter to unique days, and sort
 
+
+
+			#################### Date Range ####################
+
 			# Determine earliest & latest days
 			firstDay = Moment timestampDays.first()
 			lastDay = Moment timestampDays.last()
@@ -149,16 +160,20 @@ load = (win) ->
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
+
+
+
 			# Synchronous to ensure this happens before render
 			@setState => {
 				xDays: xTicks
 				daysOfData: timestampDays.size
 				timeSpan: [0, xTicks.size - 1]
 				xTicks
-				metricIdsWithData, metricValues
+				metricIdsWithData
+				metricValues
 				progEventIdsWithData
 				filteredProgEvents
-				inactiveMetrics
+				inactiveMetricIds
 				targetMetricsById
 			}		
 
@@ -350,7 +365,6 @@ load = (win) ->
 																style:
 																	borderRight: (
 																		if @state.metricColors?
-																			chartMetricId = 
 																			metricColor = @state.metricColors["y-#{metric.get('id')}"]
 																			"5px solid #{metricColor}"
 																	)
@@ -373,13 +387,13 @@ load = (win) ->
 								)
 							)
 
-							(unless @state.inactiveMetrics.isEmpty()
+							(unless @state.inactiveMetricIds.isEmpty()
 								[
 									R.h3({}, "Inactive")
 									R.div({className: 'dataOptions'},
-										(@state.inactiveMetrics.map (metric) =>
+										(@state.inactiveMetricIds.map (metricId) =>
 
-											metricId = metric.get('id')
+											metric = @props.metricsById.get(metricId)
 
 											R.div({
 												className: 'checkbox metric'
@@ -387,7 +401,6 @@ load = (win) ->
 												style:
 													borderRight: (
 														if @state.metricColors?
-															chartMetricId = 
 															metricColor = @state.metricColors["y-#{metric.get('id')}"]
 															"5px solid #{metricColor}"
 													)
