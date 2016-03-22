@@ -229,7 +229,6 @@ load = (win) ->
 			# Fire metric colors up to analysisTab first render
 			if @_chart? and not @state.metricColors?
 				@setState {metricColors: @_chart.data.colors()}, =>
-					console.log "set colors state:", @state.metricColors
 					@props.updateMetricColors @state.metricColors
 
 		_refreshSelectedMetrics: ->
