@@ -161,10 +161,19 @@ init = (win) ->
 			registerPageListeners()
 
 		# Hotkeys
+		devToolsKeyCount = 0
 		win.document.addEventListener 'keydown', (event) ->
 			# prevent backspace navigation
 			if event.which is 8 and event.target.tagName is 'BODY'
 				event.preventDefault()
+			# dev console with Ctrl-Shift-J x5
+			if event.ctrlKey and event.shiftKey and event.which is 74
+				setTimeout (->
+					devToolsKeyCount = 0
+				), 2000
+				devToolsKeyCount++
+				if devToolsKeyCount > 4
+					Gui.Window.get(win).showDevTools()
 		, false
 
 
