@@ -277,8 +277,7 @@ load = (win) ->
 				@_refreshResults()
 
 		_activatePage: ->	
-			
-
+			# Temporary until we find a better way to queue the page
 			setTimeout(=>
 				console.info "Activating clientFileSelectionPage"
 
