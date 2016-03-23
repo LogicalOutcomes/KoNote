@@ -139,8 +139,7 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@setState ->
-					loadingMessage: "Logging in..."
+				@setState -> loadingMessage: "Logging in..."
 
 				# Store the new session
 				global.ActiveSession = session
@@ -150,14 +149,22 @@ load = (win) ->
 					page: 'clientSelection'
 				}
 
-				# Close loginPage once logged in
+				console.info "Init New Window"
+
 				clientSelectionPageWindow.on 'loaded', =>
+					console.info "Window Loaded!"
+					@setState -> loadingMessage: "Decrypting Data..."
+
+				# Listen for the clientSelectionPage 'loaded' event
+				global.ActiveSession.persist.eventBus.on 'clientSelectionPage:loaded', =>
+					console.info "Data Loaded!"
 					@setState 
 						isLoading: false
 						loadingMessage: ""
 
 					Window.hide()
 
+				# Make sure to close loginPage when clientSelectionPage is closed
 				clientSelectionPageWindow.on 'closed', =>
 					@props.closeWindow()
 
