@@ -186,13 +186,7 @@ load = (win) ->
 					clientFileHeaders
 					clientFileProgramLinks
 					metricDefinitions
-				}, ->
-					# Fire 'loaded' event for loginPage to hide itself
-					global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
-					# Show and focus this window
-					Window.show()
-					Window.focus()
-
+				}
 
 		getPageListeners: ->
 			return {
@@ -282,10 +276,17 @@ load = (win) ->
 			if @state.queryText isnt oldState.queryText
 				@_refreshResults()
 
-		_activatePage: ->
+		_activatePage: ->		
+			# Fire 'loaded' event for loginPage to hide itself
+			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
+
+			# Show and focus this window
+			Window.show()
+			Window.focus()
+
 			@_attachKeyBindings()
 			@refs.searchBox.focus()
-			@props.setStatus('ready')		
+			@props.setStatus('ready')
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
