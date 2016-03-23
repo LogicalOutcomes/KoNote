@@ -41,7 +41,7 @@ load = (win) ->
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
 				clientFileProgramLinks: Imm.List()
-			}		
+			}
 
 		init: ->
 			@props.setWindowTitle """
@@ -268,10 +268,8 @@ load = (win) ->
 				managerLayer: null
 			}
 
-		_activatePage: ->
-			@_attachKeyBindings()
-			@refs.searchBox.focus()
-			@props.setStatus('ready')
+		componentDidMount: ->
+			@_refreshResults()
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Initial loading has finished
@@ -284,8 +282,10 @@ load = (win) ->
 			if @state.queryText isnt oldState.queryText
 				@_refreshResults()
 
-		componentDidMount: ->
-			@_refreshResults()
+		_activatePage: ->
+			@_attachKeyBindings()
+			@refs.searchBox.focus()
+			@props.setStatus('ready')		
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
