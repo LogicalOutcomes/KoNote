@@ -68,6 +68,13 @@ load = (win) ->
 							{
 								name: "Description"
 								dataPath: ['description']
+								value: (dataPoint) ->
+									description = dataPoint.get('description')
+
+									if description.length > 60
+										return description.substr(0, 59) + ' . . .'
+									else
+										return description
 							}
 							{
 								name: Term 'Clients'
