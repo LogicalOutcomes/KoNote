@@ -276,17 +276,23 @@ load = (win) ->
 			if @state.queryText isnt oldState.queryText
 				@_refreshResults()
 
-		_activatePage: ->		
-			# Fire 'loaded' event for loginPage to hide itself
-			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
+		_activatePage: ->	
+			
 
-			# Show and focus this window
-			Window.show()
-			Window.focus()
+			setTimeout(=>
+				console.info "Activating clientFileSelectionPage"
 
-			@_attachKeyBindings()
-			@refs.searchBox.focus()
-			@props.setStatus('ready')
+				# Show and focus this window
+				Window.show()
+				Window.focus()
+
+				# Fire 'loaded' event for loginPage to hide itself
+				global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
+
+				@_attachKeyBindings()
+				@refs.searchBox.focus()
+				@props.setStatus('ready')
+			, 500)
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
