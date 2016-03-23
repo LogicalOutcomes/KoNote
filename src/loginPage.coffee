@@ -139,7 +139,7 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@setState -> loadingMessage: "Logging in..."
+				@setState -> loadingMessage: "Decrypting Data..."
 
 				# Store the new session
 				global.ActiveSession = session
@@ -148,12 +148,6 @@ load = (win) ->
 				clientSelectionPageWindow = openWindow {
 					page: 'clientSelection'
 				}
-
-				console.info "Init New Window"
-
-				clientSelectionPageWindow.on 'loaded', =>
-					console.info "Window Loaded!"
-					@setState -> loadingMessage: "Decrypting Data..."
 
 				# Listen for the clientSelectionPage 'loaded' event
 				global.ActiveSession.persist.eventBus.on 'clientSelectionPage:loaded', =>
