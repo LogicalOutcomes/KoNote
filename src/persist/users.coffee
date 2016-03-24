@@ -112,6 +112,7 @@ class Account
 
 		Async.series [
 			(cb) =>
+				console.info "Generating private key..."
 				PrivateKey.generate (err, result) =>
 					if err
 						cb err
@@ -121,6 +122,7 @@ class Account
 					systemPublicKey = result.getPublicKey().export()
 					cb()
 			(cb) =>
+				console.info "Creating system user..."
 				Fs.mkdir Path.join(dataDir, '_users', '_system'), (err) =>
 					if err
 						cb new IOError err
@@ -128,6 +130,7 @@ class Account
 
 					cb()
 			(cb) =>
+				console.info "Creating system public-key..."
 				Fs.writeFile Path.join(dataDir, '_users', '_system', 'public-key'), systemPublicKey, (err) =>
 					if err
 						cb new IOError err
@@ -139,6 +142,7 @@ class Account
 				cb err
 				return
 
+			console.info "Done setting up accounts system"
 			systemAccount = new DecryptedAccount(dataDir, '_system', publicInfo, privateInfo, null, 'privateaccess')
 			cb null, systemAccount
 
