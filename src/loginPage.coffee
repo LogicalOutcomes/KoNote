@@ -149,11 +149,11 @@ load = (win) ->
 				}
 
 				# Listen for the clientSelectionPage 'loaded' event
-				global.ActiveSession.persist.eventBus.on 'clientSelectionPage:loaded', =>
-					console.info "Data Loaded!"
-					@setState 
+				global.ActiveSession.persist.eventBus.once 'clientSelectionPage:loaded', =>
+					@setState => {
 						isLoading: false
 						loadingMessage: ""
+					}
 
 					Window.hide()
 

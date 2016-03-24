@@ -61,7 +61,9 @@ load = (win, {clientFileId}) ->
 			@refs.ui.suggestClose()
 
 		render: ->
-			new NewProgNotePageUi({
+			unless @state.status is 'ready' then return R.div({})
+
+			NewProgNotePageUi({
 				ref: 'ui'
 				status: @state.status
 
@@ -76,15 +78,6 @@ load = (win, {clientFileId}) ->
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 			})
-
-		componentDidUpdate: (oldProps, oldState) ->
-			# Finished loading
-			if @state.status is 'ready' and oldState.status is 'init'
-				@_activateWindow()
-
-		_activateWindow: ->
-			Window.show()
-			Window.focus()
 
 		_loadData: ->
 			template = progNoteTemplate
@@ -218,12 +211,9 @@ load = (win, {clientFileId}) ->
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
-						@setState =>
-							return {
-								isLoading: false
-								loadErrorType: 'io-error'
-							}
-						@render()
+						@setState => {
+							loadErrorType: 'io-error'
+						}
 						return
 
 					CrashHandler.handle err
@@ -348,6 +338,14 @@ load = (win, {clientFileId}) ->
 		componentWillReceiveProps: (newProps) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
 				@setState {progNote: newProps.progNote}
+
+		componentDidMount: ->
+			setTimeout(=>
+				global.ActiveSession.persist.eventBus.trigger 'newProgNotePage:loaded'
+				
+				Window.show()
+				Window.focus()				
+			, 500)
 
 		componentDidUpdate: ->
 			if @state.editingWhichEvent?
