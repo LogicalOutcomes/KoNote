@@ -74,8 +74,6 @@ load = (win, {clientFileId}) ->
 			@refs.ui.suggestClose()
 
 		render: ->
-			unless @state.status is 'ready' then return R.div({})
-
 			return ClientFilePageUi({
 				ref: 'ui'
 
@@ -123,6 +121,8 @@ load = (win, {clientFileId}) ->
 			checkFileSync = (newData, oldData) => 
 				unless fileIsUnsync
 					fileIsUnsync = not Imm.is oldData, newData
+
+			@setState -> {isLoading: true}
 
 			# Begin the clientFile data load process
 			Async.series [
@@ -349,6 +349,7 @@ load = (win, {clientFileId}) ->
 					# Load in clientFile data
 					@setState {
 						status: 'ready'
+						isLoading: false
 
 						clientFile						
 						progressNoteHistories
@@ -357,7 +358,12 @@ load = (win, {clientFileId}) ->
 						planTargetsById
 						programs
 						eventTypes						
-					}
+					}, =>
+						setTimeout(=>
+							global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
+							Window.show()
+							Window.focus()
+						, 500)
 
 		_acquireLock: (cb=(->)) ->
 			lockFormat = "clientFile-#{clientFileId}"
@@ -641,9 +647,9 @@ load = (win, {clientFileId}) ->
 			setTimeout(=>
 				global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
 				Window.maximize()
-				Window.show()				
+				Window.show()
 				Window.focus()
-			, 500)			
+			, 500)
 
 		render: ->
 			if @props.loadErrorType
