@@ -9,7 +9,7 @@
     "toolbar": false,
     "width": 400,
     "height": 500,
-    "show": false,
+    "show": true,
     "frame": false,
     "transparent": true,
     "position": "center"

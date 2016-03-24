@@ -161,10 +161,21 @@ init = (win) ->
 			registerPageListeners()
 
 		# Hotkeys
+		devToolsKeyCount = null
 		win.document.addEventListener 'keydown', (event) ->
 			# prevent backspace navigation
 			if event.which is 8 and event.target.tagName is 'BODY'
 				event.preventDefault()
+			# dev console with Ctrl-Shift-J x5
+			if event.ctrlKey and event.shiftKey and event.which is 74
+				unless devToolsKeyCount?
+					devToolsKeyCount = 0
+					setTimeout (->
+						devToolsKeyCount = null
+					), 2000
+				devToolsKeyCount++
+				if devToolsKeyCount > 4
+					Gui.Window.get(win).showDevTools()
 		, false
 
 
@@ -255,19 +266,26 @@ init = (win) ->
 		# Make sure everything is reset
 		global.ActiveSession.persist.eventBus.trigger 'timeout:reset' 
 
-		# Register Chokidar if we have devDependencies
+		# Try registering chokidar for live-refresh capabilities
 		if Config.devMode
-			Chokidar = require 'chokidar'
+			try
+				Chokidar = require 'chokidar'
 
-			chokidarListener = Chokidar
-			.watch './src'
-			.on 'change', (filePath) =>
-				fileExtension = filePath.split('.').splice(-1)[0]				
-				switch fileExtension
-					when 'styl'
-						refreshCSS()
-					when 'coffee' or 'js' 
-						doHotCodeReplace()  
+				chokidarListener = Chokidar
+				.watch './src'
+				.on 'change', (filePath) =>
+					fileExtension = filePath.split('.').splice(-1)[0]				
+					switch fileExtension
+						when 'styl'
+							refreshCSS()
+						when 'coffee' or 'js' 
+							doHotCodeReplace()
+
+				console.info "Live-refresh enabled"
+
+			catch err
+				console.warn "Live-refresh unavailable", err
+					
 
 	unregisterPageListeners = =>
 		# Unregister Chokidar

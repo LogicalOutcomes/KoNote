@@ -34,8 +34,6 @@ load = (win) ->
 				isNewSetUp: null
 
 				isLoading: false
-
-				newInstallationWindow: null
 			}
 
 		init: ->
@@ -89,22 +87,23 @@ load = (win) ->
 				console.log "Not set up, redirecting to installation page..."				
 				@setState {isSetUp: false}
 
-				@setState {
-					newInstallationWindow: openWindow {
-						page: 'newInstallation'
-					}
-				}, =>
-					@state.newInstallationWindow.on 'close', (event) =>
-						if global.isSetUp
-							# Successfully installed, show login with isNewSetUp
-							@setState {
-								isSetUp: true
-								isNewSetUp: true
-							}
-						else
+				newInstallationWindow = openWindow {
+					page: 'newInstallation'
+				}
 
-							# Didn't complete installation, so close
-							win.close(true)
+				Window.hide()
+
+				newInstallationWindow.on 'close', (event) =>
+					if global.isSetUp
+						# Successfully installed, show login with isNewSetUp
+						@setState {
+							isSetUp: true
+							isNewSetUp: true
+						}
+						Window.show()
+					else
+						# Didn't complete installation, so close
+						win.close(true)
 
 
 		_login: (userName, password) ->
@@ -139,8 +138,7 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@setState ->
-					loadingMessage: "Logging in..."
+				@setState -> loadingMessage: "Decrypting Data..."
 
 				# Store the new session
 				global.ActiveSession = session
@@ -150,14 +148,16 @@ load = (win) ->
 					page: 'clientSelection'
 				}
 
-				# Close loginPage once logged in
-				clientSelectionPageWindow.on 'loaded', =>
-					@setState 
+				# Listen for the clientSelectionPage 'loaded' event
+				global.ActiveSession.persist.eventBus.once 'clientSelectionPage:loaded', =>
+					@setState => {
 						isLoading: false
 						loadingMessage: ""
+					}
 
 					Window.hide()
 
+				# Make sure to close loginPage when clientSelectionPage is closed
 				clientSelectionPageWindow.on 'closed', =>
 					@props.closeWindow()
 

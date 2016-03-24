@@ -36,12 +36,13 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				status: 'init'
-				isLoading: true
+
+				isLoading: false
 				loadingMessage: ""
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
 				clientFileProgramLinks: Imm.List()
-			}		
+			}
 
 		init: ->
 			@props.setWindowTitle """
@@ -57,9 +58,10 @@ load = (win) ->
 			@props.closeWindow()		
 
 		render: ->
+			unless @state.status is 'ready' then return R.div({})
+
 			return ClientSelectionPageUi {
 				openClientFile: @_openClientFile
-				setStatus: @_setStatus
 
 				status: @state.status				
 				isLoading: @state.isLoading
@@ -72,20 +74,21 @@ load = (win) ->
 			}
 
 		_openClientFile: (clientFileId) ->
-			console.log "Selected clientFileId", clientFileId
-			@setState
+			@setState {
 				isLoading: true
 				loadingMessage: "Loading Client File..."
-			, =>
-				clientFileWindow = openWindow {
-					page: 'clientFile'
-					clientFileId
+			}
+
+			clientFileWindow = openWindow {
+				page: 'clientFile'
+				clientFileId
+			}
+
+			global.ActiveSession.persist.eventBus.once 'clientFilePage:loaded', =>
+				@setState {
+					isLoading: false
+					loadingMessage: ''
 				}
-				clientFileWindow.on 'loaded', =>
-					@setState {
-						isLoading: false
-						loadingMessage: ""
-					}
 
 		_setStatus: (status) ->
 			@setState {status}
@@ -181,7 +184,8 @@ load = (win) ->
 
 				# Load in data
 				@setState {
-					isLoading: false
+					status: 'ready'
+
 					programs
 					clientFileHeaders
 					clientFileProgramLinks
@@ -262,26 +266,30 @@ load = (win) ->
 				managerLayer: null
 			}
 
-		_activatePage: ->
-			Window.show()
-			Window.focus()
-			@_attachKeyBindings()
-			@refs.searchBox.focus()
-			@props.setStatus('ready')
+		componentDidMount: ->
+			@_refreshResults()
+
+			# Temporary until we find a better way to queue the page
+			console.info "Activating clientFileSelectionPage"
+
+			setTimeout(=>
+				# Show and focus this window
+				Window.show()
+				Window.focus()
+
+				# Fire 'loaded' event for loginPage to hide itself
+				global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
+
+				@_attachKeyBindings()
+				@refs.searchBox.focus()
+			, 500)			
 
 		componentDidUpdate: (oldProps, oldState) ->
-			# Initial loading has finished
-			if @props.status is 'init' and oldProps.isLoading and not @props.isLoading
-				@_activatePage()
-
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
 				@_refreshResults()
 
 			if @state.queryText isnt oldState.queryText
 				@_refreshResults()
-
-		componentDidMount: ->
-			@_refreshResults()
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
@@ -301,10 +309,7 @@ load = (win) ->
 
 			return R.div({
 					id: 'clientSelectionPage'
-					className: [
-						'animated fadeIn'
-						if @state.menuIsOpen then 'openMenu' else ''
-					].join ' '
+					className: if @state.menuIsOpen then 'openMenu' else ''
 			},
 				Spinner {
 					isOverlay: true

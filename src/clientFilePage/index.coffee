@@ -46,7 +46,8 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				status: 'init' # Either init or ready
-				
+				isLoading: false
+
 				clientFile: null
 				clientFileLock: null
 				readOnlyData: null
@@ -61,17 +62,7 @@ load = (win, {clientFileId}) ->
 			}
 
 		init: ->
-			@props.maximizeWindow()
 			@_renewAllData()
-
-		componentDidUpdate: (oldProps, oldState) ->
-			# Finished loading
-			if @state.status is 'ready' and oldState.status is 'init'
-				@_activateWindow()
-
-		_activateWindow: ->
-			Window.show()
-			Window.focus()
 
 		_setIsLoading: (isLoading) ->
 			@setState {isLoading}
@@ -83,6 +74,8 @@ load = (win, {clientFileId}) ->
 			@refs.ui.suggestClose()
 
 		render: ->
+			unless @state.status is 'ready' then return R.div({})
+
 			return ClientFilePageUi({
 				ref: 'ui'
 
@@ -402,7 +395,7 @@ load = (win, {clientFileId}) ->
 										readOnlyData: null
 									}, @_renewAllData
 								else
-									console.log "acquireWhenFree operation cancelled"							
+									console.log "acquireWhenFree operation cancelled"
 						}, cb
 					else
 						cb err
@@ -501,6 +494,7 @@ load = (win, {clientFileId}) ->
 				}
 
 				@setState (state) => {isLoading: true}
+				
 				global.ActiveSession.persist.progNotes.create note, (err) =>
 					@setState (state) => {isLoading: false}
 
@@ -643,22 +637,20 @@ load = (win, {clientFileId}) ->
 			else
 				@props.closeWindow()
 
+		componentDidMount: ->
+			setTimeout(=>
+				global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
+				Window.maximize()
+				Window.show()				
+				Window.focus()
+			, 500)			
+
 		render: ->
 			if @props.loadErrorType
 				return LoadError {
 					loadErrorType: @props.loadErrorType
 					closeWindow: @props.closeWindow
 				}
-
-			if @props.status is 'init'
-				return R.div({className: 'clientFilePage'},
-					Spinner {
-						isOverlay: true
-						isVisible: true
-					}
-				)
-
-			Assert @props.status is 'ready'
 
 			activeTabId = @state.activeTabId
 			isReadOnly = @props.readOnlyData?
@@ -678,7 +670,7 @@ load = (win, {clientFileId}) ->
 
 			# Filter out cancelled progEvents
 
-			return R.div({className: 'clientFilePage animated fadeIn'},
+			return R.div({className: 'clientFilePage'},
 				Spinner {
 					isOverlay: true
 					isVisible: @props.isLoading

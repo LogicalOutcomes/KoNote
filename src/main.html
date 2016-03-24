@@ -20,9 +20,36 @@ that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 		<link rel="stylesheet" href="../node_modules/spectrum-colorpicker/spectrum.css">
 		<link rel="stylesheet" href="main.css">
 		<style id="main-css">/* see start.js */</style>
+		<style>
+			html, body, #container, #preloader {
+				height: 100%;
+			}
+
+			body {
+				background: radial-gradient(circle, #1EA1F5, #3175AA);
+			}
+
+			#preloader {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				padding: 15px;
+				text-shadow: 0px 2px 2px rgba(0,0,0,0.1);
+
+				color: white;
+				font-size: 18px;
+				font-family: sans-serif;
+				font-weight: 100;
+				-webkit-font-smoothing: antialiased;
+				letter-spacing: 1px;
+			}
+		</style>
 	</head>
-	<body style="background-color:rgba(0,0,0,0);">
+	<body>
 		<div id="container">
+			<div id="preloader">
+				Launching KoNote...
+			</div>
 			<!-- JavaScript will inject content here. -->
 		</div>
 

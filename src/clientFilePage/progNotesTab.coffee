@@ -181,10 +181,13 @@ load = (win) ->
 				}
 			else
 				@props.setIsLoading true
+
 				newProgNoteWindow = openWindow {
-					page: 'newProgNote', clientFileId: @props.clientFileId
+					page: 'newProgNote'
+					clientFileId: @props.clientFileId
 				}
-				newProgNoteWindow.on 'loaded', =>
+
+				global.ActiveSession.persist.eventBus.once 'newProgNotePage:loaded', =>
 					@props.setIsLoading false
 
 		_toggleQuickNotePopover: ->
