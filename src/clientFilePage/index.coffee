@@ -62,7 +62,6 @@ load = (win, {clientFileId}) ->
 			}
 
 		init: ->
-			@props.maximizeWindow()
 			@_renewAllData()
 
 		_setIsLoading: (isLoading) ->
@@ -641,7 +640,8 @@ load = (win, {clientFileId}) ->
 		componentDidMount: ->
 			setTimeout(=>
 				global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
-				Window.show()
+				Window.maximize()
+				Window.show()				
 				Window.focus()
 			, 500)			
 
