@@ -34,8 +34,6 @@ load = (win) ->
 				isNewSetUp: null
 
 				isLoading: false
-
-				newInstallationWindow: null
 			}
 
 		init: ->
@@ -89,22 +87,23 @@ load = (win) ->
 				console.log "Not set up, redirecting to installation page..."				
 				@setState {isSetUp: false}
 
-				@setState {
-					newInstallationWindow: openWindow {
-						page: 'newInstallation'
-					}
-				}, =>
-					@state.newInstallationWindow.on 'close', (event) =>
-						if global.isSetUp
-							# Successfully installed, show login with isNewSetUp
-							@setState {
-								isSetUp: true
-								isNewSetUp: true
-							}
-						else
+				newInstallationWindow = openWindow {
+					page: 'newInstallation'
+				}
 
-							# Didn't complete installation, so close
-							win.close(true)
+				Window.hide()
+
+				newInstallationWindow.on 'close', (event) =>
+					if global.isSetUp
+						# Successfully installed, show login with isNewSetUp
+						@setState {
+							isSetUp: true
+							isNewSetUp: true
+						}
+						Window.show()
+					else
+						# Didn't complete installation, so close
+						win.close(true)
 
 
 		_login: (userName, password) ->
