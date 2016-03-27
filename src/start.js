@@ -18,7 +18,7 @@
 		default: throw new Error("Unknown nwjs name found in package.json for scripts.start")
 	}
 	// Grabs nw version from package, removes things like ^> etc.
-	var nwPackage = pkg.dependencies[nwName].replace(/[^0-9.]/g, "")
+	var nwPackage = pkg.devDependencies[nwName].replace(/[^0-9.]/g, "")
 	var nwRunning = process.versions['node-webkit']	
 
 	if (nwPackage !== nwRunning) {
