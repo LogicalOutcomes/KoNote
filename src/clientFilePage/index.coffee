@@ -74,6 +74,8 @@ load = (win, {clientFileId}) ->
 			@refs.ui.suggestClose()
 
 		render: ->
+			if @state.status isnt 'ready' then return R.div({})
+
 			return ClientFilePageUi({
 				ref: 'ui'
 
