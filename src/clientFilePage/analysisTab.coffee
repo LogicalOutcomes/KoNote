@@ -42,7 +42,7 @@ load = (win) ->
 				excludedTargetIds: Imm.Set()
 				xTicks: Imm.List()
 				xDays: Imm.List()
-				timeSpan: null
+				timeSpan: [0, 0]
 
 				isGenerating: true
 			}
@@ -199,8 +199,13 @@ load = (win) ->
 								isRange: true
 								value: @state.timeSpan
 								ticks: @state.xTicks.pop().toJS()
-								onChange: @_updateTimeSpan
+								onChange: (event) =>
+									# Force-convert numerical array because this plugin is stupid!
+									timeSpanArray = event.target.value.split(",")									
+									timeSpan = [Number(timeSpanArray[0]), Number(timeSpanArray[1])]
+									@setState {timeSpan}
 								formatter: ([start, end]) =>
+									return unless start? and end?
 									startTime = Moment(@state.xTicks.get(start)).format('Do MMM')
 									endTime = Moment(@state.xTicks.get(end)).format('Do MMM')
 									return "#{startTime} - #{endTime}"
@@ -485,13 +490,6 @@ load = (win) ->
 				target.contains metricId
 			
 			return targetId? and @state.excludedTargetIds.contains(targetId)
-
-		_updateTimeSpan: (event) ->
-			newTimeSpan = event.target.value
-			return unless newTimeSpan instanceof Array
-
-			timeSpan = event.target.value.split(",")
-			@setState {timeSpan}
 
 		_updateMetricColors: (metricColors) ->
 			@setState {metricColors}

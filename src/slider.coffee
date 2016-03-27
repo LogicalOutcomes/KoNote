@@ -8,31 +8,34 @@ load = (win) ->
 	Slider = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
+		getDefaultProps: ->
+			return {
+				value: [0, 0]
+			}
+
 		componentDidUpdate: (oldProps, oldState) ->
 			# Re-init slider when ticks.length changes
 			unless oldProps.ticks.length is @props.ticks.length
-				@slider.slider('destroy')
 				@_initSlider()
 
 		componentDidMount: ->
-			console.log "@props.value", @props.value
 			@_initSlider()
 
 		_initSlider: ->
-			sliderValue = if @props.value? and @props.value instanceof Array
-				@props.value
-			else
-				[0, @props.ticks.length]
+			# Destroy it if already exists
+			if @slider? then @slider.slider('destroy')
+
+			console.log "Incoming timeSpan", @props.value
 
 			@slider = $(@refs.slider).slider({
-					enabled: true
-					tooltip: 'show'
-					range: @props.isRange or false
-					min: 0
-					max: @props.ticks.length
-					value: sliderValue
-					formatter: @props.formatter or ((value) -> value)
-				})
+				enabled: true
+				tooltip: 'show'
+				range: true
+				min: 0
+				max: @props.ticks.length
+				value: @props.value
+				formatter: @props.formatter
+			})
 
 			# Register events
 			@slider.on('slideStop', (event) => @props.onChange event)

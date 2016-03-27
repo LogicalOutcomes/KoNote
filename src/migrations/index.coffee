@@ -62,7 +62,7 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, cb) ->
 	console.group "Run migration step #{fromVersion} -> #{toVersion}"
 
 	try
-		migrationStep = require("./#{fromVersion}-#{toVersion}.coffee")
+		migrationStep = require("./#{fromVersion}-#{toVersion}")
 	catch err
 		cb err
 		return

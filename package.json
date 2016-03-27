@@ -1,7 +1,7 @@
 {
   "name": "konote",
   "displayName": "KoNote",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "main": "src/main.html",
   "window": {
     "icon": "src/icon.png",
@@ -9,7 +9,7 @@
     "toolbar": false,
     "width": 400,
     "height": 500,
-    "show": false,
+    "show": true,
     "frame": false,
     "transparent": true,
     "position": "center"

@@ -311,6 +311,7 @@ class PrivateKey
 
 		Async.series [
 			(cb) ->
+				console.info "Step 1"
 				usePromise WebCryptoApi().generateKey(
 					{
 						name: 'RSA-OAEP'
@@ -322,6 +323,7 @@ class PrivateKey
 					['encrypt', 'decrypt']
 				), (err, keyPair) ->
 					if err
+						console.info "ERROR with step 1"
 						cb err
 						return
 
@@ -329,6 +331,7 @@ class PrivateKey
 					pubEncrKey = keyPair.publicKey
 					cb()
 			(cb) ->
+				console.info "Step 2"
 				usePromise WebCryptoApi().generateKey(
 					{
 						name: 'RSASSA-PKCS1-v1_5'
@@ -347,6 +350,7 @@ class PrivateKey
 					pubSignKey = keyPair.publicKey
 					cb()
 			(cb) ->
+				console.info "Step 3"
 				Async.map [
 					[privEncrKey, 'pkcs8']
 					[pubEncrKey, 'spki']
@@ -373,6 +377,8 @@ class PrivateKey
 			if err
 				cb err
 				return
+
+			console.info "Step DONE"
 
 			cb null, new PrivateKey(
 				privEncrKey, pubEncrKey,

@@ -49,6 +49,13 @@ load = (win) ->
 							{
 								name: "Definition"
 								dataPath: ['definition']
+								value: (dataPoint) ->
+									definition = dataPoint.get('definition')
+
+									if definition.length > 60
+										return definition.substr(0, 59) + ' . . .'
+									else
+										return definition
 							}
 							{
 								name: "Options"
