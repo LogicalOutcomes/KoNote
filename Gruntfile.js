@@ -47,7 +47,8 @@ module.exports = function(grunt) {
 					{
 						src: [
 							'package.json',
-							'src/**'
+							'src/**',
+							'!src/config/develop.json'
 						],
 						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/',
 						filter: 'isFile',
