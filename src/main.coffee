@@ -34,8 +34,6 @@ init = (win) ->
 	QueryString = require 'querystring'
 	Imm = require 'immutable'
 
-	Fs = require 'fs'
-	Stylus = require 'stylus'
 	isRefreshing = null
 
 	Config = require('./config')
@@ -182,7 +180,9 @@ init = (win) ->
 		# DevMode Utilities
 		if Config.devMode
 			console.info "*** Developer Mode ***"
-
+			Fs = require 'fs'
+			Stylus = require 'stylus'
+			
 			# Set up keyboard shortcuts
 			win.document.addEventListener 'keyup', (event) ->
 				# If Ctrl-Shift-J
