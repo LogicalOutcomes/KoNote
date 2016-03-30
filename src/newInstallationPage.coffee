@@ -110,7 +110,7 @@ load = (win) ->
 								id: 'logoImage'
 								src: './assets/brand/logo.png'
 							})
-							R.div({id: 'version'}, "v1.5.2 Beta")
+							R.div({id: 'version'}, "v#{process.env.npm_package_version}")
 						)						
 					)
 					R.div({
