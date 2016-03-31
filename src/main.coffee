@@ -73,17 +73,11 @@ init = (win) ->
 	process.nextTick =>
 		# Configure if application is just starting
 		global.HCRSavedState ||= {}
-
-		# Convert react-bootstrap into factories
-		convertReactBootstrap()
 		
 		# Render and setup page
 		renderPage QueryString.parse(win.location.search.substr(1))
 		initPage()
-
-	convertReactBootstrap = ->
-		win.ReactBootstrap = _.mapObject win.ReactBootstrap, (bootstrapClass) ->
-			React.createFactory bootstrapClass
+		
 
 	renderPage = (requestedPage) =>
 		# Decide what page to render based on the page parameter
