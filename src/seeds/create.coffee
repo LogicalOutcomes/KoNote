@@ -9,12 +9,7 @@ Create = {}
 # util 
 
 createData = (dataCollection, obj, cb) ->
-	global.ActiveSession.persist[dataCollection].create obj, (err, result) ->
-		if err
-			cb err
-			return
-
-		cb null, result
+	global.ActiveSession.persist[dataCollection].create obj, cb
 
 Create.clientFile = (cb) ->
 	first = Faker.name.firstName()
@@ -52,12 +47,16 @@ Create.quickNote = (clientFile, cb) ->
 
 	createData 'progNotes', note, cb
 
-Create.planTarget = (clientFile, metrics, cb) ->
+Create.planTarget = ({clientFile, metrics}, cb) ->
+	metricIds = metrics
+	.map (metric) -> metric.get('id')
+	.toJS()
+
 	target = Imm.fromJS {
 		clientFileId: clientFile.get('id')
 		name: "Fake Target"
 		notes: "Notes Notes"
-		metricIds: metrics.map (metric) -> metric.get('id')
+		metricIds
 	}
 
 	createData 'planTargets', target, cb
@@ -146,11 +145,8 @@ Create.clientFiles = (numberOfFiles, cb=(->)) ->
   #children
 
 Create.quickNotes = (clientFile, numberOfNotes, cb) ->
-	Async.times numberOfNotes
-	, (index, cb) ->
-
+	Async.times numberOfNotes, (index, cb) ->
 		Create.quickNote(clientFile, cb)
-
 	, (err, results) ->
 		if err
 			cb err
@@ -161,25 +157,21 @@ Create.quickNotes = (clientFile, numberOfNotes, cb) ->
 	
 
 
-# Create.planTargets = (clientFile, numberOfTargets, cb) ->
-# 	Async.times numberOfTargets
-# 	, (index, cb) ->
+Create.planTargets = (quantity, props, cb) ->
+	Async.times quantity, (index, cb) ->
+		Create.planTarget(props, cb)
+	, (err, results) ->
+		if err
+			cb err
+			return
 
-# 		Create.planTarget(clientFile, cb)
-
-# 	,(err, results) ->
-# 		if err
-# 			cb err
-# 			return
-
-# 		console.log "added #{numberOfTargets} notes to each client"
-# 		cb null, Imm.List(results)
+		console.log "added #{quantity} planTargets to clientFile"
+		cb null, Imm.List(results)
 
 
 Create.programs = (numberOfPrograms, cb=(->)) ->
 	Async.times numberOfPrograms, Create.program, (err, programs) ->
 		if err
-			console.error err
 			cb err
 			return
 
@@ -199,7 +191,6 @@ Create.clientFileProgramLinks = (clientFiles, program, cb) ->
 Create.metrics = (numberOfMetrics, cb=(->)) ->
 	Async.times numberOfMetrics, Create.metric, (err, metrics) ->
 		if err
-			console.error err
 			cb err
 			return
 
