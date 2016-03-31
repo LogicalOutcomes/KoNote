@@ -84,7 +84,6 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 		# We allow explicit metadata for development purposes, such as seeding.
 		if process.env.NODE_ENV isnt 'development'
-
 			if obj.has('author')
 				cb new Error "new objects cannot already have an author"
 				return
@@ -299,11 +298,21 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		# out where this object's collection is located.
 		contextualIds = extractContextualIds obj
 
+		# We allow explicit metadata for development purposes, such as seeding.
+		if process.env.NODE_ENV isnt 'development'
+			if obj.has('author')
+				cb new Error "new objects cannot already have an author"
+				return
+
+			if obj.has('timestamp')
+				cb new Error "new objects cannot already have a timestamp"
+				return
+
 		# Add the relevant metadata fields
 		obj = obj
 		.set 'revisionId', generateId()
-		.set 'author', session.userName
-		.set 'timestamp', Moment().format(TimestampFormat)
+		.set 'author', obj.get('author') or session.userName
+		.set 'timestamp', obj.get('timestamp') or Moment().format(TimestampFormat)
 
 		fileNameEncryptionKey = getFileNameEncryptionKey()
 
