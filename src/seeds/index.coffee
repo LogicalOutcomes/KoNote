@@ -8,9 +8,10 @@ Create = require './create'
 
 generateClientFiles = (quantity, metrics, cb) ->
 	clientFile = null
-	planTarget = null
+	planTargets = null
+	sections = null
 
-	Async.mapSeries [1...quantity], (quantityPosition, cb) ->
+	Async.timesSeries quantity, (quantityPosition, cb) ->
 		console.log "About to generate clientFile ##{quantityPosition}"
 
 		Async.series [
@@ -25,23 +26,27 @@ generateClientFiles = (quantity, metrics, cb) ->
 					console.log "Created clientFile", clientFile.toJS()
 					cb()
 
-			# Create a single target
+			# Create planTargets
 			(cb) ->
-				Create.planTarget clientFile, metrics, (err, result) ->
+				Create.planTargets 5, {clientFile, metrics}, (err, results) ->
 					if err
 						cb err
 						return
 
-					planTarget = result
-					console.log "Created planTarget", planTarget.toJS()
+					planTargets = results
+					console.log "Created planTargets", planTargets.toJS()
 					cb()
 
 			# Apply the target to a section, apply to clientFile, save
 			(cb) ->
+				targetIds = planTargets
+				.map (target) -> target.get('id')
+				.toJS()
+
 				section = {
 					id: generateId()
 					name: "Aggression Section"
-					targetIds: [planTarget.get('id')]
+					targetIds
 				}
 
 				sections = [section]
@@ -58,6 +63,16 @@ generateClientFiles = (quantity, metrics, cb) ->
 					clientFile = result
 					console.log "Modified clientFile with sections:", clientFile.toJS()
 					cb()
+
+			# Write a progNote, write a note and random metric for each target, in each section
+			# (cb) ->
+				# 1. Loop over clientFile's sections
+				# 2. Loop over sections' targetIds
+				# 3. Get target with corresponding ID
+				# 4. Record the note for the target
+				# 5. Record a random number for each metric
+				# 6. Save the progNote
+
 
 		], (err) ->
 			if err
@@ -132,6 +147,7 @@ runSeries = ->
 				clientFiles = results
 				console.log "DONE! clientFiles generated:", clientFiles.toJS()
 				cb()
+
 
 		# (cb) ->
 		# 	Async.map programs.toArray(), (program, cb) ->
