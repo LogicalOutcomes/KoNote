@@ -16,7 +16,7 @@ createData = (dataCollection, obj, cb) ->
 
 		cb null, result
 
-Create.clientFile = (index, cb) ->
+Create.clientFile = (cb) ->
 	first = Faker.name.firstName()
 	middle = Faker.name.firstName()
 	last = Faker.name.lastName()
@@ -26,13 +26,7 @@ Create.clientFile = (index, cb) ->
 		clientName: {first, middle, last}
 		recordId: recordId
 		plan: {
-			sections: [
-				{
-					id: generateId()
-					name: "section hardcode"
-					targetIds: []
-				}
-			]
+			sections: []
 		}
 	}
 
@@ -58,34 +52,15 @@ Create.quickNote = (clientFile, cb) ->
 
 	createData 'progNotes', note, cb
 
-# Create.planTarget = (clientFile, metrics, cb) ->
-# 	IdList = []
-# 	Async.map metrics.toArray(), (metric, cb ->)
-# 		IdList.push(metric.get('id')), (err, result) ->
-# 			if err
-# 				cb err
-# 				return
-# 			cb null, result
-# 	, cb
+Create.planTarget = (clientFile, metrics, cb) ->
+	target = Imm.fromJS {
+		clientFileId: clientFile.get('id')
+		name: "Fake Target"
+		notes: "Notes Notes"
+		metricIds: metrics.map (metric) -> metric.get('id')
+	}
 
-# 	target = Imm.fromJS {
-# 		name: Faker.company.bsBuzz()
-# 		notes: Faker.lorem.paragraph()
-# 		metricIds: IdList
-# 	}
-
-# 	create 'planTargets', target, cb	
-
-# createProgNote = 
-	# note = Imm.fromJS {
-	# 	type: 'plan'
-	# 	status: 'default'
-	# 	clientFileId: clientFile.get('id')
-	# 	backdate: ''
-  	# 	units: ????
-	# }
-
-# 	create 'progNotes', note, cb
+	createData 'planTargets', target, cb
 
 
 # createProgEvent = (index, cb) ->
