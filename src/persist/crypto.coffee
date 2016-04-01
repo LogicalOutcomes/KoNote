@@ -11,14 +11,11 @@
 # code if possible.  Ask Tim McLean <tim@timmclean.net> to review any and all
 # changes, even refactors.
 
+Assert = require 'assert'
 Async = require 'async'
 Base64url = require 'base64url'
 BufferEq = require 'buffer-equal-constant-time'
 Crypto = require 'crypto'
-
-WebCryptoApi = ->
-	# Pull a reference out of whatever window is available
-	global.window.crypto.subtle
 
 symmKeyV1Prefix = 'symmkey-v1'
 symmCiphertextV1Prefix = new Buffer([1])
@@ -27,6 +24,25 @@ rsaKeyLength = 3072
 privKeyV1Prefix = 'privkey-v1'
 pubKeyV1Prefix = 'pubkey-v1'
 asymmCiphertextV1Prefix = new Buffer([1])
+
+WebCryptoApi = ->
+	# Hi there, programmer from the future.
+	# Yup, it has a double underscore, and yes, I used it.
+	# I wish there was a better way.
+	#
+	# If this broke, all you need to do is find a way to get a valid JavaScript
+	# `window` object from a browsing context,
+	# and get a reference to the Web Crypto API.
+	#
+	# Oh, by the way, avoid global.window (see issue 473).
+
+	Assert global.__nwWindowsStore, 'this version of NW.js does not have __nwWindowsStore'
+
+	# Grab the first NW.js Window that we can find
+	nwWin = global.__nwWindowsStore[Object.keys(global.__nwWindowsStore)[0]]
+
+	# Pull a reference out of the window
+	return nwWin.window.crypto.subtle
 
 class SymmetricEncryptionKey
 	# Implementation notes:
