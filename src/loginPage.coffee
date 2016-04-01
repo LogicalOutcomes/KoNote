@@ -103,8 +103,7 @@ load = (win) ->
 						Window.show()
 					else
 						# Didn't complete installation, so close
-						win.close(true)
-
+						@props.closeWindow()
 
 		_login: (userName, password) ->
 			# Run regex check on username first
