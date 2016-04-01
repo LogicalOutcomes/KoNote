@@ -93,7 +93,7 @@ load = (win) ->
 
 				Window.hide()
 
-				newInstallationWindow.on 'close', (event) =>
+				newInstallationWindow.on 'closed', (event) =>
 					if global.isSetUp
 						# Successfully installed, show login with isNewSetUp
 						@setState {
