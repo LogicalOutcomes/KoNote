@@ -95,6 +95,7 @@ init = (win) ->
 			navigateTo: (pageParams) =>
 				pageComponent.deinit ->
 					unregisterPageListeners() if isLoggedIn
+					nwWin.removeListener 'close', onWindowCloseEvent
 					ReactDOM.unmountComponentAtNode containerElem
 					win.location.href = "main.html?" + QueryString.stringify(pageParams)
 
