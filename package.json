@@ -72,7 +72,7 @@
 		"underscore": "^1.8.3"
 	},
 	"scripts": {
-		"start": "nodewebkit .",
+		"start": "nodewebkit . --enable-logging=stderr",
 		"test": "mocha --compilers coffee:coffee-script/register --recursive --bail"
 	}
 }
