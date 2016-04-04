@@ -145,33 +145,39 @@ load = (win) ->
 				title: "Create New #{Term 'Program'}"
 				onClose: @props.onCancel
 			},
+
+
 				R.div({className: 'createProgramDialog'},
 					R.div({className: 'form-group'},						
-						R.label({}, "Name and Color Key")
+						R.label({}, "Name")
 						R.div({className: 'input-group'},
 							R.input({
 								className: 'form-control'
 								ref: 'programName'
 								value: @state.name
 								onChange: @_updateName
-								style:
-									borderColor: @state.colorKeyHex
 							})
+						)
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Color")
 							R.div({
-								className: 'input-group-addon'
+								className: ''
 								id: 'colorPicker'
 								ref: 'colorPicker'
 								style:
-									background: @state.colorKeyHex
 									borderColor: @state.colorKeyHex
+							
 							},
+
+
 								R.span({
 									className: 'hasColor' if @state.colorKeyHex?
 								},
 									FaIcon 'eyedropper'
 								)
 							)
-						)
+						
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
