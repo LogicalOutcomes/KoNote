@@ -163,7 +163,7 @@ load = (win) ->
 						R.label({}, "Color")
 							R.div({
 								className: ''
-								id: 'colorPicker'
+								id: 'flat'
 								ref: 'colorPicker'
 								style:
 									borderColor: @state.colorKeyHex
@@ -208,10 +208,11 @@ load = (win) ->
 			# Set up color picker
 			$(colorPicker).spectrum(
 				showPalette: true
+				flat: true
 				palette: [
-					['YellowGreen', 'Tan', 'Violet']
-					['Teal', 'Sienna', 'RebeccaPurple']
-					['Maroon', 'Cyan', 'LightSlateGray']
+					['green', 'blue', 'yellow']
+					['purple', 'orange', 'brown']
+					['indigo', 'pink', 'LightSlateGray']
 				]
 				move: (color) =>
 					colorKeyHex = color.toHexString()
