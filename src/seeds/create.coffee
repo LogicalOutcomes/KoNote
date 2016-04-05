@@ -47,6 +47,24 @@ Create.quickNote = (clientFile, cb) ->
 
 	createData 'progNotes', note, cb
 
+# Create.progNote = (clientFile, cb) ->
+# 	earliestDate = Moment().subtract(2, 'months')
+# 	daySpan = Moment().diff(earliestDate, 'days')
+# 	randomDay = Math.floor(Math.random() * daySpan) + 1
+# 	randomBackdate = Moment().subtract(randomDay, 'days')
+
+# 	note = Imm.fromJS {
+# 		type: 'full'
+# 		status: 'default'
+# 		clientFileId: clientFile.get('id')
+# 		notes: Faker.lorem.paragraph()
+# 		timestamp: randomBackdate.format(TimestampFormat)
+# 		backdate: ''
+# 		units:
+# 	}
+
+# 	createData 'progNotes', note, cb
+
 Create.planTarget = ({clientFile, metrics}, cb) ->
 	metricIds = metrics
 	.map (metric) -> metric.get('id')
@@ -60,6 +78,7 @@ Create.planTarget = ({clientFile, metrics}, cb) ->
 	}
 
 	createData 'planTargets', target, cb
+
 
 
 # createProgEvent = (index, cb) ->

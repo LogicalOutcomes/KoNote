@@ -10,6 +10,7 @@ generateClientFiles = (quantity, metrics, cb) ->
 	clientFile = null
 	planTargets = null
 	sections = null
+	targetIds = null
 
 	Async.timesSeries quantity, (quantityPosition, cb) ->
 		console.log "About to generate clientFile ##{quantityPosition}"
@@ -65,13 +66,25 @@ generateClientFiles = (quantity, metrics, cb) ->
 					cb()
 
 			# Write a progNote, write a note and random metric for each target, in each section
-			# (cb) ->
+			(cb) ->
 				# 1. Loop over clientFile's sections
+				
+
+
 				# 2. Loop over sections' targetIds
+				targetIds.each(targetId)
+
 				# 3. Get target with corresponding ID
+				target = .getElementById
+				
 				# 4. Record the note for the target
+				note = 
+				clientFile = clientFile.setIn([])
+
 				# 5. Record a random number for each metric
+
 				# 6. Save the progNote
+				cb()
 
 
 		], (err) ->
@@ -139,7 +152,7 @@ runSeries = ->
 				cb()
 
 		(cb) ->
-			generateClientFiles 10, metrics, (err, results) ->
+			generateClientFiles 2, metrics, (err, results) ->
 				if err
 					cb err
 					return
@@ -165,16 +178,6 @@ runSeries = ->
 		# 		links = Imm.List(result)
 		# 		cb()
 
-
-		# (cb) ->
-		# 	#should add a single planTarget to each client file
-		# 	createPlanTargets clientFiles, metrics (err, result) ->
-		# 		if err
-		# 			cb err
-		# 			return
-
-		# 		planTargets = result
-		# 		cb()
 
 
 
