@@ -22,7 +22,7 @@ load = (win) ->
 	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
-	{ProgramBubble} = require('./programBubbles').load(win)
+	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
@@ -58,7 +58,7 @@ load = (win) ->
 								dataPath: ['colorKeyHex']								
 								cellClass: 'colorKeyCell'
 								value: (dataPoint) ->
-									ProgramBubble({colorKeyHex: dataPoint.get('colorKeyHex')})
+									ColorKeyBubble({colorKeyHex: dataPoint.get('colorKeyHex')})
 							}
 							{
 								name: "Program Name"
@@ -138,7 +138,7 @@ load = (win) ->
 
 		componentDidMount: ->
 			@refs.programName.focus()
-			@_initColorPicker @refs.colorPicker
+
 
 		render: ->
 			return Dialog({
@@ -161,23 +161,8 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Color")
-							R.div({
-								className: ''
-								id: 'colorPicker'
-								ref: 'colorPicker'
-								style:
-									borderColor: @state.colorKeyHex
-							
-							},
+						ColorKeyBubble({colorKeyHex: "blue"})
 
-
-								R.span({
-									className: 'hasColor' if @state.colorKeyHex?
-								},
-									FaIcon 'eyedropper'
-								)
-							)
-						
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
@@ -202,23 +187,6 @@ load = (win) ->
 						)
 					)
 				)
-			)
-
-		_initColorPicker: (colorPicker) ->
-			# Set up color picker
-			$(colorPicker).spectrum(
-				flat: true
-				showPaletteOnly: true
-				togglePaletteOnly: true
-				togglePaletteMoreText: 'Custom'
-				togglePaletteLessText: 'Less'
-				palette: [
-					['green', 'blue', 'yellow','purple', 'orange', 'brown',
-					'indigo', 'pink', 'LightSlateGray']
-				]
-				move: (color) =>
-					colorKeyHex = color.toHexString()
-					@setState {colorKeyHex}
 			)
 
 		_updateName: (event) ->
