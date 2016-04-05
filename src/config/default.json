@@ -51,6 +51,22 @@
 		"analyze": "analyze"
 	},
 
+	"colorKeyPalettes": {
+		"programs": [
+			"#c72e2e",
+			"#c72ea5",
+			"#7d2ec7",
+			"#2e39c7",
+			"#2eacc7",
+			"#2ec759",
+			"#c2c72e",
+			"#c7722e",
+		],
+		"eventTypes": [
+			"",
+		]
+	},
+
 	"useTemplate": "simpleDemoTemplate",
 
 	"templates": {
