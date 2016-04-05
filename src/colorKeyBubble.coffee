@@ -23,17 +23,18 @@ load = (win) ->
 				}
 
 		render: ->
+			colorKeyHex = @props.colorKeyHex or @props.data.get('colorKeyHex')
+
 			R.div({
 				className: 'colorKeyBubble'
 				ref: 'bubble'
+				key: colorKeyHex
 				style:
-					background: @props.colorKeyHex or @props.data.get('colorKeyHex')
+					background: colorKeyHex
 			
 
 			},
 				FaIcon('check')
-
-
 			)
 
 

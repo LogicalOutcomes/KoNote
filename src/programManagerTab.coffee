@@ -161,8 +161,8 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Color")
-						ColorKeyBubble({colorKeyHex: "blue"})
-
+						Config.colorKeyPalettes.programs.map (colorKeyHex) ->
+							ColorKeyBubble({colorKeyHex})
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
