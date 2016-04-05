@@ -37,6 +37,8 @@ init = (win) ->
 	isRefreshing = null
 
 	Config = require('./config')
+	Fs = require 'fs'
+	Stylus = require 'stylus'
 
 	document = win.document
 	React = win.React
@@ -174,9 +176,7 @@ init = (win) ->
 
 		# DevMode Utilities
 		if Config.devMode
-			console.info "*** Developer Mode ***"
-			Fs = require 'fs'
-			Stylus = require 'stylus'
+			console.info "*** Developer Mode ***"			
 			
 			# Set up keyboard shortcuts
 			win.document.addEventListener 'keyup', (event) ->
