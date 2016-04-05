@@ -29,12 +29,15 @@ load = (win) ->
 				className: 'colorKeyBubble'
 				ref: 'bubble'
 				key: colorKeyHex
-				style:
-					background: colorKeyHex
-			
-
 			},
-				FaIcon('check')
+				R.div({					
+					className: 'bubbleContents'
+					onClick: @props.onClick.bind(null, colorKeyHex) if @props.onClick?
+					style:
+						background: colorKeyHex
+				},
+					FaIcon('check') if @props.isSelected
+				)
 			)
 
 

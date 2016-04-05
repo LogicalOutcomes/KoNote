@@ -117,6 +117,7 @@ load = (win) ->
 							dialog: CreateProgramDialog
 							data: {
 								clientFileHeaders: @props.clientFileHeaders
+								programs
 							}
 						},
 							FaIcon('plus')
@@ -139,14 +140,15 @@ load = (win) ->
 		componentDidMount: ->
 			@refs.programName.focus()
 
-
 		render: ->
+			colorKeyPalette = Imm.List(Config.colorKeyPalettes.programs).filterNot (colorKeyHex) =>
+				@props.data.programs.find (program) ->
+					program.get('colorKeyHex') is colorKeyHex
+
 			return Dialog({
 				title: "Create New #{Term 'Program'}"
 				onClose: @props.onCancel
 			},
-
-
 				R.div({className: 'createProgramDialog'},
 					R.div({className: 'form-group'},						
 						R.label({}, "Name")
@@ -161,8 +163,16 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Color")
-						Config.colorKeyPalettes.programs.map (colorKeyHex) ->
-							ColorKeyBubble({colorKeyHex})
+						R.div({},
+							colorKeyPalette.map (colorKeyHex) =>
+								isSelected = @state.colorKeyHex is colorKeyHex
+
+								ColorKeyBubble({
+									colorKeyHex
+									isSelected
+									onClick: (colorKeyHex) => @setState {colorKeyHex}
+								})
+						)						
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
