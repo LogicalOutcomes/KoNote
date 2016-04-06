@@ -47,23 +47,51 @@ Create.quickNote = (clientFile, cb) ->
 
 	createData 'progNotes', note, cb
 
-# Create.progNote = (clientFile, cb) ->
-# 	earliestDate = Moment().subtract(2, 'months')
-# 	daySpan = Moment().diff(earliestDate, 'days')
-# 	randomDay = Math.floor(Math.random() * daySpan) + 1
-# 	randomBackdate = Moment().subtract(randomDay, 'days')
+Create.progNote = ({clientFile, sectionId, targetIds, metrics}, cb) ->
+	earliestDate = Moment().subtract(2, 'months')
+	daySpan = Moment().diff(earliestDate, 'days')
+	randomDay = Math.floor(Math.random() * daySpan) + 1
+	randomBackdate = Moment().subtract(randomDay, 'days')
+		
+	# metricIds = metrics.each(metric).get('id')
+	# # have to loop over targets and make a note for each
+	# targetIds.each(targetId)
+	# # have to loop over each metric and generate a random value for each
+	# metricIds = metrics.each(metric).get('id')
 
-# 	note = Imm.fromJS {
-# 		type: 'full'
-# 		status: 'default'
-# 		clientFileId: clientFile.get('id')
-# 		notes: Faker.lorem.paragraph()
-# 		timestamp: randomBackdate.format(TimestampFormat)
-# 		backdate: ''
-# 		units:
-# 	}
+	progNote = Imm.fromJS {
+		type: 'full'
+		status: 'default'
+		templateId: generateId
+		clientFileId: clientFile.get('id')
+		timestamp: randomBackdate.format(TimestampFormat)
+		backdate: ''
+		units: [
+			id: generateId
+			type: 'plan'
+			name:
+			sections: [
+			id: sectionId
+			name:
+				targets: [
+					id: targetId
+					name:
+					notes: Faker.lorem.paragraph()
+					metrics: [
+						id: metricId
+						name:
+						definition:
+						value: Math.floor Math.random() * 10 + 1
+					]
+				]
+			]
+			
+		]
+	}
 
-# 	createData 'progNotes', note, cb
+	createData 'progNotes', progNote, cb
+
+
 
 Create.planTarget = ({clientFile, metrics}, cb) ->
 	metricIds = metrics
@@ -172,6 +200,17 @@ Create.quickNotes = (clientFile, numberOfNotes, cb) ->
 			return
 
 		console.log "added #{numberOfNotes} notes to each client"
+		cb null, Imm.List(results)
+
+Create.progNotes = (quantity, props, cb) ->
+	Async.times quantity, (index, cb) ->
+		Create.progNote(props, cb)
+	, (err, results) ->
+		if err
+			cb err
+			return
+
+		console.log "added #{quantity} progNotes to clientFile"
 		cb null, Imm.List(results)
 	
 

@@ -68,22 +68,34 @@ generateClientFiles = (quantity, metrics, cb) ->
 			# Write a progNote, write a note and random metric for each target, in each section
 			(cb) ->
 				# 1. Loop over clientFile's sections
-				
-
+				# clientFile.plan.sections.each(section)
+				# 	sectionId = section.get('id')
 
 				# 2. Loop over sections' targetIds
-				targetIds.each(targetId)
+					# section.targetsIds.each(targetId)
+						
 
 				# 3. Get target with corresponding ID
-				target = .getElementById
+						# target = .getElementById(targetId)
 				
 				# 4. Record the note for the target
-				note = 
-				clientFile = clientFile.setIn([])
+					# done in Create.progNote
 
-				# 5. Record a random number for each metric
+				# 5. Record a random number for each metric 
+					# done in Create.progNote
 
 				# 6. Save the progNote
+					# clientFile = clientFile.setIn([])
+					# or?
+						Create.progNotes 3, {clientFile, sectionId, targetIds, metrics}, cb
+							if err
+								cb err
+								return
+
+							progNotes = results
+							console.log "Created progNotes", progNotes.toJS()
+							cb()
+				
 				cb()
 
 
