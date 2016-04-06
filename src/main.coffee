@@ -175,35 +175,21 @@ init = (win) ->
 		# DevMode Utilities
 		if Config.devMode
 			console.info "*** Developer Mode ***"
-			Fs = require 'fs'
-			Stylus = require 'stylus'
 			
 			# Set up keyboard shortcuts
+
 			win.document.addEventListener 'keyup', (event) ->
 				# If Ctrl-Shift-J
 				if event.ctrlKey and event.shiftKey and event.which is 74
 					Gui.Window.get(win).showDevTools()
 			, false
+
 			win.document.addEventListener 'keyup', (event) ->
 				# If Ctrl-R
 				if event.ctrlKey and (not event.shiftKey) and event.which is 82
 					console.log "Replace!"
 					doHotCodeReplace()
 			, false
-
-			# Live-Refresh
-			Fs.watch './', (event, filename) ->
-				if filename?
-					fileExtension = filename.split('.').splice(-1)[0]
-
-					switch fileExtension
-						when "styl"
-							refreshCSS()
-						when "coffee"
-							unless isRefreshing
-								console.log ""
-								isRefreshing = true
-								doHotCodeReplace()
 
 
 	doHotCodeReplace = =>
@@ -229,6 +215,9 @@ init = (win) ->
 		win.location.reload(true)
 
 	refreshCSS = =>
+		Fs = require 'fs'
+		Stylus = require 'stylus'
+
 		mainStylusCode = Fs.readFileSync './src/main.styl', {encoding: 'utf-8'} 
 
 		stylusOpts = {
@@ -264,7 +253,7 @@ init = (win) ->
 		# Try registering chokidar for live-refresh capabilities
 		if Config.devMode
 			try
-				Chokidar = require 'chokidar'
+				Chokidar = require 'chokidar'				
 
 				chokidarListener = Chokidar
 				.watch './src'
