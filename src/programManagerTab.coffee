@@ -320,21 +320,6 @@ load = (win) ->
 				)
 			)
 
-		_initColorPicker: (colorPicker) ->
-			# Set up color picker
-			$(colorPicker).spectrum(
-				showPalette: true
-				color: @state.colorKeyHex
-				palette: [
-					['YellowGreen', 'Tan', 'Violet']
-					['Teal', 'Sienna', 'RebeccaPurple']
-					['Maroon', 'Cyan', 'LightSlateGray']
-				]
-				move: (color) =>
-					colorKeyHex = color.toHexString()
-					@setState {colorKeyHex}
-			)
-
 		_updateName: (event) ->
 			@setState {name: event.target.value}
 
