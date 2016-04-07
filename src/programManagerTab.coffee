@@ -140,6 +140,27 @@ load = (win) ->
 		componentDidMount: ->
 			@refs.programName.focus()
 
+		
+		hsvToRgb = (h, s, v) ->
+		  i = Math.floor(h * 6)
+		  f = h * 6 - i
+		  p = v * (1 - s)
+		  q = v * (1 - f * s)
+		  t = v * (1 - (1 - f) * s)
+
+		  switch i % 6
+		    when 0 then [r, g, b] = [v, t, p]
+		    when 1 then [r, g, b] = [q, v, p]
+		    when 2 then [r, g, b] = [p, v, t]
+		    when 3 then [r, g, b] = [p, q, v]
+		    when 4 then [r, g, b] = [t, p, v]
+		    when 5 then [r, g, b] = [v, p, q]
+
+		  [ Math.round(r * 255), Math.round(g * 255), Math.round(b * 255) ]
+		  
+		rgbToHex = (rgb) ->
+  			'#' + rgb[0].toString(16) + rgb[1].toString(16) + rgb[2].toString(16)
+
 		render: ->
 			colorKeyPalette = Imm.List(Config.colorKeyPalettes.programs).filterNot (colorKeyHex) =>
 				@props.data.programs.find (program) ->
