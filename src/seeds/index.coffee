@@ -150,25 +150,21 @@ runSeries = ->
 				console.log "DONE! clientFiles generated:", clientFiles.toJS()
 				cb()
 
+		(cb) ->
+			Async.map programs.toArray(), (program, cb) ->
+				Create.clientFileProgramLinks clientFiles, program, (err, result) ->
+					if err 
+						cb err
+						return
 
-		# (cb) ->
-		# 	Async.map programs.toArray(), (program, cb) ->
-		# 		Create.clientFileProgramLinks clientFiles, program, (err, result) ->
-		# 			if err 
-		# 				cb err
-		# 				return
+					cb null, Imm.List(result)
+			, (err, result) ->
+				if err
+					cb err
+					return
 
-		# 			cb null, Imm.List(result)
-		# 	, (err, result) ->
-		# 		if err
-		# 			cb err
-		# 			return
-
-		# 		links = Imm.List(result)
-		# 		cb()
-
-
-
+				links = Imm.List(result)
+				cb()
 
 	], (err) ->
 		if err
