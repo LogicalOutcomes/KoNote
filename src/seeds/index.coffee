@@ -42,19 +42,18 @@ generateClientFiles = (quantity, metrics, cb) ->
 			(cb) ->
 				targetIds = planTargets
 				.map (target) -> target.get('id')
-				.toJS()
 
-				section = {
+				section = Imm.fromJS {
 					id: generateId()
 					name: "Aggression Section"
 					targetIds
 				}
 
-				sections = [section]
+				sections = Imm.List [section]
 
-				console.log "Sections to add:", sections
+				console.log "Sections to add:", sections.toJS()
 
-				clientFile = clientFile.setIn(['plan', 'sections'], sections)
+				clientFile = clientFile.setIn(['plan', 'sections'], sections.toJS())
 
 				global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
 					if err
@@ -67,36 +66,14 @@ generateClientFiles = (quantity, metrics, cb) ->
 
 			# Write a progNote, write a note and random metric for each target, in each section
 			(cb) ->
-				# 1. Loop over clientFile's sections
-				# clientFile.plan.sections.each(section)
-				# 	sectionId = section.get('id')
+				Create.progNotes 3, {clientFile, sections, planTargets, metrics}, (err, results) ->
+					if err
+						cb err
+						return
 
-				# 2. Loop over sections' targetIds
-					# section.targetsIds.each(targetId)
-						
-
-				# 3. Get target with corresponding ID
-						# target = .getElementById(targetId)
-				
-				# 4. Record the note for the target
-					# done in Create.progNote
-
-				# 5. Record a random number for each metric 
-					# done in Create.progNote
-
-				# 6. Save the progNote
-					# clientFile = clientFile.setIn([])
-					# or?
-						Create.progNotes 3, {clientFile, sectionId, targetIds, metrics}, cb
-							if err
-								cb err
-								return
-
-							progNotes = results
-							console.log "Created progNotes", progNotes.toJS()
-							cb()
-				
-				cb()
+					progNotes = results
+					console.log "Created progNotes", progNotes.toJS()
+					cb()
 
 
 		], (err) ->

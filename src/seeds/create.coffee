@@ -1,8 +1,10 @@
 Imm = require 'immutable'
 Faker = require 'faker'
 Async = require 'async'	
-{Users, TimestampFormat, generateId } = require '../persist'
 Moment = require 'moment'
+
+{Users, TimestampFormat, generateId } = require '../persist'
+Config = require '../config'
 
 Create = {}
 
@@ -47,7 +49,7 @@ Create.quickNote = (clientFile, cb) ->
 
 	createData 'progNotes', note, cb
 
-Create.progNote = ({clientFile, sectionId, targetIds, metrics}, cb) ->
+Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	earliestDate = Moment().subtract(2, 'months')
 	daySpan = Moment().diff(earliestDate, 'days')
 	randomDay = Math.floor(Math.random() * daySpan) + 1
@@ -59,38 +61,77 @@ Create.progNote = ({clientFile, sectionId, targetIds, metrics}, cb) ->
 	# # have to loop over each metric and generate a random value for each
 	# metricIds = metrics.each(metric).get('id')
 
+	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
+
+	console.log "progNoteTemplate", progNoteTemplate.toJS()
+
+	progNoteUnit = progNoteTemplate.getIn(['units', 0])
+
+	console.log "progNoteUnit", progNoteUnit.toJS()
+
+	# Loop over progNote sections
+	progNoteSections = sections.map (section) ->
+
+		# Loop over targetIds, and get the matching planTarget definition
+		targets = section.get('targetIds').map (targetId) ->
+			planTarget = planTargets.find (target) -> target.get('id') is targetId
+
+			# Loop over metricIds, get the matching metric
+			metricNotes = planTarget.get('metricIds').map (metricId) ->
+				metric = metrics.find (metric) -> metric.get('id') is metricId
+
+				# Generate fake metric value
+				randomNumber = Math.floor(Math.random() * 10) + 1
+
+				# Construct the metric note
+				return {
+					id: metric.get('id')
+					name: metric.get('name')
+					definition: metric.get('definition')
+					value: randomNumber.toString()
+				}
+
+
+			# Construct the target note
+			return {
+				id: planTarget.get('id')
+				name: planTarget.get('name')
+				notes: Faker.lorem.paragraph()
+				metrics: metricNotes.toJS()
+			}
+
+
+		# Construct the section as a whole
+		return {
+			id: section.get('id')
+			name: section.get('name')
+			targets: targets
+		}
+
+
+	console.log "progNoteSections", progNoteSections.toJS()
+
+
 	progNote = Imm.fromJS {
+		clientFileId: clientFile.get('id')
 		type: 'full'
 		status: 'default'
-		templateId: generateId
-		clientFileId: clientFile.get('id')
-		timestamp: randomBackdate.format(TimestampFormat)
+		templateId: progNoteTemplate.get('id')
 		backdate: ''
+		timestamp: randomBackdate.format(TimestampFormat)
 		units: [
-			id: generateId
-			type: 'plan'
-			name:
-			sections: [
-			id: sectionId
-			name:
-				targets: [
-					id: targetId
-					name:
-					notes: Faker.lorem.paragraph()
-					metrics: [
-						id: metricId
-						name:
-						definition:
-						value: Math.floor Math.random() * 10 + 1
-					]
-				]
-			]
-			
+			{
+				id: progNoteUnit.get('id')
+				type: progNoteUnit.get('type')
+				name: progNoteUnit.get('name')
+				sections: progNoteSections.toJS()
+			}
 		]
 	}
 
-	createData 'progNotes', progNote, cb
+	console.log "FINAL progNote:", progNote.toJS()
 
+	createData 'progNotes', progNote, cb
 
 
 Create.planTarget = ({clientFile, metrics}, cb) ->
