@@ -36,7 +36,7 @@ Create.progEvent = ({clientFile, progNote}, cb) ->
 	daySpan = Moment().diff(earliestDate, 'days')
 	randomDay = Math.floor(Math.random() * daySpan) + 1
 	randomBackdate = Moment().subtract(randomDay, 'days')
-	randomEnddate = Moment().add(randomDay, 'days')
+	randomEnddate = Moment().subtract(randomDay, 'days').add(3, 'days')
 
 	relatedProgNoteId = progNote.get('id')
 	clientFileId = clientFile.get('id')

@@ -144,7 +144,7 @@ runSeries = ->
 				cb()		
 
 		(cb) ->
-			Create.eventTypes 1, (err, results) ->
+			Create.eventTypes 3, (err, results) ->
 				if err
 					cb err
 					return
@@ -162,7 +162,7 @@ runSeries = ->
 				cb()
 
 		(cb) ->
-			generateClientFiles 5, metrics, (err, results) ->
+			generateClientFiles 2, metrics, (err, results) ->
 				if err
 					cb err
 					return
