@@ -11,6 +11,9 @@ generateClientFiles = (quantity, metrics, cb) ->
 	planTargets = null
 	sections = null
 	targetIds = null
+	planTargets = null
+	progEvents = null
+	progNotes = null
 
 	Async.timesSeries quantity, (quantityPosition, cb) ->
 		console.log "About to generate clientFile ##{quantityPosition}"
@@ -74,6 +77,18 @@ generateClientFiles = (quantity, metrics, cb) ->
 					progNotes = results
 					console.log "Created progNotes", progNotes.toJS()
 					cb()
+
+			# Create a # of progEvents for each progNote in the clientFile
+			(cb) ->
+				progNotes.map (progNote) ->
+					Create.progEvents 3, {clientFile, progNote}, (err, results) ->
+						if err
+							cb err
+							return
+
+						progEvents = results
+						console.log "Created progEvents", progEvents.toJS()
+						cb()
 
 
 		], (err) ->

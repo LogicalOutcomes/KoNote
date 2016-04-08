@@ -31,6 +31,30 @@ Create.clientFile = (cb) ->
 
 #children functions
 
+Create.progEvent = ({clientFile, progNote}, cb) ->
+	earliestDate = Moment().subtract(2, 'months')
+	daySpan = Moment().diff(earliestDate, 'days')
+	randomDay = Math.floor(Math.random() * daySpan) + 1
+	randomBackdate = Moment().subtract(randomDay, 'days')
+	randomEnddate = Moment().add(randomDay, 'days')
+
+	relatedProgNoteId = progNote.get('id')
+	clientFileId = clientFile.get('id')
+
+	progEvent = Imm.fromJS {
+		title: Faker.company.bsBuzz()		
+		description: Faker.lorem.paragraph()		
+		startTimestamp: randomBackdate.format(TimestampFormat)
+		endTimestamp: randomEnddate.format(TimestampFormat)
+		status: 'default'
+		# statusReason: optional
+		typeId: ''
+		relatedProgNoteId
+		clientFileId
+		relatedElement: ''
+	}
+
+	createData 'progEvents', progEvent, cb
 
 Create.quickNote = (clientFile, cb) ->
 	earliestDate = Moment().subtract(2, 'months')
@@ -54,12 +78,6 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	daySpan = Moment().diff(earliestDate, 'days')
 	randomDay = Math.floor(Math.random() * daySpan) + 1
 	randomBackdate = Moment().subtract(randomDay, 'days')
-		
-	# metricIds = metrics.each(metric).get('id')
-	# # have to loop over targets and make a note for each
-	# targetIds.each(targetId)
-	# # have to loop over each metric and generate a random value for each
-	# metricIds = metrics.each(metric).get('id')
 
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
@@ -148,26 +166,6 @@ Create.planTarget = ({clientFile, metrics}, cb) ->
 
 	createData 'planTargets', target, cb
 
-
-
-# createProgEvent = (index, cb) ->
-# 	progEvent = Imm.fromJS {
-# 		title: Faker.company.bsBuzz()		
-# 		description: Faker.lorem.paragraph()		
-# 		startTimestamp: 'YYYYMMDDTHHmmssSSSZZ'
-# 		endTimestamp: 'YYYYMMDDTHHmmssSSSZZ'
-# 		status: 'default'
-# 		# statusReason: optional
-# 		typeId: 
-# 		relatedProgNoteId: 
-# 		relatedElement: {
-# 			id: 
-# 			type: ['progNoteUnit', 'planSection', 'planTarget']
-# 		}
-# 	}
-
-
-
 Create.program = (index, cb) ->
 	program = Imm.fromJS({
 		name: Faker.company.bsBuzz()
@@ -232,6 +230,17 @@ Create.clientFiles = (numberOfFiles, cb=(->)) ->
 
   #children
 
+Create.progEvents = (quantity, props, cb) ->
+	Async.times quantity, (index, cb) ->
+		Create.progEvent(props, cb)
+	, (err, results) ->
+		if err
+			cb err
+			return
+
+		console.log "added #{quantity} events to each clientFile"
+		cb null, Imm.List(results)
+
 Create.quickNotes = (clientFile, numberOfNotes, cb) ->
 	Async.times numberOfNotes, (index, cb) ->
 		Create.quickNote(clientFile, cb)
@@ -254,8 +263,6 @@ Create.progNotes = (quantity, props, cb) ->
 		console.log "added #{quantity} progNotes to clientFile"
 		cb null, Imm.List(results)
 	
-
-
 Create.planTargets = (quantity, props, cb) ->
 	Async.times quantity, (index, cb) ->
 		Create.planTarget(props, cb)
@@ -266,7 +273,6 @@ Create.planTargets = (quantity, props, cb) ->
 
 		console.log "added #{quantity} planTargets to clientFile"
 		cb null, Imm.List(results)
-
 
 Create.programs = (numberOfPrograms, cb=(->)) ->
 	Async.times numberOfPrograms, Create.program, (err, programs) ->
