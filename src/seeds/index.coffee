@@ -7,7 +7,8 @@ Moment = require 'moment'
 Create = require './create'
 
 generateClientFile = (metrics, cb) ->
-	console.log "-------------- New Client File ---------------"
+	console.group('Generated Client File')
+
 	clientFile = null
 	planTargets = null
 	sections = null
@@ -60,7 +61,7 @@ generateClientFile = (metrics, cb) ->
 					return
 
 				clientFile = result
-				console.log "Modified clientFile with sections:", clientFile.toJS()
+				console.log "Modified clientFile with plan sections:", clientFile.toJS()
 				cb()
 
 		# Write a progNote, write a note and random metric for each target, in each section
@@ -82,23 +83,23 @@ generateClientFile = (metrics, cb) ->
 						cb err
 						return
 
-					progEvents = results
-					console.log "Created progEvents", progEvents.toJS()
-					cb(null, progEvents)
+					cb(null, results)
 
 			, (err, results) ->
 				if err
 					cb err
 					return
 
-				cb(null, results)
+				progEvents = Imm.List(results)
+				console.log "Created #{progEvents.size} sets of progEvents in total", progEvents.toJS()
+				cb()
 
 	], (err) ->
 		if err
 			cb err
 			return
 
-		console.log "-------------- Done ---------------"
+		console.groupEnd('Generated Client File')
 		cb(null, clientFile)
 
 
@@ -162,16 +163,19 @@ runSeries = ->
 				cb()
 
 		(cb) ->
-			generateClientFiles 2, metrics, (err, results) ->
+			console.group('Client Files')
+			generateClientFiles 5, metrics, (err, results) ->
 				if err
 					cb err
 					return
 
 				clientFiles = results
-				console.log "DONE! clientFiles generated:", clientFiles.toJS()
+				console.log "#{clientFiles.size} clientFiles generated:", clientFiles.toJS()
+				console.groupEnd('Client Files')
 				cb()
 
 		(cb) ->
+			console.group('Program Links')
 			Async.map programs.toArray(), (program, cb) ->
 				Create.clientFileProgramLinks clientFiles, program, (err, result) ->
 					if err 
@@ -185,19 +189,14 @@ runSeries = ->
 					return
 
 				links = Imm.List(result)
+				console.log "Created #{clientFiles.size} link(s) for each of the #{programs.size} program(s)"
+				console.groupEnd('Program Links')
 				cb()
 
 	], (err) ->
 		if err
-			console.error err
+			console.error "Problem running seeding series:", err
 			return
 
 
-
-
-module.exports = {
-	
-	runSeries
-
-}
-
+module.exports = {runSeries}
