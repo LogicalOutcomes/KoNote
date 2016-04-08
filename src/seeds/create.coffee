@@ -81,11 +81,7 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
-	console.log "progNoteTemplate", progNoteTemplate.toJS()
-
 	progNoteUnit = progNoteTemplate.getIn(['units', 0])
-
-	console.log "progNoteUnit", progNoteUnit.toJS()
 
 	# Loop over progNote sections
 	progNoteSections = sections.map (section) ->
@@ -127,9 +123,6 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 		}
 
 
-	console.log "progNoteSections", progNoteSections.toJS()
-
-
 	progNote = Imm.fromJS {
 		clientFileId: clientFile.get('id')
 		type: 'full'
@@ -146,8 +139,6 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 			}
 		]
 	}
-
-	console.log "FINAL progNote:", progNote.toJS()
 
 	createData 'progNotes', progNote, cb
 
