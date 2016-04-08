@@ -2,7 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-Async = require 'async'	
+Async = require 'async' 
 Imm = require 'immutable'
 _ = require 'underscore'
 
@@ -14,7 +14,7 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	R = React.DOM	
+	R = React.DOM 
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -55,7 +55,7 @@ load = (win) ->
 							{
 								name: "Color Key"
 								nameIsVisible: false
-								dataPath: ['colorKeyHex']								
+								dataPath: ['colorKeyHex']               
 								cellClass: 'colorKeyCell'
 								value: (dataPoint) ->
 									ColorKeyBubble({colorKeyHex: dataPoint.get('colorKeyHex')})
@@ -125,7 +125,7 @@ load = (win) ->
 							"New #{Term 'Program'} "
 						)
 					)
-			)	
+			) 
 
 	CreateProgramDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -140,26 +140,67 @@ load = (win) ->
 		componentDidMount: ->
 			@refs.programName.focus()
 
-		
-		hsvToRgb = (h, s, v) ->
-		  i = Math.floor(h * 6)
-		  f = h * 6 - i
-		  p = v * (1 - s)
-		  q = v * (1 - f * s)
-		  t = v * (1 - (1 - f) * s)
+			console.log @_hslToRgb(196/360, 25/100, 47/100)
+			console.log @_rgbToHex([90, 112, 120])
+			console.log @_rgbToHsl(90, 112, 120)
 
-		  switch i % 6
-		    when 0 then [r, g, b] = [v, t, p]
-		    when 1 then [r, g, b] = [q, v, p]
-		    when 2 then [r, g, b] = [p, v, t]
-		    when 3 then [r, g, b] = [p, q, v]
-		    when 4 then [r, g, b] = [t, p, v]
-		    when 5 then [r, g, b] = [v, p, q]
+		_rgbToHsl: (r, g, b) ->
+			r /= 255
+			g /= 255
+			b /= 255
+			max = Math.max(r, g, b)
+			min = Math.min(r, g, b)
+			l = (max + min) / 2
 
-		  [ Math.round(r * 255), Math.round(g * 255), Math.round(b * 255) ]
-		  
-		rgbToHex = (rgb) ->
-  			'#' + rgb[0].toString(16) + rgb[1].toString(16) + rgb[2].toString(16)
+			if max == min
+				h = s = 0 # achromatic
+			else
+				d = max - min
+				s = if l > 0.5 then d / (2 - max - min) else d / (max + min)
+
+				switch max
+					when r
+						h = (g - b) / d + (if g < b then 6 else 0)
+					when g
+						h = (b - r) / d + 2
+					when b
+						h = (r - g) / d + 4
+
+				h /= 6
+
+			[h, s, l]
+
+
+		# _hue2rgb: (p, q, t) ->
+		# 	t += 1 if t < 0
+		# 	t -= 1 if t > 1
+		# 	return p + (q - p) * 6 * t if t < 1/6
+		# 	return q if t < 1/2
+		# 	return p + (q - p) * (2/3 - t) * 6 if t < 2/3
+		# 	return p
+
+		_hslToRgb: (h, s, l) ->
+			if s == 0
+				r = g = b = l # achromatic
+			else
+				hue2rgb = (p, q, t) ->
+					if t < 0 then t += 1
+					if t > 1 then t -= 1
+					if t < 1/6 then return p + (q - p) * 6 * t
+					if t < 1/2 then return q
+					if t < 2/3 then return p + (q - p) * (2/3 - t) * 6
+					return p
+
+				q = if l < 0.5 then l * (1 + s) else l + s - l * s
+				p = 2 * l - q
+				r = hue2rgb(p, q, h + 1/3)
+				g = hue2rgb(p, q, h)
+				b = hue2rgb(p, q, h - 1/3)
+
+			[r * 255, g * 255, b * 255]
+			
+		_rgbToHex: (rgb) ->
+			'#' + rgb[0].toString(16) + rgb[1].toString(16) + rgb[2].toString(16)
 
 		render: ->
 			colorKeyPalette = Imm.List(Config.colorKeyPalettes.programs).filterNot (colorKeyHex) =>
@@ -171,7 +212,7 @@ load = (win) ->
 				onClose: @props.onCancel
 			},
 				R.div({className: 'createProgramDialog'},
-					R.div({className: 'form-group'},						
+					R.div({className: 'form-group'},            
 						R.label({}, "Name")
 						R.div({className: 'input-group'},
 							R.input({
@@ -193,7 +234,7 @@ load = (win) ->
 									isSelected
 									onClick: (colorKeyHex) => @setState {colorKeyHex}
 								})
-						)						
+						)           
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
@@ -203,7 +244,7 @@ load = (win) ->
 							onChange: @_updateDescription
 							rows: 3
 						})
-					)					
+					)         
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -266,7 +307,7 @@ load = (win) ->
 				onClose: @props.onCancel
 			},
 				R.div({className: 'createProgramDialog'},
-					R.div({className: 'form-group'},						
+					R.div({className: 'form-group'},            
 						R.label({}, "Name and Color Key")
 						R.div({className: 'input-group'},
 							R.input({
@@ -301,7 +342,7 @@ load = (win) ->
 							onChange: @_updateDescription
 							rows: 3
 						})
-					)					
+					)         
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -467,7 +508,7 @@ load = (win) ->
 										clientFileId = result.get('id')
 										recordId = result.get('recordId')
 
-										clientIsEnrolled = enrolledLinks.find (link) ->													
+										clientIsEnrolled = enrolledLinks.find (link) ->                         
 											link.get('clientFileId') is clientFileId
 
 										R.tr({key: clientFileId},
@@ -496,7 +537,7 @@ load = (win) ->
 								)
 							)
 						)
-					)					
+					)         
 				)
 				R.div({className: 'btn-toolbar pull-right'},
 					R.button({
@@ -579,7 +620,7 @@ load = (win) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
 				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
 				lastName = clientFile.getIn(['clientName', 'last']).toLowerCase()
-				recordId = clientFile.getIn(['recordId']).toLowerCase()				
+				recordId = clientFile.getIn(['recordId']).toLowerCase()       
 
 				return queryParts
 				.every (part) ->
