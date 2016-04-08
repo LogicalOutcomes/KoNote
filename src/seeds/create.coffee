@@ -208,18 +208,15 @@ Create.account = (index, cb) ->
 
 # wrappers
 
-Create.clientFiles = (numberOfFiles, cb=(->)) ->
-	Async.times numberOfFiles, Create.clientFile, (err, clientFiles) ->
+Create.clientFiles = (quantity, cb=(->)) ->
+	Async.times quantity, Create.clientFile, (err, clientFiles) ->
 		if err
 			console.error err
 			cb err
 			return
 
+		console.log "Created #{quantity} clientFiles"
 		cb null, Imm.List(clientFiles)
-		console.log "created #{numberOfFiles} client files"
-
-
-  #children
 
 Create.progEvents = (quantity, props, cb) ->
 	Async.times quantity, (index, cb) ->
@@ -229,7 +226,7 @@ Create.progEvents = (quantity, props, cb) ->
 			cb err
 			return
 
-		console.log "added #{quantity} events to each clientFile"
+		console.log "Created #{quantity} progEvents"
 		cb null, Imm.List(results)
 
 Create.quickNotes = (clientFile, numberOfNotes, cb) ->
@@ -240,7 +237,7 @@ Create.quickNotes = (clientFile, numberOfNotes, cb) ->
 			cb err
 			return
 
-		console.log "added #{numberOfNotes} notes to each client"
+		console.log "Created #{quantity} quickNotes"
 		cb null, Imm.List(results)
 
 Create.progNotes = (quantity, props, cb) ->
@@ -251,7 +248,7 @@ Create.progNotes = (quantity, props, cb) ->
 			cb err
 			return
 
-		console.log "added #{quantity} progNotes to clientFile"
+		console.log "Created #{quantity} progNotes"
 		cb null, Imm.List(results)
 	
 Create.planTargets = (quantity, props, cb) ->
@@ -262,17 +259,17 @@ Create.planTargets = (quantity, props, cb) ->
 			cb err
 			return
 
-		console.log "added #{quantity} planTargets to clientFile"
+		console.log "Created #{quantity} planTargets"
 		cb null, Imm.List(results)
 
-Create.programs = (numberOfPrograms, cb=(->)) ->
-	Async.times numberOfPrograms, Create.program, (err, programs) ->
+Create.programs = (quantity, cb) ->
+	Async.times quantity, Create.program, (err, programs) ->
 		if err
 			cb err
 			return
 
+		console.log "Created #{quantity} programs"
 		cb null, Imm.List(programs)
-		console.log "created #{numberOfPrograms} programs"
 
 Create.clientFileProgramLinks = (clientFiles, program, cb) ->
 	Async.map clientFiles.toArray(), (clientFile, cb) ->
@@ -281,37 +278,36 @@ Create.clientFileProgramLinks = (clientFiles, program, cb) ->
 				cb err
 				return
 
+			console.log "Linked clientFile \"#{clientFile.getIn(['clientName', 'last'])}\" to program \"#{program.get('name')}\""
 			cb null, Imm.List(result)
 	, cb
 
-Create.metrics = (numberOfMetrics, cb=(->)) ->
-	Async.times numberOfMetrics, Create.metric, (err, metrics) ->
+Create.metrics = (quantity, cb) ->
+	Async.times quantity, Create.metric, (err, metrics) ->
 		if err
 			cb err
 			return
 
+		console.log "Created #{quantity} metrics"
 		cb null, Imm.List(metrics)
-		console.log "created #{numberOfMetrics} metrics"
 
-Create.eventTypes = (numberOfEventTypes, cb=(->)) ->
-	Async.times numberOfEventTypes, Create.eventType, (err, eventTypes) ->
+Create.eventTypes = (quantity, cb) ->
+	Async.times quantity, Create.eventType, (err, eventTypes) ->
 		if err
-			console.error err
 			cb err
 			return
 
+		console.log "Created #{quantity} eventTypes"
 		cb null, Imm.List(eventTypes)
-		console.log "created #{numberOfEventTypes} event types"
 
-Create.accounts = (numberOfAccounts, cb=(->)) ->
-	Async.times numberOfAccounts, Create.account, (err, accounts) ->
+Create.accounts = (quantity, cb) ->
+	Async.times quantity, Create.account, (err, accounts) ->
 		if err
-			console.error err
 			cb err
 			return
 
+		console.log "Created #{quantity} accounts"
 		cb null, Imm.List(accounts)
-		console.log "created #{numberOfAccounts} accounts"
 
 
 module.exports = Create
