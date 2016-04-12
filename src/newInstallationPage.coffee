@@ -5,6 +5,7 @@
 Config = require './config'
 Persist = require './persist'
 Async = require 'async'
+Fs = require 'fs'
 
 load = (win) ->
 	# Libraries from browser context
@@ -23,7 +24,40 @@ load = (win) ->
 	NewInstallationPage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
-		init: -> # Nothing yet
+		init: ->
+			# First, we must test for read/write permissions
+
+			fileTestPath = './data/writeFileTest.txt'
+			fileTestString = "Hello World!"			
+
+			Async.series [
+				(cb) => Fs.writeFile fileTestPath, fileTestString, cb
+				(cb) => Fs.unlink fileTestPath, cb
+			], (err) =>
+				if err
+
+					if err.code is 'EROFS'
+						additionalMessage = unless process.platform is 'darwin' then "" else
+							"Please make sure you have dragged #{Config.productName} into
+							your Applications folder."
+
+						Bootbox.alert """
+							ERROR: '#{err.code}'.
+							Unable to write to the local directory.
+							#{additionalMessage}
+						""", @props.closeWindow
+
+					else
+						Bootbox.alert """
+							ERROR: '#{err.code}'.
+							Please contact #{Config.productName} technical support.
+						""", @props.closeWindow
+
+					console.error "Data directory test error:", err
+					return
+
+				console.log "Data directory #{Config.dataDirectory} is writeable!"
+
 
 		deinit: (cb=(->)) ->
 			cb()
@@ -273,7 +307,7 @@ load = (win) ->
 				(cb) =>
 					@_updateProgress 0, "Setting up database..."
 
-					# Build the data directory, with subfolders from dataModels
+					# Build the data directory, with subfolders/collections indicated in dataModels
 					Persist.buildDataDirectory Config.dataDirectory, (err) =>
 						if err
 							cb err
