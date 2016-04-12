@@ -92,7 +92,7 @@ class Account
 	#
 	# Note: this method assumes that the data directory has already undergone
 	# some basic set up outside of the account system (see
-	# `Persist.setUpDataDirectory`).
+	# `Persist.buildDataDirectory`).
 	#
 	# Errors:
 	# - IOError
@@ -675,7 +675,7 @@ module.exports = {
 	listUserNames
 	Account
 	DecryptedAccount
-	
+
 	UserNameTakenError
 	UnknownUserNameError
 	InvalidUserNameError

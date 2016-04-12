@@ -2,10 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-Async = require 'async'
 Joi = require 'joi'
-Mkdirp = require 'mkdirp'
-Path = require 'path'
 
 ApiBuilder = require './apiBuilder'
 {IdSchema, TimestampFormat} = require './utils'
@@ -215,23 +212,7 @@ dataModelDefinitions = [
 	}
 ]
 
-getApi = (session) ->
-	ApiBuilder.buildApi session, dataModelDefinitions
 
-# TODO This shouldn't be here, since it's derived from the data model, not part of it
-setUpDataDirectory = (dataDir, cb) ->
-	# Set up top-level directories
-	Async.series [
-		(cb) ->
-			Async.each dataModelDefinitions, (modelDef, cb) ->
-				Mkdirp Path.join(dataDir, modelDef.collectionName), cb
-			, cb
-		(cb) ->
-			Mkdirp Path.join(dataDir, '_tmp'), cb
-		(cb) ->
-			Mkdirp Path.join(dataDir, '_users'), cb
-		(cb) ->
-			Mkdirp Path.join(dataDir, '_locks'), cb
-	], cb
+getApi = (session) -> ApiBuilder.buildApi session, dataModelDefinitions
 
-module.exports = {getApi, setUpDataDirectory}
+module.exports = {dataModelDefinitions, getApi}

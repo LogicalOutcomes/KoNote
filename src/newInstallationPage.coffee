@@ -273,8 +273,8 @@ load = (win) ->
 				(cb) =>
 					@_updateProgress 0, "Setting up database..."
 
-					# Set up data directory, with subfolders from dataModels
-					Persist.setUpDataDirectory Config.dataDirectory, (err) =>
+					# Build the data directory, with subfolders from dataModels
+					Persist.buildDataDirectory Config.dataDirectory, (err) =>
 						if err
 							cb err
 							return
