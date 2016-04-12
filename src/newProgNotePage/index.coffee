@@ -41,6 +41,7 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				status: 'init'
+				isLoading: null
 
 				loadErrorType: null
 				progNote: null
@@ -60,6 +61,8 @@ load = (win, {clientFileId}) ->
 		suggestClose: ->
 			@refs.ui.suggestClose()
 
+
+
 		render: ->
 			unless @state.status is 'ready' then return R.div({})
 
@@ -67,7 +70,6 @@ load = (win, {clientFileId}) ->
 				ref: 'ui'
 				status: @state.status
 
-				isLoading: @state.isLoading
 				loadErrorType: @state.loadErrorType
 				progNote: @state.progNote
 				clientFile: @state.clientFile
@@ -296,6 +298,8 @@ load = (win, {clientFileId}) ->
 
 		getInitialState: ->
 			return {
+				isLoading: null
+
 				progNote: @props.progNote
 
 				progEvents: Imm.List()
@@ -304,9 +308,6 @@ load = (win, {clientFileId}) ->
 				isEventPlanRelationMode: null
 				selectedEventPlanRelation: null
 				hoveredEventPlanRelation: null
-
-				success: false
-				showExitAlert: false				
 			}
 
 		suggestClose: ->
@@ -395,7 +396,12 @@ load = (win, {clientFileId}) ->
 				#{clientName}: New #{Term 'Progress Note'}
 			"""
 
-			return R.div({className: 'newProgNotePage animated fadeIn'},				
+			return R.div({className: 'newProgNotePage animated fadeIn'},
+				Spinner({
+					isVisible: @state.isLoading
+					isOverlay: true
+				})
+
 				R.div({className: 'progNote'},
 					R.div({className: 'backdateContainer'},
 						BackdateWidget({
@@ -589,7 +595,7 @@ load = (win, {clientFileId}) ->
 						R.button({							
 							className: 'btn btn-default addEventButton'
 							onClick: @_newEventTab
-							disabled: @state.editingWhichEvent?
+							disabled: @state.isLoading or @state.editingWhichEvent?
 						}, FaIcon('plus'))
 					)
 				)
@@ -782,7 +788,9 @@ load = (win, {clientFileId}) ->
 		_isValidMetric: (value) -> value.match /^-?\d*\.?\d*$/
 
 		_save: ->
-			progNoteId = null
+			@setState {isLoading: true}
+
+			progNoteId = null			
 
 			Async.series [
 				(cb) =>
@@ -810,6 +818,8 @@ load = (win, {clientFileId}) ->
 
 						cb()
 			], (err) =>
+				@setState {isLoading: false}
+
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """
