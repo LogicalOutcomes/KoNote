@@ -21,7 +21,7 @@ load = (win) ->
 	Config = require('./config')
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)	
-	{FaIcon, renderName, showWhen} = require('./utils').load(win)
+	{FaIcon, renderName, showWhen, stripMetadata} = require('./utils').load(win)
 	{TimestampFormat} = require('./persist/utils')
 
 	ExportManagerTab = React.createFactory React.createClass
@@ -131,9 +131,67 @@ load = (win) ->
 					progEventsList = null
 					clientFileId = clientFile.get('id')
 					clientName = renderName clientFile.get('clientName')
+					clientFileProgramLinkHeaders = null
+					programHeaders = null
+					programs = null
 					csv = null
 
 					Async.series [
+						#get clientfile program links
+						(cb) =>
+							ActiveSession.persist.clientFileProgramLinks.list (err, results) =>
+								if err
+									cb err
+									return
+
+								clientFileProgramLinkHeaders = results
+								.filter (link) ->
+									link.get('clientFileId') is clientFileId and
+									link.get('status') is "enrolled"
+								.map (link) ->
+									link.get('programId')
+
+								cb()
+								
+						(cb) =>
+							ActiveSession.persist.programs.list (err, results) =>
+								if err
+									cb err
+									return
+
+								programHeaders = results
+								.filter (program) -> 
+									thisProgramId = program.get('id')
+									clientFileProgramLinkHeaders.contains thisProgramId
+
+								cb()
+						(cb) =>
+							Async.map programHeaders.toArray(), (programHeader, cb) =>
+								console.log programHeader.get('id')
+								ActiveSession.persist.programs.readLatestRevisions programHeader.get('id'), 1, cb
+							, (err, results) =>
+								if err
+									cb err
+									return
+
+								programs = Imm.List(results)
+								.map (program) -> stripMetadata program.get(0)
+								console.log (programs)
+
+								cb()
+
+								# clientProgramNames = @props.programs 
+								# .filter (program) ->
+								# 	program.get("id") in clientFileProgramLinkIds
+								# .map(program)
+								# 	program.get('name')
+
+								# .map (link) ->
+								# 	link.get('programId')
+								# .filter (program) -> 
+								# 	thisProgramId = program.get('id')
+								# 	clientFileProgramLinkHeaders.contains thisProgramId
+			
 						# get event headers
 						(cb) =>
 							@_updateProgress 10
@@ -158,6 +216,9 @@ load = (win) ->
 								progEvents = Imm.List(results).map (revision) -> revision.last()
 								cb()
 
+			
+
+
 						# csv format: id, timestamp, username, title, description, start time, end time
 						(cb) =>
 							@_updateProgress 50
@@ -169,6 +230,7 @@ load = (win) ->
 									timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									author: progEvent.get('author')
 									clientName
+									programs
 									title: progEvent.get('title')
 									description: progEvent.get('description')
 									startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
