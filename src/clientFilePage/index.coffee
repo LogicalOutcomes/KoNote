@@ -311,7 +311,12 @@ load = (win, {clientFileId}) ->
 					if err instanceof Persist.IOError
 						console.error err
 						console.error err.stack
-						@setState {loadErrorType: 'io-error'}
+						
+						global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
+						Window.show()
+						Window.focus()
+
+						@setState {loadErrorType: 'io-error', status: 'ready'}
 						return
 
 					CrashHandler.handle err
