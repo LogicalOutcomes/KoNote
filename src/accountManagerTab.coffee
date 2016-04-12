@@ -315,10 +315,6 @@ load = (win) ->
 		_cancel: ->
 			@props.onCancel()
 		_submit: ->
-			unless /^[a-zA-Z0-9_-]+$/.exec @state.userName
-				Bootbox.alert "User name must contain only letters, numbers, underscores, and dashes."
-				return
-
 			userName = @state.userName
 			password = @state.password
 			accountType = if @state.isAdmin then 'admin' else 'normal'
@@ -331,6 +327,10 @@ load = (win) ->
 				if err
 					if err instanceof Persist.Users.UserNameTakenError
 						Bootbox.alert "That user name is already taken."
+						return
+
+					if err instanceof Persist.Users.InvalidUserNameError
+						Bootbox.alert "User name must contain only letters, numbers, underscores, and dashes."
 						return
 
 					if err instanceof Persist.IOError

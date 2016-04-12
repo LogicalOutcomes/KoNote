@@ -174,7 +174,9 @@ class Account
 		userName = userName.toLowerCase()
 		dataDirectory = loggedInAccount.dataDirectory
 		
-		destUserDir = getUserDir dataDirectory, userName
+		destUserDir = getUserDir(dataDirectory, userName, cb)
+		return unless destUserDir?
+
 		tmpDirPath = Path.join(dataDirectory, '_tmp')
 
 		userDir = null
@@ -304,7 +306,8 @@ class Account
 	@read: (dataDir, userName, cb) =>
 		userName = userName.toLowerCase()
 
-		userDir = getUserDir dataDir, userName
+		userDir = getUserDir(dataDir, userName, cb)
+		return unless userDir?
 
 		publicInfo = null
 
@@ -650,14 +653,20 @@ generateKdfParams = ->
 		iterationCount: 600000 # higher is more secure, but slower
 	}
 
-getUserDir = (dataDir, userName) ->
+getUserDir = (dataDir, userName, cb) ->
 	unless userNameRegex.exec userName
-		throw new Error "invalid characters in user name"
+		if cb?
+			# Provide custom error instance if a callback is provided
+			cb new InvalidUserNameError()
+			return
+		else
+			throw new Error "invalid characters in user name"
 
 	return Path.join dataDir, '_users', userName
 
 class UserNameTakenError extends CustomError
 class UnknownUserNameError extends CustomError
+class InvalidUserNameError extends CustomError
 class IncorrectPasswordError extends CustomError
 class DeactivatedAccountError extends CustomError
 
@@ -666,9 +675,10 @@ module.exports = {
 	listUserNames
 	Account
 	DecryptedAccount
+	
 	UserNameTakenError
 	UnknownUserNameError
+	InvalidUserNameError
 	IncorrectPasswordError
 	DeactivatedAccountError
-	userNameRegex
 }

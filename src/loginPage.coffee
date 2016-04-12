@@ -106,11 +106,6 @@ load = (win) ->
 						@props.closeWindow()
 
 		_login: (userName, password) ->
-			# Run regex check on username first
-			unless Persist.Users.userNameRegex.exec userName
-				@refs.ui.onLoginError('InvalidUserNameError')
-				return
-
 			# Start authentication process
 			@setState ->
 				isLoading: true
@@ -118,12 +113,17 @@ load = (win) ->
 
 			Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>				
 				if err
-					@setState
+					@setState {
 						isLoading: false
 						loadingMessage: ""
+					}
 
 					if err instanceof Persist.Session.UnknownUserNameError
 						@refs.ui.onLoginError('UnknownUserNameError')
+						return
+
+					if err instanceof Persist.Session.InvalidUserNameError
+						@refs.ui.onLoginError('InvalidUserNameError')
 						return
 
 					if err instanceof Persist.Session.IncorrectPasswordError
@@ -189,6 +189,12 @@ load = (win) ->
 						setTimeout(=>
 							@refs.userNameField.focus()
 						, 100)
+				when 'InvalidUserNameError'
+					Bootbox.alert "Invalid user name. Please try again.", =>
+						@refs.userNameField.focus()
+						setTimeout(=>
+							@refs.userNameField.focus()
+						, 100)
 				when 'IncorrectPasswordError'
 					Bootbox.alert "Incorrect password. Please try again.", =>
 						@setState {password: ''}
@@ -200,13 +206,7 @@ load = (win) ->
 						@refs.userNameField.focus()
 						setTimeout(=>
 							@refs.userNameField.focus()
-						, 100)
-				when 'InvalidUserNameError'
-					Bootbox.alert "Invalid user name. Please try again.", =>
-						@refs.userNameField.focus()
-						setTimeout(=>
-							@refs.userNameField.focus()
-						, 100)
+						, 100)				
 				else
 					throw new Error "Invalid Login Error"
 
