@@ -21,7 +21,7 @@ load = (win) ->
 	Config = require('./config')
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)	
-	{FaIcon, renderName, showWhen, stripMetadata} = require('./utils').load(win)
+	{FaIcon, renderName, showWhen} = require('./utils').load(win)
 	{TimestampFormat} = require('./persist/utils')
 
 	ExportManagerTab = React.createFactory React.createClass
@@ -134,6 +134,7 @@ load = (win) ->
 					clientFileProgramLinkIds = null
 					programHeaders = null
 					programs = @props.programs
+					programNames = null
 					
 					csv = null
 
@@ -156,34 +157,20 @@ load = (win) ->
 								link.get('status') is "enrolled"
 							.map (link) ->
 								link.get('programId')
-							console.log clientFileProgramLinkIds
-
+							
+							console.log "link IDs: ", clientFileProgramLinkIds.toJS()
+							
 							cb()
 
 						(cb) =>
-							programHeaders = @props.programs
-							.filter (program) -> 
-								thisProgramId = program.get('id')
-								clientFileProgramLinkIds.contains thisProgramId
-							console.log programHeaders	
+							programNames = programs
+							.filter (program) -> clientFileProgramLinkIds.contains program.get('id')
+					        .map (program) -> program.get('name')
+							
+							console.log "program names: ", programNames.toJS()
+							
 							cb()
 
-						(cb) =>
-							Async.map programHeaders.toArray(), (programHeader, cb) =>
-								console.log programHeader.get('id')
-								ActiveSession.persist.programs.readLatestRevisions programHeader.get('id'), 1, cb
-							, (err, results) =>
-								if err
-									cb err
-									return
-
-								programs = Imm.List(results)
-								.map (program) -> stripMetadata program.get(0)
-								console.log (programs)
-
-								cb()
-
-			
 						# get event headers
 						(cb) =>
 							@_updateProgress 10
@@ -222,7 +209,7 @@ load = (win) ->
 									timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									author: progEvent.get('author')
 									clientName
-									programs
+									programs: programNames.toJS()
 									title: progEvent.get('title')
 									description: progEvent.get('description')
 									startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
