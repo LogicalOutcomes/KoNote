@@ -116,6 +116,10 @@ generateClientFiles = (quantity, metrics, cb) ->
 
 
 runSeries = ->
+	# First tell the system that we're seeding, to prevent
+	# event-driven operations such opening a clientFile
+	global.isSeeding = true
+
 	clientFiles = null
 	programs = null
 	links = null
@@ -197,6 +201,11 @@ runSeries = ->
 		if err
 			console.error "Problem running seeding series:", err
 			return
+
+		# Remove our isSeeding property entirely from global
+		delete global.isSeeding
+
+		console.log "Finished Seeding Series!"
 
 
 module.exports = {runSeries}

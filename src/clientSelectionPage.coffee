@@ -198,9 +198,7 @@ load = (win) ->
 				'create:clientFile': (newFile) =>
 					clientFileHeaders = @state.clientFileHeaders.push newFile
 					@setState {clientFileHeaders}
-					# @_openClientFile(newFile.get('id'))
-
-				# TODO: Create a function for this kind of listening/updating
+					@_openClientFile(newFile.get('id')) unless global.isSeeding
 
 				'create:program createRevision:program': (newRev) =>
 					programId = newRev.get('id')
