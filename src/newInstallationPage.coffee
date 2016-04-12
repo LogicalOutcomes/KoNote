@@ -27,7 +27,7 @@ load = (win) ->
 		init: ->
 			# First, we must test for read/write permissions
 
-			fileTestPath = './data/writeFileTest.txt'
+			fileTestPath = './writeFileTest.txt'
 			fileTestString = "Hello World!"			
 
 			Async.series [
