@@ -118,6 +118,9 @@ load = (win) ->
 		_saveEvents: (path) ->
 			isConfirmClosed = false
 			# Map over client files
+			
+			console.log "clientfileheaders: ", @props.clientFileHeaders.toArray()
+
 			if @props.clientFileHeaders.size is 0
 				Bootbox.alert {
 					title: "No Events to Export"
@@ -125,6 +128,7 @@ load = (win) ->
 				}
 			else
 				@_updateProgress 0, "Saving Events to CSV..."
+
 				Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
 					progEventsHeaders = null
 					progEvents = null
@@ -135,8 +139,10 @@ load = (win) ->
 					programHeaders = null
 					programs = @props.programs
 					programNames = null
-					
 					csv = null
+
+
+					console.log "checking clientFile with name: ",  clientName
 
 					Async.series [
 					
@@ -200,7 +206,9 @@ load = (win) ->
 
 						# csv format: id, timestamp, username, title, description, start time, end time
 						(cb) =>
+
 							@_updateProgress 50
+
 							progEvents = progEvents
 							.filter (progEvent) -> progEvent.get('status') isnt "cancelled"
 							.map (progEvent) ->
@@ -209,31 +217,38 @@ load = (win) ->
 									timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									author: progEvent.get('author')
 									clientName
-									programs: programNames.toJS()
+									programs: "\"#{programNames.toJS().join(", ")}\""
 									title: progEvent.get('title')
 									description: progEvent.get('description')
 									startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									endDate: Moment(progEvent.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 								}
-							cb null, progEvents
-							, (err, results) ->
-								if err
-									cb err
-									return
-								progEvents = Imm.List results
-								cb()
 
-						# convert to csv
-						(cb) =>
-							@_updateProgress 100
-							CSVConverter.json2csv progEvents.toJS(), (err, result) ->
-								csv = result
-								cb()
+							cb()
 
 					], (err) =>
 						if err
-							CrashHandler.handle err
+							cb err
 							return
+
+						console.log "Done iterating over client", clientName
+						cb(null, progEvents)
+
+				, (err, results) =>
+					if err
+						console.error err
+						return
+
+					progEvents = Imm.List(results).flatten()
+
+					console.log "Final events result:", progEvents.toJS()
+
+					CSVConverter.json2csv progEvents.toJS(), (err, result) =>
+						if err
+							cb err
+							return
+						csv = result
+						
 
 						# destination path must exist in order to save
 						if path.length > 1
@@ -249,7 +264,8 @@ load = (win) ->
 										title: "Save Successful"
 										message: "Events exported to: #{path}"
 									}
-									isConfirmClosed = true
+									# isConfirmClosed = true
+
 	
 		_saveMetrics: (path) ->
 			isConfirmClosed = false
