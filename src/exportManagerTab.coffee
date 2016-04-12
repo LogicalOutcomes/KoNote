@@ -131,40 +131,43 @@ load = (win) ->
 					progEventsList = null
 					clientFileId = clientFile.get('id')
 					clientName = renderName clientFile.get('clientName')
-					clientFileProgramLinkHeaders = null
+					clientFileProgramLinkIds = null
 					programHeaders = null
-					programs = null
+					programs = @props.programs
+					
 					csv = null
 
 					Async.series [
-						#get clientfile program links
+					
+						# (cb) =>
+						# 	# console.log programs
+						# 	Async.map programs.toArray(), (clientProgram, cb) =>
+						# 		console.log clientProgram.get('name')
+						# 		clientProgram.get('name')
+
+						# 	cb()
+
+
+						# get clientfile program links	
 						(cb) =>
-							ActiveSession.persist.clientFileProgramLinks.list (err, results) =>
-								if err
-									cb err
-									return
+							clientFileProgramLinkIds = @props.clientFileProgramLinks
+							.filter (link) ->
+								link.get('clientFileId') is clientFileId and
+								link.get('status') is "enrolled"
+							.map (link) ->
+								link.get('programId')
+							console.log clientFileProgramLinkIds
 
-								clientFileProgramLinkHeaders = results
-								.filter (link) ->
-									link.get('clientFileId') is clientFileId and
-									link.get('status') is "enrolled"
-								.map (link) ->
-									link.get('programId')
+							cb()
 
-								cb()
-								
 						(cb) =>
-							ActiveSession.persist.programs.list (err, results) =>
-								if err
-									cb err
-									return
+							programHeaders = @props.programs
+							.filter (program) -> 
+								thisProgramId = program.get('id')
+								clientFileProgramLinkIds.contains thisProgramId
+							console.log programHeaders	
+							cb()
 
-								programHeaders = results
-								.filter (program) -> 
-									thisProgramId = program.get('id')
-									clientFileProgramLinkHeaders.contains thisProgramId
-
-								cb()
 						(cb) =>
 							Async.map programHeaders.toArray(), (programHeader, cb) =>
 								console.log programHeader.get('id')
@@ -180,17 +183,6 @@ load = (win) ->
 
 								cb()
 
-								# clientProgramNames = @props.programs 
-								# .filter (program) ->
-								# 	program.get("id") in clientFileProgramLinkIds
-								# .map(program)
-								# 	program.get('name')
-
-								# .map (link) ->
-								# 	link.get('programId')
-								# .filter (program) -> 
-								# 	thisProgramId = program.get('id')
-								# 	clientFileProgramLinkHeaders.contains thisProgramId
 			
 						# get event headers
 						(cb) =>
