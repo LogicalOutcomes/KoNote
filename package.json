@@ -74,4 +74,5 @@
 	"scripts": {
 		"start": "nodewebkit . --enable-logging=stderr",
 		"test": "mocha --compilers coffee:coffee-script/register --recursive --bail"
+	}
 }
