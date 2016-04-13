@@ -1,7 +1,7 @@
 {
 	"name": "konote",
 	"displayName": "KoNote",
-	"version": "1.5.2",
+	"version": "1.5.2-rtp-fix",
 	"main": "src/main.html",
 	"window": {
 		"icon": "src/icon.png",
@@ -74,5 +74,4 @@
 	"scripts": {
 		"start": "nodewebkit . --enable-logging=stderr",
 		"test": "mocha --compilers coffee:coffee-script/register --recursive --bail"
-	}
 }
