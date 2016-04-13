@@ -476,6 +476,7 @@ load = (win) ->
 			# when full prognote editing becomes supported.
 			statusChangeRev = @props.progNoteHistory.last()
 			latestRev = @props.progNoteHistory.last()
+			console.log "history ", @props.progNoteHistory.toJS();
 
 			return R.div({className: 'cancelStub'},
 				R.button({
@@ -495,8 +496,8 @@ load = (win) ->
 				R.h3({},
 					"Cancelled: ",
 
-					if latestRev.get('backdate')
-						Moment(latestRev.get('backdate'), Persist.TimestampFormat)
+					if @props.progNoteHistory.first().get('backdate')
+						Moment(@props.progNoteHistory.first().get('backdate'), Persist.TimestampFormat)
 						.format('MMMM D, YYYY') + " (late entry)"
 					else
 						Moment(@props.progNoteHistory.first().get('timestamp'), Persist.TimestampFormat)
@@ -519,14 +520,14 @@ load = (win) ->
 					switch latestRev.get('type')
 						when 'basic'
 							BasicProgNoteView({
-								progNote: latestRev
+								progNote: @props.progNoteHistory.first()
 								clientFile: @props.clientFile									
 								selectedItem: @props.selectedItem
 								isReadOnly: true
 							})
 						when 'full'
 							FullProgNoteView({
-								progNote: latestRev
+								progNote: @props.progNoteHistory.first()
 								progEvents: @props.progEvents
 								eventTypes: @props.eventTypes
 								clientFile: @props.clientFile
