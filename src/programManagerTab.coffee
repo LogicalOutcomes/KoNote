@@ -144,6 +144,7 @@ load = (win) ->
 
 		render: ->
 			return Dialog({
+				ref: 'dialog'
 				title: "Create New #{Term 'Program'}"
 				onClose: @props.onCancel
 			},
@@ -225,7 +226,6 @@ load = (win) ->
 			event.preventDefault()
 
 			newProgram = @_buildProgramObject()
-
 			alreadyInUse = @_colorInUse(newProgram.get('colorKeyHex'))
 
 			if alreadyInUse
@@ -243,8 +243,12 @@ load = (win) ->
 				@_createProgram(newProgram)
 
 		_createProgram: (newProgram) ->
+			@refs.dialog.setIsLoading(true)
+
 			# Create the new program, and close
 			ActiveSession.persist.programs.create newProgram, (err, newProgram) =>
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
+
 				if err
 					CrashHandler.handle err
 					return
@@ -266,6 +270,7 @@ load = (win) ->
 
 		render: ->
 			return Dialog({
+				ref: 'dialog'
 				title: "Modifying #{Term 'Program'}"
 				onClose: @props.onCancel
 			},
@@ -357,12 +362,12 @@ load = (win) ->
 			return not Imm.is originalProgramObject, modifiedProgramObject
 
 		_submit: (event) ->
-			event.preventDefault()
+			event.preventDefault()			
 
-			newProgram = @_buildModifiedProgramObject()
+			modifiedProgram = @_buildModifiedProgramObject()
 
 			# Check for color existing usage, unless color hasn't changed
-			newColorKeyHex = newProgram.get('colorKeyHex')
+			newColorKeyHex = modifiedProgram.get('colorKeyHex')
 			alreadyInUse = @_colorInUse(newColorKeyHex) if newColorKeyHex isnt @props.rowData.get('colorKeyHex')
 
 			if alreadyInUse
@@ -374,14 +379,18 @@ load = (win) ->
 						Are you sure you want to use this colour?
 					"
 					callback: (selectedOk) =>
-						if selectedOk then @_modifyProgram(newProgram)
+						if selectedOk then @_modifyProgram(modifiedProgram)
 				}
 			else
-				@_modifyProgram(newProgram)
+				@_modifyProgram(modifiedProgram)
 
 		_modifyProgram: (modifiedProgram) ->
+			@refs.dialog.setIsLoading(true)
+
 			# Update program revision, and close
 			ActiveSession.persist.programs.createRevision modifiedProgram, (err, modifiedProgram) =>
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
+
 				if err
 					CrashHandler.handle err
 					return
@@ -416,6 +425,7 @@ load = (win) ->
 				link.get('status') is "enrolled"
 
 			return Dialog({
+				ref: 'dialog'
 				title: "Managing #{Term 'Clients'} in \"#{@props.rowData.get('name')}\""
 				onClose: @props.onClose
 			},
@@ -623,6 +633,8 @@ load = (win) ->
 		_submit: (event) ->
 			event.preventDefault()
 
+			@refs.dialog.setIsLoading(true)
+
 			programId = @props.rowData.get('id')
 
 			programLinks = @props.clientFileProgramLinks.filter (link) ->
@@ -662,6 +674,8 @@ load = (win) ->
 						cb()
 
 			, (err) =>
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
+
 				if err
 					CrashHandler.handle err
 					return
