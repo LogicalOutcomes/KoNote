@@ -479,17 +479,21 @@ load = (win) ->
 
 			return R.div({className: 'cancelStub'},
 				R.button({
-					className: 'toggleDetails btn btn-default'
+					className: 'toggleDetails btn btn-xs btn-default'
 					onClick: @_toggleDetails
 				},
-					FaIcon 'chevron-down'
-					" Show details"
+					R.span({className: "#{showWhen not @state.isExpanded}"},
+						FaIcon 'chevron-down'
+						" Show details"
+					),
+					R.span({className: "#{showWhen @state.isExpanded}"},
+						FaIcon 'chevron-up'
+						" Hide details"
+					),
 				)
 
 				R.h3({},
-					statusChangeRev.get('author')
-
-					" cancelled a #{Term 'progress note'} from ",
+					"Cancelled: ",
 
 					if latestRev.get('backdate')
 						Moment(latestRev.get('backdate'), Persist.TimestampFormat)
@@ -497,20 +501,16 @@ load = (win) ->
 					else
 						Moment(@props.progNoteHistory.first().get('timestamp'), Persist.TimestampFormat)
 						.format 'MMMM D, YYYY, HH:mm'
-
-					"."
-				),
-
-				R.div({},
-					"Cancelled on ",
-
-					Moment(statusChangeRev.get('timestamp'), Persist.TimestampFormat)
-					.format 'MMMM D, YYYY [at] HH:mm'
-
-					"."
 				),
 
 				R.div({className: "details #{showWhen @state.isExpanded}"},
+					R.h4({},
+						"Cancelled by ",
+						statusChangeRev.get('author')
+						" on ",
+						Moment(statusChangeRev.get('timestamp'), Persist.TimestampFormat)
+						.format 'MMMM D, YYYY [at] HH:mm'
+					),
 					R.h4({}, "Reason for cancellation:"),
 					R.div({className: 'reason'},
 						renderLineBreaks latestRev.get('statusReason')
