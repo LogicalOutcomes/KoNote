@@ -147,6 +147,7 @@ load = (win) ->
 					Async.series [
 						# get clientfile program links	
 						(cb) =>
+							@_updateProgress 5
 							clientFileProgramLinkIds = @props.clientFileProgramLinks
 							.filter (link) ->
 								link.get('clientFileId') is clientFileId and
@@ -235,7 +236,8 @@ load = (win) ->
 							cb err
 							return
 						csv = result
-						
+						@_updateProgress 100
+			
 
 						# destination path must exist in order to save
 						if path.length > 1
@@ -280,6 +282,7 @@ load = (win) ->
 				Async.series [
 					# get clientfile program links	
 					(cb) =>
+						@_updateProgress 5
 						clientFileProgramLinkIds = @props.clientFileProgramLinks
 						.filter (link) ->
 							link.get('clientFileId') is clientFileId and
@@ -429,6 +432,7 @@ load = (win) ->
 						return
 
 					csv = result
+					@_updateProgress 100
 
 
 					# Destination path must exist in order to save
