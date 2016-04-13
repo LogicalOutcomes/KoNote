@@ -129,71 +129,71 @@ load = (win) ->
 							placeholder: "Describe details (optional)"
 						})
 					)
-					R.div({className: 'form-group planRelationContainer'},
-						R.label({}, "Relationship to Plan")
-						DropdownButton({
-							title: (
-								if @props.selectedEventPlanRelation? and @props.selectedEventPlanRelation.get('name')?
-									@props.selectedEventPlanRelation.get('name')
-								else 
-									"No Relationship"
-							)
-							onToggle: @props.updateEventPlanRelationMode
-						},
-							(if @props.selectedEventPlanRelation?
-								[
-									R.li({
-										onClick: @props.selectEventPlanRelation.bind null, null
-										onMouseOver: @props.hoverEventPlanRelation.bind null, null
-									}, 
-										R.a({},
-											"None "
-											FaIcon('ban')
-										)
-									)
-									MenuItem({divider: true})
-								]
-							)							
-							(@props.progNote.get('units').map (unit) =>
-								switch unit.get('type')
-									when 'basic'
-										R.li({
-											key: unit.get('id')
-											onClick: @props.selectEventPlanRelation.bind null, unit
-											onMouseOver: @props.hoverEventPlanRelation.bind null, unit
-										}, 
-											R.a({}, unit.get('name'))
-										)
-									when 'plan'
-										([
-											(unit.get('sections').map (section) =>
-												([
-													R.li({
-														className: 'section'
-														key: section.get('id')
-														onClick: @props.selectEventPlanRelation.bind null, section
-														onMouseOver: @props.hoverEventPlanRelation.bind null, section
-													},
-														R.a({}, section.get('name'))
-													)
+					# R.div({className: 'form-group planRelationContainer'},
+					# 	R.label({}, "Relationship to Plan")
+					# 	DropdownButton({
+					# 		title: (
+					# 			if @props.selectedEventPlanRelation? and @props.selectedEventPlanRelation.get('name')?
+					# 				@props.selectedEventPlanRelation.get('name')
+					# 			else 
+					# 				"No Relationship"
+					# 		)
+					# 		onToggle: @props.updateEventPlanRelationMode
+					# 	},
+					# 		(if @props.selectedEventPlanRelation?
+					# 			[
+					# 				R.li({
+					# 					onClick: @props.selectEventPlanRelation.bind null, null
+					# 					onMouseOver: @props.hoverEventPlanRelation.bind null, null
+					# 				}, 
+					# 					R.a({},
+					# 						"None "
+					# 						FaIcon('ban')
+					# 					)
+					# 				)
+					# 				MenuItem({divider: true})
+					# 			]
+					# 		)							
+					# 		(@props.progNote.get('units').map (unit) =>
+					# 			switch unit.get('type')
+					# 				when 'basic'
+					# 					R.li({
+					# 						key: unit.get('id')
+					# 						onClick: @props.selectEventPlanRelation.bind null, unit
+					# 						onMouseOver: @props.hoverEventPlanRelation.bind null, unit
+					# 					}, 
+					# 						R.a({}, unit.get('name'))
+					# 					)
+					# 				when 'plan'
+					# 					([
+					# 						(unit.get('sections').map (section) =>
+					# 							([
+					# 								R.li({
+					# 									className: 'section'
+					# 									key: section.get('id')
+					# 									onClick: @props.selectEventPlanRelation.bind null, section
+					# 									onMouseOver: @props.hoverEventPlanRelation.bind null, section
+					# 								},
+					# 									R.a({}, section.get('name'))
+					# 								)
 
-													(section.get('targets').map (target) =>
-														R.li({
-															className: 'target'
-															key: target.get('id')
-															onClick: @props.selectEventPlanRelation.bind null, target
-															onMouseOver: @props.hoverEventPlanRelation.bind null, target
-														},
-															R.a({}, target.get('name'))
-														)
-													)
-												])
-											)
-											MenuItem({divider: true})
-										])
-							)
-						)
-					)
+					# 								(section.get('targets').map (target) =>
+					# 									R.li({
+					# 										className: 'target'
+					# 										key: target.get('id')
+					# 										onClick: @props.selectEventPlanRelation.bind null, target
+					# 										onMouseOver: @props.hoverEventPlanRelation.bind null, target
+					# 									},
+					# 										R.a({}, target.get('name'))
+					# 									)
+					# 								)
+					# 							])
+					# 						)
+					# 						MenuItem({divider: true})
+					# 					])
+					# 		)
+					# 	)
+					# )
 					
 					unless @props.eventTypes.isEmpty()
 						R.div({className: 'form-group eventTypeContainer'},
