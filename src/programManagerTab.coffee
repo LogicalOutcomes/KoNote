@@ -9,6 +9,7 @@ _ = require 'underscore'
 Persist = require './persist'
 Config = require './config'
 Term = require './term'
+{ProgramColors} = require './colors'
 
 load = (win) ->
 	$ = win.jQuery
@@ -24,7 +25,7 @@ load = (win) ->
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
-	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
+	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)	
 
 	ProgramManagerTab = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -104,6 +105,7 @@ load = (win) ->
 										dialog: ModifyProgramDialog
 										data: 
 											clientFileProgramLinks: @props.clientFileProgramLinks
+											programs: @props.programs
 									}
 								]
 							}
@@ -140,106 +142,47 @@ load = (win) ->
 		componentDidMount: ->
 			@refs.programName.focus()
 
-			console.log @_hslToRgb(196/360, 25/100, 47/100)
-			console.log @_rgbToHex([90, 112, 120])
-			console.log @_rgbToHsl(90, 112, 120)
-
-		_rgbToHsl: (r, g, b) ->
-			r /= 255
-			g /= 255
-			b /= 255
-			max = Math.max(r, g, b)
-			min = Math.min(r, g, b)
-			l = (max + min) / 2
-
-			if max == min
-				h = s = 0 # achromatic
-			else
-				d = max - min
-				s = if l > 0.5 then d / (2 - max - min) else d / (max + min)
-
-				switch max
-					when r
-						h = (g - b) / d + (if g < b then 6 else 0)
-					when g
-						h = (b - r) / d + 2
-					when b
-						h = (r - g) / d + 4
-
-				h /= 6
-
-			[h, s, l]
-
-
-		# _hue2rgb: (p, q, t) ->
-		# 	t += 1 if t < 0
-		# 	t -= 1 if t > 1
-		# 	return p + (q - p) * 6 * t if t < 1/6
-		# 	return q if t < 1/2
-		# 	return p + (q - p) * (2/3 - t) * 6 if t < 2/3
-		# 	return p
-
-		_hslToRgb: (h, s, l) ->
-			if s == 0
-				r = g = b = l # achromatic
-			else
-				hue2rgb = (p, q, t) ->
-					if t < 0 then t += 1
-					if t > 1 then t -= 1
-					if t < 1/6 then return p + (q - p) * 6 * t
-					if t < 1/2 then return q
-					if t < 2/3 then return p + (q - p) * (2/3 - t) * 6
-					return p
-
-				q = if l < 0.5 then l * (1 + s) else l + s - l * s
-				p = 2 * l - q
-				r = hue2rgb(p, q, h + 1/3)
-				g = hue2rgb(p, q, h)
-				b = hue2rgb(p, q, h - 1/3)
-
-			[r * 255, g * 255, b * 255]
-			
-		_rgbToHex: (rgb) ->
-			'#' + rgb[0].toString(16) + rgb[1].toString(16) + rgb[2].toString(16)
-
 		render: ->
-			colorKeyPalette = Imm.List(Config.colorKeyPalettes.programs).filterNot (colorKeyHex) =>
-				@props.data.programs.find (program) ->
-					program.get('colorKeyHex') is colorKeyHex
-
 			return Dialog({
 				title: "Create New #{Term 'Program'}"
 				onClose: @props.onCancel
 			},
 				R.div({className: 'createProgramDialog'},
-					R.div({className: 'form-group'},            
+					R.div({className: 'form-group'},
 						R.label({}, "Name")
-						R.div({className: 'input-group'},
-							R.input({
-								className: 'form-control'
-								ref: 'programName'
-								value: @state.name
-								onChange: @_updateName
-							})
-						)
+						R.input({
+							className: 'form-control'
+							ref: 'programName'
+							placeholder: "Specify #{Term 'program'} name"
+							value: @state.name
+							onChange: @_updateName
+							style:
+								borderColor: @state.colorKeyHex
+						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Color")
+						R.label({}, "Color Key")
 						R.div({},
-							colorKeyPalette.map (colorKeyHex) =>
+							ProgramColors.map (colorKeyHex) =>
 								isSelected = @state.colorKeyHex is colorKeyHex
+								alreadyInUse = @_colorInUse(colorKeyHex)
 
 								ColorKeyBubble({
 									colorKeyHex
 									isSelected
-									onClick: (colorKeyHex) => @setState {colorKeyHex}
+									alreadyInUse
+									onClick: (colorKeyHex) =>
+										# Allow toggling behaviour
+										colorKeyHex = null if @state.colorKeyHex is colorKeyHex
+										@setState {colorKeyHex}
 								})
-						)           
+						)
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
 						R.textarea({
 							className: 'form-control'
+							placeholder: "Describe the #{Term 'program'}"
 							value: @state.description
 							onChange: @_updateDescription
 							rows: 3
@@ -253,7 +196,7 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-success'
 							disabled: not @state.name or not @state.description or not @state.colorKeyHex
-							onClick: @_createProgram
+							onClick: @_submit
 						}, 
 							"Create #{Term 'Program'}"
 						)
@@ -267,6 +210,10 @@ load = (win) ->
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
 
+		_colorInUse: (colorKeyHex) ->
+			@props.data.programs.find (program) ->
+				program.get('colorKeyHex') is colorKeyHex
+
 		_buildProgramObject: ->
 			return Imm.fromJS({
 				name: @state.name
@@ -274,11 +221,28 @@ load = (win) ->
 				colorKeyHex: @state.colorKeyHex
 			})
 
-		_createProgram: (event) ->
+		_submit: (event) ->
 			event.preventDefault()
 
 			newProgram = @_buildProgramObject()
 
+			alreadyInUse = @_colorInUse(newProgram.get('colorKeyHex'))
+
+			if alreadyInUse
+				Bootbox.confirm {
+					title: "Colour key already assigned"
+					message: "
+						This colour key has already been assigned 
+						to the #{Term 'program'} \"#{alreadyInUse.get('name')}\". 
+						Are you sure you want to use this colour?
+					"
+					callback: (selectedOk) =>
+						if selectedOk then @_createProgram(newProgram)
+				}
+			else
+				@_createProgram(newProgram)
+
+		_createProgram: (newProgram) ->
 			# Create the new program, and close
 			ActiveSession.persist.programs.create newProgram, (err, newProgram) =>
 				if err
@@ -299,7 +263,6 @@ load = (win) ->
 
 		componentDidMount: ->
 			@refs.programName.focus()
-			@_initColorPicker @refs.colorPicker
 
 		render: ->
 			return Dialog({
@@ -308,36 +271,40 @@ load = (win) ->
 			},
 				R.div({className: 'createProgramDialog'},
 					R.div({className: 'form-group'},            
-						R.label({}, "Name and Color Key")
-						R.div({className: 'input-group'},
-							R.input({
-								className: 'form-control'
-								ref: 'programName'
-								value: @state.name
-								onChange: @_updateName
-								style:
-									borderColor: @state.colorKeyHex
-							})
-							R.div({
-								className: 'input-group-addon'
-								id: 'colorPicker'
-								ref: 'colorPicker'
-								style:
-									background: @state.colorKeyHex
-									borderColor: @state.colorKeyHex
-							},
-								R.span({
-									className: 'hasColor' if @state.colorKeyHex?
-								},
-									FaIcon 'eyedropper'
-								)
-							)
+						R.label({}, "Name and")
+						R.input({
+							className: 'form-control'
+							ref: 'programName'
+							placeholder: "Specify #{Term 'program'} name"
+							value: @state.name
+							onChange: @_updateName
+							style:
+								borderColor: @state.colorKeyHex
+						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Color Key")
+						R.div({},
+							ProgramColors.map (colorKeyHex) =>
+								isSelected = @state.colorKeyHex is colorKeyHex
+								alreadyInUse = @_colorInUse(colorKeyHex) unless colorKeyHex is @props.rowData.get('colorKeyHex')
+
+								ColorKeyBubble({
+									colorKeyHex
+									isSelected
+									alreadyInUse
+									onClick: (colorKeyHex) =>
+										# Allow toggling behaviour
+										colorKeyHex = null if @state.colorKeyHex is colorKeyHex
+										@setState {colorKeyHex}
+								})
 						)
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
 						R.textarea({
 							className: 'form-control'
+							placeholder: "Describe the #{Term 'program'}"
 							value: @state.description
 							onChange: @_updateDescription
 							rows: 3
@@ -351,9 +318,9 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-success'
 							disabled: (
-								@state.name or not @state.description or not @state.colorKeyHex
-							) and @_hasChanges()
-							onClick: @_modifyProgram
+								not @state.name or not @state.description or not @state.colorKeyHex
+							) or not @_hasChanges()
+							onClick: @_submit
 						}, 
 							"Finished"
 						)
@@ -366,6 +333,10 @@ load = (win) ->
 
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
+
+		_colorInUse: (colorKeyHex) ->
+			@props.programs.find (program) ->
+				program.get('colorKeyHex') is colorKeyHex			
 
 		_buildModifiedProgramObject: ->
 			return Imm.fromJS({
@@ -383,13 +354,32 @@ load = (win) ->
 		_hasChanges: ->
 			originalProgramObject = @_buildOriginalProgramObject()
 			modifiedProgramObject = @_buildModifiedProgramObject()
-			return Imm.is originalProgramObject, modifiedProgramObject
+			return not Imm.is originalProgramObject, modifiedProgramObject
 
-		_modifyProgram: (event) ->
+		_submit: (event) ->
 			event.preventDefault()
 
-			modifiedProgram = @_buildModifiedProgramObject()
+			newProgram = @_buildModifiedProgramObject()
 
+			# Check for color existing usage, unless color hasn't changed
+			newColorKeyHex = newProgram.get('colorKeyHex')
+			alreadyInUse = @_colorInUse(newColorKeyHex) if newColorKeyHex isnt @props.rowData.get('colorKeyHex')
+
+			if alreadyInUse
+				Bootbox.confirm {
+					title: "Colour key already assigned"
+					message: "
+						This colour key has already been assigned 
+						to the #{Term 'program'} \"#{alreadyInUse.get('name')}\". 
+						Are you sure you want to use this colour?
+					"
+					callback: (selectedOk) =>
+						if selectedOk then @_modifyProgram(newProgram)
+				}
+			else
+				@_modifyProgram(newProgram)
+
+		_modifyProgram: (modifiedProgram) ->
 			# Update program revision, and close
 			ActiveSession.persist.programs.createRevision modifiedProgram, (err, modifiedProgram) =>
 				if err
