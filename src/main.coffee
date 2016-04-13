@@ -37,6 +37,8 @@ init = (win) ->
 	isRefreshing = null
 
 	Config = require('./config')
+	Fs = require 'fs'
+	Stylus = require 'stylus'
 
 	document = win.document
 	React = win.React
