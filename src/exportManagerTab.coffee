@@ -145,16 +145,6 @@ load = (win) ->
 					console.log "checking clientFile with name: ",  clientName
 
 					Async.series [
-					
-						# (cb) =>
-						# 	# console.log programs
-						# 	Async.map programs.toArray(), (clientProgram, cb) =>
-						# 		console.log clientProgram.get('name')
-						# 		clientProgram.get('name')
-
-						# 	cb()
-
-
 						# get clientfile program links	
 						(cb) =>
 							clientFileProgramLinkIds = @props.clientFileProgramLinks
@@ -200,9 +190,6 @@ load = (win) ->
 
 								progEvents = Imm.List(results).map (revision) -> revision.last()
 								cb()
-
-			
-
 
 						# csv format: id, timestamp, username, title, description, start time, end time
 						(cb) =>
@@ -283,9 +270,35 @@ load = (win) ->
 				progNotes = null				
 				clientFileId = clientFile.get('id')
 				metricsList = null
+				clientFileProgramLinkIds = null
+				programHeaders = null
+				programs = @props.programs
+				programNames = null
 				csv = null
 
 				Async.series [
+					# get clientfile program links	
+					(cb) =>
+						clientFileProgramLinkIds = @props.clientFileProgramLinks
+						.filter (link) ->
+							link.get('clientFileId') is clientFileId and
+							link.get('status') is "enrolled"
+						.map (link) ->
+							link.get('programId')
+						
+						console.log "link IDs: ", clientFileProgramLinkIds.toJS()
+						
+						cb()
+
+					(cb) =>
+						programNames = programs
+						.filter (program) -> clientFileProgramLinkIds.contains program.get('id')
+				        .map (program) -> program.get('name')
+						
+						console.log "program names: ", programNames.toJS()
+						
+						cb()
+
 					# List metric definition headers
 					(cb) =>
 						@_updateProgress 10
@@ -380,6 +393,7 @@ load = (win) ->
 									clientFileId
 									clientFileName									
 									metricId: metric.get('id')
+									programs: "\"#{programNames.toJS().join(", ")}\""
 									metricName: metric.get('name')									
 									metricDefinition: metric.get('definition')
 									metricValue: metric.get('value')
@@ -396,12 +410,6 @@ load = (win) ->
 							metricsList = Imm.fromJS(results).flatten(true)
 							cb()
 					
-					# Convert to CSV
-					(cb) =>
-						@_updateProgress 100
-						CSVConverter.json2csv metricsList.toJS(), (err, result) ->
-							csv = result
-							cb()
 						
 				], (err) =>
 					if err
@@ -410,23 +418,32 @@ load = (win) ->
 
 					console.info "CSV Metric Data:", csv
 
-					# Destination path must exist in order to save
-					if path.length > 1
-						Fs.writeFile path, csv, (err) =>
-							if err
-								CrashHandler.handle err
-								return
 
-							console.info "Destination Path:", path
-							@setState {isLoading: false}
+					CSVConverter.json2csv metricsList.toJS(), (err, result) =>
+						if err
+							cb err
+							return
 
-							if isConfirmClosed isnt true
-								Bootbox.alert {
-									title: "Save Successful"
-									message: "Metrics exported to: #{path}"
-								}
-								isConfirmClosed = true
-			
+						csv = result
+
+
+						# Destination path must exist in order to save
+						if path.length > 1
+							Fs.writeFile path, csv, (err) =>
+								if err
+									CrashHandler.handle err
+									return
+
+								console.info "Destination Path:", path
+								@setState {isLoading: false}
+
+								if isConfirmClosed isnt true
+									Bootbox.alert {
+										title: "Save Successful"
+										message: "Metrics exported to: #{path}"
+									}
+									isConfirmClosed = true
+				
 		
 		_saveBackup: (path) ->
 			isConfirmClosed = false
