@@ -267,8 +267,9 @@ load = (win) ->
 				metricDefinitionHeaders = null
 				metricDefinitions = null
 				progNoteHeaders = null
-				progNotes = null				
+				progNotes = null	
 				clientFileId = clientFile.get('id')
+				clientName = renderName clientFile.get('clientName')
 				metricsList = null
 				clientFileProgramLinkIds = null
 				programHeaders = null
@@ -377,21 +378,13 @@ load = (win) ->
 							timestamp = Moment(progNoteTimestamp, TimestampFormat)
 							.format('YYYY-MM-DD HH:mm:ss')
 
-							# Get clientFile's full name
-							clientFileId = progNote.get('clientFileId')
-							clientFileName = renderName(
-								@props.clientFileHeaders
-								.find (clientFile) -> clientFile.get('id') is clientFileId
-								.get('clientName')
-							)
-
 							# Model output format of metric object
 							progNoteMetrics = progNoteMetrics.map (metric) ->
 								return {
 									timestamp
 									authorUsername: progNote.get('author')
 									clientFileId
-									clientFileName									
+									clientName									
 									metricId: metric.get('id')
 									programs: "\"#{programNames.toJS().join(", ")}\""
 									metricName: metric.get('name')									
@@ -413,36 +406,47 @@ load = (win) ->
 						
 				], (err) =>
 					if err
-						CrashHandler.handle err
+						cb err
 						return
 
-					console.info "CSV Metric Data:", csv
+					console.log "Done iterating over client: ", clientName
+					cb(null, metricsList)
+
+			, (err, results) =>
+				if err
+					console.error err
+					return
+
+				
+				metricsList = Imm.List(results).flatten()
+
+				console.log "Final Metrics result: ", metricsList.toJS()
 
 
-					CSVConverter.json2csv metricsList.toJS(), (err, result) =>
-						if err
-							cb err
-							return
+				CSVConverter.json2csv metricsList.toJS(), (err, result) =>
+					if err
+						cb err
+						return
 
-						csv = result
+					csv = result
 
 
-						# Destination path must exist in order to save
-						if path.length > 1
-							Fs.writeFile path, csv, (err) =>
-								if err
-									CrashHandler.handle err
-									return
+					# Destination path must exist in order to save
+					if path.length > 1
+						Fs.writeFile path, csv, (err) =>
+							if err
+								CrashHandler.handle err
+								return
 
-								console.info "Destination Path:", path
-								@setState {isLoading: false}
+							console.info "Destination Path:", path
+							@setState {isLoading: false}
 
-								if isConfirmClosed isnt true
-									Bootbox.alert {
-										title: "Save Successful"
-										message: "Metrics exported to: #{path}"
-									}
-									isConfirmClosed = true
+							if isConfirmClosed isnt true
+								Bootbox.alert {
+									title: "Save Successful"
+									message: "Metrics exported to: #{path}"
+								}
+								isConfirmClosed = true
 				
 		
 		_saveBackup: (path) ->
