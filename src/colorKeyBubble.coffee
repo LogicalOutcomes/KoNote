@@ -21,9 +21,16 @@ load = (win) ->
 					title: @props.data.get('name') 
 					content: @props.data.get('description')
 				}
+			else if @props.alreadyInUse
+				$(@refs.bubble).popover {
+					trigger: 'hover'
+					placement: 'top'
+					title: @props.alreadyInUse.get('name') 
+					content: @props.alreadyInUse.get('description')
+				}
 
 		render: ->
-			colorKeyHex = @props.colorKeyHex or @props.data.get('colorKeyHex')
+			colorKeyHex = @props.colorKeyHex or @props.data.get('colorKeyHex')	
 
 			R.div({
 				className: 'colorKeyBubble'
@@ -33,13 +40,21 @@ load = (win) ->
 				R.div({					
 					className: 'bubbleContents'
 					onClick: @props.onClick.bind(null, colorKeyHex) if @props.onClick?
-					style:
+					style: {
 						background: colorKeyHex
+					}
 				},
-					FaIcon('check') if @props.isSelected
+					if @props.isSelected
+						FaIcon('check')
+					else if @props.alreadyInUse
+						FaIcon('ban')
+					else
+						FaIcon('check', {
+							style:
+								visibility: 'hidden'
+						})
 				)
 			)
-
 
 
 	return ColorKeyBubble
