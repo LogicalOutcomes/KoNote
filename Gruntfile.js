@@ -6,19 +6,14 @@ that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 grunt task for release builds of konote
 creates a 'releases' folder inside the builds directory containing compiled mac dmg and windows zip files.
 
-note[1]: requires forked nw-builder module (disables merging win build with the nw exe):
+note: requires forked nw-builder module (disables merging win build with the nw exe):
 https://github.com/speedskater/node-webkit-builder
-
-note[2]: mainly tested on OSX; nwjs recommends building on native OS, so ymmv
 */
 
 // TODO:
 // bundle innosetup, resource_hacker and codesign utility for windows?
 
-var win = null;
-var mac = null;
-var generic = null;
-var griffin = null;
+var release = [];
 
 module.exports = function(grunt) {
 	grunt.initConfig({
@@ -31,43 +26,17 @@ module.exports = function(grunt) {
 						{
 							config: 'platformType',
 							type: 'checkbox',
-							message: 'Please select release platform(s)',
+							message: 'Please select release platform(s) for <%= pkg.displayName %> <%= pkg.version %>',
 							choices: [
-								{name: ' Mac', value: 'osx64'},
-								{name: ' Windows', value: 'win32'}
+								{name: ' Generic - Mac', value: 'generic-mac'},
+								{name: ' Generic - Windows', value: 'generic-win'},
+								{name: ' Griffin - Mac', value: 'griffin-mac'},
+								{name: ' Griffin - Windows', value: 'griffin-win'}
 							]
 						}
 					],
 					then: function(results) {
-						if (results.platformType.indexOf('osx64') !== -1) {
-							mac = 1;
-						}
-						if (results.platformType.indexOf('win32') !== -1) {
-							win = 1;
-						}
-					}
-				}
-			},
-			releaseType: {
-				options: {
-					questions: [
-						{
-							config: 'releaseType',
-							type: 'checkbox',
-							message: 'Please select release type(s)',
-							choices: [
-								{name: ' Generic', value: 'generic'},
-								{name: ' Griffin', value: 'griffin'}
-							]
-						}
-					],
-					then: function(results) {
-						if (results.releaseType.indexOf('griffin') !== -1) {
-							griffin = 1;
-						}
-						if (results.releaseType.indexOf('generic') !== -1) {
-							generic = 1;
-						}
+						release = results.platformType
 					}
 				}
 			}
@@ -79,11 +48,6 @@ module.exports = function(grunt) {
 						src: [
 							'package.json',
 							'src/**',
-							'node_modules/**',
-							'!node_modules/nw/**',
-							'!node_modules/nodewebkit/**',
-							'!node_modules/grunt*/**',
-							'!node_modules/chokidar*/**',
 							'!src/config/develop.json'
 						],
 						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/',
@@ -120,7 +84,7 @@ module.exports = function(grunt) {
 					appName: '<%= pkg.displayName %>',
 					//macCredits: 'path-to-file',
 					macIcns: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/icon.icns',
-					version: '<%= pkg.dependencies.nodewebkit %>',
+					version: '<%= pkg.devDependencies.nodewebkit %>',
 					platforms: ['osx64'],
 					buildType: 'default',
 					buildDir: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>',
@@ -133,7 +97,7 @@ module.exports = function(grunt) {
 			win: {
 				options: {
 					appName: '<%= pkg.displayName %>',
-					version: '<%= pkg.dependencies.nodewebkit %>',
+					version: '<%= pkg.devDependencies.nodewebkit %>',
 					platforms: ['win32'],
 					buildType: 'default',
 					buildDir: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>',
@@ -152,13 +116,16 @@ module.exports = function(grunt) {
 			codesign: {
 				cwd: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/osx64',
 				cmd: '../../../../../../codesign-osx.sh'
+			},
+			npm: {
+				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>',
+				cmd: 'npm install --production --no-optional'
 			}
 		},
 		appdmg: {
 			main: {
 				options: {
 					title: 'KoNote-<%= pkg.version %>',
-					//icon: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/icon.icns',
 					background: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/background.tiff', 'icon-size': 104,
 					contents: [
 						{x: 130, y: 150, type: 'file', path: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},
@@ -209,79 +176,43 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-stylus');
 	grunt.loadNpmTasks('grunt-contrib-coffee');
 	grunt.loadNpmTasks('grunt-contrib-clean');
-	
-	// if on osx, we can use appdmg
 	if (process.platform == 'darwin') {
 		grunt.loadNpmTasks('grunt-appdmg');
 	}
 	
 	grunt.registerTask('build', function() {
-			grunt.task.run('prompt');
-			grunt.task.run('release')
+		grunt.task.run('prompt');
+		grunt.task.run('release');
 	});
 	
 	grunt.registerTask('release', function() {
 		grunt.task.run('clean:temp');
-		
-		if (win) {
-			if (generic) {
-				// do win generic build
-				grunt.task.run('copy:main:win-generic');
-				grunt.task.run('copy:production:win-generic');
-				grunt.task.run('copy:generic:win-generic');
-				grunt.task.run('stylus:compile:win-generic');
-				grunt.task.run('coffee:compileMultiple:win-generic');
-				grunt.task.run('clean:coffee:win-generic');
-				grunt.task.run('clean:styl:win-generic');
-				grunt.task.run('nwjs:win:win-generic');
-				grunt.task.run('exec:zip:win-generic');
+		release.forEach(function(entry) {
+			grunt.task.run('copy:main:'+entry);
+			grunt.task.run('copy:production:'+entry);
+			if (entry == "generic-win") {
+				grunt.task.run('copy:generic:'+entry);
 			}
-			if (griffin) {
-				// do win griffin build
-				grunt.task.run('copy:main:win-griffin');
-				grunt.task.run('copy:production:win-griffin');
-				grunt.task.run('copy:griffin:win-griffin');
-				grunt.task.run('stylus:compile:win-griffin');
-				grunt.task.run('coffee:compileMultiple:win-griffin');
-				grunt.task.run('clean:coffee:win-griffin');
-				grunt.task.run('clean:styl:win-griffin');
-				grunt.task.run('nwjs:win:win-griffin');
-				grunt.task.run('exec:zip:win-griffin');
+			if (entry == "griffin-mac" || entry == "griffin-win") {
+				grunt.task.run('copy:griffin:'+entry);
 			}
-		}
-		if (mac) {
-			if (generic) {
-				// do mac generic build
-				console.log(process.cwd());
-				grunt.task.run('copy:main:mac-generic');
-				grunt.task.run('copy:production:mac-generic');
-				grunt.task.run('stylus:compile:mac-generic');
-				grunt.task.run('coffee:compileMultiple:mac-generic');
-				grunt.task.run('clean:coffee:mac-generic');
-				grunt.task.run('clean:styl:mac-generic');
-				grunt.task.run('nwjs:mac:mac-generic');
-				grunt.task.run('exec:codesign:mac-generic');
+			grunt.task.run('exec:npm:'+entry);
+			grunt.task.run('stylus:compile:'+entry);
+			grunt.task.run('coffee:compileMultiple:'+entry);
+			grunt.task.run('clean:coffee:'+entry);
+			grunt.task.run('clean:styl:'+entry);
+			if (entry == "generic-win" || entry == "griffin-win") {
+				grunt.task.run('nwjs:win:'+entry);
+				grunt.task.run('exec:zip:'+entry);
+			}
+			if (entry == "griffin-mac" || entry == "generic-mac") {
+				grunt.task.run('nwjs:mac:'+entry);
 				if (process.platform == 'darwin') {
-					grunt.task.run('appdmg:main:mac-generic');
+					grunt.task.run('exec:codesign:'+entry);
+					grunt.task.run('appdmg:main:'+entry);
 				}
 			}
-			if (griffin) {
-				// do mac griffin build
-				grunt.task.run('copy:main:mac-griffin');
-				grunt.task.run('copy:production:mac-griffin');
-				grunt.task.run('copy:griffin:mac-griffin');
-				grunt.task.run('stylus:compile:mac-griffin');
-				grunt.task.run('coffee:compileMultiple:mac-griffin');
-				grunt.task.run('clean:coffee:mac-griffin');
-				grunt.task.run('clean:styl:mac-griffin');
-				grunt.task.run('nwjs:mac:mac-griffin');
-				grunt.task.run('exec:codesign:mac-griffin');
-				if (process.platform == 'darwin') {
-					grunt.task.run('appdmg:main:mac-griffin');
-				}
-			}
-		}
+		});
 		grunt.task.run('clean:temp');
 	});
-	
 };

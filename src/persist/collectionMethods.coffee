@@ -82,13 +82,16 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			cb new Error "new objects cannot already have a revision ID"
 			return
 
-		if obj.has('author')
-			cb new Error "new objects cannot already have an author"
-			return
+		# We allow explicit metadata for development purposes, such as seeding.
+		if process.env.NODE_ENV isnt 'development'
 
-		if obj.has('timestamp')
-			cb new Error "new objects cannot already have a timestamp"
-			return
+			if obj.has('author')
+				cb new Error "new objects cannot already have an author"
+				return
+
+			if obj.has('timestamp')
+				cb new Error "new objects cannot already have a timestamp"
+				return
 
 		# Pull out the IDs of this object's ancestors
 		# E.g. if we're creating a prognote, extract clientFileId
@@ -98,8 +101,8 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		obj = obj
 		.set 'id', generateId()
 		.set 'revisionId', generateId()
-		.set 'author', session.userName
-		.set 'timestamp', Moment().format(TimestampFormat)
+		.set 'author', obj.get('author') or session.userName
+		.set 'timestamp', obj.get('timestamp') or Moment().format(TimestampFormat)
 
 		fileNameEncryptionKey = getFileNameEncryptionKey()
 

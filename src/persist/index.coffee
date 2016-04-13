@@ -7,15 +7,15 @@
 
 Imm = require 'immutable'
 
-DataModels = require './dataModels'
+{buildDataDirectory} = require './setup'
 Lock = require './lock'
 Session = require './session'
 Users = require './users'
 Utils = require './utils'
 
 module.exports = {
-	generateId: Utils.generateId
-	setUpDataDirectory: DataModels.setUpDataDirectory
+	buildDataDirectory
+	generateId: Utils.generateId	
 	IOError: Utils.IOError
 	ObjectNotFoundError: Utils.ObjectNotFoundError
 	TimestampFormat: Utils.TimestampFormat

@@ -8,8 +8,9 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
-	Bootbox = win.bootbox	
-	{DropdownButton, MenuItem} = win.ReactBootstrap
+	Bootbox = win.bootbox
+
+	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	Moment = require 'moment'
 	_ = require 'underscore'
@@ -199,22 +200,22 @@ load = (win) ->
 						R.div({className: 'form-group eventTypeContainer'},
 							R.label({}, "Select #{Term 'Event Type'}")
 							
-							DropdownButton({
+							B.DropdownButton({
 								title: if selectedEventType? then selectedEventType.get('name') else "No Type"
 							},
 								if selectedEventType?
 									[
-										MenuItem({
+										B.MenuItem({
 											onClick: @_updateTypeId.bind null, null
 										}, 
 											"None "
 											FaIcon('ban')
 										)
-										MenuItem({divider: true})
+										B.MenuItem({divider: true})
 									]
 
 								(@props.eventTypes.map (eventType) =>
-									MenuItem({
+									B.MenuItem({
 										key: eventType.get('id')
 										onClick: @_updateTypeId.bind null, eventType.get('id')
 									}, 

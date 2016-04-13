@@ -4,9 +4,11 @@
 
 load = (win) ->
 	# Libraries from browser context
-	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+
+	ColorKeyBubble = require('./colorKeyBubble').load(win)
+
 
 	ProgramBubbles = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -16,32 +18,12 @@ load = (win) ->
 
 			R.div({className: 'programBubbles'}, 
 				programs.map (program) -> 
-					ProgramBubble({
-						program
+					ColorKeyBubble({
+						data: program
 						key: program.get('id')
 					})
 			)
 
-	ProgramBubble = React.createFactory React.createClass
-		mixins: [React.addons.PureRenderMixin]
-
-		componentDidMount: ->
-			$(@refs.bubble).popover {
-				trigger: 'hover'
-				placement: 'right'
-				title: @props.program.get('name') if @props.program?
-				content: @props.program.get('description') if @props.program?
-			}
-
-		render: ->
-			R.div({
-				className: 'programBubble'
-				ref: 'bubble'
-				style:
-					background: @props.colorKeyHex or @props.program.get('colorKeyHex')
-			})
-
-
-	return {ProgramBubble, ProgramBubbles}
+	return ProgramBubbles
 
 module.exports = {load}

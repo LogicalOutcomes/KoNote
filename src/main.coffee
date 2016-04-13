@@ -34,11 +34,11 @@ init = (win) ->
 	QueryString = require 'querystring'
 	Imm = require 'immutable'
 
-	Fs = require 'fs'
-	Stylus = require 'stylus'
 	isRefreshing = null
 
 	Config = require('./config')
+	Fs = require 'fs'
+	Stylus = require 'stylus'
 
 	document = win.document
 	React = win.React
@@ -75,17 +75,11 @@ init = (win) ->
 	process.nextTick =>
 		# Configure if application is just starting
 		global.HCRSavedState ||= {}
-
-		# Convert react-bootstrap into factories
-		convertReactBootstrap()
 		
 		# Render and setup page
 		renderPage QueryString.parse(win.location.search.substr(1))
 		initPage()
-
-	convertReactBootstrap = ->
-		win.ReactBootstrap = _.mapObject win.ReactBootstrap, (bootstrapClass) ->
-			React.createFactory bootstrapClass
+		
 
 	renderPage = (requestedPage) =>
 		# Decide what page to render based on the page parameter
@@ -103,6 +97,7 @@ init = (win) ->
 			navigateTo: (pageParams) =>
 				pageComponent.deinit ->
 					unregisterPageListeners() if isLoggedIn
+					nwWin.removeListener 'close', onWindowCloseEvent
 					ReactDOM.unmountComponentAtNode containerElem
 					win.location.href = "main.html?" + QueryString.stringify(pageParams)
 
@@ -182,33 +177,21 @@ init = (win) ->
 		# DevMode Utilities
 		if Config.devMode
 			console.info "*** Developer Mode ***"
-
+			
 			# Set up keyboard shortcuts
+
 			win.document.addEventListener 'keyup', (event) ->
 				# If Ctrl-Shift-J
 				if event.ctrlKey and event.shiftKey and event.which is 74
 					Gui.Window.get(win).showDevTools()
 			, false
+
 			win.document.addEventListener 'keyup', (event) ->
 				# If Ctrl-R
 				if event.ctrlKey and (not event.shiftKey) and event.which is 82
 					console.log "Replace!"
 					doHotCodeReplace()
 			, false
-
-			# Live-Refresh
-			Fs.watch './', (event, filename) ->
-				if filename?
-					fileExtension = filename.split('.').splice(-1)[0]
-
-					switch fileExtension
-						when "styl"
-							refreshCSS()
-						when "coffee"
-							unless isRefreshing
-								console.log ""
-								isRefreshing = true
-								doHotCodeReplace()
 
 
 	doHotCodeReplace = =>
@@ -234,6 +217,9 @@ init = (win) ->
 		win.location.reload(true)
 
 	refreshCSS = =>
+		Fs = require 'fs'
+		Stylus = require 'stylus'
+
 		mainStylusCode = Fs.readFileSync './src/main.styl', {encoding: 'utf-8'} 
 
 		stylusOpts = {
@@ -269,7 +255,7 @@ init = (win) ->
 		# Try registering chokidar for live-refresh capabilities
 		if Config.devMode
 			try
-				Chokidar = require 'chokidar'
+				Chokidar = require 'chokidar'				
 
 				chokidarListener = Chokidar
 				.watch './src'
