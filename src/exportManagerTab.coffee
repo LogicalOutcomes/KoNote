@@ -93,13 +93,14 @@ load = (win) ->
 			if not percent and not message
 				percent = message = null
 
-			@setState (state) => {
+			@setState {
 				isLoading: true
 				exportProgress: {
 					percent
-					message: message or state.exportProgress.message
+					message: message or @state.exportProgress.message
 				}
-			}
+			}, =>
+				console.log "loading state changed to: ",  @state.isLoading, @state.exportProgress
 
 		
 		_export: ({defaultName, extension, runExport}) ->
@@ -128,6 +129,9 @@ load = (win) ->
 				}
 			else
 				@_updateProgress 0, "Saving Events to CSV..."
+				console.log "progress should be 0"
+				console.log "size of clients array: ", @props.clientFileHeaders.size 
+				progressIterator = 0
 
 				Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
 					progEventsHeaders = null
@@ -140,14 +144,16 @@ load = (win) ->
 					programs = @props.programs
 					programNames = null
 					csv = null
+					progressIterator = progressIterator + 1
 
 
-					console.log "checking clientFile with name: ",  clientName
-
+					console.log "checking clientFile with name: ",  clientName, progressIterator
+					currentProgress = (progressIterator/@props.clientFileHeaders.size) * 90
+					@_updateProgress currentProgress
+				
 					Async.series [
 						# get clientfile program links	
 						(cb) =>
-							@_updateProgress 5
 							clientFileProgramLinkIds = @props.clientFileProgramLinks
 							.filter (link) ->
 								link.get('clientFileId') is clientFileId and
@@ -170,7 +176,6 @@ load = (win) ->
 
 						# get event headers
 						(cb) =>
-							@_updateProgress 10
 							ActiveSession.persist.progEvents.list clientFileId, (err, results) ->
 								if err
 									cb err
@@ -181,7 +186,6 @@ load = (win) ->
 
 						# read each event
 						(cb) =>
-							@_updateProgress 20
 							Async.map progEventsHeaders.toArray(), (progEvent, cb) ->
 								ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEvent.get('id'), 1, cb
 							, (err, results) ->
@@ -194,9 +198,6 @@ load = (win) ->
 
 						# csv format: id, timestamp, username, title, description, start time, end time
 						(cb) =>
-
-							@_updateProgress 50
-
 							progEvents = progEvents
 							.filter (progEvent) -> progEvent.get('status') isnt "cancelled"
 							.map (progEvent) ->
@@ -236,7 +237,7 @@ load = (win) ->
 							cb err
 							return
 						csv = result
-						@_updateProgress 100
+						@_updateProg100ress 
 			
 
 						# destination path must exist in order to save
