@@ -1,7 +1,7 @@
 {
   "name": "konote",
   "displayName": "KoNote",
-  "version": "1.5.2-rtp-fix",
+  "version": "1.5.3-RC1",
   "main": "src/main.html",
   "window": {
     "icon": "src/icon.png",
