@@ -24,12 +24,12 @@ ProgramColors = Imm.List [
 	"#a3cf1d"
 	"#cfb41d"
 	"#e35c27"
-	"#cf691d"	
+	"#cf691d"
 ]
 
 # Brighter color spectrum for event types
 EventTypeColors = Imm.List [
-	"#f067a4"
+	"#f06767"
 	"#f067a4"
 	"#f067db"
 	"#c467f0"
@@ -44,6 +44,7 @@ EventTypeColors = Imm.List [
 	"#f0eb67"
 	"#f0c867"
 	"#f0a167"
+	"#f08467"
 ]
 
 module.exports = {
