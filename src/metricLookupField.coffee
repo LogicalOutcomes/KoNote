@@ -64,7 +64,7 @@ load = (win) ->
 			}
 
 			lookupField.on 'typeahead:selected', (event, metric) =>
-				lookupField.typeahead 'val', ''				
+				lookupField.typeahead 'val', ''
 				@props.onSelection metric.id
 
 			# We need to reattach an event listener to the create button, but
@@ -72,22 +72,30 @@ load = (win) ->
 			# instead, we'll let the event bubble up to an ancestor element and
 			# check the target.
 			lookupField.parent().on 'click', (event) =>
+				lookupField.focus()
+				
+				currentLookupValue = lookupField.val()
+
+				# Force typeahead to re-show suggestions if has value when focused
+				if currentLookupValue.length > 0
+					lookupField.typeahead('val', '')
+					lookupField.focus().typeahead('val', currentLookupValue).focus()
+
 				target = event.target
 				if target.classList.contains('btn') and target.classList.contains('createMetric')
 					#check if metric exists before creating
 					match = @props.metrics.toJS().filter (match) -> match.name == lookupField.typeahead 'val'
 					if match[0]
 						Bootbox.alert "<strong>#{Term 'Metric'} already exists!</strong>
-						<br><br>Please select an existing #{Term 'metric'} from the search field
-						or use a unique name to create a new #{Term 'metric'}.", ->
-							# TODO
-							# how can we refocus the lookup field?
+							<br><br>Please select an existing #{Term 'metric'} from the search field
+							or use a unique name to create a new #{Term 'metric'}."
+						.on 'hidden.bs.modal', ->
 							lookupField.typeahead 'val', ''
 							lookupField.focus()
-							return
 					else
 						lookupField.typeahead 'close'
 						@_createMetric()
+
 		render: ->
 			return R.div({className: 'metricLookupField'},
 				R.input({
