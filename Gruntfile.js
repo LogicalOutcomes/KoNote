@@ -78,6 +78,18 @@ module.exports = function(grunt) {
 				]
 			}
 		},
+		replace: {
+			main: {
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/src/main.html'],
+				overwrite: true,
+				replacements: [
+					{
+						from: 'react-with-addons.js',
+						to: 'react-with-addons.min.js'
+					}
+				]
+			}
+		},
 		nwjs: {
 			mac: {
 				options: {
@@ -172,6 +184,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-nw-builder');
 	grunt.loadNpmTasks('grunt-exec');
 	grunt.loadNpmTasks('grunt-contrib-copy');
+	grunt.loadNpmTasks('grunt-text-replace');
 	grunt.loadNpmTasks('grunt-prompt');
 	grunt.loadNpmTasks('grunt-contrib-stylus');
 	grunt.loadNpmTasks('grunt-contrib-coffee');
@@ -189,6 +202,7 @@ module.exports = function(grunt) {
 		grunt.task.run('clean:temp');
 		release.forEach(function(entry) {
 			grunt.task.run('copy:main:'+entry);
+			grunt.task.run('replace:main:'+entry);
 			grunt.task.run('copy:production:'+entry);
 			if (entry == "generic-win") {
 				grunt.task.run('copy:generic:'+entry);
