@@ -5,6 +5,7 @@
 Config = require './config'
 Persist = require './persist'
 Async = require 'async'
+Fs = require 'fs'
 
 load = (win) ->
 	# Libraries from browser context
@@ -23,7 +24,40 @@ load = (win) ->
 	NewInstallationPage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
-		init: -> # Nothing yet
+		init: ->
+			# First, we must test for read/write permissions
+
+			fileTestPath = './writeFileTest.txt'
+			fileTestString = "Hello World!"			
+
+			Async.series [
+				(cb) => Fs.writeFile fileTestPath, fileTestString, cb
+				(cb) => Fs.unlink fileTestPath, cb
+			], (err) =>
+				if err
+
+					if err.code is 'EROFS'
+						additionalMessage = unless process.platform is 'darwin' then "" else
+							"Please make sure you have dragged #{Config.productName} into
+							your Applications folder."
+
+						Bootbox.alert """
+							ERROR: '#{err.code}'.
+							Unable to write to the local directory.
+							#{additionalMessage}
+						""", @props.closeWindow
+
+					else
+						Bootbox.alert """
+							ERROR: '#{err.code}'.
+							Please contact #{Config.productName} technical support.
+						""", @props.closeWindow
+
+					console.error "Data directory test error:", err
+					return
+
+				console.log "Data directory #{Config.dataDirectory} is writeable!"
+
 
 		deinit: (cb=(->)) ->
 			cb()
@@ -110,7 +144,7 @@ load = (win) ->
 								id: 'logoImage'
 								src: './assets/brand/logo.png'
 							})
-							R.div({id: 'version'}, "v1.5.2 Beta")
+							R.div({id: 'version'}, "v1.5.3 Beta")
 						)						
 					)
 					R.div({
@@ -137,44 +171,59 @@ load = (win) ->
 								R.div({ref: 'createAdmin'},
 									R.h2({}, "Your username will be \"admin\"")
 									R.p({}, 								
-										"Please choose a password:"
-										R.br({})
-										R.br({})
+										"Please choose a password"
 									)
 									R.div({
-										className: [
-											'form-group'
-											'has-success has-feedback' if @state.password.length > 0
-										].join ' '
+										id: 'passwordFields'
+										className: 'row-fluid'
 									},
-										R.input({
-											ref: 'password'
-											className: 'form-control'
-											type: 'password'											
-											placeholder: "Set Password"
-											value: @state.password
-											onChange: @_updatePassword											
-										})
-										R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
-									)
-									R.div({
-										className: [
-											'form-group'
-											if @_passwordsMatch()
-												'has-success has-feedback'
-											else if @state.passwordConfirmation.length > 0
-												'has-error'
-										].join ' '
-									},
-										R.input({
-											ref: 'passwordConfirmation'
-											className: 'form-control'
-											type: 'password'											
-											placeholder: "Confirm Password"
-											value: @state.passwordConfirmation
-											onChange: @_updatePasswordConfirmation
-										})
-										R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
+										R.div({className: 'col-md-6'},
+											R.div({
+												className: [
+													'form-group has-feedback'
+													'has-success' if @state.password.length > 0
+												].join ' '
+											},
+												R.label({
+													htmlFor: 'password'
+												}, "Password")
+												R.input({
+													ref: 'password'
+													id: 'password'
+													className: 'form-control'
+													type: 'password'											
+													placeholder: "Set Password"
+													value: @state.password
+													onChange: @_updatePassword											
+												})
+												R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
+											)
+										)
+										R.div({className: 'col-md-6'},
+											R.div({
+												className: [
+													'form-group has-feedback'
+													if @_passwordsMatch()
+														'has-success'
+													else if @state.passwordConfirmation.length > 0
+														'has-error'
+												].join ' '
+											},
+												R.label({
+													htmlFor: 'passwordConfirmation'
+												}, "Confirm password")
+												R.input({
+													ref: 'passwordConfirmation'
+													id: 'passwordConfirmation'
+													className: 'form-control'
+													type: 'password'											
+													placeholder: "Password again"
+													value: @state.passwordConfirmation
+													onChange: @_updatePasswordConfirmation
+												})
+												R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
+											)
+										)
 									)
 									R.div({className: 'btn-toolbar'},
 										R.button({
@@ -186,6 +235,7 @@ load = (win) ->
 											onClick: @_install
 										},
 											"Create Account"
+											FaIcon('check') if @_passwordsMatch()
 										)
 									)
 								)
@@ -273,8 +323,8 @@ load = (win) ->
 				(cb) =>
 					@_updateProgress 0, "Setting up database..."
 
-					# Set up data directory, with subfolders from dataModels
-					Persist.setUpDataDirectory Config.dataDirectory, (err) =>
+					# Build the data directory, with subfolders/collections indicated in dataModels
+					Persist.buildDataDirectory Config.dataDirectory, (err) =>
 						if err
 							cb err
 							return

@@ -10,6 +10,7 @@ Rimraf = require 'rimraf'
 
 {buildApi} = require '../../src/persist/apiBuilder'
 {SymmetricEncryptionKey} = require '../../src/persist/crypto'
+{buildDataDirectory} = require '../../src/persist/setup'
 {
 	ObjectNotFoundError
 	TimestampFormat
@@ -24,17 +25,6 @@ s = {
 	globalEncryptionKey: SymmetricEncryptionKey.generate()
 	dataDirectory: dataDir
 }
-
-setUpDataDirectory = (dataModelDefinitions, cb) ->
-	# Set up top-level directories
-	Async.series [
-		(cb) ->
-			Async.each dataModelDefinitions, (modelDef, cb) ->
-				Mkdirp Path.join(dataDir, modelDef.collectionName), cb
-			, cb
-		(cb) ->
-			Fs.mkdir Path.join(dataDir, '_tmp'), cb
-	], cb
 
 describe 'ApiBuilder', ->
 	describe '.buildApi', ->
@@ -111,7 +101,7 @@ describe 'ApiBuilder', ->
 			})
 
 			beforeEach (cb) ->
-				setUpDataDirectory [immutablePersonDataModel], cb
+				buildDataDirectory dataDir, [immutablePersonDataModel], cb
 
 			it 'provides a create method', (cb) ->
 				api.people.create Imm.Map({
@@ -273,7 +263,7 @@ describe 'ApiBuilder', ->
 			})
 
 			beforeEach (cb) ->
-				setUpDataDirectory [mutablePersonDataModel], cb
+				buildDataDirectory dataDir, [mutablePersonDataModel], cb
 
 			it 'provides a create method', (cb) ->
 				api.people.create Imm.Map({
@@ -615,7 +605,7 @@ describe 'ApiBuilder', ->
 			api = buildApi s, [personDataModel]
 
 			beforeEach (cb) ->
-				setUpDataDirectory [personDataModel], cb
+				buildDataDirectory dataDir, [personDataModel], cb
 
 			it 'valid create type a', (cb) ->
 				api.people.create Imm.Map({
@@ -701,7 +691,7 @@ describe 'ApiBuilder', ->
 			api = buildApi s, modelDefs
 
 			beforeEach (cb) ->
-				setUpDataDirectory modelDefs, cb
+				buildDataDirectory dataDir, modelDefs, cb
 
 			it 'immutable object with mutable child types', (cb) ->
 				supObjId = null

@@ -93,13 +93,14 @@ load = (win) ->
 			if not percent and not message
 				percent = message = null
 
-			@setState (state) => {
+			@setState {
 				isLoading: true
 				exportProgress: {
 					percent
-					message: message or state.exportProgress.message
+					message: message or @state.exportProgress.message
 				}
-			}
+			}, =>
+				console.log "loading state changed to: ",  @state.isLoading, @state.exportProgress
 
 		
 		_export: ({defaultName, extension, runExport}) ->
@@ -118,6 +119,9 @@ load = (win) ->
 		_saveEvents: (path) ->
 			isConfirmClosed = false
 			# Map over client files
+			
+			console.log "clientfileheaders: ", @props.clientFileHeaders.toArray()
+
 			if @props.clientFileHeaders.size is 0
 				Bootbox.alert {
 					title: "No Events to Export"
@@ -125,18 +129,53 @@ load = (win) ->
 				}
 			else
 				@_updateProgress 0, "Saving Events to CSV..."
+				console.log "progress should be 0"
+				console.log "size of clients array: ", @props.clientFileHeaders.size 
+				progressIterator = 0
+
 				Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
 					progEventsHeaders = null
 					progEvents = null
 					progEventsList = null
 					clientFileId = clientFile.get('id')
 					clientName = renderName clientFile.get('clientName')
+					clientFileProgramLinkIds = null
+					programHeaders = null
+					programs = @props.programs
+					programNames = null
 					csv = null
+					progressIterator = progressIterator + 1
 
+
+					console.log "checking clientFile with name: ",  clientName, progressIterator
+					currentProgress = (progressIterator/@props.clientFileHeaders.size) * 90
+					@_updateProgress currentProgress
+				
 					Async.series [
+						# get clientfile program links	
+						(cb) =>
+							clientFileProgramLinkIds = @props.clientFileProgramLinks
+							.filter (link) ->
+								link.get('clientFileId') is clientFileId and
+								link.get('status') is "enrolled"
+							.map (link) ->
+								link.get('programId')
+							
+							console.log "link IDs: ", clientFileProgramLinkIds.toJS()
+							
+							cb()
+
+						(cb) =>
+							programNames = programs
+							.filter (program) -> clientFileProgramLinkIds.contains program.get('id')
+					        .map (program) -> program.get('name')
+							
+							console.log "program names: ", programNames.toJS()
+							
+							cb()
+
 						# get event headers
 						(cb) =>
-							@_updateProgress 10
 							ActiveSession.persist.progEvents.list clientFileId, (err, results) ->
 								if err
 									cb err
@@ -147,7 +186,6 @@ load = (win) ->
 
 						# read each event
 						(cb) =>
-							@_updateProgress 20
 							Async.map progEventsHeaders.toArray(), (progEvent, cb) ->
 								ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEvent.get('id'), 1, cb
 							, (err, results) ->
@@ -160,7 +198,6 @@ load = (win) ->
 
 						# csv format: id, timestamp, username, title, description, start time, end time
 						(cb) =>
-							@_updateProgress 50
 							progEvents = progEvents
 							.filter (progEvent) -> progEvent.get('status') isnt "cancelled"
 							.map (progEvent) ->
@@ -169,30 +206,39 @@ load = (win) ->
 									timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									author: progEvent.get('author')
 									clientName
+									programs: "\"#{programNames.toJS().join(", ")}\""
 									title: progEvent.get('title')
 									description: progEvent.get('description')
 									startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									endDate: Moment(progEvent.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 								}
-							cb null, progEvents
-							, (err, results) ->
-								if err
-									cb err
-									return
-								progEvents = Imm.List results
-								cb()
 
-						# convert to csv
-						(cb) =>
-							@_updateProgress 100
-							CSVConverter.json2csv progEvents.toJS(), (err, result) ->
-								csv = result
-								cb()
+							cb()
 
 					], (err) =>
 						if err
-							CrashHandler.handle err
+							cb err
 							return
+
+						console.log "Done iterating over client", clientName
+						cb(null, progEvents)
+
+				, (err, results) =>
+					if err
+						console.error err
+						return
+
+					progEvents = Imm.List(results).flatten()
+
+					console.log "Final events result:", progEvents.toJS()
+
+					CSVConverter.json2csv progEvents.toJS(), (err, result) =>
+						if err
+							cb err
+							return
+						csv = result
+						@_updateProg100ress 
+			
 
 						# destination path must exist in order to save
 						if path.length > 1
@@ -208,7 +254,8 @@ load = (win) ->
 										title: "Save Successful"
 										message: "Events exported to: #{path}"
 									}
-									isConfirmClosed = true
+									# isConfirmClosed = true
+
 	
 		_saveMetrics: (path) ->
 			isConfirmClosed = false
@@ -223,12 +270,40 @@ load = (win) ->
 				metricDefinitionHeaders = null
 				metricDefinitions = null
 				progNoteHeaders = null
-				progNotes = null				
+				progNotes = null	
 				clientFileId = clientFile.get('id')
+				clientName = renderName clientFile.get('clientName')
 				metricsList = null
+				clientFileProgramLinkIds = null
+				programHeaders = null
+				programs = @props.programs
+				programNames = null
 				csv = null
 
 				Async.series [
+					# get clientfile program links	
+					(cb) =>
+						@_updateProgress 5
+						clientFileProgramLinkIds = @props.clientFileProgramLinks
+						.filter (link) ->
+							link.get('clientFileId') is clientFileId and
+							link.get('status') is "enrolled"
+						.map (link) ->
+							link.get('programId')
+						
+						console.log "link IDs: ", clientFileProgramLinkIds.toJS()
+						
+						cb()
+
+					(cb) =>
+						programNames = programs
+						.filter (program) -> clientFileProgramLinkIds.contains program.get('id')
+				        .map (program) -> program.get('name')
+						
+						console.log "program names: ", programNames.toJS()
+						
+						cb()
+
 					# List metric definition headers
 					(cb) =>
 						@_updateProgress 10
@@ -307,22 +382,15 @@ load = (win) ->
 							timestamp = Moment(progNoteTimestamp, TimestampFormat)
 							.format('YYYY-MM-DD HH:mm:ss')
 
-							# Get clientFile's full name
-							clientFileId = progNote.get('clientFileId')
-							clientFileName = renderName(
-								@props.clientFileHeaders
-								.find (clientFile) -> clientFile.get('id') is clientFileId
-								.get('clientName')
-							)
-
 							# Model output format of metric object
 							progNoteMetrics = progNoteMetrics.map (metric) ->
 								return {
 									timestamp
 									authorUsername: progNote.get('author')
 									clientFileId
-									clientFileName									
+									clientName									
 									metricId: metric.get('id')
+									programs: "\"#{programNames.toJS().join(", ")}\""
 									metricName: metric.get('name')									
 									metricDefinition: metric.get('definition')
 									metricValue: metric.get('value')
@@ -339,19 +407,34 @@ load = (win) ->
 							metricsList = Imm.fromJS(results).flatten(true)
 							cb()
 					
-					# Convert to CSV
-					(cb) =>
-						@_updateProgress 100
-						CSVConverter.json2csv metricsList.toJS(), (err, result) ->
-							csv = result
-							cb()
 						
 				], (err) =>
 					if err
-						CrashHandler.handle err
+						cb err
 						return
 
-					console.info "CSV Metric Data:", csv
+					console.log "Done iterating over client: ", clientName
+					cb(null, metricsList)
+
+			, (err, results) =>
+				if err
+					console.error err
+					return
+
+				
+				metricsList = Imm.List(results).flatten()
+
+				console.log "Final Metrics result: ", metricsList.toJS()
+
+
+				CSVConverter.json2csv metricsList.toJS(), (err, result) =>
+					if err
+						cb err
+						return
+
+					csv = result
+					@_updateProgress 100
+
 
 					# Destination path must exist in order to save
 					if path.length > 1
@@ -369,7 +452,7 @@ load = (win) ->
 									message: "Metrics exported to: #{path}"
 								}
 								isConfirmClosed = true
-			
+				
 		
 		_saveBackup: (path) ->
 			isConfirmClosed = false

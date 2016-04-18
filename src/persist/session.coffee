@@ -14,9 +14,11 @@ Config = require '../config'
 DataModels = require './dataModels'
 {
 	Account, DecryptedAccount
+	
 	UnknownUserNameError
+	InvalidUserNameError
 	IncorrectPasswordError
-	DeactivatedAccountError
+	DeactivatedAccountError	
 } = require './users'
 
 login = (dataDir, userName, password, cb) ->
@@ -99,6 +101,7 @@ class Session
 module.exports = {
 	login
 	UnknownUserNameError
+	InvalidUserNameError
 	IncorrectPasswordError
 	DeactivatedAccountError
 }
