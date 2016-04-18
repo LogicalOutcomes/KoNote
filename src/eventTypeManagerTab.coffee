@@ -84,7 +84,7 @@ load = (win) ->
 						sortByData: ['name']
 						columns: [
 							{
-								name: "Color Key"
+								name: "Colour Key"
 								nameIsVisible: false
 								dataPath: ['colorKeyHex']
 								cellClass: 'colorKeyCell'
@@ -304,23 +304,20 @@ load = (win) ->
 				onClose: @props.onCancel
 			},
 				R.div({className: 'createEventTypeDialog'},
-					R.div({className: 'form-group'},						
-						R.label({}, "Name and Color Key")
-						R.div({className: 'form-group'},
-							R.label({}, "Name")
-							R.input({
-								className: 'form-control'
-								ref: 'eventTypeName'
-								placeholder: "Specify #{Term 'event type'} name"
-								value: @state.name
-								onChange: @_updateName
-								style:
-									borderColor: @state.colorKeyHex
-							})
-						)
+					R.div({className: 'form-group'},
+						R.label({}, "Name")
+						R.input({
+							className: 'form-control'
+							ref: 'eventTypeName'
+							placeholder: "Specify #{Term 'event type'} name"
+							value: @state.name
+							onChange: @_updateName
+							style:
+								borderColor: @state.colorKeyHex
+						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Color Key")
+						R.label({}, "Colour Key")
 						R.div({},
 							EventTypeColors.map (colorKeyHex) =>
 								isSelected = @state.colorKeyHex is colorKeyHex

@@ -8,7 +8,13 @@ Path = require 'path'
 
 {dataModelDefinitions} = require './dataModels'
 
-buildDataDirectory = (dataDir, cb) ->
+buildDataDirectory = (dataDir, customDataModelDefinitions, cb) ->
+	# Switch cb for customDataModelDefinitions if not provided
+	if typeof customDataModelDefinitions is 'function'
+		cb = customDataModelDefinitions
+	else
+		dataModelDefinitions = customDataModelDefinitions
+
 	# Set up top-level directories
 	Async.series [
 		(cb) ->

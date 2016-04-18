@@ -101,7 +101,7 @@ describe 'ApiBuilder', ->
 			})
 
 			beforeEach (cb) ->
-				buildDataDirectory [immutablePersonDataModel], cb
+				buildDataDirectory dataDir, [immutablePersonDataModel], cb
 
 			it 'provides a create method', (cb) ->
 				api.people.create Imm.Map({
@@ -263,7 +263,7 @@ describe 'ApiBuilder', ->
 			})
 
 			beforeEach (cb) ->
-				buildDataDirectory [mutablePersonDataModel], cb
+				buildDataDirectory dataDir, [mutablePersonDataModel], cb
 
 			it 'provides a create method', (cb) ->
 				api.people.create Imm.Map({
@@ -605,7 +605,7 @@ describe 'ApiBuilder', ->
 			api = buildApi s, [personDataModel]
 
 			beforeEach (cb) ->
-				buildDataDirectory [personDataModel], cb
+				buildDataDirectory dataDir, [personDataModel], cb
 
 			it 'valid create type a', (cb) ->
 				api.people.create Imm.Map({
@@ -691,7 +691,7 @@ describe 'ApiBuilder', ->
 			api = buildApi s, modelDefs
 
 			beforeEach (cb) ->
-				buildDataDirectory modelDefs, cb
+				buildDataDirectory dataDir, modelDefs, cb
 
 			it 'immutable object with mutable child types', (cb) ->
 				supObjId = null

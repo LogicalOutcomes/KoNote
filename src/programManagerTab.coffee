@@ -54,7 +54,7 @@ load = (win) ->
 						sortByData: ['name']
 						columns: [
 							{
-								name: "Color Key"
+								name: "Colour Key"
 								nameIsVisible: false
 								dataPath: ['colorKeyHex']               
 								cellClass: 'colorKeyCell'
@@ -276,7 +276,7 @@ load = (win) ->
 			},
 				R.div({className: 'createProgramDialog'},
 					R.div({className: 'form-group'},            
-						R.label({}, "Name and")
+						R.label({}, "Name")
 						R.input({
 							className: 'form-control'
 							ref: 'programName'
@@ -288,7 +288,7 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Color Key")
+						R.label({}, "Colour Key")
 						R.div({},
 							ProgramColors.map (colorKeyHex) =>
 								isSelected = @state.colorKeyHex is colorKeyHex
