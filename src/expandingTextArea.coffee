@@ -32,6 +32,7 @@ load = (win) ->
 				ref: 'textarea'
 				placeholder: @props.placeholder
 				onFocus: @props.onFocus
+				onClick: @props.onClick
 				onChange: @_onChange
 				value: @props.value
 				disabled: @props.disabled

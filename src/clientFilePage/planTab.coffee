@@ -626,6 +626,7 @@ load = (win) ->
 					"target-#{currentRevision.get('id')}"
 					if @props.isActive then 'active' else ''
 					if @props.hasTargetChanged then 'hasChanges' else ''
+					if @props.isReadOnly then 'readOnly' else ''
 				].join ' '
 				onClick: @_onTargetClick
 			},
@@ -638,7 +639,9 @@ load = (win) ->
 						value: currentRevision.get('name')
 						disabled: @props.isReadOnly
 						onChange: @_updateField.bind null, 'name'
-						onFocus: @props.onTargetSelection
+						onFocus: @props.onTargetSelection unless @props.isReadOnly
+						onClick: @props.onTargetSelection if @props.isReadOnly
+
 					})
 				)
 				R.div({className: 'notesContainer'},
@@ -649,7 +652,8 @@ load = (win) ->
 						value: currentRevision.get('notes')
 						disabled: @props.isReadOnly
 						onChange: @_updateField.bind null, 'notes'
-						onFocus: @props.onTargetSelection
+						onFocus: @props.onTargetSelection unless @props.isReadOnly
+						onClick: @props.onTargetSelection if @props.isReadOnly
 					})
 				)
 				R.div({className: 'metrics'},
@@ -670,7 +674,8 @@ load = (win) ->
 			@props.onTargetUpdate newValue
 		_onTargetClick: (event) ->
 			unless event.target.classList.contains 'field'
-				@refs.nameField.focus()
+				@refs.nameField.focus() unless @props.isReadOnly
+				@props.onTargetSelection()
 
 	return {PlanView}
 
