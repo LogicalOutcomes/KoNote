@@ -4,8 +4,10 @@
 
 Config = require './config'
 Persist = require './persist'
+Atomic = require './persist/atomic'
 Async = require 'async'
 Fs = require 'fs'
+
 
 load = (win) ->
 	# Libraries from browser context
@@ -20,6 +22,8 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon} = require('./utils').load(win)
+
+
 
 	NewInstallationPage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -79,6 +83,7 @@ load = (win) ->
 				ref: 'ui'
 				closeWindow: @props.closeWindow
 			})
+
 
 	NewInstallationPageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -252,12 +257,24 @@ load = (win) ->
 						className: 'animated fadeIn'
 					}, 
 						"Contact us:"						
-						R.a({href: 'mailto:help@konode.ca'},
-							"help@konode.ca"
+						R.a({
+							href: "#"
+							onClick: @_copyHelpEmail.bind null, Config.supportEmailAddress
+						},
+							Config.supportEmailAddress
 						)
 					)
 				)
 			)
+
+		_copyHelpEmail: (emailAddress) ->
+			clipboard = Gui.Clipboard.get()
+			clipboard.set emailAddress
+
+			Bootbox.alert {
+				title: "Copied Support E-mail"
+				message: "\"#{emailAddress}\" copied to your clipboard!"
+			}
 
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
@@ -288,23 +305,6 @@ load = (win) ->
 					$newTab.attr 'class', ('animated fadeIn' + onDirection)
 			, 500)
 
-		_showContactInfo: ->
-			Bootbox.dialog {
-				title: "Contact Information:"
-				message: """
-					<ul>
-						<li>E-mail: david@konode.ca</li>
-						<li>Phone: 1-416-816-3422</li>
-					</ul>
-				"""
-				buttons: {
-					success: {
-						label: "Done"
-						className: 'btn btn-success'
-					}
-				}
-			}
-
 		_updateProgress: (percent, message) ->
 			if not percent and not message
 				percent = message = null
@@ -324,61 +324,117 @@ load = (win) ->
 			systemAccount = null
 			adminPassword = @state.password
 
-			Async.series [
-				(cb) =>
-					@_updateProgress 0, "Setting up database..."
+			destDataDirectoryPath = Config.dataDirectory
+			tempDataDirectoryPath = './data_tmp'
 
-					# Build the data directory, with subfolders/collections indicated in dataModels
-					Persist.buildDataDirectory Config.dataDirectory, (err) =>
-						if err
-							cb err
+			# TODO: Check for previous tempDir existence
+
+			# Write data folder to temporary local directory, before moving to destination
+			Atomic.writeDirectoryNormally destDataDirectoryPath, tempDataDirectoryPath, (err, atomicOp) =>
+
+				# Handle IO Errors
+				if err and err instanceof Persist.IOError					
+					switch err.cause.code
+						when 'EEXIST'
+							# Bootbox.confirm {
+							# 	title: "Overwrite Previous/Pending Installation?"
+							# 	message: """
+							# 		It appears that you have a previously failed #{Config.productName} installation
+							# 		attempt, or someone else is currently being installed by somebody else 
+							# 		(less likely). Would you like to overrule this with a new installation?
+							# 	"""
+							# 	callback: (success) =>
+							# 		if success
+							# 			Fs.unlink 
+							# }
+							return
+						else
+							Bootbox.alert "IO Error"
+							console.error "Error:", err
 							return
 
-						cb()
-				(cb) =>					
-					@_updateProgress 25, "Generating secure encryption keys (this may take a while...)"
-										
-					isDone = false
-					# Only fires if async setUp
-					setTimeout(=>
-						unless isDone
-							@_updateProgress 50, "Setting up user account system (this may take a while...)"
-					, 3000)
+				# Handle other [unknown] kinds of errors more critically
+				else if err
+					errCode = [
+						err.name or ''
+						err.code or err.cause.code
+					].join ' '
 
-					# Generate mock "_system" admin user
-					Persist.Users.Account.setUp Config.dataDirectory, (err, result) =>
-						if err
-							cb err
-							return
-
-						systemAccount = result
-						isDone = true
-						cb()
-				(cb) =>
-					@_updateProgress 75, "Creating your \"admin\" user . . ."
-					# Create admin user account using systemAccount
-					Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
-						if err
-							if err instanceof Persist.Users.UserNameTakenError
-								Bootbox.alert "An admin #{Term 'user account'} already exists."
-								process.exit(1)
-								return
-
-							cb err
-							return
-
-						cb()
-			], (err) =>
-				if err
-					CrashHandler.handle err
+					Bootbox.alert {
+						title: "Error (#{errCode})"
+						message: """
+							Sorry, we seem to be having some trouble installing #{Config.productName}.
+							Please check your network connection and try again, otherwise contact
+							technical support at <u>#{Config.supportEmailAddress}</u> 
+							with the Error Code: \"#{errCode}\" .
+						"""
+					}
 					return
 
-				@_updateProgress 100, "Successfully installed #{Config.productName}!"
+				Async.series [
+					(cb) =>
+						@_updateProgress 0, "Setting up database..."
 
-				setTimeout(=>
-					global.isSetUp = true
-					win.close(true)
-				, 1000)
+						# Build the data directory, with subfolders/collections indicated in dataModels
+						Persist.buildDataDirectory tempDataDirectoryPath, (err) =>
+							if err
+								cb err
+								return
+
+							cb()
+					(cb) =>					
+						@_updateProgress 25, "Generating secure encryption keys (this may take a while...)"
+											
+						isDone = false
+						# Only fires if async setUp
+						setTimeout(=>
+							unless isDone
+								@_updateProgress 50, "Setting up user account system (this may take a while...)"
+						, 3000)
+
+						# Generate mock "_system" admin user
+						Persist.Users.Account.setUp tempDataDirectoryPath, (err, result) =>
+							if err
+								cb err
+								return
+
+							systemAccount = result
+							isDone = true
+							cb()
+					(cb) =>
+						@_updateProgress 75, "Creating your \"admin\" user . . ."
+						# Create admin user account using systemAccount
+						Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
+							if err
+								if err instanceof Persist.Users.UserNameTakenError
+									Bootbox.alert "An admin #{Term 'user account'} already exists."
+									process.exit(1)
+									return
+
+								cb err
+								return
+
+							cb()
+				], (err) =>
+					if err
+						CrashHandler.handle err
+						# Handle all types of errors
+
+					console.log "Finished building local temp copy of dataDirectory"
+
+					atomicOp.commit (err) =>
+						if err
+							CrashHandler.handle err
+							# Handle commit errors
+
+						console.log "Successfully installed #{Config.productName}!"
+						@_updateProgress 100, "Successfully installed #{Config.productName}!"
+
+						# Allow 1s for success animation before closing
+						setTimeout(=>
+							global.isSetUp = true
+							win.close(true)
+						, 1000)
 
 
 

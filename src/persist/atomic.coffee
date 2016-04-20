@@ -159,6 +159,27 @@ writeDirectory = (path, tmpDirPath, cb) =>
 
 		cb null, tmpPath, new AtomicOperation(commit)
 
+
+# Same as writeDirectory, without generating the unique folder name
+# or providing the tempPath in the mkdir callback arguments
+
+# TODO: Better name, or made part of writeDirectory API
+writeDirectoryNormally = (path, tmpDirPath, cb) =>
+	Fs.mkdir tmpDirPath, (err) =>
+		if err
+			cb new IOError err
+			return
+
+		commit = (cb) =>
+			Fs.rename tmpDirPath, path, (err) =>
+				if err
+					cb new IOError err
+					return
+
+				cb()
+
+		cb null, new AtomicOperation(commit)
+
 # Atomically remove a directory tree at the specified path.
 #
 # This function acts like 'rm -rf', except that it is an atomic operation.
@@ -205,5 +226,6 @@ module.exports = {
 	writeBufferToFile
 	writeJSONToFile
 	writeDirectory
+	writeDirectoryNormally
 	deleteDirectory
 }
