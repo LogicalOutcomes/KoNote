@@ -11,6 +11,7 @@
     "height": 500,
     "show": true,
     "frame": false,
+    "resizable": false,
     "transparent": true,
     "position": "center"
   },
