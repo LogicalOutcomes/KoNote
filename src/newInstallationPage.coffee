@@ -25,39 +25,8 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		init: ->
-			# First, we must test for read/write permissions
-
-			fileTestPath = './writeFileTest.txt'
-			fileTestString = "Hello World!"			
-
-			Async.series [
-				(cb) => Fs.writeFile fileTestPath, fileTestString, cb
-				(cb) => Fs.unlink fileTestPath, cb
-			], (err) =>
-				if err
-
-					if err.code is 'EROFS'
-						additionalMessage = unless process.platform is 'darwin' then "" else
-							"Please make sure you have dragged #{Config.productName} into
-							your Applications folder."
-
-						Bootbox.alert """
-							ERROR: '#{err.code}'.
-							Unable to write to the local directory.
-							#{additionalMessage}
-						""", @props.closeWindow
-
-					else
-						Bootbox.alert """
-							ERROR: '#{err.code}'.
-							Please contact #{Config.productName} technical support.
-						""", @props.closeWindow
-
-					console.error "Data directory test error:", err
-					return
-
-				console.log "Data directory #{Config.dataDirectory} is writeable!"
-
+			# First, we must test for write permissions
+			@_testWritePermissions()
 
 		deinit: (cb=(->)) ->
 			cb()
@@ -68,6 +37,42 @@ load = (win) ->
 
 		suggestClose: ->
 			@refs.ui.suggestClose()
+
+		_testWritePermissions: ->
+			fileTestPath = './writeFileTest.txt'
+			fileTestString = "Hello World!"			
+
+			Async.series [
+				(cb) => Fs.writeFile fileTestPath, fileTestString, cb
+				(cb) => Fs.unlink fileTestPath, cb
+			], (err) =>
+
+				if err and err.code is 'EROFS'
+					additionalMessage = unless process.platform is 'darwin' then "" else
+						"Please make sure you have dragged #{Config.productName} into
+						your Applications folder."
+
+					Bootbox.alert """
+						ERROR: '#{err.code}'.
+						Unable to write to the local directory.
+						#{additionalMessage}
+					""", @props.closeWindow
+
+					console.error "Unable to write to local directory:", err
+					return
+
+				else if err
+					Bootbox.alert """
+						ERROR: '#{err.code}'.
+						Please contact #{Config.productName} technical support.
+					""", @props.closeWindow
+
+					console.error "Local directory write test error:", err
+					return
+
+				# Test successful
+				console.log "Local directory is writeable!"
+
 
 		render: ->
 			return NewInstallationPageUi({
