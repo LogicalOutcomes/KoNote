@@ -7,6 +7,7 @@ Persist = require './persist'
 Atomic = require './persist/atomic'
 Async = require 'async'
 Fs = require 'fs'
+Rimraf = require 'rimraf'
 
 
 load = (win) ->
@@ -325,36 +326,97 @@ load = (win) ->
 			adminPassword = @state.password
 
 			destDataDirectoryPath = Config.dataDirectory
-			tempDataDirectoryPath = './data_tmp'
+			tempDataDirectoryPath = 'data_tmp'
 
-			# TODO: Check for previous tempDir existence
+			atomicOp = null
+	
+			Async.series [
+				(cb) =>
+					# Write data folder to temporary local directory, before moving to destination
+					Atomic.writeDirectoryNormally destDataDirectoryPath, tempDataDirectoryPath, (err, op) =>
+						if err 
+							# data_tmp folder already exists from a failed install
+							if err instanceof Persist.IOError	and err.cause.code is 'EEXIST'
+								Bootbox.confirm {
+									title: "OK to overwrite previous/pending installation?"
+									message: """
+										It appears you have data left over from an incomplete installation.
+										Would you like to overwrite it?
+									"""
+									callback: (confirmed) =>
+										if confirmed
+											# Delete temp directory and start installation over
+											Rimraf tempDataDirectoryPath, (err) =>
+												if err
+													cb err
+													return
 
-			# Write data folder to temporary local directory, before moving to destination
-			Atomic.writeDirectoryNormally destDataDirectoryPath, tempDataDirectoryPath, (err, atomicOp) =>
+												@_install()
+								}
+								return
 
-				# Handle IO Errors
-				if err and err instanceof Persist.IOError					
-					switch err.cause.code
-						when 'EEXIST'
-							# Bootbox.confirm {
-							# 	title: "Overwrite Previous/Pending Installation?"
-							# 	message: """
-							# 		It appears that you have a previously failed #{Config.productName} installation
-							# 		attempt, or someone else is currently being installed by somebody else 
-							# 		(less likely). Would you like to overrule this with a new installation?
-							# 	"""
-							# 	callback: (success) =>
-							# 		if success
-							# 			Fs.unlink 
-							# }
+							cb err
 							return
-						else
-							Bootbox.alert "IO Error"
-							console.error "Error:", err
+
+						# Save our atomic operation
+						atomicOp = op
+						cb()
+				(cb) =>
+					@_updateProgress 0, "Setting up database..."
+
+					# Build the data directory, with subfolders/collections indicated in dataModels
+					Persist.buildDataDirectory tempDataDirectoryPath, (err) =>
+						if err
+							cb err
 							return
 
-				# Handle other [unknown] kinds of errors more critically
-				else if err
+						cb()
+				(cb) =>					
+					@_updateProgress 25, "Generating secure encryption keys (this may take a while...)"
+										
+					isDone = false
+					# Only fires if async setUp
+					setTimeout(=>
+						unless isDone
+							@_updateProgress 50, "Setting up user account system (this may take a while...)"
+					, 3000)
+
+					# Generate mock "_system" admin user
+					Persist.Users.Account.setUp tempDataDirectoryPath, (err, result) =>
+						if err
+							cb err
+							return
+
+						systemAccount = result
+						isDone = true
+						cb()
+				(cb) =>
+					@_updateProgress 75, "Creating your \"admin\" user . . ."
+					# Create admin user account using systemAccount
+					Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
+						if err
+							if err instanceof Persist.Users.UserNameTakenError
+								Bootbox.alert "An admin #{Term 'user account'} already exists."
+								process.exit(1)
+								return
+
+							cb err
+							return
+
+						cb()
+				(cb) =>
+					atomicOp.commit cb
+			], (err) =>
+				if err
+					@setState {isLoading: false}
+
+					if err instanceof Persist.IOError
+						Bootbox.alert {
+							title: "Connection Error (IOError)"
+							message: "Please check your network connection and try again."
+						}
+						return
+
 					errCode = [
 						err.name or ''
 						err.code or err.cause.code
@@ -369,72 +431,19 @@ load = (win) ->
 							with the Error Code: \"#{errCode}\" .
 						"""
 					}
+
+					console.error err
 					return
 
-				Async.series [
-					(cb) =>
-						@_updateProgress 0, "Setting up database..."
 
-						# Build the data directory, with subfolders/collections indicated in dataModels
-						Persist.buildDataDirectory tempDataDirectoryPath, (err) =>
-							if err
-								cb err
-								return
+				console.log "Successfully installed #{Config.productName}!"
+				@_updateProgress 100, "Successfully installed #{Config.productName}!"
 
-							cb()
-					(cb) =>					
-						@_updateProgress 25, "Generating secure encryption keys (this may take a while...)"
-											
-						isDone = false
-						# Only fires if async setUp
-						setTimeout(=>
-							unless isDone
-								@_updateProgress 50, "Setting up user account system (this may take a while...)"
-						, 3000)
-
-						# Generate mock "_system" admin user
-						Persist.Users.Account.setUp tempDataDirectoryPath, (err, result) =>
-							if err
-								cb err
-								return
-
-							systemAccount = result
-							isDone = true
-							cb()
-					(cb) =>
-						@_updateProgress 75, "Creating your \"admin\" user . . ."
-						# Create admin user account using systemAccount
-						Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
-							if err
-								if err instanceof Persist.Users.UserNameTakenError
-									Bootbox.alert "An admin #{Term 'user account'} already exists."
-									process.exit(1)
-									return
-
-								cb err
-								return
-
-							cb()
-				], (err) =>
-					if err
-						CrashHandler.handle err
-						# Handle all types of errors
-
-					console.log "Finished building local temp copy of dataDirectory"
-
-					atomicOp.commit (err) =>
-						if err
-							CrashHandler.handle err
-							# Handle commit errors
-
-						console.log "Successfully installed #{Config.productName}!"
-						@_updateProgress 100, "Successfully installed #{Config.productName}!"
-
-						# Allow 1s for success animation before closing
-						setTimeout(=>
-							global.isSetUp = true
-							win.close(true)
-						, 1000)
+				# Allow 1s for success animation before closing
+				setTimeout(=>
+					global.isSetUp = true
+					win.close(true)
+				, 1000)
 
 
 
