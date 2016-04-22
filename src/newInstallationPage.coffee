@@ -29,9 +29,9 @@ load = (win) ->
 	NewInstallationPage = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
-		init: ->
-			# First, we must test for write permissions
-			@_testWritePermissions()
+		init: ->			
+			@_testDataDirectory()
+			@_testLocalWritePermissions()
 
 		deinit: (cb=(->)) ->
 			cb()
@@ -43,9 +43,25 @@ load = (win) ->
 		suggestClose: ->
 			@refs.ui.suggestClose()
 
-		_testWritePermissions: ->
-			fileTestPath = './writeFileTest.txt'
-			fileTestString = "Hello World!"			
+		_testDataDirectory: ->
+			dataDirectory = Config.dataDirectory
+
+			# Ensure a non-standard dataDirectory path actually exists
+			if dataDirectory isnt 'data' and not Fs.existsSync(dataDirectory)
+				Bootbox.alert {
+					title: "Database folder not found"
+					message: """
+						The destination folder specified for the database installation
+						can not be found on the file system. 
+						Please check the 'dataDirectory' path in your configuration file.
+					"""
+					callback: =>
+						process.exit(1)
+				}
+
+		_testLocalWritePermissions: ->
+			fileTestPath = 'writeFileTest.txt'
+			fileTestString = "Hello World!"
 
 			Async.series [
 				(cb) => Fs.writeFile fileTestPath, fileTestString, cb
@@ -415,6 +431,7 @@ load = (win) ->
 							title: "Connection Error (IOError)"
 							message: "Please check your network connection and try again."
 						}
+						console.error err
 						return
 
 					errCode = [
