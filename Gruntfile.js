@@ -86,6 +86,10 @@ module.exports = function(grunt) {
 					{
 						from: 'react-with-addons.js',
 						to: 'react-with-addons.min.js'
+					},
+					{
+						from: '<style id="main-css">/* see start.js */</style>',
+						to: '<link rel="stylesheet" href="main.css">'
 					}
 				]
 			}
