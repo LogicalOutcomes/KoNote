@@ -181,7 +181,21 @@ module.exports = function(grunt) {
 			temp: [
 				"build/releases/temp"
 			]
-		}
+		},
+		uglify: {
+			options: {
+				screwIE8: true
+			},
+			all: {
+				files: [{
+					expand: true,
+					cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
+					src: ['*.js', '!*.min.js'],
+					dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
+					ext: '.js'
+				}]
+			}
+    	}	
 	});
 	
 	// load the plugins
@@ -193,6 +207,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-stylus');
 	grunt.loadNpmTasks('grunt-contrib-coffee');
 	grunt.loadNpmTasks('grunt-contrib-clean');
+	grunt.loadNpmTasks('grunt-contrib-uglify');
 	if (process.platform == 'darwin') {
 		grunt.loadNpmTasks('grunt-appdmg');
 	}
@@ -217,6 +232,7 @@ module.exports = function(grunt) {
 			grunt.task.run('exec:npm:'+entry);
 			grunt.task.run('stylus:compile:'+entry);
 			grunt.task.run('coffee:compileMultiple:'+entry);
+			grunt.task.run('uglify:all:'+entry);
 			grunt.task.run('clean:coffee:'+entry);
 			grunt.task.run('clean:styl:'+entry);
 			if (entry == "generic-win" || entry == "griffin-win") {
