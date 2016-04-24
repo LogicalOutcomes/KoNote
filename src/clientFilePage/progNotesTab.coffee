@@ -118,18 +118,17 @@ load = (win) ->
 
 							switch progNote.get('type')
 								when 'basic'
-									BasicProgNoteView({
+									QuickNoteView({
 										key: progNote.get('id')
-
 										progNote
 										clientFile: @props.clientFile									
 										selectedItem: @state.selectedItem
+										setSelectedItem: @_setSelectedItem
 										isReadOnly: @props.isReadOnly
 									})
 								when 'full'
-									FullProgNoteView({
+									ProgNoteView({
 										key: progNote.get('id')
-
 										progNote
 										progEvents
 										eventTypes: @props.eventTypes
@@ -245,7 +244,7 @@ load = (win) ->
 			@setState {selectedItem}
 
 	# These are called 'quick notes' in the UI
-	BasicProgNoteView = React.createFactory React.createClass
+	QuickNoteView = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
@@ -295,7 +294,7 @@ load = (win) ->
 				)
 			)
 
-	FullProgNoteView = React.createFactory React.createClass
+	ProgNoteView = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
@@ -519,14 +518,14 @@ load = (win) ->
 
 					switch latestRev.get('type')
 						when 'basic'
-							BasicProgNoteView({
+							QuickNoteView({
 								progNote: @props.progNoteHistory.first()
 								clientFile: @props.clientFile									
 								selectedItem: @props.selectedItem
 								isReadOnly: true
 							})
 						when 'full'
-							FullProgNoteView({
+							ProgNoteView({
 								progNote: @props.progNoteHistory.first()
 								progEvents: @props.progEvents
 								eventTypes: @props.eventTypes
