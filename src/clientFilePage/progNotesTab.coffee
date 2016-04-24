@@ -15,6 +15,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	
 	CancelProgNoteDialog = require('./cancelProgNoteDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
@@ -243,7 +244,7 @@ load = (win) ->
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
 
-	# These are called 'quick notes' in the UI
+
 	QuickNoteView = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
@@ -263,7 +264,10 @@ load = (win) ->
 						@props.progNote.get('author')
 					)					
 				)
-				R.div({className: 'notes'},
+				R.div({
+					className: 'notes'
+					onClick: @_selectQuickNote
+				},
 					R.div({className: 'progNoteToolbar'},
 						PrintButton({
 							dataSet: [
@@ -293,6 +297,11 @@ load = (win) ->
 					renderLineBreaks @props.progNote.get('notes')
 				)
 			)
+
+		_selectQuickNote: ->
+			@props.setSelectedItem Imm.fromJS {
+				type: 'quickNote'
+			}
 
 	ProgNoteView = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
