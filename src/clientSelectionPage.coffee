@@ -269,9 +269,6 @@ load = (win) ->
 		componentDidMount: ->
 			@_refreshResults()
 
-			# Temporary until we find a better way to queue the page
-			console.info "Activating clientFileSelectionPage"
-
 			setTimeout(=>
 				# Show and focus this window
 				Window.show()
