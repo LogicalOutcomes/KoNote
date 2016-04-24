@@ -33,6 +33,8 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				selectedItem: null
+				highlightedProgNoteId: null
+				highlightedTargetId: null
 				backdate: ''
 			}
 
@@ -135,6 +137,8 @@ load = (win) ->
 										eventTypes: @props.eventTypes
 										clientFile: @props.clientFile
 										setSelectedItem: @_setSelectedItem
+										setHighlightedProgNoteId: @_setHighlightedProgNoteId
+										setHighlightedTargetId: @_setHighlightedTargetId
 										selectedItem: @state.selectedItem
 										isReadOnly: @props.isReadOnly
 									})
@@ -144,12 +148,21 @@ load = (win) ->
 					)
 					ProgNoteDetailView({
 						item: @state.selectedItem
+						highlightedProgNoteId: @state.highlightedProgNoteId
+						highlightedTargetId: @state.highlightedTargetId
 						progNoteHistories: @props.progNoteHistories
 						progEvents: @props.progEvents
 						eventTypes: @props.eventTypes
 					})
 				)
 			)
+
+		_setHighlightedProgNoteId: (progNoteId) ->			
+			@setState {highlightedProgNoteId: progNoteId}
+
+		_setHighlightedTargetId: (targetId) ->
+			@setState {highlightedTargetId: targetId}
+
 		_openNewProgNote: ->
 			if @props.hasChanges()
 				Bootbox.dialog {
@@ -301,13 +314,17 @@ load = (win) ->
 		_selectQuickNote: ->
 			@props.setSelectedItem Imm.fromJS {
 				type: 'quickNote'
+				progNoteId: @props.progNote.get('id')
 			}
 
 	ProgNoteView = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			R.div({className: 'full progNote'},
+			R.div({
+				className: 'full progNote'
+				onMouseEnter: @props.setHighlightedProgNoteId.bind null, @props.progNote.get('id')
+			},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
 						if @props.progNote.get('backdate') != ''
@@ -397,6 +414,8 @@ load = (win) ->
 										R.section({key: section.get('id')},
 											R.h2({}, section.get('name'))
 											R.div({
+												onMouseEnter: @props.setHighlightedProgNoteId.bind null, @props.progNote.get('id')
+												onMouseLeave: @props.setHighlightedProgNoteId.bind null, null
 												className: [
 													'empty'
 													showWhen section.get('targets').isEmpty()
@@ -411,6 +430,7 @@ load = (win) ->
 														'target'
 														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is target.get('id')
 													].join ' '
+													onMouseEnter: @props.setHighlightedTargetId.bind null, target.get('id')
 												},
 													R.h3({
 														onClick: @_selectPlanSectionTarget.bind(
@@ -462,6 +482,7 @@ load = (win) ->
 				type: 'basicUnit'
 				unitId: unit.get('id')
 				unitName: unit.get('name')
+				progNoteId: @props.progNote.get('id')
 			}
 		_selectPlanSectionTarget: (unit, section, target) ->
 			@props.setSelectedItem Imm.fromJS {
@@ -470,6 +491,7 @@ load = (win) ->
 				sectionId: section.get('id')
 				targetId: target.get('id')
 				targetName: target.get('name')
+				progNoteId: @props.progNote.get('id')
 			}
 
 	CancelledProgNoteView = React.createFactory React.createClass

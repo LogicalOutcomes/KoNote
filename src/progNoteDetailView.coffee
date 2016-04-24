@@ -91,7 +91,8 @@ load = (win) ->
 
 											return Imm.fromJS {
 												progNoteId
-												status: progNote.get('status')												
+												status: progNote.get('status')
+												targetId: target.get('id')
 												author: initialAuthor
 												timestamp: createdTimestamp
 												backdate: progNote.get('backdate')
@@ -103,8 +104,8 @@ load = (win) ->
 								throw new Error "unknown prognote type: #{progNote.get('type')}"
 
 				when 'quickNote'
-					itemName = Term 'Quick Notes'
-					
+					itemName = Term 'Quick Notes'					
+
 					# Extract all quickNote entries
 					entries = @props.progNoteHistories
 					.filter (progNoteHistory) -> progNoteHistory.last().get('type') is 'basic'
@@ -148,7 +149,18 @@ load = (win) ->
 				)
 				R.div({className: 'history'},
 					(entries.map (entry) =>
-						R.div({className: 'entry'},
+						entryId = entry.get('progNoteId')
+						isHighlighted = entryId is @props.highlightedProgNoteId
+						isHovered = entry.get('targetId') is @props.highlightedTargetId
+
+						R.div({
+							key: entryId
+							className: [
+								'entry'
+								'highlighted' if isHighlighted
+								'isHovered' if isHighlighted and isHovered
+							].join ' '
+						},
 							R.div({className: 'header'},
 								R.div({className: 'timestamp'},
 									if entry.get('backdate') != ''
