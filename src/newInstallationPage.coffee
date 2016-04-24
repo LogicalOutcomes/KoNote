@@ -2,12 +2,13 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+Fs = require 'fs'
+Async = require 'async'
+Rimraf = require 'rimraf'
+
 Config = require './config'
 Persist = require './persist'
 Atomic = require './persist/atomic'
-Async = require 'async'
-Fs = require 'fs'
-Rimraf = require 'rimraf'
 
 
 load = (win) ->
@@ -23,7 +24,6 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon} = require('./utils').load(win)
-
 
 
 	NewInstallationPage = React.createFactory React.createClass
@@ -58,6 +58,8 @@ load = (win) ->
 					callback: =>
 						process.exit(1)
 				}
+			else
+				console.log "Data directory is valid!"
 
 		_testLocalWritePermissions: ->
 			fileTestPath = 'writeFileTest.txt'
