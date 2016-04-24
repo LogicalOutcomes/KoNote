@@ -6,6 +6,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require './config'
+Term = require './term'
 Persist = require './persist'
 
 load = (win) ->
@@ -34,7 +35,7 @@ load = (win) ->
 
 					entries = @props.progNoteHistories.flatMap (progNoteHistory) =>
 						initialAuthor = progNoteHistory.first().get('author')
-						createdAt = progNoteHistory.first().get('timestamp')
+						createdTimestamp = progNoteHistory.first().get('timestamp')
 						progNote = progNoteHistory.last()
 
 						switch progNote.get('type')
@@ -52,7 +53,7 @@ load = (win) ->
 										status: progNote.get('status')
 										progNoteId: progNote.get('id')
 										author: initialAuthor
-										timestamp: createdAt
+										timestamp: createdTimestamp
 										backdate: progNote.get('backdate')
 										notes: unit.get('notes')
 										progEvents
@@ -68,7 +69,7 @@ load = (win) ->
 
 					entries = @props.progNoteHistories.flatMap (progNoteHistory) =>
 						initialAuthor = progNoteHistory.first().get('author')
-						createdAt = progNoteHistory.first().get('timestamp')
+						createdTimestamp = progNoteHistory.first().get('timestamp')
 						progNote = progNoteHistory.last()
 
 						switch progNote.get('type')
@@ -84,14 +85,15 @@ load = (win) ->
 										.filter (target) => # find relevant targets
 											return target.get('id') is targetId
 										.map (target) =>
+											progNoteId = progNote.get('id')
 											progEvents = @props.progEvents.filter (progEvent) =>
-												return progEvent.get('relatedProgNoteId') is progNote.get('id')
+												return progEvent.get('relatedProgNoteId') is progNoteId
 
 											return Imm.fromJS {
-												status: progNote.get('status')
-												progNoteId: progNote.get('id')
+												progNoteId
+												status: progNote.get('status')												
 												author: initialAuthor
-												timestamp: progNote.get('timestamp')
+												timestamp: createdTimestamp
 												backdate: progNote.get('backdate')
 												notes: target.get('notes')
 												progEvents
@@ -99,25 +101,45 @@ load = (win) ->
 											}
 							else
 								throw new Error "unknown prognote type: #{progNote.get('type')}"
+
+				when 'quickNote'
+					itemName = Term 'Quick Notes'
+					
+					# Extract all quickNote entries
+					entries = @props.progNoteHistories
+					.filter (progNoteHistory) -> progNoteHistory.last().get('type') is 'basic'
+					.map (progNoteHistory) ->
+						initialAuthor = progNoteHistory.first().get('author')
+						createdTimestamp = progNoteHistory.first().get('timestamp')
+						progNote = progNoteHistory.last()
+
+						progNoteId = progNote.get('id')
+						# TODO: progEvents = @props.progEvents.filter (progEvent) =>
+						# 	return progEvent.get('relatedProgNoteId') is progNoteId
+
+						return Imm.fromJS {
+							progNoteId
+							status: progNote.get('status')							
+							author: initialAuthor
+							timestamp: createdTimestamp
+							backdate: progNote.get('backdate')
+							notes: progNote.get('notes')
+							# TODO: progEvents
+						}
+						return progNote
+						.set('author', initialAuthor)
+						.set('timestamp', createdTimestamp)
+					
 				else
 					throw new Error "unknown item type: #{JSON.stringify @props.item?.get('type')}"
 
+			# Filter out blank & cancelled notes, and sort by date/backdate
 			entries = entries
-			.filter (entry) -> # remove blank entries
-				return entry.get('notes').trim().length > 0
-			.filter (entry) -> # remove cancelled entries
-				switch entry.get('status')
-					when 'default'
-						return true
-					when 'cancelled'
-						return false
-					else
-						throw new Error "unknown prognote status: #{entry.get('status')}"
+			.filter (entry) -> 
+				entry.get('notes').trim().length > 0 and
+				entry.get('status') isnt 'cancelled'
 			.sortBy (entry) ->
-				if entry.get('backdate')
-					return entry.get('backdate')
-				else
-					return entry.get('timestamp')
+				entry.get('backdate') or entry.get('timestamp')
 			.reverse()
 
 			return R.div({className: 'progNoteDetailView'},
@@ -144,8 +166,9 @@ load = (win) ->
 							R.div({className: 'notes'},
 								renderLineBreaks entry.get('notes')
 							)
-							R.div({className: 'metrics'},
-								if entry.get('metrics')
+
+							if entry.get('metrics')
+								R.div({className: 'metrics'},								
 									entry.get('metrics').map (metric) =>
 										MetricWidget({
 											isEditable: false
@@ -154,16 +177,18 @@ load = (win) ->
 											definition: metric.get('definition')
 											value: metric.get('value')
 										})
-							)
-							R.div({className: 'progEvents'},
-								entry.get('progEvents').map (progEvent) =>
-									ProgEventsWidget({
-										format: 'small'
-										data: progEvent
-										key: progEvent.get('id')
-										eventTypes: @props.eventTypes
-									})
-							)
+								)
+
+							if entry.get('progEvents')
+								R.div({className: 'progEvents'},
+									entry.get('progEvents').map (progEvent) =>
+										ProgEventsWidget({
+											format: 'small'
+											data: progEvent
+											key: progEvent.get('id')
+											eventTypes: @props.eventTypes
+										})
+								)
 						)
 					).toJS()...
 				)
