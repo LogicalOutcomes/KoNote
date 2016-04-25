@@ -405,6 +405,7 @@ load = (win) ->
 				clientFileId: @props.clientFileId
 				name: ''
 				notes: ''
+				status: 'active'
 				metricIds: []
 			}
 			newCurrentRevs = @state.currentTargetRevisionsById.set targetId, newTarget
