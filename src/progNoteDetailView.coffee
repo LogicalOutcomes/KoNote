@@ -150,15 +150,24 @@ load = (win) ->
 				R.div({className: 'history'},
 					(entries.map (entry) =>
 						entryId = entry.get('progNoteId')
-						isHighlighted = entryId is @props.highlightedProgNoteId
-						isHovered = entry.get('targetId') is @props.highlightedTargetId
+
+						isHighlighted = null
+						isHovered = null
+
+						# Figure out highlighting from progNotesTab click/hover data
+						isHighlighted = (entryId is @props.highlightedProgNoteId) and not @props.highlightedQuickNoteId?
+
+						if @props.highlightedQuickNoteId?
+							isHovered = entry.get('progNoteId') is @props.highlightedQuickNoteId
+						else if @props.highlightedTargetId?
+							isHovered = (entry.get('targetId') is @props.highlightedTargetId) and isHighlighted
 
 						R.div({
 							key: entryId
 							className: [
 								'entry'
 								'highlighted' if isHighlighted
-								'isHovered' if isHighlighted and isHovered
+								'isHovered' if isHovered
 							].join ' '
 						},
 							R.div({className: 'header'},

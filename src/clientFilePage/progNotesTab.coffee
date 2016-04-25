@@ -124,8 +124,9 @@ load = (win) ->
 									QuickNoteView({
 										key: progNote.get('id')
 										progNote
-										clientFile: @props.clientFile									
+										clientFile: @props.clientFile
 										selectedItem: @state.selectedItem
+										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
 										setSelectedItem: @_setSelectedItem
 										isReadOnly: @props.isReadOnly
 									})
@@ -149,6 +150,7 @@ load = (win) ->
 					ProgNoteDetailView({
 						item: @state.selectedItem
 						highlightedProgNoteId: @state.highlightedProgNoteId
+						highlightedQuickNoteId: @state.highlightedQuickNoteId
 						highlightedTargetId: @state.highlightedTargetId
 						progNoteHistories: @props.progNoteHistories
 						progEvents: @props.progEvents
@@ -157,11 +159,14 @@ load = (win) ->
 				)
 			)
 
-		_setHighlightedProgNoteId: (progNoteId) ->			
-			@setState {highlightedProgNoteId: progNoteId}
+		_setHighlightedProgNoteId: (highlightedProgNoteId) ->
+			@setState {highlightedProgNoteId}
 
-		_setHighlightedTargetId: (targetId) ->
-			@setState {highlightedTargetId: targetId}
+		_setHighlightedQuickNoteId: (highlightedQuickNoteId) ->	
+			@setState {highlightedQuickNoteId}
+
+		_setHighlightedTargetId: (highlightedTargetId) ->
+			@setState {highlightedTargetId}
 
 		_openNewProgNote: ->
 			if @props.hasChanges()
@@ -262,7 +267,11 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			R.div({className: 'basic progNote'},
+			R.div({
+				className: 'basic progNote'
+				onMouseEnter: @props.setHighlightedQuickNoteId.bind null, @props.progNote.get('id')
+				onMouseLeave: @props.setHighlightedQuickNoteId.bind null, null
+			},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
 						if @props.progNote.get('backdate') != ''
