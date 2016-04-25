@@ -644,6 +644,11 @@ load = (win) ->
 						onClick: @props.onTargetSelection if @props.isReadOnly
 
 					})
+					R.button({
+					className: 'addSection btn btn-success'
+					onClick: @_addSection
+					disabled: @props.isReadOnly
+					}, FaIcon('plus'))
 				)
 				R.div({className: 'notesContainer'},
 					ExpandingTextArea({
