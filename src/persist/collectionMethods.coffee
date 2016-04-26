@@ -84,7 +84,6 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 		# We allow explicit metadata for development purposes, such as seeding.
 		if process.env.NODE_ENV isnt 'development'
-
 			if obj.has('author')
 				cb new Error "new objects cannot already have an author"
 				return
