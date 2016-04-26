@@ -62,6 +62,7 @@ dataModelDefinitions = [
 				name: 'planTarget'
 				collectionName: 'planTargets'
 				isMutable: true
+				indexes: [['status']]
 				schema: Joi.object().keys({
 					name: Joi.string()
 					notes: Joi.string()
