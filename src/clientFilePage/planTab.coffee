@@ -644,13 +644,22 @@ load = (win) ->
 						onClick: @props.onTargetSelection if @props.isReadOnly
 
 					})
-					# button to activate/deactivate the target
+					# button to cancel the target
 					R.button({
-					className: 'statusButton btn btn-success'
-					onClick: @_updateStatus 'inactive', 'status'
-					disabled: @props.isReadOnly
-					}, FaIcon('plus'))
+						className: 'cancel btn btn-danger'
+						onClick: @_cancelPlanTarget
+						disabled: @props.isReadOnly
+					}, FaIcon('ban'))
+					
+
+					# button to complete the target
+					R.button({
+						className: 'cancel btn btn-success'
+						onClick: @_completePlanTarget
+						disabled: @props.isReadOnly
+					}, FaIcon('check'))
 				)
+				
 				R.div({className: 'notesContainer'},
 					ExpandingTextArea({
 						className: 'notes field'
@@ -680,9 +689,19 @@ load = (win) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
 
-		_updateStatus: (fieldName, event) ->
-			newValue = @props.currentRevision.set fieldName, event
-			@props.onTargetUpdate newValue
+		_cancelPlanTarget: ->
+			Bootbox.prompt({ 
+				size: 'small'
+				message: "Your message here…"
+				callback: (statusReason) -> console.log 'we did it', statusReason
+			})
+
+		_completePlanTarget: ->
+			Bootbox.prompt({ 
+				size: 'small'
+				message: "Your message here…"
+				callback: (statusReason) -> console.log 'we did it', statusReason
+			})
 
 		_onTargetClick: (event) ->
 			unless event.target.classList.contains 'field'
