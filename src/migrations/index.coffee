@@ -44,7 +44,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 					cb err
 					return
 
-				console.info "Database staging successful."
+				console.info "1. Database staging successful."
 				cb()
 
 		(cb) -> # Run migration on staged database dir
@@ -54,7 +54,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 					cb err
 					return
 
-				console.info "Data migration successful."
+				console.info "2. Data migration successful."
 				cb()
 
 		(cb) -> # Move (rename) live database to app directory			
@@ -64,7 +64,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 					cb err
 					return
 
-				console.info "Database backup successful."
+				console.info "3. Database backup successful."
 				setTimeout(cb, 5000)
 
 		(cb) -> # Move staged (migrated) database to destination
@@ -72,7 +72,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 				if err					
 					console.error "Database commit to destination error!"
 
-					# Since it wasn't successful, restore the original database
+					# Fail-safe: Since it wasn't successful, restore the original database dir
 					Fs.rename backupDataDir, dataDir, (err) ->
 						if err
 							console.error "Unable to restore original dataDir."
@@ -84,7 +84,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 					cb err
 					return
 
-				console.info "Database commit to destination successful."
+				console.info "4. Database commit to destination successful."
 				cb()
 
 	], (err) ->
