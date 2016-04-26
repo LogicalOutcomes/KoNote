@@ -152,6 +152,7 @@ Create.planTarget = ({clientFile, metrics}, cb) ->
 		clientFileId: clientFile.get('id')
 		name: "Fake Target"
 		notes: "Notes Notes"
+		status: "active"
 		metricIds
 	}
 
