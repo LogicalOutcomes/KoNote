@@ -648,7 +648,7 @@ load = (win) ->
 					R.button({
 						className: 'cancel btn btn-danger'
 						onClick: @_cancelPlanTarget
-						disabled: @props.isReadOnly
+						disabled: @props.isReadOnly or @props.hasTargetChanged
 					}, FaIcon('ban'))
 					
 
@@ -658,6 +658,11 @@ load = (win) ->
 						onClick: @_completePlanTarget
 						disabled: @props.isReadOnly
 					}, FaIcon('check'))
+				)
+				# temporarily showing status during development of this feature
+				R.div({},
+					"status: " 
+					@props.currentRevision.get 'status'
 				)
 				
 				R.div({className: 'notesContainer'},
@@ -691,16 +696,24 @@ load = (win) ->
 
 		_cancelPlanTarget: ->
 			Bootbox.prompt({ 
-				size: 'small'
+				title: "Please indicate a reason for cancelling this #{Term 'Target'}"
+				size: 'medium'
 				message: "Your message here…"
-				callback: (statusReason) -> console.log 'we did it', statusReason
+				callback: (statusReason) =>
+					newValue = @props.currentRevision.set 'status', 'inactive'
+					@props.onTargetUpdate newValue
+					console.log 'we did it', statusReason
 			})
 
 		_completePlanTarget: ->
 			Bootbox.prompt({ 
-				size: 'small'
+				title: "Please indicate a reason for completing this #{Term 'Target'}"
+				size: 'medium'
 				message: "Your message here…"
-				callback: (statusReason) -> console.log 'we did it', statusReason
+				callback: (statusReason) => 
+					newValue = @props.currentRevision.set 'status', 'complete'
+					@props.onTargetUpdate newValue
+					console.log 'we did it', statusReason
 			})
 
 		_onTargetClick: (event) ->
