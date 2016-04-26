@@ -644,9 +644,10 @@ load = (win) ->
 						onClick: @props.onTargetSelection if @props.isReadOnly
 
 					})
+					# button to activate/deactivate the target
 					R.button({
-					className: 'addSection btn btn-success'
-					onClick: @_addSection
+					className: 'statusButton btn btn-success'
+					onClick: @_updateStatus 'inactive', 'status'
 					disabled: @props.isReadOnly
 					}, FaIcon('plus'))
 				)
@@ -678,6 +679,11 @@ load = (win) ->
 		_updateField: (fieldName, event) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
+
+		_updateStatus: (fieldName, event) ->
+			newValue = @props.currentRevision.set fieldName, event
+			@props.onTargetUpdate newValue
+
 		_onTargetClick: (event) ->
 			unless event.target.classList.contains 'field'
 				@refs.nameField.focus() unless @props.isReadOnly
