@@ -330,8 +330,6 @@ load = (win) ->
 			if not percent and not message
 				percent = message = null
 
-			console.log "About to update progress..."
-
 			@setState {
 				isLoading: true
 				installProgress: {percent, message}
