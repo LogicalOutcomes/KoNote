@@ -700,9 +700,16 @@ load = (win) ->
 				size: 'medium'
 				message: "Your message here…"
 				callback: (statusReason) =>
-					newValue = @props.currentRevision.set 'status', 'inactive'
-					@props.onTargetUpdate newValue
-					console.log 'we did it', statusReason
+					# id = @props.key
+					newTargetRevision = @props.currentRevision.set 'status', 'inactive'
+					ActiveSession.persist.planTargets.createRevision newTargetRevision, (err, updatedTarget) ->
+						if err
+							cb err
+							return
+						console.log "updated target", updatedTarget.toJS()
+
+					@props.onTargetUpdate newTargetRevision
+					console.log 'Status reason: ', statusReason
 			})
 
 		_completePlanTarget: ->
@@ -711,9 +718,15 @@ load = (win) ->
 				size: 'medium'
 				message: "Your message here…"
 				callback: (statusReason) => 
-					newValue = @props.currentRevision.set 'status', 'complete'
-					@props.onTargetUpdate newValue
-					console.log 'we did it', statusReason
+					newTargetRevision = @props.currentRevision.set 'status', 'complete'
+					ActiveSession.persist.planTargets.createRevision newTargetRevision, (err, updatedTarget) ->
+						if err
+							cb err
+							return
+						console.log "updated target", updatedTarget.toJS()
+
+					@props.onTargetUpdate newTargetRevision
+					console.log 'Status reason: ', statusReason
 			})
 
 		_onTargetClick: (event) ->
