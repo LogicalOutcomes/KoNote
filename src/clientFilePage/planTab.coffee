@@ -684,12 +684,13 @@ load = (win) ->
 							)
 						)
 				)
-				# temporarily showing status during development of this feature
-				R.div({},
-					"status: " 
-					@props.currentRevision.get 'status'
-				)
-				
+
+				# # temporarily showing status during development of this feature
+				# R.div({},
+				# 	"status: " 
+				# 	@props.currentRevision.get 'status'
+				# )
+
 				R.div({className: 'notesContainer'},
 					ExpandingTextArea({
 						className: 'notes field'
