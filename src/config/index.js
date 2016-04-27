@@ -13,7 +13,7 @@ $.each(configFileNames, function (index, fileName) {
 	}
 	catch (err) {
 		if (err.code !== 'MODULE_NOT_FOUND') {
-			throw err;
+			throw new Error(err);
 		}
 	}
 });
