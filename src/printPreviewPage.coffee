@@ -25,6 +25,7 @@ load = (win, {dataSet}) ->
 	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
 
 	PrintPreviewPage = React.createFactory React.createClass
+		displayName: 'PrintPreviewPage'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -48,6 +49,7 @@ load = (win, {dataSet}) ->
 			}
 
 	PrintPreviewPageUi = React.createFactory React.createClass
+		displayName: 'PrintPreviewPageUi'
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
@@ -105,6 +107,7 @@ load = (win, {dataSet}) ->
 
 
 	PrintHeader = React.createFactory React.createClass
+		displayName: 'PrintHeader'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			# Calculate timestamp for backdate if exists
@@ -164,6 +167,7 @@ load = (win, {dataSet}) ->
 			)
 
 	BasicProgNoteView = React.createFactory React.createClass
+		displayName: 'BasicProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->			
 			R.div({className: 'basic progNote'},				
@@ -173,6 +177,7 @@ load = (win, {dataSet}) ->
 			)
 
 	FullProgNoteView = React.createFactory React.createClass
+		displayName: 'FullProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'full progNote'},
@@ -258,6 +263,7 @@ load = (win, {dataSet}) ->
 			)
 
 	SinglePlanView = React.createFactory React.createClass
+		displayName: 'SinglePlanView'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'plan unit'},

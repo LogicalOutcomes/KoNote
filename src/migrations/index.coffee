@@ -29,13 +29,66 @@ Base64url = require 'base64url'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
+Ncp = require 'ncp'
 
 # Use this at the command line
 runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
-	migrate dataDir, fromVersion, toVersion, userName, password, (err) ->
-		if err
-			console.error "Migration error."
+	stagedDataDir = "./data_migration_#{fromVersion}-#{toVersion}"
+	backupDataDir = "./data_migration_#{fromVersion}--backup"
 
+	Async.series [
+		(cb) -> # Copy the dataDir to a staging dir
+			Ncp dataDir, stagedDataDir, (err) ->
+				if err
+					console.error "Database staging error!"
+					cb err
+					return
+
+				console.info "1. Database staging successful."
+				cb()
+
+		(cb) -> # Run migration on staged database dir
+			migrate stagedDataDir, fromVersion, toVersion, userName, password, (err) ->
+				if err
+					console.error "Database migration error!"
+					cb err
+					return
+
+				console.info "2. Data migration successful."
+				cb()
+
+		(cb) -> # Move (rename) live database to app directory			
+			Fs.rename dataDir, backupDataDir, (err) ->
+				if err
+					console.error "Database backup error!"
+					cb err
+					return
+
+				console.info "3. Database backup successful."
+				setTimeout(cb, 5000)
+
+		(cb) -> # Move staged (migrated) database to destination
+			Fs.rename stagedDataDir, dataDir, (err) ->
+				if err					
+					console.error "Database commit to destination error!"
+
+					# Fail-safe: Since it wasn't successful, restore the original database dir
+					Fs.rename backupDataDir, dataDir, (err) ->
+						if err
+							console.error "Unable to restore original dataDir."
+							cb err
+							return
+
+						console.info "Successfully restored original dataDir"
+
+					cb err
+					return
+
+				console.info "4. Database commit to destination successful."
+				cb()
+
+	], (err) ->
+		if err
 			# Close any currently open logging groups to make sure the error is seen
 			# Yeah, this sucks.
 			for i in [0...1000]
@@ -44,14 +97,11 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 			console.error "Migration failed:"
 			console.error err
 			console.error err.stack
-
-			if err.cause
-				console.error "Caused by:"
-				console.error err.cause.stack
-
 			return
 
-		console.log "Migration complete."
+		console.info "------ Migration Complete! ------"
+
+
 
 migrate = (dataDir, fromVersion, toVersion, userName, password, cb) ->
 	# Eventually, this could be expanded to support migrating across many
@@ -59,7 +109,7 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, cb) ->
 
 	# TODO: Grab full list of migrations, handle multi-step migrations
 
-	console.group "Run migration step #{fromVersion} -> #{toVersion}"
+	console.log "Running migration step #{fromVersion} -> #{toVersion}..."
 
 	try
 		migrationStep = require("./#{fromVersion}-#{toVersion}")
@@ -69,12 +119,10 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, cb) ->
 
 	migrationStep.run dataDir, userName, password, (err) ->
 		if err
-			wrappedErr = new Error "Could not run migration #{fromVersion}-#{toVersion}"
-			wrappedErr.cause = err
-			cb wrappedErr
+			cb new Error "Could not run migration #{fromVersion}-#{toVersion}"
 			return
 
-		console.groupEnd()
+		console.log "Done migration step #{fromVersion} -> #{toVersion}."
 		cb()
 
 module.exports = {runMigration, migrate}

@@ -21,6 +21,7 @@ load = (win) ->
 	{TimestampFormat} = require '../persist/utils'
 
 	EventTabView = React.createFactory React.createClass
+		displayName: 'EventTabView'
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			# Use backdate instead of current date (if exists)

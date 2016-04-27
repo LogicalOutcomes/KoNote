@@ -12,6 +12,7 @@ load = (win) ->
 	{showWhen} = require('./utils').load(win)
 
 	Spinner = React.createFactory React.createClass
+		displayName: 'Spinner'
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidChange: (oldProps, oldState) ->

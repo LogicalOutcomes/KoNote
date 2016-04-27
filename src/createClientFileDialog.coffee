@@ -20,6 +20,7 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 
 	CreateClientFileDialog = React.createFactory React.createClass
+		displayName: 'CreateClientFileDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->

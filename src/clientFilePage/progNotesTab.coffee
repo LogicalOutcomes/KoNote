@@ -28,6 +28,7 @@ load = (win) ->
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
+		displayName: 'ProgNotesView'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -246,6 +247,7 @@ load = (win) ->
 
 
 	QuickNoteView = React.createFactory React.createClass
+		displayName: 'QuickNoteView'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
@@ -304,6 +306,7 @@ load = (win) ->
 			}
 
 	ProgNoteView = React.createFactory React.createClass
+		displayName: 'ProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
@@ -473,6 +476,7 @@ load = (win) ->
 			}
 
 	CancelledProgNoteView = React.createFactory React.createClass
+		displayName: 'CancelledProgNoteView'
 		getInitialState: ->
 			return {
 				isExpanded: false

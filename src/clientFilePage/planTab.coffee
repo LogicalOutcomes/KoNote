@@ -25,6 +25,7 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
 
 	PlanView = React.createFactory React.createClass
+		displayName: 'PlanView'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -458,6 +459,7 @@ load = (win) ->
 			}
 
 	SectionsView = React.createFactory React.createClass
+		displayName: 'SectionsView'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -568,6 +570,7 @@ load = (win) ->
 			)
 
 	SectionHeader = React.createFactory React.createClass
+		displayName: 'SectionHeader'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
@@ -615,6 +618,7 @@ load = (win) ->
 			)
 
 	PlanTarget = React.createFactory React.createClass
+		displayName: 'PlanTarget'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->

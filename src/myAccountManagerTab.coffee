@@ -24,6 +24,7 @@ load = (win) ->
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
 	MyAccountManagerTab = React.createFactory React.createClass
+		displayName: 'MyAccountManagerTab'
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->

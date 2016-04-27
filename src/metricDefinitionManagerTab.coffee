@@ -26,6 +26,7 @@ load = (win) ->
 	DefineMetricDialog = require('./defineMetricDialog').load(win)
 
 	MetricDefinitionManagerTab = React.createFactory React.createClass
+		displayName: 'MetricDefinitionManagerTab'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->

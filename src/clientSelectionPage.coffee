@@ -33,6 +33,7 @@ load = (win) ->
 	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
 
 	ClientSelectionPage = React.createFactory React.createClass
+		displayName: 'ClientSelectionPage'
 		getInitialState: ->
 			return {
 				status: 'init'
@@ -248,6 +249,7 @@ load = (win) ->
 			}
 
 	ClientSelectionPageUi = React.createFactory React.createClass
+		displayName: 'ClientSelectionPageUi'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -640,6 +642,7 @@ load = (win) ->
 
 
 	UserMenuItem = React.createFactory React.createClass
+		displayName: 'UserMenuItem'
 		mixins: [React.addons.PureRenderMixin]
 
 		getDefaultProps: ->

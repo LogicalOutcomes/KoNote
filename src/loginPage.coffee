@@ -26,6 +26,7 @@ load = (win) ->
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
 	LoginPage = React.createFactory React.createClass
+		displayName: 'LoginPage'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -162,6 +163,7 @@ load = (win) ->
 
 
 	LoginPageUi = React.createFactory React.createClass
+		displayName: 'LoginPageUi'
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {

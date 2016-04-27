@@ -11,26 +11,35 @@ Config = require './config'
 Pluralize = require 'pluralize'
 _ = require 'underscore'
 
+# Utility functions
+
 capitalize = (word) ->
   word.replace /(?:^|\s)\S/g, (a) ->
     a.toUpperCase()
 
+pluralizeLastWord = (string) ->
+	# Split string into words, pluralize last word, join back together
+	stringWords = string.split " "
+	lastWordIndex = stringWords.length - 1
+	stringWords[lastWordIndex] = Pluralize stringWords[lastWordIndex]
+	return stringWords.join " "
+
+
+# Generate variations of capitalized and pluralized terms
+
 generatedTerms = {}
 
-_.each Config.terminology, (value, name) ->	
-	capName = capitalize name.toString()
-	capValue = capitalize value
+_.each Config.terminology, (value, key) ->	
+	capKey = capitalize key.toString()
+	capValue = capitalize value	
 
-	# TODO: Combo of 1 capitalized word and 1 lowercase word ("Progress note")
-	generatedTerms[name] = value
-	generatedTerms[capName] = capValue
-	generatedTerms[Pluralize(name)] = Pluralize(value)
-	generatedTerms[Pluralize(capName)] = Pluralize(capValue)	
-
-# console.log "configTerms", generatedTerms
+	generatedTerms[key] = value
+	generatedTerms[capKey] = capValue
+	generatedTerms[pluralizeLastWord(key)] = pluralizeLastWord(value)
+	generatedTerms[pluralizeLastWord(capKey)] = pluralizeLastWord(capValue)
 
 module.exports = (term) ->
-	# TODO: Logic to switch out "a", "an", etc	
+	# TODO: Logic to switch out "a", "an", etc
 	if generatedTerms[term]
 		return generatedTerms[term]
 	else

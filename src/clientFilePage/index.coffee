@@ -43,6 +43,7 @@ load = (win, {clientFileId}) ->
 	{FaIcon, renderName, renderFileId, showWhen, stripMetadata} = require('../utils').load(win)
 
 	ClientFilePage = React.createFactory React.createClass
+		displayName: 'ClientFilePage'
 		getInitialState: ->
 			return {
 				status: 'init' # Either init or ready
@@ -595,6 +596,7 @@ load = (win, {clientFileId}) ->
 			}
 
 	ClientFilePageUi = React.createFactory React.createClass
+		displayName: 'ClientFilePageUi'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -748,6 +750,7 @@ load = (win, {clientFileId}) ->
 			}
 
 	Sidebar = React.createFactory React.createClass
+		displayName: 'Sidebar'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			activeTabId = @props.activeTabId
@@ -808,6 +811,7 @@ load = (win, {clientFileId}) ->
 			)
 
 	SidebarTab = React.createFactory React.createClass
+		displayName: 'SidebarTab'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({
@@ -820,6 +824,7 @@ load = (win, {clientFileId}) ->
 			)
 
 	LoadError = React.createFactory React.createClass
+		displayName: 'LoadError'
 		mixins: [React.addons.PureRenderMixin]
 		componentDidMount: ->
 			console.log "loadErrorType:", @props.loadErrorType
@@ -837,6 +842,7 @@ load = (win, {clientFileId}) ->
 			return R.div({className: 'clientFilePage'})
 
 	ReadOnlyNotice = React.createFactory React.createClass
+		displayName: 'ReadOnlyNotice'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({

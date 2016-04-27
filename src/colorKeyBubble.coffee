@@ -11,6 +11,7 @@ load = (win) ->
 	{FaIcon} = require('./utils').load(win)
 
 	ColorKeyBubble = React.createFactory React.createClass
+		displayName: 'ColorKeyBubble'
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->

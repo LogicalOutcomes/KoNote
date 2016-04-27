@@ -11,6 +11,7 @@ load = (win) ->
 
 
 	ProgramBubbles = React.createFactory React.createClass
+		displayName: 'ProgramBubbles'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->

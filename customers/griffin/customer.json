@@ -1,9 +1,7 @@
 {
-	"productName": "KoNote",
 	"customerLogoLg": "gc-logo.svg",
 	"customerLogoSm": "gc-logo.svg",
 	"logoSubtitle": "DSSS",
-	"logoSubtitleColor": "hsl(205, 78%, 47%)",
 
 	"clientFileRecordId": {
 		"isEnabled": true,
@@ -11,31 +9,7 @@
 	},
 	
 	"terminology": {
-		"user": "user",
-		"account": "account",
-		"user account": "user account",
-
-		"client": "client",
-		"file": "file",
-		"client file": "client file",
-
-		"section": "section",
-		"plan": "plan",
-		"target": "goal",
-		"plan target": "plan goal",
-		"treatment plan": "treatment plan",
-
-		"progress note": "progress note",
-		"quick note": "quick note",
-
-		"metric": "indicator",
-		"event": "event",
-		"event type": "event type",
-		"event types": "event types",
-		"program": "program",
-
-		"analysis": "analysis",
-		"analyze": "analyze"
+		"metric": "indicator"
 	},
 	
 	"useTemplate": "clientLog",

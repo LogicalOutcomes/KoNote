@@ -36,6 +36,7 @@ load = (win, {clientFileId}) ->
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
 	NewProgNotePage = React.createFactory React.createClass
+		displayName: 'NewProgNotePage'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -834,6 +835,7 @@ load = (win, {clientFileId}) ->
 
 
 	BackdateWidget = React.createFactory React.createClass
+		displayName: 'BackdateWidget'
 		mixins: [React.addons.PureRenderMixin]
 		componentDidMount: ->
 			$(@refs.backdate).datetimepicker({
