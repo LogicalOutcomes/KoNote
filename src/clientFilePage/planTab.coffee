@@ -19,6 +19,7 @@ load = (win) ->
 	R = React.DOM
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	WithTooltip = require('../withTooltip').load(win)
 	MetricLookupField = require('../metricLookupField').load(win)
 	MetricWidget = require('../metricWidget').load(win)
 	PrintButton = require('../printButton').load(win)
@@ -631,6 +632,7 @@ load = (win) ->
 				].join ' '
 				onClick: @_onTargetClick
 			},
+				
 				R.div({className: 'nameContainer'},
 					R.input({
 						type: 'text'
@@ -646,29 +648,41 @@ load = (win) ->
 					})
 					# button to cancel the target
 					unless @props.currentRevision.get('status') is 'inactive'
-						R.button({
-							className: 'cancel btn btn-danger'
-							onClick: @_cancelPlanTarget
-							disabled: @props.isReadOnly or @props.hasTargetChanged
-						}, FaIcon('ban'))
+						WithTooltip({title: "Deactivate", placement: 'top'},
+							R.a({
+								className: 'cancel'
+								onClick: @_cancelPlanTarget
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+							},
+								FaIcon 'ban'
+							)
+						)
 						
 
 					# button to complete the target
 					unless @props.currentRevision.get('status') is 'complete' or 
 					@props.currentRevision.get('status') is 'inactive'
-						R.button({
-							className: 'cancel btn btn-success'
-							onClick: @_completePlanTarget
-							disabled: @props.isReadOnly or @props.hasTargetChanged
-						}, FaIcon('check'))
+						WithTooltip({title: "Complete", placement: 'top'},
+							R.a({
+								className: 'complete'
+								onClick: @_completePlanTarget
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+							},
+								FaIcon 'check'
+							)
+						)
 
-					# button to complete the target
+					# button to activate the target
 					unless @props.currentRevision.get('status') is 'active'
-						R.button({
-							className: 'cancel btn btn-primary'
-							onClick: @_activatePlanTarget
-							disabled: @props.isReadOnly or @props.hasTargetChanged
-						}, FaIcon('circle'))
+						WithTooltip({title: "Activate", placement: 'top'},
+							R.a({
+								className: 'activate'
+								onClick: @_activatePlanTarget
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+							},
+								FaIcon 'play-circle'
+							)
+						)
 				)
 				# temporarily showing status during development of this feature
 				R.div({},
@@ -709,7 +723,6 @@ load = (win) ->
 			Bootbox.prompt({ 
 				title: "Please indicate a reason for cancelling this #{Term 'Target'}"
 				size: 'medium'
-			
 				callback: (statusReason) =>
 					if statusReason
 						newTargetRevision = @props.currentRevision.set 'status', 'inactive'
@@ -719,7 +732,6 @@ load = (win) ->
 								console.log err
 								return
 							console.log "updated target", updatedTarget.toJS()
-
 							@props.onTargetUpdate newTargetRevision
 						console.log 'Status reason: ', statusReason
 			})
@@ -728,7 +740,6 @@ load = (win) ->
 			Bootbox.prompt({ 
 				title: "Please indicate a reason for completing this #{Term 'Target'}"
 				size: 'medium'
-				
 				callback: (statusReason) => 
 					if statusReason
 						newTargetRevision = @props.currentRevision.set 'status', 'complete'
@@ -738,17 +749,14 @@ load = (win) ->
 								console.log err
 								return
 							console.log "updated target", updatedTarget.toJS()
-
 							@props.onTargetUpdate newTargetRevision
 						console.log 'Status reason: ', statusReason
 			})
-
 
 		_activatePlanTarget: ->
 			Bootbox.prompt({ 
 				title: "Please indicate a reason for activating this #{Term 'Target'}"
 				size: 'medium'
-				
 				callback: (statusReason) => 
 					if statusReason
 						newTargetRevision = @props.currentRevision.set 'status', 'active'
@@ -758,7 +766,6 @@ load = (win) ->
 								console.log err
 								return
 							console.log "updated target", updatedTarget.toJS()
-
 							@props.onTargetUpdate newTargetRevision
 						console.log 'Status reason: ', statusReason
 			})
