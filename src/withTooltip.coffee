@@ -11,6 +11,7 @@ load = (win) ->
 	{showWhen} = require('./utils').load(win)
 
 	WithTooltip = React.createFactory React.createClass
+		displayName: 'WithTooltip'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->

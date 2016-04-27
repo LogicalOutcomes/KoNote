@@ -20,6 +20,7 @@ load = (win) ->
 	Spinner = require('../spinner').load(win)
 
 	CancelProgNoteDialog = React.createFactory React.createClass
+		displayName: 'CancelProgNoteDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->

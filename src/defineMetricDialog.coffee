@@ -23,6 +23,7 @@ load = (win) ->
 	{FaIcon, showWhen} = require('./utils').load(win)
 
 	DefineMetricDialog = React.createFactory React.createClass
+		displayName: 'DefineMetricDialog'
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {

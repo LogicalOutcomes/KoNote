@@ -25,6 +25,7 @@ load = (win) ->
 	{TimestampFormat} = require('./persist/utils')
 
 	ExportManagerTab = React.createFactory React.createClass
+		displayName: 'ExportManagerTab'
 		mixins: [React.addons.PureRenderMixin]
 		
 		getInitialState: ->

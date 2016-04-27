@@ -6,6 +6,7 @@ load = (win) ->
 	R = React.DOM
 
 	Slider = React.createFactory React.createClass
+		displayName: 'Slider'
 		mixins: [React.addons.PureRenderMixin]
 
 		getDefaultProps: ->

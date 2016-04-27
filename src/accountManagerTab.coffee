@@ -23,6 +23,7 @@ load = (win) ->
 	{FaIcon, showWhen} = require('./utils').load(win)
 
 	AccountManagerTab = React.createFactory React.createClass
+		displayName: 'AccountManagerTab'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->

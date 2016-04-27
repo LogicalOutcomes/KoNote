@@ -16,7 +16,8 @@ load = (win) ->
 	
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('./utils').load(win)	
 	
-	progEventsWidget = React.createFactory React.createClass
+	ProgEventsWidget = React.createFactory React.createClass
+		displayName: 'ProgEventsWidget'
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
@@ -103,6 +104,6 @@ load = (win) ->
 				eventDate = [startDate, ' - ', endDate]
 			eventDate
 	
-	return progEventsWidget
+	return ProgEventsWidget
 
 module.exports = {load}

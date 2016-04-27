@@ -11,6 +11,7 @@ load = (win) ->
 	R = React.DOM
 
 	ExpandingTextArea = React.createFactory React.createClass
+		displayName: 'ExpandingTextArea'
 		mixins: [React.addons.PureRenderMixin]
 		componentDidMount: ->
 			@_resize()

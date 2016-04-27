@@ -27,6 +27,7 @@ load = (win) ->
 
 
 	NewInstallationPage = React.createFactory React.createClass
+		displayName: 'NewInstallationPage'
 		mixins: [React.addons.PureRenderMixin]
 
 		init: ->			
@@ -105,6 +106,7 @@ load = (win) ->
 
 
 	NewInstallationPageUi = React.createFactory React.createClass
+		displayName: 'NewInstallationPageUi'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
