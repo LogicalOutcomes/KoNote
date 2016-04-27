@@ -645,19 +645,29 @@ load = (win) ->
 
 					})
 					# button to cancel the target
-					R.button({
-						className: 'cancel btn btn-danger'
-						onClick: @_cancelPlanTarget
-						disabled: @props.isReadOnly or @props.hasTargetChanged
-					}, FaIcon('ban'))
-					
+					unless @props.currentRevision.get('status') is 'inactive'
+						R.button({
+							className: 'cancel btn btn-danger'
+							onClick: @_cancelPlanTarget
+							disabled: @props.isReadOnly or @props.hasTargetChanged
+						}, FaIcon('ban'))
+						
 
 					# button to complete the target
-					R.button({
-						className: 'cancel btn btn-success'
-						onClick: @_completePlanTarget
-						disabled: @props.isReadOnly
-					}, FaIcon('check'))
+					unless @props.currentRevision.get('status') is 'complete'
+						R.button({
+							className: 'cancel btn btn-success'
+							onClick: @_completePlanTarget
+							disabled: @props.isReadOnly or @props.hasTargetChanged
+						}, FaIcon('check'))
+
+					# button to complete the target
+					unless @props.currentRevision.get('status') is 'active'
+						R.button({
+							className: 'cancel btn btn-primary'
+							onClick: @_activatePlanTarget
+							disabled: @props.isReadOnly or @props.hasTargetChanged
+						}, FaIcon('circle'))
 				)
 				# temporarily showing status during development of this feature
 				R.div({},
@@ -698,35 +708,58 @@ load = (win) ->
 			Bootbox.prompt({ 
 				title: "Please indicate a reason for cancelling this #{Term 'Target'}"
 				size: 'medium'
-				message: "Your message here…"
+			
 				callback: (statusReason) =>
-					# id = @props.key
-					newTargetRevision = @props.currentRevision.set 'status', 'inactive'
-					ActiveSession.persist.planTargets.createRevision newTargetRevision, (err, updatedTarget) ->
-						if err
-							cb err
-							return
-						console.log "updated target", updatedTarget.toJS()
+					if statusReason
+						newTargetRevision = @props.currentRevision.set 'status', 'inactive'
+						newTargetRevision = newTargetRevision.set 'statusReason', statusReason
+						ActiveSession.persist.planTargets.createRevision newTargetRevision, (err, updatedTarget) =>
+							if err
+								console.log err
+								return
+							console.log "updated target", updatedTarget.toJS()
 
-					@props.onTargetUpdate newTargetRevision
-					console.log 'Status reason: ', statusReason
+							@props.onTargetUpdate newTargetRevision
+						console.log 'Status reason: ', statusReason
 			})
 
 		_completePlanTarget: ->
 			Bootbox.prompt({ 
 				title: "Please indicate a reason for completing this #{Term 'Target'}"
 				size: 'medium'
-				message: "Your message here…"
+				
 				callback: (statusReason) => 
-					newTargetRevision = @props.currentRevision.set 'status', 'complete'
-					ActiveSession.persist.planTargets.createRevision newTargetRevision, (err, updatedTarget) ->
-						if err
-							cb err
-							return
-						console.log "updated target", updatedTarget.toJS()
+					if statusReason
+						newTargetRevision = @props.currentRevision.set 'status', 'complete'
+						newTargetRevision = newTargetRevision.set 'statusReason', statusReason
+						ActiveSession.persist.planTargets.createRevision newTargetRevision, (err, updatedTarget) =>
+							if err
+								console.log err
+								return
+							console.log "updated target", updatedTarget.toJS()
 
-					@props.onTargetUpdate newTargetRevision
-					console.log 'Status reason: ', statusReason
+							@props.onTargetUpdate newTargetRevision
+						console.log 'Status reason: ', statusReason
+			})
+
+
+		_activatePlanTarget: ->
+			Bootbox.prompt({ 
+				title: "Please indicate a reason for activating this #{Term 'Target'}"
+				size: 'medium'
+				
+				callback: (statusReason) => 
+					if statusReason
+						newTargetRevision = @props.currentRevision.set 'status', 'active'
+						newTargetRevision = newTargetRevision.set 'statusReason', statusReason
+						ActiveSession.persist.planTargets.createRevision newTargetRevision, (err, updatedTarget) =>
+							if err
+								console.log err
+								return
+							console.log "updated target", updatedTarget.toJS()
+
+							@props.onTargetUpdate newTargetRevision
+						console.log 'Status reason: ', statusReason
 			})
 
 		_onTargetClick: (event) ->
