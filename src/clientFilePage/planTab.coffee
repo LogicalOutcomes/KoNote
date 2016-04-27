@@ -17,11 +17,14 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+
+	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 	MetricLookupField = require('../metricLookupField').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	OpenDialogLink = require('../openDialogLink').load(win)
 	PrintButton = require('../printButton').load(win)
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
 
@@ -649,47 +652,57 @@ load = (win) ->
 					# button to cancel the target
 					unless @props.currentRevision.get('status') is 'inactive'
 						WithTooltip({title: "Deactivate", placement: 'top'},
-							R.a({
-								className: 'cancel'
-								onClick: @_cancelPlanTarget
+							OpenDialogLink({
+								dialog: ModifyTargetStatusDialog
+								target: @props.currentRevision
+								newStatus: 'inactive'
 								disabled: @props.isReadOnly or @props.hasTargetChanged
+								# onTargetUpdate: @props.updateTarget.bind null, targetId
 							},
-								FaIcon 'ban'
+								R.a({className: 'cancel'},
+									FaIcon 'ban'
+								)
 							)
 						)
-						
 
 					# button to complete the target
 					unless @props.currentRevision.get('status') is 'complete' or 
 					@props.currentRevision.get('status') is 'inactive'
 						WithTooltip({title: "Complete", placement: 'top'},
-							R.a({
-								className: 'complete'
-								onClick: @_completePlanTarget
+							OpenDialogLink({
+								dialog: ModifyTargetStatusDialog
+								target: @props.currentRevision
+								newStatus: 'complete'
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 							},
-								FaIcon 'check'
+								R.a({className: 'complete'},
+									FaIcon 'check'
+								)
 							)
 						)
 
 					# button to activate the target
 					unless @props.currentRevision.get('status') is 'active'
-						WithTooltip({title: "Activate", placement: 'top'},
-							R.a({
-								className: 'activate'
-								onClick: @_activatePlanTarget
+						WithTooltip({title: "Reactive", placement: 'top'},
+							OpenDialogLink({
+								dialog: ModifyTargetStatusDialog
+								target: @props.currentRevision
+								newStatus: 'active'
 								disabled: @props.isReadOnly or @props.hasTargetChanged
+
 							},
-								FaIcon 'play-circle'
+								R.a({className: 'cancel'},
+									FaIcon 'play-circle'
+								)
 							)
-						)
+						)			
 				)
 
-				# # temporarily showing status during development of this feature
-				# R.div({},
-				# 	"status: " 
-				# 	@props.currentRevision.get 'status'
-				# )
+				# temporarily showing status during development of this feature
+				R.div({},
+					"status: " 
+					@props.currentRevision.get 'status'
+				)
 
 				R.div({className: 'notesContainer'},
 					ExpandingTextArea({
@@ -720,57 +733,7 @@ load = (win) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
 
-		_cancelPlanTarget: ->
-			Bootbox.prompt({ 
-				title: "Please indicate a reason for cancelling this #{Term 'Target'}"
-				size: 'medium'
-				callback: (statusReason) =>
-					if statusReason
-						newTargetRevision = @props.currentRevision.set 'status', 'inactive'
-						newTargetRevision = newTargetRevision.set 'statusReason', statusReason
-						ActiveSession.persist.planTargets.createRevision newTargetRevision, (err, updatedTarget) =>
-							if err
-								console.log err
-								return
-							console.log "updated target", updatedTarget.toJS()
-							@props.onTargetUpdate newTargetRevision
-						console.log 'Status reason: ', statusReason
-			})
-
-		_completePlanTarget: ->
-			Bootbox.prompt({ 
-				title: "Please indicate a reason for completing this #{Term 'Target'}"
-				size: 'medium'
-				callback: (statusReason) => 
-					if statusReason
-						newTargetRevision = @props.currentRevision.set 'status', 'complete'
-						newTargetRevision = newTargetRevision.set 'statusReason', statusReason
-						ActiveSession.persist.planTargets.createRevision newTargetRevision, (err, updatedTarget) =>
-							if err
-								console.log err
-								return
-							console.log "updated target", updatedTarget.toJS()
-							@props.onTargetUpdate newTargetRevision
-						console.log 'Status reason: ', statusReason
-			})
-
-		_activatePlanTarget: ->
-			Bootbox.prompt({ 
-				title: "Please indicate a reason for activating this #{Term 'Target'}"
-				size: 'medium'
-				callback: (statusReason) => 
-					if statusReason
-						newTargetRevision = @props.currentRevision.set 'status', 'active'
-						newTargetRevision = newTargetRevision.set 'statusReason', statusReason
-						ActiveSession.persist.planTargets.createRevision newTargetRevision, (err, updatedTarget) =>
-							if err
-								console.log err
-								return
-							console.log "updated target", updatedTarget.toJS()
-							@props.onTargetUpdate newTargetRevision
-						console.log 'Status reason: ', statusReason
-			})
-
+		
 		_onTargetClick: (event) ->
 			unless event.target.classList.contains 'field'
 				@refs.nameField.focus() unless @props.isReadOnly
