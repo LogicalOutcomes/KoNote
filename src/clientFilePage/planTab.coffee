@@ -654,7 +654,8 @@ load = (win) ->
 						
 
 					# button to complete the target
-					unless @props.currentRevision.get('status') is 'complete'
+					unless @props.currentRevision.get('status') is 'complete' or 
+					@props.currentRevision.get('status') is 'inactive'
 						R.button({
 							className: 'cancel btn btn-success'
 							onClick: @_completePlanTarget
