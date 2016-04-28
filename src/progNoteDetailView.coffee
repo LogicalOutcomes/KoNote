@@ -17,6 +17,7 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
 	ProgNoteDetailView = React.createFactory React.createClass
+		displayName: 'ProgNoteDetailView'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->

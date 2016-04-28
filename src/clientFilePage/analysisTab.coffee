@@ -29,6 +29,7 @@ load = (win) ->
 	TimeGranularities = ['Day', 'Week', 'Month', 'Year']
 
 	AnalysisView = React.createFactory React.createClass
+		displayName: 'AnalysisView'
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {

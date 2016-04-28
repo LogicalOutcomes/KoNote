@@ -19,6 +19,7 @@ load = (win) ->
 	MetricDefinitionManagerTab = require('./metricDefinitionManagerTab').load(win)
 
 	ManagerLayer = React.createFactory React.createClass
+		displayName: 'ManagerLayer'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->

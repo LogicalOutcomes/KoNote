@@ -20,6 +20,7 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 
 	RenameClientFileDialog = React.createFactory React.createClass
+		displayName: 'RenameClientFileDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->

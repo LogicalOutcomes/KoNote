@@ -29,6 +29,7 @@ load = (win) ->
 	} = require('./utils').load(win)
 
 	MetricLookupField = React.createFactory React.createClass
+		displayName: 'MetricLookupField'
 		mixins: [LayeredComponentMixin]
 		getInitialState: ->
 			return {
@@ -142,6 +143,7 @@ load = (win) ->
 			)
 
 	Suggestion = React.createFactory React.createClass
+		displayName: 'Suggestion'
 		render: ->
 			return R.div({},
 				R.span({className: 'name'},

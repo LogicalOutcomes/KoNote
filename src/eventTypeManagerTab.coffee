@@ -27,6 +27,7 @@ load = (win) ->
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
 	EventTypeManagerTab = React.createFactory React.createClass
+		displayName: 'EventTypeManagerTab'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -155,6 +156,7 @@ load = (win) ->
 			@setState {eventTypes: @state.eventTypes.set(eventTypeIndex, modifiedEventType)}
 
 	CreateEventTypeDialog = React.createFactory React.createClass
+		displayName: 'CreateEventTypeDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -285,6 +287,7 @@ load = (win) ->
 
 
 	ModifyEventTypeDialog = React.createFactory React.createClass
+		displayName: 'ModifyEventTypeDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->

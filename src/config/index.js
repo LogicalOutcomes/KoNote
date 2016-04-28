@@ -1,44 +1,25 @@
-var configCustomer, configDev, err;
-var _ = require('underscore');
+var $ = require('jquery');
+var Fs = require('fs')
 
-module.exports = {};
+var Config = {};
 
-try {
-	configDefault = require('./default.json');
-	_.extend(module.exports, configDefault);
-} catch (_error) {
-	err = _error;
-	if (err.code !== 'MODULE_NOT_FOUND') {
-		throw err;
+// Ordered sequence of configuration overrides
+var configFileNames = ['default', 'customer', 'production', 'develop']
+
+// Loop over config files to build master config exports
+$.each(configFileNames, function (index, fileName) {
+	try {
+		var configType = require('./'+fileName+'.json');
+		$.extend(true, Config, configType);
 	}
-}
-
-try {
-	configCustomer = require('./customer.json');
-	_.extend(module.exports, configCustomer);
-} catch (_error) {
-	err = _error;
-	if (err.code !== 'MODULE_NOT_FOUND') {
-		throw err;
+	catch (err) {
+		if (err.code !== 'MODULE_NOT_FOUND') {
+			throw new Error(err);
+		}
 	}
-}
+});
 
-try {
-	configProduction = require('./production.json');
-	_.extend(module.exports, configProduction);
-} catch (_error) {
-	err = _error;
-	if (err.code !== 'MODULE_NOT_FOUND') {
-		throw err;
-	}
-}
+// Read src version from package.json
+Config.version = JSON.parse(Fs.readFileSync('./package.json')).version;
 
-try {
-	configDev = require('./develop.json');
-	_.extend(module.exports, configDev);
-} catch (_error) {
-	err = _error;
-	if (err.code !== 'MODULE_NOT_FOUND') {
-		throw err;
-	}
-}
+module.exports = Config;

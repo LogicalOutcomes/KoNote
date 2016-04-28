@@ -23,6 +23,7 @@ load = (win) ->
 	Moment = require('moment')
 
 	TimeoutWarning = React.createFactory React.createClass
+		displayName: 'TimeoutWarning'
 		getInitialState: ->
 			return {
 				countSeconds: null
