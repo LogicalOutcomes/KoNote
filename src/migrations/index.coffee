@@ -31,12 +31,77 @@ Imm = require 'immutable'
 Path = require 'path'
 Ncp = require 'ncp'
 
+Config = require './config'
+
 # Use this at the command line
 runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 	stagedDataDir = "./data_migration_#{fromVersion}-#{toVersion}"
 	backupDataDir = "./data_migration_#{fromVersion}--backup"
 
+	lastMigrationStep = null
+
 	Async.series [
+		(cb) -> # Verify that all versions are valid
+			dataDirMetadataPath = Path.join dataDir, 'version.json'
+
+			Fs.readFile dataDirMetadataPath, (err, result) ->
+				if err
+					if err.code is 'ENOENT' and toVersion is '1.6.0'
+						console.warn "No version metadata exists yet, it will soon. Skipping tests!"
+						cb()
+						return
+
+					console.error "Unable to read version metadata!"
+					cb err
+					return
+
+				dataDirMetadata = JSON.parse result
+
+				numerical = (v) -> Number v.split('.').join('')
+
+				# Ensure fromVersions match
+				if dataDirMetadata.version isnt fromVersion
+					console.error """
+						Version Mismatch! Data directory is currently 
+						v#{dataDirMetadata.version}, but trying to install from #{fromVersion}."
+					"""
+					cb err
+					return				
+
+				# Ensure srcVersion (package.json) matches toVersion
+				# In other words, the files are ready for the new DB version
+				# This is OK in 'development' mode, for interim partial migrations
+				if Config.version isnt toVersion
+					if process.env.NODE_ENV is 'development'
+						console.error """
+							Your current src/package files are v#{Config.version},
+							which doesn't match the destination data version v#{toVersion}.
+						"""
+						cb err
+						return
+					else
+						console.warn """
+							Developer Mode! The last migration step run was 
+							Step ##{dataDirMetadata.lastMigrationStep}, so we'll
+							start from Step ##{dataDirMetadata.lastMigrationStep + 1}
+							if exists.
+						"""
+						lastMigrationStep = dataDirMetadata.lastMigrationStep
+
+				# Ensure fromVersion is numerically earlier than toVersion
+				unless numerical(fromVersion) < numerical(toVersion)
+					console.error """
+						Oops! Looks like you're trying to migrate backwards, 
+						from v#{fromVersion} to v#{toVersion}
+					"""
+					cb err
+					return
+
+				# All tests passed, continue with data migration
+				console.info "1. Version validity check successful."
+				cb()
+
+
 		(cb) -> # Copy the dataDir to a staging dir
 			Ncp dataDir, stagedDataDir, (err) ->
 				if err
@@ -44,17 +109,17 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 					cb err
 					return
 
-				console.info "1. Database staging successful."
+				console.info "2. Database staging successful."
 				cb()
 
 		(cb) -> # Run migration on staged database dir
-			migrate stagedDataDir, fromVersion, toVersion, userName, password, (err) ->
+			migrate stagedDataDir, fromVersion, toVersion, userName, password, lastMigrationStep, (err) ->
 				if err
 					console.error "Database migration error!"
 					cb err
 					return
 
-				console.info "2. Data migration successful."
+				console.info "3. Data migration successful."
 				cb()
 
 		(cb) -> # Move (rename) live database to app directory			
@@ -64,8 +129,8 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 					cb err
 					return
 
-				console.info "3. Database backup successful."
-				setTimeout(cb, 5000)
+				console.info "4. Database backup successful."
+				cb()
 
 		(cb) -> # Move staged (migrated) database to destination
 			Fs.rename stagedDataDir, dataDir, (err) ->
@@ -84,7 +149,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 					cb err
 					return
 
-				console.info "4. Database commit to destination successful."
+				console.info "5. Database commit to destination successful."
 				cb()
 
 	], (err) ->
@@ -103,7 +168,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 
 
 
-migrate = (dataDir, fromVersion, toVersion, userName, password, cb) ->
+migrate = (dataDir, fromVersion, toVersion, userName, password, lastMigrationStep, cb) ->
 	# Eventually, this could be expanded to support migrating across many
 	# versions (e.g. v1 -> v5).
 
@@ -117,7 +182,7 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, cb) ->
 		cb err
 		return
 
-	migrationStep.run dataDir, userName, password, (err) ->
+	migrationStep.run dataDir, userName, password, lastMigrationStep, (err) ->
 		if err
 			cb new Error "Could not run migration #{fromVersion}-#{toVersion}"
 			return
