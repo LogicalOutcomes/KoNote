@@ -235,8 +235,8 @@ load = (win) ->
 													rev.get('author')
 												)
 											)
-											R.div({className: 'description'},
-												renderLineBreaks rev.get('description')
+											R.div({className: 'notes'},
+												renderLineBreaks rev.get('notes')
 											)
 										)
 									).toJS()...
@@ -276,8 +276,8 @@ load = (win) ->
 			unless target
 				# If target is empty
 				emptyName = currentRev.get('name') is ''
-				emptyDescription = currentRev.get('description') is ''
-				if emptyName and emptyDescription
+				emptyNotes = currentRev.get('notes') is ''
+				if emptyName and emptyNotes
 					return false
 
 				return true
@@ -335,7 +335,7 @@ load = (win) ->
 			# Trim whitespace from fields
 			return targetRev
 			.update('name', trim)
-			.update('description', trim)
+			.update('notes', trim)
 
 		_removeUnusedTargets: ->
 			@setState (state) =>
@@ -344,11 +344,11 @@ load = (win) ->
 						currentRev = state.currentTargetRevisionsById.get(targetId)
 
 						emptyName = currentRev.get('name') is ''
-						emptyDescription = currentRev.get('description') is ''
+						emptyNotes = currentRev.get('notes') is ''
 						noMetrics = currentRev.get('metricIds').size is 0
 						noHistory = @props.planTargetsById.get(targetId, null) is null
 
-						return emptyName and emptyDescription and noMetrics and noHistory
+						return emptyName and emptyNotes and noMetrics and noHistory
 
 				return {
 					plan: state.plan.update 'sections', (sections) =>
@@ -368,9 +368,9 @@ load = (win) ->
 					currentRev = @state.currentTargetRevisionsById.get(targetId)
 
 					emptyName = currentRev.get('name') is ''
-					emptyDescription = currentRev.get('description') is ''
+					emptyNotes = currentRev.get('notes') is ''
 
-					return not emptyName and not emptyDescription
+					return not emptyName and not emptyNotes
 
 		_addSection: ->
 			sectionId = Persist.generateId()
@@ -415,7 +415,7 @@ load = (win) ->
 				id: targetId
 				clientFileId: @props.clientFileId
 				name: ''
-				description: ''
+				notes: ''
 				status: 'default'
 				metricIds: []
 			}
@@ -707,14 +707,14 @@ load = (win) ->
 					@props.currentRevision.get 'status'
 				)
 
-				R.div({className: 'descriptionContainer'},
+				R.div({className: 'notesContainer'},
 					ExpandingTextArea({
-						className: 'description field'
-						ref: 'descriptionField'
+						className: 'notes field'
+						ref: 'notesField'
 						placeholder: "Describe the current #{Term 'treatment plan'} . . ."
-						value: currentRevision.get('description')
+						value: currentRevision.get('notes')
 						disabled: @props.isReadOnly
-						onChange: @_updateField.bind null, 'description'
+						onChange: @_updateField.bind null, 'notes'
 						onFocus: @props.onTargetSelection unless @props.isReadOnly
 						onClick: @props.onTargetSelection if @props.isReadOnly
 					})
