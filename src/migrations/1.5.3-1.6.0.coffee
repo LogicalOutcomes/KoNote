@@ -414,7 +414,7 @@ addPlanTargetStatusField = (dataDir, globalEncryptionKey, cb) ->
 					planTargetObject.status = 'default'
 					encryptedObj = globalEncryptionKey.encrypt JSON.stringify planTargetObject
 
-					Fs.writeFile planTargetObjectFilePath, encryptedObj, cb				
+					Fs.writeFile planTargetObjectFilePath, encryptedObj, cb
 			], cb
 
 		, cb
@@ -444,7 +444,7 @@ module.exports = {
 			# Add status field to planTargets
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "3. Add 'status': 'default' field to plan targets"
+				console.groupCollapsed "2. Add 'status': 'default' field to plan targets"
 				addPlanTargetStatusField dataDir, globalEncryptionKey, cb	
 
 			# TODO: Add status field to planTarget indexes
