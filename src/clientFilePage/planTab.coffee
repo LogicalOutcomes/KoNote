@@ -410,7 +410,7 @@ load = (win) ->
 				clientFileId: @props.clientFileId
 				name: ''
 				notes: ''
-				status: 'active'
+				status: 'default'
 				metricIds: []
 			}
 			newCurrentRevs = @state.currentTargetRevisionsById.set targetId, newTarget
@@ -686,12 +686,12 @@ load = (win) ->
 						)
 
 					# button to activate the target
-					unless @props.currentRevision.get('status') is 'active'
+					unless @props.currentRevision.get('status') is 'default'
 						WithTooltip({title: "Reactive", placement: 'top'},
 							OpenDialogLink({
 								dialog: ModifyTargetStatusDialog
 								target: @props.currentRevision
-								newStatus: 'active'
+								newStatus: 'default'
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 
 							},
