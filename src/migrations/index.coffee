@@ -31,7 +31,7 @@ Imm = require 'immutable'
 Path = require 'path'
 Ncp = require 'ncp'
 
-Config = require './config'
+Config = require '../config'
 
 # Use this at the command line
 runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
