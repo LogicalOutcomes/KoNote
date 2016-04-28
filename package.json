@@ -21,7 +21,6 @@
     "binary-search": "^1.2.0",
     "chai": "^2.3.0",
     "chokidar": "^1.4.0",
-    "clone": "^1.0.2",
     "coffee-script": "^1.9.3",
     "faker": "^3.1.0",
     "grunt": "^0.4.5",

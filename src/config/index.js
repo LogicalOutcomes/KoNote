@@ -1,6 +1,7 @@
 var $ = require('jquery');
+var Fs = require('fs')
 
-module.exports = {};
+var Config = {};
 
 // Ordered sequence of configuration overrides
 var configFileNames = ['default', 'customer', 'production', 'develop']
@@ -8,8 +9,8 @@ var configFileNames = ['default', 'customer', 'production', 'develop']
 // Loop over config files to build master config exports
 $.each(configFileNames, function (index, fileName) {
 	try {
-		var config = require('./'+fileName+'.json');
-		$.extend(true, module.exports, config);
+		var configType = require('./'+fileName+'.json');
+		$.extend(true, Config, configType);
 	}
 	catch (err) {
 		if (err.code !== 'MODULE_NOT_FOUND') {
@@ -17,3 +18,8 @@ $.each(configFileNames, function (index, fileName) {
 		}
 	}
 });
+
+// Read src version from package.json
+Config.version = JSON.parse(Fs.readFileSync('./package.json')).version;
+
+module.exports = Config;
