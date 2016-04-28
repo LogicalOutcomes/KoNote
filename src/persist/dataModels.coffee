@@ -64,7 +64,7 @@ dataModelDefinitions = [
 				isMutable: true
 				schema: Joi.object().keys({
 					name: Joi.string()
-					notes: Joi.string()
+					description: Joi.string()
 					metricIds: Joi.array().items(
 						IdSchema
 					)

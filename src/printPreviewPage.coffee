@@ -223,11 +223,11 @@ load = (win, {dataSet}) ->
 													key: target.get('id')
 												},
 													R.h3({}, target.get('name'))
-													R.div({className: "empty #{showWhen not target.get('notes')}"},
+													R.div({className: "empty #{showWhen not target.get('description')}"},
 														'(blank)'
 													)
-													R.div({className: 'notes'},
-														renderLineBreaks target.get('notes')
+													R.div({className: 'description'},
+														renderLineBreaks target.get('description')
 													)
 													R.div({className: 'metrics'},
 														(target.get('metrics').map (metric) =>
@@ -283,7 +283,7 @@ load = (win, {dataSet}) ->
 
 									R.div({className: 'target'},
 										R.h3({className: 'name'}, thisTarget.get('name'))
-										R.div({className: 'notes'}, thisTarget.get('notes'))
+										R.div({className: 'description'}, thisTarget.get('description'))
 										R.div({className: 'metrics'},
 											(thisTarget.get('metricIds').map (metricId) =>
 												metric = @props.data.get('metrics').get(metricId)
