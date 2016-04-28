@@ -381,42 +381,32 @@ addPlanTargetStatusField = (dataDir, globalEncryptionKey, cb) ->
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
 		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
 
-		forEachFileIn Path.join(clientFilePath, 'planTargets'), (planTarget, cb) ->
-			planTargetPath = Path.join(clientFilePath, 'planTargets', planTarget)
+		forEachFileIn Path.join(clientFilePath, 'planTargets'), (planTargetDir, cb) ->
+			planTargetDirPath = Path.join(clientFilePath, 'planTargets', planTargetDir)
 
-			planTargetObjectFilePath = null
-			planTargetObject = null
+			forEachFileIn planTargetDirPath, (planTarget, cb) ->
+				planTargetObjectFilePath = Path.join(planTargetDirPath, planTarget)
+				planTargetObject = null
 
-			Async.series [
-				(cb) =>
-					# Fetch single revision (was immutable)
-					Fs.readdir planTargetPath, (err, revisions) ->
-						if err
-							cb err
-							return
+				Async.series [
+					(cb) =>
+						# Read and decrypt Plan Target object
+						Fs.readFile planTargetObjectFilePath, (err, result) ->
+							if err
+								cb err
+								return
 
-						Assert.equal revisions.length, 1, 'should always be exactly one planTarget revision'
-						planTargetObjectFilePath = Path.join(planTargetPath, revisions[0])
+							planTargetObject = JSON.parse globalEncryptionKey.decrypt result
 
-						cb()
-				(cb) =>
-					# Read and decrypt Plan Target object
-					Fs.readFile planTargetObjectFilePath, (err, result) ->
-						if err
-							cb err
-							return
+							cb()
+					(cb) =>
+						# Add 'status' property
+						planTargetObject.status = 'default'
+						encryptedObj = globalEncryptionKey.encrypt JSON.stringify planTargetObject
 
-						planTargetObject = JSON.parse globalEncryptionKey.decrypt result
-
-						cb()
-				(cb) =>
-					# Add 'status' property
-					planTargetObject.status = 'default'
-					encryptedObj = globalEncryptionKey.encrypt JSON.stringify planTargetObject
-
-					Fs.writeFile planTargetObjectFilePath, encryptedObj, cb
-			], cb
-
+						Fs.writeFile planTargetObjectFilePath, encryptedObj, cb
+				], cb
+			, cb
 		, cb
 	, (err) ->
 		if err
