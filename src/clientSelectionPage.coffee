@@ -140,6 +140,7 @@ load = (win) ->
 						clientFileProgramLinkHeaders = result
 						cb()
 				(cb) =>
+					# TODO: Lazy load this
 					Async.map clientFileProgramLinkHeaders.toArray(), (linkHeader, cb) =>
 						linkId = linkHeader.get('id')
 
@@ -152,6 +153,7 @@ load = (win) ->
 						clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
 						cb()
 				(cb) =>
+					# TODO: Lazy load this
 					ActiveSession.persist.metrics.list (err, result) =>
 						if err
 							cb err
@@ -160,6 +162,7 @@ load = (win) ->
 						metricDefinitionHeaders = result
 						cb()
 				(cb) =>
+					# TODO: Lazy load this
 					Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
 						metricDefinitionId = metricDefinitionHeader.get('id')
 						ActiveSession.persist.metrics.readLatestRevisions metricDefinitionId, 1, cb
