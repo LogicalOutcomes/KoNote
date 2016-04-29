@@ -34,6 +34,26 @@ Moment = require 'moment'
 
 Config = require '../config'
 
+# Utilities
+writeDataVersion = (dataDir, toVersion, cb) ->	
+	versionPath = Path.join dataDir, 'version.json'
+	metadata = null
+
+	Async.series [
+		(cb) ->
+			Fs.readFile versionPath, (err, result) ->
+				if err
+					cb err
+					return
+
+				metadata = result
+				metadata.dataVersion = toVersion
+				cb()
+		(cb) ->
+			Fs.writeFile versionPath, metadata, cb
+	], cb
+
+
 # Use this at the command line
 runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 	stagedDataDir = "./data_migration_#{fromVersion}-#{toVersion}"
@@ -188,7 +208,8 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, lastMigrationSte
 			cb new Error "Could not run migration #{fromVersion}-#{toVersion}"
 			return
 
-		console.log "Done migration step #{fromVersion} -> #{toVersion}."
-		cb()
+		writeDataVersion dataDir, fromVersion, ->
+			console.log "Done migration step #{fromVersion} -> #{toVersion}."
+			cb()
 
 module.exports = {runMigration, migrate}

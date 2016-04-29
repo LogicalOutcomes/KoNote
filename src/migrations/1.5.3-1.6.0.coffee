@@ -366,7 +366,7 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 createVersionMetadataFile = (dataDir, cb) ->
 	versionPath = Path.join(dataDir, 'version.json')
 	versionData = {
-		dataVersion: '1.6.0'
+		dataVersion: '1.5.3' # This stays as old version until migration is 100% done
 		lastMigrationStep: 0
 	}
 
