@@ -15,6 +15,8 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
+
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
@@ -32,6 +34,7 @@ load = (win) ->
 				middleName: ''
 				lastName: ''
 				recordId: ''
+				programIds: []
 			}
 
 		render: ->
@@ -69,6 +72,39 @@ load = (win) ->
 							onKeyDown: @_onEnterKeyDown
 						})
 					)
+					R.div({className: 'form-group eventTypeContainer'},
+							R.label({}, "Select #{Term 'Program'}")
+							
+							B.DropdownButton({
+								title: if selectedEventType? then selectedEventType.get('name') else "No Program"
+							},
+								if selectedEventType?
+									[
+										B.MenuItem({
+											onClick: @_updateTypeId.bind null, null
+										}, 
+											"None "
+											FaIcon('ban')
+										)
+										B.MenuItem({divider: true})
+									]
+
+								(@props.programs.map (program) =>
+									B.MenuItem({
+										key: program.get('id')
+										# onClick: @_updateTypeId.bind null, program.get('id')
+									}, 
+										R.div({
+											# onClick: @_updateTypeId.bind null, program.get('id')
+											style:
+												borderRight: "5px solid #{program.get('colorKeyHex')}"
+										},
+											program.get('name')
+										)
+									)
+								)
+							)
+						)
 					if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
 							R.label({}, Config.clientFileRecordId.label),
@@ -103,6 +139,8 @@ load = (win) ->
 			@setState {lastName: event.target.value}
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
+		_updatePrograms: (event) ->
+			@setState {programIds: event.target.value}
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()

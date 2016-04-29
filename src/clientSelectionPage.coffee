@@ -368,6 +368,7 @@ load = (win) ->
 										OpenDialogLink({
 											className: 'input-group-btn'
 											dialog: CreateClientFileDialog
+											programs: @props.programs
 										},
 											R.button({
 												className: 'btn btn-default'
