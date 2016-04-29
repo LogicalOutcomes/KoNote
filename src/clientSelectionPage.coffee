@@ -103,7 +103,7 @@ load = (win) ->
 			metricDefinitionHeaders = null
 			metricDefinitions = null
 
-			Async.series [
+			Async.parallel [
 				(cb) =>
 					ActiveSession.persist.clientFiles.list (err, result) =>
 						if err
@@ -113,68 +113,77 @@ load = (win) ->
 						clientFileHeaders = result
 						cb()
 				(cb) =>
-					ActiveSession.persist.programs.list (err, result) =>
-						if err
-							cb err
-							return
+					# TODO: Lazy load this
+					Async.series [
+						(cb) =>
+							ActiveSession.persist.programs.list (err, result) =>
+								if err
+									cb err
+									return
 
-						programHeaders = result
-						cb()
-				(cb) =>
-					Async.map programHeaders.toArray(), (programHeader, cb) =>
-						progId = programHeader.get('id')
+								programHeaders = result
+								cb()
+						(cb) =>
+							Async.map programHeaders.toArray(), (programHeader, cb) =>
+								progId = programHeader.get('id')
 
-						ActiveSession.persist.programs.readLatestRevisions progId, 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
+								ActiveSession.persist.programs.readLatestRevisions progId, 1, cb
+							, (err, results) =>
+								if err
+									cb err
+									return
 
-						programs = Imm.List(results).map (program) -> stripMetadata program.get(0)
-						cb()
-				(cb) =>
-					ActiveSession.persist.clientFileProgramLinks.list (err, result) =>
-						if err
-							cb err
-							return
-						clientFileProgramLinkHeaders = result
-						cb()
+								programs = Imm.List(results).map (program) -> stripMetadata program.get(0)
+								cb()
+					], cb
 				(cb) =>
 					# TODO: Lazy load this
-					Async.map clientFileProgramLinkHeaders.toArray(), (linkHeader, cb) =>
-						linkId = linkHeader.get('id')
+					Async.series [
+						(cb) =>
+							ActiveSession.persist.clientFileProgramLinks.list (err, result) =>
+								if err
+									cb err
+									return
+								clientFileProgramLinkHeaders = result
+								cb()
+						(cb) =>
+							Async.map clientFileProgramLinkHeaders.toArray(), (linkHeader, cb) =>
+								linkId = linkHeader.get('id')
 
-						ActiveSession.persist.clientFileProgramLinks.readLatestRevisions linkId, 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
+								ActiveSession.persist.clientFileProgramLinks.readLatestRevisions linkId, 1, cb
+							, (err, results) =>
+								if err
+									cb err
+									return
 
-						clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
-						cb()
+								clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
+								cb()
+					], cb
 				(cb) =>
 					# TODO: Lazy load this
-					ActiveSession.persist.metrics.list (err, result) =>
-						if err
-							cb err
-							return
+					Async.series [
+						(cb) =>							
+							ActiveSession.persist.metrics.list (err, result) =>
+								if err
+									cb err
+									return
 
-						metricDefinitionHeaders = result
-						cb()
-				(cb) =>
-					# TODO: Lazy load this
-					Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
-						metricDefinitionId = metricDefinitionHeader.get('id')
-						ActiveSession.persist.metrics.readLatestRevisions metricDefinitionId, 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
+								metricDefinitionHeaders = result
+								cb()
+						(cb) =>
+							Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
+								metricDefinitionId = metricDefinitionHeader.get('id')
+								ActiveSession.persist.metrics.readLatestRevisions metricDefinitionId, 1, cb
+							, (err, results) =>
+								if err
+									cb err
+									return
 
-						metricDefinitions = Imm.List(results)
-						.map (metricDefinition) -> stripMetadata metricDefinition.first()
+								metricDefinitions = Imm.List(results)
+								.map (metricDefinition) -> stripMetadata metricDefinition.first()
 
-						cb()
+								cb()
+					], cb
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
