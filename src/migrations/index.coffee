@@ -30,13 +30,14 @@ Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
 Ncp = require 'ncp'
+Moment = require 'moment'
 
 Config = require '../config'
 
 # Use this at the command line
 runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 	stagedDataDir = "./data_migration_#{fromVersion}-#{toVersion}"
-	backupDataDir = "./data_migration_#{fromVersion}--backup"
+	backupDataDir = "./data_migration_#{fromVersion}--backup-#{Moment().format('YYYY-MM-DD-(h:ssa)')}"
 
 	lastMigrationStep = null
 
