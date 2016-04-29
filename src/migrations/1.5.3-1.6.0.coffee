@@ -372,6 +372,7 @@ createVersionMetadataFile = (dataDir, cb) ->
 
 	Fs.writeFile versionPath, JSON.stringify(versionData), (err) ->
 		if err
+			console.info "Version File Error!"
 			cb err
 			return
 
@@ -465,6 +466,7 @@ module.exports = {
 				cb err
 				return
 
+			# End series log groups, write dataVersion before finishing
 			console.groupEnd()
 			cb()
 }
