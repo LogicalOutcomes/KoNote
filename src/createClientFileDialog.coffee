@@ -75,35 +75,18 @@ load = (win) ->
 					R.div({className: 'form-group eventTypeContainer'},
 							R.label({}, "Select #{Term 'Program'}")
 							
-							B.DropdownButton({
-								title: if selectedEventType? then selectedEventType.get('name') else "No Program"
-							},
-								if selectedEventType?
-									[
-										B.MenuItem({
-											onClick: @_updateTypeId.bind null, null
-										}, 
-											"None "
-											FaIcon('ban')
-										)
-										B.MenuItem({divider: true})
-									]
+							(@props.programs.map (program) =>
 
-								(@props.programs.map (program) =>
-									B.MenuItem({
-										key: program.get('id')
-										# onClick: @_updateTypeId.bind null, program.get('id')
-									}, 
-										R.div({
-											# onClick: @_updateTypeId.bind null, program.get('id')
-											style:
-												borderRight: "5px solid #{program.get('colorKeyHex')}"
-										},
-											program.get('name')
-										)
-									)
+								R.button({
+									className: 'btn btn-default'
+									onClick: @_cancel	
+									key: program.get('id')
+									# onClick: @_updateTypeId.bind null, program.get('id')
+									},
+									program.get('name')
 								)
 							)
+
 						)
 					if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
