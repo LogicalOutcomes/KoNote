@@ -343,7 +343,6 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 					return
 
 				versionData = JSON.parse result
-				console.log "PRE versionData", versionData
 				cb()
 		(cb) ->
 			# Increment lastMigrationStep, and save back to version.json
@@ -355,9 +354,8 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 					cb err
 					return
 
-				console.log "POST versionData", versionData
+				console.log "Updated version lastMigrationStep to #{lastMigrationStep}"
 				cb()
-
 	], cb
 
 

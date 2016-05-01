@@ -50,7 +50,13 @@ writeDataVersion = (dataDir, toVersion, cb) ->
 				metadata.dataVersion = toVersion
 				cb()
 		(cb) ->
-			Fs.writeFile versionPath, metadata, cb
+			Fs.writeFile versionPath, metadata, ->
+				if err
+					cb err
+					return
+
+				console.log "Updated dataVersion to v#{toVersion}"
+				cb()
 	], cb
 
 
@@ -208,8 +214,8 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, lastMigrationSte
 			cb new Error "Could not run migration #{fromVersion}-#{toVersion}"
 			return
 
-		writeDataVersion dataDir, fromVersion, ->
-			console.log "Done migration step #{fromVersion} -> #{toVersion}."
+		writeDataVersion dataDir, fromVersion, ->			
+			console.log "Done migrating v#{fromVersion} -> v#{toVersion}."
 			cb()
 
 module.exports = {runMigration, migrate}
