@@ -186,6 +186,8 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			cb new Error "wrong number of arguments"
 			return
 
+		fileNameEncryptionKey = getFileNameEncryptionKey()
+
 		collectionDir = null
 		fileNames = null
 
@@ -221,7 +223,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				.filter isValidFileName
 				.map (fileName) ->
 					# Decrypt file name
-					decryptedFileName = getFileNameEncryptionKey().decrypt(
+					decryptedFileName = fileNameEncryptionKey.decrypt(
 						Base64url.toBuffer fileName
 					)
 
