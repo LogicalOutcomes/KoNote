@@ -44,7 +44,14 @@ load = (win) ->
 			unless Imm.is(newProps.plan, @props.plan)
 				@setState {
 					plan: newProps.plan
-					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById newProps.planTargetsById
+				}
+
+			# Regenerate targetRevisions when target changed
+			unless Imm.is(newProps.planTargetsById, @props.planTargetsById)
+				console.log "planTargetsById updated!"
+				@setState {
+					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById newProps.planTargetsById
 				}
 
 		_generateCurrentTargetRevisionsById: (planTargetsById) ->
@@ -260,6 +267,7 @@ load = (win) ->
 					return true
 
 			return false
+
 		_hasTargetChanged: (targetId) ->
 			currentRev = @_normalizeTarget @state.currentTargetRevisionsById.get(targetId)
 
@@ -280,10 +288,8 @@ load = (win) ->
 				.delete('revisionId')
 				.delete('author')
 				.delete('timestamp')
-			unless Imm.is(currentRev, lastRevNormalized)
-				return true
 
-			return false
+			return not Imm.is(currentRev, lastRevNormalized)
 
 		_save: ->
 			@_normalizeTargets()
@@ -653,19 +659,17 @@ load = (win) ->
 						onClick: @props.onTargetSelection if @props.isReadOnly
 
 					})
+
 					# button to cancel the target
 					unless @props.currentRevision.get('status') is 'inactive'
-						WithTooltip({title: "Deactivate", placement: 'top'},
+						WithTooltip({title: "De-Activate", placement: 'top'},
 							OpenDialogLink({
 								dialog: ModifyTargetStatusDialog
 								target: @props.currentRevision
 								newStatus: 'inactive'
 								disabled: @props.isReadOnly or @props.hasTargetChanged
-								# onTargetUpdate: @props.updateTarget.bind null, targetId
 							},
-								R.a({className: 'cancel'},
-									FaIcon 'ban'
-								)
+								FaIcon 'ban'
 							)
 						)
 
@@ -679,25 +683,20 @@ load = (win) ->
 								newStatus: 'complete'
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 							},
-								R.a({className: 'complete'},
-									FaIcon 'check'
-								)
+								FaIcon 'check'
 							)
 						)
 
 					# button to activate the target
 					unless @props.currentRevision.get('status') is 'default'
-						WithTooltip({title: "Reactive", placement: 'top'},
+						WithTooltip({title: "Re-Activate", placement: 'top'},
 							OpenDialogLink({
 								dialog: ModifyTargetStatusDialog
 								target: @props.currentRevision
 								newStatus: 'default'
 								disabled: @props.isReadOnly or @props.hasTargetChanged
-
 							},
-								R.a({className: 'cancel'},
-									FaIcon 'play-circle'
-								)
+								FaIcon 'play-circle'
 							)
 						)			
 				)

@@ -23,12 +23,10 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
-			@refs.reasonField.focus()
+			@refs.statusReasonField.focus()
 
 		getInitialState: ->
-			return {
-				reason: ''
-			}
+			return {statusReason: ''}
 
 		render: ->
 			Dialog({
@@ -45,54 +43,49 @@ load = (win) ->
 						R.textarea({
 							className: 'form-control'
 							style: {minWidth: 350, minHeight: 100}
-							ref: 'reasonField'
-							onChange: @_updateReason
-							value: @state.reason
-							onKeyDown: @_onEnterKeyDown
+							ref: 'statusReasonField'
+							onChange: @_updateStatusReason
+							value: @state.statusReason
 						})
 					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
-							onClick: @_cancel							
+							onClick: @props.onCancel
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-							disabled: not @state.reason
 						}, "Confirm")
 					)
 				)
 			)
 
-		_cancel: ->
-			@props.onCancel()
-
-		_updateReason: (event) ->
-			@setState {reason: event.target.value}
-
-		_onEnterKeyDown: (event) ->
-			if event.which is 13 and @state.firstName and @state.lastName
-				@_submit()
+		_updateStatusReason: (event) ->
+			@setState {statusReason: event.target.value}
 
 		_submit: ->
-			# @refs.dialog.setIsLoading true
-			newTarget = @props.target
+			@refs.dialog.setIsLoading true
+
+			revisedPlanTarget = @props.target
 			.set('status', @props.newStatus)
-			.set('statusReason', @state.reason)
+			.set('statusReason', @state.statusReason)
 
-			ActiveSession.persist.planTargets.createRevision newTarget, (err, updatedTarget) =>
+			ActiveSession.persist.planTargets.createRevision revisedPlanTarget, (err, updatedPlanTarget) =>
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
+
 				if err
-					console.log err
-					return
-				console.log "updated target: ", updatedTarget.toJS()
-				
-				# @props.onTargetUpdate newTarget
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
 
-				
-		
+					CrashHandler.handle err
+					return
 
 				# Persist will trigger an event to update the UI
+				@props.onSuccess()				
 				
 
 	return ModifyTargetStatusDialog
