@@ -549,7 +549,7 @@ addProgNoteStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 						cb()
 				(cb) ->
 					# Decrypt, add index, re-encrypt
-					indexes = decryptFileName progNote, 4, globalEncryptionKey
+					indexes = decryptFileName progNote, 3, globalEncryptionKey
 					# Insert as first index (after ID)
 					indexes.splice(0, 1, latestRevision.get('status'))
 					console.log "indexes", indexes
