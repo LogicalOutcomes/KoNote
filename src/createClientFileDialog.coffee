@@ -20,6 +20,8 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
+	ProgramBubbles = require('./programBubbles').load(win)
+	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
 	CreateClientFileDialog = React.createFactory React.createClass
 		displayName: 'CreateClientFileDialog'
@@ -85,6 +87,11 @@ load = (win) ->
 								key: program.get('id')
 								# onClick: @_updateTypeId.bind null, program.get('id')
 								},
+								# colorbubble
+								ColorKeyBubble({
+									data: program
+									key: program.get('id')
+								})
 								program.get('name')
 							)
 						)
@@ -126,8 +133,10 @@ load = (win) ->
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
 		_updatePrograms: (event) ->
-			programIds = @state.programIds.push event.target.value
+			@state.programIds.push event.target.value
+	
 			@setState {programIds}
+			console.log @state.programIds
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
