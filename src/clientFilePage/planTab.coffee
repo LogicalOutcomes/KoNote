@@ -696,7 +696,7 @@ load = (win) ->
 								message: "This will complete the #{Term 'Target'}"
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 							},
-								R.a({className: 'deactivate'},
+								R.a({className: 'complete'},
 									FaIcon 'check'
 								)
 							)
