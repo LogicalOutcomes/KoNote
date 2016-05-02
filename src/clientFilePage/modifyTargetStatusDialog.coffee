@@ -29,37 +29,108 @@ load = (win) ->
 			return {statusReason: ''}
 
 		render: ->
-			Dialog({
-				ref: 'dialog'
-				title: "Change #{Term 'Target'} Status"
-				onClose: @props.onClose
-			},
-				R.div({className: 'cancelProgNoteDialog'},
-					R.div({className: 'alert alert-warning'},
-						"This will change the status of the #{Term 'target'}"
-					)
-					R.div({className: 'form-group'},
-						R.label({}, "Reason for status change:"),
-						R.textarea({
-							className: 'form-control'
-							style: {minWidth: 350, minHeight: 100}
-							ref: 'statusReasonField'
-							onChange: @_updateStatusReason
-							value: @state.statusReason
-						})
-					)
-					R.div({className: 'btn-toolbar'},
-						R.button({
-							className: 'btn btn-default'
-							onClick: @props.onCancel
-						}, "Cancel")
-						R.button({
-							className: 'btn btn-primary'
-							onClick: @_submit
-						}, "Confirm")
+			if @props.newStatus == ('inactive')
+
+				Dialog({
+					ref: 'dialog'
+					title: "Deactivate #{Term 'Target'}"
+					onClose: @props.onClose
+				},
+					R.div({className: 'cancelProgNoteDialog'},
+						R.div({className: 'alert alert-warning'},
+							"This will deactivate the #{Term 'target'}"
+						)
+						R.div({className: 'form-group'},
+							R.label({}, "Reason for deactivation:"),
+							R.textarea({
+								className: 'form-control'
+								style: {minWidth: 350, minHeight: 100}
+								ref: 'statusReasonField'
+								onChange: @_updateStatusReason
+								value: @state.statusReason
+							})
+						)
+						R.div({className: 'btn-toolbar'},
+							R.button({
+								className: 'btn btn-default'
+								onClick: @props.onCancel
+							}, "Cancel")
+							R.button({
+								className: 'btn btn-primary'
+								onClick: @_submit
+							}, "Confirm")
+						)
 					)
 				)
-			)
+
+			else if @props.newStatus == ('complete')
+
+				Dialog({
+					ref: 'dialog'
+					title: "Complete #{Term 'Target'}"
+					onClose: @props.onClose
+				},
+					R.div({className: 'cancelProgNoteDialog'},
+						R.div({className: 'alert alert-warning'},
+							"This will complete the #{Term 'target'}"
+						)
+						R.div({className: 'form-group'},
+							R.label({}, "Reason for completion:"),
+							R.textarea({
+								className: 'form-control'
+								style: {minWidth: 350, minHeight: 100}
+								ref: 'statusReasonField'
+								onChange: @_updateStatusReason
+								value: @state.statusReason
+							})
+						)
+						R.div({className: 'btn-toolbar'},
+							R.button({
+								className: 'btn btn-default'
+								onClick: @props.onCancel
+							}, "Cancel")
+							R.button({
+								className: 'btn btn-primary'
+								onClick: @_submit
+							}, "Confirm")
+						)
+					)
+				)
+
+			else 
+				
+				Dialog({
+					ref: 'dialog'
+					title: "Activate #{Term 'Target'}"
+					onClose: @props.onClose
+				},
+					R.div({className: 'cancelProgNoteDialog'},
+						R.div({className: 'alert alert-warning'},
+							"This will activate the #{Term 'target'}"
+						)
+						R.div({className: 'form-group'},
+							R.label({}, "Reason for activation:"),
+							R.textarea({
+								className: 'form-control'
+								style: {minWidth: 350, minHeight: 100}
+								ref: 'statusReasonField'
+								onChange: @_updateStatusReason
+								value: @state.statusReason
+							})
+						)
+						R.div({className: 'btn-toolbar'},
+							R.button({
+								className: 'btn btn-default'
+								onClick: @props.onCancel
+							}, "Cancel")
+							R.button({
+								className: 'btn btn-primary'
+								onClick: @_submit
+							}, "Confirm")
+						)
+					)
+				)
+
 
 		_updateStatusReason: (event) ->
 			@setState {statusReason: event.target.value}
