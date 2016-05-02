@@ -36,7 +36,7 @@ load = (win) ->
 					title: "Deactivate #{Term 'Target'}"
 					onClose: @props.onClose
 				},
-					R.div({className: 'cancelProgNoteDialog'},
+					R.div({className: 'modifyTargetStatusDialog'},
 						R.div({className: 'alert alert-warning'},
 							"This will deactivate the #{Term 'target'}"
 						)
@@ -58,6 +58,7 @@ load = (win) ->
 							R.button({
 								className: 'btn btn-primary'
 								onClick: @_submit
+								disabled: not @state.statusReason
 							}, "Confirm")
 						)
 					)
@@ -70,7 +71,7 @@ load = (win) ->
 					title: "Complete #{Term 'Target'}"
 					onClose: @props.onClose
 				},
-					R.div({className: 'cancelProgNoteDialog'},
+					R.div({className: 'modifyTargetStatusDialog'},
 						R.div({className: 'alert alert-warning'},
 							"This will complete the #{Term 'target'}"
 						)
@@ -92,6 +93,7 @@ load = (win) ->
 							R.button({
 								className: 'btn btn-primary'
 								onClick: @_submit
+								disabled: not @state.statusReason
 							}, "Confirm")
 						)
 					)
@@ -104,7 +106,7 @@ load = (win) ->
 					title: "Activate #{Term 'Target'}"
 					onClose: @props.onClose
 				},
-					R.div({className: 'cancelProgNoteDialog'},
+					R.div({className: 'modifyTargetStatusDialog'},
 						R.div({className: 'alert alert-warning'},
 							"This will activate the #{Term 'target'}"
 						)
@@ -126,6 +128,7 @@ load = (win) ->
 							R.button({
 								className: 'btn btn-primary'
 								onClick: @_submit
+								disabled: not @state.statusReason
 							}, "Confirm")
 						)
 					)
