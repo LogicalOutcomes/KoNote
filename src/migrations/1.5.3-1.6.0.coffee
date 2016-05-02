@@ -528,6 +528,48 @@ addProgEventStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 
 		finalizeMigrationStep(dataDir, cb)
 
+# Adds the already-existing 'status' property of latest revision
+addProgNoteStatusIndex = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		progNotesDirPath = Path.join(dataDir, 'clientFiles', clientFile, 'progNotes')
+
+		forEachFileIn progNotesDirPath, (progNote, cb) ->
+			progNotePath = Path.join(progNotesDirPath, progNote)
+
+			latestRevision = null
+
+			Async.series [
+				(cb) ->
+					getLatestRevision progNotePath, globalEncryptionKey, (err, result) ->
+						if err
+							cb err
+							return
+
+						latestRevision = result
+						cb()
+				(cb) ->
+					# Decrypt, add index, re-encrypt
+					indexes = decryptFileName progNote, 2, globalEncryptionKey
+					# Insert as first index (after ID)
+					indexes.splice(0, 1, latestRevision.get('status'))
+					console.log "indexes", indexes
+					encryptedIndexes = encryptFileName indexes, globalEncryptionKey
+
+					# Build new path
+					newProgNotePath = Path.join(progNotesDirPath, encryptedIndexes)
+
+					# Rename to new path
+					Fs.rename progNotePath, newProgNotePath, cb
+			], cb
+		, cb
+
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
 # ////////////////////// Migration Series //////////////////////
 
 
@@ -565,6 +607,9 @@ module.exports = {
 				addProgEventStatusIndex dataDir, globalEncryptionKey, cb
 
 			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "6. Append existing status index to progNote headers"
+				addProgNoteStatusIndex dataDir, globalEncryptionKey, cb
 
 			# TODO: Add status field to planTarget indexes
 			# TODO: Add status field to any other dataModels' indexes that need it

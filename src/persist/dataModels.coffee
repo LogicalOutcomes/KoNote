@@ -62,6 +62,7 @@ dataModelDefinitions = [
 				name: 'planTarget'
 				collectionName: 'planTargets'
 				isMutable: true
+				indexes: [['status']]
 				schema: Joi.object().keys({
 					name: Joi.string()
 					notes: Joi.string()
@@ -74,7 +75,7 @@ dataModelDefinitions = [
 				name: 'progNote'
 				collectionName: 'progNotes'
 				isMutable: true
-				indexes: [['timestamp'], ['backdate']]
+				indexes: [['status'], ['timestamp'], ['backdate']]
 				schema: [
 					Joi.object().keys({
 						type: 'basic' # aka "Quick Notes"
