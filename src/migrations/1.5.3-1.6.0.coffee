@@ -465,12 +465,11 @@ addEventTypeStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 						return
 
 					latestRevision = result
-					console.log "latestRevision", latestRevision.toJS()
 					cb()
 			(cb) ->
 				# Decrypt, add index, re-encrypt
 				indexes = decryptFileName eventType, 1, globalEncryptionKey
-				indexes.push latestRevision.get 'status'
+				indexes.push latestRevision.get('status')
 				encryptedIndexes = encryptFileName indexes, globalEncryptionKey
 
 				# Build new path
@@ -479,6 +478,48 @@ addEventTypeStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 				# Rename to new path
 				Fs.rename eventTypeDirPath, newEventTypeDirPath, cb
 		], cb
+
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+# Adds the already-existing 'status' property of latest revision
+addProgEventStatusIndex = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		progEventsDirPath = Path.join(dataDir, 'clientFiles', clientFile, 'progEvents')
+
+		forEachFileIn progEventsDirPath, (progEvent, cb) ->
+			progEventPath = Path.join(progEventsDirPath, progEvent)
+
+			latestRevision = null
+
+			Async.series [
+				(cb) ->
+					getLatestRevision progEventPath, globalEncryptionKey, (err, result) ->
+						if err
+							cb err
+							return
+
+						latestRevision = result
+						cb()
+				(cb) ->
+					# Decrypt, add index, re-encrypt
+					indexes = decryptFileName progEvent, 2, globalEncryptionKey
+					# Insert as first index (after ID)
+					indexes.splice(0, 1, latestRevision.get('status'))
+					console.log "indexes", indexes
+					encryptedIndexes = encryptFileName indexes, globalEncryptionKey
+
+					# Build new path
+					newProgEventPath = Path.join(progEventsDirPath, encryptedIndexes)
+
+					# Rename to new path
+					Fs.rename progEventPath, newProgEventPath, cb
+			], cb
+		, cb
 
 	, (err) ->
 		if err
@@ -510,13 +551,20 @@ module.exports = {
 			# Add status index to planTargets
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "3. Append 'default' (status) index to planTargets headers"
+				console.groupCollapsed "3. Append 'default' status index to planTargets headers"
 				addPlanTargetStatusIndex dataDir, globalEncryptionKey, cb
 
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "4. Append 'default' (status) index to eventType headers"
+				console.groupCollapsed "4. Append existing status index to eventType headers"
 				addEventTypeStatusIndex dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "5. Append existing status index to progEvent headers"
+				addProgEventStatusIndex dataDir, globalEncryptionKey, cb
+
+			(cb) ->
 
 			# TODO: Add status field to planTarget indexes
 			# TODO: Add status field to any other dataModels' indexes that need it
