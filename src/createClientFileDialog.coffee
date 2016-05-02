@@ -72,22 +72,24 @@ load = (win) ->
 							onKeyDown: @_onEnterKeyDown
 						})
 					)
-					R.div({className: 'form-group eventTypeContainer'},
-							R.label({}, "Select #{Term 'Program'}")
-							
-							(@props.programs.map (program) =>
+				
+					R.div({className: 'form-group'},
+						R.label({}, "Select #{Term 'Program'}(s)")
+						R.div({className: 'programsContainer'},
+						
+						(@props.programs.map (program) =>
 
-								R.button({
-									className: 'btn btn-default'
-									onClick: @_cancel	
-									key: program.get('id')
-									# onClick: @_updateTypeId.bind null, program.get('id')
-									},
-									program.get('name')
-								)
+							R.button({
+								className: 'btn btn-default'
+								onClick: @_updatePrograms.bind null, program.get('id')	
+								key: program.get('id')
+								# onClick: @_updateTypeId.bind null, program.get('id')
+								},
+								program.get('name')
 							)
-
 						)
+						)
+					)
 					if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
 							R.label({}, Config.clientFileRecordId.label),
@@ -99,6 +101,7 @@ load = (win) ->
 								onKeyDown: @_onEnterKeyDown
 							})
 						)
+					console.log "programIds", @state.programIds.list
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -123,7 +126,8 @@ load = (win) ->
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
 		_updatePrograms: (event) ->
-			@setState {programIds: event.target.value}
+			programIds = @state.programIds.push event.target.value
+			@setState {programIds}
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
@@ -158,6 +162,14 @@ load = (win) ->
 					return
 
 				@props.onSuccess(obj.get('id'))
+
+			# creating client file program links
+
+			# programIds.map(programId)
+			# 	newLink = Imm.fromJS {
+			# 		clientFileId
+			# 		status: "enrolled"
+			# 	}
 
 	return CreateClientFileDialog
 
