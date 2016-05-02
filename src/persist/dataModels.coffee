@@ -190,6 +190,7 @@ dataModelDefinitions = [
 		name: 'eventType'
 		collectionName: 'eventTypes'
 		isMutable: true
+		indexes: [['status']]
 		schema: Joi.object().keys({
 			name: Joi.string()
 			description: Joi.string()
