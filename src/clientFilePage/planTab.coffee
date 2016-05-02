@@ -563,6 +563,11 @@ load = (win) ->
 							)
 						)
 						R.div({className: 'targets'},
+							# filter here
+							# filteredTargets = section.get('targetIds').filter (targetId) =>
+							# 	currentRevision = currentTargetRevisionsById.get targetId
+							# 	return currentRevision.get('status') is 'default'
+
 							(section.get('targetIds').map (targetId) =>
 								PlanTarget({
 									currentRevision: currentTargetRevisionsById.get targetId
@@ -667,6 +672,9 @@ load = (win) ->
 								dialog: ModifyTargetStatusDialog
 								target: @props.currentRevision
 								newStatus: 'inactive'
+								title: "Deactivate the #{Term 'Target'}"
+								reasonLabel: "Reason for deactivation: "
+								message: "This will deactivate the #{Term 'Target'}"
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 							},
 								R.a({className: 'deactivate'},
@@ -683,6 +691,9 @@ load = (win) ->
 								dialog: ModifyTargetStatusDialog
 								target: @props.currentRevision
 								newStatus: 'complete'
+								title: "Complete the #{Term 'Target'}"
+								reasonLabel: "Reason for completion: "
+								message: "This will complete the #{Term 'Target'}"
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 							},
 								R.a({className: 'deactivate'},
@@ -698,6 +709,9 @@ load = (win) ->
 								dialog: ModifyTargetStatusDialog
 								target: @props.currentRevision
 								newStatus: 'default'
+								title: "Activate the #{Term 'Target'}"
+								reasonLabel: "Reason for activation: "
+								message: "This will activate the #{Term 'Target'}"
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 							},
 								R.a({className: 'activate'},
