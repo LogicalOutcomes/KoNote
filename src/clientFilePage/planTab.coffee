@@ -660,7 +660,7 @@ load = (win) ->
 
 					})
 
-					# button to cancel the target
+					# button to deactivate the target
 					unless @props.currentRevision.get('status') is 'inactive'
 						WithTooltip({title: "De-Activate", placement: 'top'},
 							OpenDialogLink({
@@ -669,7 +669,9 @@ load = (win) ->
 								newStatus: 'inactive'
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 							},
-								FaIcon 'ban'
+								R.a({className: 'deactivate'},
+									FaIcon 'ban'
+								)
 							)
 						)
 
@@ -683,7 +685,9 @@ load = (win) ->
 								newStatus: 'complete'
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 							},
-								FaIcon 'check'
+								R.a({className: 'deactivate'},
+									FaIcon 'check'
+								)
 							)
 						)
 
@@ -696,7 +700,9 @@ load = (win) ->
 								newStatus: 'default'
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 							},
-								FaIcon 'play-circle'
+								R.a({className: 'activate'},
+									FaIcon 'play-circle'
+								)
 							)
 						)			
 				)
