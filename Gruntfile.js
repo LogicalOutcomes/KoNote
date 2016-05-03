@@ -194,13 +194,17 @@ module.exports = function(grunt) {
 		},
 		uglify: {
 			options: {
-				screwIE8: true
+				screwIE8: true,
+				sourceMap: true,
+				sourceMapIn: function(path) {
+					return path+".map";
+				}
 			},
 			all: {
 				files: [{
 					expand: true,
 					cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
-					src: ['*.js', '!*.min.js'],
+					src: ['**/*.js', '!layeredComponentMixin.js', '!start.js', '!config/index.js'],
 					dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
 					ext: '.js'
 				}]
