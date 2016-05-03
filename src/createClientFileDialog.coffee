@@ -184,7 +184,7 @@ load = (win) ->
 			# 		programId
 			# 	})
 
-			# 	global.ActiveSession.persist.clientFileProgramLinks.create link, colorKeyBubble
+			# 	global.ActiveSession.persist.clientFileProgramLinks.create link, cb
 			# 		if err
 			# 			if err instanceof Persist.IOError
 			# 				console.error err
