@@ -433,7 +433,7 @@ addPlanTargetStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 
 			# Decrypt, add index, re-encrypt
 			indexes = decryptFileName planTargetDir, 1, globalEncryptionKey
-			indexes.push 'default'
+			indexes.unshift 'default'
 			encryptedIndexes = encryptFileName indexes, globalEncryptionKey
 
 			# Build new path
