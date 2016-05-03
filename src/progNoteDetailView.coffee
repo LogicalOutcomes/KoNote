@@ -92,7 +92,8 @@ load = (win) ->
 
 											return Imm.fromJS {
 												progNoteId
-												status: progNote.get('status')												
+												status: progNote.get('status')
+												targetId: target.get('id')
 												author: initialAuthor
 												timestamp: createdTimestamp
 												backdate: progNote.get('backdate')
@@ -105,7 +106,7 @@ load = (win) ->
 
 				when 'quickNote'
 					itemName = Term 'Quick Notes'
-					
+
 					# Extract all quickNote entries
 					entries = @props.progNoteHistories
 					.filter (progNoteHistory) -> progNoteHistory.last().get('type') is 'basic'
@@ -149,7 +150,29 @@ load = (win) ->
 				)
 				R.div({className: 'history'},
 					(entries.map (entry) =>
-						R.div({className: 'entry'},
+						entryId = entry.get('progNoteId')
+
+						isHighlighted = null
+						isHovered = null
+
+						# Figure out highlighting from progNotesTab click/hover data
+						isHighlighted = (entryId is @props.highlightedProgNoteId) and not @props.highlightedQuickNoteId?
+
+						## TODO: Restore this hover feature
+						# if @props.highlightedQuickNoteId?
+						# 	isHovered = entry.get('progNoteId') is @props.highlightedQuickNoteId
+						# else if @props.highlightedTargetId?
+						# 	isHovered = (entry.get('targetId') is @props.highlightedTargetId) and isHighlighted
+
+						R.div({
+							key: entryId
+							className: [
+								'entry'
+								## TODO: Restore this hover feature
+								# 'highlighted' if isHighlighted
+								# 'isHovered' if isHovered
+							].join ' '
+						},
 							R.div({className: 'header'},
 								R.div({className: 'timestamp'},
 									if entry.get('backdate') != ''
