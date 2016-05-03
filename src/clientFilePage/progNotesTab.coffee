@@ -271,8 +271,9 @@ load = (win) ->
 		render: ->
 			R.div({
 				className: 'basic progNote'
-				onMouseEnter: @props.setHighlightedQuickNoteId.bind null, @props.progNote.get('id')
-				onMouseLeave: @props.setHighlightedQuickNoteId.bind null, null
+				## TODO: Restore hover feature
+				# onMouseEnter: @props.setHighlightedQuickNoteId.bind null, @props.progNote.get('id')
+				# onMouseLeave: @props.setHighlightedQuickNoteId.bind null, null
 			},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
@@ -335,7 +336,8 @@ load = (win) ->
 		render: ->
 			R.div({
 				className: 'full progNote'
-				onMouseEnter: @props.setHighlightedProgNoteId.bind null, @props.progNote.get('id')
+				## TODO: Restore hover feature
+				# onMouseEnter: @props.setHighlightedProgNoteId.bind null, @props.progNote.get('id')
 			},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
@@ -426,8 +428,9 @@ load = (win) ->
 										R.section({key: section.get('id')},
 											R.h2({}, section.get('name'))
 											R.div({
-												onMouseEnter: @props.setHighlightedProgNoteId.bind null, @props.progNote.get('id')
-												onMouseLeave: @props.setHighlightedProgNoteId.bind null, null
+												## TODO: Restore hover feature
+												# onMouseEnter: @props.setHighlightedProgNoteId.bind null, @props.progNote.get('id')
+												# onMouseLeave: @props.setHighlightedProgNoteId.bind null, null
 												className: [
 													'empty'
 													showWhen section.get('targets').isEmpty()
@@ -442,7 +445,8 @@ load = (win) ->
 														'target'
 														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is target.get('id')
 													].join ' '
-													onMouseEnter: @props.setHighlightedTargetId.bind null, target.get('id')
+													## TODO: Restore hover feature
+													# onMouseEnter: @props.setHighlightedTargetId.bind null, target.get('id')
 												},
 													R.h3({
 														onClick: @_selectPlanSectionTarget.bind(
