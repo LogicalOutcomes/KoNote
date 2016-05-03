@@ -176,35 +176,38 @@ load = (win) ->
 					return
 
 				@props.onSuccess(obj.get('id'))
+
+				console.log "obj.getID >>>>", obj.get('id')
 				
 				# @setState {clientFileId: obj.get('id')}
 
-			# creating client file program links
-			console.log "programIds before creating links >>>>>>", @state.programIds.toJS()
 
-			tempArray = @state.programIds.toJS()
-			console.log "tempArray", tempArray
+				# creating client file program links  (now in cb of create clientFile)
+				console.log "state of programIds before creating links >>>>>>", @state.programIds.toJS()
 
-			tempArray.map (programId) ->
-				console.log "programId in loop>>>>>", programId
-				link = Imm.fromJS ({
-					clientFileId
-					status: 'enrolled'
-					programId
-				})
+				programIds = @state.programIds
+				console.log "final programIds array to be looped >>>>>> ", programIds.toJS()
 
-				global.ActiveSession.persist.clientFileProgramLinks.create link, (err,cb) =>
-					if err
-						if err instanceof Persist.IOError
-							console.error err
-							Bootbox.alert """
-								Please check your network connection and try again.
-							"""
+				programIds.forEach (programId) ->
+					console.log "programId in loop>>>>>", programId
+					link = Imm.fromJS ({
+						clientFileId: obj.get('id')
+						status: 'enrolled'
+						programId
+					})
+
+					global.ActiveSession.persist.clientFileProgramLinks.create link, (err, link) =>
+						if err
+							if err instanceof Persist.IOError
+								console.error err
+								Bootbox.alert """
+									Please check your network connection and try again.
+								"""
+								return
+
+							CrashHandler.handle err
 							return
-
-						CrashHandler.handle err
-					return
-
+						console.log "created LINK >>>>>", link.toJS()
 
 
 	return CreateClientFileDialog
