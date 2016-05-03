@@ -7,6 +7,7 @@
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
+_ = require 'underscore'
 
 Config = require '../config'
 Term = require '../term'
@@ -151,7 +152,7 @@ load = (win) ->
 					})
 				)
 				R.div({className: 'targetDetail'},
-					(if selectedTarget is null
+					(if not selectedTarget?
 						R.div({className: "noSelection #{showWhen plan.get('sections').size > 0}"},
 							"More information will appear here when you select ",
 							"a #{Term 'target'} on the left."
@@ -211,37 +212,9 @@ load = (win) ->
 									)
 								)
 							)
-							R.div({className: 'history'},
-								R.div({className: 'heading'},
-									'History'
-								)
-								(if selectedTarget.get('revisions').size is 0
-									R.div({className: 'noRevisions'},
-										"This #{Term 'target'} is new.  ",
-										"It won't have any history until the #{Term 'client file'} is saved."
-									)
-								)
-								R.div({className: 'revisions'},
-									(selectedTarget.get('revisions').map (rev) =>
-										R.div({className: 'revision'},
-											R.div({className: 'nameLine'},
-												R.div({className: 'name'},
-													rev.get('name')
-												)
-												R.div({className: 'tag'},
-													Moment(rev.get('timestamp'), Persist.TimestampFormat)
-														.format('MMM D, YYYY [at] HH:mm'),
-													" by ",
-													rev.get('author')
-												)
-											)
-											R.div({className: 'description'},
-												renderLineBreaks rev.get('description')
-											)
-										)
-									).toJS()...
-								)
-							)
+							PlanTargetHistory({
+								revisions: selectedTarget.get('revisions')
+							})
 						)
 					)
 				)
@@ -760,6 +733,106 @@ load = (win) ->
 			unless event.target.classList.contains 'field'
 				@refs.nameField.focus() unless @props.isReadOnly
 				@props.onTargetSelection()
+
+
+	PlanTargetHistory = React.createFactory React.createClass
+		displayName: 'PlanTargetHistory'
+
+		propTypes: -> {
+			revisions: React.PropTypes.instanceOf Imm.List
+		}
+
+		_buildChangeLog: (revision, index) ->
+			# Return the regular revision if no previous revision, or they match
+			previousRevision = if index > 0 then @props.revisions.get(index - 1) else null
+			if not previousRevision? or Imm.is(previousRevision, revision)
+				return revision
+
+			# TODO: Generalize this function for arrays & strings,
+			# so we (hopefully) don't need to change this when dataModel changes
+				
+			# Diff the metricIds
+			previousMetricIds = previousRevision.get('metricIds')
+			currentMetricIds = revision.get('metricIds')
+
+			unless Imm.is previousMetricIds, currentMetricIds
+				deletedMetricIds = previousMetricIds
+				.filterNot (metricId) -> currentMetricIds.contains(metricId)
+				.map (metricId) -> {deleted: metricId}
+
+				addedMetricIds = currentMetricIds
+				.filterNot (metricId) -> previousMetricIds.contains(metricId)
+				.map (metricId) -> {added: metricId}
+
+				changedMetricIds = deletedMetricIds.concat addedMetricIds				
+				revision = revision.set {changedMetricIds}
+				console.log "changedMetricIds", changedMetricIds
+
+
+			# Diff the name
+			previousName = previousRevision.get('name')
+			currentName = revision.get('name')
+
+			unless previousName is currentName
+				changedName = currentName
+				revision = revision.set {changedName}
+				console.log "changedName", changedName
+
+
+			# Diff the description
+			previousDescription = previousRevision.get('description')
+			currentDescription = revision.get('description')
+
+			unless previousDescription is currentDescription
+				changedDescription = currentDescription
+				revision = revision.set {changedDescription}
+				console.log "changedDescription", changedDescription
+
+
+			return revision
+
+		render: ->
+			# Process revision history to devise change logs
+			# They're already in reverse-order, so reverse() to map changes
+			revisions = @props.revisions
+			.reverse()
+			.map(@_buildChangeLog)
+			.reverse()
+
+			return R.div({className: 'planTargetHistory'},
+				R.div({className: 'heading'},
+					'History'
+				)
+				(if revisions.size is 0
+					R.div({className: 'noRevisions'},
+						"This #{Term 'target'} is new.  ",
+						"It won't have any history until the #{Term 'client file'} is saved."
+					)
+				)
+				R.div({className: 'revisions'},
+					(revisions.map (revision) =>
+						formattedTimestamp = Moment(revision.get('timestamp'), Persist.TimestampFormat)
+						.format('MMM D, YYYY [at] HH:mm')
+
+						R.div({className: 'revision'},
+							R.div({className: 'nameLine'},
+								R.div({className: 'name'}, revision.get('name'))
+								R.div({className: 'tag'},
+									formattedTimestamp
+									" by "
+									revision.get('author')
+								)
+							)
+							R.div({className: 'description'},
+								if revision.has('changedMetricIds')
+									"Changed: #{JSON.stringify revision.get('changedMetricIds')}"
+
+								renderLineBreaks revision.get('description')
+							)
+						)
+					).toJS()...
+				)
+			)
 
 	return {PlanView}
 
