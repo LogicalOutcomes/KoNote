@@ -37,6 +37,7 @@ load = (win) ->
 				lastName: ''
 				recordId: ''
 				programIds: []
+				clientfileId: ''
 			}
 
 		render: ->
@@ -171,14 +172,31 @@ load = (win) ->
 					return
 
 				@props.onSuccess(obj.get('id'))
+				
+				@setState {clientFileId: obj.get('id')}
 
 			# creating client file program links
 
-			# programIds.map(programId)
-			# 	newLink = Imm.fromJS {
+			# programIds.map(programId) =>
+			# 	link = Imm.fromJS ({
 			# 		clientFileId
-			# 		status: "enrolled"
-			# 	}
+			# 		status: 'enrolled'
+			# 		programId
+			# 	})
+
+			# 	global.ActiveSession.persist.clientFileProgramLinks.create link, colorKeyBubble
+			# 		if err
+			# 			if err instanceof Persist.IOError
+			# 				console.error err
+			# 				Bootbox.alert """
+			# 					Please check your network connection and try again.
+			# 				"""
+			# 				return
+
+			# 			CrashHandler.handle err
+			# 		return
+
+
 
 	return CreateClientFileDialog
 
