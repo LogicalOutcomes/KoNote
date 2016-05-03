@@ -157,17 +157,19 @@ load = (win) ->
 						# Figure out highlighting from progNotesTab click/hover data
 						isHighlighted = (entryId is @props.highlightedProgNoteId) and not @props.highlightedQuickNoteId?
 
-						if @props.highlightedQuickNoteId?
-							isHovered = entry.get('progNoteId') is @props.highlightedQuickNoteId
-						else if @props.highlightedTargetId?
-							isHovered = (entry.get('targetId') is @props.highlightedTargetId) and isHighlighted
+						## TODO: Restore this hover feature
+						# if @props.highlightedQuickNoteId?
+						# 	isHovered = entry.get('progNoteId') is @props.highlightedQuickNoteId
+						# else if @props.highlightedTargetId?
+						# 	isHovered = (entry.get('targetId') is @props.highlightedTargetId) and isHighlighted
 
 						R.div({
 							key: entryId
 							className: [
 								'entry'
-								'highlighted' if isHighlighted
-								'isHovered' if isHovered
+								## TODO: Restore this hover feature
+								# 'highlighted' if isHighlighted
+								# 'isHovered' if isHovered
 							].join ' '
 						},
 							R.div({className: 'header'},
