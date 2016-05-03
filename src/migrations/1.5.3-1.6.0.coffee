@@ -570,6 +570,48 @@ addProgNoteStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 
 		finalizeMigrationStep(dataDir, cb)
 
+
+changePlanTargetNotesPropertyToDescription = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		planTargetsDirPath = Path.join(dataDir, 'clientFiles', clientFile, 'planTargets')
+
+		forEachFileIn planTargetsDirPath, (planTarget, cb) ->
+			planTargetPath = Path.join(planTargetsDirPath, planTarget)
+
+			forEachFileIn planTargetPath, (planTargetRevision, cb) ->
+				planTargetRevisionPath = Path.join(planTargetPath, planTargetRevision)
+
+				planTargetObject = null
+
+				Async.series [
+					(cb) =>
+						# Read and decrypt Plan Target object
+						Fs.readFile planTargetRevisionPath, (err, result) ->
+							if err
+								cb err
+								return
+
+							planTargetObject = JSON.parse globalEncryptionKey.decrypt result
+
+							cb()
+					(cb) =>
+						# Change 'notes' property to 'description'
+						planTargetObject.description = planTargetObject.notes
+						delete planTargetObject.notes
+
+						encryptedObj = globalEncryptionKey.encrypt JSON.stringify planTargetObject
+
+						Fs.writeFile planTargetRevisionPath, encryptedObj, cb
+				], cb
+			, cb
+		, cb
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
 # ////////////////////// Migration Series //////////////////////
 
 
@@ -610,6 +652,11 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "6. Append existing status index to progNote headers"
 				addProgNoteStatusIndex dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "7. Change planTarget 'notes' property name to 'description'"
+				changePlanTargetNotesPropertyToDescription dataDir, globalEncryptionKey, cb
 		]
 
 
