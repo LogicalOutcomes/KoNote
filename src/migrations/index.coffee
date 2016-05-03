@@ -50,14 +50,20 @@ writeDataVersion = (dataDir, toVersion, cb) ->
 				metadata.dataVersion = toVersion
 				cb()
 		(cb) ->
-			Fs.writeFile versionPath, metadata, cb
+			Fs.writeFile versionPath, metadata, (err) ->
+				if err
+					cb err
+					return
+
+				console.log "Updated dataVersion to v#{toVersion}"
+				cb()
 	], cb
 
 
 # Use this at the command line
 runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 	stagedDataDir = "./data_migration_#{fromVersion}-#{toVersion}"
-	backupDataDir = "./data_migration_#{fromVersion}--backup-#{Moment().format('YYYY-MM-DD-(h:ssa)')}"
+	backupDataDir = "./data_migration_#{fromVersion}--backup-#{Moment().format('YYYY-MM-DD-(h-ssa)')}"
 
 	lastMigrationStep = null
 
@@ -81,10 +87,10 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 				numerical = (v) -> Number v.split('.').join('')
 
 				# Ensure fromVersions match
-				if dataDirMetadata.version isnt fromVersion
+				if dataDirMetadata.dataVersion isnt fromVersion
 					console.error """
 						Version Mismatch! Data directory is currently 
-						v#{dataDirMetadata.version}, but trying to install from #{fromVersion}."
+						v#{dataDirMetadata.dataVersion}, but trying to install from #{fromVersion}."
 					"""
 					cb err
 					return				
@@ -124,6 +130,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 
 
 		(cb) -> # Copy the dataDir to a staging dir
+			console.log "Copying database to staging folder...."
 			Ncp dataDir, stagedDataDir, (err) ->
 				if err
 					console.error "Database staging error!"
@@ -208,8 +215,8 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, lastMigrationSte
 			cb new Error "Could not run migration #{fromVersion}-#{toVersion}"
 			return
 
-		writeDataVersion dataDir, fromVersion, ->
-			console.log "Done migration step #{fromVersion} -> #{toVersion}."
+		writeDataVersion dataDir, fromVersion, ->			
+			console.log "Done migrating v#{fromVersion} -> v#{toVersion}."
 			cb()
 
 module.exports = {runMigration, migrate}

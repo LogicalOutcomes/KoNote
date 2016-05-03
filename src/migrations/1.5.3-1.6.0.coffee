@@ -110,7 +110,15 @@ forEachFileIn = (parentDir, loopBody, cb) ->
 				fileNames = result
 				cb()
 		(cb) ->
+			if fileNames.length is 0 then console.warn "(no files to iterate over)"
+
 			Async.eachSeries fileNames, (fileName, cb) ->
+				# Skip .DS_Store & Thumbs.db files
+				if fileName in ['.DS_Store', 'Thumbs.db']
+					console.warn "Skipping #{fileName}"
+					cb()
+					return
+
 				console.group "Process #{JSON.stringify Path.join(parentDir, fileName)}:"
 
 				loopBody fileName, (err) ->
@@ -343,7 +351,6 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 					return
 
 				versionData = JSON.parse result
-				console.log "PRE versionData", versionData
 				cb()
 		(cb) ->
 			# Increment lastMigrationStep, and save back to version.json
@@ -355,9 +362,8 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 					cb err
 					return
 
-				console.log "POST versionData", versionData
+				console.log "Updated version lastMigrationStep to #{lastMigrationStep}"
 				cb()
-
 	], cb
 
 
@@ -418,6 +424,152 @@ addPlanTargetStatusField = (dataDir, globalEncryptionKey, cb) ->
 		finalizeMigrationStep(dataDir, cb)
 
 
+addPlanTargetStatusIndex = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFileDirPath, 'planTargets'), (planTargetDir, cb) ->
+			planTargetDirPath = Path.join(clientFileDirPath, 'planTargets', planTargetDir)
+
+			# Decrypt, add index, re-encrypt
+			indexes = decryptFileName planTargetDir, 1, globalEncryptionKey
+			indexes.push 'default'
+			encryptedIndexes = encryptFileName indexes, globalEncryptionKey
+
+			# Build new path
+			newPlanTargetDirPath = Path.join(clientFileDirPath, 'planTargets', encryptedIndexes)
+
+			# Rename to new path
+			Fs.rename planTargetDirPath, newPlanTargetDirPath, cb
+
+		, cb
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+# Adds the already-existing 'status' property of latest revision
+addEventTypeStatusIndex = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'eventTypes'), (eventType, cb) ->
+		eventTypeDirPath = Path.join(dataDir, 'eventTypes', eventType)
+
+		latestRevision = null
+
+		Async.series [
+			(cb) ->
+				getLatestRevision eventTypeDirPath, globalEncryptionKey, (err, result) ->
+					if err
+						cb err
+						return
+
+					latestRevision = result
+					cb()
+			(cb) ->
+				# Decrypt, add index, re-encrypt
+				indexes = decryptFileName eventType, 1, globalEncryptionKey
+				indexes.push latestRevision.get('status')
+				encryptedIndexes = encryptFileName indexes, globalEncryptionKey
+
+				# Build new path
+				newEventTypeDirPath = Path.join(dataDir, 'eventTypes', encryptedIndexes)
+
+				# Rename to new path
+				Fs.rename eventTypeDirPath, newEventTypeDirPath, cb
+		], cb
+
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+# Adds the already-existing 'status' property of latest revision
+addProgEventStatusIndex = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		progEventsDirPath = Path.join(dataDir, 'clientFiles', clientFile, 'progEvents')
+
+		forEachFileIn progEventsDirPath, (progEvent, cb) ->
+			progEventPath = Path.join(progEventsDirPath, progEvent)
+
+			latestRevision = null
+
+			Async.series [
+				(cb) ->
+					getLatestRevision progEventPath, globalEncryptionKey, (err, result) ->
+						if err
+							cb err
+							return
+
+						latestRevision = result
+						cb()
+				(cb) ->
+					# Decrypt, add index, re-encrypt
+					indexes = decryptFileName progEvent, 2, globalEncryptionKey
+					# Insert as first index (after ID)
+					indexes.splice(0, 1, latestRevision.get('status'))
+					console.log "indexes", indexes
+					encryptedIndexes = encryptFileName indexes, globalEncryptionKey
+
+					# Build new path
+					newProgEventPath = Path.join(progEventsDirPath, encryptedIndexes)
+
+					# Rename to new path
+					Fs.rename progEventPath, newProgEventPath, cb
+			], cb
+		, cb
+
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+# Adds the already-existing 'status' property of latest revision
+addProgNoteStatusIndex = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		progNotesDirPath = Path.join(dataDir, 'clientFiles', clientFile, 'progNotes')
+
+		forEachFileIn progNotesDirPath, (progNote, cb) ->
+			progNotePath = Path.join(progNotesDirPath, progNote)
+
+			latestRevision = null
+
+			Async.series [
+				(cb) ->
+					getLatestRevision progNotePath, globalEncryptionKey, (err, result) ->
+						if err
+							cb err
+							return
+
+						latestRevision = result
+						cb()
+				(cb) ->
+					# Decrypt, add index, re-encrypt
+					indexes = decryptFileName progNote, 4, globalEncryptionKey
+					# Insert as first index (after ID)
+					indexes.splice(0, 1, latestRevision.get('status'))
+					console.log "indexes", indexes
+					encryptedIndexes = encryptFileName indexes, globalEncryptionKey
+
+					# Build new path
+					newProgNotePath = Path.join(progNotesDirPath, encryptedIndexes)
+
+					# Rename to new path
+					Fs.rename progNotePath, newProgNotePath, cb
+			], cb
+		, cb
+
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
 # ////////////////////// Migration Series //////////////////////
 
 
@@ -435,8 +587,29 @@ module.exports = {
 			# Add status field to planTargets
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "2. Add 'status': 'default' field to plan targets"
-				addPlanTargetStatusField dataDir, globalEncryptionKey, cb	
+				console.groupCollapsed "2. Add 'status': 'default' field to planTarget objects"
+				addPlanTargetStatusField dataDir, globalEncryptionKey, cb
+
+			# Add status index to planTargets
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "3. Append 'default' status index to planTargets headers"
+				addPlanTargetStatusIndex dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "4. Append existing status index to eventType headers"
+				addEventTypeStatusIndex dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "5. Append existing status index to progEvent headers"
+				addProgEventStatusIndex dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "6. Append existing status index to progNote headers"
+				addProgNoteStatusIndex dataDir, globalEncryptionKey, cb
 
 			# TODO: Add status field to planTarget indexes
 			# TODO: Add status field to any other dataModels' indexes that need it
@@ -445,7 +618,7 @@ module.exports = {
 
 		# Slice off the previous steps for a partial migration
 		if lastMigrationStep?
-			migrationSeries = migrationSeries.slice(optionalLastStepNumber)
+			migrationSeries = migrationSeries.slice(lastMigrationStep)
 
 		# Shift in standard step 
 		migrationSeries.unshift (cb) ->

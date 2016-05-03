@@ -25,6 +25,7 @@ Moment = require 'moment'
 Path = require 'path'
 
 Atomic = require './atomic'
+Cache = require './cache'
 Crypto = require './crypto'
 
 {
@@ -65,6 +66,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 	# A directory for temp files, i.e. stuff we don't care about
 	tmpDirPath = Path.join(session.dataDirectory, '_tmp')
+
+	# A cache for remembering the results of list operations on this collection
+	listCache = new Cache(5000) # 5-second expiry
 
 	# Define a series of methods that this collection API will (or might) contain.
 	# These methods correspond to what is documented in the wiki.
@@ -186,6 +190,13 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			cb new Error "wrong number of arguments"
 			return
 
+		# Check cache
+		cacheKey = contextualIds.join('::') # IDs never contain colons
+		cachedResult = listCache.get(cacheKey)
+		if cachedResult?
+			cb null, cachedResult
+			return
+
 		fileNameEncryptionKey = getFileNameEncryptionKey()
 
 		collectionDir = null
@@ -241,6 +252,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 						result = result.setIn indexedProp, indexValues[i].toString()
 
 					return result
+
+			# Store result in cache
+			listCache.set(cacheKey, result)
 
 			cb null, result
 

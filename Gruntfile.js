@@ -92,6 +92,16 @@ module.exports = function(grunt) {
 						to: '<link rel="stylesheet" href="main.css">'
 					}
 				]
+			},
+			config: {
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/default.json'],
+				overwrite: true,
+				replacements: [
+					{
+						from: '"devMode": true,',
+						to: ''
+					}
+				]
 			}
 		},
 		nwjs: {
@@ -184,13 +194,17 @@ module.exports = function(grunt) {
 		},
 		uglify: {
 			options: {
-				screwIE8: true
+				screwIE8: true,
+				sourceMap: true,
+				sourceMapIn: function(path) {
+					return path+".map";
+				}
 			},
 			all: {
 				files: [{
 					expand: true,
 					cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
-					src: ['*.js', '!*.min.js'],
+					src: ['**/*.js', '!layeredComponentMixin.js', '!start.js', '!config/index.js'],
 					dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
 					ext: '.js'
 				}]
@@ -222,6 +236,7 @@ module.exports = function(grunt) {
 		release.forEach(function(entry) {
 			grunt.task.run('copy:main:'+entry);
 			grunt.task.run('replace:main:'+entry);
+			grunt.task.run('replace:config:'+entry);
 			grunt.task.run('copy:production:'+entry);
 			if (entry == "generic-win") {
 				grunt.task.run('copy:generic:'+entry);
