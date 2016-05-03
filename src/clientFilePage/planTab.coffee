@@ -417,7 +417,6 @@ load = (win) ->
 				status: 'default'
 				name: ''
 				notes: ''
-				status: 'default'
 				metricIds: []
 			}
 			newCurrentRevs = @state.currentTargetRevisionsById.set targetId, newTarget
@@ -667,37 +666,37 @@ load = (win) ->
 					})
 
 					# button to deactivate the target
-					unless @props.currentRevision.get('status') is 'inactive'
+					unless @props.currentRevision.get('status') is 'cancelled'
 						WithTooltip({title: "De-Activate", placement: 'top'},
 							OpenDialogLink({
 								dialog: ModifyTargetStatusDialog
 								target: @props.currentRevision
-								newStatus: 'inactive'
+								newStatus: 'cancelled'
 								title: "Deactivate the #{Term 'Target'}"
 								reasonLabel: "Reason for deactivation: "
 								message: "This will deactivate the #{Term 'Target'}"
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 							},
-								R.a({className: 'deactivate'},
+								R.a({className: 'cancelled'},
 									FaIcon 'ban'
 								)
 							)
 						)
 
 					# button to complete the target
-					unless @props.currentRevision.get('status') is 'complete' or 
-					@props.currentRevision.get('status') is 'inactive'
+					unless @props.currentRevision.get('status') is 'completed' or 
+					@props.currentRevision.get('status') is 'cancelled'
 						WithTooltip({title: "Complete", placement: 'top'},
 							OpenDialogLink({
 								dialog: ModifyTargetStatusDialog
 								target: @props.currentRevision
-								newStatus: 'complete'
+								newStatus: 'completed'
 								title: "Complete the #{Term 'Target'}"
 								reasonLabel: "Reason for completion: "
 								message: "This will complete the #{Term 'Target'}"
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 							},
-								R.a({className: 'complete'},
+								R.a({className: 'completed'},
 									FaIcon 'check'
 								)
 							)
