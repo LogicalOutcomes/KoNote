@@ -36,7 +36,7 @@ load = (win) ->
 				middleName: ''
 				lastName: ''
 				recordId: ''
-				programIds: []
+				programIds: Imm.List()
 				clientfileId: ''
 			}
 
@@ -86,9 +86,8 @@ load = (win) ->
 								className: 'btn btn-default'
 								onClick: @_updatePrograms.bind null, program.get('id')	
 								key: program.get('id')
-								# onClick: @_updateTypeId.bind null, program.get('id')
+								value: program.get('id')
 								},
-								# colorbubble
 								ColorKeyBubble({
 									data: program
 									key: program.get('id')
@@ -109,7 +108,6 @@ load = (win) ->
 								onKeyDown: @_onEnterKeyDown
 							})
 						)
-					console.log "programIds", @state.programIds.list
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -134,10 +132,16 @@ load = (win) ->
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
 		_updatePrograms: (event) ->
-			@state.programIds.push event.target.value
-	
-			@setState {programIds}
-			console.log @state.programIds
+			tempArray = @state.programIds
+			console.log "temparray before push>>>>>", tempArray.toJS()
+			console.log "event>>>>>", event
+			tempArray = tempArray.push event
+			console.log "state.programIds: ", @state.programIds.toJS()
+			console.log "tempArray after push>>>>>", tempArray.toJS()
+			@setState {programIds: tempArray}
+
+			console.log ">>>> programid state:", @state.programIds.toJS()
+			console.log ">>>> programid state:", @state.programIds.toJS()
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
@@ -173,28 +177,33 @@ load = (win) ->
 
 				@props.onSuccess(obj.get('id'))
 				
-				@setState {clientFileId: obj.get('id')}
+				# @setState {clientFileId: obj.get('id')}
 
 			# creating client file program links
+			console.log "programIds before creating links >>>>>>", @state.programIds.toJS()
 
-			# programIds.map(programId) =>
-			# 	link = Imm.fromJS ({
-			# 		clientFileId
-			# 		status: 'enrolled'
-			# 		programId
-			# 	})
+			tempArray = @state.programIds.toJS()
+			console.log "tempArray", tempArray
 
-			# 	global.ActiveSession.persist.clientFileProgramLinks.create link, cb
-			# 		if err
-			# 			if err instanceof Persist.IOError
-			# 				console.error err
-			# 				Bootbox.alert """
-			# 					Please check your network connection and try again.
-			# 				"""
-			# 				return
+			tempArray.map (programId) ->
+				console.log "programId in loop>>>>>", programId
+				link = Imm.fromJS ({
+					clientFileId
+					status: 'enrolled'
+					programId
+				})
 
-			# 			CrashHandler.handle err
-			# 		return
+				global.ActiveSession.persist.clientFileProgramLinks.create link, (err,cb) =>
+					if err
+						if err instanceof Persist.IOError
+							console.error err
+							Bootbox.alert """
+								Please check your network connection and try again.
+							"""
+							return
+
+						CrashHandler.handle err
+					return
 
 
 
