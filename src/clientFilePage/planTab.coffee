@@ -17,10 +17,14 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+
+	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	WithTooltip = require('../withTooltip').load(win)
 	MetricLookupField = require('../metricLookupField').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	OpenDialogLink = require('../openDialogLink').load(win)
 	PrintButton = require('../printButton').load(win)
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
 
@@ -40,7 +44,14 @@ load = (win) ->
 			unless Imm.is(newProps.plan, @props.plan)
 				@setState {
 					plan: newProps.plan
-					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById newProps.planTargetsById
+				}
+
+			# Regenerate targetRevisions when target changed
+			unless Imm.is(newProps.planTargetsById, @props.planTargetsById)
+				console.log "planTargetsById updated!"
+				@setState {
+					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById newProps.planTargetsById
 				}
 
 		_generateCurrentTargetRevisionsById: (planTargetsById) ->
@@ -256,6 +267,7 @@ load = (win) ->
 					return true
 
 			return false
+
 		_hasTargetChanged: (targetId) ->
 			currentRev = @_normalizeTarget @state.currentTargetRevisionsById.get(targetId)
 
@@ -276,10 +288,8 @@ load = (win) ->
 				.delete('revisionId')
 				.delete('author')
 				.delete('timestamp')
-			unless Imm.is(currentRev, lastRevNormalized)
-				return true
 
-			return false
+			return not Imm.is(currentRev, lastRevNormalized)
 
 		_save: ->
 			@_normalizeTargets()
@@ -407,6 +417,7 @@ load = (win) ->
 				status: 'default'
 				name: ''
 				notes: ''
+				status: 'default'
 				metricIds: []
 			}
 			newCurrentRevs = @state.currentTargetRevisionsById.set targetId, newTarget
@@ -553,6 +564,11 @@ load = (win) ->
 							)
 						)
 						R.div({className: 'targets'},
+							# filter here
+							# filteredTargets = section.get('targetIds').filter (targetId) =>
+							# 	currentRevision = currentTargetRevisionsById.get targetId
+							# 	return currentRevision.get('status') is 'default'
+
 							(section.get('targetIds').map (targetId) =>
 								PlanTarget({
 									currentRevision: currentTargetRevisionsById.get targetId
@@ -635,6 +651,7 @@ load = (win) ->
 				].join ' '
 				onClick: @_onTargetClick
 			},
+				
 				R.div({className: 'nameContainer'},
 					R.input({
 						type: 'text'
@@ -648,7 +665,69 @@ load = (win) ->
 						onClick: @props.onTargetSelection if @props.isReadOnly
 
 					})
+
+					# button to deactivate the target
+					unless @props.currentRevision.get('status') is 'inactive'
+						WithTooltip({title: "De-Activate", placement: 'top'},
+							OpenDialogLink({
+								dialog: ModifyTargetStatusDialog
+								target: @props.currentRevision
+								newStatus: 'inactive'
+								title: "Deactivate the #{Term 'Target'}"
+								reasonLabel: "Reason for deactivation: "
+								message: "This will deactivate the #{Term 'Target'}"
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+							},
+								R.a({className: 'deactivate'},
+									FaIcon 'ban'
+								)
+							)
+						)
+
+					# button to complete the target
+					unless @props.currentRevision.get('status') is 'complete' or 
+					@props.currentRevision.get('status') is 'inactive'
+						WithTooltip({title: "Complete", placement: 'top'},
+							OpenDialogLink({
+								dialog: ModifyTargetStatusDialog
+								target: @props.currentRevision
+								newStatus: 'complete'
+								title: "Complete the #{Term 'Target'}"
+								reasonLabel: "Reason for completion: "
+								message: "This will complete the #{Term 'Target'}"
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+							},
+								R.a({className: 'complete'},
+									FaIcon 'check'
+								)
+							)
+						)
+
+					# button to activate the target
+					unless @props.currentRevision.get('status') is 'default'
+						WithTooltip({title: "Re-Activate", placement: 'top'},
+							OpenDialogLink({
+								dialog: ModifyTargetStatusDialog
+								target: @props.currentRevision
+								newStatus: 'default'
+								title: "Activate the #{Term 'Target'}"
+								reasonLabel: "Reason for activation: "
+								message: "This will activate the #{Term 'Target'}"
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+							},
+								R.a({className: 'activate'},
+									FaIcon 'play-circle'
+								)
+							)
+						)			
 				)
+
+				# temporarily showing status during development of this feature
+				R.div({},
+					"status: " 
+					@props.currentRevision.get 'status'
+				)
+
 				R.div({className: 'notesContainer'},
 					ExpandingTextArea({
 						className: 'notes field'
@@ -677,6 +756,8 @@ load = (win) ->
 		_updateField: (fieldName, event) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
+
+		
 		_onTargetClick: (event) ->
 			unless event.target.classList.contains 'field'
 				@refs.nameField.focus() unless @props.isReadOnly

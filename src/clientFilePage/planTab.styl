@@ -158,21 +158,56 @@
 							border-color #68AAD2 !important
 
 						> .nameContainer, > .notesContainer
+							display flex
 							> div
 								cursor pointer
 
-								&:hover
-									background sidebar-bg
+								// &:hover
+								// 	background sidebar-bg
 
 							> .field
 								width 100%
 
 								padding 2px 5px
+								
+							> .deactivate
+								display inline-block
+								padding 5px 0 5px 5px
+
+								color #337ab7
+								cursor pointer
+
+								&:hover
+									color red
+							
+							> .complete
+								display inline-block
+								padding 5px
+
+								color #337ab7
+								cursor pointer
+
+								&:hover
+									color green
+							
+							> .activate
+								display inline-block
+								padding 5px
+
+								color #337ab7
+								cursor pointer
+
+								&:hover
+									color green
+									
+						
+
 
 						> .nameContainer
 							padding-bottom 15px
 
 							font-weight 700
+								
 
 						> .metrics
 							display flex
