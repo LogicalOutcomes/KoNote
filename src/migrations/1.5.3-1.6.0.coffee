@@ -469,7 +469,7 @@ addEventTypeStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 			(cb) ->
 				# Decrypt, add index, re-encrypt
 				indexes = decryptFileName eventType, 1, globalEncryptionKey
-				indexes.push latestRevision.get('status')
+				indexes.unshift latestRevision.get('status')
 				encryptedIndexes = encryptFileName indexes, globalEncryptionKey
 
 				# Build new path
@@ -509,7 +509,7 @@ addProgEventStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 					# Decrypt, add index, re-encrypt
 					indexes = decryptFileName progEvent, 2, globalEncryptionKey
 					# Insert as first index (after ID)
-					indexes.splice(0, 1, latestRevision.get('status'))
+					indexes.unshift latestRevision.get('status')
 					console.log "indexes", indexes
 					encryptedIndexes = encryptFileName indexes, globalEncryptionKey
 
@@ -551,7 +551,7 @@ addProgNoteStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 					# Decrypt, add index, re-encrypt
 					indexes = decryptFileName progNote, 3, globalEncryptionKey
 					# Insert as first index (after ID)
-					indexes.splice(0, 1, latestRevision.get('status'))
+					indexes.unshift latestRevision.get('status')
 					console.log "indexes", indexes
 					encryptedIndexes = encryptFileName indexes, globalEncryptionKey
 
@@ -610,9 +610,6 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "6. Append existing status index to progNote headers"
 				addProgNoteStatusIndex dataDir, globalEncryptionKey, cb
-
-			# TODO: Add status field to planTarget indexes
-			# TODO: Add status field to any other dataModels' indexes that need it
 		]
 
 
