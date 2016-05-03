@@ -404,6 +404,7 @@ load = (win) ->
 			newTarget = Imm.fromJS {
 				id: targetId
 				clientFileId: @props.clientFileId
+				status: 'default'
 				name: ''
 				notes: ''
 				metricIds: []
