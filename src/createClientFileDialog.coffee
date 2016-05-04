@@ -86,7 +86,7 @@ load = (win) ->
 							R.button({
 								className: 
 									if isSelected
-										'btn btn-primary'
+										'btn btn-primary-active'
 									else 'btn btn-default'
 								onClick: 
 									if @state.programIds.contains(program.get('id'))
