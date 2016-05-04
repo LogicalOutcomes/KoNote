@@ -178,7 +178,7 @@ load = (win) ->
 
 				@props.onSuccess(obj.get('id'))
 
-				# creating client file program links  (now in cb of create clientFile)
+				# creating client file program links 
 				programIds = @state.programIds
 				programIds.forEach (programId) ->
 					link = Imm.fromJS {
