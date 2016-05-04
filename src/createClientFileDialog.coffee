@@ -146,8 +146,8 @@ load = (win) ->
 			console.log "removing from array"
 			tempArray = @state.programIds
 			index = tempArray.indexOf(event)
-			tempArray.splice(index, 1)
-			
+			tempArray = tempArray.splice(index, 1)
+
 
 			@setState {programIds: tempArray}, -> console.log(@state.programIds.toJS())
 
