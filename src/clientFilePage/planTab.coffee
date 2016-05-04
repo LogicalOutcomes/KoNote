@@ -795,9 +795,10 @@ load = (win) ->
 			# Process revision history to devise change logs
 			# They're already in reverse-order, so reverse() to map changes
 			revisions = @props.revisions
-			.reverse()
-			.map(@_buildChangeLog)
-			.reverse()
+			# TODO: Add this back in for #207 once we have the UI worked out
+			# .reverse()
+			# .map(@_buildChangeLog)
+			# .reverse()
 
 			return R.div({className: 'planTargetHistory'},
 				R.div({className: 'heading'},
