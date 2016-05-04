@@ -81,9 +81,13 @@ load = (win) ->
 						R.div({className: 'programsContainer'},
 						
 						(@props.programs.map (program) =>
+							isSelected = @state.programIds.contains(program.get('id'))
 
 							R.button({
-								className: 'btn btn-default'
+								className: 
+									if isSelected
+										'btn btn-primary'
+									else 'btn btn-default'
 								onClick: 
 									if @state.programIds.contains(program.get('id'))
 										@_removeFromPrograms.bind null, program.get('id')
