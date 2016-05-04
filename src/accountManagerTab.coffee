@@ -48,7 +48,6 @@ load = (win) ->
 						cb()
 				(cb) =>
 					Async.map userNames.toArray(), (userName, cb) =>
-
 						Persist.Users.Account.read Config.dataDirectory, userName, (err, result) =>
 							if err
 								cb err
@@ -71,6 +70,12 @@ load = (win) ->
 				@setState {userAccounts}
 
 		render: ->
+			activeUserAccounts = @state.userAccounts.filter (userAccount) ->
+				userAccount.getIn(['publicInfo', 'isActive'])
+
+			inactiveUserAccounts = @state.userAccounts.filter (userAccount) ->
+				not userAccount.getIn(['publicInfo', 'isActive'])
+
 			return R.div({
 				className: 'accountManagerTab'
 			},
@@ -78,48 +83,64 @@ load = (win) ->
 					R.h1({}, Term 'User Accounts')
 				)
 				R.div({className: 'main'},
-					OrderableTable({
-						tableData: @state.userAccounts
-						rowKey: ['userName']
-						rowIsVisible: (row) =>
-							return row.getIn(['publicInfo', 'isActive'])
-						columns: [
-							{
-								name: "User Name"
-								dataPath: ['userName']
-							}
-							{
-								name: "Account Type"
-								dataPath: ['publicInfo', 'accountType']
-							}
-							{
-								name: "Options"
-								nameIsVisible: false
-								buttons: [
+					R.div({className: 'activeUserAccounts'},
+						OrderableTable({
+							tableData: activeUserAccounts
+							rowKey: ['userName']
+							columns: [
+								{
+									name: "User Name"
+									dataPath: ['userName']
+								}
+								{
+									name: "Account Type"
+									dataPath: ['publicInfo', 'accountType']
+								}
+								{
+									name: "Options"
+									nameIsVisible: false
+									buttons: [
+										{
+											className: 'btn btn-default'
+											text: "Reset Password"
+											# icon: 'key'
+											dialog: ResetPasswordDialog
+										}
+										{
+											className: 'btn btn-danger'
+											text: "Deactivate"
+											# icon: 'user'
+											onClick: (userAccount) => @_deactivateAccount.bind null, userAccount
+										}									
+									]
+								}
+							]
+						})
+					)
+					unless inactiveUserAccounts.isEmpty()						
+						R.div({className: 'inactiveUserAccounts'},
+							R.br({})
+							R.h3({}, "Deactivated Accounts")
+							OrderableTable({
+								tableData: inactiveUserAccounts
+								rowKey: ['userName']
+								columns: [
 									{
-										className: 'btn btn-default'
-										text: "Reset Password"
-										# icon: 'key'
-										dialog: ResetPasswordDialog
+										name: "User Name"
+										dataPath: ['userName']
 									}
 									{
-										className: 'btn btn-danger'
-										text: "Deactivate"
-										# icon: 'user'
-										onClick: (dataPoint) =>
-											userName = dataPoint.get('userName')
-
-											@_deactivateAccount.bind null, userName, =>
-												# Remove userAccount
-												userAccounts = @state.userAccounts
-												.filter (userAccount) => userAccount.get('userName') isnt userName
-												# Restore state
-												@setState {userAccounts}
-									}									
+										name: "Account Type"
+										dataPath: ['publicInfo', 'accountType']
+									}
+									{
+										name: "Options"
+										nameIsVisible: false
+										buttons: []
+									}
 								]
-							}
-						]
-					})
+							})
+						)
 				)
 				R.div({className: 'optionsMenu'},
 					OpenDialogLink({
@@ -155,13 +176,16 @@ load = (win) ->
 				selectedUserName: userName
 			}
 
-		_deactivateAccount: (userName, cb) ->
+		_deactivateAccount: (userAccount) ->
+			console.log "userAccount", userAccount.toJS()
+			userName = userAccount.get('userName')
+
 			if userName is global.ActiveSession.userName
 				Bootbox.alert "Accounts cannot deactivate themselves.  Try logging in using a different account."
 				return
 
 			dataDirectory = global.ActiveSession.account.dataDirectory
-			userAccount = null
+			userAccountOp = null
 
 			Async.series [
 				(cb) =>
@@ -176,10 +200,10 @@ load = (win) ->
 							cb err
 							return
 
-						userAccount = account
+						userAccountOp = account
 						cb()
 				(cb) =>
-					userAccount.deactivate (err) =>
+					userAccountOp.deactivate (err) =>
 						if err
 							cb err
 							return
@@ -202,9 +226,15 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				# Account deactivated without errors
-				Bootbox.alert "The account #{userName} has been deactivated."
-				cb()
+				# Update clientFile's active status in state				
+				userAccountIndex = @state.userAccounts.indexOf userAccount
+				console.log "userAccountIndex", userAccountIndex
+				updatedUserAccount = userAccount.setIn(['publicInfo', 'isActive'], false)
+				userAccounts = @state.userAccounts.set userAccountIndex, updatedUserAccount
+				
+				# Save to local state, inform the user
+				@setState {userAccounts}, ->
+					Bootbox.alert "The account #{userName} has been deactivated."
 
 		_closeDialog: ->
 			@setState {
