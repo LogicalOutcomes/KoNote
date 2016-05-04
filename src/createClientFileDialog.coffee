@@ -15,9 +15,13 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
+
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
+	ProgramBubbles = require('./programBubbles').load(win)
+	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
 	CreateClientFileDialog = React.createFactory React.createClass
 		displayName: 'CreateClientFileDialog'
@@ -32,6 +36,8 @@ load = (win) ->
 				middleName: ''
 				lastName: ''
 				recordId: ''
+				programIds: Imm.List()
+				clientfileId: ''
 			}
 
 		render: ->
@@ -69,6 +75,33 @@ load = (win) ->
 							onKeyDown: @_onEnterKeyDown
 						})
 					)
+				
+					R.div({className: 'form-group'},
+						R.label({}, "Select #{Term 'Program'}(s)")
+						R.div({className: 'programsContainer'},
+						(@props.programs.map (program) =>
+							isSelected = @state.programIds.contains(program.get('id'))
+							R.button({
+								className: 
+									if isSelected 
+										'btn btn-default-active'
+									else 'btn btn-default'
+								onClick: 
+									if @state.programIds.contains(program.get('id'))
+										@_removeFromPrograms.bind null, program.get('id')
+									else @_pushToPrograms.bind null, program.get('id')	
+								key: program.get('id')
+								value: program.get('id')
+								},
+								ColorKeyBubble({
+									data: program
+									key: program.get('id')
+								})
+								program.get('name')
+							)
+						)
+						)
+					)
 					if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
 							R.label({}, Config.clientFileRecordId.label),
@@ -103,6 +136,13 @@ load = (win) ->
 			@setState {lastName: event.target.value}
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
+		_pushToPrograms: (event) ->
+			programIds = @state.programIds.push event
+			@setState {programIds}
+		_removeFromPrograms: (event) ->
+			index = @state.programIds.indexOf(event)
+			programIds = @state.programIds.splice(index, 1)
+			@setState {programIds}
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
@@ -138,6 +178,27 @@ load = (win) ->
 
 				@props.onSuccess(obj.get('id'))
 
+				# creating client file program links  (now in cb of create clientFile)
+				programIds = @state.programIds
+				programIds.forEach (programId) ->
+					link = Imm.fromJS {
+						clientFileId: obj.get('id')
+						status: 'enrolled'
+						programId
+					}
+
+					global.ActiveSession.persist.clientFileProgramLinks.create link, (err, link) =>
+						if err
+							if err instanceof Persist.IOError
+								console.error err
+								Bootbox.alert """
+									Please check your network connection and try again.
+								"""
+								return
+
+							CrashHandler.handle err
+							return
+						
 	return CreateClientFileDialog
 
 module.exports = {load}

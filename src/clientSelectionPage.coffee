@@ -380,6 +380,7 @@ load = (win) ->
 										OpenDialogLink({
 											className: 'input-group-btn'
 											dialog: CreateClientFileDialog
+											programs: @props.programs
 										},
 											R.button({
 												className: 'btn btn-default'
@@ -413,6 +414,7 @@ load = (win) ->
 											OpenDialogLink({
 												className: 'btn btn-success'
 												dialog: CreateClientFileDialog
+												programs: @props.programs
 											},
 												"New #{Term 'Client File'} "
 												FaIcon('folder-open')
@@ -499,6 +501,7 @@ load = (win) ->
 										title: "New #{Term 'Client File'}"
 										icon: 'folder-open'
 										dialog: CreateClientFileDialog
+										programs: @props.programs
 										onClick: @_updateManagerLayer.bind null, null
 									})
 									UserMenuItem({
