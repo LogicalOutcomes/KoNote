@@ -84,7 +84,10 @@ load = (win) ->
 
 							R.button({
 								className: 'btn btn-default'
-								onClick: @_updatePrograms.bind null, program.get('id')	
+								onClick: 
+									if program.get('id') in @props.programIds
+										@_removeFromPrograms.bind null, program.get('id')
+									else @_pushToPrograms.bind null, program.get('id')	
 								key: program.get('id')
 								value: program.get('id')
 								},
@@ -131,17 +134,18 @@ load = (win) ->
 			@setState {lastName: event.target.value}
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
-		_updatePrograms: (event) ->
+		_pushToPrograms: (event) ->
 			tempArray = @state.programIds
-			console.log "temparray before push>>>>>", tempArray.toJS()
-			console.log "event>>>>>", event
 			tempArray = tempArray.push event
-			console.log "state.programIds: ", @state.programIds.toJS()
-			console.log "tempArray after push>>>>>", tempArray.toJS()
 			@setState {programIds: tempArray}
 
-			console.log ">>>> programid state:", @state.programIds.toJS()
-			console.log ">>>> programid state:", @state.programIds.toJS()
+		_removeFromPrograms: (event) ->
+			tempArray = @state.programIds
+			index = tempArray.indexOf(event)
+			tempArray.splice(index, 1)
+
+			@setState {programIds: tempArray}
+
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
