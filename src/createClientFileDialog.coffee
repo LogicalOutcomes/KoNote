@@ -190,11 +190,11 @@ load = (win) ->
 
 				programIds.forEach (programId) ->
 					console.log "programId in loop>>>>>", programId
-					link = Imm.fromJS ({
+					link = Imm.fromJS {
 						clientFileId: obj.get('id')
 						status: 'enrolled'
 						programId
-					})
+					}
 
 					global.ActiveSession.persist.clientFileProgramLinks.create link, (err, link) =>
 						if err
