@@ -79,19 +79,16 @@ load = (win) ->
 					R.div({className: 'form-group'},
 						R.label({}, "Select #{Term 'Program'}(s)")
 						R.div({className: 'programsContainer'},
-						
 						(@props.programs.map (program) =>
 							isSelected = @state.programIds.contains(program.get('id'))
-
 							R.button({
 								className: 
-									if isSelected
-										'btn btn-primary-active'
+									if isSelected 
+										'btn btn-default-active'
 									else 'btn btn-default'
 								onClick: 
 									if @state.programIds.contains(program.get('id'))
 										@_removeFromPrograms.bind null, program.get('id')
-
 									else @_pushToPrograms.bind null, program.get('id')	
 								key: program.get('id')
 								value: program.get('id')
@@ -140,21 +137,12 @@ load = (win) ->
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
 		_pushToPrograms: (event) ->
-			console.log "pushing to array"
-			tempArray = @state.programIds
-			tempArray = tempArray.push event
-			@setState {programIds: tempArray}, -> console.log(@state.programIds.toJS())
-	
-
+			programIds = @state.programIds.push event
+			@setState {programIds}
 		_removeFromPrograms: (event) ->
-			console.log "removing from array"
-			tempArray = @state.programIds
-			index = tempArray.indexOf(event)
-			tempArray = tempArray.splice(index, 1)
-
-
-			@setState {programIds: tempArray}, -> console.log(@state.programIds.toJS())
-
+			index = @state.programIds.indexOf(event)
+			programIds = @state.programIds.splice(index, 1)
+			@setState {programIds}
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
@@ -190,19 +178,9 @@ load = (win) ->
 
 				@props.onSuccess(obj.get('id'))
 
-				console.log "obj.getID >>>>", obj.get('id')
-				
-				# @setState {clientFileId: obj.get('id')}
-
-
 				# creating client file program links  (now in cb of create clientFile)
-				console.log "state of programIds before creating links >>>>>>", @state.programIds.toJS()
-
 				programIds = @state.programIds
-				console.log "final programIds array to be looped >>>>>> ", programIds.toJS()
-
 				programIds.forEach (programId) ->
-					console.log "programId in loop>>>>>", programId
 					link = Imm.fromJS {
 						clientFileId: obj.get('id')
 						status: 'enrolled'
@@ -220,9 +198,7 @@ load = (win) ->
 
 							CrashHandler.handle err
 							return
-						console.log "created LINK >>>>>", link.toJS()
-
-
+						
 	return CreateClientFileDialog
 
 module.exports = {load}
