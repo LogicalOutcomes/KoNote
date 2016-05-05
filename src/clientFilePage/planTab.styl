@@ -46,10 +46,6 @@
 				.canSave
 					width 60%
 					
-			// @media (max-width: 1150px)
-			// 	.btn
-			// 		font-size .95em !important
-					
 			@media (max-width: 1150px)
 				display block
 
@@ -162,52 +158,36 @@
 							> div
 								cursor pointer
 
-								// &:hover
-								// 	background sidebar-bg
-
 							> .field
 								width 100%
 
 								padding 2px 5px
-								
-							> .deactivate
-								display inline-block
-								padding 5px 0 5px 5px
-
-								color #337ab7
-								cursor pointer
-
-								&:hover
-									color red
-							
-							> .complete
-								display inline-block
-								padding 5px
-
-								color #337ab7
-								cursor pointer
-
-								&:hover
-									color green
-							
-							> .activate
-								display inline-block
-								padding 5px
-
-								color #337ab7
-								cursor pointer
-
-								&:hover
-									color green
-									
-						
 
 
 						> .nameContainer
+							display flex
+							flex-direction row
+							
 							padding-bottom 15px
-
 							font-weight 700
 								
+							> .statusButtonGroup
+								display flex
+															
+								> .statusButton
+									flex 1
+									display flex
+									justify-content center
+									align-items center
+									padding 8px
+									padding-right 0
+									
+									font-size 18px
+									opacity 0.6
+									transition opacity .15s ease
+									
+									&:hover
+										opacity 1
 
 						> .metrics
 							display flex
