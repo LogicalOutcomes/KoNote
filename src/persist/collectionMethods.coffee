@@ -185,6 +185,11 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				cb err
 				return
 
+			# Update list cache to include new object
+			listCache.update getListCacheKey(contextualIds), (oldHeaders) ->
+				# Add header of this new object to cached list
+				return oldHeaders.push decodeObjectHeader(header, modelDef.indexes, destObjDir)
+
 			# Dispatch event via event bus, notifying the app of the change
 			eventBus.trigger "create:#{modelDef.name}", obj
 
@@ -373,6 +378,15 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					if err
 						cb new IOError err
 						return
+
+					# Update list cache to reflect new objDir name
+					listCache.update getListCacheKey(contextualIds), (oldHeaders) ->
+						return oldHeaders.map (oldHeader) ->
+							if oldHeader.get('id') != objId
+								return oldHeader
+
+							# Replace this old header with the new updated header
+							return decodeObjectHeader(expectedHeader, modelDef.indexes, objDir)
 
 					cb()
 		], (err) ->
