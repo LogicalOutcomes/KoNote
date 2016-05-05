@@ -1,7 +1,19 @@
 .createClientFileDialog
 	min-width 300px
 
-	.programsContainer
-		width: 350px
-	    max-height: 450px
-	    overflow: scroll
+	#programsContainer
+		width 350px
+		max-height 200px
+		overflow-y auto
+		
+		.programOptionButton
+			margin-right 10px
+			margin-bottom 10px
+			outline none
+			
+			&:last-child
+				margin-right 0
+			
+			.colorKeyBubble
+				margin-right 10px
+					
