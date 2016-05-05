@@ -73,7 +73,7 @@
 			flex 1
 			overflow-y auto
 			overflow-x hidden
-			padding 0 30px 10px 30px
+			padding 0 25px 25px 25px
 
 			> .section
 				&:last-child
@@ -124,8 +124,32 @@
 					text-align center
 
 				> .targets
+					padding 15px 0
+					
+					// TODO: Make this multi-use
+					&.status-completed, &.status-cancelled
+						padding 0
+					
+					> .inactiveTargetHeader
+						cursor pointer
+						font-size 16px
+						opacity 0.8							
+						transition opacity .15s ease
+						
+						&:hover
+							opacity 1
+						
+						.fa
+							font-size 1.25em
+							padding 12px 8px
+							transform rotate(0deg)
+							transition transform .25s ease
+							
+							&.expanded
+								transform rotate(90deg)
+							
 					> .target
-						margin-top 20px
+						margin-bottom 20px
 
 						border 1px solid sidebar-borders
 						border-radius 5px
@@ -134,14 +158,8 @@
 
 						transition all 0.15s linear
 						
-						&.status-default
-							// No additional styling
-								
-						&.status-cancelled
-							border-color red
-							
-						&.status-completed
-							border-color green
+						&:last-child
+							margin-bottom 0 !important
 
 						&.hasChanges
 							background #EEFFF5
@@ -160,8 +178,7 @@
 								
 						&.blink
 							background #7ecdfc !important
-							border-color #68AAD2 !important
-
+							border-color #68AAD2 !important						
 
 						> .nameContainer, > .descriptionContainer
 							> div

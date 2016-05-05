@@ -539,12 +539,21 @@ load = (win) ->
 						)
 						(if targetIdsByStatus.has('completed')
 							R.div({className: 'targets status-completed'},
-								R.a({onClick: @_toggleDisplayCompletedTargets},
-									if @state.displayCompletedTargets then "Hide" else "Display"
-									" completed #{Term 'targets'}"
-									" (#{targetIdsByStatus.get('completed').size})"
+								R.span({
+									className: 'inactiveTargetHeader'
+									onClick: @_toggleDisplayCompletedTargets
+								},
+									# Rotates 90'CW when expanded
+									FaIcon('caret-right', {
+										className: 'expanded' if @state.displayCompletedTargets
+									})
+									R.strong({}, targetIdsByStatus.get('completed').size)
+									" Completed "
+									Term (
+										if targetIdsByStatus.get('completed').size > 1 then 'Targets' else 'Target'
+									)									
 								)
-								if @state.displayCompletedTargets
+								(if @state.displayCompletedTargets
 									# Completed status
 									(targetIdsByStatus.get('completed').map (targetId) =>
 										PlanTarget({
@@ -554,20 +563,31 @@ load = (win) ->
 											key: targetId
 											isActive: targetId is selectedTargetId
 											isReadOnly
+											isInactive: true
 											onTargetUpdate: updateTarget.bind null, targetId
 											onTargetSelection: setSelectedTarget.bind null, targetId
 										})
 									)
+								)
 							)
 						)
 						(if targetIdsByStatus.has('cancelled')
 							R.div({className: 'targets status-cancelled'},
-								R.a({onClick: @_toggleDisplayCancelledTargets},
-									if @state.displayCancelledTargets then "Hide" else "Display"
-									" cancelled #{Term 'targets'}"
-									" (#{targetIdsByStatus.get('cancelled').size})"
+								R.span({
+									className: 'inactiveTargetHeader'
+									onClick: @_toggleDisplayCancelledTargets
+								},
+									# Rotates 90'CW when expanded
+									FaIcon('caret-right', {
+										className: 'expanded' if @state.displayCancelledTargets
+									})
+									R.strong({}, targetIdsByStatus.get('cancelled').size)
+									" Cancelled "
+									Term (
+										if targetIdsByStatus.get('cancelled').size > 1 then 'Targets' else 'Target'
+									)									
 								)
-								if @state.displayCancelledTargets
+								(if @state.displayCancelledTargets
 									# Cancelled statuses
 									(targetIdsByStatus.get('cancelled').map (targetId) =>
 										PlanTarget({
@@ -577,14 +597,12 @@ load = (win) ->
 											key: targetId
 											isActive: targetId is selectedTargetId
 											isReadOnly
+											isInactive: true
 											onTargetUpdate: updateTarget.bind null, targetId
 											onTargetSelection: setSelectedTarget.bind null, targetId
 										})
 									)
-								else
-									R.a({onClick: @_toggleDisplayCancelledTargets},
-
-									)
+								)
 							)
 						)
 					)
@@ -693,10 +711,10 @@ load = (win) ->
 						ref: 'nameField'
 						placeholder: "Name of #{Term 'target'}"
 						value: currentRevision.get('name')
-						disabled: @props.isReadOnly
+						disabled: @props.isReadOnly or @props.isInactive
 						onChange: @_updateField.bind null, 'name'
-						onFocus: @props.onTargetSelection unless @props.isReadOnly
-						onClick: @props.onTargetSelection if @props.isReadOnly
+						onFocus: @props.onTargetSelection unless @props.isReadOnly or @props.isInactive
+						onClick: @props.onTargetSelection if @props.isReadOnly or @props.isInactive
 
 					})					
 
@@ -769,10 +787,10 @@ load = (win) ->
 						ref: 'descriptionField'
 						placeholder: "Describe the current #{Term 'treatment plan'} . . ."
 						value: currentRevision.get('description')
-						disabled: @props.isReadOnly
+						disabled: @props.isReadOnly or @props.isInactive
 						onChange: @_updateField.bind null, 'description'
-						onFocus: @props.onTargetSelection unless @props.isReadOnly
-						onClick: @props.onTargetSelection if @props.isReadOnly
+						onFocus: @props.onTargetSelection unless @props.isReadOnly or @props.isInactive
+						onClick: @props.onTargetSelection if @props.isReadOnly or @props.isInactive
 					})
 				)
 				R.div({className: 'metrics'},
