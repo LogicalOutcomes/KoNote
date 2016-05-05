@@ -30,6 +30,7 @@ load = (win) ->
 			return {
 				openDialogId: null
 				userAccounts: Imm.List()
+				displayDeactivated: false
 			}
 
 		componentDidMount: ->
@@ -70,23 +71,39 @@ load = (win) ->
 				@setState {userAccounts}
 
 		render: ->
-			activeUserAccounts = @state.userAccounts.filter (userAccount) ->
-				userAccount.getIn(['publicInfo', 'isActive'])
+			userAccounts = @state.userAccounts
 
-			inactiveUserAccounts = @state.userAccounts.filter (userAccount) ->
-				not userAccount.getIn(['publicInfo', 'isActive'])
+			# Filter out deactivated accounts
+			unless @state.displayDeactivated
+				userAccounts = userAccounts.filter (userAccount) ->
+					userAccount.getIn(['publicInfo', 'isActive'])
 
-			return R.div({
-				className: 'accountManagerTab'
-			},
+			return R.div({className: 'accountManagerTab'},
 				R.div({className: 'header'},
-					R.h1({}, Term 'User Accounts')
+					R.h1({},
+						R.span({id: 'toggleDisplayDeactivated'},
+							R.div({className: 'checkbox'},
+								R.label({},
+									R.input({
+										type: 'checkbox'
+										checked: @state.displayDeactivated
+										onClick: @_toggleDisplayDeactivated
+									})
+									"Show deactivated"
+								)
+							)
+						)
+						
+						Term 'User Accounts'
+					)
 				)
 				R.div({className: 'main'},
-					R.div({className: 'activeUserAccounts'},
+					R.div({id: 'userAccountsContainer'},
 						OrderableTable({
-							tableData: activeUserAccounts
+							tableData: userAccounts
 							rowKey: ['userName']
+							rowClass: (dataPoint) ->
+								'deactivatedAccount' unless dataPoint.getIn(['publicInfo', 'isActive'])
 							columns: [
 								{
 									name: "User Name"
@@ -103,13 +120,11 @@ load = (win) ->
 										{
 											className: 'btn btn-default'
 											text: "Reset Password"
-											# icon: 'key'
 											dialog: ResetPasswordDialog
 										}
 										{
 											className: 'btn btn-danger'
 											text: "Deactivate"
-											# icon: 'user'
 											onClick: (userAccount) => @_deactivateAccount.bind null, userAccount
 										}									
 									]
@@ -117,30 +132,6 @@ load = (win) ->
 							]
 						})
 					)
-					unless inactiveUserAccounts.isEmpty()						
-						R.div({className: 'inactiveUserAccounts'},
-							R.br({})
-							R.h3({}, "Deactivated Accounts")
-							OrderableTable({
-								tableData: inactiveUserAccounts
-								rowKey: ['userName']
-								columns: [
-									{
-										name: "User Name"
-										dataPath: ['userName']
-									}
-									{
-										name: "Account Type"
-										dataPath: ['publicInfo', 'accountType']
-									}
-									{
-										name: "Options"
-										nameIsVisible: false
-										buttons: []
-									}
-								]
-							})
-						)
 				)
 				R.div({className: 'optionsMenu'},
 					OpenDialogLink({
@@ -175,6 +166,10 @@ load = (win) ->
 				openDialogId: 'resetPassword'
 				selectedUserName: userName
 			}
+
+		_toggleDisplayDeactivated: ->
+			displayDeactivated = not @state.displayDeactivated
+			@setState {displayDeactivated}
 
 		_deactivateAccount: (userAccount) ->
 			console.log "userAccount", userAccount.toJS()
@@ -263,7 +258,7 @@ load = (win) ->
 				title: "Create new #{Term 'account'}"
 				onClose: @_cancel
 			},
-				R.div({id: 'createAccountDialog'},
+				R.div({className: 'createAccountDialog'},
 					R.div({className: 'form-group'},
 						R.label({}, "User name"),
 						R.input({
@@ -391,7 +386,7 @@ load = (win) ->
 				onClose: @_cancel
 				ref: 'dialog'
 			},
-				R.div({className: 'ResetPasswordDialog'},
+				R.div({className: 'resetPasswordDialog'},
 					R.div({className: 'form-group'},
 						R.label({}, "New password"),
 						R.input({
