@@ -7,6 +7,7 @@
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
+_ = require 'underscore'
 
 Config = require '../config'
 Term = require '../term'
@@ -17,10 +18,14 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+
+	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	WithTooltip = require('../withTooltip').load(win)
 	MetricLookupField = require('../metricLookupField').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	OpenDialogLink = require('../openDialogLink').load(win)
 	PrintButton = require('../printButton').load(win)
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
 
@@ -40,7 +45,14 @@ load = (win) ->
 			unless Imm.is(newProps.plan, @props.plan)
 				@setState {
 					plan: newProps.plan
-					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById newProps.planTargetsById
+				}
+
+			# Regenerate targetRevisions when target changed
+			unless Imm.is(newProps.planTargetsById, @props.planTargetsById)
+				console.log "planTargetsById updated!"
+				@setState {
+					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById newProps.planTargetsById
 				}
 
 		_generateCurrentTargetRevisionsById: (planTargetsById) ->
@@ -140,7 +152,7 @@ load = (win) ->
 					})
 				)
 				R.div({className: 'targetDetail'},
-					(if selectedTarget is null
+					(if not selectedTarget?
 						R.div({className: "noSelection #{showWhen plan.get('sections').size > 0}"},
 							"More information will appear here when you select ",
 							"a #{Term 'target'} on the left."
@@ -200,37 +212,9 @@ load = (win) ->
 									)
 								)
 							)
-							R.div({className: 'history'},
-								R.div({className: 'heading'},
-									'History'
-								)
-								(if selectedTarget.get('revisions').size is 0
-									R.div({className: 'noRevisions'},
-										"This #{Term 'target'} is new.  ",
-										"It won't have any history until the #{Term 'client file'} is saved."
-									)
-								)
-								R.div({className: 'revisions'},
-									(selectedTarget.get('revisions').map (rev) =>
-										R.div({className: 'revision'},
-											R.div({className: 'nameLine'},
-												R.div({className: 'name'},
-													rev.get('name')
-												)
-												R.div({className: 'tag'},
-													Moment(rev.get('timestamp'), Persist.TimestampFormat)
-														.format('MMM D, YYYY [at] HH:mm'),
-													" by ",
-													rev.get('author')
-												)
-											)
-											R.div({className: 'notes'},
-												renderLineBreaks rev.get('notes')
-											)
-										)
-									).toJS()...
-								)
-							)
+							PlanTargetHistory({
+								revisions: selectedTarget.get('revisions')
+							})
 						)
 					)
 				)
@@ -256,6 +240,7 @@ load = (win) ->
 					return true
 
 			return false
+
 		_hasTargetChanged: (targetId) ->
 			currentRev = @_normalizeTarget @state.currentTargetRevisionsById.get(targetId)
 
@@ -264,8 +249,8 @@ load = (win) ->
 			unless target
 				# If target is empty
 				emptyName = currentRev.get('name') is ''
-				emptyNotes = currentRev.get('notes') is ''
-				if emptyName and emptyNotes
+				emptyDescription = currentRev.get('description') is ''
+				if emptyName and emptyDescription
 					return false
 
 				return true
@@ -276,10 +261,8 @@ load = (win) ->
 				.delete('revisionId')
 				.delete('author')
 				.delete('timestamp')
-			unless Imm.is(currentRev, lastRevNormalized)
-				return true
 
-			return false
+			return not Imm.is(currentRev, lastRevNormalized)
 
 		_save: ->
 			@_normalizeTargets()
@@ -325,7 +308,7 @@ load = (win) ->
 			# Trim whitespace from fields
 			return targetRev
 			.update('name', trim)
-			.update('notes', trim)
+			.update('description', trim)
 
 		_removeUnusedTargets: ->
 			@setState (state) =>
@@ -334,11 +317,11 @@ load = (win) ->
 						currentRev = state.currentTargetRevisionsById.get(targetId)
 
 						emptyName = currentRev.get('name') is ''
-						emptyNotes = currentRev.get('notes') is ''
+						emptyDescription = currentRev.get('description') is ''
 						noMetrics = currentRev.get('metricIds').size is 0
 						noHistory = @props.planTargetsById.get(targetId, null) is null
 
-						return emptyName and emptyNotes and noMetrics and noHistory
+						return emptyName and emptyDescription and noMetrics and noHistory
 
 				return {
 					plan: state.plan.update 'sections', (sections) =>
@@ -358,9 +341,9 @@ load = (win) ->
 					currentRev = @state.currentTargetRevisionsById.get(targetId)
 
 					emptyName = currentRev.get('name') is ''
-					emptyNotes = currentRev.get('notes') is ''
+					emptyDescription = currentRev.get('description') is ''
 
-					return not emptyName and not emptyNotes
+					return not emptyName and not emptyDescription
 
 		_addSection: ->
 			sectionId = Persist.generateId()
@@ -404,8 +387,9 @@ load = (win) ->
 			newTarget = Imm.fromJS {
 				id: targetId
 				clientFileId: @props.clientFileId
+				status: 'default'
 				name: ''
-				notes: ''
+				description: ''
 				metricIds: []
 			}
 			newCurrentRevs = @state.currentTargetRevisionsById.set targetId, newTarget
@@ -552,6 +536,11 @@ load = (win) ->
 							)
 						)
 						R.div({className: 'targets'},
+							# filter here
+							# filteredTargets = section.get('targetIds').filter (targetId) =>
+							# 	currentRevision = currentTargetRevisionsById.get targetId
+							# 	return currentRevision.get('status') is 'default'
+
 							(section.get('targetIds').map (targetId) =>
 								PlanTarget({
 									currentRevision: currentTargetRevisionsById.get targetId
@@ -634,6 +623,7 @@ load = (win) ->
 				].join ' '
 				onClick: @_onTargetClick
 			},
+				
 				R.div({className: 'nameContainer'},
 					R.input({
 						type: 'text'
@@ -647,15 +637,76 @@ load = (win) ->
 						onClick: @props.onTargetSelection if @props.isReadOnly
 
 					})
+
+					# button to deactivate the target
+					unless @props.currentRevision.get('status') is 'cancelled'
+						WithTooltip({title: "De-Activate", placement: 'top'},
+							OpenDialogLink({
+								dialog: ModifyTargetStatusDialog
+								target: @props.currentRevision
+								newStatus: 'cancelled'
+								title: "Deactivate the #{Term 'Target'}"
+								reasonLabel: "Reason for deactivation: "
+								message: "This will deactivate the #{Term 'Target'}"
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+							},
+								R.a({className: 'cancelled'},
+									FaIcon 'ban'
+								)
+							)
+						)
+
+					# button to complete the target
+					unless @props.currentRevision.get('status') is 'completed' or 
+					@props.currentRevision.get('status') is 'cancelled'
+						WithTooltip({title: "Complete", placement: 'top'},
+							OpenDialogLink({
+								dialog: ModifyTargetStatusDialog
+								target: @props.currentRevision
+								newStatus: 'completed'
+								title: "Complete the #{Term 'Target'}"
+								reasonLabel: "Reason for completion: "
+								message: "This will complete the #{Term 'Target'}"
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+							},
+								R.a({className: 'completed'},
+									FaIcon 'check'
+								)
+							)
+						)
+
+					# button to activate the target
+					unless @props.currentRevision.get('status') is 'default'
+						WithTooltip({title: "Re-Activate", placement: 'top'},
+							OpenDialogLink({
+								dialog: ModifyTargetStatusDialog
+								target: @props.currentRevision
+								newStatus: 'default'
+								title: "Activate the #{Term 'Target'}"
+								reasonLabel: "Reason for activation: "
+								message: "This will activate the #{Term 'Target'}"
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+							},
+								R.a({className: 'activate'},
+									FaIcon 'play-circle'
+								)
+							)
+						)			
 				)
-				R.div({className: 'notesContainer'},
+
+				# temporarily showing status during development of this feature
+				R.div({},
+					"status: " 
+					@props.currentRevision.get 'status'
+				)
+				R.div({className: 'descriptionContainer'},
 					ExpandingTextArea({
-						className: 'notes field'
-						ref: 'notesField'
+						className: 'description field'
+						ref: 'descriptionField'
 						placeholder: "Describe the current #{Term 'treatment plan'} . . ."
-						value: currentRevision.get('notes')
+						value: currentRevision.get('description')
 						disabled: @props.isReadOnly
-						onChange: @_updateField.bind null, 'notes'
+						onChange: @_updateField.bind null, 'description'
 						onFocus: @props.onTargetSelection unless @props.isReadOnly
 						onClick: @props.onTargetSelection if @props.isReadOnly
 					})
@@ -676,10 +727,112 @@ load = (win) ->
 		_updateField: (fieldName, event) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
+
+		
 		_onTargetClick: (event) ->
 			unless event.target.classList.contains 'field'
 				@refs.nameField.focus() unless @props.isReadOnly
 				@props.onTargetSelection()
+
+
+	PlanTargetHistory = React.createFactory React.createClass
+		displayName: 'PlanTargetHistory'
+
+		propTypes: -> {
+			revisions: React.PropTypes.instanceOf Imm.List
+		}
+
+		_buildChangeLog: (revision, index) ->
+			# Return the regular revision if no previous revision, or they match
+			previousRevision = if index > 0 then @props.revisions.get(index - 1) else null
+			if not previousRevision? or Imm.is(previousRevision, revision)
+				return revision
+
+			# TODO: Generalize this function for arrays & strings,
+			# so we (hopefully) don't need to change this when dataModel changes
+				
+			# Diff the metricIds
+			previousMetricIds = previousRevision.get('metricIds')
+			currentMetricIds = revision.get('metricIds')
+
+			unless Imm.is previousMetricIds, currentMetricIds
+				deletedMetricIds = previousMetricIds
+				.filterNot (metricId) -> currentMetricIds.contains(metricId)
+				.map (metricId) -> {deleted: metricId}
+
+				addedMetricIds = currentMetricIds
+				.filterNot (metricId) -> previousMetricIds.contains(metricId)
+				.map (metricId) -> {added: metricId}
+
+				changedMetricIds = deletedMetricIds.concat addedMetricIds				
+				revision = revision.set {changedMetricIds}
+				console.log "changedMetricIds", changedMetricIds
+
+
+			# Diff the name
+			previousName = previousRevision.get('name')
+			currentName = revision.get('name')
+
+			unless previousName is currentName
+				changedName = currentName
+				revision = revision.set {changedName}
+				console.log "changedName", changedName
+
+
+			# Diff the description
+			previousDescription = previousRevision.get('description')
+			currentDescription = revision.get('description')
+
+			unless previousDescription is currentDescription
+				changedDescription = currentDescription
+				revision = revision.set {changedDescription}
+				console.log "changedDescription", changedDescription
+
+
+			return revision
+
+		render: ->
+			# Process revision history to devise change logs
+			# They're already in reverse-order, so reverse() to map changes
+			revisions = @props.revisions
+			.reverse()
+			.map(@_buildChangeLog)
+			.reverse()
+
+			return R.div({className: 'planTargetHistory'},
+				R.div({className: 'heading'},
+					'History'
+				)
+				(if revisions.size is 0
+					R.div({className: 'noRevisions'},
+						"This #{Term 'target'} is new.  ",
+						"It won't have any history until the #{Term 'client file'} is saved."
+					)
+				)
+				R.div({className: 'revisions'},
+					(revisions.map (revision) =>
+						formattedTimestamp = Moment(revision.get('timestamp'), Persist.TimestampFormat)
+						.format('MMM D, YYYY [at] HH:mm')
+
+						R.div({className: 'revision'},
+							R.div({className: 'nameLine'},
+								R.div({className: 'name'}, revision.get('name'))
+								R.div({className: 'tag'},
+									formattedTimestamp
+									" by "
+									revision.get('author')
+								)
+							)
+							R.div({className: 'description'},
+								if revision.has('changedMetricIds')
+									"Changed: #{JSON.stringify revision.get('changedMetricIds')}"
+
+								renderLineBreaks revision.get('description')
+							)
+						)
+					).toJS()...
+				)
+			)
 
 	return {PlanView}
 

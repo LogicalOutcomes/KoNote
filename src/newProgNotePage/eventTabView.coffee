@@ -207,7 +207,7 @@ load = (win) ->
 								if selectedEventType?
 									[
 										B.MenuItem({
-											onClick: @_updateTypeId.bind null, null
+											onClick: @_updateTypeId.bind null, ''
 										}, 
 											"None "
 											FaIcon('ban')

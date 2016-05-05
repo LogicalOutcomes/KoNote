@@ -150,9 +150,9 @@ Create.planTarget = ({clientFile, metrics}, cb) ->
 
 	target = Imm.fromJS {
 		clientFileId: clientFile.get('id')
-		name: "Fake Target"
-		notes: "Notes Notes"
-		# status: "active"
+		name: Faker.company.bsBuzz()
+		description: Faker.lorem.paragraph()
+		status: "default"
 		metricIds
 	}
 
