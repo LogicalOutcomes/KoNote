@@ -42,16 +42,12 @@ load = (win) ->
 
 		componentWillReceiveProps: (newProps) ->
 			# Regenerate transient data when plan is updated
-			unless Imm.is(newProps.plan, @props.plan)
+			planChanged = not Imm.is(newProps.plan, @props.plan)
+			planTargetsChanged = not Imm.is(newProps.planTargetsById, @props.planTargetsById)
+			
+			if planChanged or planTargetsChanged
 				@setState {
 					plan: newProps.plan
-					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById newProps.planTargetsById
-				}
-
-			# Regenerate targetRevisions when target changed
-			unless Imm.is(newProps.planTargetsById, @props.planTargetsById)
-				console.log "planTargetsById updated!"
-				@setState {
 					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById newProps.planTargetsById
 				}
 
