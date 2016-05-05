@@ -30,7 +30,6 @@ load = (win) ->
 
 		_init: ->
 			if @props.showTooltip
-				console.info "Init!"
 				$(ReactDOM.findDOMNode(@)).tooltip {
 					placement: @props.placement
 					title: @props.title
@@ -38,7 +37,6 @@ load = (win) ->
 
 		_destroy: ->
 			if @props.showTooltip
-				console.info "Destroying"
 				$(ReactDOM.findDOMNode(@)).tooltip 'destroy'
 
 	return WithTooltip
