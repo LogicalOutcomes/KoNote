@@ -91,7 +91,7 @@ describe 'ApiBuilder', ->
 					})
 				})
 			}
-			api = buildApi s, [immutablePersonDataModel]
+			api = null
 
 			defaultNestedValue = Imm.Map({
 				a: Imm.Map({
@@ -101,6 +101,7 @@ describe 'ApiBuilder', ->
 			})
 
 			beforeEach (cb) ->
+				api = buildApi s, [immutablePersonDataModel]
 				buildDataDirectory dataDir, [immutablePersonDataModel], cb
 
 			it 'provides a create method', (cb) ->
@@ -253,7 +254,7 @@ describe 'ApiBuilder', ->
 					})
 				})
 			}
-			api = buildApi s, [mutablePersonDataModel]
+			api = null
 
 			defaultNestedValue = Imm.Map({
 				a: Imm.Map({
@@ -263,6 +264,7 @@ describe 'ApiBuilder', ->
 			})
 
 			beforeEach (cb) ->
+				api = buildApi s, [mutablePersonDataModel]
 				buildDataDirectory dataDir, [mutablePersonDataModel], cb
 
 			it 'provides a create method', (cb) ->
@@ -602,9 +604,10 @@ describe 'ApiBuilder', ->
 					})
 				]
 			}
-			api = buildApi s, [personDataModel]
+			api = null
 
 			beforeEach (cb) ->
+				api = buildApi s, [personDataModel]
 				buildDataDirectory dataDir, [personDataModel], cb
 
 			it 'valid create type a', (cb) ->
@@ -688,9 +691,10 @@ describe 'ApiBuilder', ->
 					]
 				}
 			]
-			api = buildApi s, modelDefs
+			api = null
 
 			beforeEach (cb) ->
+				api = buildApi s, modelDefs
 				buildDataDirectory dataDir, modelDefs, cb
 
 			it 'immutable object with mutable child types', (cb) ->
