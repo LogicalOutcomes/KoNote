@@ -15,8 +15,6 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
-			console.log "@props.hideContent", @props.hideContent
-
 			settings = {}
 
 			if @props.data?
@@ -39,8 +37,6 @@ load = (win) ->
 			if @props.hideContent
 				settings.content = settings.title
 				delete settings.title
-
-			console.log "settings", settings
 
 			$(@refs.bubble).popover(settings)
 
