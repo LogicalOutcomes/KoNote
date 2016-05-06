@@ -139,9 +139,11 @@ load = (win) ->
 						currentTargetRevisionsById: @state.currentTargetRevisionsById
 						selectedTargetId: @state.selectedTargetId
 						isReadOnly: @props.isReadOnly
+						planTargetsById: @props.planTargetsById
 
 						renameSection: @_renameSection
 						addTargetToSection: @_addTargetToSection
+						removeNewTarget: @_removeNewTarget
 						hasTargetChanged: @_hasTargetChanged
 						updateTarget: @_updateTarget
 						setSelectedTarget: @_setSelectedTarget
@@ -399,6 +401,17 @@ load = (win) ->
 					$(".target-#{targetId} .name.field").focus()
 				, 250)
 
+		_removeNewTarget: (sectionId, transientTargetId) ->
+			sectionIndex = @_getSectionIndex sectionId
+
+			plan = @state.plan.updateIn ['sections', sectionIndex, 'targetIds'], (targetIds) =>
+				targetIndex = targetIds.indexOf transientTargetId
+				return targetIds.splice(targetIndex, 1)
+
+			currentTargetRevisionsById = @state.currentTargetRevisionsById.delete transientTargetId
+
+			@setState {plan, currentTargetRevisionsById}
+
 		_getSectionIndex: (sectionId) ->
 			return @state.plan.get('sections').findIndex (section) =>
 				return section.get('id') is sectionId
@@ -460,6 +473,7 @@ load = (win) ->
 				plan
 				metricsById
 				currentTargetRevisionsById
+				planTargetsById
 				selectedTargetId
 				isReadOnly
 
@@ -467,11 +481,13 @@ load = (win) ->
 				addTargetToSection
 				hasTargetChanged
 				updateTarget
+				removeNewTarget
 				setSelectedTarget
-			} = @props			
+			} = @props
 
 			return R.div({className: 'sections', ref: 'sections'},
 				(plan.get('sections').map (section) =>
+					sectionId = section.get('id')
 					headerState = 'inline'
 
 					# Group targetIds into an object, with a property for each status
@@ -530,7 +546,9 @@ load = (win) ->
 										hasTargetChanged: hasTargetChanged targetId
 										key: targetId
 										isActive: targetId is selectedTargetId
+										isExistingTarget: planTargetsById.has(targetId)
 										isReadOnly
+										onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
 										onTargetUpdate: updateTarget.bind null, targetId
 										onTargetSelection: setSelectedTarget.bind null, targetId
 									})
@@ -559,11 +577,13 @@ load = (win) ->
 										PlanTarget({
 											currentRevision: currentTargetRevisionsById.get targetId
 											metricsById
-											hasTargetChanged: hasTargetChanged targetId
+											hasTargetChanged: hasTargetChanged(targetId) or planTargetsById.has(targetId)
 											key: targetId
 											isActive: targetId is selectedTargetId
+											isExistingTarget: planTargetsById.has(targetId)
 											isReadOnly
 											isInactive: true
+											onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
 											onTargetUpdate: updateTarget.bind null, targetId
 											onTargetSelection: setSelectedTarget.bind null, targetId
 										})
@@ -571,8 +591,8 @@ load = (win) ->
 								)
 							)
 						)
-						(if targetIdsByStatus.has('cancelled')
-							R.div({className: 'targets status-cancelled'},
+						(if targetIdsByStatus.has('deactivated')
+							R.div({className: 'targets status-deactivated'},
 								R.span({
 									className: 'inactiveTargetHeader'
 									onClick: @_toggleDisplayCancelledTargets
@@ -581,23 +601,25 @@ load = (win) ->
 									FaIcon('caret-right', {
 										className: 'expanded' if @state.displayCancelledTargets
 									})
-									R.strong({}, targetIdsByStatus.get('cancelled').size)
-									" Cancelled "
+									R.strong({}, targetIdsByStatus.get('deactivated').size)
+									" Deactivated "
 									Term (
-										if targetIdsByStatus.get('cancelled').size > 1 then 'Targets' else 'Target'
+										if targetIdsByStatus.get('deactivated').size > 1 then 'Targets' else 'Target'
 									)									
 								)
 								(if @state.displayCancelledTargets
 									# Cancelled statuses
-									(targetIdsByStatus.get('cancelled').map (targetId) =>
+									(targetIdsByStatus.get('deactivated').map (targetId) =>
 										PlanTarget({
 											currentRevision: currentTargetRevisionsById.get targetId
 											metricsById
 											hasTargetChanged: hasTargetChanged targetId
 											key: targetId
 											isActive: targetId is selectedTargetId
+											isExistingTarget: planTargetsById.has(targetId)
 											isReadOnly
 											isInactive: true
+											onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
 											onTargetUpdate: updateTarget.bind null, targetId
 											onTargetSelection: setSelectedTarget.bind null, targetId
 										})
@@ -698,7 +720,7 @@ load = (win) ->
 					"target-#{currentRevision.get('id')}"
 					"status-#{revisionStatus}"
 					'active' if @props.isActive
-					'hasChanges' if @props.hasTargetChanged
+					'hasChanges' if @props.hasTargetChanged or not @props.isExistingTarget
 					'readOnly' if @props.isReadOnly
 				].join ' '
 				onClick: @_onTargetClick
@@ -718,64 +740,75 @@ load = (win) ->
 
 					})					
 
-					# Can cancel/complete a 'default' target					
-					(if revisionStatus is 'default'
-						R.div({className: 'statusButtonGroup'},
-							WithTooltip({title: "Cancel #{Term 'Target'}", placement: 'top'},
-								OpenDialogLink({
-									className: 'statusButton'
-									dialog: ModifyTargetStatusDialog
-									planTarget: @props.currentRevision
-									newStatus: 'cancelled'
-									title: "Cancel #{Term 'Target'}"
-									message: """
-										This will remove the #{Term 'target'} from the #{Term 'client'} 
-										#{Term 'plan'}, and future #{Term 'progress notes'}. 
-										It may be re-activated again later.
-									"""
-									reasonLabel: "Reason for cancellation:"									
-									disabled: @props.isReadOnly or @props.hasTargetChanged
-								},
-									FaIcon 'ban'
+					(if @props.isExistingTarget
+						# Can cancel/complete a 'default' target					
+						(if revisionStatus is 'default'
+							R.div({className: 'statusButtonGroup'},
+								WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
+									OpenDialogLink({
+										className: 'statusButton'
+										dialog: ModifyTargetStatusDialog
+										planTarget: @props.currentRevision
+										newStatus: 'deactivated'
+										title: "Deactivate #{Term 'Target'}"
+										message: """
+											This will remove the #{Term 'target'} from the #{Term 'client'} 
+											#{Term 'plan'}, and future #{Term 'progress notes'}. 
+											It may be re-activated again later.
+										"""
+										reasonLabel: "Reason for deactivation:"									
+										disabled: @props.isReadOnly or @props.hasTargetChanged
+									},
+										FaIcon 'ban'
+									)
+								)
+								WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
+									OpenDialogLink({
+										className: 'statusButton'
+										dialog: ModifyTargetStatusDialog
+										planTarget: @props.currentRevision
+										newStatus: 'completed'
+										title: "Complete #{Term 'Target'}"
+										message: """
+											This will set the #{Term 'target'} as 'completed'. This often 
+											means that the desired outcome has been reached.
+										"""
+										reasonLabel: "Reason for completion:"
+										disabled: @props.isReadOnly or @props.hasTargetChanged
+									},
+										FaIcon 'check'
+									)
 								)
 							)
-							WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
-								OpenDialogLink({
-									className: 'statusButton'
-									dialog: ModifyTargetStatusDialog
-									planTarget: @props.currentRevision
-									newStatus: 'completed'
-									title: "Complete #{Term 'Target'}"
-									message: """
-										This will set the #{Term 'target'} as 'completed'. This often 
-										means that the desired outcome has been reached.
-									"""
-									reasonLabel: "Reason for completion:"
-									disabled: @props.isReadOnly or @props.hasTargetChanged
-								},
-									FaIcon 'check'
+						else
+							R.div({className: 'statusButtonGroup'},
+								WithTooltip({title: "Re-Activate #{Term 'Target'}", placement: 'top'},
+									OpenDialogLink({
+										className: 'statusButton'
+										dialog: ModifyTargetStatusDialog
+										planTarget: @props.currentRevision
+										newStatus: 'default'
+										title: "Re-Activate #{Term 'Target'}"									
+										message: """
+											This will re-activate the #{Term 'target'}, so it appears 
+											in the #{Term 'client'} #{Term 'plan'} and 
+											future #{Term 'progress notes'}.
+										"""
+										reasonLabel: "Reason for activation:"
+										disabled: @props.isReadOnly or @props.hasTargetChanged
+									},
+										FaIcon 'sign-in'
+									)
 								)
 							)
 						)
 					else
 						R.div({className: 'statusButtonGroup'},
-							WithTooltip({title: "Re-Activate #{Term 'Target'}", placement: 'top'},
-								OpenDialogLink({
-									className: 'statusButton'
-									dialog: ModifyTargetStatusDialog
-									planTarget: @props.currentRevision
-									newStatus: 'default'
-									title: "Re-Activate #{Term 'Target'}"									
-									message: """
-										This will re-activate the #{Term 'target'}, so it appears 
-										in the #{Term 'client'} #{Term 'plan'} and 
-										future #{Term 'progress notes'}.
-									"""
-									reasonLabel: "Reason for activation:"
-									disabled: @props.isReadOnly or @props.hasTargetChanged
-								},
-									FaIcon 'sign-in'
-								)
+							R.div({
+								className: 'statusButton'
+								onClick: @props.onRemoveNewTarget
+							},
+								FaIcon 'times'
 							)
 						)
 					)
@@ -806,6 +839,7 @@ load = (win) ->
 					).toJS()...
 				)
 			)
+
 		_updateField: (fieldName, event) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
