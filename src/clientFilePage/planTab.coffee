@@ -7,6 +7,7 @@
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
+_ = require 'underscore'
 
 Config = require '../config'
 Term = require '../term'
@@ -17,14 +18,19 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+
+	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	WithTooltip = require('../withTooltip').load(win)
 	MetricLookupField = require('../metricLookupField').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	OpenDialogLink = require('../openDialogLink').load(win)
 	PrintButton = require('../printButton').load(win)
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
 
 	PlanView = React.createFactory React.createClass
+		displayName: 'PlanView'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -36,10 +42,13 @@ load = (win) ->
 
 		componentWillReceiveProps: (newProps) ->
 			# Regenerate transient data when plan is updated
-			unless Imm.is(newProps.plan, @props.plan)
+			planChanged = not Imm.is(newProps.plan, @props.plan)
+			planTargetsChanged = not Imm.is(newProps.planTargetsById, @props.planTargetsById)
+			
+			if planChanged or planTargetsChanged
 				@setState {
 					plan: newProps.plan
-					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById newProps.planTargetsById
 				}
 
 		_generateCurrentTargetRevisionsById: (planTargetsById) ->
@@ -130,16 +139,18 @@ load = (win) ->
 						currentTargetRevisionsById: @state.currentTargetRevisionsById
 						selectedTargetId: @state.selectedTargetId
 						isReadOnly: @props.isReadOnly
+						planTargetsById: @props.planTargetsById
 
 						renameSection: @_renameSection
 						addTargetToSection: @_addTargetToSection
+						removeNewTarget: @_removeNewTarget
 						hasTargetChanged: @_hasTargetChanged
 						updateTarget: @_updateTarget
 						setSelectedTarget: @_setSelectedTarget
 					})
 				)
 				R.div({className: 'targetDetail'},
-					(if selectedTarget is null
+					(if not selectedTarget?
 						R.div({className: "noSelection #{showWhen plan.get('sections').size > 0}"},
 							"More information will appear here when you select ",
 							"a #{Term 'target'} on the left."
@@ -199,37 +210,9 @@ load = (win) ->
 									)
 								)
 							)
-							R.div({className: 'history'},
-								R.div({className: 'heading'},
-									'History'
-								)
-								(if selectedTarget.get('revisions').size is 0
-									R.div({className: 'noRevisions'},
-										"This #{Term 'target'} is new.  ",
-										"It won't have any history until the #{Term 'client file'} is saved."
-									)
-								)
-								R.div({className: 'revisions'},
-									(selectedTarget.get('revisions').map (rev) =>
-										R.div({className: 'revision'},
-											R.div({className: 'nameLine'},
-												R.div({className: 'name'},
-													rev.get('name')
-												)
-												R.div({className: 'tag'},
-													Moment(rev.get('timestamp'), Persist.TimestampFormat)
-														.format('MMM D, YYYY [at] HH:mm'),
-													" by ",
-													rev.get('author')
-												)
-											)
-											R.div({className: 'notes'},
-												renderLineBreaks rev.get('notes')
-											)
-										)
-									).toJS()...
-								)
-							)
+							PlanTargetHistory({
+								revisions: selectedTarget.get('revisions')
+							})
 						)
 					)
 				)
@@ -255,6 +238,7 @@ load = (win) ->
 					return true
 
 			return false
+
 		_hasTargetChanged: (targetId) ->
 			currentRev = @_normalizeTarget @state.currentTargetRevisionsById.get(targetId)
 
@@ -263,8 +247,8 @@ load = (win) ->
 			unless target
 				# If target is empty
 				emptyName = currentRev.get('name') is ''
-				emptyNotes = currentRev.get('notes') is ''
-				if emptyName and emptyNotes
+				emptyDescription = currentRev.get('description') is ''
+				if emptyName and emptyDescription
 					return false
 
 				return true
@@ -275,10 +259,8 @@ load = (win) ->
 				.delete('revisionId')
 				.delete('author')
 				.delete('timestamp')
-			unless Imm.is(currentRev, lastRevNormalized)
-				return true
 
-			return false
+			return not Imm.is(currentRev, lastRevNormalized)
 
 		_save: ->
 			@_normalizeTargets()
@@ -324,7 +306,7 @@ load = (win) ->
 			# Trim whitespace from fields
 			return targetRev
 			.update('name', trim)
-			.update('notes', trim)
+			.update('description', trim)
 
 		_removeUnusedTargets: ->
 			@setState (state) =>
@@ -333,11 +315,11 @@ load = (win) ->
 						currentRev = state.currentTargetRevisionsById.get(targetId)
 
 						emptyName = currentRev.get('name') is ''
-						emptyNotes = currentRev.get('notes') is ''
+						emptyDescription = currentRev.get('description') is ''
 						noMetrics = currentRev.get('metricIds').size is 0
 						noHistory = @props.planTargetsById.get(targetId, null) is null
 
-						return emptyName and emptyNotes and noMetrics and noHistory
+						return emptyName and emptyDescription and noMetrics and noHistory
 
 				return {
 					plan: state.plan.update 'sections', (sections) =>
@@ -357,9 +339,9 @@ load = (win) ->
 					currentRev = @state.currentTargetRevisionsById.get(targetId)
 
 					emptyName = currentRev.get('name') is ''
-					emptyNotes = currentRev.get('notes') is ''
+					emptyDescription = currentRev.get('description') is ''
 
-					return not emptyName and not emptyNotes
+					return not emptyName and not emptyDescription
 
 		_addSection: ->
 			sectionId = Persist.generateId()
@@ -403,8 +385,9 @@ load = (win) ->
 			newTarget = Imm.fromJS {
 				id: targetId
 				clientFileId: @props.clientFileId
+				status: 'default'
 				name: ''
-				notes: ''
+				description: ''
 				metricIds: []
 			}
 			newCurrentRevs = @state.currentTargetRevisionsById.set targetId, newTarget
@@ -417,6 +400,17 @@ load = (win) ->
 				setTimeout(=>
 					$(".target-#{targetId} .name.field").focus()
 				, 250)
+
+		_removeNewTarget: (sectionId, transientTargetId) ->
+			sectionIndex = @_getSectionIndex sectionId
+
+			plan = @state.plan.updateIn ['sections', sectionIndex, 'targetIds'], (targetIds) =>
+				targetIndex = targetIds.indexOf transientTargetId
+				return targetIds.splice(targetIndex, 1)
+
+			currentTargetRevisionsById = @state.currentTargetRevisionsById.delete transientTargetId
+
+			@setState {plan, currentTargetRevisionsById}
 
 		_getSectionIndex: (sectionId) ->
 			return @state.plan.get('sections').findIndex (section) =>
@@ -458,41 +452,28 @@ load = (win) ->
 			}
 
 	SectionsView = React.createFactory React.createClass
+		displayName: 'SectionsView'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
 			return {
 				sectionsScrollTop: 0
 				sectionOffsets: null
+				displayCancelledTargets: null
+				displayCompletedTargets: null
 			}
 
 		componentDidMount: ->
 			sectionsDom = @refs.sections
 			sectionsDom.addEventListener 'scroll', (event) =>
-				@_recalculateOffsets()
-
-		_recalculateOffsets: ->
-			sectionsDom = @refs.sections
-			sectionsScrollTop = sectionsDom.scrollTop
-
-			sectionOffsets = @props.plan.get('sections').map (section) =>
-				sectionDom = @refs['section-' + section.get('id')]
-
-				offset = Imm.Map({
-					top: sectionDom.offsetTop
-					height: sectionDom.offsetHeight
-				})
-
-				return [section.get('id'), offset]
-			.fromEntrySeq().toMap()
-
-			@setState (s) -> {sectionsScrollTop, sectionOffsets}
+				@_recalculateOffsets()		
 
 		render: ->
 			{
 				plan
 				metricsById
 				currentTargetRevisionsById
+				planTargetsById
 				selectedTargetId
 				isReadOnly
 
@@ -500,13 +481,20 @@ load = (win) ->
 				addTargetToSection
 				hasTargetChanged
 				updateTarget
+				removeNewTarget
 				setSelectedTarget
 			} = @props
 
 			return R.div({className: 'sections', ref: 'sections'},
 				(plan.get('sections').map (section) =>
+					sectionId = section.get('id')
 					headerState = 'inline'
 
+					# Group targetIds into an object, with a property for each status
+					targetIdsByStatus = section.get('targetIds').groupBy (targetId) ->
+						return currentTargetRevisionsById.getIn([targetId, 'status'])
+
+					# Recalculate sticky header
 					if @state.sectionOffsets and @state.sectionOffsets.get(section.get('id'))
 						scrollTop = @state.sectionsScrollTop
 						sectionOffset = @state.sectionOffsets.get(section.get('id'))
@@ -526,10 +514,8 @@ load = (win) ->
 						SectionHeader({
 							type: 'inline'
 							visible: headerState is 'inline'
-
 							section
 							isReadOnly
-
 							renameSection
 							addTargetToSection
 						})
@@ -537,10 +523,8 @@ load = (win) ->
 							type: 'sticky'
 							visible: headerState is 'sticky'
 							scrollTop: @state.sectionsScrollTop
-
 							section
 							isReadOnly
-
 							renameSection
 							addTargetToSection
 						})
@@ -549,25 +533,133 @@ load = (win) ->
 								"This #{Term 'section'} is empty."
 							)
 						)
-						R.div({className: 'targets'},
-							(section.get('targetIds').map (targetId) =>
-								PlanTarget({
-									currentRevision: currentTargetRevisionsById.get targetId
-									metricsById
-									hasTargetChanged: hasTargetChanged targetId
-									key: targetId
-									isActive: targetId is selectedTargetId
-									isReadOnly
-									onTargetUpdate: updateTarget.bind null, targetId
-									onTargetSelection: setSelectedTarget.bind null, targetId
-								})
-							).toJS()...
+
+						# TODO: Generalize these 3 into a single component
+
+						(if targetIdsByStatus.has('default')
+							R.div({className: 'targets status-default'},
+								# Default status
+								(targetIdsByStatus.get('default').map (targetId) =>
+									PlanTarget({
+										currentRevision: currentTargetRevisionsById.get targetId
+										metricsById
+										hasTargetChanged: hasTargetChanged targetId
+										key: targetId
+										isActive: targetId is selectedTargetId
+										isExistingTarget: planTargetsById.has(targetId)
+										isReadOnly
+										onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
+										onTargetUpdate: updateTarget.bind null, targetId
+										onTargetSelection: setSelectedTarget.bind null, targetId
+									})
+								)
+							)
+						)
+						(if targetIdsByStatus.has('completed')
+							R.div({className: 'targets status-completed'},
+								R.span({
+									className: 'inactiveTargetHeader'
+									onClick: @_toggleDisplayCompletedTargets
+								},
+									# Rotates 90'CW when expanded
+									FaIcon('caret-right', {
+										className: 'expanded' if @state.displayCompletedTargets
+									})
+									R.strong({}, targetIdsByStatus.get('completed').size)
+									" Completed "
+									Term (
+										if targetIdsByStatus.get('completed').size > 1 then 'Targets' else 'Target'
+									)									
+								)
+								(if @state.displayCompletedTargets
+									# Completed status
+									(targetIdsByStatus.get('completed').map (targetId) =>
+										PlanTarget({
+											currentRevision: currentTargetRevisionsById.get targetId
+											metricsById
+											hasTargetChanged: hasTargetChanged(targetId) or planTargetsById.has(targetId)
+											key: targetId
+											isActive: targetId is selectedTargetId
+											isExistingTarget: planTargetsById.has(targetId)
+											isReadOnly
+											isInactive: true
+											onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
+											onTargetUpdate: updateTarget.bind null, targetId
+											onTargetSelection: setSelectedTarget.bind null, targetId
+										})
+									)
+								)
+							)
+						)
+						(if targetIdsByStatus.has('deactivated')
+							R.div({className: 'targets status-deactivated'},
+								R.span({
+									className: 'inactiveTargetHeader'
+									onClick: @_toggleDisplayCancelledTargets
+								},
+									# Rotates 90'CW when expanded
+									FaIcon('caret-right', {
+										className: 'expanded' if @state.displayCancelledTargets
+									})
+									R.strong({}, targetIdsByStatus.get('deactivated').size)
+									" Deactivated "
+									Term (
+										if targetIdsByStatus.get('deactivated').size > 1 then 'Targets' else 'Target'
+									)									
+								)
+								(if @state.displayCancelledTargets
+									# Cancelled statuses
+									(targetIdsByStatus.get('deactivated').map (targetId) =>
+										PlanTarget({
+											currentRevision: currentTargetRevisionsById.get targetId
+											metricsById
+											hasTargetChanged: hasTargetChanged targetId
+											key: targetId
+											isActive: targetId is selectedTargetId
+											isExistingTarget: planTargetsById.has(targetId)
+											isReadOnly
+											isInactive: true
+											onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
+											onTargetUpdate: updateTarget.bind null, targetId
+											onTargetSelection: setSelectedTarget.bind null, targetId
+										})
+									)
+								)
+							)
 						)
 					)
 				).toJS()...
 			)
 
+		_recalculateOffsets: ->
+			sectionsDom = @refs.sections
+			sectionsScrollTop = sectionsDom.scrollTop
+
+			sectionOffsets = @props.plan.get('sections').map (section) =>
+				sectionDom = @refs['section-' + section.get('id')]
+
+				offset = Imm.Map({
+					top: sectionDom.offsetTop
+					height: sectionDom.offsetHeight
+				})
+
+				return [section.get('id'), offset]
+			.fromEntrySeq().toMap()
+
+			@setState (s) -> {sectionsScrollTop, sectionOffsets}
+
+		_toggleDisplayCancelledTargets: ->
+			displayCancelledTargets = not @state.displayCancelledTargets
+			@setState {displayCancelledTargets}
+
+		_toggleDisplayCompletedTargets: ->
+			displayCompletedTargets = not @state.displayCompletedTargets
+			@setState {displayCompletedTargets}
+
+
+
 	SectionHeader = React.createFactory React.createClass
+		displayName: 'SectionHeader'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
@@ -615,20 +707,25 @@ load = (win) ->
 			)
 
 	PlanTarget = React.createFactory React.createClass
+		displayName: 'PlanTarget'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
 			currentRevision = @props.currentRevision
+			revisionStatus = @props.currentRevision.get('status')
 
 			return R.div({
 				className: [
 					'target'
 					"target-#{currentRevision.get('id')}"
-					if @props.isActive then 'active' else ''
-					if @props.hasTargetChanged then 'hasChanges' else ''
+					"status-#{revisionStatus}"
+					'active' if @props.isActive
+					'hasChanges' if @props.hasTargetChanged or not @props.isExistingTarget
+					'readOnly' if @props.isReadOnly
 				].join ' '
 				onClick: @_onTargetClick
 			},
+				
 				R.div({className: 'nameContainer'},
 					R.input({
 						type: 'text'
@@ -636,20 +733,97 @@ load = (win) ->
 						ref: 'nameField'
 						placeholder: "Name of #{Term 'target'}"
 						value: currentRevision.get('name')
-						disabled: @props.isReadOnly
+						disabled: @props.isReadOnly or @props.isInactive
 						onChange: @_updateField.bind null, 'name'
-						onFocus: @props.onTargetSelection
-					})
+						onFocus: @props.onTargetSelection unless @props.isReadOnly or @props.isInactive
+						onClick: @props.onTargetSelection if @props.isReadOnly or @props.isInactive
+
+					})					
+
+					(if @props.isExistingTarget
+						# Can cancel/complete a 'default' target					
+						(if revisionStatus is 'default'
+							R.div({className: 'statusButtonGroup'},
+								WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
+									OpenDialogLink({
+										className: 'statusButton'
+										dialog: ModifyTargetStatusDialog
+										planTarget: @props.currentRevision
+										newStatus: 'deactivated'
+										title: "Deactivate #{Term 'Target'}"
+										message: """
+											This will remove the #{Term 'target'} from the #{Term 'client'} 
+											#{Term 'plan'}, and future #{Term 'progress notes'}. 
+											It may be re-activated again later.
+										"""
+										reasonLabel: "Reason for deactivation:"									
+										disabled: @props.isReadOnly or @props.hasTargetChanged
+									},
+										FaIcon 'ban'
+									)
+								)
+								WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
+									OpenDialogLink({
+										className: 'statusButton'
+										dialog: ModifyTargetStatusDialog
+										planTarget: @props.currentRevision
+										newStatus: 'completed'
+										title: "Complete #{Term 'Target'}"
+										message: """
+											This will set the #{Term 'target'} as 'completed'. This often 
+											means that the desired outcome has been reached.
+										"""
+										reasonLabel: "Reason for completion:"
+										disabled: @props.isReadOnly or @props.hasTargetChanged
+									},
+										FaIcon 'check'
+									)
+								)
+							)
+						else
+							R.div({className: 'statusButtonGroup'},
+								WithTooltip({title: "Re-Activate #{Term 'Target'}", placement: 'top'},
+									OpenDialogLink({
+										className: 'statusButton'
+										dialog: ModifyTargetStatusDialog
+										planTarget: @props.currentRevision
+										newStatus: 'default'
+										title: "Re-Activate #{Term 'Target'}"									
+										message: """
+											This will re-activate the #{Term 'target'}, so it appears 
+											in the #{Term 'client'} #{Term 'plan'} and 
+											future #{Term 'progress notes'}.
+										"""
+										reasonLabel: "Reason for activation:"
+										disabled: @props.isReadOnly or @props.hasTargetChanged
+									},
+										FaIcon 'sign-in'
+									)
+								)
+							)
+						)
+					else
+						R.div({className: 'statusButtonGroup'},
+							R.div({
+								className: 'statusButton'
+								onClick: @props.onRemoveNewTarget
+							},
+								FaIcon 'times'
+							)
+						)
+					)
 				)
-				R.div({className: 'notesContainer'},
+
+				R.div({className: 'descriptionContainer'},
 					ExpandingTextArea({
-						className: 'notes field'
-						ref: 'notesField'
+						className: 'description field'
+						ref: 'descriptionField'
 						placeholder: "Describe the current #{Term 'treatment plan'} . . ."
-						value: currentRevision.get('notes')
-						disabled: @props.isReadOnly
-						onChange: @_updateField.bind null, 'notes'
-						onFocus: @props.onTargetSelection
+						value: currentRevision.get('description')
+						disabled: @props.isReadOnly or @props.isInactive
+						onChange: @_updateField.bind null, 'description'
+						onFocus: @props.onTargetSelection unless @props.isReadOnly or @props.isInactive
+						onClick: @props.onTargetSelection if @props.isReadOnly or @props.isInactive
 					})
 				)
 				R.div({className: 'metrics'},
@@ -665,12 +839,117 @@ load = (win) ->
 					).toJS()...
 				)
 			)
+
 		_updateField: (fieldName, event) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
+
+		
 		_onTargetClick: (event) ->
 			unless event.target.classList.contains 'field'
-				@refs.nameField.focus()
+				@refs.nameField.focus() unless @props.isReadOnly
+				@props.onTargetSelection()
+
+
+	PlanTargetHistory = React.createFactory React.createClass
+		displayName: 'PlanTargetHistory'
+
+		propTypes: -> {
+			revisions: React.PropTypes.instanceOf Imm.List
+		}
+
+		_buildChangeLog: (revision, index) ->
+			# Return the regular revision if no previous revision, or they match
+			previousRevision = if index > 0 then @props.revisions.get(index - 1) else null
+			if not previousRevision? or Imm.is(previousRevision, revision)
+				return revision
+
+			# TODO: Generalize this function for arrays & strings,
+			# so we (hopefully) don't need to change this when dataModel changes
+				
+			# Diff the metricIds
+			previousMetricIds = previousRevision.get('metricIds')
+			currentMetricIds = revision.get('metricIds')
+
+			unless Imm.is previousMetricIds, currentMetricIds
+				deletedMetricIds = previousMetricIds
+				.filterNot (metricId) -> currentMetricIds.contains(metricId)
+				.map (metricId) -> {deleted: metricId}
+
+				addedMetricIds = currentMetricIds
+				.filterNot (metricId) -> previousMetricIds.contains(metricId)
+				.map (metricId) -> {added: metricId}
+
+				changedMetricIds = deletedMetricIds.concat addedMetricIds				
+				revision = revision.set {changedMetricIds}
+				console.log "changedMetricIds", changedMetricIds
+
+
+			# Diff the name
+			previousName = previousRevision.get('name')
+			currentName = revision.get('name')
+
+			unless previousName is currentName
+				changedName = currentName
+				revision = revision.set {changedName}
+				console.log "changedName", changedName
+
+
+			# Diff the description
+			previousDescription = previousRevision.get('description')
+			currentDescription = revision.get('description')
+
+			unless previousDescription is currentDescription
+				changedDescription = currentDescription
+				revision = revision.set {changedDescription}
+				console.log "changedDescription", changedDescription
+
+
+			return revision
+
+		render: ->
+			# Process revision history to devise change logs
+			# They're already in reverse-order, so reverse() to map changes
+			revisions = @props.revisions
+			# TODO: Add this back in for #207 once we have the UI worked out
+			# .reverse()
+			# .map(@_buildChangeLog)
+			# .reverse()
+
+			return R.div({className: 'planTargetHistory'},
+				R.div({className: 'heading'},
+					'History'
+				)
+				(if revisions.isEmpty()
+					R.div({className: 'noRevisions'},
+						"This #{Term 'target'} is new.  ",
+						"It won't have any history until the #{Term 'client file'} is saved."
+					)
+				)
+				R.div({className: 'revisions'},
+					(revisions.map (revision) =>
+						formattedTimestamp = Moment(revision.get('timestamp'), Persist.TimestampFormat)
+						.format('MMM D, YYYY [at] HH:mm')
+
+						R.div({className: 'revision'},
+							R.div({className: 'nameLine'},
+								R.div({className: 'name'}, revision.get('name'))
+								R.div({className: 'tag'},
+									formattedTimestamp
+									" by "
+									revision.get('author')
+								)
+							)
+							R.div({className: 'description'},
+								if revision.has('changedMetricIds')
+									"Changed: #{JSON.stringify revision.get('changedMetricIds')}"
+
+								renderLineBreaks revision.get('description')
+							)
+						)
+					).toJS()...
+				)
+			)
 
 	return {PlanView}
 

@@ -18,6 +18,7 @@ load = (win) ->
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 
 	Chart = React.createFactory React.createClass
+		displayName: 'Chart'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->

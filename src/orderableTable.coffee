@@ -19,6 +19,7 @@ load = (win) ->
 	{FaIcon, showWhen, executeIfFunction} = require('./utils').load(win)
 
 	OrderableTable = React.createFactory React.createClass
+		displayName: 'OrderableTable'
 		mixins: [React.addons.PureRenderMixin]
 
 		getDefaultProps: ->

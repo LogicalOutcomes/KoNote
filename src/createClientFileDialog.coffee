@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # A dialog for allowing the user to create a new client file
+Async = require 'async'
 
 Persist = require './persist'
 Imm = require 'immutable'
@@ -18,8 +19,11 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
+	ProgramBubbles = require('./programBubbles').load(win)
+	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
 	CreateClientFileDialog = React.createFactory React.createClass
+		displayName: 'CreateClientFileDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
@@ -31,6 +35,8 @@ load = (win) ->
 				middleName: ''
 				lastName: ''
 				recordId: ''
+				programIds: Imm.List()
+				clientfileId: ''
 			}
 
 		render: ->
@@ -41,7 +47,7 @@ load = (win) ->
 			},
 				R.div({className: 'createClientFileDialog'},
 					R.div({className: 'form-group'},
-						R.label({}, "First name"),
+						R.label({}, "First Name"),
 						R.input({
 							ref: 'firstNameField'
 							className: 'form-control'
@@ -51,7 +57,7 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Middle name"),
+						R.label({}, "Middle Name"),
 						R.input({
 							className: 'form-control'
 							onChange: @_updateMiddleName
@@ -60,7 +66,7 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Last name"),
+						R.label({}, "Last Name"),
 						R.input({
 							className: 'form-control'
 							onChange: @_updateLastName
@@ -68,7 +74,34 @@ load = (win) ->
 							onKeyDown: @_onEnterKeyDown
 						})
 					)
-					if Config.clientFileRecordId.isEnabled
+					
+					(unless @props.programs.isEmpty()
+						R.div({className: 'form-group'},
+							R.label({}, "Assign to #{Term 'Program'}(s)")
+							R.div({id: 'programsContainer'},
+								(@props.programs.map (program) =>
+									isSelected = @state.programIds.contains(program.get('id'))
+									R.button({
+										className: 'btn btn-default programOptionButton'
+										onClick: 
+											(if isSelected then @_removeFromPrograms else @_pushToPrograms)
+											.bind null, program.get('id')
+										key: program.get('id')
+										value: program.get('id')
+										},
+										ColorKeyBubble({
+											isSelected
+											data: program
+											key: program.get('id')
+										})
+										program.get('name')
+									)
+								)
+							)
+						)
+					)
+
+					(if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
 							R.label({}, Config.clientFileRecordId.label),
 							R.input({
@@ -79,6 +112,8 @@ load = (win) ->
 								onKeyDown: @_onEnterKeyDown
 							})
 						)
+					)
+
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -88,30 +123,46 @@ load = (win) ->
 							className: 'btn btn-primary'
 							onClick: @_submit
 							disabled: not @state.firstName or not @state.lastName
-						}, "Create #{Term 'File'}")
+						}, "Create #{Term 'Client File'}")
 					)
 				)
 			)
+
 		_cancel: ->
 			@props.onCancel()
+
 		_updateFirstName: (event) ->
 			@setState {firstName: event.target.value}
+
 		_updateMiddleName: (event) ->
 			@setState {middleName: event.target.value}
+
 		_updateLastName: (event) ->
 			@setState {lastName: event.target.value}
+
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
+
+		_pushToPrograms: (programId) ->
+			programIds = @state.programIds.push programId
+			@setState {programIds}
+
+		_removeFromPrograms: (programId) ->
+			index = @state.programIds.indexOf(programId)
+			programIds = @state.programIds.splice(index, 1)
+			@setState {programIds}
+
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
+
 		_submit: ->
+			@refs.dialog.setIsLoading(true)
+
 			first = @state.firstName
 			middle = @state.middleName
 			last = @state.lastName
-			recordId = @state.recordId
-
-			@refs.dialog.setIsLoading(true)
+			recordId = @state.recordId			
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
@@ -119,9 +170,35 @@ load = (win) ->
 			  plan: {
 			    sections: []
 			  }
-			}
+			}			
 
-			global.ActiveSession.persist.clientFiles.create clientFile, (err, obj) =>
+			newClientFileObj = null
+
+			Async.series [
+				(cb) =>
+					# Create the clientFile, 
+					global.ActiveSession.persist.clientFiles.create clientFile, (err, result) =>
+						if err
+							cb err
+							return
+
+						newClientFileObj = result
+						cb()
+				(cb) =>
+					# Build the link objects
+					clientFileProgramLinks = @state.programIds.map (programId) ->
+						Imm.fromJS {
+							clientFileId: newClientFileObj.get('id')
+							status: 'enrolled'
+							programId
+						}
+
+					# Build every link in list asyncronously, then cb
+					Async.each clientFileProgramLinks.toArray(), (link, cb) ->
+						global.ActiveSession.persist.clientFileProgramLinks.create link, cb
+					, cb
+
+			], (err) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
@@ -135,8 +212,10 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@props.onSuccess(obj.get('id'))
+				# UI will be auto-updated with new file/links by page listeners
+				@props.onSuccess()
 
+						
 	return CreateClientFileDialog
 
 module.exports = {load}

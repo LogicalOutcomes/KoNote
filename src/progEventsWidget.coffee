@@ -16,7 +16,8 @@ load = (win) ->
 	
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('./utils').load(win)	
 	
-	progEventsWidget = React.createFactory React.createClass
+	ProgEventsWidget = React.createFactory React.createClass
+		displayName: 'ProgEventsWidget'
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
@@ -65,11 +66,13 @@ load = (win) ->
 								R.div({className: 'date'}, @state.eventDate)
 							)							
 							if eventType?
-								R.div({
-									style:
-										borderBottom: "1px solid #{eventType.get('colorKeyHex')}"
-								},
-									"Type: #{eventType.get('name')}"
+								R.div({},
+									"Type: "
+									R.span({
+										style: {borderBottom: "2px solid #{eventType.get('colorKeyHex')}"}
+									},
+										eventType.get('name')
+									)
 								)
 						)
 					when 'small'
@@ -103,6 +106,6 @@ load = (win) ->
 				eventDate = [startDate, ' - ', endDate]
 			eventDate
 	
-	return progEventsWidget
+	return ProgEventsWidget
 
 module.exports = {load}

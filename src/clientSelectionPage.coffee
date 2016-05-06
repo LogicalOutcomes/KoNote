@@ -33,6 +33,7 @@ load = (win) ->
 	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
 
 	ClientSelectionPage = React.createFactory React.createClass
+		displayName: 'ClientSelectionPage'
 		getInitialState: ->
 			return {
 				status: 'init'
@@ -102,7 +103,7 @@ load = (win) ->
 			metricDefinitionHeaders = null
 			metricDefinitions = null
 
-			Async.series [
+			Async.parallel [
 				(cb) =>
 					ActiveSession.persist.clientFiles.list (err, result) =>
 						if err
@@ -112,65 +113,77 @@ load = (win) ->
 						clientFileHeaders = result
 						cb()
 				(cb) =>
-					ActiveSession.persist.programs.list (err, result) =>
-						if err
-							cb err
-							return
+					# TODO: Lazy load this
+					Async.series [
+						(cb) =>
+							ActiveSession.persist.programs.list (err, result) =>
+								if err
+									cb err
+									return
 
-						programHeaders = result
-						cb()
+								programHeaders = result
+								cb()
+						(cb) =>
+							Async.map programHeaders.toArray(), (programHeader, cb) =>
+								progId = programHeader.get('id')
+
+								ActiveSession.persist.programs.readLatestRevisions progId, 1, cb
+							, (err, results) =>
+								if err
+									cb err
+									return
+
+								programs = Imm.List(results).map (program) -> stripMetadata program.get(0)
+								cb()
+					], cb
 				(cb) =>
-					Async.map programHeaders.toArray(), (programHeader, cb) =>
-						progId = programHeader.get('id')
+					# TODO: Lazy load this
+					Async.series [
+						(cb) =>
+							ActiveSession.persist.clientFileProgramLinks.list (err, result) =>
+								if err
+									cb err
+									return
+								clientFileProgramLinkHeaders = result
+								cb()
+						(cb) =>
+							Async.map clientFileProgramLinkHeaders.toArray(), (linkHeader, cb) =>
+								linkId = linkHeader.get('id')
 
-						ActiveSession.persist.programs.readLatestRevisions progId, 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
+								ActiveSession.persist.clientFileProgramLinks.readLatestRevisions linkId, 1, cb
+							, (err, results) =>
+								if err
+									cb err
+									return
 
-						programs = Imm.List(results).map (program) -> stripMetadata program.get(0)
-						cb()
+								clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
+								cb()
+					], cb
 				(cb) =>
-					ActiveSession.persist.clientFileProgramLinks.list (err, result) =>
-						if err
-							cb err
-							return
-						clientFileProgramLinkHeaders = result
-						cb()
-				(cb) =>
-					Async.map clientFileProgramLinkHeaders.toArray(), (linkHeader, cb) =>
-						linkId = linkHeader.get('id')
+					# TODO: Lazy load this
+					Async.series [
+						(cb) =>							
+							ActiveSession.persist.metrics.list (err, result) =>
+								if err
+									cb err
+									return
 
-						ActiveSession.persist.clientFileProgramLinks.readLatestRevisions linkId, 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
+								metricDefinitionHeaders = result
+								cb()
+						(cb) =>
+							Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
+								metricDefinitionId = metricDefinitionHeader.get('id')
+								ActiveSession.persist.metrics.readLatestRevisions metricDefinitionId, 1, cb
+							, (err, results) =>
+								if err
+									cb err
+									return
 
-						clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
-						cb()
-				(cb) =>
-					ActiveSession.persist.metrics.list (err, result) =>
-						if err
-							cb err
-							return
+								metricDefinitions = Imm.List(results)
+								.map (metricDefinition) -> stripMetadata metricDefinition.first()
 
-						metricDefinitionHeaders = result
-						cb()
-				(cb) =>
-					Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
-						metricDefinitionId = metricDefinitionHeader.get('id')
-						ActiveSession.persist.metrics.readLatestRevisions metricDefinitionId, 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						metricDefinitions = Imm.List(results)
-						.map (metricDefinition) -> stripMetadata metricDefinition.first()
-
-						cb()
+								cb()
+					], cb
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -198,9 +211,7 @@ load = (win) ->
 				'create:clientFile': (newFile) =>
 					clientFileHeaders = @state.clientFileHeaders.push newFile
 					@setState {clientFileHeaders}
-					@_openClientFile(newFile.get('id'))
-
-				# TODO: Create a function for this kind of listening/updating
+					@_openClientFile(newFile.get('id')) unless global.isSeeding
 
 				'create:program createRevision:program': (newRev) =>
 					programId = newRev.get('id')
@@ -250,6 +261,7 @@ load = (win) ->
 			}
 
 	ClientSelectionPageUi = React.createFactory React.createClass
+		displayName: 'ClientSelectionPageUi'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -268,9 +280,6 @@ load = (win) ->
 
 		componentDidMount: ->
 			@_refreshResults()
-
-			# Temporary until we find a better way to queue the page
-			console.info "Activating clientFileSelectionPage"
 
 			setTimeout(=>
 				# Show and focus this window
@@ -371,6 +380,7 @@ load = (win) ->
 										OpenDialogLink({
 											className: 'input-group-btn'
 											dialog: CreateClientFileDialog
+											programs: @props.programs
 										},
 											R.button({
 												className: 'btn btn-default'
@@ -404,6 +414,7 @@ load = (win) ->
 											OpenDialogLink({
 												className: 'btn btn-success'
 												dialog: CreateClientFileDialog
+												programs: @props.programs
 											},
 												"New #{Term 'Client File'} "
 												FaIcon('folder-open')
@@ -490,6 +501,7 @@ load = (win) ->
 										title: "New #{Term 'Client File'}"
 										icon: 'folder-open'
 										dialog: CreateClientFileDialog
+										programs: @props.programs
 										onClick: @_updateManagerLayer.bind null, null
 									})
 									UserMenuItem({
@@ -645,6 +657,7 @@ load = (win) ->
 
 
 	UserMenuItem = React.createFactory React.createClass
+		displayName: 'UserMenuItem'
 		mixins: [React.addons.PureRenderMixin]
 
 		getDefaultProps: ->
@@ -664,7 +677,7 @@ load = (win) ->
 				onClick: @props.onClick
 			},
 				if @props.dialog?
-					OpenDialogLink({dialog: @props.dialog},
+					OpenDialogLink(@props,
 						FaIcon(@props.icon)
 						@props.title
 					)

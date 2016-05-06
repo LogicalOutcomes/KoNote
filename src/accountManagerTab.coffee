@@ -23,12 +23,14 @@ load = (win) ->
 	{FaIcon, showWhen} = require('./utils').load(win)
 
 	AccountManagerTab = React.createFactory React.createClass
+		displayName: 'AccountManagerTab'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
 			return {
 				openDialogId: null
 				userAccounts: Imm.List()
+				displayDeactivated: false
 			}
 
 		componentDidMount: ->
@@ -47,7 +49,6 @@ load = (win) ->
 						cb()
 				(cb) =>
 					Async.map userNames.toArray(), (userName, cb) =>
-
 						Persist.Users.Account.read Config.dataDirectory, userName, (err, result) =>
 							if err
 								cb err
@@ -70,55 +71,67 @@ load = (win) ->
 				@setState {userAccounts}
 
 		render: ->
-			return R.div({
-				className: 'accountManagerTab'
-			},
+			userAccounts = @state.userAccounts
+
+			# Filter out deactivated accounts
+			unless @state.displayDeactivated
+				userAccounts = userAccounts.filter (userAccount) ->
+					userAccount.getIn(['publicInfo', 'isActive'])
+
+			return R.div({className: 'accountManagerTab'},
 				R.div({className: 'header'},
-					R.h1({}, Term 'User Accounts')
+					R.h1({},
+						R.span({id: 'toggleDisplayDeactivated'},
+							R.div({className: 'checkbox'},
+								R.label({},
+									R.input({
+										type: 'checkbox'
+										checked: @state.displayDeactivated
+										onClick: @_toggleDisplayDeactivated
+									})
+									"Show deactivated"
+								)
+							)
+						)
+						
+						Term 'User Accounts'
+					)
 				)
 				R.div({className: 'main'},
-					OrderableTable({
-						tableData: @state.userAccounts
-						rowKey: ['userName']
-						rowIsVisible: (row) =>
-							return row.getIn(['publicInfo', 'isActive'])
-						columns: [
-							{
-								name: "User Name"
-								dataPath: ['userName']
-							}
-							{
-								name: "Account Type"
-								dataPath: ['publicInfo', 'accountType']
-							}
-							{
-								name: "Options"
-								nameIsVisible: false
-								buttons: [
-									{
-										className: 'btn btn-default'
-										text: "Reset Password"
-										# icon: 'key'
-										dialog: ResetPasswordDialog
-									}
-									{
-										className: 'btn btn-danger'
-										text: "Deactivate"
-										# icon: 'user'
-										onClick: (dataPoint) =>
-											userName = dataPoint.get('userName')
-
-											@_deactivateAccount.bind null, userName, =>
-												# Remove userAccount
-												userAccounts = @state.userAccounts
-												.filter (userAccount) => userAccount.get('userName') isnt userName
-												# Restore state
-												@setState {userAccounts}
-									}									
-								]
-							}
-						]
-					})
+					R.div({id: 'userAccountsContainer'},
+						OrderableTable({
+							tableData: userAccounts
+							rowKey: ['userName']
+							rowClass: (dataPoint) ->
+								'deactivatedAccount' unless dataPoint.getIn(['publicInfo', 'isActive'])
+							columns: [
+								{
+									name: "User Name"
+									dataPath: ['userName']
+								}
+								{
+									name: "Account Type"
+									dataPath: ['publicInfo', 'accountType']
+								}
+								{
+									name: "Options"
+									nameIsVisible: false
+									buttons: [
+										{
+											className: 'btn btn-default'
+											text: "Reset Password"
+											dialog: ResetPasswordDialog
+										}
+										{
+											className: 'btn btn-danger'
+											text: "Deactivate"
+											onClick: (userAccount) => @_deactivateAccount.bind null, userAccount
+										}									
+									]
+								}
+							]
+						})
+					)
 				)
 				R.div({className: 'optionsMenu'},
 					OpenDialogLink({
@@ -154,13 +167,20 @@ load = (win) ->
 				selectedUserName: userName
 			}
 
-		_deactivateAccount: (userName, cb) ->
+		_toggleDisplayDeactivated: ->
+			displayDeactivated = not @state.displayDeactivated
+			@setState {displayDeactivated}
+
+		_deactivateAccount: (userAccount) ->
+			console.log "userAccount", userAccount.toJS()
+			userName = userAccount.get('userName')
+
 			if userName is global.ActiveSession.userName
 				Bootbox.alert "Accounts cannot deactivate themselves.  Try logging in using a different account."
 				return
 
 			dataDirectory = global.ActiveSession.account.dataDirectory
-			userAccount = null
+			userAccountOp = null
 
 			Async.series [
 				(cb) =>
@@ -175,10 +195,10 @@ load = (win) ->
 							cb err
 							return
 
-						userAccount = account
+						userAccountOp = account
 						cb()
 				(cb) =>
-					userAccount.deactivate (err) =>
+					userAccountOp.deactivate (err) =>
 						if err
 							cb err
 							return
@@ -201,9 +221,15 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				# Account deactivated without errors
-				Bootbox.alert "The account #{userName} has been deactivated."
-				cb()
+				# Update clientFile's active status in state				
+				userAccountIndex = @state.userAccounts.indexOf userAccount
+				console.log "userAccountIndex", userAccountIndex
+				updatedUserAccount = userAccount.setIn(['publicInfo', 'isActive'], false)
+				userAccounts = @state.userAccounts.set userAccountIndex, updatedUserAccount
+				
+				# Save to local state, inform the user
+				@setState {userAccounts}, ->
+					Bootbox.alert "The account #{userName} has been deactivated."
 
 		_closeDialog: ->
 			@setState {
@@ -232,7 +258,7 @@ load = (win) ->
 				title: "Create new #{Term 'account'}"
 				onClose: @_cancel
 			},
-				R.div({id: 'createAccountDialog'},
+				R.div({className: 'createAccountDialog'},
 					R.div({className: 'form-group'},
 						R.label({}, "User name"),
 						R.input({
@@ -360,7 +386,7 @@ load = (win) ->
 				onClose: @_cancel
 				ref: 'dialog'
 			},
-				R.div({className: 'ResetPasswordDialog'},
+				R.div({className: 'resetPasswordDialog'},
 					R.div({className: 'form-group'},
 						R.label({}, "New password"),
 						R.input({

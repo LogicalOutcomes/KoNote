@@ -18,6 +18,7 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 
 	Dialog = React.createFactory React.createClass
+		displayName: 'Dialog'
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {

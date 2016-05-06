@@ -44,10 +44,12 @@ load = (win) ->
 
 	# Shortcut for using Font Awesome icons in React
 	FaIcon = (name, customProps) ->
-		properties = {className: "fa fa-#{name}"}
+		properties = customProps or {}
+
 		if customProps?
-			# Extend in any custom settings
-			_.extend properties, customProps
+			properties.className = "fa fa-#{name} #{properties.className}"
+		else
+			properties.className = "fa fa-#{name}"
 
 		return R.i(properties)
 

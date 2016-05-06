@@ -16,6 +16,7 @@ load = (win) ->
 	{FaIcon} = require('./utils').load(win)
 
 	OpenDialogLink = React.createFactory React.createClass
+		displayName: 'OpenDialogLink'
 		mixins: [React.addons.PureRenderMixin, LayeredComponentMixin]
 
 		getInitialState: ->

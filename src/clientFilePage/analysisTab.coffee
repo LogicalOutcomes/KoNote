@@ -29,6 +29,7 @@ load = (win) ->
 	TimeGranularities = ['Day', 'Week', 'Month', 'Year']
 
 	AnalysisView = React.createFactory React.createClass
+		displayName: 'AnalysisView'
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
@@ -225,7 +226,7 @@ load = (win) ->
 				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
 					R.div({className: 'chartContainer'},
 						# Force chart to be re-rendered when tab is opened
-						if @props.isVisible and (
+						if @props.isVisible and not @state.xTicks.isEmpty() and (
 							not @state.filteredProgEvents.isEmpty() or
 							not @state.selectedMetricIds.isEmpty()
 						)

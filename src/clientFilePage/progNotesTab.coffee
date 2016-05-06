@@ -15,6 +15,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	
 	CancelProgNoteDialog = require('./cancelProgNoteDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
@@ -27,11 +28,14 @@ load = (win) ->
 	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
+		displayName: 'ProgNotesView'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
 			return {
 				selectedItem: null
+				highlightedProgNoteId: null
+				highlightedTargetId: null
 				backdate: ''
 			}
 
@@ -118,23 +122,25 @@ load = (win) ->
 
 							switch progNote.get('type')
 								when 'basic'
-									BasicProgNoteView({
+									QuickNoteView({
 										key: progNote.get('id')
-
 										progNote
-										clientFile: @props.clientFile									
+										clientFile: @props.clientFile
 										selectedItem: @state.selectedItem
+										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
+										setSelectedItem: @_setSelectedItem
 										isReadOnly: @props.isReadOnly
 									})
 								when 'full'
-									FullProgNoteView({
+									ProgNoteView({
 										key: progNote.get('id')
-
 										progNote
 										progEvents
 										eventTypes: @props.eventTypes
 										clientFile: @props.clientFile
 										setSelectedItem: @_setSelectedItem
+										setHighlightedProgNoteId: @_setHighlightedProgNoteId
+										setHighlightedTargetId: @_setHighlightedTargetId
 										selectedItem: @state.selectedItem
 										isReadOnly: @props.isReadOnly
 									})
@@ -144,12 +150,25 @@ load = (win) ->
 					)
 					ProgNoteDetailView({
 						item: @state.selectedItem
+						highlightedProgNoteId: @state.highlightedProgNoteId
+						highlightedQuickNoteId: @state.highlightedQuickNoteId
+						highlightedTargetId: @state.highlightedTargetId
 						progNoteHistories: @props.progNoteHistories
 						progEvents: @props.progEvents
 						eventTypes: @props.eventTypes
 					})
 				)
 			)
+
+		_setHighlightedProgNoteId: (highlightedProgNoteId) ->
+			@setState {highlightedProgNoteId}
+
+		_setHighlightedQuickNoteId: (highlightedQuickNoteId) ->	
+			@setState {highlightedQuickNoteId}
+
+		_setHighlightedTargetId: (highlightedTargetId) ->
+			@setState {highlightedTargetId}
+
 		_openNewProgNote: ->
 			if @props.hasChanges()
 				Bootbox.dialog {
@@ -244,12 +263,18 @@ load = (win) ->
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
 
-	# These are called 'quick notes' in the UI
-	BasicProgNoteView = React.createFactory React.createClass
+
+	QuickNoteView = React.createFactory React.createClass
+		displayName: 'QuickNoteView'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			R.div({className: 'basic progNote'},
+			R.div({
+				className: 'basic progNote'
+				## TODO: Restore hover feature
+				# onMouseEnter: @props.setHighlightedQuickNoteId.bind null, @props.progNote.get('id')
+				# onMouseLeave: @props.setHighlightedQuickNoteId.bind null, null
+			},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
 						if @props.progNote.get('backdate') != ''
@@ -264,7 +289,10 @@ load = (win) ->
 						@props.progNote.get('author')
 					)					
 				)
-				R.div({className: 'notes'},
+				R.div({
+					className: 'notes'
+					onClick: @_selectQuickNote
+				},
 					R.div({className: 'progNoteToolbar'},
 						PrintButton({
 							dataSet: [
@@ -295,11 +323,22 @@ load = (win) ->
 				)
 			)
 
-	FullProgNoteView = React.createFactory React.createClass
+		_selectQuickNote: ->
+			@props.setSelectedItem Imm.fromJS {
+				type: 'quickNote'
+				progNoteId: @props.progNote.get('id')
+			}
+
+	ProgNoteView = React.createFactory React.createClass
+		displayName: 'ProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			R.div({className: 'full progNote'},
+			R.div({
+				className: 'full progNote'
+				## TODO: Restore hover feature
+				# onMouseEnter: @props.setHighlightedProgNoteId.bind null, @props.progNote.get('id')
+			},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
 						if @props.progNote.get('backdate') != ''
@@ -389,6 +428,9 @@ load = (win) ->
 										R.section({key: section.get('id')},
 											R.h2({}, section.get('name'))
 											R.div({
+												## TODO: Restore hover feature
+												# onMouseEnter: @props.setHighlightedProgNoteId.bind null, @props.progNote.get('id')
+												# onMouseLeave: @props.setHighlightedProgNoteId.bind null, null
 												className: [
 													'empty'
 													showWhen section.get('targets').isEmpty()
@@ -403,6 +445,8 @@ load = (win) ->
 														'target'
 														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is target.get('id')
 													].join ' '
+													## TODO: Restore hover feature
+													# onMouseEnter: @props.setHighlightedTargetId.bind null, target.get('id')
 												},
 													R.h3({
 														onClick: @_selectPlanSectionTarget.bind(
@@ -454,6 +498,7 @@ load = (win) ->
 				type: 'basicUnit'
 				unitId: unit.get('id')
 				unitName: unit.get('name')
+				progNoteId: @props.progNote.get('id')
 			}
 		_selectPlanSectionTarget: (unit, section, target) ->
 			@props.setSelectedItem Imm.fromJS {
@@ -462,9 +507,11 @@ load = (win) ->
 				sectionId: section.get('id')
 				targetId: target.get('id')
 				targetName: target.get('name')
+				progNoteId: @props.progNote.get('id')
 			}
 
 	CancelledProgNoteView = React.createFactory React.createClass
+		displayName: 'CancelledProgNoteView'
 		getInitialState: ->
 			return {
 				isExpanded: false
@@ -474,9 +521,8 @@ load = (win) ->
 			# Here, we assume that the latest revision was the one that
 			# changed the status.  This assumption may become invalid
 			# when full prognote editing becomes supported.
-			statusChangeRev = @props.progNoteHistory.last()
 			latestRev = @props.progNoteHistory.last()
-			console.log "history ", @props.progNoteHistory.toJS();
+			statusChangeRev = latestRev
 
 			return R.div({className: 'cancelStub'},
 				R.button({
@@ -519,14 +565,14 @@ load = (win) ->
 
 					switch latestRev.get('type')
 						when 'basic'
-							BasicProgNoteView({
+							QuickNoteView({
 								progNote: @props.progNoteHistory.first()
 								clientFile: @props.clientFile									
 								selectedItem: @props.selectedItem
 								isReadOnly: true
 							})
 						when 'full'
-							FullProgNoteView({
+							ProgNoteView({
 								progNote: @props.progNoteHistory.first()
 								progEvents: @props.progEvents
 								eventTypes: @props.eventTypes

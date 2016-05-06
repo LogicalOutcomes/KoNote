@@ -2,10 +2,14 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+Fs = require 'fs'
+Async = require 'async'
+Rimraf = require 'rimraf'
+
 Config = require './config'
 Persist = require './persist'
-Async = require 'async'
-Fs = require 'fs'
+Atomic = require './persist/atomic'
+
 
 load = (win) ->
 	# Libraries from browser context
@@ -21,43 +25,14 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon} = require('./utils').load(win)
 
+
 	NewInstallationPage = React.createFactory React.createClass
+		displayName: 'NewInstallationPage'
 		mixins: [React.addons.PureRenderMixin]
 
-		init: ->
-			# First, we must test for read/write permissions
-
-			fileTestPath = './writeFileTest.txt'
-			fileTestString = "Hello World!"			
-
-			Async.series [
-				(cb) => Fs.writeFile fileTestPath, fileTestString, cb
-				(cb) => Fs.unlink fileTestPath, cb
-			], (err) =>
-				if err
-
-					if err.code is 'EROFS'
-						additionalMessage = unless process.platform is 'darwin' then "" else
-							"Please make sure you have dragged #{Config.productName} into
-							your Applications folder."
-
-						Bootbox.alert """
-							ERROR: '#{err.code}'.
-							Unable to write to the local directory.
-							#{additionalMessage}
-						""", @props.closeWindow
-
-					else
-						Bootbox.alert """
-							ERROR: '#{err.code}'.
-							Please contact #{Config.productName} technical support.
-						""", @props.closeWindow
-
-					console.error "Data directory test error:", err
-					return
-
-				console.log "Data directory #{Config.dataDirectory} is writeable!"
-
+		init: ->			
+			@_testDataDirectory()
+			@_testLocalWritePermissions()
 
 		deinit: (cb=(->)) ->
 			cb()
@@ -69,13 +44,69 @@ load = (win) ->
 		suggestClose: ->
 			@refs.ui.suggestClose()
 
+		_testDataDirectory: ->
+			dataDirectory = Config.dataDirectory
+
+			# Ensure a non-standard dataDirectory path actually exists
+			if dataDirectory isnt 'data' and not Fs.existsSync(dataDirectory)
+				Bootbox.alert {
+					title: "Database folder not found"
+					message: """
+						The destination folder specified for the database installation
+						can not be found on the file system. 
+						Please check the 'dataDirectory' path in your configuration file.
+					"""
+					callback: =>
+						process.exit(1)
+				}
+			else
+				console.log "Data directory is valid!"
+
+		_testLocalWritePermissions: ->
+			fileTestPath = 'writeFileTest.txt'
+			fileTestString = "Hello World!"
+
+			Async.series [
+				(cb) => Fs.writeFile fileTestPath, fileTestString, cb
+				(cb) => Fs.unlink fileTestPath, cb
+			], (err) =>
+
+				if err and err.code is 'EROFS'
+					additionalMessage = unless process.platform is 'darwin' then "" else
+						"Please make sure you have dragged #{Config.productName} into
+						your Applications folder."
+
+					Bootbox.alert """
+						ERROR: '#{err.code}'.
+						Unable to write to the local directory.
+						#{additionalMessage}
+					""", @props.closeWindow
+
+					console.error "Unable to write to local directory:", err
+					return
+
+				else if err
+					Bootbox.alert """
+						ERROR: '#{err.code}'.
+						Please contact #{Config.productName} technical support.
+					""", @props.closeWindow
+
+					console.error "Local directory write test error:", err
+					return
+
+				# Test successful
+				console.log "Local directory is writeable!"
+
+
 		render: ->
 			return NewInstallationPageUi({
 				ref: 'ui'
 				closeWindow: @props.closeWindow
 			})
 
+
 	NewInstallationPageUi = React.createFactory React.createClass
+		displayName: 'NewInstallationPageUi'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -144,7 +175,7 @@ load = (win) ->
 								id: 'logoImage'
 								src: './assets/brand/logo.png'
 							})
-							R.div({id: 'version'}, "v1.5.3 Beta")
+							R.div({id: 'version'}, "v#{Config.version}")
 						)						
 					)
 					R.div({
@@ -247,12 +278,24 @@ load = (win) ->
 						className: 'animated fadeIn'
 					}, 
 						"Contact us:"						
-						R.a({href: 'mailto:help@konode.ca'},
-							"help@konode.ca"
+						R.a({
+							href: "#"
+							onClick: @_copyHelpEmail.bind null, Config.supportEmailAddress
+						},
+							Config.supportEmailAddress
 						)
 					)
 				)
 			)
+
+		_copyHelpEmail: (emailAddress) ->
+			clipboard = Gui.Clipboard.get()
+			clipboard.set emailAddress
+
+			Bootbox.alert {
+				title: "Copied Support E-mail"
+				message: "\"#{emailAddress}\" copied to your clipboard!"
+			}
 
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
@@ -283,28 +326,9 @@ load = (win) ->
 					$newTab.attr 'class', ('animated fadeIn' + onDirection)
 			, 500)
 
-		_showContactInfo: ->
-			Bootbox.dialog {
-				title: "Contact Information:"
-				message: """
-					<ul>
-						<li>E-mail: david@konode.ca</li>
-						<li>Phone: 1-416-816-3422</li>
-					</ul>
-				"""
-				buttons: {
-					success: {
-						label: "Done"
-						className: 'btn btn-success'
-					}
-				}
-			}
-
 		_updateProgress: (percent, message) ->
 			if not percent and not message
 				percent = message = null
-
-			console.log "About to update progress..."
 
 			@setState {
 				isLoading: true
@@ -319,12 +343,47 @@ load = (win) ->
 			systemAccount = null
 			adminPassword = @state.password
 
+			destDataDirectoryPath = Config.dataDirectory
+			tempDataDirectoryPath = 'data_tmp'
+
+			atomicOp = null
+	
 			Async.series [
+				(cb) =>
+					# Write data folder to temporary local directory, before moving to destination
+					Atomic.writeDirectoryNormally destDataDirectoryPath, tempDataDirectoryPath, (err, op) =>
+						if err 
+							# data_tmp folder already exists from a failed install
+							if err instanceof Persist.IOError	and err.cause.code is 'EEXIST'
+								Bootbox.confirm {
+									title: "OK to overwrite previous/pending installation?"
+									message: """
+										It appears you have data left over from an incomplete installation.
+										Would you like to overwrite it?
+									"""
+									callback: (confirmed) =>
+										if confirmed
+											# Delete temp directory and start installation over
+											Rimraf tempDataDirectoryPath, (err) =>
+												if err
+													cb err
+													return
+
+												@_install()
+								}
+								return
+
+							cb err
+							return
+
+						# Save our atomic operation
+						atomicOp = op
+						cb()
 				(cb) =>
 					@_updateProgress 0, "Setting up database..."
 
 					# Build the data directory, with subfolders/collections indicated in dataModels
-					Persist.buildDataDirectory Config.dataDirectory, (err) =>
+					Persist.buildDataDirectory tempDataDirectoryPath, (err) =>
 						if err
 							cb err
 							return
@@ -341,7 +400,7 @@ load = (win) ->
 					, 3000)
 
 					# Generate mock "_system" admin user
-					Persist.Users.Account.setUp Config.dataDirectory, (err, result) =>
+					Persist.Users.Account.setUp tempDataDirectoryPath, (err, result) =>
 						if err
 							cb err
 							return
@@ -363,13 +422,43 @@ load = (win) ->
 							return
 
 						cb()
+				(cb) =>
+					atomicOp.commit cb
 			], (err) =>
 				if err
-					CrashHandler.handle err
+					@setState {isLoading: false}
+
+					if err instanceof Persist.IOError
+						Bootbox.alert {
+							title: "Connection Error (IOError)"
+							message: "Please check your network connection and try again."
+						}
+						console.error err
+						return
+
+					errCode = [
+						err.name or ''
+						err.code or err.cause.code
+					].join ' '
+
+					Bootbox.alert {
+						title: "Error (#{errCode})"
+						message: """
+							Sorry, we seem to be having some trouble installing #{Config.productName}.
+							Please check your network connection and try again, otherwise contact
+							technical support at <u>#{Config.supportEmailAddress}</u> 
+							with the Error Code: \"#{errCode}\" .
+						"""
+					}
+
+					console.error err
 					return
 
+
+				console.log "Successfully installed #{Config.productName}!"
 				@_updateProgress 100, "Successfully installed #{Config.productName}!"
 
+				# Allow 1s for success animation before closing
 				setTimeout(=>
 					global.isSetUp = true
 					win.close(true)

@@ -42,29 +42,32 @@ dataModelDefinitions = [
 				name: 'progEvent'
 				collectionName: 'progEvents'
 				isMutable: true
-				indexes: [['relatedProgNoteId']]
-				schema: Joi.object().keys({					
-					title: Joi.string()					
+				indexes: [['status'], ['relatedProgNoteId']]
+				schema: Joi.object().keys({
+					title: Joi.string()
 					description: Joi.string().allow('')			
 					startTimestamp: Joi.date().format(TimestampFormat).raw()
 					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
-					status: ['default', 'cancelled']
-					statusReason: Joi.string().optional()
 					typeId: IdSchema.allow('')
 					relatedProgNoteId: IdSchema
 					relatedElement: Joi.object().keys({
 						id: IdSchema
-						type: ['progNoteUnit', 'planSection', 'planTarget']						
-					}).allow('')					
+						type: ['progNoteUnit', 'planSection', 'planTarget']
+					}).allow('')
+					status: ['default', 'cancelled']
+					statusReason: Joi.string().optional()
 				})
 			}
 			{
 				name: 'planTarget'
 				collectionName: 'planTargets'
 				isMutable: true
+				indexes: [['status']]
 				schema: Joi.object().keys({
 					name: Joi.string()
-					notes: Joi.string()
+					description: Joi.string()
+					status: ['default', 'deactivated', 'completed']
+					statusReason: Joi.string().optional()
 					metricIds: Joi.array().items(
 						IdSchema
 					)
@@ -74,7 +77,7 @@ dataModelDefinitions = [
 				name: 'progNote'
 				collectionName: 'progNotes'
 				isMutable: true
-				indexes: [['timestamp'], ['backdate']]
+				indexes: [['status'], ['timestamp'], ['backdate']]
 				schema: [
 					Joi.object().keys({
 						type: 'basic' # aka "Quick Notes"
@@ -190,6 +193,7 @@ dataModelDefinitions = [
 		name: 'eventType'
 		collectionName: 'eventTypes'
 		isMutable: true
+		indexes: [['status']]
 		schema: Joi.object().keys({
 			name: Joi.string()
 			description: Joi.string()

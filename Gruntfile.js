@@ -78,6 +78,32 @@ module.exports = function(grunt) {
 				]
 			}
 		},
+		replace: {
+			main: {
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/src/main.html'],
+				overwrite: true,
+				replacements: [
+					{
+						from: 'react-with-addons.js',
+						to: 'react-with-addons.min.js'
+					},
+					{
+						from: '<style id="main-css">/* see start.js */</style>',
+						to: '<link rel="stylesheet" href="main.css">'
+					}
+				]
+			},
+			config: {
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/default.json'],
+				overwrite: true,
+				replacements: [
+					{
+						from: '"devMode": true,',
+						to: ''
+					}
+				]
+			}
+		},
 		nwjs: {
 			mac: {
 				options: {
@@ -165,17 +191,37 @@ module.exports = function(grunt) {
 			temp: [
 				"build/releases/temp"
 			]
-		}
+		},
+		uglify: {
+			options: {
+				screwIE8: true,
+				sourceMap: true,
+				sourceMapIn: function(path) {
+					return path+".map";
+				}
+			},
+			all: {
+				files: [{
+					expand: true,
+					cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
+					src: ['**/*.js', '!layeredComponentMixin.js', '!start.js', '!config/index.js'],
+					dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src',
+					ext: '.js'
+				}]
+			}
+    	}	
 	});
 	
 	// load the plugins
 	grunt.loadNpmTasks('grunt-nw-builder');
 	grunt.loadNpmTasks('grunt-exec');
 	grunt.loadNpmTasks('grunt-contrib-copy');
+	grunt.loadNpmTasks('grunt-text-replace');
 	grunt.loadNpmTasks('grunt-prompt');
 	grunt.loadNpmTasks('grunt-contrib-stylus');
 	grunt.loadNpmTasks('grunt-contrib-coffee');
 	grunt.loadNpmTasks('grunt-contrib-clean');
+	grunt.loadNpmTasks('grunt-contrib-uglify');
 	if (process.platform == 'darwin') {
 		grunt.loadNpmTasks('grunt-appdmg');
 	}
@@ -189,6 +235,8 @@ module.exports = function(grunt) {
 		grunt.task.run('clean:temp');
 		release.forEach(function(entry) {
 			grunt.task.run('copy:main:'+entry);
+			grunt.task.run('replace:main:'+entry);
+			grunt.task.run('replace:config:'+entry);
 			grunt.task.run('copy:production:'+entry);
 			if (entry == "generic-win") {
 				grunt.task.run('copy:generic:'+entry);
@@ -199,6 +247,7 @@ module.exports = function(grunt) {
 			grunt.task.run('exec:npm:'+entry);
 			grunt.task.run('stylus:compile:'+entry);
 			grunt.task.run('coffee:compileMultiple:'+entry);
+			grunt.task.run('uglify:all:'+entry);
 			grunt.task.run('clean:coffee:'+entry);
 			grunt.task.run('clean:styl:'+entry);
 			if (entry == "generic-win" || entry == "griffin-win") {

@@ -1,5 +1,7 @@
 {	
+	"devMode": true,
 	"productName": "KoNote",
+	"supportEmailAddress": "help@konode.ca",
 	"customerLogoLg": "customer-logo-lg.png",
 	"customerLogoSm": "customer-logo-sm.png",
 	"logoSubtitle": "beta",
@@ -45,7 +47,6 @@
 		"metric": "metric",
 		"event": "event",
 		"event type": "event type",
-		"event types": "event types",
 		"program": "program",
 
 		"analysis": "analysis",

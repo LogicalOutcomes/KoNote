@@ -25,6 +25,7 @@ load = (win, {dataSet}) ->
 	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
 
 	PrintPreviewPage = React.createFactory React.createClass
+		displayName: 'PrintPreviewPage'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -48,6 +49,7 @@ load = (win, {dataSet}) ->
 			}
 
 	PrintPreviewPageUi = React.createFactory React.createClass
+		displayName: 'PrintPreviewPageUi'
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
@@ -105,6 +107,7 @@ load = (win, {dataSet}) ->
 
 
 	PrintHeader = React.createFactory React.createClass
+		displayName: 'PrintHeader'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			# Calculate timestamp for backdate if exists
@@ -164,6 +167,7 @@ load = (win, {dataSet}) ->
 			)
 
 	BasicProgNoteView = React.createFactory React.createClass
+		displayName: 'BasicProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->			
 			R.div({className: 'basic progNote'},				
@@ -173,6 +177,7 @@ load = (win, {dataSet}) ->
 			)
 
 	FullProgNoteView = React.createFactory React.createClass
+		displayName: 'FullProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'full progNote'},
@@ -221,7 +226,7 @@ load = (win, {dataSet}) ->
 													R.div({className: "empty #{showWhen not target.get('notes')}"},
 														'(blank)'
 													)
-													R.div({className: 'notes'},
+													R.div({className: 'description'},
 														renderLineBreaks target.get('notes')
 													)
 													R.div({className: 'metrics'},
@@ -258,6 +263,7 @@ load = (win, {dataSet}) ->
 			)
 
 	SinglePlanView = React.createFactory React.createClass
+		displayName: 'SinglePlanView'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			R.div({className: 'plan unit'},
@@ -271,13 +277,18 @@ load = (win, {dataSet}) ->
 								)
 							)
 							R.div({className: 'targets'},
-								(section.get('targetIds').map (targetId) =>
+								(section.get('targetIds')
+								.filter (targetId) =>
+									targets = @props.data.get('targets')
+									thisTarget = targets.get(targetId)
+									return thisTarget.get('status') is 'default'
+								.map (targetId) =>
 									targets = @props.data.get('targets')
 									thisTarget = targets.get(targetId)
 
 									R.div({className: 'target'},
 										R.h3({className: 'name'}, thisTarget.get('name'))
-										R.div({className: 'notes'}, thisTarget.get('notes'))
+										R.div({className: 'description'}, thisTarget.get('description'))
 										R.div({className: 'metrics'},
 											(thisTarget.get('metricIds').map (metricId) =>
 												metric = @props.data.get('metrics').get(metricId)

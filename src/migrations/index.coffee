@@ -29,13 +29,159 @@ Base64url = require 'base64url'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
+Ncp = require 'ncp'
+Moment = require 'moment'
+
+Config = require '../config'
+
+# Utilities
+writeDataVersion = (dataDir, toVersion, cb) ->	
+	versionPath = Path.join dataDir, 'version.json'
+	metadata = null
+
+	Async.series [
+		(cb) ->
+			Fs.readFile versionPath, (err, result) ->
+				if err
+					cb err
+					return
+
+				metadata = result
+				metadata.dataVersion = toVersion
+				cb()
+		(cb) ->
+			Fs.writeFile versionPath, metadata, (err) ->
+				if err
+					cb err
+					return
+
+				console.log "Updated dataVersion to v#{toVersion}"
+				cb()
+	], cb
+
 
 # Use this at the command line
 runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
-	migrate dataDir, fromVersion, toVersion, userName, password, (err) ->
-		if err
-			console.error "Migration error."
+	stagedDataDir = "./data_migration_#{fromVersion}-#{toVersion}"
+	backupDataDir = "./data_migration_#{fromVersion}--backup-#{Moment().format('YYYY-MM-DD-(h-ssa)')}"
 
+	lastMigrationStep = null
+
+	Async.series [
+		(cb) -> # Verify that all versions are valid
+			dataDirMetadataPath = Path.join dataDir, 'version.json'
+
+			Fs.readFile dataDirMetadataPath, (err, result) ->
+				if err
+					if err.code is 'ENOENT' and toVersion is '1.6.0'
+						console.warn "No version metadata exists yet, it will soon. Skipping tests!"
+						cb()
+						return
+
+					console.error "Unable to read version metadata!"
+					cb err
+					return
+
+				dataDirMetadata = JSON.parse result
+
+				numerical = (v) -> Number v.split('.').join('')
+
+				# Ensure fromVersions match
+				if dataDirMetadata.dataVersion isnt fromVersion
+					console.error """
+						Version Mismatch! Data directory is currently 
+						v#{dataDirMetadata.dataVersion}, but trying to install from #{fromVersion}."
+					"""
+					cb err
+					return				
+
+				# Ensure srcVersion (package.json) matches toVersion
+				# In other words, the files are ready for the new DB version
+				# This is OK in 'development' mode, for interim partial migrations
+				if Config.version isnt toVersion
+					if process.env.NODE_ENV isnt 'development'
+						console.error """
+							Your current src/package files are v#{Config.version},
+							which doesn't match the destination data version v#{toVersion}.
+						"""
+						cb err
+						return
+					else
+						console.warn """
+							Developer Mode! The last migration step run was 
+							Step ##{dataDirMetadata.lastMigrationStep}, so we'll
+							start from Step ##{dataDirMetadata.lastMigrationStep + 1}
+							if exists.
+						"""
+						lastMigrationStep = dataDirMetadata.lastMigrationStep
+
+				# Ensure fromVersion is numerically earlier than toVersion
+				unless numerical(fromVersion) < numerical(toVersion)
+					console.error """
+						Oops! Looks like you're trying to migrate backwards, 
+						from v#{fromVersion} to v#{toVersion}
+					"""
+					cb err
+					return
+
+				# All tests passed, continue with data migration
+				console.info "1. Version validity check successful."
+				cb()
+
+
+		(cb) -> # Copy the dataDir to a staging dir
+			console.log "Copying database to staging folder...."
+			Ncp dataDir, stagedDataDir, (err) ->
+				if err
+					console.error "Database staging error!"
+					cb err
+					return
+
+				console.info "2. Database staging successful."
+				cb()
+
+		(cb) -> # Run migration on staged database dir
+			migrate stagedDataDir, fromVersion, toVersion, userName, password, lastMigrationStep, (err) ->
+				if err
+					console.error "Database migration error!"
+					cb err
+					return
+
+				console.info "3. Data migration successful."
+				cb()
+
+		(cb) -> # Move (rename) live database to app directory			
+			Fs.rename dataDir, backupDataDir, (err) ->
+				if err
+					console.error "Database backup error!"
+					cb err
+					return
+
+				console.info "4. Database backup successful."
+				cb()
+
+		(cb) -> # Move staged (migrated) database to destination
+			Fs.rename stagedDataDir, dataDir, (err) ->
+				if err					
+					console.error "Database commit to destination error!"
+
+					# Fail-safe: Since it wasn't successful, restore the original database dir
+					Fs.rename backupDataDir, dataDir, (err) ->
+						if err
+							console.error "Unable to restore original dataDir."
+							cb err
+							return
+
+						console.info "Successfully restored original dataDir"
+
+					cb err
+					return
+
+				console.info "5. Database commit to destination successful."
+				cb()
+
+	], (err) ->
+		if err
 			# Close any currently open logging groups to make sure the error is seen
 			# Yeah, this sucks.
 			for i in [0...1000]
@@ -44,22 +190,19 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 			console.error "Migration failed:"
 			console.error err
 			console.error err.stack
-
-			if err.cause
-				console.error "Caused by:"
-				console.error err.cause.stack
-
 			return
 
-		console.log "Migration complete."
+		console.info "------ Migration Complete! ------"
 
-migrate = (dataDir, fromVersion, toVersion, userName, password, cb) ->
+
+
+migrate = (dataDir, fromVersion, toVersion, userName, password, lastMigrationStep, cb) ->
 	# Eventually, this could be expanded to support migrating across many
 	# versions (e.g. v1 -> v5).
 
 	# TODO: Grab full list of migrations, handle multi-step migrations
 
-	console.group "Run migration step #{fromVersion} -> #{toVersion}"
+	console.log "Running migration step #{fromVersion} -> #{toVersion}..."
 
 	try
 		migrationStep = require("./#{fromVersion}-#{toVersion}")
@@ -67,14 +210,13 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, cb) ->
 		cb err
 		return
 
-	migrationStep.run dataDir, userName, password, (err) ->
+	migrationStep.run dataDir, userName, password, lastMigrationStep, (err) ->
 		if err
-			wrappedErr = new Error "Could not run migration #{fromVersion}-#{toVersion}"
-			wrappedErr.cause = err
-			cb wrappedErr
+			cb new Error "Could not run migration #{fromVersion}-#{toVersion}"
 			return
 
-		console.groupEnd()
-		cb()
+		writeDataVersion dataDir, fromVersion, ->			
+			console.log "Done migrating v#{fromVersion} -> v#{toVersion}."
+			cb()
 
 module.exports = {runMigration, migrate}

@@ -28,6 +28,7 @@ load = (win) ->
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)	
 
 	ProgramManagerTab = React.createFactory React.createClass
+		displayName: 'ProgramManagerTab'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
@@ -130,6 +131,7 @@ load = (win) ->
 			) 
 
 	CreateProgramDialog = React.createFactory React.createClass
+		displayName: 'CreateProgramDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -172,6 +174,7 @@ load = (win) ->
 									colorKeyHex
 									isSelected
 									alreadyInUse
+									hideContent: true
 									onClick: (colorKeyHex) =>
 										# Allow toggling behaviour
 										colorKeyHex = null if @state.colorKeyHex is colorKeyHex
@@ -255,7 +258,9 @@ load = (win) ->
 
 				@props.onSuccess()
 
+
 	ModifyProgramDialog = React.createFactory React.createClass
+		displayName: 'ModifyProgramDialog'		
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -298,6 +303,7 @@ load = (win) ->
 									colorKeyHex
 									isSelected
 									alreadyInUse
+									hideContent: true
 									onClick: (colorKeyHex) =>
 										# Allow toggling behaviour
 										colorKeyHex = null if @state.colorKeyHex is colorKeyHex
@@ -399,6 +405,7 @@ load = (win) ->
 
 
 	ManageProgramClientsDialog = React.createFactory React.createClass
+		displayName: 'ManageProgramClientsDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->

@@ -5,7 +5,6 @@
 (function () {
 	console.time('initLoad')
 	
-	// TODO: Get NODE_ENV without having to load Config
 	var Config = require('./config');
 
 	if (!Config.devMode) {

@@ -25,6 +25,7 @@ Moment = require 'moment'
 Path = require 'path'
 
 Atomic = require './atomic'
+Cache = require './cache'
 Crypto = require './crypto'
 
 {
@@ -66,6 +67,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 	# A directory for temp files, i.e. stuff we don't care about
 	tmpDirPath = Path.join(session.dataDirectory, '_tmp')
 
+	# A cache for remembering the results of list operations on this collection
+	listCache = new Cache(5000) # 5-second expiry
+
 	# Define a series of methods that this collection API will (or might) contain.
 	# These methods correspond to what is documented in the wiki.
 	# See the wiki for instructions on their use.
@@ -84,7 +88,6 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 		# We allow explicit metadata for development purposes, such as seeding.
 		if process.env.NODE_ENV isnt 'development'
-
 			if obj.has('author')
 				cb new Error "new objects cannot already have an author"
 				return
@@ -187,6 +190,15 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			cb new Error "wrong number of arguments"
 			return
 
+		# Check cache
+		cacheKey = contextualIds.join('::') # IDs never contain colons
+		cachedResult = listCache.get(cacheKey)
+		if cachedResult?
+			cb null, cachedResult
+			return
+
+		fileNameEncryptionKey = getFileNameEncryptionKey()
+
 		collectionDir = null
 		fileNames = null
 
@@ -222,7 +234,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				.filter isValidFileName
 				.map (fileName) ->
 					# Decrypt file name
-					decryptedFileName = getFileNameEncryptionKey().decrypt(
+					decryptedFileName = fileNameEncryptionKey.decrypt(
 						Base64url.toBuffer fileName
 					)
 
@@ -240,6 +252,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 						result = result.setIn indexedProp, indexValues[i].toString()
 
 					return result
+
+			# Store result in cache
+			listCache.set(cacheKey, result)
 
 			cb null, result
 

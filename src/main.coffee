@@ -100,6 +100,7 @@ init = (win) ->
 					win.location.href = "main.html?" + QueryString.stringify(pageParams)
 
 			closeWindow: =>
+				nwWin.hide()
 				pageComponent.deinit =>
 					unregisterPageListeners() if isLoggedIn
 					ReactDOM.unmountComponentAtNode containerElem

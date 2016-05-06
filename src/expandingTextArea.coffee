@@ -11,6 +11,7 @@ load = (win) ->
 	R = React.DOM
 
 	ExpandingTextArea = React.createFactory React.createClass
+		displayName: 'ExpandingTextArea'
 		mixins: [React.addons.PureRenderMixin]
 		componentDidMount: ->
 			@_resize()
@@ -32,6 +33,7 @@ load = (win) ->
 				ref: 'textarea'
 				placeholder: @props.placeholder
 				onFocus: @props.onFocus
+				onClick: @props.onClick
 				onChange: @_onChange
 				value: @props.value
 				disabled: @props.disabled

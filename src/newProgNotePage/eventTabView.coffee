@@ -21,6 +21,7 @@ load = (win) ->
 	{TimestampFormat} = require '../persist/utils'
 
 	EventTabView = React.createFactory React.createClass
+		displayName: 'EventTabView'
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			# Use backdate instead of current date (if exists)
@@ -206,7 +207,7 @@ load = (win) ->
 								if selectedEventType?
 									[
 										B.MenuItem({
-											onClick: @_updateTypeId.bind null, null
+											onClick: @_updateTypeId.bind null, ''
 										}, 
 											"None "
 											FaIcon('ban')

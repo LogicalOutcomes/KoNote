@@ -25,6 +25,7 @@ load = (win) ->
 	{TimestampFormat} = require('./persist/utils')
 
 	ExportManagerTab = React.createFactory React.createClass
+		displayName: 'ExportManagerTab'
 		mixins: [React.addons.PureRenderMixin]
 		
 		getInitialState: ->
@@ -87,7 +88,7 @@ load = (win) ->
 		_prettySize: (bytes) ->
 			if bytes / 1024 > 1024
 				return (bytes/1024/1024).toFixed(2) + "MB"
-			return (bytes/1024).toFixed(2) + "KB"
+			return (bytes/1024).toFixed(0) + "KB"
 
 		_updateProgress: (percent, message) ->
 			if not percent and not message
@@ -537,7 +538,7 @@ load = (win) ->
 					writtenProgress = Math.floor((written / totalSize) * 100)
 					console.log written, totalSize
 					console.log "Written progress: #{writtenProgress}"
-					messageText = "Writing Data: (#{@_prettySize(written)} / #{@_prettySize(totalSize)})"
+					messageText = "Writing Data: (#{@_prettySize(written)})"
 
 					if writtenProgress is 100
 						messageText = "Zipping data directory..."

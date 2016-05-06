@@ -11,6 +11,7 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
 	BrandWidget = React.createFactory React.createClass
+		displayName: 'BrandWidget'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({
