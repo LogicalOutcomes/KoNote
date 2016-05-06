@@ -920,7 +920,7 @@ load = (win) ->
 				R.div({className: 'heading'},
 					'History'
 				)
-				(if revisions.size is 0
+				(if revisions.isEmpty()
 					R.div({className: 'noRevisions'},
 						"This #{Term 'target'} is new.  ",
 						"It won't have any history until the #{Term 'client file'} is saved."
