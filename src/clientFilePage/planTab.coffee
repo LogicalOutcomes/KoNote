@@ -795,7 +795,7 @@ load = (win) ->
 											future #{Term 'progress notes'}.
 										"""
 										reasonLabel: "Reason for activation:"
-										disabled: @props.isReadOnly or @props.hasTargetChanged
+										disabled: @props.isReadOnly
 									},
 										FaIcon 'sign-in'
 									)
