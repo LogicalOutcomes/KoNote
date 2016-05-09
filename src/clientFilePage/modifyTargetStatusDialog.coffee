@@ -79,6 +79,7 @@ load = (win) ->
 						Bootbox.alert """
 							An error occurred.  Please check your network connection and try again.
 						"""
+						console.error err
 						return
 
 					CrashHandler.handle err
