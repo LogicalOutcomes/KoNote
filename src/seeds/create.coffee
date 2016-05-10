@@ -164,6 +164,7 @@ Create.program = (index, cb) ->
 	program = Imm.fromJS({
 		name: Faker.company.bsBuzz()
 		description: Faker.lorem.paragraph()
+		# chooses a hexColor randomly from an imported list of hexcolors
 		colorKeyHex: ProgramColors.get(Math.floor(Math.random() * ProgramColors.size))
 	})
 
@@ -190,6 +191,7 @@ Create.metric = (index, cb) ->
 Create.eventType = (index, cb) ->	
 	eventType = Imm.fromJS ({
 		name: Faker.company.bsBuzz()
+		# chooses a hexColor randomly from an imported list of hexcolors
 		colorKeyHex: EventTypeColors.get(Math.floor(Math.random() * EventTypeColors.size))
 		description: Faker.lorem.paragraph()
 		status: 'default'
