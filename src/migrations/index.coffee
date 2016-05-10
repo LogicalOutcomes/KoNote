@@ -29,7 +29,6 @@ Base64url = require 'base64url'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
-Ncp = require 'ncp'
 Moment = require 'moment'
 
 Config = require '../config'
@@ -144,15 +143,6 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 
 		(cb) -> # Copy the dataDir to a staging dir
 			console.log "Copying database to staging folder...."
-			# Ncp dataDir, stagedDataDir, (err) ->
-			# 	if err
-			# 		console.error "Database staging error!"
-			# 		cb err
-			# 		return
-
-			# 	console.info "2. Database staging successful."
-			# 	cb()
-
 			copyRecursiveSync dataDir, stagedDataDir
 			cb()
 
