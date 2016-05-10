@@ -4,7 +4,9 @@ Async = require 'async'
 Moment = require 'moment'
 
 {Users, TimestampFormat, generateId } = require '../persist'
+{ProgramColors, EventTypeColors} = require '../colors'
 Config = require '../config'
+
 
 Create = {}
 
@@ -162,7 +164,7 @@ Create.program = (index, cb) ->
 	program = Imm.fromJS({
 		name: Faker.company.bsBuzz()
 		description: Faker.lorem.paragraph()
-		colorKeyHex: Faker.internet.color()
+		colorKeyHex: ProgramColors.get(Math.floor(Math.random() * ProgramColors.size))
 	})
 
 	createData 'programs', program, cb
@@ -185,10 +187,10 @@ Create.metric = (index, cb) ->
 	createData 'metrics', metric, cb
 	
 
-Create.eventType = (index, cb) ->
+Create.eventType = (index, cb) ->	
 	eventType = Imm.fromJS ({
 		name: Faker.company.bsBuzz()
-		colorKeyHex: Faker.internet.color()
+		colorKeyHex: EventTypeColors.get(Math.floor(Math.random() * EventTypeColors.size))
 		description: Faker.lorem.paragraph()
 		status: 'default'
 	})

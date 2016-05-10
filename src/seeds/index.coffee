@@ -66,7 +66,7 @@ generateClientFile = (metrics, cb) ->
 
 		# Write a progNote, write a note and random metric for each target, in each section
 		(cb) ->
-			Create.progNotes 300, {clientFile, sections, planTargets, metrics}, (err, results) ->
+			Create.progNotes 3, {clientFile, sections, planTargets, metrics}, (err, results) ->
 				if err
 					cb err
 					return
