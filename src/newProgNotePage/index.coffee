@@ -103,7 +103,7 @@ load = (win, {clientFileId}) ->
 						clientFile = revisions.first()
 						@setState {clientFile}
 
-						cb null
+						cb()
 				(cb) =>
 					ActiveSession.persist.planTargets.list clientFileId, (err, result) =>
 						if err
@@ -111,7 +111,7 @@ load = (win, {clientFileId}) ->
 							return
 
 						planTargetHeaders = result
-						cb null
+						cb()
 				(cb) =>
 					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
 						ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
@@ -124,7 +124,7 @@ load = (win, {clientFileId}) ->
 							return [planTarget.getIn([0, 'id']), planTarget]
 						planTargetsById = Imm.Map(pairs)
 
-						cb null
+						cb()
 				(cb) =>
 					# Figure out which metrics we need to load
 					requiredMetricIds = Imm.Set()
@@ -147,7 +147,7 @@ load = (win, {clientFileId}) ->
 								return
 
 							metricsById = metricsById.set metricId, result.first()
-							cb null
+							cb()
 					, cb
 				(cb) =>
 					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
@@ -156,7 +156,7 @@ load = (win, {clientFileId}) ->
 							return
 
 						progNoteHeaders = Imm.fromJS results
-						cb null
+						cb()
 				(cb) =>
 					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
 						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
@@ -168,7 +168,7 @@ load = (win, {clientFileId}) ->
 						@setState (state) =>
 							return {progNoteHistories: Imm.List(results)}
 
-						cb null
+						cb()
 				(cb) =>
 					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
 						if err
@@ -272,7 +272,12 @@ load = (win, {clientFileId}) ->
 									Imm.fromJS {
 										id: section.get 'id'
 										name: section.get 'name'
-										targets: section.get('targetIds').map (targetId) =>											
+										targets: section.get('targetIds')
+										.filter (targetId) =>
+											target = planTargetsById.get targetId
+											lastRev = target.last()
+											return lastRev.get('status') is 'default'
+										.map (targetId) =>											
 											target = planTargetsById.get targetId
 											lastRev = target.last()
 
@@ -483,7 +488,7 @@ load = (win, {clientFileId}) ->
 											},
 												R.h2({}, section.get 'name')
 
-												(section.get('targets').map (target) =>														
+												(section.get('targets').map (target) =>
 													targetId = target.get 'id'
 
 													R.div({

@@ -66,11 +66,13 @@ load = (win) ->
 								R.div({className: 'date'}, @state.eventDate)
 							)							
 							if eventType?
-								R.div({
-									style:
-										borderBottom: "1px solid #{eventType.get('colorKeyHex')}"
-								},
-									"Type: #{eventType.get('name')}"
+								R.div({},
+									"Type: "
+									R.span({
+										style: {borderBottom: "2px solid #{eventType.get('colorKeyHex')}"}
+									},
+										eventType.get('name')
+									)
 								)
 						)
 					when 'small'

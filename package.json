@@ -1,7 +1,7 @@
 {
   "name": "konote",
   "displayName": "KoNote",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "main": "src/main.html",
   "window": {
     "icon": "src/icon.png",
@@ -60,11 +60,10 @@
     "json-2-csv": "^2.0.10",
     "mkdirp": "^0.5.1",
     "moment": "^2.10.3",
-    "ncp": "^2.0.0",
     "pluralize": "^1.1.2",
-    "react": "^15.0.1",
-    "react-bootstrap": "^0.29.2",
-    "react-dom": "^15.0.1",
+    "react": "^15.0.2",
+    "react-bootstrap": "^0.29.3",
+    "react-dom": "^15.0.2",
     "rimraf": "^2.3.4",
     "string.prototype.endswith": "^0.2.0",
     "string.prototype.includes": "^1.0.0",

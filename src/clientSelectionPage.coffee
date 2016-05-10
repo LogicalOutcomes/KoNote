@@ -677,7 +677,7 @@ load = (win) ->
 				onClick: @props.onClick
 			},
 				if @props.dialog?
-					OpenDialogLink({dialog: @props.dialog},
+					OpenDialogLink(@props,
 						FaIcon(@props.icon)
 						@props.title
 					)

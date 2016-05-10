@@ -14,22 +14,29 @@ load = (win) ->
 		displayName: 'WithTooltip'
 		mixins: [React.addons.PureRenderMixin]
 
-		render: ->
-			return @props.children
+		getDefaultProps: -> {showTooltip: true}
+
+		componentWillReceiveProps: (newProps) ->
+			if @props.title isnt newProps.title and newProps.showTooltip
+				$(ReactDOM.findDOMNode(@)).attr('data-original-title', newProps.title)
+
+		render: -> @props.children
 
 		componentDidMount: ->
-			@_configureTooltip()
+			@_init()
 
-		componentDidUpdate: ->
-			@_configureTooltip()
+		componentWillUnount: ->
+			@_destroy()		
 
-		_configureTooltip: ->
-			if @props.showTooltip is undefined or @props.showTooltip is true
+		_init: ->
+			if @props.showTooltip
 				$(ReactDOM.findDOMNode(@)).tooltip {
 					placement: @props.placement
 					title: @props.title
 				}
-			else
+
+		_destroy: ->
+			if @props.showTooltip
 				$(ReactDOM.findDOMNode(@)).tooltip 'destroy'
 
 	return WithTooltip

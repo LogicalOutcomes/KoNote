@@ -277,7 +277,12 @@ load = (win, {dataSet}) ->
 								)
 							)
 							R.div({className: 'targets'},
-								(section.get('targetIds').map (targetId) =>
+								(section.get('targetIds')
+								.filter (targetId) =>
+									targets = @props.data.get('targets')
+									thisTarget = targets.get(targetId)
+									return thisTarget.get('status') is 'default'
+								.map (targetId) =>
 									targets = @props.data.get('targets')
 									thisTarget = targets.get(targetId)
 

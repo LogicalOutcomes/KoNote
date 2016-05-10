@@ -174,6 +174,7 @@ load = (win) ->
 									colorKeyHex
 									isSelected
 									alreadyInUse
+									hideContent: true
 									onClick: (colorKeyHex) =>
 										# Allow toggling behaviour
 										colorKeyHex = null if @state.colorKeyHex is colorKeyHex
@@ -302,6 +303,7 @@ load = (win) ->
 									colorKeyHex
 									isSelected
 									alreadyInUse
+									hideContent: true
 									onClick: (colorKeyHex) =>
 										# Allow toggling behaviour
 										colorKeyHex = null if @state.colorKeyHex is colorKeyHex

@@ -15,20 +15,30 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
+			settings = {}
+
 			if @props.data?
-				$(@refs.bubble).popover {
+				settings = {
 					trigger: 'hover'
 					placement: 'right'
+					container: 'body'
 					title: @props.data.get('name') 
 					content: @props.data.get('description')
 				}
 			else if @props.alreadyInUse
-				$(@refs.bubble).popover {
+				settings = {
 					trigger: 'hover'
 					placement: 'top'
+					container: 'body'
 					title: @props.alreadyInUse.get('name') 
 					content: @props.alreadyInUse.get('description')
 				}
+
+			if @props.hideContent
+				settings.content = settings.title
+				delete settings.title
+
+			$(@refs.bubble).popover(settings)
 
 		render: ->
 			colorKeyHex = @props.colorKeyHex or @props.data.get('colorKeyHex')	

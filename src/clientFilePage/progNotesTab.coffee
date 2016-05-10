@@ -521,9 +521,8 @@ load = (win) ->
 			# Here, we assume that the latest revision was the one that
 			# changed the status.  This assumption may become invalid
 			# when full prognote editing becomes supported.
-			statusChangeRev = @props.progNoteHistory.last()
 			latestRev = @props.progNoteHistory.last()
-			console.log "history ", @props.progNoteHistory.toJS();
+			statusChangeRev = latestRev
 
 			return R.div({className: 'cancelStub'},
 				R.button({

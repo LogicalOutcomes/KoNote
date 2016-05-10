@@ -42,16 +42,12 @@ load = (win) ->
 
 		componentWillReceiveProps: (newProps) ->
 			# Regenerate transient data when plan is updated
-			unless Imm.is(newProps.plan, @props.plan)
+			planChanged = not Imm.is(newProps.plan, @props.plan)
+			planTargetsChanged = not Imm.is(newProps.planTargetsById, @props.planTargetsById)
+			
+			if planChanged or planTargetsChanged
 				@setState {
 					plan: newProps.plan
-					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById newProps.planTargetsById
-				}
-
-			# Regenerate targetRevisions when target changed
-			unless Imm.is(newProps.planTargetsById, @props.planTargetsById)
-				console.log "planTargetsById updated!"
-				@setState {
 					currentTargetRevisionsById: @_generateCurrentTargetRevisionsById newProps.planTargetsById
 				}
 
@@ -143,9 +139,11 @@ load = (win) ->
 						currentTargetRevisionsById: @state.currentTargetRevisionsById
 						selectedTargetId: @state.selectedTargetId
 						isReadOnly: @props.isReadOnly
+						planTargetsById: @props.planTargetsById
 
 						renameSection: @_renameSection
 						addTargetToSection: @_addTargetToSection
+						removeNewTarget: @_removeNewTarget
 						hasTargetChanged: @_hasTargetChanged
 						updateTarget: @_updateTarget
 						setSelectedTarget: @_setSelectedTarget
@@ -403,6 +401,17 @@ load = (win) ->
 					$(".target-#{targetId} .name.field").focus()
 				, 250)
 
+		_removeNewTarget: (sectionId, transientTargetId) ->
+			sectionIndex = @_getSectionIndex sectionId
+
+			plan = @state.plan.updateIn ['sections', sectionIndex, 'targetIds'], (targetIds) =>
+				targetIndex = targetIds.indexOf transientTargetId
+				return targetIds.splice(targetIndex, 1)
+
+			currentTargetRevisionsById = @state.currentTargetRevisionsById.delete transientTargetId
+
+			@setState {plan, currentTargetRevisionsById}
+
 		_getSectionIndex: (sectionId) ->
 			return @state.plan.get('sections').findIndex (section) =>
 				return section.get('id') is sectionId
@@ -450,35 +459,21 @@ load = (win) ->
 			return {
 				sectionsScrollTop: 0
 				sectionOffsets: null
+				displayCancelledTargets: null
+				displayCompletedTargets: null
 			}
 
 		componentDidMount: ->
 			sectionsDom = @refs.sections
 			sectionsDom.addEventListener 'scroll', (event) =>
-				@_recalculateOffsets()
-
-		_recalculateOffsets: ->
-			sectionsDom = @refs.sections
-			sectionsScrollTop = sectionsDom.scrollTop
-
-			sectionOffsets = @props.plan.get('sections').map (section) =>
-				sectionDom = @refs['section-' + section.get('id')]
-
-				offset = Imm.Map({
-					top: sectionDom.offsetTop
-					height: sectionDom.offsetHeight
-				})
-
-				return [section.get('id'), offset]
-			.fromEntrySeq().toMap()
-
-			@setState (s) -> {sectionsScrollTop, sectionOffsets}
+				@_recalculateOffsets()		
 
 		render: ->
 			{
 				plan
 				metricsById
 				currentTargetRevisionsById
+				planTargetsById
 				selectedTargetId
 				isReadOnly
 
@@ -486,13 +481,20 @@ load = (win) ->
 				addTargetToSection
 				hasTargetChanged
 				updateTarget
+				removeNewTarget
 				setSelectedTarget
 			} = @props
 
 			return R.div({className: 'sections', ref: 'sections'},
 				(plan.get('sections').map (section) =>
+					sectionId = section.get('id')
 					headerState = 'inline'
 
+					# Group targetIds into an object, with a property for each status
+					targetIdsByStatus = section.get('targetIds').groupBy (targetId) ->
+						return currentTargetRevisionsById.getIn([targetId, 'status'])
+
+					# Recalculate sticky header
 					if @state.sectionOffsets and @state.sectionOffsets.get(section.get('id'))
 						scrollTop = @state.sectionsScrollTop
 						sectionOffset = @state.sectionOffsets.get(section.get('id'))
@@ -512,10 +514,8 @@ load = (win) ->
 						SectionHeader({
 							type: 'inline'
 							visible: headerState is 'inline'
-
 							section
 							isReadOnly
-
 							renameSection
 							addTargetToSection
 						})
@@ -523,10 +523,8 @@ load = (win) ->
 							type: 'sticky'
 							visible: headerState is 'sticky'
 							scrollTop: @state.sectionsScrollTop
-
 							section
 							isReadOnly
-
 							renameSection
 							addTargetToSection
 						})
@@ -535,28 +533,130 @@ load = (win) ->
 								"This #{Term 'section'} is empty."
 							)
 						)
-						R.div({className: 'targets'},
-							# filter here
-							# filteredTargets = section.get('targetIds').filter (targetId) =>
-							# 	currentRevision = currentTargetRevisionsById.get targetId
-							# 	return currentRevision.get('status') is 'default'
 
-							(section.get('targetIds').map (targetId) =>
-								PlanTarget({
-									currentRevision: currentTargetRevisionsById.get targetId
-									metricsById
-									hasTargetChanged: hasTargetChanged targetId
-									key: targetId
-									isActive: targetId is selectedTargetId
-									isReadOnly
-									onTargetUpdate: updateTarget.bind null, targetId
-									onTargetSelection: setSelectedTarget.bind null, targetId
-								})
-							).toJS()...
+						# TODO: Generalize these 3 into a single component
+
+						(if targetIdsByStatus.has('default')
+							R.div({className: 'targets status-default'},
+								# Default status
+								(targetIdsByStatus.get('default').map (targetId) =>
+									PlanTarget({
+										currentRevision: currentTargetRevisionsById.get targetId
+										metricsById
+										hasTargetChanged: hasTargetChanged targetId
+										key: targetId
+										isActive: targetId is selectedTargetId
+										isExistingTarget: planTargetsById.has(targetId)
+										isReadOnly
+										onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
+										onTargetUpdate: updateTarget.bind null, targetId
+										onTargetSelection: setSelectedTarget.bind null, targetId
+									})
+								)
+							)
+						)
+						(if targetIdsByStatus.has('completed')
+							R.div({className: 'targets status-completed'},
+								R.span({
+									className: 'inactiveTargetHeader'
+									onClick: @_toggleDisplayCompletedTargets
+								},
+									# Rotates 90'CW when expanded
+									FaIcon('caret-right', {
+										className: 'expanded' if @state.displayCompletedTargets
+									})
+									R.strong({}, targetIdsByStatus.get('completed').size)
+									" Completed "
+									Term (
+										if targetIdsByStatus.get('completed').size > 1 then 'Targets' else 'Target'
+									)									
+								)
+								(if @state.displayCompletedTargets
+									# Completed status
+									(targetIdsByStatus.get('completed').map (targetId) =>
+										PlanTarget({
+											currentRevision: currentTargetRevisionsById.get targetId
+											metricsById
+											hasTargetChanged: hasTargetChanged(targetId) or planTargetsById.has(targetId)
+											key: targetId
+											isActive: targetId is selectedTargetId
+											isExistingTarget: planTargetsById.has(targetId)
+											isReadOnly
+											isInactive: true
+											onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
+											onTargetUpdate: updateTarget.bind null, targetId
+											onTargetSelection: setSelectedTarget.bind null, targetId
+										})
+									)
+								)
+							)
+						)
+						(if targetIdsByStatus.has('deactivated')
+							R.div({className: 'targets status-deactivated'},
+								R.span({
+									className: 'inactiveTargetHeader'
+									onClick: @_toggleDisplayCancelledTargets
+								},
+									# Rotates 90'CW when expanded
+									FaIcon('caret-right', {
+										className: 'expanded' if @state.displayCancelledTargets
+									})
+									R.strong({}, targetIdsByStatus.get('deactivated').size)
+									" Deactivated "
+									Term (
+										if targetIdsByStatus.get('deactivated').size > 1 then 'Targets' else 'Target'
+									)									
+								)
+								(if @state.displayCancelledTargets
+									# Cancelled statuses
+									(targetIdsByStatus.get('deactivated').map (targetId) =>
+										PlanTarget({
+											currentRevision: currentTargetRevisionsById.get targetId
+											metricsById
+											hasTargetChanged: hasTargetChanged targetId
+											key: targetId
+											isActive: targetId is selectedTargetId
+											isExistingTarget: planTargetsById.has(targetId)
+											isReadOnly
+											isInactive: true
+											onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
+											onTargetUpdate: updateTarget.bind null, targetId
+											onTargetSelection: setSelectedTarget.bind null, targetId
+										})
+									)
+								)
+							)
 						)
 					)
 				).toJS()...
 			)
+
+		_recalculateOffsets: ->
+			sectionsDom = @refs.sections
+			sectionsScrollTop = sectionsDom.scrollTop
+
+			sectionOffsets = @props.plan.get('sections').map (section) =>
+				sectionDom = @refs['section-' + section.get('id')]
+
+				offset = Imm.Map({
+					top: sectionDom.offsetTop
+					height: sectionDom.offsetHeight
+				})
+
+				return [section.get('id'), offset]
+			.fromEntrySeq().toMap()
+
+			@setState (s) -> {sectionsScrollTop, sectionOffsets}
+
+		_toggleDisplayCancelledTargets: ->
+			displayCancelledTargets = not @state.displayCancelledTargets
+			@setState {displayCancelledTargets}
+
+		_toggleDisplayCompletedTargets: ->
+			displayCompletedTargets = not @state.displayCompletedTargets
+			@setState {displayCompletedTargets}
+
+
 
 	SectionHeader = React.createFactory React.createClass
 		displayName: 'SectionHeader'
@@ -612,14 +712,16 @@ load = (win) ->
 
 		render: ->
 			currentRevision = @props.currentRevision
+			revisionStatus = @props.currentRevision.get('status')
 
 			return R.div({
 				className: [
 					'target'
 					"target-#{currentRevision.get('id')}"
-					if @props.isActive then 'active' else ''
-					if @props.hasTargetChanged then 'hasChanges' else ''
-					if @props.isReadOnly then 'readOnly' else ''
+					"status-#{revisionStatus}"
+					'active' if @props.isActive
+					'hasChanges' if @props.hasTargetChanged or not @props.isExistingTarget
+					'readOnly' if @props.isReadOnly
 				].join ' '
 				onClick: @_onTargetClick
 			},
@@ -631,84 +733,97 @@ load = (win) ->
 						ref: 'nameField'
 						placeholder: "Name of #{Term 'target'}"
 						value: currentRevision.get('name')
-						disabled: @props.isReadOnly
+						disabled: @props.isReadOnly or @props.isInactive
 						onChange: @_updateField.bind null, 'name'
-						onFocus: @props.onTargetSelection unless @props.isReadOnly
-						onClick: @props.onTargetSelection if @props.isReadOnly
+						onFocus: @props.onTargetSelection unless @props.isReadOnly or @props.isInactive
+						onClick: @props.onTargetSelection if @props.isReadOnly or @props.isInactive
 
-					})
+					})					
 
-					# button to deactivate the target
-					unless @props.currentRevision.get('status') is 'cancelled'
-						WithTooltip({title: "De-Activate", placement: 'top'},
-							OpenDialogLink({
-								dialog: ModifyTargetStatusDialog
-								target: @props.currentRevision
-								newStatus: 'cancelled'
-								title: "Deactivate the #{Term 'Target'}"
-								reasonLabel: "Reason for deactivation: "
-								message: "This will deactivate the #{Term 'Target'}"
-								disabled: @props.isReadOnly or @props.hasTargetChanged
-							},
-								R.a({className: 'cancelled'},
-									FaIcon 'ban'
+					(if @props.isExistingTarget
+						# Can cancel/complete a 'default' target					
+						(if revisionStatus is 'default'
+							R.div({className: 'statusButtonGroup'},
+								WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
+									OpenDialogLink({
+										className: 'statusButton'
+										dialog: ModifyTargetStatusDialog
+										planTarget: @props.currentRevision
+										newStatus: 'deactivated'
+										title: "Deactivate #{Term 'Target'}"
+										message: """
+											This will remove the #{Term 'target'} from the #{Term 'client'} 
+											#{Term 'plan'}, and future #{Term 'progress notes'}. 
+											It may be re-activated again later.
+										"""
+										reasonLabel: "Reason for deactivation:"									
+										disabled: @props.isReadOnly or @props.hasTargetChanged
+									},
+										FaIcon 'ban'
+									)
+								)
+								WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
+									OpenDialogLink({
+										className: 'statusButton'
+										dialog: ModifyTargetStatusDialog
+										planTarget: @props.currentRevision
+										newStatus: 'completed'
+										title: "Complete #{Term 'Target'}"
+										message: """
+											This will set the #{Term 'target'} as 'completed'. This often 
+											means that the desired outcome has been reached.
+										"""
+										reasonLabel: "Reason for completion:"
+										disabled: @props.isReadOnly or @props.hasTargetChanged
+									},
+										FaIcon 'check'
+									)
+								)
+							)
+						else
+							R.div({className: 'statusButtonGroup'},
+								WithTooltip({title: "Re-Activate #{Term 'Target'}", placement: 'top'},
+									OpenDialogLink({
+										className: 'statusButton'
+										dialog: ModifyTargetStatusDialog
+										planTarget: @props.currentRevision
+										newStatus: 'default'
+										title: "Re-Activate #{Term 'Target'}"									
+										message: """
+											This will re-activate the #{Term 'target'}, so it appears 
+											in the #{Term 'client'} #{Term 'plan'} and 
+											future #{Term 'progress notes'}.
+										"""
+										reasonLabel: "Reason for activation:"
+										disabled: @props.isReadOnly
+									},
+										FaIcon 'sign-in'
+									)
 								)
 							)
 						)
-
-					# button to complete the target
-					unless @props.currentRevision.get('status') is 'completed' or 
-					@props.currentRevision.get('status') is 'cancelled'
-						WithTooltip({title: "Complete", placement: 'top'},
-							OpenDialogLink({
-								dialog: ModifyTargetStatusDialog
-								target: @props.currentRevision
-								newStatus: 'completed'
-								title: "Complete the #{Term 'Target'}"
-								reasonLabel: "Reason for completion: "
-								message: "This will complete the #{Term 'Target'}"
-								disabled: @props.isReadOnly or @props.hasTargetChanged
+					else
+						R.div({className: 'statusButtonGroup'},
+							R.div({
+								className: 'statusButton'
+								onClick: @props.onRemoveNewTarget
 							},
-								R.a({className: 'completed'},
-									FaIcon 'check'
-								)
+								FaIcon 'times'
 							)
 						)
-
-					# button to activate the target
-					unless @props.currentRevision.get('status') is 'default'
-						WithTooltip({title: "Re-Activate", placement: 'top'},
-							OpenDialogLink({
-								dialog: ModifyTargetStatusDialog
-								target: @props.currentRevision
-								newStatus: 'default'
-								title: "Activate the #{Term 'Target'}"
-								reasonLabel: "Reason for activation: "
-								message: "This will activate the #{Term 'Target'}"
-								disabled: @props.isReadOnly or @props.hasTargetChanged
-							},
-								R.a({className: 'activate'},
-									FaIcon 'play-circle'
-								)
-							)
-						)			
+					)
 				)
 
-				# temporarily showing status during development of this feature
-				R.div({},
-					"status: " 
-					@props.currentRevision.get 'status'
-				)
 				R.div({className: 'descriptionContainer'},
 					ExpandingTextArea({
 						className: 'description field'
 						ref: 'descriptionField'
 						placeholder: "Describe the current #{Term 'treatment plan'} . . ."
 						value: currentRevision.get('description')
-						disabled: @props.isReadOnly
+						disabled: @props.isReadOnly or @props.isInactive
 						onChange: @_updateField.bind null, 'description'
-						onFocus: @props.onTargetSelection unless @props.isReadOnly
-						onClick: @props.onTargetSelection if @props.isReadOnly
+						onFocus: @props.onTargetSelection unless @props.isReadOnly or @props.isInactive
+						onClick: @props.onTargetSelection if @props.isReadOnly or @props.isInactive
 					})
 				)
 				R.div({className: 'metrics'},
@@ -724,6 +839,7 @@ load = (win) ->
 					).toJS()...
 				)
 			)
+
 		_updateField: (fieldName, event) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
@@ -795,15 +911,16 @@ load = (win) ->
 			# Process revision history to devise change logs
 			# They're already in reverse-order, so reverse() to map changes
 			revisions = @props.revisions
-			.reverse()
-			.map(@_buildChangeLog)
-			.reverse()
+			# TODO: Add this back in for #207 once we have the UI worked out
+			# .reverse()
+			# .map(@_buildChangeLog)
+			# .reverse()
 
 			return R.div({className: 'planTargetHistory'},
 				R.div({className: 'heading'},
 					'History'
 				)
-				(if revisions.size is 0
+				(if revisions.isEmpty()
 					R.div({className: 'noRevisions'},
 						"This #{Term 'target'} is new.  ",
 						"It won't have any history until the #{Term 'client file'} is saved."

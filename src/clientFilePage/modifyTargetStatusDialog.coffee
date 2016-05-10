@@ -35,9 +35,7 @@ load = (win) ->
 				onClose: @props.onClose
 			},
 				R.div({className: 'modifyTargetStatusDialog'},
-					R.div({className: 'alert alert-warning'},
-						@props.message
-					)
+					R.div({className: 'alert alert-warning'}, @props.message)
 					R.div({className: 'form-group'},
 						R.label({}, @props.reasonLabel),
 						R.textarea({
@@ -46,6 +44,7 @@ load = (win) ->
 							ref: 'statusReasonField'
 							onChange: @_updateStatusReason
 							value: @state.statusReason
+							placeholder: "Please specify a reason..."
 						})
 					)
 					R.div({className: 'btn-toolbar'},
@@ -68,7 +67,7 @@ load = (win) ->
 		_submit: ->
 			@refs.dialog.setIsLoading true
 
-			revisedPlanTarget = @props.target
+			revisedPlanTarget = @props.planTarget
 			.set('status', @props.newStatus)
 			.set('statusReason', @state.statusReason)
 
@@ -80,6 +79,7 @@ load = (win) ->
 						Bootbox.alert """
 							An error occurred.  Please check your network connection and try again.
 						"""
+						console.error err
 						return
 
 					CrashHandler.handle err

@@ -46,10 +46,6 @@
 				.canSave
 					width 60%
 					
-			// @media (max-width: 1150px)
-			// 	.btn
-			// 		font-size .95em !important
-					
 			@media (max-width: 1150px)
 				display block
 
@@ -77,7 +73,7 @@
 			flex 1
 			overflow-y auto
 			overflow-x hidden
-			padding 0 30px 10px 30px
+			padding 0 25px 25px 25px
 
 			> .section
 				&:last-child
@@ -128,8 +124,32 @@
 					text-align center
 
 				> .targets
+					padding 15px 0
+					
+					// TODO: Make this multi-use
+					&.status-completed, &.status-deactivated
+						padding 0
+					
+					> .inactiveTargetHeader
+						cursor pointer
+						font-size 16px
+						opacity 0.8							
+						transition opacity .15s ease
+						
+						&:hover
+							opacity 1
+						
+						.fa
+							font-size 1.25em
+							padding 12px 8px
+							transform rotate(0deg)
+							transition transform .25s ease
+							
+							&.expanded
+								transform rotate(90deg)
+							
 					> .target
-						margin-top 20px
+						margin-bottom 20px
 
 						border 1px solid sidebar-borders
 						border-radius 5px
@@ -137,6 +157,9 @@
 						padding 15px 20px
 
 						transition all 0.15s linear
+						
+						&:last-child
+							margin-bottom 0 !important
 
 						&.hasChanges
 							background #EEFFF5
@@ -155,59 +178,42 @@
 								
 						&.blink
 							background #7ecdfc !important
-							border-color #68AAD2 !important
-
+							border-color #68AAD2 !important						
 
 						> .nameContainer, > .descriptionContainer
 							> div
 								cursor pointer
 
-								// &:hover
-								// 	background sidebar-bg
-
 							> .field
 								width 100%
 
 								padding 2px 5px
-								
-							> .deactivate
-								display inline-block
-								padding 5px 0 5px 5px
-
-								color #337ab7
-								cursor pointer
-
-								&:hover
-									color red
-							
-							> .complete
-								display inline-block
-								padding 5px
-
-								color #337ab7
-								cursor pointer
-
-								&:hover
-									color green
-							
-							> .activate
-								display inline-block
-								padding 5px
-
-								color #337ab7
-								cursor pointer
-
-								&:hover
-									color green
-									
-						
 
 
 						> .nameContainer
+							display flex
+							flex-direction row
+							
 							padding-bottom 15px
-
 							font-weight 700
 								
+							> .statusButtonGroup
+								display flex
+															
+								> .statusButton
+									flex 1
+									display flex
+									justify-content center
+									align-items center
+									padding 8px
+									padding-right 2px
+									
+									font-size 18px
+									opacity 0.6
+									transition opacity .15s ease
+									
+									&:hover
+										opacity 1
 
 						> .metrics
 							display flex
