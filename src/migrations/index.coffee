@@ -35,6 +35,31 @@ Moment = require 'moment'
 Config = require '../config'
 
 # Utilities
+
+copyFileSync = (source, target) ->
+  targetFile = target
+  # if target is a directory a new file with the same name will be created
+  if Fs.existsSync(target)
+    if Fs.lstatSync(target).isDirectory()
+      targetFile = Path.join(target, Path.basename(source))
+  Fs.writeFileSync targetFile, Fs.readFileSync(source)
+
+copyFolderRecursiveSync = (source, target) ->
+  files = []
+  # check if folder needs to be created or integrated
+  targetFolder = Path.join(target, Path.basename(source))
+  if !Fs.existsSync(targetFolder)
+    Fs.mkdirSync targetFolder
+  # copy
+  if Fs.lstatSync(source).isDirectory()
+    files = Fs.readdirSync(source)
+    files.forEach (file) ->
+      curSource = Path.join(source, file)
+      if Fs.lstatSync(curSource).isDirectory()
+        copyFolderRecursiveSync curSource, targetFolder
+      else
+        copyFileSync curSource, targetFolder
+
 writeDataVersion = (dataDir, toVersion, cb) ->	
 	versionPath = Path.join dataDir, 'version.json'
 	metadata = null
@@ -62,7 +87,7 @@ writeDataVersion = (dataDir, toVersion, cb) ->
 
 # Use this at the command line
 runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
-	stagedDataDir = "./data_migration_#{fromVersion}-#{toVersion}"
+	stagedDataDir = "./backup"
 	backupDataDir = "./data_migration_#{fromVersion}--backup-#{Moment().format('YYYY-MM-DD-(h-ssa)')}"
 
 	lastMigrationStep = null
@@ -131,17 +156,20 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 
 		(cb) -> # Copy the dataDir to a staging dir
 			console.log "Copying database to staging folder...."
-			Ncp dataDir, stagedDataDir, (err) ->
-				if err
-					console.error "Database staging error!"
-					cb err
-					return
+			# Ncp dataDir, stagedDataDir, (err) ->
+			# 	if err
+			# 		console.error "Database staging error!"
+			# 		cb err
+			# 		return
 
-				console.info "2. Database staging successful."
-				cb()
+			# 	console.info "2. Database staging successful."
+			# 	cb()
+
+			copyFolderRecursiveSync dataDir, stagedDataDir
+			cb()
 
 		(cb) -> # Run migration on staged database dir
-			migrate stagedDataDir, fromVersion, toVersion, userName, password, lastMigrationStep, (err) ->
+			migrate stagedDataDir+'/data', fromVersion, toVersion, userName, password, lastMigrationStep, (err) ->
 				if err
 					console.error "Database migration error!"
 					cb err
