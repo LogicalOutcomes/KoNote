@@ -1,6 +1,6 @@
 {
   "name": "konote",
-  "version": "1.6.0-RC1",
+  "version": "1.6.0",
   "dependencies": {
     "animate.css": {
       "version": "3.5.1",
