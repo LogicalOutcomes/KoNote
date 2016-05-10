@@ -5,8 +5,19 @@
 Async = require 'async'
 Mkdirp = require 'mkdirp'
 Path = require 'path'
+Fs = require 'fs'
 
+Config = require '../config'
 {dataModelDefinitions} = require './dataModels'
+
+createVersionMetadataFile = (dataDir, cb) ->
+	versionPath = Path.join(dataDir, 'version.json')
+	versionData = {
+		dataVersion: Config.version
+		lastMigrationStep: 0
+	}
+
+	Fs.writeFile versionPath, JSON.stringify(versionData), cb
 
 buildDataDirectory = (dataDir, customDataModelDefinitions, cb) ->
 	# Switch cb for customDataModelDefinitions if not provided
@@ -27,6 +38,8 @@ buildDataDirectory = (dataDir, customDataModelDefinitions, cb) ->
 			Mkdirp Path.join(dataDir, '_users'), cb
 		(cb) ->
 			Mkdirp Path.join(dataDir, '_locks'), cb
+		(cb) ->
+			createVersionMetadataFile dataDir, cb
 	], cb
 
 module.exports = {buildDataDirectory}

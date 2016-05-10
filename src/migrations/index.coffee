@@ -29,12 +29,24 @@ Base64url = require 'base64url'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
-Ncp = require 'ncp'
 Moment = require 'moment'
 
 Config = require '../config'
 
 # Utilities
+copyRecursiveSync = (src, dest) ->
+	exists = Fs.existsSync(src)
+	stats = exists and Fs.statSync(src)
+	isDirectory = exists and stats.isDirectory()
+	if exists and isDirectory
+		Fs.mkdirSync dest
+		Fs.readdirSync(src).forEach (childItemName) ->
+			copyRecursiveSync Path.join(src, childItemName), Path.join(dest, childItemName)
+			return
+	else
+		Fs.linkSync src, dest
+	return
+
 writeDataVersion = (dataDir, toVersion, cb) ->	
 	versionPath = Path.join dataDir, 'version.json'
 	metadata = null
@@ -131,14 +143,8 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 
 		(cb) -> # Copy the dataDir to a staging dir
 			console.log "Copying database to staging folder...."
-			Ncp dataDir, stagedDataDir, (err) ->
-				if err
-					console.error "Database staging error!"
-					cb err
-					return
-
-				console.info "2. Database staging successful."
-				cb()
+			copyRecursiveSync dataDir, stagedDataDir
+			cb()
 
 		(cb) -> # Run migration on staged database dir
 			migrate stagedDataDir, fromVersion, toVersion, userName, password, lastMigrationStep, (err) ->
