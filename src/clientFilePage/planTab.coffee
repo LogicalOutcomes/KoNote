@@ -591,8 +591,8 @@ load = (win) ->
 								)
 							)
 						)
-						(if targetIdsByStatus.has('deactivated')
-							R.div({className: 'targets status-deactivated'},
+						(if targetIdsByStatus.has('dormant')
+							R.div({className: 'targets status-dormant'},
 								R.span({
 									className: 'inactiveTargetHeader'
 									onClick: @_toggleDisplayCancelledTargets
@@ -601,15 +601,15 @@ load = (win) ->
 									FaIcon('caret-right', {
 										className: 'expanded' if @state.displayCancelledTargets
 									})
-									R.strong({}, targetIdsByStatus.get('deactivated').size)
-									" Deactivated "
+									R.strong({}, targetIdsByStatus.get('dormant').size)
+									" dormant "
 									Term (
-										if targetIdsByStatus.get('deactivated').size > 1 then 'Targets' else 'Target'
+										if targetIdsByStatus.get('dormant').size > 1 then 'Targets' else 'Target'
 									)									
 								)
 								(if @state.displayCancelledTargets
 									# Cancelled statuses
-									(targetIdsByStatus.get('deactivated').map (targetId) =>
+									(targetIdsByStatus.get('dormant').map (targetId) =>
 										PlanTarget({
 											currentRevision: currentTargetRevisionsById.get targetId
 											metricsById
@@ -749,7 +749,7 @@ load = (win) ->
 										className: 'statusButton'
 										dialog: ModifyTargetStatusDialog
 										planTarget: @props.currentRevision
-										newStatus: 'deactivated'
+										newStatus: 'dormant'
 										title: "Deactivate #{Term 'Target'}"
 										message: """
 											This will remove the #{Term 'target'} from the #{Term 'client'} 
