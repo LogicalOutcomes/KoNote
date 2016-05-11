@@ -58,7 +58,6 @@ load = (win) ->
 		Gui.Window.open 'main.html?' + $.param(params), {
 			focus: false
 			show: false
-			toolbar: false
 			width: 1000
 			height: 700
 			icon: "src/icon.png"
