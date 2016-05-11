@@ -309,16 +309,17 @@ load = (win, {clientFileId}) ->
 						cb()
 			], (err) =>
 				if err
+					# Cancel any lock operations, and show the page in error
+					@_killLocks()
+					global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'					
+					Window.show()
+
 					if err instanceof Persist.IOError
 						console.error err
 						console.error err.stack						
 
 						@setState {loadErrorType: 'io-error', status: 'ready'}
 						return
-
-					global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
-					Window.show()
-					Window.focus()
 
 					CrashHandler.handle err
 					return
