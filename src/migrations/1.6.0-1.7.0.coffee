@@ -369,21 +369,6 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 
 # //////////////// Version-Specific Utilities /////////////////
 
-createVersionMetadataFile = (dataDir, cb) ->
-	versionPath = Path.join(dataDir, 'version.json')
-	versionData = {
-		dataVersion: '1.6.0' # This stays as old version until migration is 100% done
-		lastMigrationStep: 0
-	}
-
-	Fs.writeFile versionPath, JSON.stringify(versionData), (err) ->
-		if err
-			console.info "Version File Error!"
-			cb err
-			return
-
-		finalizeMigrationStep(dataDir, cb)
-
 changePlanTargetDeactivatedStatusToDormant = (dataDir, globalEncryptionKey, cb) ->
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
 		planTargetsDirPath = Path.join(dataDir, 'clientFiles', clientFile, 'planTargets')
@@ -435,15 +420,9 @@ module.exports = {
 		globalEncryptionKey = null
 
 		migrationSeries = [
-			# Create non-encrypted version.json file
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "1. Create version.json file"
-				createVersionMetadataFile dataDir, cb
-
-			(cb) ->
-				console.groupEnd()
-				console.groupCollapsed "2. Change planTarget 'deactivated' status to 'dormant'"
+				console.groupCollapsed "1. Change planTarget 'deactivated' status to 'dormant'"
 				changePlanTargetDeactivatedStatusToDormant dataDir, globalEncryptionKey, cb
 		]
 
