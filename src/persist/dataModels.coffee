@@ -30,6 +30,8 @@ dataModelDefinitions = [
 					Joi.object().keys({
 						id: IdSchema
 						name: Joi.string()
+						status: ['default', 'dormant', 'completed']
+						statusReason: Joi.string().optional()
 						targetIds: Joi.array().items(
 							IdSchema
 						)

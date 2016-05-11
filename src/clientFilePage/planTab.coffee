@@ -357,6 +357,7 @@ load = (win) ->
 						id: sectionId
 						name: sectionName
 						targetIds: []
+						status: 'default'
 					}
 
 				@setState {plan: newPlan}, =>
@@ -685,7 +686,8 @@ load = (win) ->
 				}
 			},
 				R.div({className: 'sectionName'},
-					section.get('name')
+					section.get('name'), " status: ", section.get('status')
+
 				)
 				R.div({className: 'btn-group btn-group-sm'},
 					R.button({
