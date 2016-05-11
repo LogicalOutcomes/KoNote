@@ -57,11 +57,11 @@ init = (win) ->
 	process.on 'uncaughtException', (err) ->
 		CrashHandler.handle err
 
-	# application menu bar required for osx copy-paste functionality
-	if process.platform == 'darwin'
-		mb = new Gui.Menu({type: 'menubar'})
-		mb.createMacBuiltin(Config.productName)
-		Gui.Window.get().menu = mb
+	# Application menu bar required for osx copy-paste functionality
+	if process.platform is 'darwin'
+		menuBar = new Gui.Menu({type: 'menubar'})
+		menuBar.createMacBuiltin(Config.productName)
+		Gui.Window.get().menu = menuBar
 
 	containerElem = document.getElementById('container')
 
@@ -70,19 +70,25 @@ init = (win) ->
 	chokidarListener = null
 	allListeners = null
 
+	# Build page params object, assign default pageId if none provided
+	pageParameters = QueryString.parse(win.location.search.substr(1))
+	pageParameters.page = defaultPageId unless pageParameters.page?
+
+	win.pageParameters = pageParameters
+
 	process.nextTick =>
 		# Configure if application is just starting
 		global.HCRSavedState ||= {}
 		
 		# Render and setup page
-		renderPage QueryString.parse(win.location.search.substr(1))
+		renderPage(pageParameters)
 		initPage()
 		
 
 	renderPage = (requestedPage) =>
 		# Decide what page to render based on the page parameter
 		# URL would look something like `.../main.html?page=client`
-		pageModulePath = pageModulePathsById[requestedPage.page or defaultPageId]
+		pageModulePath = pageModulePathsById[requestedPage.page]
 
 		# Load the page module
 		pageComponentClass = require(pageModulePath).load(win, requestedPage)
@@ -270,7 +276,7 @@ init = (win) ->
 
 			catch err
 				console.warn "Live-refresh unavailable", err
-					
+
 
 	unregisterPageListeners = =>
 		# Unregister Chokidar
@@ -282,6 +288,11 @@ init = (win) ->
 
 	# Define the listener here so that it can be removed later
 	onWindowCloseEvent = =>
-		pageComponent.suggestClose()
+		try
+			# Sometimes pageComponent will be undefined during a crash
+			pageComponent.suggestClose()
+		catch err
+			console.warn "Force-closing window..."
+			nwWin.close(true)
 
 module.exports = {init}

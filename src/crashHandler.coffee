@@ -23,7 +23,9 @@ load = (win) ->
 
 	handle = (err) ->
 		# Show NW window, in case it's still hidden
-		nwWin.show()
+		# Exclude loginPage, since it's meant to be hidden
+		if not win.pageParameters.page is 'login' and global.ActiveSession?
+			nwWin.show()
 		
 		# Record where this function was actually called from.
 		# Sometimes this additional info is useful, because async calls often
