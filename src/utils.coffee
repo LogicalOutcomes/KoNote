@@ -61,7 +61,7 @@ load = (win) ->
 			toolbar: false
 			width: 1000
 			height: 700
-			icon: "icon.png"
+			icon: "src/icon.png"
 		}
 
 	renderName = (name) ->
