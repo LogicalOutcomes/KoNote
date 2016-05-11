@@ -12,12 +12,6 @@
 
 _ = require 'underscore'
 
-# ES6 polyfills
-# These can be removed once we're back to NW.js 0.12+
-require 'string.prototype.endswith'
-require 'string.prototype.includes'
-require 'string.prototype.startswith'
-
 defaultPageId = 'login'
 pageModulePathsById = {
 	login: './loginPage'

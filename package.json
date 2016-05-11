@@ -64,9 +64,6 @@
     "react-bootstrap": "^0.29.3",
     "react-dom": "^15.0.2",
     "rimraf": "^2.3.4",
-    "string.prototype.endswith": "^0.2.0",
-    "string.prototype.includes": "^1.0.0",
-    "string.prototype.startswith": "^0.2.0",
     "typeahead.js": "^0.10.5",
     "underscore": "^1.8.3"
   },
