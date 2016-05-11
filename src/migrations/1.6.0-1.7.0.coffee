@@ -369,8 +369,20 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 
 # //////////////// Version-Specific Utilities /////////////////
 
-changePlanTargetNotesPropertyToDescription 
+createVersionMetadataFile = (dataDir, cb) ->
+	versionPath = Path.join(dataDir, 'version.json')
+	versionData = {
+		dataVersion: '1.6.0' # This stays as old version until migration is 100% done
+		lastMigrationStep: 0
+	}
 
+	Fs.writeFile versionPath, JSON.stringify(versionData), (err) ->
+		if err
+			console.info "Version File Error!"
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
 
 changePlanTargetDeactivatedStatusToDormant = (dataDir, globalEncryptionKey, cb) ->
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
