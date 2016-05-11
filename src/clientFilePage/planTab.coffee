@@ -602,7 +602,7 @@ load = (win) ->
 										className: 'expanded' if @state.displayCancelledTargets
 									})
 									R.strong({}, targetIdsByStatus.get('dormant').size)
-									" dormant "
+									" Dormant "
 									Term (
 										if targetIdsByStatus.get('dormant').size > 1 then 'Targets' else 'Target'
 									)									
@@ -744,19 +744,19 @@ load = (win) ->
 						# Can cancel/complete a 'default' target					
 						(if revisionStatus is 'default'
 							R.div({className: 'statusButtonGroup'},
-								WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
+								WithTooltip({title: "Make #{Term 'Target'} Dormant", placement: 'top'},
 									OpenDialogLink({
 										className: 'statusButton'
 										dialog: ModifyTargetStatusDialog
 										planTarget: @props.currentRevision
 										newStatus: 'dormant'
-										title: "Deactivate #{Term 'Target'}"
+										title: "Make #{Term 'Target'} Dormant"
 										message: """
 											This will remove the #{Term 'target'} from the #{Term 'client'} 
 											#{Term 'plan'}, and future #{Term 'progress notes'}. 
 											It may be re-activated again later.
 										"""
-										reasonLabel: "Reason for deactivation:"									
+										reasonLabel: "Reason for dormancy:"									
 										disabled: @props.isReadOnly or @props.hasTargetChanged
 									},
 										FaIcon 'ban'
