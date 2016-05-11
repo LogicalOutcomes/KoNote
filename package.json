@@ -3,6 +3,7 @@
   "displayName": "KoNote",
   "version": "1.6.0",
   "main": "src/main.html",
+  "chromium-args": "--enable-spell-checking",
   "window": {
     "icon": "src/icon.png",
     "title": "KoNote",
