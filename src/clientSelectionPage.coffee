@@ -80,7 +80,7 @@ load = (win) ->
 				loadingMessage: "Loading Client File..."
 			}
 
-			clientFileWindow = openWindow {
+			openWindow {
 				page: 'clientFile'
 				clientFileId
 			}

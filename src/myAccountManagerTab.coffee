@@ -21,7 +21,7 @@ load = (win) ->
 	OpenDialogLink = require('./openDialogLink').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	Spinner = require('./spinner').load(win)
-	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
+	{FaIcon, renderName, showWhen} = require('./utils').load(win)
 
 	MyAccountManagerTab = React.createFactory React.createClass
 		displayName: 'MyAccountManagerTab'
