@@ -148,6 +148,11 @@ init = (win) ->
 			isLoggedIn = true
 			registerPageListeners()
 
+		# Disable context menu
+		win.document.addEventListener 'contextmenu', (ev) ->
+			ev.preventDefault()
+			false
+	
 		# Hotkeys
 		devToolsKeyCount = null
 		win.document.addEventListener 'keydown', (event) ->
