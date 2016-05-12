@@ -36,13 +36,13 @@ WebCryptoApi = ->
 	#
 	# Oh, by the way, avoid global.window (see issue 473).
 
-	Assert global.__nwWindowsStore, 'this version of NW.js does not have __nwWindowsStore'
+	# Assert global.__nwWindowsStore, 'this version of NW.js does not have __nwWindowsStore'
 
-	# Grab the first NW.js Window that we can find
-	nwWin = global.__nwWindowsStore[Object.keys(global.__nwWindowsStore)[0]]
+	# # Grab the first NW.js Window that we can find
+	# nwWin = global.__nwWindowsStore[Object.keys(global.__nwWindowsStore)[0]]
 
 	# Pull a reference out of the window
-	return nwWin.window.crypto.subtle
+	return window.crypto.subtle
 
 class SymmetricEncryptionKey
 	# Implementation notes:
