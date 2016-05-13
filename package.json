@@ -69,7 +69,7 @@
     "underscore": "^1.8.3"
   },
   "scripts": {
-    "start": "nw . --enable-logging=stderr",
+    "start": "nw . --enable-logging=stderr --remote-debugging-port=9222",
     "test": "mocha --compilers coffee:coffee-script/register --recursive --bail"
   }
 }
