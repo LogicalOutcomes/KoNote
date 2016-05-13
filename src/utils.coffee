@@ -56,7 +56,7 @@ load = (win) ->
 	# A convenience method for opening a new window
 	# Callback function (optional) provides window context as argument
 	openWindow = (params, cb=(->)) ->
-		nw.Window.open 'src/main.html?' + $.param(params), {
+		Gui.Window.open 'src/main.html?' + $.param(params), {
 			focus: false
 			show: false
 			width: 1000
