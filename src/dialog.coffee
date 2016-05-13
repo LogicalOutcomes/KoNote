@@ -42,7 +42,7 @@ load = (win) ->
 					isVisible: @state.isLoading
 					isOverlay: true
 				})
-				R.div({className: 'dialog panel panel-primary animated fadeInUp'},
+				R.div({className: 'dialog panel panel-primary animated fadeIn'},
 					R.div({className: 'panel-heading'},
 						R.h3({className: 'panel-title'}, @props.title)
 						(unless @props.disableCancel
