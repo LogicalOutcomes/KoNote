@@ -102,6 +102,16 @@ module.exports = function(grunt) {
 						to: ''
 					}
 				]
+			},
+			bootstrap: {
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/node_modules/bootstrap/dist/js/bootstrap.min.js'],
+				overwrite: true,
+				replacements: [
+					{
+						from: 'TRANSITION_DURATION=300',
+						to: 'TRANSITION_DURATION=100'
+					}
+				]
 			}
 		},
 		nwjs: {
@@ -245,6 +255,7 @@ module.exports = function(grunt) {
 				grunt.task.run('copy:griffin:'+entry);
 			}
 			grunt.task.run('exec:npm:'+entry);
+			grunt.task.run('replace:bootstrap:'+entry);
 			grunt.task.run('stylus:compile:'+entry);
 			grunt.task.run('coffee:compileMultiple:'+entry);
 			grunt.task.run('uglify:all:'+entry);
