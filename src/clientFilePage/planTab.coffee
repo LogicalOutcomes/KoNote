@@ -835,6 +835,7 @@ load = (win) ->
 							definition: metric.get('definition')
 							value: metric.get('value')
 							key: metricId
+							tooltipViewport: '.section'
 						})
 					).toJS()...
 				)
