@@ -148,7 +148,7 @@ runSeries = (templateFileName) ->
 				cb()
 
 		(cb) ->
-			Create.accounts 0, (err, results) ->
+			Create.accounts template.accounts, (err, results) ->
 				if err
 					cb err
 					return
@@ -157,7 +157,7 @@ runSeries = (templateFileName) ->
 				cb()
 
 		(cb) ->
-			Create.programs 2, (err, results) ->
+			Create.programs template.programs, (err, results) ->
 				if err
 					cb err
 					return
@@ -166,7 +166,7 @@ runSeries = (templateFileName) ->
 				cb()		
 
 		(cb) ->
-			Create.eventTypes 3, (err, results) ->
+			Create.eventTypes template.eventTypes, (err, results) ->
 				if err
 					cb err
 					return
@@ -175,7 +175,7 @@ runSeries = (templateFileName) ->
 				cb()		
 
 		(cb) ->
-			Create.metrics 4, (err, results) ->
+			Create.metrics template.metrics, (err, results) ->
 				if err
 					cb err
 					return

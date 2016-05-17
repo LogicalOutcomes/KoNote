@@ -1,3 +1,7 @@
 {
-	"clientFiles": 6
+	"clientFiles": 6,
+	"accounts": 2,
+	"programs": 2,
+	"eventTypes": 4,
+	"metrics": 2
 }
