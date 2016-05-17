@@ -2,6 +2,7 @@ Imm = require 'immutable'
 Faker = require 'faker'
 Async = require 'async'
 Moment = require 'moment'
+Fs = require 'fs'
 
 {Users, Persist, generateId} = require '../persist'
 Create = require './create'
@@ -115,10 +116,12 @@ generateClientFiles = (quantity, metrics, cb) ->
 		cb(null, clientFiles)
 
 
-runSeries = ->
+runSeries = (templateFileName) ->
 	# First tell the system that we're seeding, to prevent
 	# event-driven operations such opening a clientFile
 	global.isSeeding = true
+
+	template = null
 
 	clientFiles = null
 	programs = null
@@ -130,6 +133,20 @@ runSeries = ->
 	planTargets = null
 
 	Async.series [
+		(cb) -> 
+			Fs.readFile "./src/seeds/templates/#{templateFileName}.json", (err, result) -> 
+				if err
+					if err.code is "ENOENT"
+						console.error "#{templateFileName}: Template does not exist."
+
+					cb err
+					return
+
+				console.log JSON.parse(result)
+				template = JSON.parse(result)
+
+				cb()
+
 		(cb) ->
 			Create.accounts 0, (err, results) ->
 				if err
@@ -168,7 +185,7 @@ runSeries = ->
 
 		(cb) ->
 			console.group('Client Files')
-			generateClientFiles 5, metrics, (err, results) ->
+			generateClientFiles template.clientFiles, metrics, (err, results) ->
 				if err
 					cb err
 					return
