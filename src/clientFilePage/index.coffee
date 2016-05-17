@@ -48,6 +48,8 @@ load = (win, {clientFileId}) ->
 			return {
 				status: 'init' # Either init or ready
 				isLoading: false
+				
+				headerIndex: 0
 
 				clientFile: null
 				clientFileLock: null
@@ -98,6 +100,8 @@ load = (win, {clientFileId}) ->
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
 				createQuickNote: @_createQuickNote
+				
+				renewAllData: @_renewAllData
 			})
 
 		_renewAllData: ->
@@ -181,7 +185,13 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
+						# load 10 at a time
 						progNoteHeaders = results
+						.sortBy (header) ->
+							createdAt = header.get('backdate') or header.get('timestamp')
+							return Moment createdAt, Persist.TimestampFormat
+						.reverse()
+						.slice(0, @state.headerIndex+10)
 						cb()
 
 				(cb) =>
@@ -359,6 +369,8 @@ load = (win, {clientFileId}) ->
 					@setState {
 						status: 'ready'
 						isLoading: false
+						
+						headerIndex: @state.headerIndex+10
 
 						clientFile						
 						progressNoteHistories
@@ -726,6 +738,8 @@ load = (win, {clientFileId}) ->
 						
 						hasChanges: @hasChanges
 						onTabChange: @_changeTab
+				
+						renewAllData: @props.renewAllData
 
 						createQuickNote: @props.createQuickNote
 						setIsLoading: @props.setIsLoading
