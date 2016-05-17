@@ -20,6 +20,7 @@ load = (win) ->
 	R = React.DOM
 
 	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
+	ModifySectionStatusDialog = require('./modifySectionStatusDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	WithTooltip = require('../withTooltip').load(win)
@@ -363,6 +364,15 @@ load = (win) ->
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
 
+		_changeSectionStatus: (sectionId, newStatus) ->
+			sectionIndex = @_getSectionIndex sectionId
+			sectionStatus = @state.plan.getIn ['sections', sectionIndex, 'status']
+
+			Bootbox.prompt 'Enter a reason for status change', (statusReason) =>
+				newPlan = @state.plan.setIn ['sections', sectionIndex, 'status'], newStatus
+				@setState {plan: newPlan}
+
+
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
 			sectionName = @state.plan.getIn ['sections', sectionIndex, 'name']
@@ -672,6 +682,7 @@ load = (win) ->
 				isReadOnly
 
 				renameSection
+				
 				addTargetToSection
 			} = @props
 
@@ -706,7 +717,50 @@ load = (win) ->
 						"Add #{Term 'target'}"
 					)
 				)
+
+				# SECTION STATUS BUTTONS
+		
+				R.div({className: 'statusButtonGroup'},
+					WithTooltip({title: "Make #{Term 'Target'} Dormant", placement: 'top'},
+						OpenDialogLink({
+							className: 'statusButton'
+							dialog: ModifySectionStatusDialog
+							# plan: @props.plan
+							newStatus: 'dormant'
+							# sectionIndex: @_getSectionIndex section.get('id')
+							title: "Make #{Term 'Target'} Dormant"
+							message: """
+								This will remove the #{Term 'target'} from the #{Term 'client'} 
+								#{Term 'plan'}, and future #{Term 'progress notes'}. 
+								It may be re-activated again later.
+							"""
+							reasonLabel: "Reason for dormancy:"									
+							disabled: @props.isReadOnly or @props.hasTargetChanged
+						},
+							FaIcon 'ban'
+						)
+					)
+					WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
+						OpenDialogLink({
+							className: 'statusButton'
+							dialog: ModifySectionStatusDialog
+							# plan: @state.plan
+							newStatus: 'completed'
+							# sectionIndex: @_getSectionIndex section.get('id')
+							title: "Complete #{Term 'Target'}"
+							message: """
+								This will set the #{Term 'target'} as 'completed'. This often 
+								means that the desired outcome has been reached.
+							"""
+							reasonLabel: "Reason for completion:"
+							disabled: @props.isReadOnly or @props.hasTargetChanged
+						},
+							FaIcon 'check'
+						)
+					)
+				)
 			)
+			
 
 	PlanTarget = React.createFactory React.createClass
 		displayName: 'PlanTarget'
