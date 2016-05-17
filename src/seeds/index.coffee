@@ -7,7 +7,7 @@ Fs = require 'fs'
 {Users, Persist, generateId} = require '../persist'
 Create = require './create'
 
-generateClientFile = (metrics, cb) ->
+generateClientFile = (metrics, template, cb) ->
 	console.group('Generated Client File')
 
 	clientFile = null
@@ -20,6 +20,7 @@ generateClientFile = (metrics, cb) ->
 
 	Async.series [
 		# Create the empty clientFile
+
 		(cb) ->
 			Create.clientFile (err, result) ->
 				if err
@@ -32,7 +33,7 @@ generateClientFile = (metrics, cb) ->
 
 		# Create planTargets
 		(cb) ->
-			Create.planTargets 5, {clientFile, metrics}, (err, results) ->
+			Create.planTargets template.planTargets, {clientFile, metrics}, (err, results) ->
 				if err
 					cb err
 					return
@@ -67,7 +68,7 @@ generateClientFile = (metrics, cb) ->
 
 		# Write a progNote, write a note and random metric for each target, in each section
 		(cb) ->
-			Create.progNotes 3, {clientFile, sections, planTargets, metrics}, (err, results) ->
+			Create.progNotes template.progNotes, {clientFile, sections, planTargets, metrics}, (err, results) ->
 				if err
 					cb err
 					return
@@ -79,7 +80,7 @@ generateClientFile = (metrics, cb) ->
 		# Create a # of progEvents for each progNote in the clientFile
 		(cb) ->
 			Async.map progNotes.toArray(), (progNote, cb) ->
-				Create.progEvents 3, {clientFile, progNote}, (err, results) ->
+				Create.progEvents template.progEvents, {clientFile, progNote}, (err, results) ->
 					if err
 						cb err
 						return
@@ -104,9 +105,9 @@ generateClientFile = (metrics, cb) ->
 		cb(null, clientFile)
 
 
-generateClientFiles = (quantity, metrics, cb) ->	
+generateClientFiles = (quantity, metrics, template, cb) ->	
 	Async.timesSeries quantity, (quantityPosition, cb) ->
-		generateClientFile(metrics, cb)
+		generateClientFile(metrics, template, cb)
 	, (err, results) ->
 		if err
 			cb err
@@ -185,7 +186,7 @@ runSeries = (templateFileName) ->
 
 		(cb) ->
 			console.group('Client Files')
-			generateClientFiles template.clientFiles, metrics, (err, results) ->
+			generateClientFiles template.clientFiles, metrics, template, (err, results) ->
 				if err
 					cb err
 					return
