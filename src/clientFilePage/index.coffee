@@ -191,7 +191,7 @@ load = (win, {clientFileId}) ->
 							createdAt = header.get('backdate') or header.get('timestamp')
 							return Moment createdAt, Persist.TimestampFormat
 						.reverse()
-						.slice(0, @state.headerIndex+10)
+						.slice(@state.headerIndex, @state.headerIndex+10)
 						cb()
 
 				(cb) =>
@@ -366,6 +366,8 @@ load = (win, {clientFileId}) ->
 						}
 				else
 					# Load in clientFile data
+					if @state.clientFile?
+						progressNoteHistories = @state.progressNoteHistories.concat progressNoteHistories
 					@setState {
 						status: 'ready'
 						isLoading: false
