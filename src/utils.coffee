@@ -2,6 +2,9 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+Moment = require 'moment'
+
+{TimestampFormat} = require './persist'
 Config = require './config'
 _ = require 'underscore'
 
@@ -122,6 +125,12 @@ load = (win) ->
 		.delete('author')
 		.delete('timestamp')
 
+	formatTimestamp = (timestamp) ->
+		return Moment(timestamp, TimestampFormat).format('Do MMM, YYYY [at] h:mmA')
+
+	capitalize = (word) ->
+    return word.charAt(0).toUpperCase() + word.slice(1)
+
 	# Ensures that `text` does not exceed `maxLength` by replacing excess
 	# characters with an ellipsis character.
 	truncateText = (maxLength, text) ->
@@ -140,7 +149,9 @@ load = (win) ->
 		renderFileId
 		showWhen
 		stripMetadata
-		truncateText
+		formatTimestamp
+		capitalize
+		truncateText		
 	}
 
 module.exports = {
