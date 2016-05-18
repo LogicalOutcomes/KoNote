@@ -746,16 +746,16 @@ load = (win) ->
 							FaIcon 'ban'
 						)
 					)
-					WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
+					WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top'},
 						OpenDialogLink({
 							className: 'statusButton'
 							dialog: ModifySectionStatusDialog
-							# plan: @state.plan
+							plan: plan
 							newStatus: 'completed'
-							# sectionIndex: @_getSectionIndex section.get('id')
-							title: "Complete #{Term 'Target'}"
+							sectionIndex: getSectionIndex section.get('id')
+							title: "Complete #{Term 'Section'}"
 							message: """
-								This will set the #{Term 'target'} as 'completed'. This often 
+								This will set the #{Term 'section'} as 'completed'. This often 
 								means that the desired outcome has been reached.
 							"""
 							reasonLabel: "Reason for completion:"
