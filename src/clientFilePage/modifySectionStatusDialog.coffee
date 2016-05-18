@@ -70,10 +70,16 @@ load = (win) ->
 
 			# ************change this part to section stuff*************
 
-			revisedSection = @props.plan
-			.setIn(['sections', sectionIndex, 'status'], @props.newStatus)
-			.setIn(['sections', sectionIndex, 'statusReason'], @state.statusReason)
-			
+			console.log "section index >>>>>>>>>>>>>>> ", @props.sectionIndex
+			console.log "plan >>>>>>>>>>>>>>>>>>>>> ", @props.plan
+			console.log "newStatus >>>>>>>>>>>>>>>>>>>> ", @props.newStatus
+			console.log "statusReason >>>>>>>>>>>>>>> ", @state.statusReason
+
+
+			newPlan = @props.plan
+			.setIn(['sections', @props.sectionIndex, 'status'], @props.newStatus)
+			.setIn(['sections', @props.sectionIndex, 'statusReason'], @state.statusReason)
+			@setState {plan: newPlan}
 
 				# if err
 				# 	if err instanceof Persist.IOError

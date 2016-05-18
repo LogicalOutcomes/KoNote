@@ -148,6 +148,7 @@ load = (win) ->
 						hasTargetChanged: @_hasTargetChanged
 						updateTarget: @_updateTarget
 						setSelectedTarget: @_setSelectedTarget
+						getSectionIndex: @_getSectionIndex
 					})
 				)
 				R.div({className: 'targetDetail'},
@@ -364,13 +365,13 @@ load = (win) ->
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
 
-		_changeSectionStatus: (sectionId, newStatus) ->
-			sectionIndex = @_getSectionIndex sectionId
-			sectionStatus = @state.plan.getIn ['sections', sectionIndex, 'status']
+		# _changeSectionStatus: (sectionId, newStatus) ->
+		# 	sectionIndex = @_getSectionIndex sectionId
+		# 	sectionStatus = @state.plan.getIn ['sections', sectionIndex, 'status']
 
-			Bootbox.prompt 'Enter a reason for status change', (statusReason) =>
-				newPlan = @state.plan.setIn ['sections', sectionIndex, 'status'], newStatus
-				@setState {plan: newPlan}
+		# 	Bootbox.prompt 'Enter a reason for status change', (statusReason) =>
+		# 		newPlan = @state.plan.setIn ['sections', sectionIndex, 'status'], newStatus
+		# 		@setState {plan: newPlan}
 
 
 		_renameSection: (sectionId) ->
@@ -494,6 +495,7 @@ load = (win) ->
 				updateTarget
 				removeNewTarget
 				setSelectedTarget
+				getSectionIndex
 			} = @props
 
 			return R.div({className: 'sections', ref: 'sections'},
@@ -528,7 +530,9 @@ load = (win) ->
 							section
 							isReadOnly
 							renameSection
+							getSectionIndex
 							addTargetToSection
+							plan
 						})
 						SectionHeader({
 							type: 'sticky'
@@ -537,7 +541,9 @@ load = (win) ->
 							section
 							isReadOnly
 							renameSection
+							getSectionIndex
 							addTargetToSection
+							plan
 						})
 						(if section.get('targetIds').size is 0
 							R.div({className: 'noTargets'},
@@ -680,9 +686,9 @@ load = (win) ->
 				scrollTop
 				section
 				isReadOnly
-
+				plan
 				renameSection
-				
+				getSectionIndex
 				addTargetToSection
 			} = @props
 
@@ -721,16 +727,16 @@ load = (win) ->
 				# SECTION STATUS BUTTONS
 		
 				R.div({className: 'statusButtonGroup'},
-					WithTooltip({title: "Make #{Term 'Target'} Dormant", placement: 'top'},
+					WithTooltip({title: "Make #{Term 'Section'} Dormant", placement: 'top'},
 						OpenDialogLink({
 							className: 'statusButton'
 							dialog: ModifySectionStatusDialog
-							# plan: @props.plan
+							plan: plan
 							newStatus: 'dormant'
-							# sectionIndex: @_getSectionIndex section.get('id')
-							title: "Make #{Term 'Target'} Dormant"
+							sectionIndex: getSectionIndex section.get('id')
+							title: "Make #{Term 'Section'} Dormant"
 							message: """
-								This will remove the #{Term 'target'} from the #{Term 'client'} 
+								This will remove the #{Term 'Section'} from the #{Term 'client'} 
 								#{Term 'plan'}, and future #{Term 'progress notes'}. 
 								It may be re-activated again later.
 							"""
