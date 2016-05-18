@@ -275,7 +275,6 @@ load = (win, {clientFileId}) ->
 						cb()
 				(cb) =>
 					Async.map programHeaders.toArray(), (programHeader, cb) =>
-						console.log programHeader.get('id')
 						ActiveSession.persist.programs.readLatestRevisions programHeader.get('id'), 1, cb
 					, (err, results) =>
 						if err
