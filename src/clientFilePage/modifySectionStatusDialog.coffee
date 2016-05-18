@@ -79,7 +79,7 @@ load = (win) ->
 			newPlan = @props.plan
 			.setIn(['sections', @props.sectionIndex, 'status'], @props.newStatus)
 			.setIn(['sections', @props.sectionIndex, 'statusReason'], @state.statusReason)
-			@setState {plan: newPlan}
+			
 
 				# if err
 				# 	if err instanceof Persist.IOError
