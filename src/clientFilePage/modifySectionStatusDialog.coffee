@@ -71,7 +71,7 @@ load = (win) ->
 			# ************change this part to section stuff*************
 
 			console.log "section index >>>>>>>>>>>>>>> ", @props.sectionIndex
-			console.log "plan >>>>>>>>>>>>>>>>>>>>> ", @props.plan
+			console.log "plan >>>>>>>>>>>>>>>>>>>>> ", @props.plan.toJS()
 			console.log "newStatus >>>>>>>>>>>>>>>>>>>> ", @props.newStatus
 			console.log "statusReason >>>>>>>>>>>>>>> ", @state.statusReason
 
@@ -81,19 +81,22 @@ load = (win) ->
 			.setIn(['sections', @props.sectionIndex, 'statusReason'], @state.statusReason)
 			
 
-				# if err
-				# 	if err instanceof Persist.IOError
-				# 		Bootbox.alert """
-				# 			An error occurred.  Please check your network connection and try again.
-				# 		"""
-				# 		console.error err
-				# 		return
+			ActiveSession.persist.plan.createRevision newPlan, (err, updatedPlan) =>
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
-				# 	CrashHandler.handle err
-				# 	return
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						console.error err
+						return
 
-				# # Persist will trigger an event to update the UI
-			@props.onSuccess()				
+					CrashHandler.handle err
+					return
+
+				# Persist will trigger an event to update the UI
+				@props.onSuccess()					
 				
 
 	return ModifySectionStatusDialog
