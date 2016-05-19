@@ -720,7 +720,7 @@ load = (win) ->
 				}
 			},
 				R.div({className: 'sectionName'},
-					section.get('name'), " status: ", section.get('status')
+					section.get('name')
 
 				)
 				R.div({className: 'btn-group btn-group-sm'},
