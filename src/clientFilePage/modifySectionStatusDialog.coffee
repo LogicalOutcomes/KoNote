@@ -77,7 +77,7 @@ load = (win) ->
 			.setIn(['sections', @props.sectionIndex, 'status'], @props.newStatus)
 			.setIn(['sections', @props.sectionIndex, 'statusReason'], @state.statusReason)
 		
-			@props.onSuccess revisedPlan, (=> @refs.dialog.setIsLoading false), @props.onCancel
+			@props.onSuccess revisedPlan, (=> @refs.dialog.setIsLoading(false) if @refs.dialog?), @props.onCancel
 
 	return ModifySectionStatusDialog
 
