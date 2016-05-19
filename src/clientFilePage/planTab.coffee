@@ -135,6 +135,7 @@ load = (win) ->
 						)
 					)
 					SectionsView({
+						clientFile: @props.clientFile
 						plan: @state.plan
 						metricsById: @props.metricsById
 						currentTargetRevisionsById: @state.currentTargetRevisionsById
@@ -365,14 +366,6 @@ load = (win) ->
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
 
-		# _changeSectionStatus: (sectionId, newStatus) ->
-		# 	sectionIndex = @_getSectionIndex sectionId
-		# 	sectionStatus = @state.plan.getIn ['sections', sectionIndex, 'status']
-
-		# 	Bootbox.prompt 'Enter a reason for status change', (statusReason) =>
-		# 		newPlan = @state.plan.setIn ['sections', sectionIndex, 'status'], newStatus
-		# 		@setState {plan: newPlan}
-
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
@@ -482,6 +475,7 @@ load = (win) ->
 
 		render: ->
 			{
+				clientFile
 				plan
 				metricsById
 				currentTargetRevisionsById
@@ -525,6 +519,8 @@ load = (win) ->
 						ref: 'section-' + section.get('id')
 					},
 						SectionHeader({
+							clientFile
+							plan
 							type: 'inline'
 							visible: headerState is 'inline'
 							section
@@ -532,9 +528,10 @@ load = (win) ->
 							renameSection
 							getSectionIndex
 							addTargetToSection
-							plan
 						})
 						SectionHeader({
+							clientFile
+							plan
 							type: 'sticky'
 							visible: headerState is 'sticky'
 							scrollTop: @state.sectionsScrollTop
@@ -543,7 +540,6 @@ load = (win) ->
 							renameSection
 							getSectionIndex
 							addTargetToSection
-							plan
 						})
 						(if section.get('targetIds').size is 0
 							R.div({className: 'noTargets'},
@@ -679,8 +675,28 @@ load = (win) ->
 		displayName: 'SectionHeader'
 		mixins: [React.addons.PureRenderMixin]
 
+		_updateSectionStatus: (revisedPlan, stopLoading, cb) ->
+			revisedClientFile = @props.clientFile.set('plan', revisedPlan)
+			ActiveSession.persist.clientFiles.createRevision revisedClientFile, (err, updatedClientFile) ->
+				stopLoading()
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						console.error err
+						return
+
+					CrashHandler.handle err
+					return
+
+				console.log ">>>>>>>>updated clientfile: ", updatedClientFile.toJS()
+
+				cb()
+
 		render: ->
 			{
+				clientFile
 				type
 				visible
 				scrollTop
@@ -729,9 +745,9 @@ load = (win) ->
 				R.div({className: 'statusButtonGroup'},
 					WithTooltip({title: "Make #{Term 'Section'} Dormant", placement: 'top'},
 						OpenDialogLink({
+							plan
 							className: 'statusButton'
 							dialog: ModifySectionStatusDialog
-							plan: plan
 							newStatus: 'dormant'
 							sectionIndex: getSectionIndex section.get('id')
 							title: "Make #{Term 'Section'} Dormant"
@@ -742,6 +758,7 @@ load = (win) ->
 							"""
 							reasonLabel: "Reason for dormancy:"									
 							disabled: @props.isReadOnly or @props.hasTargetChanged
+							onSuccess: @_updateSectionStatus
 						},
 							FaIcon 'ban'
 						)
