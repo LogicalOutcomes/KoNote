@@ -847,7 +847,11 @@ load = (win) ->
 						# Can cancel/complete a 'default' target					
 						(if revisionStatus is 'default'
 							R.div({className: 'statusButtonGroup'},
-								WithTooltip({title: "Make #{Term 'Target'} Dormant", placement: 'top'},
+								WithTooltip({
+									title: "Make #{Term 'Target'} Dormant"
+									placement: 'top'
+									container: 'body'
+								},
 									OpenDialogLink({
 										className: 'statusButton'
 										dialog: ModifyTargetStatusDialog
