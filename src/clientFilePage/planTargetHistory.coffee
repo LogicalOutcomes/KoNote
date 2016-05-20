@@ -55,7 +55,7 @@ load = (win) ->
 				createdPlanTarget = Imm.fromJS {
 					property: Term('target')
 					action: 'created'
-					icon: 'pencil'
+					icon: 'arrow-right'
 				}
 				changeLog = revision.get('changeLog').push createdPlanTarget
 				return revision.set('changeLog', changeLog)
@@ -105,7 +105,7 @@ load = (win) ->
 					property: 'name'
 					action: 'revised'
 					value: diffedName
-					icon: 'arrow-right'
+					icon: 'pencil'
 				}
 
 				changeLog = revision.get('changeLog').push revisedName
@@ -124,7 +124,7 @@ load = (win) ->
 					property: 'description'
 					action: 'revised'
 					value: diffedDescription
-					icon: 'arrow-right'
+					icon: 'pencil'
 				}
 
 				changeLog = revision.get('changeLog').push revisedDescription
