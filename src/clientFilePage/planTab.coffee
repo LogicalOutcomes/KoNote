@@ -20,6 +20,8 @@ load = (win) ->
 	R = React.DOM
 
 	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
+	PlanTargetHistory = require('./planTargetHistory').load(win)
+
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	WithTooltip = require('../withTooltip').load(win)
@@ -27,8 +29,10 @@ load = (win) ->
 	MetricWidget = require('../metricWidget').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
 	PrintButton = require('../printButton').load(win)
-	{FaIcon, renderLineBreaks, showWhen, 
-	stripMetadata, formatTimestamp, capitalize} = require('../utils').load(win)
+
+	{
+		FaIcon, renderLineBreaks, showWhen, stripMetadata, formatTimestamp, capitalize
+	} = require('../utils').load(win)
 
 	PlanView = React.createFactory React.createClass
 		displayName: 'PlanView'
@@ -213,6 +217,7 @@ load = (win) ->
 							)
 							PlanTargetHistory({
 								revisions: selectedTarget.get('revisions')
+								metricsById: @props.metricsById
 							})
 						)
 					)
@@ -851,178 +856,7 @@ load = (win) ->
 			unless event.target.classList.contains 'field'
 				@refs.nameField.focus() unless @props.isReadOnly
 				@props.onTargetSelection()
-
-
-	PlanTargetHistory = React.createFactory React.createClass
-		displayName: 'PlanTargetHistory'
-		mixins: [React.addons.PureRenderMixin]
-
-		propTypes: -> {
-			revisions: React.PropTypes.instanceOf Imm.List
-		}
-
-		_buildChangeLog: (revision, index) ->
-			# Instantiate our changeLog in the currentRevision object
-			revision = revision.set 'changeLog', Imm.List()
-			revisionId = revision.get 'revisionId'
-
-			# Find previous revision if exists
-			previousRevision = if index > 0 then @props.revisions.reverse().get(index - 1) else null
-
-			# No previous revision means this is when it was created!
-			if not previousRevision?
-				createdPlanTarget = Imm.fromJS {
-					property: Term('target')
-					action: 'created'
-				}
-				changeLog = revision.get('changeLog').push createdPlanTarget
-				return revision.set('changeLog', changeLog)
-
-			# TODO: Generalize these diffs for arrays & strings,
-			# so we (hopefully) don't need to update this as the dataModel changes
-				
-			# Diff the metricIds
-			previousMetricIds = previousRevision.get('metricIds')
-			currentMetricIds = revision.get('metricIds')
-
-			unless Imm.is previousMetricIds, currentMetricIds
-				removedMetricIds = previousMetricIds
-				.filterNot (metricId) -> currentMetricIds.contains(metricId)
-				.map (metricId) -> Imm.fromJS {
-					property: Term('metric')
-					action: 'removed'
-					value: metricId
-				}
-
-				addedMetricIds = currentMetricIds
-				.filterNot (metricId) -> previousMetricIds.contains(metricId)
-				.map (metricId) -> Imm.fromJS {
-					property: Term('metric')
-					action: 'added'
-					value: metricId
-				}
-
-				revisedMetricIds = removedMetricIds.concat addedMetricIds
-				changeLog = revision.get('changeLog').push revisedMetricIds
-				revision = revision.set('changeLog', changeLog)
-
-
-			# Diff the name
-			previousName = previousRevision.get('name')
-			currentName = revision.get('name')
-
-			console.log "Diff name:", previousName, currentName
-
-			unless previousName is currentName
-				revisedName = Imm.fromJS {
-					property: 'name'
-					action: 'revised'
-					value: currentName
-				}
-
-				changeLog = revision.get('changeLog').push revisedName
-				revision = revision.set('changeLog', changeLog)
-
-				console.log "Changed name:", revisedName.toJS()
-
-
-			# Diff the description
-			previousDescription = previousRevision.get('description')
-			currentDescription = revision.get('description')
-
-			unless previousDescription is currentDescription
-				revisedDescription = Imm.fromJS {
-					revisionId
-					property: 'description'
-					action: 'revised'
-					value: currentDescription
-				}
-
-				changeLog = revision.get('changeLog').push revisedDescription
-				revision = revision.set('changeLog', changeLog)
-
-			console.info "Changed:", revision.get('changeLog').toJS()
-
-			return revision		
-
-		render: ->
-			# Process revision history to devise change logs
-			# They're already in reverse-order, so reverse() to map changes
-			revisions = @props.revisions
-			.reverse()
-			.map(@_buildChangeLog)
-			.reverse()
-
-			console.log "List of revisions:", revisions.toJS()
-
-			return R.div({className: 'planTargetHistory'},
-				R.div({className: 'heading'}, 'History')
-
-				(if revisions.isEmpty()
-					R.div({className: 'noRevisions'},
-						"This #{Term 'target'} is new.  ",
-						"It won't have any history until the #{Term 'client file'} is saved."
-					)
-				else
-					R.div({className: 'revisions'},
-						revisions.map (revision) -> RevisionChangeLog({revision})
-					)
-				)				
-			)
-
-	RevisionChangeLog = React.createFactory React.createClass
-		displayName: 'RevisionChangeLog'
-		mixins: [React.addons.PureRenderMixin]
-
-		render: ->
-			revision = @props.revision
-			console.log "revision.get('changeLog')", revision.get('changeLog').toJS()
-
-			return R.section({
-				className: 'revision'
-				key: revision.get('revisionId')
-			},
-				R.div({className: 'heading'},
-					R.div({className: 'author'},
-						revision.get('author')
-					)
-					R.div({className: 'timestamp'},
-						formatTimestamp revision.get('timestamp')
-					)
-				)
-
-				R.div({className: 'changeLog'},
-					(revision.get('changeLog').map (entry, key) ->
-						(if not entry.get('action') or entry.get('action') is 'created'
-							R.article({className: 'entry', key},
-								"Created #{entry.get('property')} as:"
-								RevisionSnapshot(revision)
-							)
-						else
-							R.article({className: 'entry', key},
-								"#{capitalize entry.get('action')} #{entry.get('property')} to:"
-								R.div({className: 'value'}, renderLineBreaks entry.get('value'))
-							)
-						)
-					)
-				)
-			)
-
-
-	RevisionSnapshot = (revision) ->
-		R.div({className: 'snapshot'},
-			R.div({className: 'nameLine'},
-				R.div({className: 'name'}, revision.get('name'))
-				R.div({className: 'tag'},
-					formatTimestamp(revision.get('timestamp'))
-					" by "
-					revision.get('author')
-				)
-			)
-			R.div({className: 'description'},
-				renderLineBreaks revision.get('description')
-			)
-		)
+	
 
 	return {PlanView}
 

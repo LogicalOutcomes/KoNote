@@ -1,7 +1,9 @@
-.planTargetHistory
-	padding 20px 0
+.planTargetHistory	
 
 	> .heading
+		padding 15px
+		padding-left 25px
+		
 		font-size 24px
 		font-weight 300
 
@@ -11,44 +13,92 @@
 		color #888
 		text-align center
 
-	> .revisions
+	> .revisions		
 		
 		> section.revision
-			padding 25px 0
+			position relative
+			padding 25px
 
 			border-bottom 1px solid sidebar-borders
 			
-			.heading
+			.header
 				display flex
+				flex-direction row
 
 				.author
 					flex 1
+					font-weight 700
+					
+					> .fa
+						color #cadbe5
+						font-size 1.2em
+						margin-right 10px
 					
 				.timestamp
-					flex 1
 					text-align right
+					font-weight 600
+					color #888
 
 			&:last-child
 				border-bottom none
 				
 			.snapshot
-				background yellow
+				margin-left 23px
+				padding-top 5px
+				color #515151
 				
-			> article.entry
-			
-				.changeLogEntry
-					background #eee
-
-				.nameLine
-					display flex
-
-					padding-bottom 20px
-
-					.name
-						flex 1
-
-						font-weight 700
-
-					.tag
-						font-weight 600
-						color #888
+				> .name
+					font-size 1.4em
+					font-weight 700
+					line-height 1.5em
+					border-bottom 1px dashed sidebar-borders
+					margin-top 10px
+					margin-bottom 10px
+					
+			&:hover article.entry .snapshotButton
+				visibility visible
+				
+			article.entry
+				position relative
+				margin-left 23px
+				padding-top 10px				
+				
+				> .snapshotButton
+					float right
+					margin 5px
+					margin-right 0
+					margin-top -2px
+					opacity 0.5
+					transition opacity .15s ease
+					visibility hidden
+					outline none
+					
+					&:hover
+						opacity 1
+				
+				> .fa
+					position absolute
+					left 0px
+					top 0
+					padding-top 12px
+					
+					color #cadbe5
+					font-size 1.1em
+					margin-left -23px
+					
+				> .action
+					font-weight 600
+					
+				> .value
+					display inline-block
+					color #515151
+					
+					> .added
+						background #C0F0C0
+						
+					> .removed
+						text-decoration line-through
+						opacity 0.8
+					
+				> .snapshot
+					margin 0 // Required for consistent display

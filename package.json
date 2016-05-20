@@ -51,6 +51,7 @@
     "buffer-equal-constant-time": "^1.0.1",
     "c3": "https://github.com/konode001/c3#0.4.10-fixes-regions",
     "d3": "^3.5.0",
+    "diff": "^2.2.2",
     "eonasdan-bootstrap-datetimepicker": "https://github.com/konode001/bootstrap-datetimepicker",
     "font-awesome": "^4.3.0",
     "get-folder-size": "^1.0.0",
