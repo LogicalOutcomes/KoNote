@@ -14,7 +14,10 @@ load = (win) ->
 		displayName: 'WithTooltip'
 		mixins: [React.addons.PureRenderMixin]
 
-		getDefaultProps: -> {showTooltip: true}
+		getDefaultProps: -> {
+			showTooltip: true 
+			container: false
+		}
 
 		componentWillReceiveProps: (newProps) ->
 			if @props.title isnt newProps.title and newProps.showTooltip
@@ -25,7 +28,7 @@ load = (win) ->
 		componentDidMount: ->
 			@_init()
 
-		componentWillUnount: ->
+		componentWillUnmount: ->
 			@_destroy()		
 
 		_init: ->
@@ -33,6 +36,7 @@ load = (win) ->
 				$(ReactDOM.findDOMNode(@)).tooltip {
 					placement: @props.placement
 					title: @props.title
+					container: @props.container
 				}
 
 		_destroy: ->

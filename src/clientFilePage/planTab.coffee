@@ -21,7 +21,7 @@ load = (win) ->
 
 	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
 	PlanTargetHistory = require('./planTargetHistory').load(win)
-
+	ModifySectionStatusDialog = require('./modifySectionStatusDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	WithTooltip = require('../withTooltip').load(win)
@@ -139,6 +139,7 @@ load = (win) ->
 						)
 					)
 					SectionsView({
+						clientFile: @props.clientFile
 						plan: @state.plan
 						metricsById: @props.metricsById
 						currentTargetRevisionsById: @state.currentTargetRevisionsById
@@ -152,6 +153,7 @@ load = (win) ->
 						hasTargetChanged: @_hasTargetChanged
 						updateTarget: @_updateTarget
 						setSelectedTarget: @_setSelectedTarget
+						getSectionIndex: @_getSectionIndex
 					})
 				)
 				R.div({className: 'targetDetail'},
@@ -363,10 +365,12 @@ load = (win) ->
 						id: sectionId
 						name: sectionName
 						targetIds: []
+						status: 'default'
 					}
 
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
+
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
@@ -476,6 +480,7 @@ load = (win) ->
 
 		render: ->
 			{
+				clientFile
 				plan
 				metricsById
 				currentTargetRevisionsById
@@ -489,6 +494,7 @@ load = (win) ->
 				updateTarget
 				removeNewTarget
 				setSelectedTarget
+				getSectionIndex
 			} = @props
 
 			return R.div({className: 'sections', ref: 'sections'},
@@ -518,20 +524,26 @@ load = (win) ->
 						ref: 'section-' + section.get('id')
 					},
 						SectionHeader({
+							clientFile
+							plan
 							type: 'inline'
 							visible: headerState is 'inline'
 							section
 							isReadOnly
 							renameSection
+							getSectionIndex
 							addTargetToSection
 						})
 						SectionHeader({
+							clientFile
+							plan
 							type: 'sticky'
 							visible: headerState is 'sticky'
 							scrollTop: @state.sectionsScrollTop
 							section
 							isReadOnly
 							renameSection
+							getSectionIndex
 							addTargetToSection
 						})
 						(if section.get('targetIds').size is 0
@@ -668,15 +680,37 @@ load = (win) ->
 		displayName: 'SectionHeader'
 		mixins: [React.addons.PureRenderMixin]
 
+		_updateSectionStatus: (revisedPlan, stopLoading, cb) ->
+			revisedClientFile = @props.clientFile.set('plan', revisedPlan)
+			ActiveSession.persist.clientFiles.createRevision revisedClientFile, (err, updatedClientFile) ->
+				stopLoading()
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						console.error err
+						return
+
+					CrashHandler.handle err
+					return
+
+				console.log ">>>>>>>>updated clientfile: ", updatedClientFile.toJS()
+
+				cb()
+
 		render: ->
+			sectionStatus = @props.section.get('status')
 			{
+				clientFile
 				type
 				visible
 				scrollTop
 				section
 				isReadOnly
-
+				plan
 				renameSection
+				getSectionIndex
 				addTargetToSection
 			} = @props
 
@@ -692,6 +726,7 @@ load = (win) ->
 			},
 				R.div({className: 'sectionName'},
 					section.get('name')
+
 				)
 				R.div({className: 'btn-group btn-group-sm'},
 					R.button({
@@ -710,7 +745,74 @@ load = (win) ->
 						"Add #{Term 'target'}"
 					)
 				)
+
+				# SECTION STATUS BUTTONS
+				if sectionStatus is 'default'
+					R.div({className: 'statusButtonGroup'},
+						WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
+							OpenDialogLink({
+								plan
+								className: 'statusButton'
+								dialog: ModifySectionStatusDialog
+								newStatus: 'deactivated'
+								sectionIndex: getSectionIndex section.get('id')
+								title: "Deactivate #{Term 'Section'}"
+								message: """
+									This will remove the #{Term 'section'} from the #{Term 'client'} 
+									#{Term 'plan'}, and future #{Term 'progress notes'}. 
+									It may be re-activated again later.
+								"""
+								reasonLabel: "Reason for deactivation:"									
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+								onSuccess: @_updateSectionStatus
+							},
+								FaIcon 'ban'
+							)
+						)
+						WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
+							OpenDialogLink({
+								plan
+								className: 'statusButton'
+								dialog: ModifySectionStatusDialog
+								newStatus: 'completed'
+								sectionIndex: getSectionIndex section.get('id')
+								title: "Complete #{Term 'Section'}"
+								message: """
+									This will set the #{Term 'section'} as 'completed'. This often 
+									means that the desired outcome has been reached.
+								"""
+								reasonLabel: "Reason for completion:"
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+								onSuccess: @_updateSectionStatus
+							},
+								FaIcon 'check'
+							)
+						)
+					)
+				else 
+					R.div({className: 'statusButtonGroup'},
+						WithTooltip({title: "Reactivate #{Term 'Section'}", placement: 'top', container: 'body'},
+							OpenDialogLink({
+								plan
+								className: 'statusButton'
+								dialog: ModifySectionStatusDialog
+								newStatus: 'default'
+								sectionIndex: getSectionIndex section.get('id')
+								title: "Reactivate #{Term 'Section'}"
+								message: """
+									This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'} 
+									#{Term 'plan'}, and future #{Term 'progress notes'}. 
+								"""
+								reasonLabel: "Reason for reactivation:"									
+								disabled: @props.isReadOnly or @props.hasTargetChanged
+								onSuccess: @_updateSectionStatus
+							},
+								FaIcon 'sign-in'
+							)
+						)
+					)
 			)
+			
 
 	PlanTarget = React.createFactory React.createClass
 		displayName: 'PlanTarget'

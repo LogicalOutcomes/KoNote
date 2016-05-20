@@ -369,48 +369,6 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 
 # //////////////// Version-Specific Utilities /////////////////
 
-changePlanTargetDeactivatedStatusToDormant = (dataDir, globalEncryptionKey, cb) ->
-	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
-		planTargetsDirPath = Path.join(dataDir, 'clientFiles', clientFile, 'planTargets')
-
-		forEachFileIn planTargetsDirPath, (planTarget, cb) ->
-			planTargetPath = Path.join(planTargetsDirPath, planTarget)
-
-			forEachFileIn planTargetPath, (planTargetRevision, cb) ->
-				planTargetRevisionPath = Path.join(planTargetPath, planTargetRevision)
-
-				planTargetObject = null
-
-				Async.series [
-					(cb) =>
-						# Read and decrypt Plan Target object
-						Fs.readFile planTargetRevisionPath, (err, result) ->
-							if err
-								cb err
-								return
-
-							planTargetObject = JSON.parse globalEncryptionKey.decrypt result
-
-							cb()
-					(cb) =>
-						# Change 'deactivated' status to 'dormant'
-						if planTargetObject.status is 'deactivated'
-							planTargetObject.status = 'dormant'
-
-						encryptedObj = globalEncryptionKey.encrypt JSON.stringify planTargetObject
-
-						Fs.writeFile planTargetRevisionPath, encryptedObj, cb
-				], cb
-			, cb
-		, cb
-	, (err) ->
-		if err
-			cb err
-			return
-
-		finalizeMigrationStep(dataDir, cb)
-
-
 
 # ////////////////////// Migration Series //////////////////////
 
@@ -420,10 +378,7 @@ module.exports = {
 		globalEncryptionKey = null
 
 		migrationSeries = [
-			(cb) ->
-				console.groupEnd()
-				console.groupCollapsed "1. Change planTarget 'deactivated' status to 'dormant'"
-				changePlanTargetDeactivatedStatusToDormant dataDir, globalEncryptionKey, cb
+			
 		]
 
 

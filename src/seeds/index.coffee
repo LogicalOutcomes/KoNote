@@ -49,8 +49,9 @@ generateClientFile = (metrics, template, cb) ->
 
 			section = Imm.fromJS {
 				id: generateId()
-				name: "Aggression Section"
+				name: Faker.company.bsBuzz()
 				targetIds
+				status: 'default'
 			}
 
 			sections = Imm.List [section]
