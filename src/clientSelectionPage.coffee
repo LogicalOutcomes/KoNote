@@ -80,7 +80,7 @@ load = (win) ->
 				loadingMessage: "Loading Client File..."
 			}
 
-			clientFileWindow = openWindow {
+			openWindow {
 				page: 'clientFile'
 				clientFileId
 			}
@@ -291,7 +291,7 @@ load = (win) ->
 
 				@_attachKeyBindings()
 				@refs.searchBox.focus()
-			, 500)			
+			, 250)
 
 		componentDidUpdate: (oldProps, oldState) ->
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders

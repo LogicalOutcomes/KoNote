@@ -10,10 +10,8 @@
 	if (!Config.devMode) {
 		/////////// PRODUCTION MODE ///////////
 		process.env.NODE_ENV = 'production';
-
-		console.time('initApp');
+		
 		require('./main').init(window);
-		console.timeEnd('initApp');
 
 		return;
 	}
@@ -46,6 +44,8 @@
 
 		// Run the app
 		require('./main').init(window);
+
+		global.console.info("*** Developer Mode ***");
 
 		return;
 	});

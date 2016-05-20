@@ -201,7 +201,7 @@ load = (win) ->
 			else
 				@props.setIsLoading true
 
-				newProgNoteWindow = openWindow {
+				openWindow {
 					page: 'newProgNote'
 					clientFileId: @props.clientFileId
 				}

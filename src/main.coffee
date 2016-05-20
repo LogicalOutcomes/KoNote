@@ -12,12 +12,6 @@
 
 _ = require 'underscore'
 
-# ES6 polyfills
-# These can be removed once we're back to NW.js 0.12+
-require 'string.prototype.endswith'
-require 'string.prototype.includes'
-require 'string.prototype.startswith'
-
 defaultPageId = 'login'
 pageModulePathsById = {
 	login: './loginPage'
@@ -160,13 +154,20 @@ init = (win) ->
 			isLoggedIn = true
 			registerPageListeners()
 
-		# Hotkeys
+		# Disable context menu
+		win.document.addEventListener 'contextmenu', (event) ->
+			event.preventDefault()
+			return false
+	
+		# User-Facing Utlities
 		devToolsKeyCount = null
+
 		win.document.addEventListener 'keydown', (event) ->
-			# prevent backspace navigation
+			# Prevent backspace navigation
 			if event.which is 8 and event.target.tagName is 'BODY'
 				event.preventDefault()
-			# dev console with Ctrl-Shift-J x5
+			# devTools with Ctrl-Shift-J x5
+			# TODO: Remove this in favour of SDK (right-click to inspect)
 			if event.ctrlKey and event.shiftKey and event.which is 74
 				unless devToolsKeyCount?
 					devToolsKeyCount = 0
@@ -175,20 +176,17 @@ init = (win) ->
 					), 2000
 				devToolsKeyCount++
 				if devToolsKeyCount > 4
-					Gui.Window.get(win).showDevTools()
+					win.nw.Window.get(win).showDevTools()
 		, false
 
 
 		# DevMode Utilities
 		if Config.devMode
-			console.info "*** Developer Mode ***"
-			
-			# Set up keyboard shortcuts
 
 			win.document.addEventListener 'keyup', (event) ->
 				# If Ctrl-Shift-J
 				if event.ctrlKey and event.shiftKey and event.which is 74
-					Gui.Window.get(win).showDevTools()
+					win.nw.Window.get().showDevTools()
 			, false
 
 			win.document.addEventListener 'keyup', (event) ->

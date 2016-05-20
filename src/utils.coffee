@@ -57,15 +57,15 @@ load = (win) ->
 		return R.i(properties)
 
 	# A convenience method for opening a new window
-	openWindow = (params) ->
-		Gui.Window.open 'main.html?' + $.param(params), {
+	# Callback function (optional) provides window context as argument
+	openWindow = (params, cb=(->)) ->
+		Gui.Window.open 'src/main.html?' + $.param(params), {
 			focus: false
 			show: false
-			toolbar: false
 			width: 1000
 			height: 700
 			icon: "src/icon.png"
-		}
+		}, cb
 
 	renderName = (name) ->
 		result = []
