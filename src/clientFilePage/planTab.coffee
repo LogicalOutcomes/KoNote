@@ -744,7 +744,7 @@ load = (win) ->
 				# SECTION STATUS BUTTONS
 				if sectionStatus is 'default'
 					R.div({className: 'statusButtonGroup'},
-						WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top'},
+						WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
 							OpenDialogLink({
 								plan
 								className: 'statusButton'
@@ -764,7 +764,7 @@ load = (win) ->
 								FaIcon 'ban'
 							)
 						)
-						WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top'},
+						WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
 							OpenDialogLink({
 								plan
 								className: 'statusButton'
@@ -786,7 +786,7 @@ load = (win) ->
 					)
 				else 
 					R.div({className: 'statusButtonGroup'},
-						WithTooltip({title: "Reactivate #{Term 'Section'}", placement: 'top'},
+						WithTooltip({title: "Reactivate #{Term 'Section'}", placement: 'top', container: 'body'},
 							OpenDialogLink({
 								plan
 								className: 'statusButton'
@@ -847,11 +847,7 @@ load = (win) ->
 						# Can cancel/complete a 'default' target					
 						(if revisionStatus is 'default'
 							R.div({className: 'statusButtonGroup'},
-								WithTooltip({
-									title: "Deactivate #{Term 'Target'}"
-									placement: 'top'
-									container: 'body'
-								},
+								WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
 									OpenDialogLink({
 										className: 'statusButton'
 										dialog: ModifyTargetStatusDialog
