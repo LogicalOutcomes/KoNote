@@ -42,8 +42,9 @@ load = (win) ->
 		componentDidMount: ->
 			progNotesPane = $('.progNotes')
 			progNotesPane.on 'scroll', =>
-				if progNotesPane.scrollTop() + progNotesPane.innerHeight() + progNotesPane.innerHeight() >= progNotesPane[0].scrollHeight
-					@props.renewAllData()
+				if @props.isLoading is false and @props.headerIndex < @props.progNoteTotal
+					if progNotesPane.scrollTop() + progNotesPane.innerHeight() + progNotesPane.innerHeight() >= progNotesPane[0].scrollHeight
+						@props.renewAllData()
 			
 			quickNoteToggle = $('.addQuickNote')
 			quickNoteToggle.data 'isVisible', false

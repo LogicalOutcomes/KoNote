@@ -57,6 +57,7 @@ load = (win, {clientFileId}) ->
 				lockOperation: null
 
 				progressNoteHistories: null
+				progNoteTotal: null
 				progressEvents: null
 				planTargetsById: Imm.Map()
 				metricsById: Imm.Map()
@@ -94,6 +95,9 @@ load = (win, {clientFileId}) ->
 				metricsById: @state.metricsById
 				programs: @state.programs
 				eventTypes: @state.eventTypes
+				
+				headerIndex: @state.headerIndex
+				progNoteTotal: @state.progNoteTotal
 
 				setIsLoading: @_setIsLoading
 				closeWindow: @props.closeWindow
@@ -115,6 +119,7 @@ load = (win, {clientFileId}) ->
 			planTargetHeaders = null
 			progNoteHeaders = null
 			progressNoteHistories = null
+			progNoteTotal = null
 			progEventHeaders = null
 			progressEvents = null
 			metricHeaders = null
@@ -185,7 +190,8 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						# load 10 at a time
+						# lazyloading
+						progNoteTotal = results.size
 						progNoteHeaders = results
 						.sortBy (header) ->
 							createdAt = header.get('backdate') or header.get('timestamp')
@@ -373,6 +379,7 @@ load = (win, {clientFileId}) ->
 						isLoading: false
 						
 						headerIndex: @state.headerIndex+10
+						progNoteTotal
 
 						clientFile						
 						progressNoteHistories
@@ -737,6 +744,8 @@ load = (win, {clientFileId}) ->
 						progEvents: @props.progressEvents
 						eventTypes: @props.eventTypes
 						metricsById: @props.metricsById
+						headerIndex: @props.headerIndex
+						progNoteTotal: @props.progNoteTotal
 						
 						hasChanges: @hasChanges
 						onTabChange: @_changeTab
@@ -744,6 +753,7 @@ load = (win, {clientFileId}) ->
 						renewAllData: @props.renewAllData
 
 						createQuickNote: @props.createQuickNote
+						isLoading: @props.isLoading
 						setIsLoading: @props.setIsLoading
 						isReadOnly
 					})
