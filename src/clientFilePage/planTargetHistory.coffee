@@ -11,9 +11,10 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
-	{
-		FaIcon, renderLineBreaks, showWhen, stripMetadata, formatTimestamp, capitalize
-	} = require('../utils').load(win)
+	MetricWidget = require('../metricWidget').load(win)
+
+	{FaIcon, renderLineBreaks, showWhen, 
+	stripMetadata, formatTimestamp, capitalize} = require('../utils').load(win)
 
 	PlanTargetHistory = React.createFactory React.createClass
 		displayName: 'PlanTargetHistory'
@@ -55,7 +56,7 @@ load = (win) ->
 				createdPlanTarget = Imm.fromJS {
 					property: Term('target')
 					action: 'created'
-					icon: 'arrow-right'
+					icon: 'pencil'
 				}
 				changeLog = revision.get('changeLog').push createdPlanTarget
 				return revision.set('changeLog', changeLog)
@@ -74,8 +75,8 @@ load = (win) ->
 					revisionId
 					property: Term('metric')
 					action: 'removed'
-					value: @props.metricsById.getIn([metricId, 'name'])
-					icon: 'times'
+					value: metricId
+					icon: 'minus'
 				}
 
 				addedMetricIds = currentMetricIds
@@ -84,7 +85,7 @@ load = (win) ->
 					revisionId
 					property: Term('metric')
 					action: 'added'
-					value: @props.metricsById.getIn([metricId, 'name'])
+					value: metricId
 					icon: 'plus'
 				}
 
@@ -105,7 +106,7 @@ load = (win) ->
 					property: 'name'
 					action: 'revised'
 					value: diffedName
-					icon: 'pencil'
+					icon: 'dot-circle-o'
 				}
 
 				changeLog = revision.get('changeLog').push revisedName
@@ -124,7 +125,7 @@ load = (win) ->
 					property: 'description'
 					action: 'revised'
 					value: diffedDescription
-					icon: 'pencil'
+					icon: 'dot-circle-o'
 				}
 
 				changeLog = revision.get('changeLog').push revisedDescription
@@ -167,12 +168,13 @@ load = (win) ->
 					)
 				else
 					R.div({className: 'revisions'},
-						revisions.map (revision) -> RevisionChangeLog({
+						revisions.map (revision) => RevisionChangeLog({
 							key: revision.get('revisionId')
-							revision							
+							revision
+							metricsById: @props.metricsById
 						})
 					)
-				)				
+				)
 			)
 
 	RevisionChangeLog = React.createFactory React.createClass
@@ -205,11 +207,17 @@ load = (win) ->
 							index
 							entry
 							revision
+							metricsById: @props.metricsById
 							onToggleSnapshot: @_toggleSnapshot
+							isSnapshotVisible: @state.isSnapshotVisible
 						})
 					)
 					(if @state.isSnapshotVisible
-						RevisionSnapshot(revision)
+						RevisionSnapshot({
+							revision
+							metricsById: @props.metricsById
+							isAnimated: true
+						})
 					)
 				)
 			)
@@ -229,7 +237,7 @@ load = (win) ->
 						onClick: @props.onToggleSnapshot
 					}, 
 						if not @props.isSnapshotVisible then "view" else "hide"
-						" snapshot"
+						" full revision"
 					)
 				)
 
@@ -238,7 +246,7 @@ load = (win) ->
 				R.span({className: 'action'},
 					# Different display cases for indication of change
 					(if entry.get('action') is 'created'
-						"#{capitalize entry.get('action')} new #{entry.get('property')}: "						
+						"#{capitalize entry.get('action')} #{entry.get('property')} as: "						
 					else if entry.get('statusReason')
 						"#{capitalize entry.get('value')} #{Term 'target'} because: "
 					else
@@ -247,24 +255,63 @@ load = (win) ->
 				)
 
 				(if entry.get('action') is 'created'
-					RevisionSnapshot(@props.revision)
+					# We can show full snapshot for target creation
+					RevisionSnapshot({
+						revision: @props.revision
+						metricsById: @props.metricsById
+					})
+				else if entry.get('property') is 'metric'
+					# Use widget to display metric
+					metric = @props.metricsById.get(entry.get('value'))
+
+					MetricWidget({
+						isEditable: false
+						name: metric.get('name')
+						definition: metric.get('definition')
+						tooltipViewport: '.entry'
+						styleClass: 'clear'
+					})
 				else
+					# Set HTML because diffing <span>'s may exist
+					__html = entry.get('statusReason') or entry.get('value')
+
 					R.div({
 						className: 'value'
-						dangerouslySetInnerHTML: {__html: entry.get('value')}
+						dangerouslySetInnerHTML: {__html}
 					})
 				)
 			)
 
-	RevisionSnapshot = (revision) ->
-		R.div({className: 'snapshot'},
-			R.div({className: 'name'},
-				revision.get('name')
+	RevisionSnapshot = React.createFactory React.createClass
+		render: ->
+			revision = @props.revision
+
+			R.div({
+				className: [
+					'snapshot'
+					'animated fadeInDown' if @props.isAnimated
+				].join ' '
+			},
+				R.div({className: 'name'},
+					revision.get('name')
+				)
+				R.div({className: 'description'},
+					renderLineBreaks revision.get('description')
+				)
+				R.div({className: 'metrics'},
+					(revision.get('metricIds').map (metricId) =>
+						metric = @props.metricsById.get(metricId)
+
+						MetricWidget({
+							isEditable: false
+							key: metricId
+							name: metric.get('name')
+							definition: metric.get('definition')
+							tooltipViewport: '.snapshot'
+						})
+					)
+				)
 			)
-			R.div({className: 'description'},
-				renderLineBreaks revision.get('description')
-			)
-		)
 
 	return PlanTargetHistory
 

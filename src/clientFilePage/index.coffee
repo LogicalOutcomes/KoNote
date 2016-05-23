@@ -48,6 +48,8 @@ load = (win, {clientFileId}) ->
 			return {
 				status: 'init' # Either init or ready
 				isLoading: false
+				
+				headerIndex: 0
 
 				clientFile: null
 				clientFileLock: null
@@ -55,6 +57,7 @@ load = (win, {clientFileId}) ->
 				lockOperation: null
 
 				progressNoteHistories: null
+				progNoteTotal: null
 				progressEvents: null
 				planTargetsById: Imm.Map()
 				metricsById: Imm.Map()
@@ -92,12 +95,17 @@ load = (win, {clientFileId}) ->
 				metricsById: @state.metricsById
 				programs: @state.programs
 				eventTypes: @state.eventTypes
+				
+				headerIndex: @state.headerIndex
+				progNoteTotal: @state.progNoteTotal
 
 				setIsLoading: @_setIsLoading
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
 				createQuickNote: @_createQuickNote
+				
+				renewAllData: @_renewAllData
 			})
 
 		_renewAllData: ->
@@ -111,6 +119,7 @@ load = (win, {clientFileId}) ->
 			planTargetHeaders = null
 			progNoteHeaders = null
 			progressNoteHistories = null
+			progNoteTotal = null
 			progEventHeaders = null
 			progressEvents = null
 			metricHeaders = null
@@ -181,7 +190,14 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
+						# lazyloading
+						progNoteTotal = results.size
 						progNoteHeaders = results
+						.sortBy (header) ->
+							createdAt = header.get('backdate') or header.get('timestamp')
+							return Moment createdAt, Persist.TimestampFormat
+						.reverse()
+						.slice(@state.headerIndex, @state.headerIndex+10)
 						cb()
 
 				(cb) =>
@@ -355,9 +371,14 @@ load = (win, {clientFileId}) ->
 						}
 				else
 					# Load in clientFile data
+					if @state.clientFile?
+						progressNoteHistories = @state.progressNoteHistories.concat progressNoteHistories
 					@setState {
 						status: 'ready'
 						isLoading: false
+						
+						headerIndex: @state.headerIndex+10
+						progNoteTotal
 
 						clientFile						
 						progressNoteHistories
@@ -722,11 +743,16 @@ load = (win, {clientFileId}) ->
 						progEvents: @props.progressEvents
 						eventTypes: @props.eventTypes
 						metricsById: @props.metricsById
+						headerIndex: @props.headerIndex
+						progNoteTotal: @props.progNoteTotal
 						
 						hasChanges: @hasChanges
 						onTabChange: @_changeTab
+				
+						renewAllData: @props.renewAllData
 
 						createQuickNote: @props.createQuickNote
+						isLoading: @props.isLoading
 						setIsLoading: @props.setIsLoading
 						isReadOnly
 					})
