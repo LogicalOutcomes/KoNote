@@ -284,6 +284,7 @@ load = (win, {clientFileId}) ->
 											return Imm.fromJS {
 												id: lastRev.get 'id'
 												name: lastRev.get 'name'
+												description: lastRev.get 'description'
 												notes: ''
 												metrics: lastRev.get('metricIds').map (metricId) =>
 													metric = metricsById.get metricId
@@ -458,6 +459,7 @@ load = (win, {clientFileId}) ->
 														unitId, metricId
 													)
 													value: metric.get('value')
+													isEditable: true
 												})
 											).toJS()...
 										)
@@ -528,6 +530,7 @@ load = (win, {clientFileId}) ->
 																		null,
 																		unitId, sectionId, targetId, metricId
 																	)
+																	isEditable: true
 																}
 															)
 														)	
@@ -550,12 +553,14 @@ load = (win, {clientFileId}) ->
 							FaIcon('check')
 						)
 				)
+
 				ProgNoteDetailView({
 					item: @state.selectedItem
 					progNoteHistories: @props.progNoteHistories
 					progEvents: @props.progEvents
 					eventTypes: @props.eventTypes
 				})
+
 				R.div({className: 'eventsPanel'},
 					R.span({className: 'title'}, Term "Events")
 					R.div({
@@ -700,6 +705,7 @@ load = (win, {clientFileId}) ->
 					sectionName: section.get 'name'
 					targetId: target.get 'id'
 					targetName: target.get 'name'
+					targetDescription: target.get 'description'
 				}
 			}
 

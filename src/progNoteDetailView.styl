@@ -8,13 +8,34 @@
 		color #888
 		text-align center
 
-	> .itemName
+	> .itemDetails
+		cursor default
 		border-bottom 2px solid hsl(202, 34%, 85%)
+			
+		.itemName
+			padding 15px
+			
+			.toggleDescriptionButton
+				float right				
+				margin-top 15px
+				opacity 0
+				transition opacity .15s ease
+				color #666
+				
+				&:hover
+					text-decoration underline
+					
+			&:hover .toggleDescriptionButton
+				opacity 1				
 
-		padding 10px 20px
-
-		font-size 24px
-		font-weight 300
+			h3
+				margin 10px 0
+				font-size 24px
+				font-weight 300
+				
+		.itemDescription
+			padding 15px
+			padding-top 0
 
 	> .history
 		flex 1
