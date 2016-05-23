@@ -75,7 +75,7 @@ load = (win) ->
 					revisionId
 					property: Term('metric')
 					action: 'removed'
-					value: @props.metricsById.getIn([metricId, 'name'])
+					value: metricId
 					icon: 'minus'
 				}
 
@@ -85,7 +85,7 @@ load = (win) ->
 					revisionId
 					property: Term('metric')
 					action: 'added'
-					value: @props.metricsById.getIn([metricId, 'name'])
+					value: metricId
 					icon: 'plus'
 				}
 
@@ -216,6 +216,7 @@ load = (win) ->
 						RevisionSnapshot({
 							revision
 							metricsById: @props.metricsById
+							isAnimated: true
 						})
 					)
 				)
@@ -245,7 +246,7 @@ load = (win) ->
 				R.span({className: 'action'},
 					# Different display cases for indication of change
 					(if entry.get('action') is 'created'
-						"#{capitalize entry.get('action')} new #{entry.get('property')}: "						
+						"#{capitalize entry.get('action')} #{entry.get('property')} as: "						
 					else if entry.get('statusReason')
 						"#{capitalize entry.get('value')} #{Term 'target'} because: "
 					else
@@ -254,11 +255,24 @@ load = (win) ->
 				)
 
 				(if entry.get('action') is 'created'
+					# We can show full snapshot for target creation
 					RevisionSnapshot({
 						revision: @props.revision
 						metricsById: @props.metricsById
 					})
+				else if entry.get('property') is 'metric'
+					# Use widget to display metric
+					metric = @props.metricsById.get(entry.get('value'))
+
+					MetricWidget({
+						isEditable: false
+						name: metric.get('name')
+						definition: metric.get('definition')
+						tooltipViewport: '.entry'
+						styleClass: 'clear'
+					})
 				else
+					# Set HTML because diffing <span>'s may exist
 					__html = entry.get('statusReason') or entry.get('value')
 
 					R.div({
@@ -272,7 +286,12 @@ load = (win) ->
 		render: ->
 			revision = @props.revision
 
-			R.div({className: 'snapshot'},
+			R.div({
+				className: [
+					'snapshot'
+					'animated fadeInDown' if @props.isAnimated
+				].join ' '
+			},
 				R.div({className: 'name'},
 					revision.get('name')
 				)

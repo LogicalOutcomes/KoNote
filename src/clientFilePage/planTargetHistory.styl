@@ -42,6 +42,9 @@
 			&:last-child
 				border-bottom none
 				
+			.metricWidget
+				margin 5px
+				
 			.snapshot
 				margin-left 23px
 				color #515151
@@ -53,18 +56,13 @@
 					font-weight 600
 					line-height 1.5em
 					border-bottom 1px dotted sidebar-borders
-					// margin-top 5px
-					// margin-bottom 10px
 						
 				> .description
 					padding 5px
 					
 				> .metrics
 					display flex
-					flex-wrap wrap
-					
-					> .metricWidget
-						margin 5px
+					flex-wrap wrap									
 					
 			&:hover article.entry .snapshotButton
 				opacity 0.5
@@ -100,6 +98,9 @@
 					font-weight 600
 					margin-bottom 5px
 					
+				> .metricWidget // Displayed inline with action
+					display inline-flex
+					
 				> .value
 					display inline-block
 					color #515151
@@ -108,8 +109,9 @@
 						background #C0F0C0
 						
 					> .removed
+						color #FF2727
 						text-decoration line-through
-						opacity 0.8
+						opacity 0.75
 					
 				> .snapshot
 					margin 0 // Required for consistent display
