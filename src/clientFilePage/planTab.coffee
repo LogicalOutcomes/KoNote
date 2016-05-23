@@ -609,8 +609,8 @@ load = (win) ->
 								)
 							)
 						)
-						(if targetIdsByStatus.has('dormant')
-							R.div({className: 'targets status-dormant'},
+						(if targetIdsByStatus.has('deactivated')
+							R.div({className: 'targets status-deactivated'},
 								R.span({
 									className: 'inactiveTargetHeader'
 									onClick: @_toggleDisplayCancelledTargets
@@ -619,15 +619,15 @@ load = (win) ->
 									FaIcon('caret-right', {
 										className: 'expanded' if @state.displayCancelledTargets
 									})
-									R.strong({}, targetIdsByStatus.get('dormant').size)
-									" Dormant "
+									R.strong({}, targetIdsByStatus.get('deactivated').size)
+									" Deactivated "
 									Term (
-										if targetIdsByStatus.get('dormant').size > 1 then 'Targets' else 'Target'
+										if targetIdsByStatus.get('deactivated').size > 1 then 'Targets' else 'Target'
 									)									
 								)
 								(if @state.displayCancelledTargets
 									# Cancelled statuses
-									(targetIdsByStatus.get('dormant').map (targetId) =>
+									(targetIdsByStatus.get('deactivated').map (targetId) =>
 										PlanTarget({
 											currentRevision: currentTargetRevisionsById.get targetId
 											metricsById
@@ -852,19 +852,19 @@ load = (win) ->
 						# Can cancel/complete a 'default' target					
 						(if revisionStatus is 'default'
 							R.div({className: 'statusButtonGroup'},
-								WithTooltip({title: "Make #{Term 'Target'} Dormant", placement: 'top'},
+								WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
 									OpenDialogLink({
 										className: 'statusButton'
 										dialog: ModifyTargetStatusDialog
 										planTarget: @props.currentRevision
-										newStatus: 'dormant'
-										title: "Make #{Term 'Target'} Dormant"
+										newStatus: 'deactivated'
+										title: "Deactivate #{Term 'Target'}"
 										message: """
 											This will remove the #{Term 'target'} from the #{Term 'client'} 
 											#{Term 'plan'}, and future #{Term 'progress notes'}. 
 											It may be re-activated again later.
 										"""
-										reasonLabel: "Reason for dormancy:"									
+										reasonLabel: "Reason for deactivation:"									
 										disabled: @props.isReadOnly or @props.hasTargetChanged
 									},
 										FaIcon 'ban'
