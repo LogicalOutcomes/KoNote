@@ -482,7 +482,6 @@ load = (win, {clientFileId}) ->
 													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
 												].join ' '
 												onMouseOver: @_hoverEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
-
 												onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
 												onClick: @_selectEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
 											},
