@@ -15,7 +15,6 @@ load = (win) ->
 	MetricWidget = React.createFactory React.createClass
 		displayName: 'MetricWidget'
 		mixins: [React.addons.PureRenderMixin]
-
 		componentDidMount: ->
 			tooltipContent = R.div({className: 'tooltipContent'},
 				renderLineBreaks @props.definition
@@ -27,21 +26,22 @@ load = (win) ->
 				viewport: {"selector": viewport, "padding": 0 }
 			}
 		render: ->
+			isEditable = @props.isEditable isnt false
+			allowDeleting = @props.allowDeleting is true
 
-			return R.span({
-				className: [
-					'metricWidget'
-					@props.styleClass or ''
-				].join ' '
-			},
+			return R.div({className: 'metricWidget'},
 				(if @props.value?
 					R.input({
 						className: 'value circle'
 						onFocus: @props.onFocus
 						value: @props.value
 						onChange: @_onChange
-						placeholder: if @props.isEditable then '__' else '--'
-						disabled: not @props.isEditable
+						placeholder: (if isEditable
+							'__'
+						else
+							'--'
+						)
+						disabled: isEditable is false
 					})
 				else
 					R.div({className: 'icon circle'},
@@ -51,7 +51,7 @@ load = (win) ->
 				R.div({className: 'name', ref: 'name'},
 					@props.name
 				)
-				(if @props.allowDeleting and not @props.isReadOnly
+				(if allowDeleting and not @props.isReadOnly
 					R.div({className: 'delete', onClick: @props.onDelete},
 						FaIcon 'times'
 					)
