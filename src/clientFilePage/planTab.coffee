@@ -609,8 +609,8 @@ load = (win) ->
 								)
 							)
 						)
-						(if targetIdsByStatus.has('deactivated')
-							R.div({className: 'targets status-deactivated'},
+						(if targetIdsByStatus.has('dormant')
+							R.div({className: 'targets status-dormant'},
 								R.span({
 									className: 'inactiveTargetHeader'
 									onClick: @_toggleDisplayCancelledTargets
@@ -619,15 +619,15 @@ load = (win) ->
 									FaIcon('caret-right', {
 										className: 'expanded' if @state.displayCancelledTargets
 									})
-									R.strong({}, targetIdsByStatus.get('deactivated').size)
-									" Deactivated "
+									R.strong({}, targetIdsByStatus.get('dormant').size)
+									" Dormant "
 									Term (
-										if targetIdsByStatus.get('deactivated').size > 1 then 'Targets' else 'Target'
+										if targetIdsByStatus.get('dormant').size > 1 then 'Targets' else 'Target'
 									)									
 								)
 								(if @state.displayCancelledTargets
 									# Cancelled statuses
-									(targetIdsByStatus.get('deactivated').map (targetId) =>
+									(targetIdsByStatus.get('dormant').map (targetId) =>
 										PlanTarget({
 											currentRevision: currentTargetRevisionsById.get targetId
 											metricsById
@@ -803,7 +803,7 @@ load = (win) ->
 									This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'} 
 									#{Term 'plan'}, and future #{Term 'progress notes'}. 
 								"""
-								reasonLabel: "Reason for activation:"									
+								reasonLabel: "Reason for reactivation:"									
 								disabled: @props.isReadOnly or @props.hasTargetChanged
 								onSuccess: @_updateSectionStatus
 							},
@@ -852,19 +852,19 @@ load = (win) ->
 						# Can cancel/complete a 'default' target					
 						(if revisionStatus is 'default'
 							R.div({className: 'statusButtonGroup'},
-								WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
+								WithTooltip({title: "Make #{Term 'Target'} Dormant", placement: 'top'},
 									OpenDialogLink({
 										className: 'statusButton'
 										dialog: ModifyTargetStatusDialog
 										planTarget: @props.currentRevision
-										newStatus: 'deactivated'
-										title: "Deactivate #{Term 'Target'}"
+										newStatus: 'dormant'
+										title: "Make #{Term 'Target'} Dormant"
 										message: """
 											This will remove the #{Term 'target'} from the #{Term 'client'} 
 											#{Term 'plan'}, and future #{Term 'progress notes'}. 
 											It may be re-activated again later.
 										"""
-										reasonLabel: "Reason for deactivation:"									
+										reasonLabel: "Reason for dormancy:"									
 										disabled: @props.isReadOnly or @props.hasTargetChanged
 									},
 										FaIcon 'ban'

@@ -40,6 +40,12 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
+			progNotesPane = $('.progNotes')
+			progNotesPane.on 'scroll', =>
+				if @props.isLoading is false and @props.headerIndex < @props.progNoteTotal
+					if progNotesPane.scrollTop() + progNotesPane.innerHeight() + progNotesPane.innerHeight() >= progNotesPane[0].scrollHeight
+						@props.renewAllData()
+			
 			quickNoteToggle = $('.addQuickNote')
 			quickNoteToggle.data 'isVisible', false
 			quickNoteToggle.popover {
@@ -77,7 +83,10 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'panes'},
-					R.div({className: 'progNotes'},
+					R.div({
+						className: 'progNotes'
+						ref: 'progNotes'
+					},
 						R.div({
 							className: "empty #{showWhen @props.progNoteHistories.size is 0}"},
 							R.div({className: 'message'},

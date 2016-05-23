@@ -68,7 +68,7 @@ dataModelDefinitions = [
 				schema: Joi.object().keys({
 					name: Joi.string()
 					description: Joi.string()
-					status: ['default', 'deactivated', 'completed']
+					status: ['default', 'dormant', 'completed']
 					statusReason: Joi.string().optional()
 					metricIds: Joi.array().items(
 						IdSchema
