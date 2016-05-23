@@ -402,10 +402,9 @@ load = (win) ->
 											'selected' if @props.selectedItem? and @props.selectedItem.get('unitId') is unitId
 										].join ' '
 										key: unitId
+										onClick: @_selectBasicUnit.bind null, unit
 									},
-										R.h3({
-											onClick: @_selectBasicUnit.bind null, unit
-										},
+										R.h3({},
 											unit.get('name')
 										)
 										R.div({className: 'notes'},
@@ -454,16 +453,11 @@ load = (win) ->
 														'target'
 														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is target.get('id')
 													].join ' '
+													onClick: @_selectPlanSectionTarget.bind(null, unit, section, target)
 													## TODO: Restore hover feature
 													# onMouseEnter: @props.setHighlightedTargetId.bind null, target.get('id')
 												},
-													R.h3({
-														onClick: @_selectPlanSectionTarget.bind(
-															null, unit, section, target
-														)
-													},
-														target.get('name')
-													)
+													R.h3({}, target.get('name'))
 													R.div({className: "empty #{showWhen target.get('notes') is ''}"},
 														'(blank)'
 													)
