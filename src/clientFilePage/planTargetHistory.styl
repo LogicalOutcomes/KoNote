@@ -45,36 +45,42 @@
 			.snapshot
 				margin-left 23px
 				color #515151
-				border 1px dashed sidebar-borders
+				padding-top 15px				
 				
 				> .name
 					padding 5px
 					font-size 1.2em
 					font-weight 600
 					line-height 1.5em
-					border-bottom 1px dashed sidebar-borders
+					border-bottom 1px dotted sidebar-borders
 					// margin-top 5px
 					// margin-bottom 10px
 						
 				> .description
 					padding 5px
 					
+				> .metrics
+					display flex
+					flex-wrap wrap
+					
+					> .metricWidget
+						margin 5px
+					
 			&:hover article.entry .snapshotButton
-				visibility visible
+				opacity 0.5
 				
 			article.entry
 				position relative
 				margin-left 23px
-				padding 10px 0
+				padding-top 10px
 				
 				> .snapshotButton
 					float right
 					margin 5px
 					margin-right 0
 					margin-top -2px
-					opacity 0.5
+					opacity 0
 					transition opacity .15s ease
-					visibility hidden
 					outline none
 					
 					&:hover
