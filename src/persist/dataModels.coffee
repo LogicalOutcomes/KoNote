@@ -122,6 +122,8 @@ dataModelDefinitions = [
 												Joi.object().keys({
 													id: IdSchema
 													name: Joi.string()
+													# TODO: Migrate from current target description, so not optional
+													description: Joi.string().optional()
 													notes: Joi.string().allow('')
 													metrics: Joi.array().items(
 														Joi.object().keys({
