@@ -342,24 +342,62 @@ load = (win) ->
 		displayName: 'ProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
 
+		_filterEmptyValues: (progNote) ->
+			progNoteUnits = progNote.get('units')
+			.map (unit) ->
+				if unit.get('type') is 'basic'
+					# Strip empty metric values
+					unitMetrics = unit.get('metrics').filterNot (metric) -> not metric.get('value')
+					return unit.set('metrics', unitMetrics)
+						
+				else if unit.get('type') is 'plan'
+					unitSections = unit.get('sections').map (section) ->						
+						sectionTargets = section.get('targets')
+						# Strip empty metric values
+						.map (target) ->
+							targetMetrics = target.get('metrics').filterNot (metric) ->
+								return not metric.get('value')
+							return target.set('metrics', targetMetrics)
+						# Strip empty targets
+						.filterNot (target) ->
+							not target.get('notes') and target.get('metrics').isEmpty()
+
+						return section.set('targets', sectionTargets)
+
+					return unit.set('sections', unitSections)
+
+				else
+					throw new Error "Unknown progNote unit type: #{unit.get('type')}"
+					
+			.filterNot (unit) ->
+				# Finally, strip any empty 'basic' notes
+				unit.get('type') is 'basic' and not unit.get('notes') and unit.get('metrics').isEmpty()
+
+			return progNote.set('units', progNoteUnits)
+
 		render: ->
+			# Filter out any empty notes/metrics
+			progNote = @_filterEmptyValues(@props.progNote)
+
+			console.log "progNote", progNote.toJS()
+
 			R.div({
 				className: 'full progNote'
 				## TODO: Restore hover feature
-				# onMouseEnter: @props.setHighlightedProgNoteId.bind null, @props.progNote.get('id')
+				# onMouseEnter: @props.setHighlightedProgNoteId.bind null, progNote.get('id')
 			},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
-						if @props.progNote.get('backdate') != ''
-							Moment(@props.progNote.get('backdate'), Persist.TimestampFormat)
+						if progNote.get('backdate') != ''
+							Moment(progNote.get('backdate'), Persist.TimestampFormat)
 							.format('MMMM D, YYYY') + " (late entry)"
 						else
-							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							Moment(progNote.get('timestamp'), Persist.TimestampFormat)
 							.format 'MMMM D, YYYY [at] HH:mm'
 					)
 					R.div({className: 'author'},
 						' by '
-						@props.progNote.get('author')
+						progNote.get('author')
 					)
 				)
 				R.div({className: 'progNoteList'},
@@ -368,7 +406,7 @@ load = (win) ->
 							dataSet: [
 								{
 									format: 'progNote'
-									data: @props.progNote
+									data: progNote
 									progEvents: @props.progEvents
 									clientFile: @props.clientFile
 								}
@@ -380,7 +418,7 @@ load = (win) ->
 						WithTooltip({title: "Cancel", placement: 'top'},
 							OpenDialogLink({
 								dialog: CancelProgNoteDialog
-								progNote: @props.progNote
+								progNote: progNote
 								progEvents: @props.progEvents
 								disabled: @props.isReadOnly
 							},
@@ -390,7 +428,7 @@ load = (win) ->
 							)
 						)
 					)
-					(@props.progNote.get('units').map (unit) =>
+					(progNote.get('units').map (unit) =>
 						unitId = unit.get 'id'
 
 						switch unit.get('type')
@@ -437,7 +475,7 @@ load = (win) ->
 											R.h2({}, section.get('name'))
 											R.div({
 												## TODO: Restore hover feature
-												# onMouseEnter: @props.setHighlightedProgNoteId.bind null, @props.progNote.get('id')
+												# onMouseEnter: @props.setHighlightedProgNoteId.bind null, progNote.get('id')
 												# onMouseLeave: @props.setHighlightedProgNoteId.bind null, null
 												className: [
 													'empty'
