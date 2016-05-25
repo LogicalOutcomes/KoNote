@@ -272,7 +272,8 @@ load = (win, {clientFileId}) ->
 									Imm.fromJS {
 										id: section.get 'id'
 										name: section.get 'name'
-										targets: section.get('targetIds')
+										status: section.get 'status'
+										targets: section.get 'targetIds'										
 										.filter (targetId) =>
 											target = planTargetsById.get targetId
 											lastRev = target.last()
@@ -474,7 +475,9 @@ load = (win, {clientFileId}) ->
 											"This is empty because 
 											the client has no #{Term 'plan'} #{Term 'sections'}."
 										)
-										(unit.get('sections').map (section) =>
+										(unit.get('sections')
+										.filter (section) => section.get('status') is 'default'
+										.map (section) =>
 											sectionId = section.get 'id'
 
 											R.section({
