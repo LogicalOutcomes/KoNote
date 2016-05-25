@@ -724,16 +724,23 @@ load = (win) ->
 					)
 				)
 
-				# SECTION STATUS BUTTONS
+				# SECTION STATUS BUTTONS   >>>>>>>>>> target = @props.planTargetsById.get(targetId, null)
+
 				if sectionStatus is 'default'
 					R.div({className: 'statusButtonGroup'},
 						WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
 							OpenDialogLink({
+<<<<<<< Updated upstream
 								clientFile
 								className: 'statusButton'
+=======
+								plan
+								className: 'statusButton' 
+>>>>>>> Stashed changes
 								dialog: ModifySectionStatusDialog
 								newStatus: 'deactivated'
 								sectionIndex: getSectionIndex section.get('id')
+								sectionTargetIds: section.get('targetIds')
 								title: "Deactivate #{Term 'Section'}"
 								message: """
 									This will remove the #{Term 'section'} from the #{Term 'client'} 
@@ -753,6 +760,7 @@ load = (win) ->
 								dialog: ModifySectionStatusDialog
 								newStatus: 'completed'
 								sectionIndex: getSectionIndex section.get('id')
+								sectionTargetIds: section.get('targetIds')
 								title: "Complete #{Term 'Section'}"
 								message: """
 									This will set the #{Term 'section'} as 'completed'. This often 
@@ -774,6 +782,7 @@ load = (win) ->
 								dialog: ModifySectionStatusDialog
 								newStatus: 'default'
 								sectionIndex: getSectionIndex section.get('id')
+								sectionTargetIds: section.get('targetIds')
 								title: "Reactivate #{Term 'Section'}"
 								message: """
 									This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'} 

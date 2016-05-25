@@ -67,6 +67,7 @@ load = (win) ->
 		_submit: ->
 			@refs.dialog.setIsLoading true
 
+
 			revisedPlan = @props.clientFile.get('plan')
 			.setIn(['sections', @props.sectionIndex, 'status'], @props.newStatus)
 			.setIn(['sections', @props.sectionIndex, 'statusReason'], @state.statusReason)
@@ -88,6 +89,7 @@ load = (win) ->
 					return
 				
 				@props.onSuccess()
+
 
 	return ModifySectionStatusDialog
 
