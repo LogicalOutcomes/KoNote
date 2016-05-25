@@ -63,14 +63,6 @@ load = (win) ->
 
 		render: ->
 			plan = @state.plan
-
-			# Group sections into an object, with a property for each status
-			sectionsByStatus = plan.get('sections').groupBy (section) ->
-				return section.get('status')
-			console.log "sectionsByStatus >>>>>>>", sectionsByStatus.toJS()
-
-
-
 			# If something selected and that target has not been deleted
 			if @state.selectedTargetId? and @state.currentTargetRevisionsById.has(@state.selectedTargetId)
 				# If this target has been saved at least once
@@ -476,8 +468,6 @@ load = (win) ->
 			return {
 				sectionsScrollTop: 0
 				sectionOffsets: null
-				displayCancelledTargets: null
-				displayCompletedTargets: null
 			}
 
 		componentDidMount: ->
@@ -504,154 +494,43 @@ load = (win) ->
 				getSectionIndex
 			} = @props
 
+
+			# Group sections into an object, with a property for each status
+			sectionsByStatus = plan.get('sections').groupBy (section) ->
+				return section.get('status')
+			console.log "sectionsByStatus >>>>>>>", sectionsByStatus.toJS()
+
+
 			return R.div({className: 'sections', ref: 'sections'},
-				(plan.get('sections').map (section) =>
-					sectionId = section.get('id')
-					headerState = 'inline'
+				(if sectionsByStatus.has('default')
+					
+					# Default status
+					(sectionsByStatus.get('default').map (section) =>
+						SectionView({
+							ref: 'section-' + section.get('id')
 
-					# Group targetIds into an object, with a property for each status
-					targetIdsByStatus = section.get('targetIds').groupBy (targetId) ->
-						return currentTargetRevisionsById.getIn([targetId, 'status'])
-
-					# Recalculate sticky header
-					if @state.sectionOffsets and @state.sectionOffsets.get(section.get('id'))
-						scrollTop = @state.sectionsScrollTop
-						sectionOffset = @state.sectionOffsets.get(section.get('id'))
-
-						headerHeight = 60
-						minSticky = sectionOffset.get('top')
-						maxSticky = sectionOffset.get('top') + sectionOffset.get('height') - headerHeight
-
-						if scrollTop >= minSticky and scrollTop < maxSticky
-							headerState = 'sticky'
-
-					return R.div({
-						className: 'section'
-						key: section.get('id')
-						ref: 'section-' + section.get('id')
-					},
-						SectionHeader({
-							clientFile
-							type: 'inline'
-							visible: headerState is 'inline'
 							section
-							isReadOnly
-							renameSection
-							getSectionIndex
-							addTargetToSection
-						})
-						SectionHeader({
 							clientFile
-							type: 'sticky'
-							visible: headerState is 'sticky'
-							scrollTop: @state.sectionsScrollTop
-							section
+							plan
+							metricsById
+							currentTargetRevisionsById
+							planTargetsById
+							selectedTargetId
 							isReadOnly
+
 							renameSection
-							getSectionIndex
 							addTargetToSection
+							hasTargetChanged
+							updateTarget
+							removeNewTarget
+							setSelectedTarget
+							getSectionIndex
+
+							sectionOffsets: @state.sectionOffsets
+							sectionsScrollTop: @state.sectionsScrollTop
 						})
-						(if section.get('targetIds').size is 0
-							R.div({className: 'noTargets'},
-								"This #{Term 'section'} is empty."
-							)
-						)
-
-						# TODO: Generalize these 3 into a single component
-
-						(if targetIdsByStatus.has('default')
-							R.div({className: 'targets status-default'},
-								# Default status
-								(targetIdsByStatus.get('default').map (targetId) =>
-									PlanTarget({
-										currentRevision: currentTargetRevisionsById.get targetId
-										metricsById
-										hasTargetChanged: hasTargetChanged targetId
-										key: targetId
-										isActive: targetId is selectedTargetId
-										isExistingTarget: planTargetsById.has(targetId)
-										isReadOnly
-										onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
-										onTargetUpdate: updateTarget.bind null, targetId
-										onTargetSelection: setSelectedTarget.bind null, targetId
-									})
-								)
-							)
-						)
-						(if targetIdsByStatus.has('completed')
-							R.div({className: 'targets status-completed'},
-								R.span({
-									className: 'inactiveTargetHeader'
-									onClick: @_toggleDisplayCompletedTargets
-								},
-									# Rotates 90'CW when expanded
-									FaIcon('caret-right', {
-										className: 'expanded' if @state.displayCompletedTargets
-									})
-									R.strong({}, targetIdsByStatus.get('completed').size)
-									" Completed "
-									Term (
-										if targetIdsByStatus.get('completed').size > 1 then 'Targets' else 'Target'
-									)									
-								)
-								(if @state.displayCompletedTargets
-									# Completed status
-									(targetIdsByStatus.get('completed').map (targetId) =>
-										PlanTarget({
-											currentRevision: currentTargetRevisionsById.get targetId
-											metricsById
-											hasTargetChanged: hasTargetChanged(targetId) or planTargetsById.has(targetId)
-											key: targetId
-											isActive: targetId is selectedTargetId
-											isExistingTarget: planTargetsById.has(targetId)
-											isReadOnly
-											isInactive: true
-											onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
-											onTargetUpdate: updateTarget.bind null, targetId
-											onTargetSelection: setSelectedTarget.bind null, targetId
-										})
-									)
-								)
-							)
-						)
-						(if targetIdsByStatus.has('deactivated')
-							R.div({className: 'targets status-deactivated'},
-								R.span({
-									className: 'inactiveTargetHeader'
-									onClick: @_toggleDisplayCancelledTargets
-								},
-									# Rotates 90'CW when expanded
-									FaIcon('caret-right', {
-										className: 'expanded' if @state.displayCancelledTargets
-									})
-									R.strong({}, targetIdsByStatus.get('deactivated').size)
-									" Deactivated "
-									Term (
-										if targetIdsByStatus.get('deactivated').size > 1 then 'Targets' else 'Target'
-									)									
-								)
-								(if @state.displayCancelledTargets
-									# Cancelled statuses
-									(targetIdsByStatus.get('deactivated').map (targetId) =>
-										PlanTarget({
-											currentRevision: currentTargetRevisionsById.get targetId
-											metricsById
-											hasTargetChanged: hasTargetChanged targetId
-											key: targetId
-											isActive: targetId is selectedTargetId
-											isExistingTarget: planTargetsById.has(targetId)
-											isReadOnly
-											isInactive: true
-											onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
-											onTargetUpdate: updateTarget.bind null, targetId
-											onTargetSelection: setSelectedTarget.bind null, targetId
-										})
-									)
-								)
-							)
-						)
-					)
-				).toJS()...
+					)				
+				)
 			)
 
 		_recalculateOffsets: ->
@@ -671,6 +550,184 @@ load = (win) ->
 
 			@setState (s) -> {sectionsScrollTop, sectionOffsets}
 
+
+
+	SectionView = React.createFactory React.createClass
+		displayName: 'SectionView'
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			return {
+				displayCancelledTargets: null
+				displayCompletedTargets: null
+			}
+
+
+		render: ->
+			{
+				section
+				clientFile
+				plan
+				metricsById
+				currentTargetRevisionsById
+				planTargetsById
+				selectedTargetId
+				isReadOnly
+
+				renameSection
+				addTargetToSection
+				hasTargetChanged
+				updateTarget
+				removeNewTarget
+				setSelectedTarget
+				getSectionIndex
+			} = @props
+
+			sectionId = @props.section.get('id')
+			headerState = 'inline'
+
+			# Group targetIds into an object, with a property for each status
+			targetIdsByStatus = section.get('targetIds').groupBy (targetId) ->
+				return currentTargetRevisionsById.getIn([targetId, 'status'])
+
+			# Recalculate sticky header
+			if @props.sectionOffsets and @props.sectionOffsets.get(section.get('id'))
+				scrollTop = @props.sectionsScrollTop
+				sectionOffset = @props.sectionOffsets.get(section.get('id'))
+
+				headerHeight = 60
+				minSticky = sectionOffset.get('top')
+				maxSticky = sectionOffset.get('top') + sectionOffset.get('height') - headerHeight
+
+				if scrollTop >= minSticky and scrollTop < maxSticky
+					headerState = 'sticky'
+
+			return R.div({
+				className: "section status-#{section.get('status')}"
+				key: section.get('id')				
+			},
+				SectionHeader({
+					clientFile
+					type: 'inline'
+					visible: headerState is 'inline'
+					section
+					isReadOnly
+					renameSection
+					getSectionIndex
+					addTargetToSection
+				})
+				SectionHeader({
+					clientFile
+					type: 'sticky'
+					visible: headerState is 'sticky'
+					scrollTop: @props.sectionsScrollTop
+					section
+					isReadOnly
+					renameSection
+					getSectionIndex
+					addTargetToSection
+				})
+				(if section.get('targetIds').size is 0
+					R.div({className: 'noTargets'},
+						"This #{Term 'section'} is empty."
+					)
+				)
+
+				# TODO: Generalize these 3 into a single component
+
+				(if targetIdsByStatus.has('default')
+					R.div({className: 'targets status-default'},
+						# Default status
+						(targetIdsByStatus.get('default').map (targetId) =>
+							PlanTarget({
+								currentRevision: currentTargetRevisionsById.get targetId
+								metricsById
+								hasTargetChanged: hasTargetChanged targetId
+								key: targetId
+								isActive: targetId is selectedTargetId
+								isExistingTarget: planTargetsById.has(targetId)
+								isReadOnly
+								onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
+								onTargetUpdate: updateTarget.bind null, targetId
+								onTargetSelection: setSelectedTarget.bind null, targetId
+							})
+						)
+					)
+				)
+				(if targetIdsByStatus.has('completed')
+					R.div({className: 'targets status-completed'},
+						R.span({
+							className: 'inactiveTargetHeader'
+							onClick: @_toggleDisplayCompletedTargets
+						},
+							# Rotates 90'CW when expanded
+							FaIcon('caret-right', {
+								className: 'expanded' if @state.displayCompletedTargets
+							})
+							R.strong({}, targetIdsByStatus.get('completed').size)
+							" Completed "
+							Term (
+								if targetIdsByStatus.get('completed').size > 1 then 'Targets' else 'Target'
+							)									
+						)
+						(if @state.displayCompletedTargets
+							# Completed status
+							(targetIdsByStatus.get('completed').map (targetId) =>
+								PlanTarget({
+									currentRevision: currentTargetRevisionsById.get targetId
+									metricsById
+									hasTargetChanged: hasTargetChanged(targetId) or planTargetsById.has(targetId)
+									key: targetId
+									isActive: targetId is selectedTargetId
+									isExistingTarget: planTargetsById.has(targetId)
+									isReadOnly
+									isInactive: true
+									onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
+									onTargetUpdate: updateTarget.bind null, targetId
+									onTargetSelection: setSelectedTarget.bind null, targetId
+								})
+							)
+						)
+					)
+				)
+				(if targetIdsByStatus.has('deactivated')
+					R.div({className: 'targets status-deactivated'},
+						R.span({
+							className: 'inactiveTargetHeader'
+							onClick: @_toggleDisplayCancelledTargets
+						},
+							# Rotates 90'CW when expanded
+							FaIcon('caret-right', {
+								className: 'expanded' if @state.displayCancelledTargets
+							})
+							R.strong({}, targetIdsByStatus.get('deactivated').size)
+							" Deactivated "
+							Term (
+								if targetIdsByStatus.get('deactivated').size > 1 then 'Targets' else 'Target'
+							)									
+						)
+						(if @state.displayCancelledTargets
+							# Cancelled statuses
+							(targetIdsByStatus.get('deactivated').map (targetId) =>
+								PlanTarget({
+									currentRevision: currentTargetRevisionsById.get targetId
+									metricsById
+									hasTargetChanged: hasTargetChanged targetId
+									key: targetId
+									isActive: targetId is selectedTargetId
+									isExistingTarget: planTargetsById.has(targetId)
+									isReadOnly
+									isInactive: true
+									onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
+									onTargetUpdate: updateTarget.bind null, targetId
+									onTargetSelection: setSelectedTarget.bind null, targetId
+								})
+							)
+						)
+					)
+				)
+			)
+
 		_toggleDisplayCancelledTargets: ->
 			displayCancelledTargets = not @state.displayCancelledTargets
 			@setState {displayCancelledTargets}
@@ -678,7 +735,6 @@ load = (win) ->
 		_toggleDisplayCompletedTargets: ->
 			displayCompletedTargets = not @state.displayCompletedTargets
 			@setState {displayCompletedTargets}
-
 
 
 	SectionHeader = React.createFactory React.createClass
