@@ -525,7 +525,6 @@ load = (win) ->
 					},
 						SectionHeader({
 							clientFile
-							plan
 							type: 'inline'
 							visible: headerState is 'inline'
 							section
@@ -536,7 +535,6 @@ load = (win) ->
 						})
 						SectionHeader({
 							clientFile
-							plan
 							type: 'sticky'
 							visible: headerState is 'sticky'
 							scrollTop: @state.sectionsScrollTop
@@ -680,25 +678,6 @@ load = (win) ->
 		displayName: 'SectionHeader'
 		mixins: [React.addons.PureRenderMixin]
 
-		_updateSectionStatus: (revisedPlan, stopLoading, cb) ->
-			revisedClientFile = @props.clientFile.set('plan', revisedPlan)
-			ActiveSession.persist.clientFiles.createRevision revisedClientFile, (err, updatedClientFile) ->
-				stopLoading()
-				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert """
-							An error occurred.  Please check your network connection and try again.
-						"""
-						console.error err
-						return
-
-					CrashHandler.handle err
-					return
-
-				console.log ">>>>>>>>updated clientfile: ", updatedClientFile.toJS()
-
-				cb()
-
 		render: ->
 			sectionStatus = @props.section.get('status')
 			{
@@ -708,7 +687,6 @@ load = (win) ->
 				scrollTop
 				section
 				isReadOnly
-				plan
 				renameSection
 				getSectionIndex
 				addTargetToSection
@@ -751,7 +729,7 @@ load = (win) ->
 					R.div({className: 'statusButtonGroup'},
 						WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
 							OpenDialogLink({
-								plan
+								clientFile
 								className: 'statusButton'
 								dialog: ModifySectionStatusDialog
 								newStatus: 'deactivated'
@@ -764,14 +742,13 @@ load = (win) ->
 								"""
 								reasonLabel: "Reason for deactivation:"									
 								disabled: @props.isReadOnly or @props.hasTargetChanged
-								onSuccess: @_updateSectionStatus
 							},
 								FaIcon 'ban'
 							)
 						)
 						WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
 							OpenDialogLink({
-								plan
+								clientFile
 								className: 'statusButton'
 								dialog: ModifySectionStatusDialog
 								newStatus: 'completed'
@@ -783,7 +760,6 @@ load = (win) ->
 								"""
 								reasonLabel: "Reason for completion:"
 								disabled: @props.isReadOnly or @props.hasTargetChanged
-								onSuccess: @_updateSectionStatus
 							},
 								FaIcon 'check'
 							)
@@ -793,7 +769,7 @@ load = (win) ->
 					R.div({className: 'statusButtonGroup'},
 						WithTooltip({title: "Reactivate #{Term 'Section'}", placement: 'top', container: 'body'},
 							OpenDialogLink({
-								plan
+								clientFile
 								className: 'statusButton'
 								dialog: ModifySectionStatusDialog
 								newStatus: 'default'
@@ -805,7 +781,6 @@ load = (win) ->
 								"""
 								reasonLabel: "Reason for reactivation:"									
 								disabled: @props.isReadOnly or @props.hasTargetChanged
-								onSuccess: @_updateSectionStatus
 							},
 								FaIcon 'sign-in'
 							)
