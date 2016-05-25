@@ -369,37 +369,6 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 
 # //////////////// Version-Specific Utilities /////////////////
 
-addClientFileStatusField = (dataDir, globalEncryptionKey, cb) ->
-	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
-		clientFileObjectPath = Path.join(dataDir, 'clientFiles', clientFile)
-		clientFileObject = null
-
-		Async.series [
-			(cb) =>
-				# Read and decrypt Plan Target object
-				Fs.readFile clientFileObjectPath, (err, result) ->
-					if err
-						cb err
-						return
-
-					clientFileObject = JSON.parse globalEncryptionKey.decrypt result
-					
-
-					cb()
-			(cb) =>
-				# Add 'status' property
-				clientFileObject.status = 'default'
-				encryptedObj = globalEncryptionKey.encrypt JSON.stringify clientFileObject
-
-				Fs.writeFile clientFileObjectPath, encryptedObj, cb
-		], cb
-	, (err) ->
-		if err
-			console.info "Problem with clientFiles"
-			cb err
-			return
-
-		finalizeMigrationStep(dataDir, cb)
 
 # ////////////////////// Migration Series //////////////////////
 
@@ -409,18 +378,6 @@ module.exports = {
 		globalEncryptionKey = null
 
 		migrationSeries = [
-			# Create non-encrypted version.json file
-			(cb) ->
-				console.groupEnd()
-				console.groupCollapsed "1. Create version.json file"
-				createVersionMetadataFile dataDir, cb
-
-			# Add status field to clientFiles
-			(cb) ->
-				console.groupEnd()
-				console.groupCollapsed "2. Add 'status': 'default' field to clientFile objects"
-				addClientFileStatusField dataDir, globalEncryptionKey, cb
-
 			
 		]
 
