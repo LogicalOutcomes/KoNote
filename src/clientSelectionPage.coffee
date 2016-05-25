@@ -100,8 +100,6 @@ load = (win) ->
 			programs = null
 			clientFileProgramLinkHeaders = null
 			clientFileProgramLinks = null
-			metricDefinitionHeaders = null
-			metricDefinitions = null
 
 			Async.parallel [
 				(cb) =>
@@ -158,32 +156,7 @@ load = (win) ->
 
 								clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
 								cb()
-					], cb
-				(cb) =>
-					# TODO: Lazy load this
-					Async.series [
-						(cb) =>							
-							ActiveSession.persist.metrics.list (err, result) =>
-								if err
-									cb err
-									return
-
-								metricDefinitionHeaders = result
-								cb()
-						(cb) =>
-							Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
-								metricDefinitionId = metricDefinitionHeader.get('id')
-								ActiveSession.persist.metrics.readLatestRevisions metricDefinitionId, 1, cb
-							, (err, results) =>
-								if err
-									cb err
-									return
-
-								metricDefinitions = Imm.List(results)
-								.map (metricDefinition) -> stripMetadata metricDefinition.first()
-
-								cb()
-					], cb
+					], cb					
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -202,7 +175,6 @@ load = (win) ->
 					programs
 					clientFileHeaders
 					clientFileProgramLinks
-					metricDefinitions
 				}
 
 		getPageListeners: ->
@@ -242,22 +214,7 @@ load = (win) ->
 							clientFileProgramLinks = state.clientFileProgramLinks.push newRev
 
 						return {clientFileProgramLinks}
-
-				'create:metric createRevision:metric': (newRev) =>
-					metricDefinitionId = newRev.get('id')
-					# Updating or creating metric?
-					existingMetricDefinition = @state.metricDefinitions
-					.find (metricDefinition) -> metricDefinition.get('id') is metricDefinitionId
-
-					@setState (state) ->
-						if existingMetricDefinition?
-							definitionIndex = state.metricDefinitions.indexOf existingMetricDefinition
-							metricDefinitions = state.metricDefinitions.set definitionIndex, newRev
-						else
-							metricDefinitions = state.metricDefinitions.push newRev
-
-						return {metricDefinitions}
-
+						
 			}
 
 	ClientSelectionPageUi = React.createFactory React.createClass
@@ -349,7 +306,6 @@ load = (win) ->
 							clientFileHeaders: @props.clientFileHeaders							
 							programs: @props.programs
 							clientFileProgramLinks: @props.clientFileProgramLinks
-							metricDefinitions: @props.metricDefinitions
 						})
 					)
 					R.div({
