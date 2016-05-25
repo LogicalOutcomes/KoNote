@@ -730,13 +730,8 @@ load = (win) ->
 					R.div({className: 'statusButtonGroup'},
 						WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
 							OpenDialogLink({
-<<<<<<< Updated upstream
 								clientFile
 								className: 'statusButton'
-=======
-								plan
-								className: 'statusButton' 
->>>>>>> Stashed changes
 								dialog: ModifySectionStatusDialog
 								newStatus: 'deactivated'
 								sectionIndex: getSectionIndex section.get('id')
