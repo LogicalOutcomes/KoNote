@@ -22,7 +22,8 @@ load = (win, {dataSet}) ->
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	ProgEventsWidget = require('./progEventsWidget').load(win)
-	{FaIcon,renderLineBreaks, renderName, renderFileId, showWhen} = require('./utils').load(win)
+	{FaIcon,renderLineBreaks, renderName, 
+	renderFileId, showWhen, formatTimestamp} = require('./utils').load(win)
 
 	PrintPreviewPage = React.createFactory React.createClass
 		displayName: 'PrintPreviewPage'
@@ -111,9 +112,7 @@ load = (win, {dataSet}) ->
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			# Calculate timestamp for backdate if exists
-			timestamp = Moment(
-				@props.data.get('backdate') or @props.data.get('timestamp')
-			, Persist.TimestampFormat).format 'MMMM D, YYYY [at] HH:mm'
+			timestamp = formatTimestamp(@props.data.get('backdate') or @props.data.get('timestamp'))
 
 			if @props.data.get('backdate') then timestamp  = "(late entry) #{timestamp}"
 
@@ -152,7 +151,7 @@ load = (win, {dataSet}) ->
 							R.span({className: 'author'}, global.ActiveSession.userName)
 						)
 						R.li({className: 'date'},
-							Moment().format 'MMMM D, YYYY [at] HH:mm'
+							Moment().format 'Do MMM, YYYY [at] h:mma'
 						)
 					)
 				)
@@ -211,7 +210,7 @@ load = (win, {dataSet}) ->
 							when 'plan'
 								R.div({className: 'plan unit', key: unit.get('id')},
 									R.h1({}, unit.get 'name')
-									R.div({className: "empty #{showWhen unit.get('sections').length is 0}"},
+									R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
 										"This is empty because this #{Term 'plan'} has no #{Term 'sections'}."
 									)
 									(unit.get('sections').map (section) =>

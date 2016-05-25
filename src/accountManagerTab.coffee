@@ -29,11 +29,11 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				openDialogId: null
-				userAccounts: Imm.List()
+				userAccounts: null
 				displayDeactivated: false
 			}
 
-		componentDidMount: ->
+		componentWillMount: ->
 			# Load Users' publicInfo, since it's not passed down from clientSelectionPage
 			userNames = null
 			userAccounts = null
@@ -371,7 +371,6 @@ load = (win) ->
 
 				newAccount = result
 				@props.onSuccess(newAccount)
-				@props.onCancel()
 
 	ResetPasswordDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]

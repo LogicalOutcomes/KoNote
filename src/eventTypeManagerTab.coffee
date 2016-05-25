@@ -32,10 +32,10 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				eventTypes: Imm.List()
+				eventTypes: null
 			}
 
-		componentDidMount: ->
+		componentWillMount: ->
 			eventTypeHeaders = null
 			eventTypes = null
 

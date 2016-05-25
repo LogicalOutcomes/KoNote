@@ -47,7 +47,7 @@ load = (win) ->
 			@_updateParentData()
 
 		_updateParentData: ->
-			return unless @props.onSortChange?
+			return if not @props.onSortChange? or not @props.tableData?
 			orderedData = @_reorderData(@props.tableData)
 			@props.onSortChange(orderedData)
 
@@ -64,16 +64,20 @@ load = (win) ->
 			return orderedData
 
 		render: ->
-			orderedData = @_reorderData(@props.tableData)
+			# Null means that the data must be loading (still initialState)
+			if not @props.tableData?
+				return R.div({className: 'orderableTable'})
 
-			if orderedData.size is 0
-				return R.div({
-					className: 'orderableTable noMatchesMessage'
-				},
+			# Is an Imm.List(), but no data
+			if @props.tableData.size is 0
+				return R.div({className: 'orderableTable noMatchesMessage'},
 					@props.noMatchesMessage or "No data available"
 				)
+
+			# We have data, let's put it in order
+			orderedData = @_reorderData(@props.tableData)
 			
-			return R.div({className: 'orderableTable'},
+			return R.div({className: 'orderableTable animated fadeIn'},
 				R.div({className: 'tableHead'},
 					R.div({className: 'tableRow'},
 						(@props.columns.map (column) =>

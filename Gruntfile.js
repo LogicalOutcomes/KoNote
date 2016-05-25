@@ -5,9 +5,6 @@ that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 grunt task for release builds of konote
 creates a 'releases' folder inside the builds directory containing compiled mac dmg and windows zip files.
-
-note: requires forked nw-builder module (disables merging win build with the nw exe):
-https://github.com/speedskater/node-webkit-builder
 */
 
 // TODO:
@@ -114,6 +111,7 @@ module.exports = function(grunt) {
 				]
 			}
 		},
+		/*
 		nwjs: {
 			mac: {
 				options: {
@@ -144,18 +142,27 @@ module.exports = function(grunt) {
 				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/**']
 			}
     	},
+		*/
 		exec: {
 			zip: {
-				cwd: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/win32',
-				cmd: 'zip -r --quiet ../../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
+				cwd: 'build/releases/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-ia32',
+				cmd: 'zip -r --quiet ../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
 			},
 			codesign: {
-				cwd: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/osx64',
-				cmd: '../../../../../../codesign-osx.sh'
+				cwd: 'build/releases/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-osx-x64',
+				cmd: '../../../../codesign-osx.sh'
 			},
 			npm: {
 				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>',
 				cmd: 'npm install --production --no-optional'
+			},
+			nwjswin: {
+				cwd: 'build/releases/temp/',
+				cmd: 'nwb nwbuild -v 0.14.4 -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+			},
+			nwjsosx: {
+				cwd: 'build/releases/temp/',
+				cmd: 'nwb nwbuild -v 0.14.4 -p osx64 --mac-icns ./<%= grunt.task.current.args[0] %>/src/icon.icns -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			}
 		},
 		appdmg: {
@@ -164,7 +171,7 @@ module.exports = function(grunt) {
 					title: 'KoNote-<%= pkg.version %>',
 					background: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/background.tiff', 'icon-size': 104,
 					contents: [
-						{x: 130, y: 150, type: 'file', path: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>/KoNote/osx64/KoNote.app'},
+						{x: 130, y: 150, type: 'file', path: 'build/releases/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-osx-x64/konote.app'},
 						{x: 320, y: 150, type: 'link', path: '/Applications'}
 					]
 				},
@@ -199,11 +206,12 @@ module.exports = function(grunt) {
 				"build/releases/temp/<%= grunt.task.current.args[0] %>/src/**/*.styl"
 			],
 			temp: [
-				"build/releases/temp"
+				"build/releases/temp/**/*"
 			]
 		},
 		uglify: {
 			options: {
+				banner: "require('source-map-support').install({environment: 'node'});",
 				screwIE8: true,
 				sourceMap: true,
 				sourceMapIn: function(path) {
@@ -223,7 +231,6 @@ module.exports = function(grunt) {
 	});
 	
 	// load the plugins
-	grunt.loadNpmTasks('grunt-nw-builder');
 	grunt.loadNpmTasks('grunt-exec');
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-text-replace');
@@ -262,11 +269,13 @@ module.exports = function(grunt) {
 			grunt.task.run('clean:coffee:'+entry);
 			grunt.task.run('clean:styl:'+entry);
 			if (entry == "generic-win" || entry == "griffin-win") {
-				grunt.task.run('nwjs:win:'+entry);
+				//grunt.task.run('nwjs:win:'+entry);
+				grunt.task.run('exec:nwjswin:'+entry);
 				grunt.task.run('exec:zip:'+entry);
 			}
 			if (entry == "griffin-mac" || entry == "generic-mac") {
-				grunt.task.run('nwjs:mac:'+entry);
+				//grunt.task.run('nwjs:mac:'+entry);
+				grunt.task.run('exec:nwjsosx:'+entry);
 				if (process.platform == 'darwin') {
 					grunt.task.run('exec:codesign:'+entry);
 					grunt.task.run('appdmg:main:'+entry);

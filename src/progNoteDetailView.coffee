@@ -20,6 +20,10 @@ load = (win) ->
 		displayName: 'ProgNoteDetailView'
 		mixins: [React.addons.PureRenderMixin]
 
+		getInitialState: -> {
+			descriptionIsVisible: null
+		}
+
 		render: ->
 			unless @props.item
 				return R.div({className: 'progNoteDetailView'},
@@ -67,6 +71,7 @@ load = (win) ->
 					sectionId = @props.item.get('sectionId')
 					targetId = @props.item.get('targetId')
 					itemName = @props.item.get('targetName')
+					itemDescription = @props.item.get('targetDescription')
 
 					entries = @props.progNoteHistories.flatMap (progNoteHistory) =>
 						initialAuthor = progNoteHistory.first().get('author')
@@ -144,9 +149,31 @@ load = (win) ->
 				entry.get('backdate') or entry.get('timestamp')
 			.reverse()
 
+			console.info "itemDescription", itemDescription
+
 			return R.div({className: 'progNoteDetailView'},
-				R.div({className: 'itemName'},
-					itemName
+				R.div({className: 'itemDetails'},
+					R.div({},
+						R.div({
+							className: 'itemName'
+							onClick: => @setState {descriptionIsVisible: not @state.descriptionIsVisible}
+						},
+							(if itemDescription?
+								R.span({
+									className: 'toggleDescriptionButton'								
+								},
+									if @state.descriptionIsVisible then "Hide" else "Click to view"
+									" description"
+								)
+							)
+							R.h3({}, itemName)
+						)
+						(if itemDescription? and @state.descriptionIsVisible
+							R.div({
+								className: 'itemDescription animated fadeInDown'
+							}, itemDescription)
+						)
+					)
 				)
 				R.div({className: 'history'},
 					(entries.map (entry) =>

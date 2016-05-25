@@ -52,15 +52,7 @@ writeFile = (path, tmpDirPath, cb) =>
 				(cb) =>
 					Fs.rename tmpPath, path, (err) =>
 						if err
-							# Retry once after 500ms
-							setTimeout(=>
-								console.log "Retrying..."
-								Fs.rename tmpPath, path, (err) =>
-									if err
-										cb new IOError err
-										return
-							, 500)
-
+							cb new IOError err
 							return
 
 						cb()

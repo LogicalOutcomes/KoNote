@@ -42,39 +42,43 @@
 			&:last-child
 				border-bottom none
 				
+			.metricWidget
+				margin 5px
+				
 			.snapshot
 				margin-left 23px
 				color #515151
-				border 1px dashed sidebar-borders
+				padding-top 15px				
 				
 				> .name
 					padding 5px
 					font-size 1.2em
 					font-weight 600
 					line-height 1.5em
-					border-bottom 1px dashed sidebar-borders
-					// margin-top 5px
-					// margin-bottom 10px
+					border-bottom 1px dotted sidebar-borders
 						
 				> .description
 					padding 5px
 					
+				> .metrics
+					display flex
+					flex-wrap wrap									
+					
 			&:hover article.entry .snapshotButton
-				visibility visible
+				opacity 0.5
 				
 			article.entry
 				position relative
 				margin-left 23px
-				padding 10px 0
+				padding-top 10px
 				
 				> .snapshotButton
 					float right
 					margin 5px
 					margin-right 0
 					margin-top -2px
-					opacity 0.5
+					opacity 0
 					transition opacity .15s ease
-					visibility hidden
 					outline none
 					
 					&:hover
@@ -94,6 +98,9 @@
 					font-weight 600
 					margin-bottom 5px
 					
+				> .metricWidget // Displayed inline with action
+					display inline-flex
+					
 				> .value
 					display inline-block
 					color #515151
@@ -102,8 +109,9 @@
 						background #C0F0C0
 						
 					> .removed
+						color #FF2727
 						text-decoration line-through
-						opacity 0.8
+						opacity 0.75
 					
 				> .snapshot
 					margin 0 // Required for consistent display

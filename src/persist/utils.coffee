@@ -6,9 +6,6 @@ Base64url = require 'base64url'
 Crypto = require 'crypto'
 Joi = require 'joi'
 
-# TODO Persist modules shouldn't depend on KoNote modules
-{CustomError} = require '../utils'
-
 # Generate a unique ID.
 # Outputs a string containing only a-z, A-Z, 0-9, "-", and "_".
 # Expected to be unique until 2^60 IDs have been generated.
@@ -28,6 +25,27 @@ isValidJSON = (jsonString) ->
 	catch err
 		console.error "Invalid JSON:", jsonString
 		return false
+
+# This class allows new error types to be created easily without breaking stack
+# traces, toString, etc.
+#
+# Example:
+# 	class MyError extends CustomError
+#
+# MyError will accept a single, optional argument `message`.
+#
+# Example:
+# 	class MyError2 extends CustomError
+# 		constructor: (message, anotherArgument) ->
+# 			super message # must call superclass constructor
+# 			@anotherArgument = anotherArgument
+#
+# MyError2 will accept two mandatory arguments: `message` and `anotherArgument`.
+class CustomError extends Error
+	constructor: (message) ->
+		@name = @constructor.name
+		@message = message
+		Error.captureStackTrace @, @constructor
 
 class ObjectNotFoundError extends CustomError
 	constructor: ->

@@ -67,17 +67,27 @@ load = (win) ->
 		_submit: ->
 			@refs.dialog.setIsLoading true
 
-			console.log "section index >>>>>>>>>>>>>>> ", @props.sectionIndex
-			console.log "plan >>>>>>>>>>>>>>>>>>>>> ", @props.plan.toJS()
-			console.log "newStatus >>>>>>>>>>>>>>>>>>>> ", @props.newStatus
-			console.log "statusReason >>>>>>>>>>>>>>> ", @state.statusReason
-
-
-			revisedPlan = @props.plan
+			revisedPlan = @props.clientFile.get('plan')
 			.setIn(['sections', @props.sectionIndex, 'status'], @props.newStatus)
 			.setIn(['sections', @props.sectionIndex, 'statusReason'], @state.statusReason)
-		
-			@props.onSuccess revisedPlan, (=> @refs.dialog.setIsLoading(false) if @refs.dialog?), @props.onCancel
+
+			revisedClientFile = @props.clientFile.set 'plan', revisedPlan
+
+			ActiveSession.persist.clientFiles.createRevision revisedClientFile, (err, updatedClientFile) =>
+				@refs.dialog.setIsLoading false
+
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						console.error err
+						return
+
+					CrashHandler.handle err
+					return
+				
+				@props.onSuccess()
 
 	return ModifySectionStatusDialog
 
