@@ -19,7 +19,7 @@ load = (win) ->
 	Dialog = require('./dialog').load(win)
 	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
-	Spinner = require('./spinner').load(win)	
+	Spinner = require('./spinner').load(win)
 	{FaIcon, showWhen} = require('./utils').load(win)
 
 	AccountManagerTab = React.createFactory React.createClass
@@ -74,7 +74,7 @@ load = (win) ->
 			userAccounts = @state.userAccounts
 
 			# Filter out deactivated accounts
-			unless @state.displayDeactivated
+			if userAccounts? and not @state.displayDeactivated
 				userAccounts = userAccounts.filter (userAccount) ->
 					userAccount.getIn(['publicInfo', 'isActive'])
 
