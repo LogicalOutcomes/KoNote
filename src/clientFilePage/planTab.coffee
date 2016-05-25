@@ -468,6 +468,8 @@ load = (win) ->
 			return {
 				sectionsScrollTop: 0
 				sectionOffsets: null
+				displayDeactivatedSections: null
+				displayCompletedSections: null
 			}
 
 		componentDidMount: ->
@@ -531,6 +533,98 @@ load = (win) ->
 						})
 					)				
 				)
+				(if sectionsByStatus.has('completed')
+					R.div({className: 'sections status-completed'},
+						R.span({
+							className: 'inactiveSectionHeader'
+							onClick: @_toggleDisplayCompletedSections
+						},
+							# Rotates 90'CW when expanded
+							FaIcon('caret-right', {
+								className: 'expanded' if @state.displayCompletedSections
+							})
+							R.strong({}, sectionsByStatus.get('completed').size)
+							" Completed "
+							Term (
+								if sectionsByStatus.get('completed').size > 1 then 'Sections' else 'Section'
+							)									
+						)
+						(if @state.displayCompletedSections
+							# Completed status	
+							(sectionsByStatus.get('completed').map (section) =>
+								SectionView({
+									ref: 'section-' + section.get('id')
+
+									section
+									clientFile
+									plan
+									metricsById
+									currentTargetRevisionsById
+									planTargetsById
+									selectedTargetId
+									isReadOnly
+
+									renameSection
+									addTargetToSection
+									hasTargetChanged
+									updateTarget
+									removeNewTarget
+									setSelectedTarget
+									getSectionIndex
+
+									sectionOffsets: @state.sectionOffsets
+									sectionsScrollTop: @state.sectionsScrollTop
+								})
+							)
+						)	
+					)
+				)
+				(if sectionsByStatus.has('deactivated')
+					R.div({className: 'sections status-deactivated'},
+						R.span({
+							className: 'inactiveSectionHeader'
+							onClick: @_toggleDisplayDeactivatedSections
+						},
+							# Rotates 90'CW when expanded
+							FaIcon('caret-right', {
+								className: 'expanded' if @state.displayDeactivatedSections
+							})
+							R.strong({}, sectionsByStatus.get('deactivated').size)
+							" Deactivated "
+							Term (
+								if sectionsByStatus.get('deactivated').size > 1 then 'Sections' else 'Section'
+							)									
+						)
+						(if @state.displayDeactivatedSections
+							# Deactivated status	
+							(sectionsByStatus.get('deactivated').map (section) =>
+								SectionView({
+									ref: 'section-' + section.get('id')
+
+									section
+									clientFile
+									plan
+									metricsById
+									currentTargetRevisionsById
+									planTargetsById
+									selectedTargetId
+									isReadOnly
+
+									renameSection
+									addTargetToSection
+									hasTargetChanged
+									updateTarget
+									removeNewTarget
+									setSelectedTarget
+									getSectionIndex
+
+									sectionOffsets: @state.sectionOffsets
+									sectionsScrollTop: @state.sectionsScrollTop
+								})
+							)
+						)	
+					)
+				)
 			)
 
 		_recalculateOffsets: ->
@@ -550,6 +644,13 @@ load = (win) ->
 
 			@setState (s) -> {sectionsScrollTop, sectionOffsets}
 
+		_toggleDisplayDeactivatedSections: ->
+			displayDeactivatedSections = not @state.displayDeactivatedSections
+			@setState {displayDeactivatedSections}
+
+		_toggleDisplayCompletedSections: ->
+			displayCompletedSections = not @state.displayCompletedSections
+			@setState {displayCompletedSections}
 
 
 	SectionView = React.createFactory React.createClass

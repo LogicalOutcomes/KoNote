@@ -75,7 +75,7 @@ load = (win) ->
 			revisedClientFile = @props.clientFile.set 'plan', revisedPlan
 
 			ActiveSession.persist.clientFiles.createRevision revisedClientFile, (err, updatedClientFile) =>
-				@refs.dialog.setIsLoading false
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
 					if err instanceof Persist.IOError
