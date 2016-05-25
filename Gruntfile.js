@@ -111,6 +111,7 @@ module.exports = function(grunt) {
 				]
 			}
 		},
+		/*
 		nwjs: {
 			mac: {
 				options: {
@@ -141,6 +142,7 @@ module.exports = function(grunt) {
 				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/**']
 			}
     	},
+		*/
 		exec: {
 			zip: {
 				cwd: 'build/releases/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-ia32',
