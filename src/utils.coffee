@@ -7,27 +7,7 @@ Moment = require 'moment'
 {TimestampFormat} = require './persist'
 Config = require './config'
 _ = require 'underscore'
-
-# This class allows new error types to be created easily without breaking stack
-# traces, toString, etc.
-#
-# Example:
-# 	class MyError extends CustomError
-#
-# MyError will accept a single, optional argument `message`.
-#
-# Example:
-# 	class MyError2 extends CustomError
-# 		constructor: (message, anotherArgument) ->
-# 			super message # must call superclass constructor
-# 			@anotherArgument = anotherArgument
-#
-# MyError2 will accept two mandatory arguments: `message` and `anotherArgument`.
-class CustomError extends Error
-	constructor: (message) ->
-		@name = @constructor.name
-		@message = message
-		Error.captureStackTrace @, @constructor
+{CustomError} = require './persist/utils'
 
 load = (win) ->
 	$ = win.jQuery
