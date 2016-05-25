@@ -64,6 +64,13 @@ load = (win) ->
 		render: ->
 			plan = @state.plan
 
+			# Group sections into an object, with a property for each status
+			sectionsByStatus = plan.get('sections').groupBy (section) ->
+				return section.get('status')
+			console.log "sectionsByStatus >>>>>>>", sectionsByStatus.toJS()
+
+
+
 			# If something selected and that target has not been deleted
 			if @state.selectedTargetId? and @state.currentTargetRevisionsById.has(@state.selectedTargetId)
 				# If this target has been saved at least once
@@ -735,7 +742,7 @@ load = (win) ->
 								dialog: ModifySectionStatusDialog
 								newStatus: 'deactivated'
 								sectionIndex: getSectionIndex section.get('id')
-								sectionTargetIds: section.get('targetIds')
+								# sectionTargetIds: section.get('targetIds')
 								title: "Deactivate #{Term 'Section'}"
 								message: """
 									This will remove the #{Term 'section'} from the #{Term 'client'} 
@@ -755,7 +762,7 @@ load = (win) ->
 								dialog: ModifySectionStatusDialog
 								newStatus: 'completed'
 								sectionIndex: getSectionIndex section.get('id')
-								sectionTargetIds: section.get('targetIds')
+								# sectionTargetIds: section.get('targetIds')
 								title: "Complete #{Term 'Section'}"
 								message: """
 									This will set the #{Term 'section'} as 'completed'. This often 
@@ -777,7 +784,7 @@ load = (win) ->
 								dialog: ModifySectionStatusDialog
 								newStatus: 'default'
 								sectionIndex: getSectionIndex section.get('id')
-								sectionTargetIds: section.get('targetIds')
+								# sectionTargetIds: section.get('targetIds')
 								title: "Reactivate #{Term 'Section'}"
 								message: """
 									This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'} 
