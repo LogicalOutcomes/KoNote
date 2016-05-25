@@ -126,7 +126,7 @@ load = (win) ->
 		.delete('timestamp')
 
 	formatTimestamp = (timestamp) ->
-		return Moment(timestamp, TimestampFormat).format('Do MMM, YYYY [at] h:mmA')
+		return Moment(timestamp, TimestampFormat).format('Do MMM, YYYY [at] h:mma')
 
 	capitalize = (word) ->
     return word.charAt(0).toUpperCase() + word.slice(1)
