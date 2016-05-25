@@ -25,10 +25,10 @@ privKeyV1Prefix = 'privkey-v1'
 pubKeyV1Prefix = 'pubkey-v1'
 asymmCiphertextV1Prefix = new Buffer([1])
 
-# Hi there, programmer from the past :P
-# With nw.13+, the window context is now run in the background,
-# so it's now safe to use global.window to access crypto
-WebCryptoApi = global.window.crypto.subtle
+# This is a function instead of a reference so that the test suite still works.
+# This won't be necessary any more if the test is run inside NW.js instead of plain Node.js,
+# or if we just eliminate the dependency on the Web Crypto API (issue #525).
+WebCryptoApi = -> global.window.crypto.subtle
 
 class SymmetricEncryptionKey
 	# Implementation notes:
@@ -314,7 +314,7 @@ class PrivateKey
 		Async.series [
 			(cb) ->
 				console.info "Step 1"
-				usePromise WebCryptoApi.generateKey(
+				usePromise WebCryptoApi().generateKey(
 					{
 						name: 'RSA-OAEP'
 						modulusLength: rsaKeyLength
@@ -334,7 +334,7 @@ class PrivateKey
 					cb()
 			(cb) ->
 				console.info "Step 2"
-				usePromise WebCryptoApi.generateKey(
+				usePromise WebCryptoApi().generateKey(
 					{
 						name: 'RSASSA-PKCS1-v1_5'
 						modulusLength: rsaKeyLength
@@ -359,7 +359,7 @@ class PrivateKey
 					[privSignKey, 'pkcs8']
 					[pubSignKey, 'spki']
 				], ([key, format], cb) ->
-					usePromise WebCryptoApi.exportKey(format, key), (err, exportedKeyBuf) ->
+					usePromise WebCryptoApi().exportKey(format, key), (err, exportedKeyBuf) ->
 						if err
 							cb err
 							return
@@ -434,7 +434,7 @@ class PrivateKey
 			encryptedMsg[asymmCiphertextV1Prefix.length...(asymmCiphertextV1Prefix.length + rsaKeyLength/8)]
 
 		# BEGIN NW.js v0.11 code
-		usePromise WebCryptoApi.importKey(
+		usePromise WebCryptoApi().importKey(
 			'pkcs8', toUint8Array(@_rawPrivEncrKey),
 			{
 				name: 'RSA-OAEP'
@@ -446,7 +446,7 @@ class PrivateKey
 				cb err
 				return
 
-			usePromise WebCryptoApi.decrypt(
+			usePromise WebCryptoApi().decrypt(
 				{name: 'RSA-OAEP'}, webCryptoKey, toUint8Array(encryptedContentKey)
 			), (err, contentKeyText) =>
 				if err
@@ -527,7 +527,7 @@ class PublicKey
 		# Generate a new symmetric key and encrypt using RSA
 		contentKey = SymmetricEncryptionKey.generate()
 		# BEGIN NW.js v0.11 code
-		usePromise WebCryptoApi.importKey(
+		usePromise WebCryptoApi().importKey(
 			'spki', toUint8Array(@_rawPubEncrKey),
 			{
 				name: 'RSA-OAEP'
@@ -539,7 +539,7 @@ class PublicKey
 				cb err
 				return
 
-			usePromise WebCryptoApi.encrypt(
+			usePromise WebCryptoApi().encrypt(
 				{name: 'RSA-OAEP'}, webCryptoKey, toUint8Array(new Buffer(contentKey.export()))
 			), (err, encryptedContentKey) =>
 				if err
