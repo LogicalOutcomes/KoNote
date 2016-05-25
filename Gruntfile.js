@@ -211,6 +211,7 @@ module.exports = function(grunt) {
 		},
 		uglify: {
 			options: {
+				banner: "require('source-map-support').install({environment: 'node'});",
 				screwIE8: true,
 				sourceMap: true,
 				sourceMapIn: function(path) {
