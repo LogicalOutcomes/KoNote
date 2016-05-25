@@ -379,8 +379,6 @@ load = (win) ->
 			# Filter out any empty notes/metrics
 			progNote = @_filterEmptyValues(@props.progNote)
 
-			console.log "progNote", progNote.toJS()
-
 			R.div({
 				className: 'full progNote'
 				## TODO: Restore hover feature

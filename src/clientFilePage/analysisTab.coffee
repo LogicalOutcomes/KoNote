@@ -280,7 +280,7 @@ load = (win) ->
 							)
 
 							(unless @props.eventTypes.isEmpty()
-								[
+								R.div({},
 									R.h3({}, Term 'Event Types')
 									R.div({className: 'dataOptions'},
 										(@props.eventTypes.map (eventType) =>
@@ -303,11 +303,11 @@ load = (win) ->
 											)
 										)								
 									)
-								]
+								)
 							)							
 
 							(unless untypedEvents.isEmpty()
-								[
+								R.div({},
 									R.h3({}, "Other")
 									R.div({className: 'dataOptions'},
 										R.div({className: 'checkbox'},
@@ -322,7 +322,7 @@ load = (win) ->
 											)
 										)
 									)
-								]
+								)
 							)
 						)
 
@@ -347,7 +347,7 @@ load = (win) ->
 							R.h3({}, "Plan")
 							R.div({className: 'dataOptions'},
 								(@props.plan.get('sections').map (section) =>
-									[
+									R.div({},
 										R.h4({}, section.get('name'))
 										R.section({key: section.get('id')},
 											(section.get('targetIds').map (targetId) =>
@@ -389,12 +389,12 @@ load = (win) ->
 												)
 											)
 										)
-									]
+									)
 								)
 							)
 
 							(unless @state.inactiveMetricIds.isEmpty()
-								[
+								R.div({},
 									R.h3({}, "Inactive")
 									R.div({className: 'dataOptions'},
 										(@state.inactiveMetricIds.map (metricId) =>
@@ -422,7 +422,7 @@ load = (win) ->
 											)
 										)
 									)
-								]
+								)
 							)
 						)
 					)
