@@ -268,7 +268,6 @@ load = (win, {clientFileId}) ->
 								id: unit.get 'id'
 								name: unit.get 'name'
 								sections: clientFile.getIn(['plan', 'sections'])
-								.filter (section) => section.get('status') is 'default'
 								.map (section) =>
 
 									Imm.fromJS {
@@ -299,6 +298,8 @@ load = (win, {clientFileId}) ->
 													}
 											}
 									}
+								.filter (section) =>
+									section.get('status') is 'default' and not section.get('targets').isEmpty()
 							}
 			}	
 
@@ -473,8 +474,8 @@ load = (win, {clientFileId}) ->
 									},
 										R.h1({className: 'unitName'}, unit.get 'name')
 										R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
-											"This is empty because 
-											the client has no #{Term 'plan'} #{Term 'sections'}."
+											"This is empty because the client has no active 
+											#{Term 'plan'} #{Term 'sections'} or #{Term 'targets'}."
 										)
 										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
@@ -802,7 +803,7 @@ load = (win, {clientFileId}) ->
 
 		_save: ->
 			@setState {isLoading: true}
-			
+
 			progNoteId = null
 
 			Async.series [
