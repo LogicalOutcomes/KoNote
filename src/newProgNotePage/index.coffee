@@ -267,12 +267,13 @@ load = (win, {clientFileId}) ->
 								type: 'plan'
 								id: unit.get 'id'
 								name: unit.get 'name'
-								sections: clientFile.getIn(['plan', 'sections']).map (section) =>
+								sections: clientFile.getIn(['plan', 'sections'])
+								.filter (section) => section.get('status') is 'default'
+								.map (section) =>
 
 									Imm.fromJS {
 										id: section.get 'id'
 										name: section.get 'name'
-										status: section.get 'status'
 										targets: section.get 'targetIds'										
 										.filter (targetId) =>
 											target = planTargetsById.get targetId
@@ -475,9 +476,7 @@ load = (win, {clientFileId}) ->
 											"This is empty because 
 											the client has no #{Term 'plan'} #{Term 'sections'}."
 										)
-										(unit.get('sections')
-										.filter (section) => section.get('status') is 'default'
-										.map (section) =>
+										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
 
 											R.section({
@@ -803,23 +802,12 @@ load = (win, {clientFileId}) ->
 
 		_save: ->
 			@setState {isLoading: true}
-
-			# Strip out section status from 'plan' units, not needed in dataModel
-			progNoteUnits = @state.progNote.get('units').map (unit) ->			
-				if unit.get('type') is 'plan'
-					return unit.set 'sections', unit.get('sections').map (section) ->
-						section.delete('status')
-				else
-					return unit
-
-			progNote = @state.progNote.set 'units', progNoteUnits
-
-
+			
 			progNoteId = null
 
 			Async.series [
 				(cb) =>
-					ActiveSession.persist.progNotes.create progNote, (err, obj) =>
+					ActiveSession.persist.progNotes.create @state.progNote, (err, obj) =>
 						if err
 							cb err
 							return
