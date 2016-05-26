@@ -272,7 +272,6 @@ load = (win, {clientFileId}) ->
 									Imm.fromJS {
 										id: section.get 'id'
 										name: section.get 'name'
-										status: section.get 'status'
 										targets: section.get 'targetIds'										
 										.filter (targetId) =>
 											target = planTargetsById.get targetId
