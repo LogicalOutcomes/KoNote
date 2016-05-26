@@ -423,12 +423,17 @@ load = (win) ->
 			@setState {plan, currentTargetRevisionsById}
 
 		_removeNewSection: (section) ->
-			console.log "running remove secion method >>>>>> "
 			sectionId = section.get('id')
 			sectionIndex = @_getSectionIndex sectionId
+
+			# Update plan
 			plan = @state.plan.set 'sections', @state.plan.get('sections').splice(sectionIndex, 1)
 
-			@setState {plan}
+			# Filter out all this section's targetIds from currentTargetRevisionsById
+			currentTargetRevisionsById = @state.currentTargetRevisionsById.filterNot (targetRevision, targetId) ->
+				section.get('targetIds').contains targetId
+
+			@setState {plan, currentTargetRevisionsById}
 
 		_getSectionIndex: (sectionId) ->
 			return @state.plan.get('sections').findIndex (section) =>
@@ -521,7 +526,6 @@ load = (win) ->
 							ref: 'section-' + section.get('id')
 
 							section
-							isExistingSection: clientFile.getIn(['plan','sections']).contains(section)
 							clientFile
 							plan
 							metricsById
@@ -568,7 +572,6 @@ load = (win) ->
 									ref: 'section-' + section.get('id')
 
 									section
-									isExistingSection: clientFile.getIn(['plan','sections']).contains(section)
 									clientFile
 									plan
 									metricsById
@@ -618,7 +621,6 @@ load = (win) ->
 									ref: 'section-' + section.get('id')
 
 									section
-									isExistingSection: pclientFile.getIn(['plan','sections']).contains(section)
 									clientFile
 									plan
 									metricsById
@@ -686,7 +688,6 @@ load = (win) ->
 		render: ->
 			{
 				section
-				isExistingSection
 				clientFile
 				plan
 				metricsById
@@ -734,7 +735,6 @@ load = (win) ->
 					type: 'inline'
 					visible: headerState is 'inline'
 					section
-					isExistingSection
 					isReadOnly
 					renameSection
 					getSectionIndex
@@ -747,7 +747,6 @@ load = (win) ->
 					visible: headerState is 'sticky'
 					scrollTop: @props.sectionsScrollTop
 					section
-					isExistingSection
 					isReadOnly
 					renameSection
 					getSectionIndex
@@ -872,7 +871,6 @@ load = (win) ->
 			sectionStatus = @props.section.get('status')
 			{
 				clientFile
-				isExistingSection
 				type
 				visible
 				scrollTop
@@ -884,6 +882,9 @@ load = (win) ->
 				removeNewSection
 				onRemoveNewSection
 			} = @props
+
+			# Figure out whether already exists in plan
+			isExistingSection = clientFile.getIn(['plan','sections']).contains(section)
 
 			return R.div({
 				className: [
