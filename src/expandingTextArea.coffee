@@ -12,9 +12,27 @@ load = (win) ->
 
 	ExpandingTextArea = React.createFactory React.createClass
 		displayName: 'ExpandingTextArea'
-		mixins: [React.addons.PureRenderMixin]
+		mixins: [React.addons.PureRenderMixin]		
+
+		render: ->
+			return R.textarea({
+				className: "expandingTextAreaComponent form-control #{@props.className}"
+				ref: 'textarea'
+				placeholder: @props.placeholder
+				onFocus: @props.onFocus
+				onClick: @props.onClick
+				onChange: @_onChange
+				value: @props.value
+				disabled: @props.disabled
+			})
+
 		componentDidMount: ->
 			@_resize()
+
+			setTimeout(=>
+				@_resize()
+			, 1000)
+
 		_resize: ->
 			textareaDom = @refs.textarea
 
@@ -27,17 +45,7 @@ load = (win) ->
 			scrollableAreaHeight += 2 # to prevent scrollbar
 			newHeight = Math.max minimumHeight, scrollableAreaHeight
 			textareaDom.style.height = newHeight + 'px'
-		render: ->
-			return R.textarea({
-				className: "expandingTextAreaComponent form-control #{@props.className}"
-				ref: 'textarea'
-				placeholder: @props.placeholder
-				onFocus: @props.onFocus
-				onClick: @props.onClick
-				onChange: @_onChange
-				value: @props.value
-				disabled: @props.disabled
-			})
+
 		_onChange: (event) ->
 			@_resize()
 			@props.onChange event
