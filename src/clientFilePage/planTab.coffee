@@ -423,7 +423,9 @@ load = (win) ->
 			@setState {plan, currentTargetRevisionsById}
 
 		_removeNewSection: (section) ->
-			sectionIndex @_getSectionIndex sectionId
+			console.log "running remove secion method >>>>>> "
+			sectionId = section.get('id')
+			sectionIndex = @_getSectionIndex sectionId
 			plan = @state.plan.set 'sections', @state.plan.get('sections').splice(sectionIndex, 1)
 
 			@setState {plan}
@@ -519,7 +521,7 @@ load = (win) ->
 							ref: 'section-' + section.get('id')
 
 							section
-							isExistingSection: plan.get('sections').contains(section)
+							isExistingSection: clientFile.getIn(['plan','sections']).contains(section)
 							clientFile
 							plan
 							metricsById
@@ -616,7 +618,7 @@ load = (win) ->
 									ref: 'section-' + section.get('id')
 
 									section
-									isExistingSection: plan.get('sections').contains(section)
+									isExistingSection: pclientFile.getIn(['plan','sections']).contains(section)
 									clientFile
 									plan
 									metricsById
@@ -699,6 +701,7 @@ load = (win) ->
 				updateTarget
 				removeNewTarget
 				removeNewSection
+				onRemoveNewSection
 				setSelectedTarget
 				getSectionIndex
 			} = @props
@@ -736,6 +739,7 @@ load = (win) ->
 					renameSection
 					getSectionIndex
 					addTargetToSection
+					onRemoveNewSection
 				})
 				SectionHeader({
 					clientFile
@@ -748,6 +752,7 @@ load = (win) ->
 					renameSection
 					getSectionIndex
 					addTargetToSection
+					onRemoveNewSection
 				})
 				(if section.get('targetIds').size is 0
 					R.div({className: 'noTargets'},
@@ -877,6 +882,7 @@ load = (win) ->
 				getSectionIndex
 				addTargetToSection
 				removeNewSection
+				onRemoveNewSection
 			} = @props
 
 			return R.div({
@@ -982,7 +988,7 @@ load = (win) ->
 					R.div({className: 'statusButtonGroup'},
 						R.div({
 							className: 'statusButton'
-							onClick: @props.onRemoveNewSection
+							onClick: onRemoveNewSection
 						},
 							FaIcon 'times'
 						)
