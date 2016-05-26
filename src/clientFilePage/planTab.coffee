@@ -653,11 +653,11 @@ load = (win) ->
 			sectionsScrollTop = sectionsDom.scrollTop
 
 			sectionOffsets = @props.plan.get('sections').map (section) =>
-				sectionDom = @refs['section-' + section.get('id')]
+				sectionDom = @refs['section-' + section.get('id')] or {}
 
 				offset = Imm.Map({
-					top: sectionDom.offsetTop
-					height: sectionDom.offsetHeight
+					top: sectionDom.offsetTop or 0
+					height: sectionDom.offsetHeight or 0
 				})
 
 				return [section.get('id'), offset]
