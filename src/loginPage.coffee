@@ -173,13 +173,7 @@ load = (win) ->
 
 			if @props.isNewSetUp
 				@setState {userName: 'admin'}
-				setTimeout(=>
-					@refs.passwordField.focus()
-				, 100)
-			else
-				setTimeout(=>
-					@refs.userNameField.focus()
-				, 100)
+				@refs.passwordField.focus()
 
 		onLoginError: (type) ->
 			switch type
@@ -239,6 +233,7 @@ load = (win) ->
 						R.div({className: 'form-group'},
 							R.input({
 								className: 'form-control'
+								autoFocus: true
 								ref: 'userNameField'
 								onChange: @_updateUserName
 								onKeyDown: @_onEnterKeyDown
@@ -259,11 +254,11 @@ load = (win) ->
 							})
 						)
 						R.div({className: 'btn-toolbar'},
-							#TODO: password reminder
-#							R.button({
-#								className: 'btn btn-link'
-#								onClick: @_forgotPassword
-#							}, "Forgot Password?")
+							## TODO: Password reminder
+							# R.button({
+							# 	className: 'btn btn-link'
+							# 	onClick: @_forgotPassword
+							# }, "Forgot Password?")
 							R.button({
 								className: [
 									'btn'
