@@ -149,6 +149,7 @@ load = (win) ->
 						renameSection: @_renameSection
 						addTargetToSection: @_addTargetToSection
 						removeNewTarget: @_removeNewTarget
+						removeNewSection: @_removeNewSection
 						hasTargetChanged: @_hasTargetChanged
 						updateTarget: @_updateTarget
 						setSelectedTarget: @_setSelectedTarget
@@ -421,6 +422,12 @@ load = (win) ->
 
 			@setState {plan, currentTargetRevisionsById}
 
+		_removeNewSection: (section) ->
+			sectionIndex @_getSectionIndex sectionId
+			plan = @state.plan.set 'sections', @state.plan.get('sections').splice(sectionIndex, 1)
+
+			@setState {plan}
+
 		_getSectionIndex: (sectionId) ->
 			return @state.plan.get('sections').findIndex (section) =>
 				return section.get('id') is sectionId
@@ -492,6 +499,7 @@ load = (win) ->
 				hasTargetChanged
 				updateTarget
 				removeNewTarget
+				removeNewSection
 				setSelectedTarget
 				getSectionIndex
 			} = @props
@@ -500,8 +508,6 @@ load = (win) ->
 			# Group sections into an object, with a property for each status
 			sectionsByStatus = plan.get('sections').groupBy (section) ->
 				return section.get('status')
-			console.log "sectionsByStatus >>>>>>>", sectionsByStatus.toJS()
-
 
 			return R.div({className: 'sections', ref: 'sections'},
 				(if sectionsByStatus.has('default')
@@ -509,9 +515,11 @@ load = (win) ->
 					# Default status
 					(sectionsByStatus.get('default').map (section) =>
 						SectionView({
+							key: section.get('id')
 							ref: 'section-' + section.get('id')
 
 							section
+							isExistingSection: plan.get('sections').contains(section)
 							clientFile
 							plan
 							metricsById
@@ -519,7 +527,7 @@ load = (win) ->
 							planTargetsById
 							selectedTargetId
 							isReadOnly
-
+							
 							renameSection
 							addTargetToSection
 							hasTargetChanged
@@ -527,6 +535,7 @@ load = (win) ->
 							removeNewTarget
 							setSelectedTarget
 							getSectionIndex
+							onRemoveNewSection: removeNewSection.bind null, section
 
 							sectionOffsets: @state.sectionOffsets
 							sectionsScrollTop: @state.sectionsScrollTop
@@ -553,9 +562,11 @@ load = (win) ->
 							# Completed status	
 							(sectionsByStatus.get('completed').map (section) =>
 								SectionView({
+									key: section.get('id')
 									ref: 'section-' + section.get('id')
 
 									section
+									isExistingSection: clientFile.getIn(['plan','sections']).contains(section)
 									clientFile
 									plan
 									metricsById
@@ -569,6 +580,8 @@ load = (win) ->
 									hasTargetChanged
 									updateTarget
 									removeNewTarget
+									removeNewSection
+									onRemoveNewSection: removeNewSection.bind null, section
 									setSelectedTarget
 									getSectionIndex
 
@@ -599,9 +612,11 @@ load = (win) ->
 							# Deactivated status	
 							(sectionsByStatus.get('deactivated').map (section) =>
 								SectionView({
+									key: section.get('id')
 									ref: 'section-' + section.get('id')
 
 									section
+									isExistingSection: plan.get('sections').contains(section)
 									clientFile
 									plan
 									metricsById
@@ -615,6 +630,8 @@ load = (win) ->
 									hasTargetChanged
 									updateTarget
 									removeNewTarget
+									removeNewSection
+									onRemoveNewSection: removeNewSection.bind null, section
 									setSelectedTarget
 									getSectionIndex
 
@@ -667,6 +684,7 @@ load = (win) ->
 		render: ->
 			{
 				section
+				isExistingSection
 				clientFile
 				plan
 				metricsById
@@ -680,6 +698,7 @@ load = (win) ->
 				hasTargetChanged
 				updateTarget
 				removeNewTarget
+				removeNewSection
 				setSelectedTarget
 				getSectionIndex
 			} = @props
@@ -712,6 +731,7 @@ load = (win) ->
 					type: 'inline'
 					visible: headerState is 'inline'
 					section
+					isExistingSection
 					isReadOnly
 					renameSection
 					getSectionIndex
@@ -723,6 +743,7 @@ load = (win) ->
 					visible: headerState is 'sticky'
 					scrollTop: @props.sectionsScrollTop
 					section
+					isExistingSection
 					isReadOnly
 					renameSection
 					getSectionIndex
@@ -846,6 +867,7 @@ load = (win) ->
 			sectionStatus = @props.section.get('status')
 			{
 				clientFile
+				isExistingSection
 				type
 				visible
 				scrollTop
@@ -854,6 +876,7 @@ load = (win) ->
 				renameSection
 				getSectionIndex
 				addTargetToSection
+				removeNewSection
 			} = @props
 
 			return R.div({
@@ -890,70 +913,82 @@ load = (win) ->
 
 				# SECTION STATUS BUTTONS   >>>>>>>>>> target = @props.planTargetsById.get(targetId, null)
 
-				if sectionStatus is 'default'
-					R.div({className: 'statusButtonGroup'},
-						WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
-							OpenDialogLink({
-								clientFile
-								className: 'statusButton'
-								dialog: ModifySectionStatusDialog
-								newStatus: 'deactivated'
-								sectionIndex: getSectionIndex section.get('id')
-								# sectionTargetIds: section.get('targetIds')
-								title: "Deactivate #{Term 'Section'}"
-								message: """
-									This will remove the #{Term 'section'} from the #{Term 'client'} 
-									#{Term 'plan'}, and future #{Term 'progress notes'}. 
-									It may be re-activated again later.
-								"""
-								reasonLabel: "Reason for deactivation:"									
-								disabled: @props.isReadOnly or @props.hasTargetChanged
-							},
-								FaIcon 'ban'
+				(if isExistingSection
+					if sectionStatus is 'default'
+						R.div({className: 'statusButtonGroup'},
+							WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
+								OpenDialogLink({
+									clientFile
+									className: 'statusButton'
+									dialog: ModifySectionStatusDialog
+									newStatus: 'deactivated'
+									sectionIndex: getSectionIndex section.get('id')
+									# sectionTargetIds: section.get('targetIds')
+									title: "Deactivate #{Term 'Section'}"
+									message: """
+										This will remove the #{Term 'section'} from the #{Term 'client'} 
+										#{Term 'plan'}, and future #{Term 'progress notes'}. 
+										It may be re-activated again later.
+									"""
+									reasonLabel: "Reason for deactivation:"									
+									disabled: @props.isReadOnly or @props.hasTargetChanged
+								},
+									FaIcon 'ban'
+								)
+							)
+							WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
+								OpenDialogLink({
+									clientFile
+									className: 'statusButton'
+									dialog: ModifySectionStatusDialog
+									newStatus: 'completed'
+									sectionIndex: getSectionIndex section.get('id')
+									# sectionTargetIds: section.get('targetIds')
+									title: "Complete #{Term 'Section'}"
+									message: """
+										This will set the #{Term 'section'} as 'completed'. This often 
+										means that the desired outcome has been reached.
+									"""
+									reasonLabel: "Reason for completion:"
+									disabled: @props.isReadOnly or @props.hasTargetChanged
+								},
+									FaIcon 'check'
+								)
 							)
 						)
-						WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
-							OpenDialogLink({
-								clientFile
-								className: 'statusButton'
-								dialog: ModifySectionStatusDialog
-								newStatus: 'completed'
-								sectionIndex: getSectionIndex section.get('id')
-								# sectionTargetIds: section.get('targetIds')
-								title: "Complete #{Term 'Section'}"
-								message: """
-									This will set the #{Term 'section'} as 'completed'. This often 
-									means that the desired outcome has been reached.
-								"""
-								reasonLabel: "Reason for completion:"
-								disabled: @props.isReadOnly or @props.hasTargetChanged
-							},
-								FaIcon 'check'
+					else 
+						R.div({className: 'statusButtonGroup'},
+							WithTooltip({title: "Reactivate #{Term 'Section'}", placement: 'top', container: 'body'},
+								OpenDialogLink({
+									clientFile
+									className: 'statusButton'
+									dialog: ModifySectionStatusDialog
+									newStatus: 'default'
+									sectionIndex: getSectionIndex section.get('id')
+									# sectionTargetIds: section.get('targetIds')
+									title: "Reactivate #{Term 'Section'}"
+									message: """
+										This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'} 
+										#{Term 'plan'}, and future #{Term 'progress notes'}. 
+									"""
+									reasonLabel: "Reason for reactivation:"									
+									disabled: @props.isReadOnly or @props.hasTargetChanged
+								},
+									FaIcon 'sign-in'
+								)
 							)
+						)
+				else
+					R.div({className: 'statusButtonGroup'},
+						R.div({
+							className: 'statusButton'
+							onClick: @props.onRemoveNewSection
+						},
+							FaIcon 'times'
 						)
 					)
-				else 
-					R.div({className: 'statusButtonGroup'},
-						WithTooltip({title: "Reactivate #{Term 'Section'}", placement: 'top', container: 'body'},
-							OpenDialogLink({
-								clientFile
-								className: 'statusButton'
-								dialog: ModifySectionStatusDialog
-								newStatus: 'default'
-								sectionIndex: getSectionIndex section.get('id')
-								# sectionTargetIds: section.get('targetIds')
-								title: "Reactivate #{Term 'Section'}"
-								message: """
-									This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'} 
-									#{Term 'plan'}, and future #{Term 'progress notes'}. 
-								"""
-								reasonLabel: "Reason for reactivation:"									
-								disabled: @props.isReadOnly or @props.hasTargetChanged
-							},
-								FaIcon 'sign-in'
-							)
-						)
-					)
+				)
+
 			)
 			
 
