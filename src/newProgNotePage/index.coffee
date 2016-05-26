@@ -272,6 +272,7 @@ load = (win, {clientFileId}) ->
 									Imm.fromJS {
 										id: section.get 'id'
 										name: section.get 'name'
+										status: section.get 'status'
 										targets: section.get 'targetIds'										
 										.filter (targetId) =>
 											target = planTargetsById.get targetId
@@ -803,11 +804,22 @@ load = (win, {clientFileId}) ->
 		_save: ->
 			@setState {isLoading: true}
 
-			progNoteId = null			
+			# Strip out section status from 'plan' units, not needed in dataModel
+			progNoteUnits = @state.progNote.get('units').map (unit) ->			
+				if unit.get('type') is 'plan'
+					return unit.set 'sections', unit.get('sections').map (section) ->
+						section.delete('status')
+				else
+					return unit
+
+			progNote = @state.progNote.set 'units', progNoteUnits
+
+
+			progNoteId = null
 
 			Async.series [
 				(cb) =>
-					ActiveSession.persist.progNotes.create @state.progNote, (err, obj) =>
+					ActiveSession.persist.progNotes.create progNote, (err, obj) =>
 						if err
 							cb err
 							return
