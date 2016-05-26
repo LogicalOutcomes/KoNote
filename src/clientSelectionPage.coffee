@@ -335,6 +335,7 @@ load = (win) ->
 									unless noData
 										OpenDialogLink({
 											className: 'input-group-btn'
+											ref: 'openCreateClientSmall'
 											dialog: CreateClientFileDialog
 											programs: @props.programs
 										},
