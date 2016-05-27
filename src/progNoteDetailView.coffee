@@ -149,8 +149,6 @@ load = (win) ->
 				entry.get('backdate') or entry.get('timestamp')
 			.reverse()
 
-			console.info "itemDescription", itemDescription
-
 			return R.div({className: 'progNoteDetailView'},
 				R.div({className: 'itemDetails'},
 					R.div({},
