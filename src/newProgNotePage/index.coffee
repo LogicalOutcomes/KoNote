@@ -267,12 +267,14 @@ load = (win, {clientFileId}) ->
 								type: 'plan'
 								id: unit.get 'id'
 								name: unit.get 'name'
-								sections: clientFile.getIn(['plan', 'sections']).map (section) =>
+								sections: clientFile.getIn(['plan', 'sections'])
+								.filter (section) => section.get('status') is 'default'
+								.map (section) =>
 
 									Imm.fromJS {
 										id: section.get 'id'
 										name: section.get 'name'
-										targets: section.get('targetIds')
+										targets: section.get 'targetIds'										
 										.filter (targetId) =>
 											target = planTargetsById.get targetId
 											lastRev = target.last()
@@ -296,7 +298,8 @@ load = (win, {clientFileId}) ->
 														value: ''
 													}
 											}
-									}
+									}								
+								.filter (section) => not section.get('targets').isEmpty()
 							}
 			}	
 
@@ -471,8 +474,8 @@ load = (win, {clientFileId}) ->
 									},
 										R.h1({className: 'unitName'}, unit.get 'name')
 										R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
-											"This is empty because 
-											the client has no #{Term 'plan'} #{Term 'sections'}."
+											"This is empty because the client has no active 
+											#{Term 'plan'} #{Term 'sections'} or #{Term 'targets'}."
 										)
 										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
@@ -801,7 +804,7 @@ load = (win, {clientFileId}) ->
 		_save: ->
 			@setState {isLoading: true}
 
-			progNoteId = null			
+			progNoteId = null
 
 			Async.series [
 				(cb) =>

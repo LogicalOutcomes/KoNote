@@ -26,8 +26,6 @@ load = (win) ->
 			# Destroy it if already exists
 			if @slider? then @slider.slider('destroy')
 
-			console.log "Incoming timeSpan", @props.value
-
 			@slider = $(@refs.slider).slider({
 				enabled: true
 				tooltip: 'show'

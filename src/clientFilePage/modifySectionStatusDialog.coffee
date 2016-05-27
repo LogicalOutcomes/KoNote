@@ -67,6 +67,7 @@ load = (win) ->
 		_submit: ->
 			@refs.dialog.setIsLoading true
 
+
 			revisedPlan = @props.clientFile.get('plan')
 			.setIn(['sections', @props.sectionIndex, 'status'], @props.newStatus)
 			.setIn(['sections', @props.sectionIndex, 'statusReason'], @state.statusReason)
@@ -74,7 +75,7 @@ load = (win) ->
 			revisedClientFile = @props.clientFile.set 'plan', revisedPlan
 
 			ActiveSession.persist.clientFiles.createRevision revisedClientFile, (err, updatedClientFile) =>
-				@refs.dialog.setIsLoading false
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
 					if err instanceof Persist.IOError
@@ -88,6 +89,7 @@ load = (win) ->
 					return
 				
 				@props.onSuccess()
+
 
 	return ModifySectionStatusDialog
 

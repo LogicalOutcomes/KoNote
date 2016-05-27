@@ -238,17 +238,14 @@ load = (win) ->
 		componentDidMount: ->
 			@_refreshResults()
 
-			setTimeout(=>
-				# Show and focus this window
-				Window.show()
-				Window.focus()
+			# Show and focus this window
+			Window.show()
+			Window.focus()
 
-				# Fire 'loaded' event for loginPage to hide itself
-				global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
+			# Fire 'loaded' event for loginPage to hide itself
+			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
 
-				@_attachKeyBindings()
-				@refs.searchBox.focus()
-			, 250)
+			@_attachKeyBindings()
 
 		componentDidUpdate: (oldProps, oldState) ->
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
@@ -335,6 +332,7 @@ load = (win) ->
 									unless noData
 										OpenDialogLink({
 											className: 'input-group-btn'
+											ref: 'openCreateClientSmall'
 											dialog: CreateClientFileDialog
 											programs: @props.programs
 										},
@@ -350,6 +348,7 @@ load = (win) ->
 										className: 'searchBox form-control'
 										ref: 'searchBox'
 										type: 'text'
+										autoFocus: true
 										disabled: noData
 										placeholder:
 											unless noData

@@ -12,21 +12,8 @@ load = (win) ->
 
 	ExpandingTextArea = React.createFactory React.createClass
 		displayName: 'ExpandingTextArea'
-		mixins: [React.addons.PureRenderMixin]
-		componentDidMount: ->
-			@_resize()
-		_resize: ->
-			textareaDom = @refs.textarea
+		mixins: [React.addons.PureRenderMixin]		
 
-			# Reset height to 0
-			textareaDom.style.height = '0px'
-
-			# Calculate new height
-			minimumHeight = 54 # pixels
-			scrollableAreaHeight = textareaDom.scrollHeight
-			scrollableAreaHeight += 2 # to prevent scrollbar
-			newHeight = Math.max minimumHeight, scrollableAreaHeight
-			textareaDom.style.height = newHeight + 'px'
 		render: ->
 			return R.textarea({
 				className: "expandingTextAreaComponent form-control #{@props.className}"
@@ -38,6 +25,28 @@ load = (win) ->
 				value: @props.value
 				disabled: @props.disabled
 			})
+
+		componentDidMount: ->
+			@_resize()
+
+			setTimeout(=>
+				@_resize()
+			, 1000)
+
+		_resize: ->
+			return unless @refs.textarea?
+			textareaDom = @refs.textarea
+
+			# Reset height to 0
+			textareaDom.style.height = '0px'
+
+			# Calculate new height
+			minimumHeight = 54 # pixels
+			scrollableAreaHeight = textareaDom.scrollHeight
+			scrollableAreaHeight += 2 # to prevent scrollbar
+			newHeight = Math.max minimumHeight, scrollableAreaHeight
+			textareaDom.style.height = newHeight + 'px'
+
 		_onChange: (event) ->
 			@_resize()
 			@props.onChange event

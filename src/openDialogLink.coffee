@@ -62,7 +62,7 @@ load = (win) ->
 					@setState {isOpen: false}
 			}
 
-			props = _.extend(_.clone(@props), defaultProps)
+			props = _.extend({}, @props, defaultProps,)
 
 			return @props.dialog(props)
 
