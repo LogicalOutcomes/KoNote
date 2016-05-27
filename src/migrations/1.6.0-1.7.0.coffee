@@ -113,8 +113,9 @@ forEachFileIn = (parentDir, loopBody, cb) ->
 			if fileNames.length is 0 then console.warn "(no files to iterate over)"
 
 			Async.eachSeries fileNames, (fileName, cb) ->
-				# Skip .DS_Store & Thumbs.db files
-				if fileName in ['.DS_Store', 'Thumbs.db']
+				# Skip .DS_Store & Thumbs.db files, and known children folders
+				# TODO: Make this a regex check
+				if fileName in ['.DS_Store', 'Thumbs.db', 'progEvents', 'planTargets', 'progNotes']
 					console.warn "Skipping #{fileName}"
 					cb()
 					return
@@ -371,31 +372,39 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 
 addClientFilePlanSectionStatusField = (dataDir, globalEncryptionKey, cb) ->
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
-		clientFileObjectPath = Path.join(dataDir, 'clientFiles', clientFile)
-		clientFileObject = null
+		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
+		
+		forEachFileIn clientFileDirPath, (clientFileRev, cb) ->
+			clientFileRevPath = Path.join(clientFileDirPath, clientFileRev)
+			clientFileRevObject = null
+ 
+			Async.series [
+				(cb) =>
+					# Read and decrypt ClientFile object
+					Fs.readFile clientFileRevPath, (err, result) ->
+						if err
+							cb err
+							return
 
-		Async.series [
-			(cb) =>
-				# Read and decrypt ClientFile object
-				Fs.readFile clientFileObjectPath, (err, result) ->
-					if err
-						cb err
-						return
+						clientFileRevObject = Imm.fromJS(JSON.parse globalEncryptionKey.decrypt result)
+						cb()
+				(cb) =>
+					# Add 'default' status to every section
+					planSections = clientFileRevObject.getIn(['plan', 'sections']).map (section) ->						
+						return section.set 'status', 'default'
 
-					clientFileObject = Imm.fromJS JSON.parse globalEncryptionKey.decrypt result
-					cb()
-			(cb) =>
-				# Map over plan units
-				planSections = clientFileObject.getIn(['plan', 'sections').map (section) ->
-					console.log "section", section
-					return section.set('status', 'default')
+					clientFileRevObject = clientFileRevObject
+					.setIn(['plan', 'sections'], planSections)
+					.toJS()
 
-				clientFileObject = clientFileObject.setIn(['plan', 'sections'], planSections)
-				encryptedObject = globalEncryptionKey.encrypt JSON.stringify clientFileObject.toJS()
+					console.log "clientFileRevObject", clientFileRevObject
 
-				Fs.writeFile clientFileObjectPath, encryptedObject, cb			
-		], cb
+					encryptedObject = globalEncryptionKey.encrypt(JSON.stringify clientFileRevObject)
 
+					Fs.writeFile clientFileRevPath, encryptedObject, cb
+			], cb
+
+		, cb
 	, (err) ->
 		if err
 			console.info "Problem with planSections status"
@@ -434,8 +443,6 @@ module.exports = {
 
 				globalEncryptionKey = result
 				cb()
-
-		console.log "migrationSeries", migrationSeries
 
 		# Execute the series
 		Async.series migrationSeries, (err) ->
