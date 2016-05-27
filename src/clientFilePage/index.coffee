@@ -193,11 +193,13 @@ load = (win, {clientFileId}) ->
 						# lazyloading
 						progNoteTotal = results.size
 						progNoteHeaders = results
+						###
 						.sortBy (header) ->
 							createdAt = header.get('backdate') or header.get('timestamp')
 							return Moment createdAt, Persist.TimestampFormat
 						.reverse()
 						.slice(@state.headerIndex, @state.headerIndex+10)
+						###
 						cb()
 
 				(cb) =>
