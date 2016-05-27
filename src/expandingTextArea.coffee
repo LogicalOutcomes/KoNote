@@ -34,6 +34,7 @@ load = (win) ->
 			, 1000)
 
 		_resize: ->
+			return unless @refs.textarea?
 			textareaDom = @refs.textarea
 
 			# Reset height to 0
