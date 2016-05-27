@@ -884,8 +884,9 @@ load = (win) ->
 			} = @props
 
 			# Figure out whether already exists in plan
-			isExistingSection = clientFile.getIn(['plan','sections']).contains(section)
-
+			isExistingSection = clientFile.getIn(['plan','sections'])
+			.find((obj) => obj.get('id') == section.get('id'))
+		
 			return R.div({
 				className: [
 					'sectionHeader'
