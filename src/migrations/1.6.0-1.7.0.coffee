@@ -369,6 +369,40 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 
 # //////////////// Version-Specific Utilities /////////////////
 
+addClientFilePlanSectionStatusField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFileObjectPath = Path.join(dataDir, 'clientFiles', clientFile)
+		clientFileObject = null
+
+		Async.series [
+			(cb) =>
+				# Read and decrypt ClientFile object
+				Fs.readFile clientFileObjectPath, (err, result) ->
+					if err
+						cb err
+						return
+
+					clientFileObject = Imm.fromJS JSON.parse globalEncryptionKey.decrypt result
+					cb()
+			(cb) =>
+				# Map over plan units
+				planSections = clientFileObject.getIn(['plan', 'sections').map (section) ->
+					console.log "section", section
+					return section.set('status', 'default')
+
+				clientFileObject = clientFileObject.setIn(['plan', 'sections'], planSections)
+				encryptedObject = globalEncryptionKey.encrypt JSON.stringify clientFileObject.toJS()
+
+				Fs.writeFile clientFileObjectPath, encryptedObject, cb			
+		], cb
+
+	, (err) ->
+		if err
+			console.info "Problem with planSections status"
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
 
 # ////////////////////// Migration Series //////////////////////
 
@@ -377,8 +411,12 @@ module.exports = {
 	run: (dataDir, userName, password, lastMigrationStep, cb) ->
 		globalEncryptionKey = null
 
+		# This is where we add the migration series steps
 		migrationSeries = [
-			
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "1. Add 'status': 'default' property to all plan sections"
+				addClientFilePlanSectionStatusField dataDir, globalEncryptionKey, cb
 		]
 
 
