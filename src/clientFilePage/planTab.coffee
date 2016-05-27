@@ -802,7 +802,7 @@ load = (win) ->
 								PlanTarget({
 									currentRevision: currentTargetRevisionsById.get targetId
 									metricsById
-									hasTargetChanged: hasTargetChanged(targetId) or planTargetsById.has(targetId)
+									hasTargetChanged: hasTargetChanged targetId
 									key: targetId
 									isActive: targetId is selectedTargetId
 									isExistingTarget: planTargetsById.has(targetId)
@@ -898,7 +898,6 @@ load = (win) ->
 			},
 				R.div({className: 'sectionName'},
 					section.get('name')
-
 				)
 				R.div({className: 'btn-group btn-group-sm'},
 					R.button({
@@ -917,8 +916,6 @@ load = (win) ->
 						"Add #{Term 'target'}"
 					)
 				)
-
-				# SECTION STATUS BUTTONS   >>>>>>>>>> target = @props.planTargetsById.get(targetId, null)
 
 				(if isExistingSection
 					if sectionStatus is 'default'
