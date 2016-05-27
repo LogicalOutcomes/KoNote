@@ -88,23 +88,23 @@ load = (win) ->
 				console.log "Not set up, redirecting to installation page..."				
 				@setState {isSetUp: false}
 
-				newInstallationWindow = openWindow {
-					page: 'newInstallation'
-				}
+				openWindow {page: 'newInstallation'}, (newInstallationWindow) =>
+					# Hide loginPage while installing
+					Window.hide()
 
-				Window.hide()
-
-				newInstallationWindow.on 'closed', (event) =>
-					if global.isSetUp
-						# Successfully installed, show login with isNewSetUp
-						@setState {
-							isSetUp: true
-							isNewSetUp: true
-						}
-						Window.show()
-					else
-						# Didn't complete installation, so close
-						@props.closeWindow()
+					newInstallationWindow.on 'closed', (event) =>
+						if global.isSetUp
+							# Successfully installed, show login with isNewSetUp
+							@setState {
+								isSetUp: true
+								isNewSetUp: true
+							}
+							Window.show()
+						else
+							# Didn't complete installation, so close window and quit the app
+							@props.closeWindow()
+							console.log "About to quit..."
+							Window.quit()
 
 		_login: (userName, password) ->
 			# Start authentication process
@@ -144,22 +144,19 @@ load = (win) ->
 				global.ActiveSession = session
 
 				# Proceed to clientSelectionPage
-				clientSelectionPageWindow = openWindow {
-					page: 'clientSelection'
-				}
+				openWindow {page: 'clientSelection'}, (clientSelectionPageWindow) =>
+					# Hide loginPage once loaded
+					global.ActiveSession.persist.eventBus.once 'clientSelectionPage:loaded', =>
+						@setState => {
+							isLoading: false
+							loadingMessage: ""
+						}
+						Window.hide()
 
-				# Listen for the clientSelectionPage 'loaded' event
-				global.ActiveSession.persist.eventBus.once 'clientSelectionPage:loaded', =>
-					@setState => {
-						isLoading: false
-						loadingMessage: ""
-					}
-
-					Window.hide()
-
-				# Make sure to close loginPage when clientSelectionPage is closed
-				clientSelectionPageWindow.on 'closed', =>
-					@props.closeWindow()
+					# Make sure to close loginPage when clientSelectionPage is closed
+					clientSelectionPageWindow.on 'closed', =>
+						@props.closeWindow()
+						Window.quit()
 
 
 	LoginPageUi = React.createFactory React.createClass
@@ -176,13 +173,7 @@ load = (win) ->
 
 			if @props.isNewSetUp
 				@setState {userName: 'admin'}
-				setTimeout(=>
-					@refs.passwordField.focus()
-				, 100)
-			else
-				setTimeout(=>
-					@refs.userNameField.focus()
-				, 100)
+				@refs.passwordField.focus()
 
 		onLoginError: (type) ->
 			switch type
@@ -242,6 +233,7 @@ load = (win) ->
 						R.div({className: 'form-group'},
 							R.input({
 								className: 'form-control'
+								autoFocus: true
 								ref: 'userNameField'
 								onChange: @_updateUserName
 								onKeyDown: @_onEnterKeyDown
@@ -262,11 +254,11 @@ load = (win) ->
 							})
 						)
 						R.div({className: 'btn-toolbar'},
-							#TODO: password reminder
-#							R.button({
-#								className: 'btn btn-link'
-#								onClick: @_forgotPassword
-#							}, "Forgot Password?")
+							## TODO: Password reminder
+							# R.button({
+							# 	className: 'btn btn-link'
+							# 	onClick: @_forgotPassword
+							# }, "Forgot Password?")
 							R.button({
 								className: [
 									'btn'

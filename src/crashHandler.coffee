@@ -22,6 +22,11 @@ load = (win) ->
 	{FaIcon} = require('./utils').load(win)
 
 	handle = (err) ->
+		# Show NW window, in case it's still hidden
+		# Exclude loginPage, since it's meant to be hidden
+		if not win.pageParameters.page is 'login' and global.ActiveSession?
+			nwWin.show()
+		
 		# Record where this function was actually called from.
 		# Sometimes this additional info is useful, because async calls often
 		# obscure what caused an error.

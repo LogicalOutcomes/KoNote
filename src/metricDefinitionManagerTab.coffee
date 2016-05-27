@@ -29,6 +29,48 @@ load = (win) ->
 		displayName: 'MetricDefinitionManagerTab'
 		mixins: [React.addons.PureRenderMixin]
 
+		getInitialState: -> {
+			metricDefinitions: null
+		}
+
+		componentWillMount: ->
+			metricDefinitionHeaders = null
+			metricDefinitions = null
+
+			Async.series [
+				(cb) =>							
+					ActiveSession.persist.metrics.list (err, result) =>
+						if err
+							cb err
+							return
+
+						metricDefinitionHeaders = result
+						cb()
+				(cb) =>
+					Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
+						metricDefinitionId = metricDefinitionHeader.get('id')
+						ActiveSession.persist.metrics.readLatestRevisions metricDefinitionId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						metricDefinitions = Imm.List(results)
+						.map (metricDefinition) -> stripMetadata metricDefinition.first()
+
+						cb()
+			], (err) =>
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+
+					CrashHandler.handle err
+					return
+
+				# Successfully loaded metric definitions
+				@setState {metricDefinitions}
+
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
 
@@ -38,7 +80,7 @@ load = (win) ->
 				)
 				R.div({className: 'main'},
 					OrderableTable({
-						tableData: @props.metricDefinitions
+						tableData: @state.metricDefinitions
 						noMatchesMessage: "No #{Term 'metrics'} defined yet"
 						sortByData: ['name']
 						columns: [
@@ -69,6 +111,9 @@ load = (win) ->
 										text: null
 										icon: 'wrench'
 										dialog: ModifyMetricDialog
+										data: {
+											onSuccess: @_onModifyMetric
+										}
 									}
 								]
 							}
@@ -79,12 +124,28 @@ load = (win) ->
 					OpenDialogLink({
 						className: 'btn btn-lg btn-primary'
 						dialog: DefineMetricDialog
+						onSuccess: @_onCreateMetric
 					},
 						FaIcon('plus')
 						" New #{Term 'Metric'} Definition"
 					)
 				)
 			)
+
+		_onModifyMetric: (revisedMetric) ->
+			originalMetric = @state.metricDefinitions.find (metric) ->
+				metric.get('id') is revisedMetric.get('id')
+
+			index = @state.metricDefinitions.indexOf originalMetric
+
+			console.log "index", index
+
+			metricDefinitions = @state.metricDefinitions.set index, revisedMetric
+			@setState {metricDefinitions}
+
+		_onCreateMetric: (createdMetric) ->
+			metricDefinitions = @state.metricDefinitions.push createdMetric
+			@setState {metricDefinitions}
 
 	ModifyMetricDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -173,8 +234,7 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				# New revision caught by page listeners
-				@props.onSuccess()
+				@props.onSuccess(result)
 
 
 	return MetricDefinitionManagerTab

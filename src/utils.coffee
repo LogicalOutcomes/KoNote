@@ -2,29 +2,12 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0 
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+Moment = require 'moment'
+
+{TimestampFormat} = require './persist'
 Config = require './config'
 _ = require 'underscore'
-
-# This class allows new error types to be created easily without breaking stack
-# traces, toString, etc.
-#
-# Example:
-# 	class MyError extends CustomError
-#
-# MyError will accept a single, optional argument `message`.
-#
-# Example:
-# 	class MyError2 extends CustomError
-# 		constructor: (message, anotherArgument) ->
-# 			super message # must call superclass constructor
-# 			@anotherArgument = anotherArgument
-#
-# MyError2 will accept two mandatory arguments: `message` and `anotherArgument`.
-class CustomError extends Error
-	constructor: (message) ->
-		@name = @constructor.name
-		@message = message
-		Error.captureStackTrace @, @constructor
+{CustomError} = require './persist/utils'
 
 load = (win) ->
 	$ = win.jQuery
@@ -54,15 +37,15 @@ load = (win) ->
 		return R.i(properties)
 
 	# A convenience method for opening a new window
-	openWindow = (params) ->
-		Gui.Window.open 'main.html?' + $.param(params), {
+	# Callback function (optional) provides window context as argument
+	openWindow = (params, cb=(->)) ->
+		Gui.Window.open 'src/main.html?' + $.param(params), {
 			focus: false
 			show: false
-			toolbar: false
 			width: 1000
 			height: 700
-			icon: "icon.png"
-		}
+			icon: "src/icon.png"
+		}, cb
 
 	renderName = (name) ->
 		result = []
@@ -122,6 +105,12 @@ load = (win) ->
 		.delete('author')
 		.delete('timestamp')
 
+	formatTimestamp = (timestamp) ->
+		return Moment(timestamp, TimestampFormat).format('Do MMM, YYYY [at] h:mma')
+
+	capitalize = (word) ->
+    return word.charAt(0).toUpperCase() + word.slice(1)
+
 	# Ensures that `text` does not exceed `maxLength` by replacing excess
 	# characters with an ellipsis character.
 	truncateText = (maxLength, text) ->
@@ -140,7 +129,9 @@ load = (win) ->
 		renderFileId
 		showWhen
 		stripMetadata
-		truncateText
+		formatTimestamp
+		capitalize
+		truncateText		
 	}
 
 module.exports = {

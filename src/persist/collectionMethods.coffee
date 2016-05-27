@@ -70,6 +70,15 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 	# A cache for remembering the results of list operations on this collection
 	listCache = new Cache(5000) # 5-second expiry
 
+	# Derive a (weak) encryption key to be used on file names.
+	# File name encryption uses a different type of encryption key.
+	# That key is generated here for convenience.
+	#
+	# The weak key is derived from globalEncryptionKey.
+	# Security level 5 is used, i.e. 5 bytes of overhead
+	# (see persist/crypto for details).
+	fileNameEncryptionKey = new Crypto.WeakSymmetricEncryptionKey(session.globalEncryptionKey, 5)
+
 	# Define a series of methods that this collection API will (or might) contain.
 	# These methods correspond to what is documented in the wiki.
 	# See the wiki for instructions on their use.
@@ -107,11 +116,10 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		.set 'author', obj.get('author') or session.userName
 		.set 'timestamp', obj.get('timestamp') or Moment().format(TimestampFormat)
 
-		fileNameEncryptionKey = getFileNameEncryptionKey()
-
 		destObjDir = null
 		objDir = null
 		objDirOp = null
+		header = null
 
 		Async.series [
 			(cb) ->
@@ -124,14 +132,14 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 						return
 
 					# Generate this object's future directory name
-					fileName = createObjectFileName(obj, modelDef.indexes)
-					encryptedFileName = Base64url.encode fileNameEncryptionKey.encrypt fileName
+					header = encodeObjectHeader(obj, modelDef.indexes)
+					fileName = Base64url.encode fileNameEncryptionKey.encrypt header
 
 					# Generate this object's future directory path
 					destObjDir = Path.join(
 						parentDir
 						modelDef.collectionName
-						encryptedFileName
+						fileName
 					)
 
 					cb()
@@ -162,13 +170,13 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				# Create the first revision of this new object
 
 				# Generate the revision file name and path
-				revFileName = createRevisionFileName(obj)
-				encryptedRevFileName = Base64url.encode fileNameEncryptionKey.encrypt revFileName
+				revHeader = encodeObjectRevisionHeader(obj)
+				revFileName = Base64url.encode fileNameEncryptionKey.encrypt revHeader
 
 				# The revision file will go in the object directory
-				revFilePath = Path.join(objDir, encryptedRevFileName)
+				revFilePath = Path.join(objDir, revFileName)
 
-				writeObjectFile obj, revFilePath, contextualIds, cb
+				writeObjectRevisionFile obj, revFilePath, contextualIds, cb
 			(cb) ->
 				# Done preparing the object directory, finish the operation atomically
 				objDirOp.commit cb
@@ -176,6 +184,11 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			if err
 				cb err
 				return
+
+			# Update list cache to include new object
+			listCache.update getListCacheKey(contextualIds), (oldHeaders) ->
+				# Add header of this new object to cached list
+				return oldHeaders.push decodeObjectHeader(header, modelDef.indexes, destObjDir)
 
 			# Dispatch event via event bus, notifying the app of the change
 			eventBus.trigger "create:#{modelDef.name}", obj
@@ -191,13 +204,11 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			return
 
 		# Check cache
-		cacheKey = contextualIds.join('::') # IDs never contain colons
+		cacheKey = getListCacheKey(contextualIds)
 		cachedResult = listCache.get(cacheKey)
 		if cachedResult?
 			cb null, cachedResult
 			return
-
-		fileNameEncryptionKey = getFileNameEncryptionKey()
 
 		collectionDir = null
 		fileNames = null
@@ -230,7 +241,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				return
 
 			# Decrypt/parse the file names
-			result = Imm.List(fileNames)
+			headers = Imm.List(fileNames)
 				.filter isValidFileName
 				.map (fileName) ->
 					# Decrypt file name
@@ -239,24 +250,15 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					)
 
 					# Parse file name
-					[indexValues..., id] = decodeFileName(decryptedFileName, modelDef.indexes.length + 1)
-
-					# Prepare this entry in the results list
-					result = Imm.Map({
-						id: Base64url.encode id
-						_dirPath: Path.join(collectionDir, fileName) # for internal use only
-					})
-
-					# Use model def to match up the indexed field names with their values
-					for indexedProp, i in modelDef.indexes
-						result = result.setIn indexedProp, indexValues[i].toString()
-
-					return result
+					return decodeObjectHeader(
+						decryptedFileName, modelDef.indexes,
+						Path.join(collectionDir, fileName)
+					)
 
 			# Store result in cache
-			listCache.set(cacheKey, result)
+			listCache.set(cacheKey, headers)
 
-			cb null, result
+			cb null, headers
 
 	read = (contextualIds..., id, cb) ->
 		# API user must provide enough IDs to figure out where this collection
@@ -301,7 +303,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				revisionFilePath = Path.join(objDir, revisionFile)
 
 				# Read the only revision
-				readObjectFile revisionFilePath, contextualIds, id, cb
+				readObjectRevisionFile revisionFilePath, contextualIds, id, cb
 
 	createRevision = (obj, cb) ->
 		# The object should already have been created, so it should already
@@ -309,6 +311,8 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		unless obj.has('id')
 			cb new Error "missing property 'id'"
 			return
+
+		objId = obj.get('id')
 
 		# Use the model definition to determine what IDs are needed to figure
 		# out where this object's collection is located.
@@ -320,14 +324,12 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		.set 'author', session.userName
 		.set 'timestamp', Moment().format(TimestampFormat)
 
-		fileNameEncryptionKey = getFileNameEncryptionKey()
-
 		objDir = null
 
 		Async.series [
 			(cb) ->
 				# Find where this object's directory is located
-				lookupObjDirById contextualIds, obj.get('id'), (err, result) ->
+				lookupObjDirById contextualIds, objId, (err, result) ->
 					if err
 						cb err
 						return
@@ -335,40 +337,39 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					objDir = result
 					cb()
 			(cb) ->
-				# Encrypt a file name for this revision
-				revFileName = createRevisionFileName(obj)
-				encryptedRevFileName = Base64url.encode fileNameEncryptionKey.encrypt revFileName
-
-				revFilePath = Path.join(objDir, encryptedRevFileName)
+				# Determine file name and path for this revision
+				revHeader = encodeObjectRevisionHeader(obj)
+				revFileName = Base64url.encode fileNameEncryptionKey.encrypt revHeader
+				revFilePath = Path.join(objDir, revFileName)
 
 				# Write the revision to a file
-				writeObjectFile obj, revFilePath, contextualIds, cb
+				writeObjectRevisionFile obj, revFilePath, contextualIds, cb
 			(cb) ->
 				# When an indexed property changes, we need to rename the object directory
 				# so that the change shows up when `list()` is used.
 
 				parentDirPath = Path.dirname objDir
 
-				# We expect this to be the object directory name when it is decrypted
-				expectedDecryptedDirName = createObjectFileName(obj, modelDef.indexes)
+				# This is what the object header should be when we're done.
+				expectedHeader = encodeObjectHeader(obj, modelDef.indexes)
 
-				# Decrypt the current directory name
-				currentEncryptedDirName = Path.basename objDir
-				currentDecryptedDirName = fileNameEncryptionKey.decrypt(
-					Base64url.toBuffer currentEncryptedDirName
+				# Decrypt the current header
+				currentDirName = Path.basename objDir
+				currentHeader = fileNameEncryptionKey.decrypt(
+					Base64url.toBuffer currentDirName
 				)
 
-				# Does the current name match what we expected?
-				if BufferEq(expectedDecryptedDirName, currentDecryptedDirName)
+				# Does the current header match what we want?
+				if BufferEq(expectedHeader, currentHeader)
 					# OK, no update needed
 					cb()
 					return
 
-				# But sometimes expectations don't meet reality.
+				# Expectations didn't meet reality, so we gotta fix it.
 
-				# Take the expected dir name, encrypt it
-				currentDirPath = Path.join(parentDirPath, currentEncryptedDirName)
-				newDirName = Base64url.encode fileNameEncryptionKey.encrypt expectedDecryptedDirName
+				# Take the expected header, encrypt it
+				currentDirPath = Path.join(parentDirPath, currentDirName)
+				newDirName = Base64url.encode fileNameEncryptionKey.encrypt expectedHeader
 				newDirPath = Path.join(parentDirPath, newDirName)
 
 				# Rename the object directory to the new encrypted name
@@ -377,6 +378,15 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					if err
 						cb new IOError err
 						return
+
+					# Update list cache to reflect new objDir name
+					listCache.update getListCacheKey(contextualIds), (oldHeaders) ->
+						return oldHeaders.map (oldHeader) ->
+							if oldHeader.get('id') != objId
+								return oldHeader
+
+							# Replace this old header with the new updated header
+							return decodeObjectHeader(expectedHeader, modelDef.indexes, objDir)
 
 					cb()
 		], (err) ->
@@ -395,8 +405,6 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		if contextualIds.length isnt context.size
 			cb new Error "wrong number of arguments"
 			return
-
-		fileNameEncryptionKey = getFileNameEncryptionKey()
 
 		objDir = null
 		revisions = null
@@ -427,17 +435,16 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 						# Ensure validFileName first
 						return isValidFileName(fileName) and not childCollectionNames.contains(fileName)
 					.map (fileName) ->
-						# Decrypt the revision file name
-						decryptedFileName = fileNameEncryptionKey.decrypt(
+						# Decrypt the revision header
+						encodedRevisionHeader = fileNameEncryptionKey.decrypt(
 							Base64url.toBuffer fileName
 						)
 
-						# Parse the revision file name, and add some fields for
-						# internal use
-						revision = parseRevisionFileName(decryptedFileName)
+						# Parse the revision header, and add some fields for internal use
+						revisionHeader = decodeObjectRevisionHeader(encodedRevisionHeader)
 							.set('_fileName', fileName)
 							.set('_filePath', Path.join(objDir, fileName))
-						return revision
+						return revisionHeader
 					# Sort the results from earliest to latest
 					.sortBy (rev) -> Moment(rev.get('timestamp'), TimestampFormat)
 
@@ -468,7 +475,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 			# Read the revision files one-by-one
 			Async.map revisions.toArray(), (rev, cb) ->
-				readObjectFile rev.get('_filePath'), contextualIds, id, cb
+				readObjectRevisionFile rev.get('_filePath'), contextualIds, id, cb
 			, (err, results) ->
 				if err
 					cb err
@@ -504,7 +511,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 			# Read only those revision files
 			Async.map revisions.toArray(), (rev, cb) ->
-				readObjectFile rev.get('_filePath'), contextualIds, id, cb
+				readObjectRevisionFile rev.get('_filePath'), contextualIds, id, cb
 			, (err, results) ->
 				if err
 					cb err
@@ -513,6 +520,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				cb null, Imm.List(results)
 
 	# Private utility methods
+
+	getListCacheKey = (contextualIds) ->
+		return contextualIds.join('::') # IDs never contain colons
 
 	# Extract from `obj` the ID field for every ancestor object.
 	#
@@ -587,12 +597,12 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			# Return the object directory path
 			cb null, match.get('_dirPath')
 
-	# Read the object file at the specified path.
+	# Read the object revision file at the specified path.
 	#
 	# This function decrypts the object data, parses the JSON, and validates
 	# the object against the collection schema.  The object's ID and context
 	# fields are also validated for security purposes.
-	readObjectFile = (path, contextualIds, id, cb) ->
+	readObjectRevisionFile = (path, contextualIds, id, cb) ->
 		# Get this collection's schema
 		schema = prepareSchema modelDef.schema, context
 
@@ -638,12 +648,12 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 			cb null, Imm.fromJS validation.value
 
-	# Write an object file to the specified path.
+	# Write an object revision file to the specified path.
 	#
 	# This function will encode and encrypt the object.  Before doing so,
 	# however, it will add information about the object's context, and validate
 	# the object against this collection's schema.
-	writeObjectFile = (obj, path, contextualIds, cb) ->
+	writeObjectRevisionFile = (obj, path, contextualIds, cb) ->
 		# Get this collection's schema
 		schema = prepareSchema modelDef.schema, context
 
@@ -678,14 +688,6 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				return
 
 			cb null, obj
-
-	# File name encryption uses a different type of encryption key.
-	# That key is generated here for convenience.
-	getFileNameEncryptionKey = ->
-		# Derive the weak key from globalEncryptionKey.
-		# Use security level 5, i.e. 5 bytes of overhead
-		# (see persist/crypto for details).
-		return new Crypto.WeakSymmetricEncryptionKey(session.globalEncryptionKey, 5)
 
 	# Build and return the actual collection API, using the previously defined methods
 	result = {
@@ -731,7 +733,7 @@ prepareSchema = (schema, context) ->
 	# Extend the original set of permissible keys
 	return schema.keys(newKeys)
 
-createObjectFileName = (obj, indexes) ->
+encodeObjectHeader = (obj, indexes) ->
 	components = []
 
 	for index in indexes
@@ -743,31 +745,46 @@ createObjectFileName = (obj, indexes) ->
 	# essentially base64url.
 	components.push Base64url.toBuffer obj.get('id')
 
-	return encodeFileName components
+	return encodeHeader components
 
-parseRevisionFileName = (decryptedFileName) ->
-	# Revision file names are encoded the same as object directory names.
-	# The only difference is that revision file names are always just
+decodeObjectHeader = (header, indexes, dirPath) ->
+	[indexValues..., id] = decodeHeader(header, indexes.length + 1)
+
+	result = Imm.Map({
+		id: Base64url.encode id
+		_dirPath: dirPath # for internal use only
+	})
+
+	# Use model def to match up the indexed field names with their values
+	for indexedProp, i in indexes
+		result = result.setIn indexedProp, indexValues[i].toString()
+
+	return result
+
+encodeObjectRevisionHeader = (obj) ->
+	return encodeHeader [
+		new Buffer(obj.get('timestamp'), 'utf8')
+		Base64url.toBuffer obj.get('revisionId') # decode revision ID to save space
+	]
+
+decodeObjectRevisionHeader = (header) ->
+	# Object revision headers are encoded the same as object headers.
+	# The difference is that revision headers are always just
 	# timestamp+revisionId, instead of having a variable number of index
-	# fields.  More precisely, revision file names always have exactly two
+	# fields.  More precisely, revision headers always have exactly two
 	# components: a timestamp and a revision ID.
-	[timestamp, revisionId] = decodeFileName(decryptedFileName, 2)
+	[timestamp, revisionId] = decodeHeader(header, 2)
 
 	return Imm.Map({
 		timestamp: timestamp.toString()
 		revisionId: Base64url.encode revisionId
 	})
 
-createRevisionFileName = (obj) ->
-	return encodeFileName [
-		new Buffer(obj.get('timestamp'), 'utf8')
-		Base64url.toBuffer obj.get('revisionId') # decode revision ID to save space
-	]
-
-# Since we want to include multiple strings in a single file name, an encoding
-# is needed.  Ideally, we would use JSON, but JSON is rather verbose.  Since
-# the file name will be encrypted, we're able to use arbitrary bytes.  We will
-# use an encoding with the following rules:
+# File names are used to store object and revision headers for efficient
+# retrieval.  Since a header consists of multiple strings, an encoding is
+# needed to fit them all into a single file name.  Ideally, we would use JSON,
+# but JSON is rather verbose.  Since the header will be encrypted, we're able
+# to use arbitrary bytes.  We will use an encoding with the following rules:
 # - The strings are first encoded as bytes as per UTF-8
 # - All byte values (0x00 - 0xFF) except 0x00 are output unchanged.
 # - 0x00 is encoded as 0x004C (i.e. a NUL byte followed by an ascii uppercase L).
@@ -778,7 +795,7 @@ createRevisionFileName = (obj) ->
 # This ensures that any string (or even any binary string) can be encoded and
 # decoded unambiguously.
 
-encodeFileName = (components) ->
+encodeHeader = (components) ->
 	delimiter = new Buffer([0x00, 0x53])
 
 	result = []
@@ -787,26 +804,26 @@ encodeFileName = (components) ->
 		if i > 0
 			result.push delimiter
 
-		encodedComp = encodeFileNameComponent(c)
+		encodedComp = encodeHeaderComponent(c)
 		result.push encodedComp
 
 	return Buffer.concat result
 
-decodeFileName = (fileName, componentCount) ->
+decodeHeader = (header, componentCount) ->
 	comps = []
 
-	nextComp = createZeroedBuffer(fileName.length)
+	nextComp = createZeroedBuffer(header.length)
 	nextCompOffset = 0
 	i = 0
-	while i < fileName.length
+	while i < header.length
 		# If the next byte is a special sequence
-		if fileName[i] is 0x00
-			# If no more bytes in the file name
-			if i is (fileName.length - 1)
+		if header[i] is 0x00
+			# If no more bytes in the header
+			if i is (header.length - 1)
 				# There must always be another byte following a dot
-				throw new Error "file name ended early: #{fileName.toJSON()}"
+				throw new Error "header ended early: #{header.toJSON()}"
 
-			switch fileName[i+1]
+			switch header[i+1]
 				when 0x4C # "L"
 					# Add literal NUL byte to component
 					nextComp[nextCompOffset] = 0x00
@@ -818,16 +835,16 @@ decodeFileName = (fileName, componentCount) ->
 					comps.push nextComp.slice(0, nextCompOffset)
 
 					# Reset for next component
-					nextComp = createZeroedBuffer(fileName.length)
+					nextComp = createZeroedBuffer(header.length)
 					nextCompOffset = 0
 				else
-					throw new Error "unexpected byte sequence at #{i} in file name: #{fileName.toJSON()}"
+					throw new Error "unexpected byte sequence at #{i} in header: #{header.toJSON()}"
 
 			# Skip over the next byte, since we already handled it
 			i += 2
 			continue
 
-		nextComp[nextCompOffset] = fileName[i]
+		nextComp[nextCompOffset] = header[i]
 		nextCompOffset += 1
 
 		i += 1
@@ -836,16 +853,16 @@ decodeFileName = (fileName, componentCount) ->
 	comps.push nextComp.slice(0, nextCompOffset)
 
 	if comps.length isnt componentCount
-		console.log fileName
-		throw new Error "expected #{componentCount} parts in file name #{JSON.stringify comps}"
+		console.log header
+		throw new Error "expected #{componentCount} parts in header #{JSON.stringify comps}"
 
 	return comps
 
 # In order to support arbitrary binary strings, this method encodes 0x00 bytes
 # as 0x004C.
-encodeFileNameComponent = (comp) ->
+encodeHeaderComponent = (comp) ->
 	unless Buffer.isBuffer comp
-		throw new Error "expected file name component to be a buffer"
+		throw new Error "expected header component to be a buffer"
 
 	literalNulByte = new Buffer([0x00, 0x4C])
 

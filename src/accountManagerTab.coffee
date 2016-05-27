@@ -19,7 +19,7 @@ load = (win) ->
 	Dialog = require('./dialog').load(win)
 	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
-	Spinner = require('./spinner').load(win)	
+	Spinner = require('./spinner').load(win)
 	{FaIcon, showWhen} = require('./utils').load(win)
 
 	AccountManagerTab = React.createFactory React.createClass
@@ -29,11 +29,11 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				openDialogId: null
-				userAccounts: Imm.List()
+				userAccounts: null
 				displayDeactivated: false
 			}
 
-		componentDidMount: ->
+		componentWillMount: ->
 			# Load Users' publicInfo, since it's not passed down from clientSelectionPage
 			userNames = null
 			userAccounts = null
@@ -74,7 +74,7 @@ load = (win) ->
 			userAccounts = @state.userAccounts
 
 			# Filter out deactivated accounts
-			unless @state.displayDeactivated
+			if userAccounts? and not @state.displayDeactivated
 				userAccounts = userAccounts.filter (userAccount) ->
 					userAccount.getIn(['publicInfo', 'isActive'])
 
@@ -371,7 +371,6 @@ load = (win) ->
 
 				newAccount = result
 				@props.onSuccess(newAccount)
-				@props.onCancel()
 
 	ResetPasswordDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]

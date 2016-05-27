@@ -2,11 +2,12 @@ Imm = require 'immutable'
 Faker = require 'faker'
 Async = require 'async'
 Moment = require 'moment'
+Fs = require 'fs'
 
 {Users, Persist, generateId} = require '../persist'
 Create = require './create'
 
-generateClientFile = (metrics, cb) ->
+generateClientFile = (metrics, template, cb) ->
 	console.group('Generated Client File')
 
 	clientFile = null
@@ -19,6 +20,7 @@ generateClientFile = (metrics, cb) ->
 
 	Async.series [
 		# Create the empty clientFile
+
 		(cb) ->
 			Create.clientFile (err, result) ->
 				if err
@@ -31,7 +33,7 @@ generateClientFile = (metrics, cb) ->
 
 		# Create planTargets
 		(cb) ->
-			Create.planTargets 5, {clientFile, metrics}, (err, results) ->
+			Create.planTargets template.planTargets, {clientFile, metrics}, (err, results) ->
 				if err
 					cb err
 					return
@@ -47,8 +49,9 @@ generateClientFile = (metrics, cb) ->
 
 			section = Imm.fromJS {
 				id: generateId()
-				name: "Aggression Section"
+				name: Faker.company.bsBuzz()
 				targetIds
+				status: 'default'
 			}
 
 			sections = Imm.List [section]
@@ -66,7 +69,7 @@ generateClientFile = (metrics, cb) ->
 
 		# Write a progNote, write a note and random metric for each target, in each section
 		(cb) ->
-			Create.progNotes 300, {clientFile, sections, planTargets, metrics}, (err, results) ->
+			Create.progNotes template.progNotes, {clientFile, sections, planTargets, metrics}, (err, results) ->
 				if err
 					cb err
 					return
@@ -78,7 +81,7 @@ generateClientFile = (metrics, cb) ->
 		# Create a # of progEvents for each progNote in the clientFile
 		(cb) ->
 			Async.map progNotes.toArray(), (progNote, cb) ->
-				Create.progEvents 3, {clientFile, progNote}, (err, results) ->
+				Create.progEvents template.progEvents, {clientFile, progNote}, (err, results) ->
 					if err
 						cb err
 						return
@@ -103,9 +106,9 @@ generateClientFile = (metrics, cb) ->
 		cb(null, clientFile)
 
 
-generateClientFiles = (quantity, metrics, cb) ->	
+generateClientFiles = (quantity, metrics, template, cb) ->	
 	Async.timesSeries quantity, (quantityPosition, cb) ->
-		generateClientFile(metrics, cb)
+		generateClientFile(metrics, template, cb)
 	, (err, results) ->
 		if err
 			cb err
@@ -115,10 +118,12 @@ generateClientFiles = (quantity, metrics, cb) ->
 		cb(null, clientFiles)
 
 
-runSeries = ->
+runSeries = (templateFileName) ->
 	# First tell the system that we're seeding, to prevent
 	# event-driven operations such opening a clientFile
 	global.isSeeding = true
+
+	template = null
 
 	clientFiles = null
 	programs = null
@@ -130,8 +135,22 @@ runSeries = ->
 	planTargets = null
 
 	Async.series [
+		(cb) -> 
+			Fs.readFile "./src/seeds/templates/#{templateFileName}.json", (err, result) -> 
+				if err
+					if err.code is "ENOENT"
+						console.error "#{templateFileName}: Template does not exist."
+
+					cb err
+					return
+
+				console.log JSON.parse(result)
+				template = JSON.parse(result)
+
+				cb()
+
 		(cb) ->
-			Create.accounts 0, (err, results) ->
+			Create.accounts template.accounts, (err, results) ->
 				if err
 					cb err
 					return
@@ -140,7 +159,7 @@ runSeries = ->
 				cb()
 
 		(cb) ->
-			Create.programs 2, (err, results) ->
+			Create.programs template.programs, (err, results) ->
 				if err
 					cb err
 					return
@@ -149,7 +168,7 @@ runSeries = ->
 				cb()		
 
 		(cb) ->
-			Create.eventTypes 3, (err, results) ->
+			Create.eventTypes template.eventTypes, (err, results) ->
 				if err
 					cb err
 					return
@@ -158,7 +177,7 @@ runSeries = ->
 				cb()		
 
 		(cb) ->
-			Create.metrics 4, (err, results) ->
+			Create.metrics template.metrics, (err, results) ->
 				if err
 					cb err
 					return
@@ -168,7 +187,7 @@ runSeries = ->
 
 		(cb) ->
 			console.group('Client Files')
-			generateClientFiles 5, metrics, (err, results) ->
+			generateClientFiles template.clientFiles, metrics, template, (err, results) ->
 				if err
 					cb err
 					return

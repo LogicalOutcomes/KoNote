@@ -24,6 +24,13 @@ load = (win) ->
 				isOpen: false
 			}
 
+		getDefaultProps: ->
+			return {
+				onClose: ->
+				onCancel: ->
+				onSuccess: ->
+			}
+
 		render: ->
 			return R.div({
 				className: @props.className
@@ -42,16 +49,20 @@ load = (win) ->
 			unless @state.isOpen
 				return R.div()
 
+			# Runs whatever prop function first, then closes the dialog
 			defaultProps = {
-				onClose: =>
+				onClose: (arg) =>
+					@props.onClose(arg)
 					@setState {isOpen: false}
-				onCancel: =>
+				onCancel: (arg) =>
+					@props.onCancel(arg)
 					@setState {isOpen: false}
-				onSuccess: =>
+				onSuccess: (arg) =>
+					@props.onSuccess(arg)
 					@setState {isOpen: false}
 			}
 
-			props = _.extend(defaultProps, @props)
+			props = _.extend({}, @props, defaultProps,)
 
 			return @props.dialog(props)
 

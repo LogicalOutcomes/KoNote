@@ -1,18 +1,17 @@
-var $ = require('jquery');
-var Fs = require('fs')
+var Fs = require('fs');
+var Imm = require('immutable');
 
-var Config = {};
+var Config = Imm.Map();
 
 // Ordered sequence of configuration overrides
-var configFileNames = ['default', 'customer', 'production', 'develop']
+var configFileNames = ['default', 'customer', 'production', 'develop'];
 
 // Loop over config files to build master config exports
-$.each(configFileNames, function (index, fileName) {
+configFileNames.forEach(function (fileName) {
 	try {
 		var configType = require('./'+fileName+'.json');
-		$.extend(true, Config, configType);
-	}
-	catch (err) {
+		Config = Config.mergeDeep(Imm.fromJS(configType));
+	} catch (err) {
 		if (err.code !== 'MODULE_NOT_FOUND') {
 			throw new Error(err);
 		}
@@ -20,6 +19,7 @@ $.each(configFileNames, function (index, fileName) {
 });
 
 // Read src version from package.json
-Config.version = JSON.parse(Fs.readFileSync('./package.json')).version;
+var packageJson = JSON.parse(Fs.readFileSync('./package.json'));
+Config = Config.set('version', packageJson.version);
 
-module.exports = Config;
+module.exports = Config.toJS();

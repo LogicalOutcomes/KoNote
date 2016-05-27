@@ -25,24 +25,10 @@ privKeyV1Prefix = 'privkey-v1'
 pubKeyV1Prefix = 'pubkey-v1'
 asymmCiphertextV1Prefix = new Buffer([1])
 
-WebCryptoApi = ->
-	# Hi there, programmer from the future.
-	# Yup, it has a double underscore, and yes, I used it.
-	# I wish there was a better way.
-	#
-	# If this broke, all you need to do is find a way to get a valid JavaScript
-	# `window` object from a browsing context,
-	# and get a reference to the Web Crypto API.
-	#
-	# Oh, by the way, avoid global.window (see issue 473).
-
-	Assert global.__nwWindowsStore, 'this version of NW.js does not have __nwWindowsStore'
-
-	# Grab the first NW.js Window that we can find
-	nwWin = global.__nwWindowsStore[Object.keys(global.__nwWindowsStore)[0]]
-
-	# Pull a reference out of the window
-	return nwWin.window.crypto.subtle
+# This is a function instead of a reference so that the test suite still works.
+# This won't be necessary any more if the test is run inside NW.js instead of plain Node.js,
+# or if we just eliminate the dependency on the Web Crypto API (issue #525).
+WebCryptoApi = -> global.window.crypto.subtle
 
 class SymmetricEncryptionKey
 	# Implementation notes:

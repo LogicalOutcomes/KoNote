@@ -1,15 +1,14 @@
 *.swo
 *.swp
+*.csv
+*.zip
+
+.brackets.json
 .DS_Store
-npm-debug.log
 
 /data*
 /node_modules/
 /build/releases/
+
 develop.json
-
-*.csv
-
-*.zip
-
-src/config/develop.json
+npm-debug.log

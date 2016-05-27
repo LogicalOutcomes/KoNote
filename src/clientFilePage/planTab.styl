@@ -74,8 +74,31 @@
 			overflow-y auto
 			overflow-x hidden
 			padding 0 25px 25px 25px
+			
+			// TODO: Make this multi-use (it's used again in targets!)
+			&.status-completed, &.status-deactivated
+				padding 0
+			
+			.inactiveSectionHeader
+				cursor pointer
+				font-size 16px
+				opacity 0.8							
+				transition opacity .15s ease
+				
+				&:hover
+					opacity 1
+				
+				.fa
+					font-size 1.25em
+					padding 12px 8px
+					transform rotate(0deg)
+					transition transform .25s ease
+					
+					&.expanded
+						transform rotate(90deg)
 
-			> .section
+			.section				
+							
 				&:last-child
 					padding-bottom 15px
 
@@ -89,6 +112,25 @@
 					border-width 1px
 
 					padding 10px 30px 5px
+
+					> .statusButtonGroup
+						display flex
+															
+						> .statusButton
+							cursor pointer
+							flex 1
+							display flex
+							justify-content center
+							align-items center
+							padding 8px
+							padding-right 2px
+							
+							font-size 18px
+							opacity 0.6
+							transition opacity .15s ease
+							
+							&:hover
+								opacity 1
 
 					&.inline
 						margin 0 -30px
@@ -233,8 +275,6 @@
 
 		border-left 2px solid sidebar-borders
 
-		padding 0 30px
-
 		> .noSelection
 			padding 100px 0
 
@@ -242,8 +282,9 @@
 			text-align center
 
 		> .targetDetailContainer
+			
 			> .metricsSection
-				padding 20px 0
+				padding 25px
 				
 				.addMetricButton
 					color #939393

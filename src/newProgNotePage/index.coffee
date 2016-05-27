@@ -267,12 +267,13 @@ load = (win, {clientFileId}) ->
 								type: 'plan'
 								id: unit.get 'id'
 								name: unit.get 'name'
-								sections: clientFile.getIn(['plan', 'sections']).map (section) =>
+								sections: clientFile.getIn(['plan', 'sections'])
+								.map (section) =>
 
 									Imm.fromJS {
 										id: section.get 'id'
 										name: section.get 'name'
-										targets: section.get('targetIds')
+										targets: section.get 'targetIds'										
 										.filter (targetId) =>
 											target = planTargetsById.get targetId
 											lastRev = target.last()
@@ -284,6 +285,7 @@ load = (win, {clientFileId}) ->
 											return Imm.fromJS {
 												id: lastRev.get 'id'
 												name: lastRev.get 'name'
+												description: lastRev.get 'description'
 												notes: ''
 												metrics: lastRev.get('metricIds').map (metricId) =>
 													metric = metricsById.get metricId
@@ -296,6 +298,8 @@ load = (win, {clientFileId}) ->
 													}
 											}
 									}
+								.filter (section) =>
+									section.get('status') is 'default' and not section.get('targets').isEmpty()
 							}
 			}	
 
@@ -458,6 +462,7 @@ load = (win, {clientFileId}) ->
 														unitId, metricId
 													)
 													value: metric.get('value')
+													isEditable: true
 												})
 											).toJS()...
 										)
@@ -469,8 +474,8 @@ load = (win, {clientFileId}) ->
 									},
 										R.h1({className: 'unitName'}, unit.get 'name')
 										R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
-											"This is empty because 
-											the client has no #{Term 'plan'} #{Term 'sections'}."
+											"This is empty because the client has no active 
+											#{Term 'plan'} #{Term 'sections'} or #{Term 'targets'}."
 										)
 										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
@@ -482,7 +487,6 @@ load = (win, {clientFileId}) ->
 													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
 												].join ' '
 												onMouseOver: @_hoverEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
-
 												onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
 												onClick: @_selectEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
 											},
@@ -529,6 +533,7 @@ load = (win, {clientFileId}) ->
 																		null,
 																		unitId, sectionId, targetId, metricId
 																	)
+																	isEditable: true
 																}
 															)
 														)	
@@ -551,12 +556,14 @@ load = (win, {clientFileId}) ->
 							FaIcon('check')
 						)
 				)
+
 				ProgNoteDetailView({
 					item: @state.selectedItem
 					progNoteHistories: @props.progNoteHistories
 					progEvents: @props.progEvents
 					eventTypes: @props.eventTypes
 				})
+
 				R.div({className: 'eventsPanel'},
 					R.span({className: 'title'}, Term "Events")
 					R.div({
@@ -701,6 +708,7 @@ load = (win, {clientFileId}) ->
 					sectionName: section.get 'name'
 					targetId: target.get 'id'
 					targetName: target.get 'name'
+					targetDescription: target.get 'description'
 				}
 			}
 
@@ -796,7 +804,7 @@ load = (win, {clientFileId}) ->
 		_save: ->
 			@setState {isLoading: true}
 
-			progNoteId = null			
+			progNoteId = null
 
 			Async.series [
 				(cb) =>

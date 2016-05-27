@@ -80,7 +80,7 @@ load = (win) ->
 				loadingMessage: "Loading Client File..."
 			}
 
-			clientFileWindow = openWindow {
+			openWindow {
 				page: 'clientFile'
 				clientFileId
 			}
@@ -100,8 +100,6 @@ load = (win) ->
 			programs = null
 			clientFileProgramLinkHeaders = null
 			clientFileProgramLinks = null
-			metricDefinitionHeaders = null
-			metricDefinitions = null
 
 			Async.parallel [
 				(cb) =>
@@ -158,32 +156,7 @@ load = (win) ->
 
 								clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
 								cb()
-					], cb
-				(cb) =>
-					# TODO: Lazy load this
-					Async.series [
-						(cb) =>							
-							ActiveSession.persist.metrics.list (err, result) =>
-								if err
-									cb err
-									return
-
-								metricDefinitionHeaders = result
-								cb()
-						(cb) =>
-							Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
-								metricDefinitionId = metricDefinitionHeader.get('id')
-								ActiveSession.persist.metrics.readLatestRevisions metricDefinitionId, 1, cb
-							, (err, results) =>
-								if err
-									cb err
-									return
-
-								metricDefinitions = Imm.List(results)
-								.map (metricDefinition) -> stripMetadata metricDefinition.first()
-
-								cb()
-					], cb
+					], cb					
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -202,7 +175,6 @@ load = (win) ->
 					programs
 					clientFileHeaders
 					clientFileProgramLinks
-					metricDefinitions
 				}
 
 		getPageListeners: ->
@@ -242,22 +214,7 @@ load = (win) ->
 							clientFileProgramLinks = state.clientFileProgramLinks.push newRev
 
 						return {clientFileProgramLinks}
-
-				'create:metric createRevision:metric': (newRev) =>
-					metricDefinitionId = newRev.get('id')
-					# Updating or creating metric?
-					existingMetricDefinition = @state.metricDefinitions
-					.find (metricDefinition) -> metricDefinition.get('id') is metricDefinitionId
-
-					@setState (state) ->
-						if existingMetricDefinition?
-							definitionIndex = state.metricDefinitions.indexOf existingMetricDefinition
-							metricDefinitions = state.metricDefinitions.set definitionIndex, newRev
-						else
-							metricDefinitions = state.metricDefinitions.push newRev
-
-						return {metricDefinitions}
-
+						
 			}
 
 	ClientSelectionPageUi = React.createFactory React.createClass
@@ -281,17 +238,14 @@ load = (win) ->
 		componentDidMount: ->
 			@_refreshResults()
 
-			setTimeout(=>
-				# Show and focus this window
-				Window.show()
-				Window.focus()
+			# Show and focus this window
+			Window.show()
+			Window.focus()
 
-				# Fire 'loaded' event for loginPage to hide itself
-				global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
+			# Fire 'loaded' event for loginPage to hide itself
+			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
 
-				@_attachKeyBindings()
-				@refs.searchBox.focus()
-			, 500)			
+			@_attachKeyBindings()
 
 		componentDidUpdate: (oldProps, oldState) ->
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
@@ -349,7 +303,6 @@ load = (win) ->
 							clientFileHeaders: @props.clientFileHeaders							
 							programs: @props.programs
 							clientFileProgramLinks: @props.clientFileProgramLinks
-							metricDefinitions: @props.metricDefinitions
 						})
 					)
 					R.div({
@@ -379,6 +332,7 @@ load = (win) ->
 									unless noData
 										OpenDialogLink({
 											className: 'input-group-btn'
+											ref: 'openCreateClientSmall'
 											dialog: CreateClientFileDialog
 											programs: @props.programs
 										},
@@ -394,6 +348,7 @@ load = (win) ->
 										className: 'searchBox form-control'
 										ref: 'searchBox'
 										type: 'text'
+										autoFocus: true
 										disabled: noData
 										placeholder:
 											unless noData

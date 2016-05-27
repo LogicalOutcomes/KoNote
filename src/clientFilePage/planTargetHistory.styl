@@ -1,7 +1,9 @@
-.planTargetHistory
-	padding 20px 0
+.planTargetHistory	
 
 	> .heading
+		padding 15px
+		padding-left 25px
+		
 		font-size 24px
 		font-weight 300
 
@@ -11,25 +13,105 @@
 		color #888
 		text-align center
 
-	> .revisions
-		> .revision
-			padding 25px 0
+	> .revisions		
+		
+		> section.revision
+			position relative
+			padding 25px
 
 			border-bottom 1px solid sidebar-borders
+			
+			.header
+				display flex
+				flex-direction row
+
+				.author
+					flex 1
+					font-weight 700
+					
+					> .fa
+						color #cadbe5
+						font-size 1.2em
+						margin-right 10px
+					
+				.timestamp
+					text-align right
+					font-weight 600
+					color #888
 
 			&:last-child
 				border-bottom none
-
-			> .nameLine
-				display flex
-
-				padding-bottom 20px
-
+				
+			.metricWidget
+				margin 5px
+				
+			.snapshot
+				margin-left 23px
+				color #515151
+				padding-top 15px				
+				
 				> .name
-					flex 1
-
-					font-weight 700
-
-				> .tag
+					padding 5px
+					font-size 1.2em
 					font-weight 600
-					color #888
+					line-height 1.5em
+					border-bottom 1px dotted sidebar-borders
+						
+				> .description
+					padding 5px
+					
+				> .metrics
+					display flex
+					flex-wrap wrap									
+					
+			&:hover article.entry .snapshotButton
+				opacity 0.5
+				
+			article.entry
+				position relative
+				margin-left 23px
+				padding-top 10px
+				
+				> .snapshotButton
+					float right
+					margin 5px
+					margin-right 0
+					margin-top -2px
+					opacity 0
+					transition opacity .15s ease
+					outline none
+					
+					&:hover
+						opacity 1
+				
+				> .fa
+					position absolute
+					left 0px
+					top 0
+					padding-top 12px
+					
+					color #cadbe5
+					font-size 1.1em
+					margin-left -23px
+					
+				> .action
+					font-weight 600
+					margin-bottom 5px
+					
+				> .metricWidget // Displayed inline with action
+					display inline-flex
+					
+				> .value
+					display inline-block
+					color #515151
+					
+					> .added
+						background #C0F0C0
+						
+					> .removed
+						color #FF2727
+						text-decoration line-through
+						opacity 0.75
+					
+				> .snapshot
+					margin 0 // Required for consistent display
