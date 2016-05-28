@@ -79,6 +79,9 @@ class SymmetricEncryptionKey
 		iterationCount = +params.iterationCount
 		salt = params.salt
 
+		# Workaround for bug in NW.js v0.14 (see issue #584)
+		password = new Buffer(password, 'utf8')
+
 		Crypto.pbkdf2 password, salt, iterationCount, 32, 'sha256', (err, keyMat) ->
 			if err
 				cb err
