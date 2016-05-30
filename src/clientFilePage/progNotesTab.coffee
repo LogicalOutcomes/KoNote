@@ -92,7 +92,7 @@ load = (win) ->
 								className: 'btn btn-link cancelRevisingProgNote'
 								onClick: @_cancelRevisingProgNote
 							},
-								"Cancel"
+								"Cancel Editing"
 							)
 						)
 					else
@@ -161,6 +161,15 @@ load = (win) ->
 									clientFile: @props.clientFile
 									setSelectedItem: @_setSelectedItem
 									selectedItem: @state.selectedItem
+
+									isEditing
+									revisingProgNote: @state.revisingProgNote
+									startRevisingProgNote: @_startRevisingProgNote
+									cancelRevisingProgNote: @_cancelRevisingProgNote
+									updateBasicUnitNotes: @_updateBasicUnitNotes
+									updatePlanTargetNotes: @_updatePlanTargetNotes
+									updateQuickNotes: @_updateQuickNotes
+									saveProgNoteRevision: @_saveProgNoteRevision
 								})
 
 							Assert.equal progNote.get('status'), 'default'
@@ -180,7 +189,7 @@ load = (win) ->
 										revisingProgNote: @state.revisingProgNote
 										startRevisingProgNote: @_startRevisingProgNote
 										cancelRevisingProgNote: @_cancelRevisingProgNote
-										updateBasicUnitNotes: @_updateBasicUnitNotes
+										updateQuickNotes: @_updateQuickNotes
 										saveProgNoteRevision: @_saveProgNoteRevision
 									})
 								when 'full'
@@ -260,6 +269,13 @@ load = (win) ->
 					]
 					newNotes
 				)
+			}
+
+		_updateQuickNotes: (event) ->
+			newNotes = event.target.value
+
+			@setState {
+				revisingProgNote: @state.revisingProgNote.set 'notes', newNotes
 			}
 
 		_saveProgNoteRevision: ->
@@ -395,6 +411,10 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
+			isEditing = @props.isEditing
+
+			progNote = if isEditing then @props.revisingProgNote else @props.progNote
+
 			R.div({
 				className: 'basic progNote'
 				## TODO: Restore hover feature
@@ -403,49 +423,62 @@ load = (win) ->
 			},
 				R.div({className: 'header'},
 					R.div({className: 'timestamp'},
-						if @props.progNote.get('backdate') != ''
-							Moment(@props.progNote.get('backdate'), Persist.TimestampFormat)
+						if progNote.get('backdate') != ''
+							Moment(progNote.get('backdate'), Persist.TimestampFormat)
 							.format('MMMM D, YYYY') + " (late entry)"
 						else
-							Moment(@props.progNote.get('timestamp'), Persist.TimestampFormat)
+							Moment(progNote.get('timestamp'), Persist.TimestampFormat)
 							.format 'MMMM D, YYYY [at] HH:mm'
 					)
 					R.div({className: 'author'},
 						' by '
-						@props.progNote.get('author')
+						progNote.get('author')
 					)					
 				)
 				R.div({
 					className: 'notes'
 					onClick: @_selectQuickNote
 				},
-					R.div({className: 'progNoteToolbar'},
-						PrintButton({
-							dataSet: [
-								{
-									format: 'progNote'
-									data: @props.progNote
-									clientFile: @props.clientFile
-								}
-							]
-							isVisible: true
-							iconOnly: true
-							tooltip: {show: true}
-						})
-						WithTooltip({title: "Cancel", placement: 'top'},
+					(if not isEditing and progNote.get('status') isnt 'cancelled'
+						R.div({className: 'progNoteToolbar'},
+							PrintButton({
+								dataSet: [
+									{
+										format: 'progNote'
+										data: progNote
+										progEvents: @props.progEvents
+										clientFile: @props.clientFile
+									}
+								]
+								disabled: isEditing
+								isVisible: true
+								iconOnly: true
+								tooltip: {show: true}
+							})
+							R.a({
+								className: 'editNote'
+								onClick: @props.startRevisingProgNote.bind null, progNote
+							},
+								"Edit"
+							)
 							OpenDialogLink({
 								dialog: CancelProgNoteDialog
-								progNote: @props.progNote
+								progNote: progNote
 								progEvents: @props.progEvents
 								disabled: @props.isReadOnly
 							},
-								R.a({className: 'cancel'},
-									FaIcon 'ban'
-								)
-							)
+								R.a({className: 'cancelNote'}, "Delete")
+							)						
 						)
 					)
-					renderLineBreaks @props.progNote.get('notes')
+					(if isEditing
+						ExpandingTextArea({
+							value: progNote.get('notes')
+							onChange: @props.updateQuickNotes
+						})
+					else
+						renderLineBreaks progNote.get('notes')
+					)
 				)
 			)
 
@@ -518,7 +551,7 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'progNoteList'},
-					(unless isEditing
+					(if not isEditing and progNote.get('status') isnt 'cancelled'
 						R.div({className: 'progNoteToolbar'},
 							PrintButton({
 								dataSet: [
@@ -534,26 +567,20 @@ load = (win) ->
 								iconOnly: true
 								tooltip: {show: true}
 							})
-							WithTooltip({title: "Cancel Note", placement: 'top'},
-								OpenDialogLink({
-									dialog: CancelProgNoteDialog
-									progNote: progNote
-									progEvents: @props.progEvents
-									disabled: @props.isReadOnly
-								},
-									R.a({className: 'cancel'},
-										"Cancel"
-									)
-								)
+							R.a({
+								className: 'editNote'
+								onClick: @props.startRevisingProgNote.bind null, progNote
+							},
+								"Edit"
 							)
-							WithTooltip({title: "Edit Note", placement: 'top'},
-								R.a({
-									className: 'editNote'
-									onClick: @props.startRevisingProgNote.bind null, progNote
-								},
-									"Edit"
-								)
-							)
+							OpenDialogLink({
+								dialog: CancelProgNoteDialog
+								progNote: progNote
+								progEvents: @props.progEvents
+								disabled: @props.isReadOnly
+							},
+								R.a({className: 'cancelNote'}, "Delete")
+							)						
 						)
 					)
 					(progNote.get('units').map (unit) =>
@@ -652,6 +679,7 @@ load = (win) ->
 														(target.get('metrics').map (metric) =>
 															MetricWidget({
 																isEditable: isEditing
+																tooltipViewport: '.progNotes'
 																# TODO: Modify a metric
 																# onChange: @_updatePlanTargetMetric
 																key: metric.get('id')
@@ -725,15 +753,15 @@ load = (win) ->
 					R.span({className: "#{showWhen not @state.isExpanded}"},
 						FaIcon 'chevron-down'
 						" Show details"
-					),
+					)
 					R.span({className: "#{showWhen @state.isExpanded}"},
 						FaIcon 'chevron-up'
 						" Hide details"
-					),
+					)
 				)
 
 				R.h3({},
-					"Cancelled: ",
+					"Cancelled: "
 
 					if @props.progNoteHistory.first().get('backdate')
 						Moment(@props.progNoteHistory.first().get('backdate'), Persist.TimestampFormat)
@@ -745,13 +773,13 @@ load = (win) ->
 
 				R.div({className: "details #{showWhen @state.isExpanded}"},
 					R.h4({},
-						"Cancelled by ",
+						"Cancelled by "
 						statusChangeRev.get('author')
 						" on ",
 						Moment(statusChangeRev.get('timestamp'), Persist.TimestampFormat)
 						.format 'MMMM D, YYYY [at] HH:mm'
 					),
-					R.h4({}, "Reason for cancellation:"),
+					R.h4({}, "Reason for cancellation:")
 					R.div({className: 'reason'},
 						renderLineBreaks latestRev.get('statusReason')
 					)
@@ -763,6 +791,13 @@ load = (win) ->
 								clientFile: @props.clientFile									
 								selectedItem: @props.selectedItem
 								isReadOnly: true
+
+								isEditing: @props.isEditing
+								revisingProgNote: @props.revisingProgNote
+								startRevisingProgNote: @props.startRevisingProgNote
+								cancelRevisingProgNote: @props.cancelRevisingProgNote
+								updateQuickNotes: @props.updateQuickNotes
+								saveProgNoteRevision: @props.saveProgNoteRevision
 							})
 						when 'full'
 							ProgNoteView({
@@ -773,6 +808,13 @@ load = (win) ->
 								setSelectedItem: @props.setSelectedItem
 								selectedItem: @props.selectedItem
 								isReadOnly: true
+
+								isEditing: @props.isEditing
+								revisingProgNote: @props.revisingProgNote
+								startRevisingProgNote: @props.startRevisingProgNote
+								cancelRevisingProgNote: @props.cancelRevisingProgNote
+								updatePlanTargetNotes: @props.updatePlanTargetNotes
+								saveProgNoteRevision: @props.saveProgNoteRevision
 							})
 						else
 							throw new Error "unknown prognote type: #{progNote.get('type')}"
