@@ -42,6 +42,7 @@ load = (win) ->
 				highlightedProgNoteId: null
 				highlightedTargetId: null
 				backdate: ''
+				revisingProgNote: null
 			}
 
 		componentDidMount: ->
@@ -71,42 +72,33 @@ load = (win) ->
 			progNoteHistories = @props.progNoteHistories
 
 			# Only show the single progNote while editing
-			if @state.editingProgNoteId
+			if @state.revisingProgNote?
 				progNoteHistories = progNoteHistories.filter (progNoteHistory) =>
 					progNote = progNoteHistory.last()
-					return progNote.get('id') is @state.editingProgNoteId
+					return progNote.get('id') is @state.revisingProgNote.get('id')
 
 			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
 				R.div({className: "toolbar #{showWhen @props.progNoteHistories.size > 0}"},
-					R.button({
-						className: 'newProgNote btn btn-primary'
-						onClick: @_openNewProgNote
-						disabled: @props.isReadOnly
-					},
-						FaIcon 'file'
-						"New #{Term 'progress note'}"
-					)
-					R.button({
-						className: "addQuickNote btn btn-default #{showWhen @props.progNoteHistories.size > 0}"						
-						onClick: @_toggleQuickNotePopover
-						disabled: @props.isReadOnly
-					},
-						FaIcon 'plus'
-						"Add #{Term 'quick note'}"
-					)
-				)
-				R.div({className: 'panes'},
-					R.div({
-						className: 'progNotes'
-						ref: 'progNotes'
-					},
-						R.div({
-							className: "empty #{showWhen @props.progNoteHistories.size is 0}"},
-							R.div({className: 'message'},
-								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
+					(if @state.revisingProgNote?
+						R.div({},
+							R.button({
+								className: 'btn btn-success saveRevisingProgNote'
+								onClick: @_saveProgNoteRevision
+							},
+								FaIcon 'save'
+								"Save Changes"
 							)
 							R.button({
-								className: 'newProgNote btn btn-primary btn-lg'
+								className: 'btn btn-link cancelRevisingProgNote'
+								onClick: @_cancelRevisingProgNote
+							},
+								"Cancel"
+							)
+						)
+					else
+						R.div({},
+							R.button({
+								className: 'newProgNote btn btn-primary'
 								onClick: @_openNewProgNote
 								disabled: @props.isReadOnly
 							},
@@ -114,7 +106,35 @@ load = (win) ->
 								"New #{Term 'progress note'}"
 							)
 							R.button({
-								className: "addQuickNote btn btn-default btn-lg #{showWhen @props.progNoteHistories.size is 0}"								
+								className: "addQuickNote btn btn-default #{showWhen @props.progNoteHistories.size > 0}"						
+								onClick: @_toggleQuickNotePopover
+								disabled: @props.isReadOnly
+							},
+								FaIcon 'plus'
+								"Add #{Term 'quick note'}"
+							)
+						)
+					)
+				)
+				R.div({className: 'panes'},
+					R.div({
+						className: 'progNotes'
+						ref: 'progNotes'
+					},
+						R.div({className: "empty #{showWhen @props.progNoteHistories.size is 0}"},
+							R.div({className: 'message'},
+								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
+							)
+							R.button({
+								className: 'btn btn-primary btn-lg newProgNote'
+								onClick: @_openNewProgNote
+								disabled: @props.isReadOnly
+							},
+								FaIcon 'file'
+								"New #{Term 'progress note'}"
+							)
+							R.button({
+								className: "btn btn-default btn-lg addQuickNote #{showWhen @props.progNoteHistories.size is 0}"								
 								onClick: @_toggleQuickNotePopover
 								disabled: @props.isReadOnly
 							},
@@ -126,7 +146,7 @@ load = (win) ->
 							progNote = progNoteHistory.last()
 							progNoteId = progNote.get('id')
 
-							isEditing = @state.editingProgNoteId is progNoteId
+							isEditing = @state.revisingProgNote? and @state.revisingProgNote.get('id') is progNoteId
 
 							# Filter out only events for this progNote
 							progEvents = @props.progEvents.filter (progEvent) =>
@@ -150,28 +170,41 @@ load = (win) ->
 									QuickNoteView({
 										key: progNote.get('id')
 										progNote
-										isEditing
-										clientFile: @props.clientFile
-										setEditingProgNoteId: @_setEditingProgNoteId
+										clientFile: @props.clientFile										
 										selectedItem: @state.selectedItem
 										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
 										setSelectedItem: @_setSelectedItem
 										isReadOnly: @props.isReadOnly
+
+										isEditing
+										revisingProgNote: @state.revisingProgNote
+										startRevisingProgNote: @_startRevisingProgNote
+										cancelRevisingProgNote: @_cancelRevisingProgNote
+										updateBasicUnitNotes: @_updateBasicUnitNotes
+										saveProgNoteRevision: @_saveProgNoteRevision
 									})
 								when 'full'
 									ProgNoteView({
 										key: progNote.get('id')
 										progNote
 										progEvents
-										isEditing
 										eventTypes: @props.eventTypes
 										clientFile: @props.clientFile
 										setSelectedItem: @_setSelectedItem
 										setEditingProgNoteId: @_setEditingProgNoteId
+										updatePlanTargetNotes: @_updatePlanTargetNotes
 										setHighlightedProgNoteId: @_setHighlightedProgNoteId
 										setHighlightedTargetId: @_setHighlightedTargetId
 										selectedItem: @state.selectedItem
 										isReadOnly: @props.isReadOnly
+
+										isEditing
+										revisingProgNote: @state.revisingProgNote
+										startRevisingProgNote: @_startRevisingProgNote
+										cancelRevisingProgNote: @_cancelRevisingProgNote
+										updateBasicUnitNotes: @_updateBasicUnitNotes
+										updatePlanTargetNotes: @_updatePlanTargetNotes
+										saveProgNoteRevision: @_saveProgNoteRevision
 									})
 								else
 									throw new Error "unknown prognote type: #{progNote.get('type')}"
@@ -189,8 +222,69 @@ load = (win) ->
 				)
 			)
 
-		_setEditingProgNoteId: (editingProgNoteId) ->
-			@setState {editingProgNoteId}
+		_startRevisingProgNote: (revisingProgNote) ->
+			@setState {revisingProgNote}
+
+		_cancelRevisingProgNote: ->
+			@setState {revisingProgNote: null}
+
+		_updateBasicUnitNotes: (unitId, event) ->
+			newNotes = event.target.value
+
+			unitIndex = getUnitIndex @state.revisingProgNote, unitId
+
+			@setState {
+				revisingProgNote: @state.revisingProgNote.setIn(
+					[
+						'units', unitIndex
+						'notes'
+					]
+					newNotes
+				)
+			}
+
+		_updatePlanTargetNotes: (unitId, sectionId, targetId, event) ->
+			newNotes = event.target.value
+
+			unitIndex = getUnitIndex @state.revisingProgNote, unitId
+			sectionIndex = getPlanSectionIndex @state.revisingProgNote, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex @state.revisingProgNote, unitIndex, sectionIndex, targetId
+
+			@setState {
+				revisingProgNote: @state.revisingProgNote.setIn(
+					[
+						'units', unitIndex
+						'sections', sectionIndex
+						'targets', targetIndex
+						'notes'
+					]
+					newNotes
+				)
+			}
+
+		_saveProgNoteRevision: ->
+			@props.setIsLoading true
+
+			progNoteRevision = @state.revisingProgNote
+
+			console.log "progNoteRevision", progNoteRevision.toJS()
+
+			ActiveSession.persist.progNotes.createRevision progNoteRevision, (err, result) =>
+				@props.setIsLoading false
+
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+
+					CrashHandler.handle err
+					return
+
+				@_cancelRevisingProgNote()
+				Bootbox.alert "Successfully revised #{Term 'progress note'}!"
+				return
 
 		_setHighlightedProgNoteId: (highlightedProgNoteId) ->
 			@setState {highlightedProgNoteId}
@@ -365,17 +459,6 @@ load = (win) ->
 		displayName: 'ProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: -> {
-			progNoteRevision: Imm.Map {
-				units: Imm.List()
-			}
-		}
-
-		componentWillReceiveProps: (nextProps) ->
-			# Newly started editing, inject progNote into state
-			if not @props.isEditing and nextProps.isEditing
-				@setState => {progNoteRevision: @props.progNote}
-
 		_filterEmptyValues: (progNote) ->
 			progNoteUnits = progNote.get('units')
 			.map (unit) ->
@@ -413,9 +496,7 @@ load = (win) ->
 			isEditing = @props.isEditing
 
 			# Filter out any empty notes/metrics, unless we're editing
-			progNote = if isEditing then @state.progNoteRevision else @_filterEmptyValues(@props.progNote)
-
-			if isEditing then console.log "progNote", progNote.toJS()
+			progNote = if isEditing then @props.revisingProgNote else @_filterEmptyValues(@props.progNote)
 
 			R.div({
 				className: 'full progNote'
@@ -437,37 +518,43 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'progNoteList'},
-					R.div({className: 'progNoteToolbar'},
-						PrintButton({
-							dataSet: [
-								{
-									format: 'progNote'
-									data: progNote
+					(unless isEditing
+						R.div({className: 'progNoteToolbar'},
+							PrintButton({
+								dataSet: [
+									{
+										format: 'progNote'
+										data: progNote
+										progEvents: @props.progEvents
+										clientFile: @props.clientFile
+									}
+								]
+								disabled: isEditing
+								isVisible: true
+								iconOnly: true
+								tooltip: {show: true}
+							})
+							WithTooltip({title: "Cancel Note", placement: 'top'},
+								OpenDialogLink({
+									dialog: CancelProgNoteDialog
+									progNote: progNote
 									progEvents: @props.progEvents
-									clientFile: @props.clientFile
-								}
-							]
-							disabled: isEditing
-							isVisible: true
-							iconOnly: true
-							tooltip: {show: true}
-						})
-						WithTooltip({title: "Cancel", placement: 'top'},
-							OpenDialogLink({
-								dialog: CancelProgNoteDialog
-								progNote: progNote
-								progEvents: @props.progEvents
-								disabled: @props.isReadOnly
-							},
-								R.a({className: 'cancel'},
-									FaIcon 'ban'
+									disabled: @props.isReadOnly
+								},
+									R.a({className: 'cancel'},
+										"Cancel"
+									)
+								)
+							)
+							WithTooltip({title: "Edit Note", placement: 'top'},
+								R.a({
+									className: 'editNote'
+									onClick: @props.startRevisingProgNote.bind null, progNote
+								},
+									"Edit"
 								)
 							)
 						)
-						R.button({
-							className: 'btn btn-default'
-							onClick: @props.setEditingProgNoteId.bind null, progNote.get('id')
-						}, "Edit")
 					)
 					(progNote.get('units').map (unit) =>
 						unitId = unit.get 'id'
@@ -490,7 +577,7 @@ load = (win) ->
 											(if isEditing
 												ExpandingTextArea({
 													value: unit.get('notes')
-													onChange: @_updateBasicUnitNotes.bind null, unitId													
+													onChange: @props.updateBasicUnitNotes.bind null, unitId													
 												})
 											else
 												renderLineBreaks unit.get('notes')
@@ -555,7 +642,7 @@ load = (win) ->
 														(if isEditing
 															ExpandingTextArea({
 																value: target.get('notes')
-																onChange: @_updatePlanTargetNotes.bind null, unitId, sectionId, targetId																
+																onChange: @props.updatePlanTargetNotes.bind null, unitId, sectionId, targetId																
 															})
 														else
 															renderLineBreaks target.get('notes')
@@ -612,41 +699,7 @@ load = (win) ->
 				targetId: target.get('id')
 				targetName: target.get('name')
 				progNoteId: @props.progNote.get('id')
-			}
-
-		_updateBasicUnitNotes: (unitId, event) ->
-			newNotes = event.target.value
-
-			unitIndex = getUnitIndex @state.progNoteRevision, unitId
-
-			@setState {
-				progNoteRevision: @state.progNoteRevision.setIn(
-					[
-						'units', unitIndex
-						'notes'
-					]
-					newNotes
-				)
-			}
-
-		_updatePlanTargetNotes: (unitId, sectionId, targetId, event) ->
-			newNotes = event.target.value
-
-			unitIndex = getUnitIndex @state.progNoteRevision, unitId
-			sectionIndex = getPlanSectionIndex @state.progNoteRevision, unitIndex, sectionId
-			targetIndex = getPlanTargetIndex @state.progNoteRevision, unitIndex, sectionIndex, targetId
-
-			@setState {
-				progNoteRevision: @state.progNoteRevision.setIn(
-					[
-						'units', unitIndex
-						'sections', sectionIndex
-						'targets', targetIndex
-						'notes'
-					]
-					newNotes
-				)
-			}
+			}		
 
 
 
