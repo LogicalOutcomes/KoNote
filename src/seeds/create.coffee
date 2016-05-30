@@ -199,7 +199,7 @@ Create.eventType = (index, cb) ->
 	createData 'eventTypes', eventType, cb
 
 Create.account = (index, cb) ->
-	userName = Faker.lorem.word()
+	userName = 'user' + Faker.random.number()
 	password = 'password'
 	accountType = 'normal'
 

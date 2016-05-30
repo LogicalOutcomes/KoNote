@@ -124,7 +124,7 @@ generateClientFiles = (quantity, metrics, template, cb) ->
 		cb(null, clientFiles)
 
 
-runSeries = (templateFileName) ->
+runSeries = (templateFileName = 'seedSmall') -> 
 	# First tell the system that we're seeding, to prevent
 	# event-driven operations such opening a clientFile
 	global.isSeeding = true
