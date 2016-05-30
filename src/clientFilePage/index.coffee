@@ -672,6 +672,34 @@ load = (win, {clientFileId}) ->
 						}
 					}
 				}
+			else if @refs.progNotesTab.hasChanges()
+				Bootbox.dialog {
+					title: "Unsaved Changes to #{Term 'Progress Note'}"
+					message: """
+						You have unsaved changes to a #{Term 'progress note'}.
+						How would you like to proceed?
+					"""
+					buttons: {
+						default: {
+							label: "Cancel"
+							className: "btn-default"
+							callback: => Bootbox.hideAll()
+						}
+						danger: {
+							label: "Discard Changes"
+							className: "btn-danger"
+							callback: => 
+								@props.closeWindow()
+						}
+						success: {
+							label: "View #{Term 'Progress Note'}"
+							className: "btn-success"
+							callback: => 
+								Bootbox.hideAll()
+								@setState {activeTabId: 'progNotes'}
+						}
+					}
+				}
 			else
 				@props.closeWindow()
 

@@ -25,11 +25,16 @@ load = (win) ->
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	PrintButton = require('../printButton').load(win)
 	WithTooltip = require('../withTooltip').load(win)
-	{FaIcon, openWindow, renderLineBreaks, showWhen} = require('../utils').load(win)
+	{FaIcon, openWindow, renderLineBreaks, showWhen
+	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
 		displayName: 'ProgNotesView'
 		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: -> {
+			editingProgNoteId: null
+		}
 
 		getInitialState: ->
 			return {
@@ -63,6 +68,14 @@ load = (win) ->
 			}
 
 		render: ->
+			progNoteHistories = @props.progNoteHistories
+
+			# Only show the single progNote while editing
+			if @state.editingProgNoteId
+				progNoteHistories = progNoteHistories.filter (progNoteHistory) =>
+					progNote = progNoteHistory.last()
+					return progNote.get('id') is @state.editingProgNoteId
+
 			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
 				R.div({className: "toolbar #{showWhen @props.progNoteHistories.size > 0}"},
 					R.button({
@@ -109,8 +122,11 @@ load = (win) ->
 								"Add #{Term 'quick note'}"
 							)
 						)
-						(@props.progNoteHistories.map (progNoteHistory) =>
+						(progNoteHistories.map (progNoteHistory) =>
 							progNote = progNoteHistory.last()
+							progNoteId = progNote.get('id')
+
+							isEditing = @state.editingProgNoteId is progNoteId
 
 							# Filter out only events for this progNote
 							progEvents = @props.progEvents.filter (progEvent) =>
@@ -134,7 +150,9 @@ load = (win) ->
 									QuickNoteView({
 										key: progNote.get('id')
 										progNote
+										isEditing
 										clientFile: @props.clientFile
+										setEditingProgNoteId: @_setEditingProgNoteId
 										selectedItem: @state.selectedItem
 										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
 										setSelectedItem: @_setSelectedItem
@@ -145,9 +163,11 @@ load = (win) ->
 										key: progNote.get('id')
 										progNote
 										progEvents
+										isEditing
 										eventTypes: @props.eventTypes
 										clientFile: @props.clientFile
 										setSelectedItem: @_setSelectedItem
+										setEditingProgNoteId: @_setEditingProgNoteId
 										setHighlightedProgNoteId: @_setHighlightedProgNoteId
 										setHighlightedTargetId: @_setHighlightedTargetId
 										selectedItem: @state.selectedItem
@@ -168,6 +188,9 @@ load = (win) ->
 					})
 				)
 			)
+
+		_setEditingProgNoteId: (editingProgNoteId) ->
+			@setState {editingProgNoteId}
 
 		_setHighlightedProgNoteId: (highlightedProgNoteId) ->
 			@setState {highlightedProgNoteId}
@@ -342,6 +365,17 @@ load = (win) ->
 		displayName: 'ProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
 
+		getInitialState: -> {
+			progNoteRevision: Imm.Map {
+				units: Imm.List()
+			}
+		}
+
+		componentWillReceiveProps: (nextProps) ->
+			# Newly started editing, inject progNote into state
+			if not @props.isEditing and nextProps.isEditing
+				@setState => {progNoteRevision: @props.progNote}
+
 		_filterEmptyValues: (progNote) ->
 			progNoteUnits = progNote.get('units')
 			.map (unit) ->
@@ -376,8 +410,12 @@ load = (win) ->
 			return progNote.set('units', progNoteUnits)
 
 		render: ->
-			# Filter out any empty notes/metrics
-			progNote = @_filterEmptyValues(@props.progNote)
+			isEditing = @props.isEditing
+
+			# Filter out any empty notes/metrics, unless we're editing
+			progNote = if isEditing then @state.progNoteRevision else @_filterEmptyValues(@props.progNote)
+
+			if isEditing then console.log "progNote", progNote.toJS()
 
 			R.div({
 				className: 'full progNote'
@@ -409,6 +447,7 @@ load = (win) ->
 									clientFile: @props.clientFile
 								}
 							]
+							disabled: isEditing
 							isVisible: true
 							iconOnly: true
 							tooltip: {show: true}
@@ -425,6 +464,10 @@ load = (win) ->
 								)
 							)
 						)
+						R.button({
+							className: 'btn btn-default'
+							onClick: @props.setEditingProgNoteId.bind null, progNote.get('id')
+						}, "Edit")
 					)
 					(progNote.get('units').map (unit) =>
 						unitId = unit.get 'id'
@@ -441,10 +484,17 @@ load = (win) ->
 										onClick: @_selectBasicUnit.bind null, unit
 									},
 										R.h3({},
-											unit.get('name')
+											R.input({}, unit.get('name'))
 										)
 										R.div({className: 'notes'},
-											renderLineBreaks(unit.get('notes'))
+											(if isEditing
+												ExpandingTextArea({
+													value: unit.get('notes')
+													onChange: @_updateBasicUnitNotes.bind null, unitId													
+												})
+											else
+												renderLineBreaks unit.get('notes')
+											)
 										)
 										unless unit.get('metrics').isEmpty()
 											R.div({className: 'metrics'},
@@ -468,8 +518,10 @@ load = (win) ->
 										unit.get('name')
 									)
 
-									(unit.get('sections').map (section) =>										
-										R.section({key: section.get('id')},
+									(unit.get('sections').map (section) =>
+										sectionId = section.get('id')
+
+										R.section({key: sectionId},
 											R.h2({}, section.get('name'))
 											R.div({
 												## TODO: Restore hover feature
@@ -483,27 +535,38 @@ load = (win) ->
 												"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
 											)
 											(section.get('targets').map (target) =>
+												targetId = target.get('id')
+
 												R.div({
-													key: target.get('id')
+													key: targetId
 													className: [
 														'target'
-														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is target.get('id')
+														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is targetId
 													].join ' '
 													onClick: @_selectPlanSectionTarget.bind(null, unit, section, target)
 													## TODO: Restore hover feature
 													# onMouseEnter: @props.setHighlightedTargetId.bind null, target.get('id')
 												},
 													R.h3({}, target.get('name'))
-													R.div({className: "empty #{showWhen target.get('notes') is ''}"},
+													R.div({className: "empty #{showWhen target.get('notes') is '' and not isEditing}"},
 														'(blank)'
 													)
 													R.div({className: 'notes'},
-														renderLineBreaks target.get('notes')
+														(if isEditing
+															ExpandingTextArea({
+																value: target.get('notes')
+																onChange: @_updatePlanTargetNotes.bind null, unitId, sectionId, targetId																
+															})
+														else
+															renderLineBreaks target.get('notes')
+														)
 													)
 													R.div({className: 'metrics'},
 														(target.get('metrics').map (metric) =>
 															MetricWidget({
-																isEditable: false
+																isEditable: isEditing
+																# TODO: Modify a metric
+																# onChange: @_updatePlanTargetMetric
 																key: metric.get('id')
 																name: metric.get('name')
 																definition: metric.get('definition')
@@ -532,6 +595,7 @@ load = (win) ->
 						)						
 				)
 			)
+
 		_selectBasicUnit: (unit) ->
 			@props.setSelectedItem Imm.fromJS {
 				type: 'basicUnit'
@@ -539,6 +603,7 @@ load = (win) ->
 				unitName: unit.get('name')
 				progNoteId: @props.progNote.get('id')
 			}
+
 		_selectPlanSectionTarget: (unit, section, target) ->
 			@props.setSelectedItem Imm.fromJS {
 				type: 'planSectionTarget'
@@ -548,6 +613,42 @@ load = (win) ->
 				targetName: target.get('name')
 				progNoteId: @props.progNote.get('id')
 			}
+
+		_updateBasicUnitNotes: (unitId, event) ->
+			newNotes = event.target.value
+
+			unitIndex = getUnitIndex @state.progNoteRevision, unitId
+
+			@setState {
+				progNoteRevision: @state.progNoteRevision.setIn(
+					[
+						'units', unitIndex
+						'notes'
+					]
+					newNotes
+				)
+			}
+
+		_updatePlanTargetNotes: (unitId, sectionId, targetId, event) ->
+			newNotes = event.target.value
+
+			unitIndex = getUnitIndex @state.progNoteRevision, unitId
+			sectionIndex = getPlanSectionIndex @state.progNoteRevision, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex @state.progNoteRevision, unitIndex, sectionIndex, targetId
+
+			@setState {
+				progNoteRevision: @state.progNoteRevision.setIn(
+					[
+						'units', unitIndex
+						'sections', sectionIndex
+						'targets', targetIndex
+						'notes'
+					]
+					newNotes
+				)
+			}
+
+
 
 	CancelledProgNoteView = React.createFactory React.createClass
 		displayName: 'CancelledProgNoteView'
