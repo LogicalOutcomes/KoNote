@@ -86,7 +86,7 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	progNoteUnit = progNoteTemplate.getIn(['units', 0])
 
 	# Loop over progNote sections
-	progNoteSections = sections.map (section) ->
+	progNoteSections = Imm.List(sections).toJS().map (section) ->
 
 		# Loop over targetIds, and get the matching planTarget definition
 		targets = section.get('targetIds').map (targetId) ->
@@ -137,7 +137,7 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 				id: progNoteUnit.get('id')
 				type: progNoteUnit.get('type')
 				name: progNoteUnit.get('name')
-				sections: progNoteSections.toJS()
+				sections: progNoteSections
 			}
 		]
 	}

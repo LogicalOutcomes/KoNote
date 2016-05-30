@@ -47,25 +47,31 @@ generateClientFile = (metrics, template, cb) ->
 			targetIds = planTargets
 			.map (target) -> target.get('id')
 
-			section = Imm.fromJS {
-				id: generateId()
-				name: Faker.company.bsBuzz()
-				targetIds
-				status: 'default'
-			}
-
-			sections = Imm.List [section]
-
-			clientFile = clientFile.setIn(['plan', 'sections'], sections.toJS())
-
-			global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
+			Async.times template.clientFileSections, (index, cb) ->	
+				section = Imm.fromJS {
+					id: generateId()
+					name: Faker.company.bsBuzz()
+					targetIds
+					status: 'default'
+				}
+				cb null, section
+			
+			, (err, results) ->
 				if err
 					cb err
 					return
 
-				clientFile = result
-				console.log "Modified clientFile with plan sections:", clientFile.toJS()
-				cb()
+				clientFile = clientFile.setIn(['plan', 'sections'], Imm.List(results).toJS())
+
+				global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
+					if err
+						cb err
+						return
+
+					clientFile = result
+					console.log "Modified clientFile with plan sections:", clientFile.toJS()
+					cb()
+
 
 		# Write a progNote, write a note and random metric for each target, in each section
 		(cb) ->
