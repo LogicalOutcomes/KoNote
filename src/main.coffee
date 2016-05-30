@@ -155,9 +155,9 @@ init = (win) ->
 			registerPageListeners()
 
 		# Disable context menu
-		win.document.addEventListener 'contextmenu', (event) ->
-			event.preventDefault()
-			return false
+		#win.document.addEventListener 'contextmenu', (event) ->
+		#	event.preventDefault()
+		#	return false
 	
 		# User-Facing Utlities
 		devToolsKeyCount = null
