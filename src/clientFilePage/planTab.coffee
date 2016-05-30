@@ -229,7 +229,7 @@ load = (win) ->
 
 		_focusMetricLookupField: -> $('.lookupField').focus()
 
-		blinkUnsaved: ->			
+		blinkUnsaved: ->
 			toggleBlink = -> $('.hasChanges').toggleClass('blink')
 			secondBlink = ->
 				toggleBlink()
