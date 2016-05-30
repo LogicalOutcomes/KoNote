@@ -44,18 +44,16 @@ generateClientFile = (metrics, template, cb) ->
 
 		# Apply the target to a section, apply to clientFile, save
 		(cb) ->
-			console.log "start >>>>"
 			targetIds = planTargets
 			.map (target) -> target.get('id')
 
-			Async.times 3, (index, cb) ->	
+			Async.times template.clientFileSections, (index, cb) ->	
 				section = Imm.fromJS {
 					id: generateId()
 					name: Faker.company.bsBuzz()
 					targetIds
 					status: 'default'
 				}
-				console.log "new section >>>> ", section
 				cb null, section
 			
 			, (err, results) ->
@@ -63,7 +61,6 @@ generateClientFile = (metrics, template, cb) ->
 					cb err
 					return
 
-				console.log "results >>> ", Imm.List(results).toJS()
 				clientFile = clientFile.setIn(['plan', 'sections'], Imm.List(results).toJS())
 
 				global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
