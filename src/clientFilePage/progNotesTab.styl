@@ -124,26 +124,37 @@
 
 					> .timestamp
 						flex 1
+						
+				.progNoteToolbar
+					position absolute
+					top 0
+					right 0
+
+					display flex
+
+					a
+						font-size 1.2em
+						opacity 0.5
+						transition opacity .15s ease
+						display inline-block
+
+						padding 8px
+						padding-top 0
+
+						color black
+						cursor pointer
+						
+						&:hover
+							opacity 1
 
 				&.basic
 					> .notes
 						padding 20px 0 0
-
-						> .progNoteToolbar
+						
+						.progNoteToolbar
+							position static
 							float right
-
-							display flex
-
-							> .cancel
-								display inline-block
-
-								padding 0 0 5px
-
-								color black
-								cursor pointer
-
-								&:hover
-									color red
+							top 15px
 
 						> br
 							display block
@@ -151,28 +162,6 @@
 				&.full
 					> .progNoteList
 						position relative
-
-						> .progNoteToolbar
-							position absolute
-							top 0
-							right 0
-
-							display flex
-
-							a
-								font-size 1.2em
-								opacity 0.5
-								transition opacity .15s ease
-								display inline-block
-
-								padding 8px
-								padding-top 0
-
-								color black
-								cursor pointer
-								
-								&:hover
-									opacity 1
 
 						> .unit
 							padding-bottom 20px
