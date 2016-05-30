@@ -31,7 +31,9 @@ load = (win, {clientFileId}) ->
 	Dialog = require('../dialog').load(win)
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
-	{FaIcon, renderName, showWhen, stripMetadata} = require('../utils').load(win)
+	
+	{FaIcon, renderName, showWhen, stripMetadata,
+	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
 
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
@@ -657,37 +659,6 @@ load = (win, {clientFileId}) ->
 
 		_updateEventPlanRelationMode: (isEventPlanRelationMode) ->
 			@setState {isEventPlanRelationMode}
-			
-		_getUnitIndex: (unitId) ->
-			result = @state.progNote.get('units')
-			.findIndex (unit) =>
-				return unit.get('id') is unitId
-
-			if result is -1
-				throw new Error "could not find unit with ID #{JSON.stringify unitId}"
-
-			return result
-
-		_getPlanSectionIndex: (unitIndex, sectionId) ->
-			result = @state.progNote.getIn(['units', unitIndex, 'sections'])
-			.findIndex (section) =>
-				return section.get('id') is sectionId
-
-			if result is -1
-				throw new Error "could not find unit with ID #{JSON.stringify sectionId}"
-
-			return result
-
-		_getPlanTargetIndex: (unitIndex, sectionIndex, targetId) ->
-			result = @state.progNote.getIn(['units', unitIndex, 'sections', sectionIndex, 'targets'])
-			.findIndex (target) =>
-				return target.get('id') is targetId
-
-			if result is -1
-				throw new Error "could not find target with ID #{JSON.stringify targetId}"
-
-			return result
-
 
 		_selectBasicUnit: (unit) ->
 			@setState {
@@ -722,7 +693,7 @@ load = (win, {clientFileId}) ->
 		_updateBasicNotes: (unitId, event) ->
 			newNotes = event.target.value
 
-			unitIndex = @_getUnitIndex unitId
+			unitIndex = getUnitIndex @state.progNote, unitId
 			progNote = @state.progNote.setIn ['units', unitIndex, 'notes'], event.target.value
 
 			@setState {
@@ -738,7 +709,7 @@ load = (win, {clientFileId}) ->
 		_updateBasicMetric: (unitId, metricId, newMetricValue) ->
 			return unless @_isValidMetric(newMetricValue)
 
-			unitIndex = @_getUnitIndex unitId
+			unitIndex = getUnitIndex @state.progNote, unitId
 
 			metricIndex = @state.progNote.getIn(['units', unitIndex, 'metrics'])
 			.findIndex (metric) =>
@@ -758,9 +729,9 @@ load = (win, {clientFileId}) ->
 		_updatePlanTargetNotes: (unitId, sectionId, targetId, event) ->
 			newNotes = event.target.value
 
-			unitIndex = @_getUnitIndex unitId
-			sectionIndex = @_getPlanSectionIndex unitIndex, sectionId
-			targetIndex = @_getPlanTargetIndex unitIndex, sectionIndex, targetId
+			unitIndex = getUnitIndex @state.progNote, unitId
+			sectionIndex = getPlanSectionIndex @state.progNote, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex @state.progNote, unitIndex, sectionIndex, targetId
 
 			@setState {
 				progNote: @state.progNote.setIn(
@@ -777,9 +748,9 @@ load = (win, {clientFileId}) ->
 		_updatePlanTargetMetric: (unitId, sectionId, targetId, metricId, newMetricValue) ->
 			return unless @_isValidMetric(newMetricValue)
 
-			unitIndex = @_getUnitIndex unitId
-			sectionIndex = @_getPlanSectionIndex unitIndex, sectionId
-			targetIndex = @_getPlanTargetIndex unitIndex, sectionIndex, targetId
+			unitIndex = getUnitIndex @state.progNote, unitId
+			sectionIndex = getPlanSectionIndex @state.progNote, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex @state.progNote, unitIndex, sectionIndex, targetId
 
 			metricIndex = @state.progNote.getIn(
 				['units', unitIndex, 'sections', sectionIndex, 'targets', targetIndex, 'metrics']

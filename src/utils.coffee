@@ -119,6 +119,39 @@ load = (win) ->
 
 		return text[...(maxLength - 1)] + '…'
 
+	
+	##### Convenience methods for fetching data from a progNote
+
+	getUnitIndex = (progNote, unitId) ->
+		result = progNote.get('units')
+		.findIndex (unit) =>
+			return unit.get('id') is unitId
+
+		if result is -1
+			throw new Error "could not find unit with ID #{JSON.stringify unitId}"
+
+		return result
+
+	getPlanSectionIndex = (progNote, unitIndex, sectionId) ->
+		result = progNote.getIn(['units', unitIndex, 'sections'])
+		.findIndex (section) =>
+			return section.get('id') is sectionId
+
+		if result is -1
+			throw new Error "could not find unit with ID #{JSON.stringify sectionId}"
+
+		return result
+
+	getPlanTargetIndex = (progNote, unitIndex, sectionIndex, targetId) ->
+		result = progNote.getIn(['units', unitIndex, 'sections', sectionIndex, 'targets'])
+		.findIndex (target) =>
+			return target.get('id') is targetId
+
+		if result is -1
+			throw new Error "could not find target with ID #{JSON.stringify targetId}"
+
+		return result
+
 	return {
 		CustomError
 		executeIfFunction
@@ -131,7 +164,10 @@ load = (win) ->
 		stripMetadata
 		formatTimestamp
 		capitalize
-		truncateText		
+		truncateText
+		getUnitIndex
+		getPlanSectionIndex
+		getPlanTargetIndex
 	}
 
 module.exports = {
