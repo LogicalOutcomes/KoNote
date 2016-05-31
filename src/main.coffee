@@ -166,27 +166,38 @@ init = (win) ->
 			# Prevent backspace navigation
 			if event.which is 8 and event.target.tagName is 'BODY'
 				event.preventDefault()
-			# devTools with Ctrl-Shift-J x5
-			# TODO: Remove this in favour of SDK (right-click to inspect)
-			if event.ctrlKey and event.shiftKey and event.which is 74
-				unless devToolsKeyCount?
-					devToolsKeyCount = 0
-					setTimeout (->
-						devToolsKeyCount = null
-					), 2000
-				devToolsKeyCount++
-				if devToolsKeyCount > 4
-					win.nw.Window.get(win).showDevTools()
+			# TODO: Remove this, since it can't run in production anyway
+			# devTools with Ctrl-Shift-J x5			
+			# if event.ctrlKey and event.shiftKey and event.which is 74
+			# 	unless devToolsKeyCount?
+			# 		devToolsKeyCount = 0
+			# 		setTimeout (->
+			# 			devToolsKeyCount = null
+			# 		), 2000
+			# 	devToolsKeyCount++
+			# 	if devToolsKeyCount > 4
+			# 		win.nw.Window.get(win).showDevTools()
 		, false
 
 
 		# DevMode Utilities
 		if Config.devMode
 
-			win.document.addEventListener 'keyup', (event) ->
-				# If Ctrl-Shift-J
+			# Ctrl-Shift-J opens devTools for current window context
+			win.document.addEventListener 'keyup', (event) ->				
 				if event.ctrlKey and event.shiftKey and event.which is 74
 					win.nw.Window.get().showDevTools()
+			, false
+
+			# Ctrl-Shift-B opens devTools for background window context
+			win.document.addEventListener 'keyup', (event) ->				
+				if event.ctrlKey and event.shiftKey and event.which is 66
+					# From https://github.com/nwjs/nw.js/issues/4881
+					chrome.developerPrivate.openDevTools({
+						renderViewId: -1
+						renderProcessId: -1
+						extensionId: chrome.runtime.id
+					})
 			, false
 
 			win.document.addEventListener 'keyup', (event) ->
