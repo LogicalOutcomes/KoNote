@@ -696,7 +696,7 @@ load = (win, {clientFileId}) ->
 							className: "btn-success"
 							callback: => 
 								Bootbox.hideAll()
-								@setState {activeTabId: 'progNotes'}
+								@setState {activeTabId: 'progressNotes'}
 						}
 					}
 				}
@@ -766,6 +766,7 @@ load = (win, {clientFileId}) ->
 						isReadOnly
 					})
 					ProgNotesTab.ProgNotesView({
+						ref: 'progNotesTab'
 						isVisible: activeTabId is 'progressNotes'
 						clientFileId
 						clientFile: @props.clientFile
@@ -787,6 +788,7 @@ load = (win, {clientFileId}) ->
 						isReadOnly
 					})
 					AnalysisTab.AnalysisView({
+						ref: 'analysisTab'
 						isVisible: activeTabId is 'analysis'
 						clientFileId
 						clientName
