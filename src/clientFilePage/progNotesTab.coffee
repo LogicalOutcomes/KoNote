@@ -68,8 +68,12 @@ load = (win) ->
 				'''
 			}
 
+		hasChanges: -> 
+			@_revisingProgNoteHasChanges()
+
 		render: ->
 			progNoteHistories = @props.progNoteHistories
+			hasChanges = @_revisingProgNoteHasChanges()
 
 			# Only show the single progNote while editing
 			if @state.revisingProgNote?
@@ -82,18 +86,33 @@ load = (win) ->
 					(if @state.revisingProgNote?
 						R.div({},
 							R.button({
-								className: 'btn btn-success saveRevisingProgNote'
+								className: [
+									'btn'
+									'btn-success' if hasChanges
+									'saveRevisingProgNote'
+								].join ' '
 								onClick: @_saveProgNoteRevision
+								disabled: not hasChanges
 							},
 								FaIcon 'save'
-								"Save Changes"
+								"Save #{Term 'Progress Note'}"
 							)
 							R.button({
-								className: 'btn btn-link cancelRevisingProgNote'
+								className: 'btn btn-default cancelRevisingProgNote'
 								onClick: @_cancelRevisingProgNote
 							},
-								"Cancel Editing"
+								"Cancel"
 							)
+							R.button({
+								className: [
+									'btn btn-link'
+									'cancelRevisingProgNote'
+									showWhen hasChanges
+								].join ' '
+								onClick: @_resetRevisingProgNote
+							},
+								"Reset Changes"
+							)							
 						)
 					else
 						R.div({},
@@ -161,11 +180,12 @@ load = (win) ->
 									clientFile: @props.clientFile
 									setSelectedItem: @_setSelectedItem
 									selectedItem: @state.selectedItem
+									isReadOnly: @props.isReadOnly
 
 									isEditing
 									revisingProgNote: @state.revisingProgNote
 									startRevisingProgNote: @_startRevisingProgNote
-									cancelRevisingProgNote: @_cancelRevisingProgNote
+									cancelRevisingProgNote: @_cancelRevisingProgNote									
 									updateBasicUnitNotes: @_updateBasicUnitNotes
 									updatePlanTargetNotes: @_updatePlanTargetNotes
 									updateQuickNotes: @_updateQuickNotes
@@ -231,11 +251,35 @@ load = (win) ->
 				)
 			)
 
-		_startRevisingProgNote: (revisingProgNote) ->
+		_startRevisingProgNote: (originalProgNote) ->
+			# Attach the original revision inside the progNote, strip it out when save
+			revisingProgNote = originalProgNote.set('originalRevision', originalProgNote)
 			@setState {revisingProgNote}
 
+		_resetRevisingProgNote: ->
+			Bootbox.confirm "Discard changes and start over?", (ok) =>
+				if ok then @_startRevisingProgNote @state.revisingProgNote.get('originalRevision')
+
 		_cancelRevisingProgNote: ->
+			if @_revisingProgNoteHasChanges()
+				return Bootbox.confirm "Discard changes and cancel editing?", (ok) =>
+					if ok then @_discardRevisingProgNote()
+
+			@_discardRevisingProgNote()
+
+		_discardRevisingProgNote: ->
 			@setState {revisingProgNote: null}
+
+		_revisingProgNoteHasChanges: ->
+			return null unless @state.revisingProgNote?
+
+			originalRevision = @state.revisingProgNote.get('originalRevision')
+			newRevision = @_stripRevisingProgNote()
+			return not Imm.is originalRevision, newRevision
+
+		_stripRevisingProgNote: ->
+			# Strip out the originalRevision for saving/comparing
+			@state.revisingProgNote.remove 'originalRevision'
 
 		_updateBasicUnitNotes: (unitId, event) ->
 			newNotes = event.target.value
@@ -274,16 +318,12 @@ load = (win) ->
 		_updateQuickNotes: (event) ->
 			newNotes = event.target.value
 
-			@setState {
-				revisingProgNote: @state.revisingProgNote.set 'notes', newNotes
-			}
+			revisingProgNote = @state.revisingProgNote.set 'notes', newNotes
+			@setState {revisingProgNote}
 
 		_saveProgNoteRevision: ->
 			@props.setIsLoading true
-
-			progNoteRevision = @state.revisingProgNote
-
-			console.log "progNoteRevision", progNoteRevision.toJS()
+			progNoteRevision = @_stripRevisingProgNote()
 
 			ActiveSession.persist.progNotes.createRevision progNoteRevision, (err, result) =>
 				@props.setIsLoading false
@@ -298,8 +338,7 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@_cancelRevisingProgNote()
-				Bootbox.alert "Successfully revised #{Term 'progress note'}!"
+				@_discardRevisingProgNote()
 				return
 
 		_setHighlightedProgNoteId: (highlightedProgNoteId) ->
@@ -440,36 +479,14 @@ load = (win) ->
 					onClick: @_selectQuickNote
 				},
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
-						R.div({className: 'progNoteToolbar'},
-							PrintButton({
-								dataSet: [
-									{
-										format: 'progNote'
-										data: progNote
-										progEvents: @props.progEvents
-										clientFile: @props.clientFile
-									}
-								]
-								disabled: isEditing
-								isVisible: true
-								iconOnly: true
-								tooltip: {show: true}
-							})
-							R.a({
-								className: 'editNote'
-								onClick: @props.startRevisingProgNote.bind null, progNote
-							},
-								"Edit"
-							)
-							OpenDialogLink({
-								dialog: CancelProgNoteDialog
-								progNote: progNote
-								progEvents: @props.progEvents
-								disabled: @props.isReadOnly
-							},
-								R.a({className: 'cancelNote'}, "Delete")
-							)						
-						)
+						ProgNoteToolbar({
+							isEditing
+							isReadOnly: @props.isReadOnly
+							startRevisingProgNote: @props.startRevisingProgNote
+							progNote
+							progEvents: @props.progEvents
+							clientFile: @props.clientFile
+						})						
 					)
 					(if isEditing
 						ExpandingTextArea({
@@ -552,36 +569,14 @@ load = (win) ->
 				)
 				R.div({className: 'progNoteList'},
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
-						R.div({className: 'progNoteToolbar'},
-							PrintButton({
-								dataSet: [
-									{
-										format: 'progNote'
-										data: progNote
-										progEvents: @props.progEvents
-										clientFile: @props.clientFile
-									}
-								]
-								disabled: isEditing
-								isVisible: true
-								iconOnly: true
-								tooltip: {show: true}
-							})
-							R.a({
-								className: 'editNote'
-								onClick: @props.startRevisingProgNote.bind null, progNote
-							},
-								"Edit"
-							)
-							OpenDialogLink({
-								dialog: CancelProgNoteDialog
-								progNote: progNote
-								progEvents: @props.progEvents
-								disabled: @props.isReadOnly
-							},
-								R.a({className: 'cancelNote'}, "Delete")
-							)						
-						)
+						ProgNoteToolbar({
+							isEditing
+							isReadOnly: @props.isReadOnly
+							startRevisingProgNote: @props.startRevisingProgNote
+							progNote
+							progEvents: @props.progEvents
+							clientFile: @props.clientFile
+						})
 					)
 					(progNote.get('units').map (unit) =>
 						unitId = unit.get 'id'
@@ -733,6 +728,8 @@ load = (win) ->
 
 	CancelledProgNoteView = React.createFactory React.createClass
 		displayName: 'CancelledProgNoteView'
+		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				isExpanded: false
@@ -823,6 +820,48 @@ load = (win) ->
 
 		_toggleDetails: (event) ->
 			@setState (s) -> {isExpanded: not s.isExpanded}
+
+
+	ProgNoteToolbar = (props) ->
+		{
+			isEditing
+			isReadOnly
+			startRevisingProgNote
+			progNote
+			progEvents
+			clientFile
+		} = props
+
+		R.div({className: 'progNoteToolbar'},
+			PrintButton({
+				dataSet: [
+					{
+						format: 'progNote'
+						data: progNote
+						progEvents
+						clientFile
+					}
+				]
+				disabled: isEditing
+				isVisible: true
+				iconOnly: true
+				tooltip: {show: true}
+			})
+			R.a({
+				className: "editNote #{showWhen not isReadOnly}"
+				onClick: startRevisingProgNote.bind null, progNote
+			},
+				"Edit"
+			)
+			OpenDialogLink({
+				className: "cancelNote #{showWhen not isReadOnly}"
+				dialog: CancelProgNoteDialog
+				progNote
+				progEvents
+			},
+				R.a({}, "Cancel")
+			)						
+		)
 
 	return {ProgNotesView}
 
