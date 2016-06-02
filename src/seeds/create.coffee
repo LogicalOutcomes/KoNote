@@ -150,11 +150,20 @@ Create.planTarget = ({clientFile, metrics}, cb) ->
 	.map (metric) -> metric.get('id')
 	.toJS()
 
+	# randomly chooses a status, with a higher probability of 'default'
+	randomNumber = Math.floor(Math.random() * 10) + 1
+	if randomNumber > 7 
+		status = 'deactivated'
+	else if randomNumber < 3 
+		status = 'completed'
+	else 
+		status = 'default'
+
 	target = Imm.fromJS {
 		clientFileId: clientFile.get('id')
 		name: Faker.company.bsBuzz()
 		description: Faker.lorem.paragraph()
-		status: "default"
+		status
 		metricIds
 	}
 
