@@ -33,7 +33,7 @@ generateClientFile = (metrics, template, cb) ->
 
 		# Create planTargets
 		(cb) ->
-			Create.planTargets template.planTargets, {clientFile, metrics}, (err, results) ->
+			Create.planTargets template.planTargets, clientFile, metrics, (err, results) ->
 				if err
 					cb err
 					return

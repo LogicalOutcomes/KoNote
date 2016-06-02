@@ -145,7 +145,9 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	createData 'progNotes', progNote, cb
 
 
-Create.planTarget = ({clientFile, metrics}, cb) ->
+Create.planTarget = (clientFile, metrics, cb) ->
+	
+	console.log "metrics >>>> ", metrics
 	metricIds = metrics
 	.map (metric) -> metric.get('id')
 	.toJS()
@@ -265,15 +267,45 @@ Create.progNotes = (quantity, props, cb) ->
 		console.log "Created #{quantity} progNotes"
 		cb null, Imm.List(results)
 	
-Create.planTargets = (quantity, props, cb) ->
-	Async.times quantity, (index, cb) ->
-		Create.planTarget(props, cb)
+Create.planTargets = (targetQuantity, clientFile, metrics, cb) ->
+
+
+	# i have targetQuantity, and want to divide metrics into 
+	#  targetQuantity number of smaller arrays
+
+	Array.prototype.eachSlice = (size) ->
+		@arr = []
+		i = 0
+		l = @length
+		while i < l
+			@arr.push @slice(i, i + size)
+			i += size
+		@arr
+
+	console.log "metrics >>>>>>>", metrics.toJS()
+	console.log "targetQuantity >>>>>>>", targetQuantity
+
+	metricArray = metrics.toJS()
+	metricArrays = metricArray.eachSlice(3)
+
+	metricList = Imm.fromJS(metricArray)
+	console.log "metricList back to imm>>>>>", metricList 
+
+	console.log "metricArrays >>>>>>>>>>>>", metricArrays
+
+	x = 0
+	Async.times targetQuantity, (index, cb) =>
+		targetMetrics = Imm.fromJS(metricArrays[x])
+		console.log "x >>>>>>>", x
+		console.log "targetMetrics>>>>>>>", targetMetrics
+		Create.planTarget(clientFile, targetMetrics, cb)
+		x = x + 1
 	, (err, results) ->
 		if err
 			cb err
 			return
 
-		console.log "Created #{quantity} planTargets"
+		console.log "Created #{targetQuantity} planTargets"
 		cb null, Imm.List(results)
 
 Create.programs = (quantity, cb) ->
