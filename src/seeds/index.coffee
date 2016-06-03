@@ -33,7 +33,7 @@ generateClientFile = (metrics, template, cb) ->
 
 		# Create planTargets
 		(cb) ->
-			Create.planTargets template.planTargets, {clientFile, metrics}, (err, results) ->
+			Create.planTargets template.planTargets, clientFile, metrics, (err, results) ->
 				if err
 					cb err
 					return
@@ -48,11 +48,20 @@ generateClientFile = (metrics, template, cb) ->
 			.map (target) -> target.get('id')
 
 			Async.times template.clientFileSections, (index, cb) ->	
+				# randomly chooses a status, with a higher probability of 'default'
+				randomNumber = Math.floor(Math.random() * 10) + 1
+				if randomNumber > 7 
+					status = 'deactivated'
+				else if randomNumber < 3 
+					status = 'completed'
+				else 
+					status = 'default'
+
 				section = Imm.fromJS {
 					id: generateId()
 					name: Faker.company.bsBuzz()
 					targetIds
-					status: 'default'
+					status
 				}
 				cb null, section
 			
@@ -124,7 +133,7 @@ generateClientFiles = (quantity, metrics, template, cb) ->
 		cb(null, clientFiles)
 
 
-runSeries = (templateFileName) ->
+runSeries = (templateFileName = 'seedSmall') -> 
 	# First tell the system that we're seeding, to prevent
 	# event-driven operations such opening a clientFile
 	global.isSeeding = true
