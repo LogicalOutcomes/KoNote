@@ -17,8 +17,8 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen, 
 	stripMetadata, formatTimestamp, capitalize} = require('../utils').load(win)
 
-	PlanTargetHistory = React.createFactory React.createClass
-		displayName: 'PlanTargetHistory'
+	RevisionHistory = React.createFactory React.createClass
+		displayName: 'RevisionHistory'
 		mixins: [React.addons.PureRenderMixin]
 
 		getDefaultProps: -> {
@@ -123,12 +123,12 @@ load = (win) ->
 			.map(@_buildInChangeLog)
 			.reverse()
 
-			return R.div({className: 'planTargetHistory'},
+			return R.div({className: 'revisionHistory'},
 				R.div({className: 'heading'}, "Revision History")
 
 				(if revisions.isEmpty()
 					R.div({className: 'noRevisions'},
-						"This #{Term 'target'} is new.  ",
+						"This #{@props.dataModelName} is new.  ",
 						"It won't have any history until the #{Term 'client file'} is saved."
 					)
 				else
@@ -147,8 +147,9 @@ load = (win) ->
 		displayName: 'RevisionChangeLog'
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: ->
-			return {isSnapshotVisible: null}
+		getInitialState: -> {
+			isSnapshotVisible: null
+		}
 
 		_toggleSnapshot: -> @setState {isSnapshotVisible: not @state.isSnapshotVisible}
 
@@ -156,7 +157,7 @@ load = (win) ->
 			revision = @props.revision
 			changeLog = revision.get('changeLog')
 
-			return R.section({className: 'revision animated fadeIn'},
+			return R.section({className: 'revision'},
 				R.div({className: 'header'},
 					R.div({className: 'author'},
 						FaIcon('user')
@@ -226,7 +227,7 @@ load = (win) ->
 				)
 
 				(if entry.get('action') is 'created'
-					# We can show full snapshot for target creation
+					# We can show full snapshot for dataModel creation
 					RevisionSnapshot({
 						revision: @props.revision
 						dataModelName: @props.dataModelName
@@ -255,12 +256,12 @@ load = (win) ->
 			)
 
 	RevisionSnapshot = (props) ->
-		revision = props.revision
+		{revision, metricsById, isAnimated} = props
 
 		R.div({
 			className: [
 				'snapshot'
-				'animated fadeInDown' if props.isAnimated
+				'animated fadeInDown' if isAnimated
 			].join ' '
 		},
 			R.div({className: 'name'},
@@ -271,7 +272,7 @@ load = (win) ->
 			)
 			R.div({className: 'metrics'},
 				(revision.get('metricIds').map (metricId) =>
-					metric = props.metricsById.get(metricId)
+					metric = metricsById.get(metricId)
 
 					MetricWidget({
 						isEditable: false
@@ -284,6 +285,6 @@ load = (win) ->
 			)
 		)
 
-	return PlanTargetHistory
+	return RevisionHistory
 
 module.exports = {load}

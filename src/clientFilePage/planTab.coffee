@@ -20,7 +20,7 @@ load = (win) ->
 	R = React.DOM
 
 	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
-	PlanTargetHistory = require('./planTargetHistory').load(win)
+	RevisionHistory = require('./revisionHistory').load(win)
 	ModifySectionStatusDialog = require('./modifySectionStatusDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
@@ -217,7 +217,7 @@ load = (win) ->
 									)
 								)
 							)
-							PlanTargetHistory({
+							RevisionHistory({
 								revisions: selectedTarget.get('revisions')
 								metricsById: @props.metricsById
 								dataModelName: 'target'
