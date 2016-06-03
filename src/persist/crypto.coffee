@@ -79,6 +79,9 @@ class SymmetricEncryptionKey
 		iterationCount = +params.iterationCount
 		salt = params.salt
 
+		# Workaround for bug in NW.js v0.14 (see issue #584)
+		password = new Buffer(password, 'utf8')
+
 		Crypto.pbkdf2 password, salt, iterationCount, 32, 'sha256', (err, keyMat) ->
 			if err
 				cb err
@@ -433,7 +436,6 @@ class PrivateKey
 		encryptedContentKey =
 			encryptedMsg[asymmCiphertextV1Prefix.length...(asymmCiphertextV1Prefix.length + rsaKeyLength/8)]
 
-		# BEGIN NW.js v0.11 code
 		usePromise WebCryptoApi().importKey(
 			'pkcs8', toUint8Array(@_rawPrivEncrKey),
 			{
@@ -459,18 +461,6 @@ class PrivateKey
 
 				encryptedContent = encryptedMsg[(asymmCiphertextV1Prefix.length + rsaKeyLength/8)...]
 				cb null, contentKey.decrypt encryptedContent
-		# END NW.js v0.11 code
-
-		# BEGIN NW.js v0.12+ code
-#		contentKeyText = Crypto.privateDecrypt(
-#			toPemKeyFormat('PRIVATE KEY', @_rawPrivEncrKey),
-#			encryptedContentKey
-#		)
-#		contentKey = SymmetricEncryptionKey.import(contentKeyText.toString())
-#
-#		encryptedContent = encryptedMsg[(asymmCiphertextV1Prefix.length + rsaKeyLength/8)...]
-#		return contentKey.decrypt encryptedContent
-		# END NW.js v0.12+ code
 
 class PublicKey
 	# PRIVATE CONSTRUCTOR
@@ -526,7 +516,7 @@ class PublicKey
 
 		# Generate a new symmetric key and encrypt using RSA
 		contentKey = SymmetricEncryptionKey.generate()
-		# BEGIN NW.js v0.11 code
+
 		usePromise WebCryptoApi().importKey(
 			'spki', toUint8Array(@_rawPubEncrKey),
 			{
@@ -552,20 +542,6 @@ class PublicKey
 				outputBuffers.push contentKey.encrypt(msg)
 
 				cb null, Buffer.concat outputBuffers
-		# END NW.js v0.11 code
-
-		# BEGIN NW.js v0.12+ code
-#		encryptedContentKey = Crypto.publicEncrypt(
-#			toPemKeyFormat('PUBLIC KEY', @_rawPubEncrKey),
-#			new Buffer(contentKey.export())
-#		)
-#		outputBuffers.push encryptedContentKey
-#
-#		# Encrypt message with content key
-#		outputBuffers.push contentKey.encrypt(msg)
-#
-#		return Buffer.concat outputBuffers
-		# END NW.js v0.12+ code
 
 generateSalt = ->
 	# 128-bit salt

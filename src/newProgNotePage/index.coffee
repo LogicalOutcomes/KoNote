@@ -268,6 +268,7 @@ load = (win, {clientFileId}) ->
 								id: unit.get 'id'
 								name: unit.get 'name'
 								sections: clientFile.getIn(['plan', 'sections'])
+								.filter (section) => section.get('status') is 'default'
 								.map (section) =>
 
 									Imm.fromJS {
@@ -297,9 +298,8 @@ load = (win, {clientFileId}) ->
 														value: ''
 													}
 											}
-									}
-								.filter (section) =>
-									section.get('status') is 'default' and not section.get('targets').isEmpty()
+									}								
+								.filter (section) => not section.get('targets').isEmpty()
 							}
 			}	
 

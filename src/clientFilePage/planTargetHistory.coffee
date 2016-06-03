@@ -4,6 +4,7 @@
 
 Imm = require 'immutable'
 Term = require '../term'
+{diffWordsWithSpace} = require 'diff'
 
 load = (win) ->
 	$ = win.jQuery
@@ -25,9 +26,7 @@ load = (win) ->
 		}
 
 		_diffStrings: (oldString, newString) ->
-			{diffChars} = require 'diff'
-
-			diffs = diffChars(oldString, newString)
+			diffs = diffWordsWithSpace(oldString, newString)
 			diffedString = ""
 
 			# Vanilla JS for sake of performance

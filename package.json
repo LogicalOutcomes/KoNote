@@ -1,9 +1,13 @@
 {
-  "name": "konote",
+  "name": "KoNote",
   "displayName": "KoNote",
   "version": "1.7.0-RC1",
+  "author": "KoNote",
   "main": "src/main.html",
   "chromium-args": "--enable-spell-checking",
+  "nwjsBuilder": {
+    "companyName": "KoNote"
+  },
   "window": {
     "icon": "src/icon.png",
     "title": "KoNote",
@@ -33,7 +37,11 @@
     "grunt-text-replace": "^0.4.0",
     "mocha": "^2.2.5",
     "nw": "0.14.5-sdk",
+<<<<<<< HEAD
     "nwjs-builder": "^1.10.4",
+=======
+	"nwjs-builder": "^1.10.5",
+>>>>>>> release-v1.7.0
     "stylus": "^0.50.0"
   },
   "optionalDependencies": {

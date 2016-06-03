@@ -113,8 +113,9 @@ forEachFileIn = (parentDir, loopBody, cb) ->
 			if fileNames.length is 0 then console.warn "(no files to iterate over)"
 
 			Async.eachSeries fileNames, (fileName, cb) ->
-				# Skip .DS_Store & Thumbs.db files
-				if fileName in ['.DS_Store', 'Thumbs.db']
+				# Skip .DS_Store & Thumbs.db files, and known children folders
+				# TODO: Make this a regex check
+				if fileName in ['.DS_Store', 'Thumbs.db', 'progEvents', 'planTargets', 'progNotes']
 					console.warn "Skipping #{fileName}"
 					cb()
 					return
@@ -369,6 +370,48 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 
 # //////////////// Version-Specific Utilities /////////////////
 
+addClientFilePlanSectionStatusField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
+		
+		forEachFileIn clientFileDirPath, (clientFileRev, cb) ->
+			clientFileRevPath = Path.join(clientFileDirPath, clientFileRev)
+			clientFileRevObject = null
+ 
+			Async.series [
+				(cb) =>
+					# Read and decrypt ClientFile object
+					Fs.readFile clientFileRevPath, (err, result) ->
+						if err
+							cb err
+							return
+
+						clientFileRevObject = Imm.fromJS(JSON.parse globalEncryptionKey.decrypt result)
+						cb()
+				(cb) =>
+					# Add 'default' status to every section
+					planSections = clientFileRevObject.getIn(['plan', 'sections']).map (section) ->						
+						return section.set 'status', 'default'
+
+					clientFileRevObject = clientFileRevObject
+					.setIn(['plan', 'sections'], planSections)
+					.toJS()
+
+					console.log "clientFileRevObject", clientFileRevObject
+
+					encryptedObject = globalEncryptionKey.encrypt(JSON.stringify clientFileRevObject)
+
+					Fs.writeFile clientFileRevPath, encryptedObject, cb
+			], cb
+
+		, cb
+	, (err) ->
+		if err
+			console.info "Problem with planSections status"
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
 
 # ////////////////////// Migration Series //////////////////////
 
@@ -377,8 +420,12 @@ module.exports = {
 	run: (dataDir, userName, password, lastMigrationStep, cb) ->
 		globalEncryptionKey = null
 
+		# This is where we add the migration series steps
 		migrationSeries = [
-			
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "1. Add 'status': 'default' property to all plan sections"
+				addClientFilePlanSectionStatusField dataDir, globalEncryptionKey, cb
 		]
 
 
@@ -396,8 +443,6 @@ module.exports = {
 
 				globalEncryptionKey = result
 				cb()
-
-		console.log "migrationSeries", migrationSeries
 
 		# Execute the series
 		Async.series migrationSeries, (err) ->

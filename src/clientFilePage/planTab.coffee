@@ -18,6 +18,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	ReactDOM = win.ReactDOM
 
 	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
 	PlanTargetHistory = require('./planTargetHistory').load(win)
@@ -228,7 +229,7 @@ load = (win) ->
 
 		_focusMetricLookupField: -> $('.lookupField').focus()
 
-		blinkUnsaved: ->			
+		blinkUnsaved: ->
 			toggleBlink = -> $('.hasChanges').toggleClass('blink')
 			secondBlink = ->
 				toggleBlink()
@@ -652,15 +653,20 @@ load = (win) ->
 			sectionsDom = @refs.sections
 			sectionsScrollTop = sectionsDom.scrollTop
 
-			sectionOffsets = @props.plan.get('sections').map (section) =>
-				sectionDom = @refs['section-' + section.get('id')] or {}
+			sectionOffsets = @props.plan.get('sections').flatMap (section) =>
+				ref = @refs['section-' + section.get('id')]
+
+				# Some [inactive] sections may be hidden from DOM, so no refs
+				return [] unless ref?
+
+				sectionDom = ReactDOM.findDOMNode(ref)
 
 				offset = Imm.Map({
-					top: sectionDom.offsetTop or 0
-					height: sectionDom.offsetHeight or 0
+					top: sectionDom.offsetTop
+					height: sectionDom.offsetHeight
 				})
 
-				return [section.get('id'), offset]
+				return [[section.get('id'), offset]]
 			.fromEntrySeq().toMap()
 
 			@setState (s) -> {sectionsScrollTop, sectionOffsets}
@@ -884,8 +890,9 @@ load = (win) ->
 			} = @props
 
 			# Figure out whether already exists in plan
-			isExistingSection = clientFile.getIn(['plan','sections']).contains(section)
-
+			isExistingSection = clientFile.getIn(['plan','sections'])
+			.some (obj) => obj.get('id') is section.get('id')
+		
 			return R.div({
 				className: [
 					'sectionHeader'

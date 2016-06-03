@@ -6,6 +6,8 @@
 # Note: users can add line breaks inside textareas, which may need special
 # handling when being displayed.
 
+_ = require 'underscore'
+
 load = (win) ->
 	React = win.React
 	R = React.DOM
@@ -27,11 +29,16 @@ load = (win) ->
 			})
 
 		componentDidMount: ->
+			@_windowResizeListener = _.debounce =>
+				@_resize()
+			, 50 # milliseconds
+
+			win.addEventListener 'resize', @_windowResizeListener
+
 			@_resize()
 
-			setTimeout(=>
-				@_resize()
-			, 1000)
+		componentWillUnmount: ->
+			win.removeEventListener 'resize', @_windowResizeListener
 
 		_resize: ->
 			return unless @refs.textarea?
