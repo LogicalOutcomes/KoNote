@@ -4,6 +4,7 @@
 
 Imm = require 'immutable'
 Term = require '../term'
+{diffChars} = require 'diff'
 
 load = (win) ->
 	$ = win.jQuery
@@ -20,12 +21,17 @@ load = (win) ->
 		displayName: 'PlanTargetHistory'
 		mixins: [React.addons.PureRenderMixin]
 
+		getDefaultProps: -> {
+			terms: {}
+			metricsById: Imm.List()
+		}
+
 		propTypes: -> {
+			dataModelName: React.PropTypes.string()
 			revisions: React.PropTypes.instanceOf Imm.List
 		}
 
 		_diffStrings: (oldString, newString) ->
-			{diffChars} = require 'diff'
 
 			diffs = diffChars(oldString, newString)
 			diffedString = ""
@@ -43,123 +49,82 @@ load = (win) ->
 
 			return diffedString
 
-		_buildChangeLog: (revision, index) ->
-			# Instantiate our changeLog in the currentRevision object
-			revision = revision.set 'changeLog', Imm.List()
-			revisionId = revision.get 'revisionId'
+		_generateChangeLogEntries: (revision, index) ->
+			changeLog = Imm.List()
 
-			# Find previous revision if exists
-			previousRevision = if index > 0 then @props.revisions.reverse().get(index - 1) else null
+			# Convenience method for adding Imm changeLog entries
+			# Replace property name with term from @props when valid
+			pushToChangeLog = (entry) => 				
+				if @props.terms[entry.property]?
+					entry.property = @props.terms[entry.property]
+				changeLog = changeLog.push Imm.fromJS(entry)
 
-			# No previous revision means this is when it was created!
-			if not previousRevision?
-				createdPlanTarget = Imm.fromJS {
-					property: Term('target')
+			# Return creation change if 0-index, check existence to make sure
+			unless index > 0 and @props.revisions.reverse().get(index - 1)?
+				pushToChangeLog {
+					property: @props.dataModelName
 					action: 'created'
-					icon: 'pencil'
 				}
-				changeLog = revision.get('changeLog').push createdPlanTarget
-				return revision.set('changeLog', changeLog)
+				return changeLog
 
-			# TODO: Generalize these diffs for arrays & strings,
-			# so we (hopefully) don't need to update this as the dataModel changes
-				
-			# Diff the metricIds
-			previousMetricIds = previousRevision.get('metricIds')
-			currentMetricIds = revision.get('metricIds')
+			# Not a first revision, so let's build the diff objects for each property/value
+			# compared to the previous revision (ignoring metadata properties)
+			previousRevision = stripMetadata @props.revisions.reverse().get(index - 1)
+			currentRevision = stripMetadata revision
 
-			unless Imm.is previousMetricIds, currentMetricIds
-				removedMetricIds = previousMetricIds
-				.filterNot (metricId) -> currentMetricIds.contains(metricId)
-				.map (metricId) => Imm.fromJS {
-					revisionId
-					property: Term('metric')
-					action: 'removed'
-					value: metricId
-					icon: 'minus'
-				}
+			currentRevision.entrySeq().forEach ([property, value]) =>
+				previousValue = previousRevision.get(property)
 
-				addedMetricIds = currentMetricIds
-				.filterNot (metricId) -> previousMetricIds.contains(metricId)
-				.map (metricId) => Imm.fromJS {
-					revisionId
-					property: Term('metric')
-					action: 'added'
-					value: metricId
-					icon: 'plus'
-				}
+				# Plain string & number comparison
+				if typeof value in ['string', 'number'] and value isnt previousValue
+					entry = {
+						property
+						action: 'revised'
+						value: @_diffStrings(previousValue, value)
+					}
+					# We'll need the statusReason for 'status' if exists
+					if property is 'status' and currentRevision.has('statusReason')
+						entry.statusReason = currentRevision.has('statusReason')
 
-				revisedMetricIds = removedMetricIds.concat addedMetricIds
-				changeLog = revision.get('changeLog').concat revisedMetricIds
-				revision = revision.set('changeLog', changeLog)
+					pushToChangeLog(entry)
 
+				# Imm.List comparison
+				# For now, let's assume this can only be an Imm List of IDs
+				else if not Imm.is value, previousValue
+					# Generate 'removed' list items
+					previousValue
+					.filterNot (metricId) -> value.contains(metricId)
+					.forEach (arrayItem) -> pushToChangeLog {
+						property
+						action: 'removed'
+						value: arrayItem
+					}
+					# Generate 'added' list items
+					value
+					.filterNot (metricId) -> previousValue.contains(metricId)
+					.forEach (arrayItem) -> pushToChangeLog {
+						property
+						action: 'added'
+						value: arrayItem
+					}
 
-			# Diff the name
-			previousName = previousRevision.get('name')
-			currentName = revision.get('name')			
+			# Fin.
+			return changeLog
 
-			unless previousName is currentName				
-				diffedName = @_diffStrings(previousName, currentName)
-
-				revisedName = Imm.fromJS {
-					revisionId
-					property: 'name'
-					action: 'revised'
-					value: diffedName
-					icon: 'dot-circle-o'
-				}
-
-				changeLog = revision.get('changeLog').push revisedName
-				revision = revision.set('changeLog', changeLog)
-
-
-			# Diff the description
-			previousDescription = previousRevision.get('description')
-			currentDescription = revision.get('description')
-
-			unless previousDescription is currentDescription
-				diffedDescription = @_diffStrings(previousDescription, currentDescription)
-
-				revisedDescription = Imm.fromJS {
-					revisionId
-					property: 'description'
-					action: 'revised'
-					value: diffedDescription
-					icon: 'dot-circle-o'
-				}
-
-				changeLog = revision.get('changeLog').push revisedDescription
-				revision = revision.set('changeLog', changeLog)
-
-			# Diff the status
-			previousStatus = previousRevision.get('status')
-			currentStatus = revision.get('status')
-
-			unless previousStatus is currentStatus
-				revisedStatus = Imm.fromJS {
-					revisionId
-					property: 'status'
-					action: 'revised'
-					value: currentStatus
-					statusReason: revision.get('statusReason')
-					icon: if currentStatus is 'completed' then 'check' else 'ban'
-				}
-
-				changeLog = revision.get('changeLog').push revisedStatus
-				revision = revision.set('changeLog', changeLog)
-
-			return revision		
+		_buildInChangeLog: (revision, index) ->
+			changeLog = @_generateChangeLogEntries revision, index
+			return revision.set 'changeLog', changeLog
 
 		render: ->
 			# Process revision history to devise change logs
 			# They're already in reverse-order, so reverse() to map changes
 			revisions = @props.revisions
 			.reverse()
-			.map(@_buildChangeLog)
+			.map(@_buildInChangeLog)
 			.reverse()
 
 			return R.div({className: 'planTargetHistory'},
-				R.div({className: 'heading'}, "#{Term 'Target'} History")
+				R.div({className: 'heading'}, "Revision History")
 
 				(if revisions.isEmpty()
 					R.div({className: 'noRevisions'},
@@ -172,6 +137,7 @@ load = (win) ->
 							key: revision.get('revisionId')
 							revision
 							metricsById: @props.metricsById
+							dataModelName: @props.dataModelName
 						})
 					)
 				)
@@ -188,7 +154,7 @@ load = (win) ->
 
 		render: ->
 			revision = @props.revision
-			changeLog = revision.get('changeLog')	
+			changeLog = revision.get('changeLog')
 
 			return R.section({className: 'revision animated fadeIn'},
 				R.div({className: 'header'},
@@ -200,13 +166,14 @@ load = (win) ->
 						formatTimestamp revision.get('timestamp')
 					)
 				)
-				R.div({className: 'changeLog'},					
+				R.div({className: 'changeLog'},         
 					(changeLog.map (entry, index) =>
 						ChangeLogEntry({
 							key: index
 							index
 							entry
 							revision
+							dataModelName: @props.dataModelName
 							metricsById: @props.metricsById
 							onToggleSnapshot: @_toggleSnapshot
 							isSnapshotVisible: @state.isSnapshotVisible
@@ -229,6 +196,10 @@ load = (win) ->
 		render: ->
 			entry = @props.entry
 
+			# Account for terminology metricIds -> metrics
+			if entry.get('property') is 'metricIds'
+				entry = entry.set('property', 'metric')
+
 			R.article({className: 'entry', key: @props.index},
 				# Only show snapshotButton on first changeLogEntry
 				(if @props.index is 0 and entry.get('action') isnt 'created'
@@ -246,9 +217,9 @@ load = (win) ->
 				R.span({className: 'action'},
 					# Different display cases for indication of change
 					(if entry.get('action') is 'created'
-						"#{capitalize entry.get('action')} #{entry.get('property')} as: "						
+						"#{capitalize entry.get('action')} #{entry.get('property')} as: "
 					else if entry.get('statusReason')
-						"#{capitalize entry.get('value')} #{Term 'target'} because: "
+						"#{capitalize entry.get('value')} #{@props.dataModelName} because: "
 					else
 						"#{capitalize entry.get('action')} #{entry.get('property')}: "
 					)
@@ -258,6 +229,7 @@ load = (win) ->
 					# We can show full snapshot for target creation
 					RevisionSnapshot({
 						revision: @props.revision
+						dataModelName: @props.dataModelName
 						metricsById: @props.metricsById
 					})
 				else if entry.get('property') is 'metric'
@@ -282,36 +254,35 @@ load = (win) ->
 				)
 			)
 
-	RevisionSnapshot = React.createFactory React.createClass
-		render: ->
-			revision = @props.revision
+	RevisionSnapshot = (props) ->
+		revision = props.revision
 
-			R.div({
-				className: [
-					'snapshot'
-					'animated fadeInDown' if @props.isAnimated
-				].join ' '
-			},
-				R.div({className: 'name'},
-					revision.get('name')
-				)
-				R.div({className: 'description'},
-					renderLineBreaks revision.get('description')
-				)
-				R.div({className: 'metrics'},
-					(revision.get('metricIds').map (metricId) =>
-						metric = @props.metricsById.get(metricId)
+		R.div({
+			className: [
+				'snapshot'
+				'animated fadeInDown' if props.isAnimated
+			].join ' '
+		},
+			R.div({className: 'name'},
+				revision.get('name')
+			)
+			R.div({className: 'description'},
+				renderLineBreaks revision.get('description')
+			)
+			R.div({className: 'metrics'},
+				(revision.get('metricIds').map (metricId) =>
+					metric = props.metricsById.get(metricId)
 
-						MetricWidget({
-							isEditable: false
-							key: metricId
-							name: metric.get('name')
-							definition: metric.get('definition')
-							tooltipViewport: '.snapshot'
-						})
-					)
+					MetricWidget({
+						isEditable: false
+						key: metricId
+						name: metric.get('name')
+						definition: metric.get('definition')
+						tooltipViewport: '.snapshot'
+					})
 				)
 			)
+		)
 
 	return PlanTargetHistory
 

@@ -220,6 +220,10 @@ load = (win) ->
 							PlanTargetHistory({
 								revisions: selectedTarget.get('revisions')
 								metricsById: @props.metricsById
+								dataModelName: 'target'
+								terms: {
+									metric: Term 'metric'
+								}
 							})
 						)
 					)
