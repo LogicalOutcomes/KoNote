@@ -74,6 +74,10 @@ load = (win) ->
 
 	# Converts line breaks to React <br> tags and trims leading or trailing whitespace
 	renderLineBreaks = (text) ->
+		unless text?
+			console.warn "renderLineBreaks received: ", text
+			return ""
+
 		lines = text.trim()
 		.replace(/\r\n/g, '\n') # Windows -> Unix
 		.replace(/\r/g, '\n') # old Mac -> Unix
