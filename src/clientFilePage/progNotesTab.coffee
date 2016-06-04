@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Assert = require 'assert'
@@ -15,7 +15,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	
+
 	CancelProgNoteDialog = require('./cancelProgNoteDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
@@ -25,7 +25,7 @@ load = (win) ->
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	PrintButton = require('../printButton').load(win)
 	WithTooltip = require('../withTooltip').load(win)
-	{FaIcon, openWindow, renderLineBreaks, showWhen
+	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp
 	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
@@ -49,9 +49,9 @@ load = (win) ->
 			progNotesPane = $('.progNotes')
 			progNotesPane.on 'scroll', =>
 				if @props.isLoading is false and @props.headerIndex < @props.progNoteTotal
-					if progNotesPane.scrollTop() + progNotesPane.innerHeight() + progNotesPane.innerHeight() >= progNotesPane[0].scrollHeight
+					if progNotesPane.scrollTop() + (progNotesPane.innerHeight() * 2) >= progNotesPane[0].scrollHeight
 						@props.renewAllData()
-			
+
 			quickNoteToggle = $('.addQuickNote')
 			quickNoteToggle.data 'isVisible', false
 			quickNoteToggle.popover {
@@ -68,7 +68,7 @@ load = (win) ->
 				'''
 			}
 
-		hasChanges: -> 
+		hasChanges: ->
 			@_revisingProgNoteHasChanges()
 
 		render: ->
@@ -112,7 +112,7 @@ load = (win) ->
 								onClick: @_resetRevisingProgNote
 							},
 								"Reset Changes"
-							)							
+							)
 						)
 					else
 						R.div({},
@@ -125,7 +125,7 @@ load = (win) ->
 								"New #{Term 'progress note'}"
 							)
 							R.button({
-								className: "addQuickNote btn btn-default #{showWhen @props.progNoteHistories.size > 0}"						
+								className: "addQuickNote btn btn-default #{showWhen @props.progNoteHistories.size > 0}"
 								onClick: @_toggleQuickNotePopover
 								disabled: @props.isReadOnly
 							},
@@ -153,7 +153,11 @@ load = (win) ->
 								"New #{Term 'progress note'}"
 							)
 							R.button({
-								className: "btn btn-default btn-lg addQuickNote #{showWhen @props.progNoteHistories.size is 0}"								
+								className: [
+									'btn btn-default btn-lg'
+									'addQuickNote'
+									showWhen @props.progNoteHistories.size is 0
+								].join ' '
 								onClick: @_toggleQuickNotePopover
 								disabled: @props.isReadOnly
 							},
@@ -185,7 +189,7 @@ load = (win) ->
 									isEditing
 									revisingProgNote: @state.revisingProgNote
 									startRevisingProgNote: @_startRevisingProgNote
-									cancelRevisingProgNote: @_cancelRevisingProgNote									
+									cancelRevisingProgNote: @_cancelRevisingProgNote
 									updateBasicUnitNotes: @_updateBasicUnitNotes
 									updatePlanTargetNotes: @_updatePlanTargetNotes
 									updateQuickNotes: @_updateQuickNotes
@@ -199,7 +203,8 @@ load = (win) ->
 									QuickNoteView({
 										key: progNote.get('id')
 										progNote
-										clientFile: @props.clientFile										
+										progNoteHistory
+										clientFile: @props.clientFile
 										selectedItem: @state.selectedItem
 										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
 										setSelectedItem: @_setSelectedItem
@@ -216,6 +221,7 @@ load = (win) ->
 									ProgNoteView({
 										key: progNote.get('id')
 										progNote
+										progNoteHistory
 										progEvents
 										eventTypes: @props.eventTypes
 										clientFile: @props.clientFile
@@ -344,7 +350,7 @@ load = (win) ->
 		_setHighlightedProgNoteId: (highlightedProgNoteId) ->
 			@setState {highlightedProgNoteId}
 
-		_setHighlightedQuickNoteId: (highlightedQuickNoteId) ->	
+		_setHighlightedQuickNoteId: (highlightedQuickNoteId) ->
 			@setState {highlightedQuickNoteId}
 
 		_setHighlightedTargetId: (highlightedTargetId) ->
@@ -367,13 +373,13 @@ load = (win) ->
 						danger: {
 							label: "Ignore"
 							className: "btn-danger"
-							callback: => 
+							callback: =>
 								openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
 						}
 						success: {
 							label: "View #{Term 'Plan'}"
 							className: "btn-success"
-							callback: => 
+							callback: =>
 								Bootbox.hideAll()
 								@props.onTabChange 'plan'
 						}
@@ -432,7 +438,7 @@ load = (win) ->
 						@setState {backdate: ''}
 					else
 						@setState {backdate: Moment(e.date).format(Persist.TimestampFormat)}
-				
+
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
 					@setState {backdate: ''}
@@ -451,6 +457,7 @@ load = (win) ->
 
 		render: ->
 			isEditing = @props.isEditing
+			hasRevisions = @props.progNoteHistory.size > 1
 
 			progNote = if isEditing then @props.revisingProgNote else @props.progNote
 
@@ -460,20 +467,10 @@ load = (win) ->
 				# onMouseEnter: @props.setHighlightedQuickNoteId.bind null, @props.progNote.get('id')
 				# onMouseLeave: @props.setHighlightedQuickNoteId.bind null, null
 			},
-				R.div({className: 'header'},
-					R.div({className: 'timestamp'},
-						if progNote.get('backdate') != ''
-							Moment(progNote.get('backdate'), Persist.TimestampFormat)
-							.format('MMMM D, YYYY') + " (late entry)"
-						else
-							Moment(progNote.get('timestamp'), Persist.TimestampFormat)
-							.format 'MMMM D, YYYY [at] HH:mm'
-					)
-					R.div({className: 'author'},
-						' by '
-						progNote.get('author')
-					)					
-				)
+				ProgNoteHeader({
+					progNote
+					hasRevisions
+				})
 				R.div({
 					className: 'notes'
 					onClick: @_selectQuickNote
@@ -486,7 +483,7 @@ load = (win) ->
 							progNote
 							progEvents: @props.progEvents
 							clientFile: @props.clientFile
-						})						
+						})
 					)
 					(if isEditing
 						ExpandingTextArea({
@@ -505,6 +502,19 @@ load = (win) ->
 				progNoteId: @props.progNote.get('id')
 			}
 
+	ProgNoteHeader = ({progNote, hasRevisions}) ->
+		R.div({className: 'header'},
+			R.div({className: 'timestamp'},
+				formatTimestamp(progNote.get('backdate') or progNote.get('timestamp'))
+				" (late entry)" if progNote.get('backdate')
+				" (revised)" if hasRevisions
+			)
+			R.div({className: 'author'},
+				' by '
+				progNote.get('author')
+			)
+		)
+
 	ProgNoteView = React.createFactory React.createClass
 		displayName: 'ProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
@@ -516,9 +526,9 @@ load = (win) ->
 					# Strip empty metric values
 					unitMetrics = unit.get('metrics').filterNot (metric) -> not metric.get('value')
 					return unit.set('metrics', unitMetrics)
-						
+
 				else if unit.get('type') is 'plan'
-					unitSections = unit.get('sections').map (section) ->						
+					unitSections = unit.get('sections').map (section) ->
 						sectionTargets = section.get('targets')
 						# Strip empty metric values
 						.map (target) ->
@@ -535,7 +545,7 @@ load = (win) ->
 
 				else
 					throw new Error "Unknown progNote unit type: #{unit.get('type')}"
-					
+
 			.filterNot (unit) ->
 				# Finally, strip any empty 'basic' notes
 				unit.get('type') is 'basic' and not unit.get('notes') and unit.get('metrics').isEmpty()
@@ -547,26 +557,17 @@ load = (win) ->
 
 			# Filter out any empty notes/metrics, unless we're editing
 			progNote = if isEditing then @props.revisingProgNote else @_filterEmptyValues(@props.progNote)
+			hasRevisions = @props.progNoteHistory.size > 1
 
 			R.div({
 				className: 'full progNote'
 				## TODO: Restore hover feature
 				# onMouseEnter: @props.setHighlightedProgNoteId.bind null, progNote.get('id')
 			},
-				R.div({className: 'header'},
-					R.div({className: 'timestamp'},
-						if progNote.get('backdate') != ''
-							Moment(progNote.get('backdate'), Persist.TimestampFormat)
-							.format('MMMM D, YYYY') + " (late entry)"
-						else
-							Moment(progNote.get('timestamp'), Persist.TimestampFormat)
-							.format 'MMMM D, YYYY [at] HH:mm'
-					)
-					R.div({className: 'author'},
-						' by '
-						progNote.get('author')
-					)
-				)
+				ProgNoteHeader({
+					progNote
+					hasRevisions
+				})
 				R.div({className: 'progNoteList'},
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
 						ProgNoteToolbar({
@@ -599,7 +600,7 @@ load = (win) ->
 											(if isEditing
 												ExpandingTextArea({
 													value: unit.get('notes')
-													onChange: @props.updateBasicUnitNotes.bind null, unitId													
+													onChange: @props.updateBasicUnitNotes.bind null, unitId
 												})
 											else
 												renderLineBreaks unit.get('notes')
@@ -664,7 +665,7 @@ load = (win) ->
 														(if isEditing
 															ExpandingTextArea({
 																value: target.get('notes')
-																onChange: @props.updatePlanTargetNotes.bind null, unitId, sectionId, targetId																
+																onChange: @props.updatePlanTargetNotes.bind null, unitId, sectionId, targetId
 															})
 														else
 															renderLineBreaks target.get('notes')
@@ -694,7 +695,7 @@ load = (win) ->
 					unless @props.progEvents.isEmpty()
 						R.div({className: 'progEvents'}
 							R.h3({}, Term 'Events')
-							(@props.progEvents.map (progEvent) =>								
+							(@props.progEvents.map (progEvent) =>
 								ProgEventsWidget({
 									key: progEvent.get('id')
 									format: 'large'
@@ -702,7 +703,7 @@ load = (win) ->
 									eventTypes: @props.eventTypes
 								})
 							).toJS()...
-						)						
+						)
 				)
 			)
 
@@ -717,12 +718,12 @@ load = (win) ->
 		_selectPlanSectionTarget: (unit, section, target) ->
 			@props.setSelectedItem Imm.fromJS {
 				type: 'planSectionTarget'
-				unitId: unit.get('id')				
+				unitId: unit.get('id')
 				sectionId: section.get('id')
 				targetId: target.get('id')
 				targetName: target.get('name')
 				progNoteId: @props.progNote.get('id')
-			}		
+			}
 
 
 
@@ -740,6 +741,7 @@ load = (win) ->
 			# changed the status.  This assumption may become invalid
 			# when full prognote editing becomes supported.
 			latestRev = @props.progNoteHistory.last()
+			firstRev = @props.progNoteHistory.first()
 			statusChangeRev = latestRev
 
 			return R.div({className: 'cancelStub'},
@@ -759,22 +761,16 @@ load = (win) ->
 
 				R.h3({},
 					"Cancelled: "
-
-					if @props.progNoteHistory.first().get('backdate')
-						Moment(@props.progNoteHistory.first().get('backdate'), Persist.TimestampFormat)
-						.format('MMMM D, YYYY') + " (late entry)"
-					else
-						Moment(@props.progNoteHistory.first().get('timestamp'), Persist.TimestampFormat)
-						.format 'MMMM D, YYYY, HH:mm'
+					formatTimestamp(firstRev.get('backdate') or firstRev.get('timestamp'))
+					" (late entry)" if firstRev.get('backdate')
 				),
 
 				R.div({className: "details #{showWhen @state.isExpanded}"},
 					R.h4({},
 						"Cancelled by "
 						statusChangeRev.get('author')
-						" on ",
-						Moment(statusChangeRev.get('timestamp'), Persist.TimestampFormat)
-						.format 'MMMM D, YYYY [at] HH:mm'
+						" on "
+						formatTimestamp statusChangeRev.get('timestamp')
 					),
 					R.h4({}, "Reason for cancellation:")
 					R.div({className: 'reason'},
@@ -785,7 +781,7 @@ load = (win) ->
 						when 'basic'
 							QuickNoteView({
 								progNote: @props.progNoteHistory.first()
-								clientFile: @props.clientFile									
+								clientFile: @props.clientFile
 								selectedItem: @props.selectedItem
 								isReadOnly: true
 
@@ -860,7 +856,7 @@ load = (win) ->
 				progEvents
 			},
 				R.a({}, "Cancel")
-			)						
+			)
 		)
 
 	return {ProgNotesView}
