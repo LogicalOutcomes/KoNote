@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Moment = require 'moment'
@@ -106,7 +106,7 @@ load = (win) ->
 		.delete('timestamp')
 
 	formatTimestamp = (timestamp) ->
-		return Moment(timestamp, TimestampFormat).format('Do MMM, YYYY [at] h:mma')
+		return Moment(timestamp, TimestampFormat).format('MMMM Do, YYYY [at] h:mma')
 
 	capitalize = (word) ->
     return word.charAt(0).toUpperCase() + word.slice(1)
@@ -119,7 +119,7 @@ load = (win) ->
 
 		return text[...(maxLength - 1)] + '…'
 
-	
+
 	##### Convenience methods for fetching data from a progNote
 
 	getUnitIndex = (progNote, unitId) ->
