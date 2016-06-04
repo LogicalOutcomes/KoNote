@@ -1,9 +1,9 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
-Term = require '../term'
+Term = require './term'
 {diffChars} = require 'diff'
 
 load = (win) ->
@@ -12,10 +12,10 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
-	MetricWidget = require('../metricWidget').load(win)
+	MetricWidget = require('./metricWidget').load(win)
 
-	{FaIcon, renderLineBreaks, showWhen, 
-	stripMetadata, formatTimestamp, capitalize} = require('../utils').load(win)
+	{FaIcon, renderLineBreaks, showWhen,
+	stripMetadata, formatTimestamp, capitalize} = require('./utils').load(win)
 
 	RevisionHistory = React.createFactory React.createClass
 		displayName: 'RevisionHistory'
@@ -24,6 +24,7 @@ load = (win) ->
 		getDefaultProps: -> {
 			terms: {}
 			metricsById: Imm.List()
+			disableSnapshot: false
 		}
 
 		propTypes: -> {
@@ -54,7 +55,7 @@ load = (win) ->
 
 			# Convenience method for adding Imm changeLog entries
 			# Replace property name with term from @props when valid
-			pushToChangeLog = (entry) => 				
+			pushToChangeLog = (entry) =>
 				if @props.terms[entry.property]?
 					entry.property = @props.terms[entry.property]
 				changeLog = changeLog.push Imm.fromJS(entry)
@@ -138,6 +139,7 @@ load = (win) ->
 							revision
 							metricsById: @props.metricsById
 							dataModelName: @props.dataModelName
+							disableSnapshot: @props.disableSnapshot
 						})
 					)
 				)
@@ -167,7 +169,7 @@ load = (win) ->
 						formatTimestamp revision.get('timestamp')
 					)
 				)
-				R.div({className: 'changeLog'},         
+				R.div({className: 'changeLog'},
 					(changeLog.map (entry, index) =>
 						ChangeLogEntry({
 							key: index
@@ -178,9 +180,10 @@ load = (win) ->
 							metricsById: @props.metricsById
 							onToggleSnapshot: @_toggleSnapshot
 							isSnapshotVisible: @state.isSnapshotVisible
+							disableSnapshot: @props.disableSnapshot
 						})
 					)
-					(if @state.isSnapshotVisible
+					(if @state.isSnapshotVisible and not @props.disableSnapshot
 						RevisionSnapshot({
 							revision
 							metricsById: @props.metricsById
@@ -203,11 +206,11 @@ load = (win) ->
 
 			R.article({className: 'entry', key: @props.index},
 				# Only show snapshotButton on first changeLogEntry
-				(if @props.index is 0 and entry.get('action') isnt 'created'
+				(if not @props.disableSnapshot and @props.index is 0 and entry.get('action') isnt 'created'
 					R.button({
 						className: 'btn btn-default btn-xs snapshotButton'
 						onClick: @props.onToggleSnapshot
-					}, 
+					},
 						if not @props.isSnapshotVisible then "view" else "hide"
 						" full revision"
 					)
@@ -226,7 +229,7 @@ load = (win) ->
 					)
 				)
 
-				(if entry.get('action') is 'created'
+				(if entry.get('action') is 'created' and not @props.disableSnapshot
 					# We can show full snapshot for dataModel creation
 					RevisionSnapshot({
 						revision: @props.revision
@@ -257,6 +260,7 @@ load = (win) ->
 
 	RevisionSnapshot = (props) ->
 		{revision, metricsById, isAnimated} = props
+		hasMetrics = revision.get('metricIds')?
 
 		R.div({
 			className: [
@@ -267,20 +271,24 @@ load = (win) ->
 			R.div({className: 'name'},
 				revision.get('name')
 			)
+
 			R.div({className: 'description'},
 				renderLineBreaks revision.get('description')
 			)
-			R.div({className: 'metrics'},
-				(revision.get('metricIds').map (metricId) =>
-					metric = metricsById.get(metricId)
 
-					MetricWidget({
-						isEditable: false
-						key: metricId
-						name: metric.get('name')
-						definition: metric.get('definition')
-						tooltipViewport: '.snapshot'
-					})
+			(if hasMetrics
+				R.div({className: 'metrics'},
+					(revision.get('metricIds').map (metricId) =>
+						metric = metricsById.get(metricId)
+
+						MetricWidget({
+							isEditable: false
+							key: metricId
+							name: metric.get('name')
+							definition: metric.get('definition')
+							tooltipViewport: '.snapshot'
+						})
+					)
 				)
 			)
 		)

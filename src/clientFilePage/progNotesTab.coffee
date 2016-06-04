@@ -25,6 +25,7 @@ load = (win) ->
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	PrintButton = require('../printButton').load(win)
 	WithTooltip = require('../withTooltip').load(win)
+
 	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp
 	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
 
@@ -140,7 +141,7 @@ load = (win) ->
 						className: 'progNotes'
 						ref: 'progNotes'
 					},
-						R.div({className: "empty #{showWhen @props.progNoteHistories.size is 0}"},
+						R.div({className: "empty #{showWhen (@props.progNoteHistories.size is 0)}"},
 							R.div({className: 'message'},
 								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
 							)
@@ -156,7 +157,7 @@ load = (win) ->
 								className: [
 									'btn btn-default btn-lg'
 									'addQuickNote'
-									showWhen @props.progNoteHistories.size is 0
+									showWhen (@props.progNoteHistories.size is 0)
 								].join ' '
 								onClick: @_toggleQuickNotePopover
 								disabled: @props.isReadOnly
@@ -208,6 +209,7 @@ load = (win) ->
 										selectedItem: @state.selectedItem
 										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
 										setSelectedItem: @_setSelectedItem
+										selectProgNote: @_selectProgNote
 										isReadOnly: @props.isReadOnly
 
 										isEditing
@@ -226,6 +228,7 @@ load = (win) ->
 										eventTypes: @props.eventTypes
 										clientFile: @props.clientFile
 										setSelectedItem: @_setSelectedItem
+										selectProgNote: @_selectProgNote
 										setEditingProgNoteId: @_setEditingProgNoteId
 										updatePlanTargetNotes: @_updatePlanTargetNotes
 										setHighlightedProgNoteId: @_setHighlightedProgNoteId
@@ -253,6 +256,7 @@ load = (win) ->
 						progNoteHistories: @props.progNoteHistories
 						progEvents: @props.progEvents
 						eventTypes: @props.eventTypes
+						metricsById: @props.metricsById
 					})
 				)
 			)
@@ -450,6 +454,12 @@ load = (win) ->
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
 
+		_selectProgNote: (progNote) ->
+			@_setSelectedItem Imm.fromJS {
+				type: 'progNote'
+				progNoteId: progNote.get('id')
+			}
+
 
 	QuickNoteView = React.createFactory React.createClass
 		displayName: 'QuickNoteView'
@@ -470,6 +480,7 @@ load = (win) ->
 				ProgNoteHeader({
 					progNote
 					hasRevisions
+					selectProgNote: @props.selectProgNote
 				})
 				R.div({
 					className: 'notes'
@@ -501,19 +512,6 @@ load = (win) ->
 				type: 'quickNote'
 				progNoteId: @props.progNote.get('id')
 			}
-
-	ProgNoteHeader = ({progNote, hasRevisions}) ->
-		R.div({className: 'header'},
-			R.div({className: 'timestamp'},
-				formatTimestamp(progNote.get('backdate') or progNote.get('timestamp'))
-				" (late entry)" if progNote.get('backdate')
-				" (revised)" if hasRevisions
-			)
-			R.div({className: 'author'},
-				' by '
-				progNote.get('author')
-			)
-		)
 
 	ProgNoteView = React.createFactory React.createClass
 		displayName: 'ProgNoteView'
@@ -567,6 +565,7 @@ load = (win) ->
 				ProgNoteHeader({
 					progNote
 					hasRevisions
+					selectProgNote: @props.selectProgNote
 				})
 				R.div({className: 'progNoteList'},
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
@@ -817,6 +816,23 @@ load = (win) ->
 		_toggleDetails: (event) ->
 			@setState (s) -> {isExpanded: not s.isExpanded}
 
+	ProgNoteHeader = ({progNote, hasRevisions, selectProgNote}) ->
+		R.div({className: 'header'},
+			R.div({className: 'timestamp'},
+				formatTimestamp(progNote.get('backdate') or progNote.get('timestamp'))
+				" (late entry)" if progNote.get('backdate')
+
+				if hasRevisions
+					R.a({
+						className: 'selectProgNoteButton'
+						onClick: selectProgNote.bind null, progNote
+					}, "(revised)")
+			)
+			R.div({className: 'author'},
+				' by '
+				progNote.get('author')
+			)
+		)
 
 	ProgNoteToolbar = (props) ->
 		{

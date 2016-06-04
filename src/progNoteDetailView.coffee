@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
@@ -12,8 +12,11 @@ Persist = require './persist'
 load = (win) ->
 	React = win.React
 	R = React.DOM
+
 	ProgEventsWidget = require('./progEventsWidget').load(win)
 	MetricWidget = require('./metricWidget').load(win)
+	RevisionHistory = require('./revisionHistory').load(win)
+
 	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
 	ProgNoteDetailView = React.createFactory React.createClass
@@ -34,6 +37,21 @@ load = (win) ->
 				)
 
 			switch @props.item.get('type')
+				when 'progNote'
+					# First figure out which progNote history to diff through
+					progNoteHistory = @props.progNoteHistories.find (progNoteHistory) =>
+						progNoteHistory.last().get('id') is @props.item.get('progNoteId')
+
+					return RevisionHistory({
+						revisions: progNoteHistory
+						metricsById: @props.metricsById
+						dataModelName: Term 'progress note'
+						terms: {
+							metric: Term 'metric'
+						}
+						disableSnapshot: true
+					})
+
 				when 'basicUnit'
 					unitId = @props.item.get('unitId')
 					itemName = @props.item.get('unitName')
@@ -46,7 +64,7 @@ load = (win) ->
 						switch progNote.get('type')
 							when 'basic'
 								return Imm.List()
-							when 'full'								
+							when 'full'
 								return progNote.get('units')
 								.filter (unit) => # find relevant units
 									return unit.get('id') is unitId
@@ -126,7 +144,7 @@ load = (win) ->
 
 						return Imm.fromJS {
 							progNoteId
-							status: progNote.get('status')							
+							status: progNote.get('status')
 							author: initialAuthor
 							timestamp: createdTimestamp
 							backdate: progNote.get('backdate')
@@ -136,13 +154,13 @@ load = (win) ->
 						return progNote
 						.set('author', initialAuthor)
 						.set('timestamp', createdTimestamp)
-					
+
 				else
 					throw new Error "unknown item type: #{JSON.stringify @props.item?.get('type')}"
 
 			# Filter out blank & cancelled notes, and sort by date/backdate
 			entries = entries
-			.filter (entry) -> 
+			.filter (entry) ->
 				entry.get('notes').trim().length > 0 and
 				entry.get('status') isnt 'cancelled'
 			.sortBy (entry) ->
@@ -158,7 +176,7 @@ load = (win) ->
 						},
 							(if itemDescription?
 								R.span({
-									className: 'toggleDescriptionButton'								
+									className: 'toggleDescriptionButton'
 								},
 									if @state.descriptionIsVisible then "Hide" else "Click to view"
 									" description"
@@ -217,7 +235,7 @@ load = (win) ->
 							)
 
 							if entry.get('metrics')
-								R.div({className: 'metrics'},								
+								R.div({className: 'metrics'},
 									entry.get('metrics').map (metric) =>
 										MetricWidget({
 											isEditable: false
