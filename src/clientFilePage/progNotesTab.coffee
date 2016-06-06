@@ -592,9 +592,7 @@ load = (win) ->
 										key: unitId
 										onClick: @_selectBasicUnit.bind null, unit
 									},
-										R.h3({},
-											R.input({}, unit.get('name'))
-										)
+										R.h3({}, unit.get('name'))
 										R.div({className: 'notes'},
 											(if isEditing
 												ExpandingTextArea({
