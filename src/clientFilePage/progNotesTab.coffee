@@ -526,7 +526,8 @@ load = (win) ->
 					return unit.set('metrics', unitMetrics)
 
 				else if unit.get('type') is 'plan'
-					unitSections = unit.get('sections').map (section) ->
+					unitSections = unit.get('sections')
+					.map (section) ->
 						sectionTargets = section.get('targets')
 						# Strip empty metric values
 						.map (target) ->
@@ -538,6 +539,9 @@ load = (win) ->
 							not target.get('notes') and target.get('metrics').isEmpty()
 
 						return section.set('targets', sectionTargets)
+
+					.filterNot (section) ->
+						section.get('targets').isEmpty()
 
 					return unit.set('sections', unitSections)
 
@@ -579,7 +583,7 @@ load = (win) ->
 							isEditing
 							isReadOnly: @props.isReadOnly
 							startRevisingProgNote: @props.startRevisingProgNote
-							progNote
+							progNote: @props.progNote
 							progEvents: @props.progEvents
 							clientFile: @props.clientFile
 						})
