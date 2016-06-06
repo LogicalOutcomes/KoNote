@@ -24,6 +24,7 @@ Create.clientFile = (cb) ->
 	clientFile = Imm.fromJS {
 		clientName: {first, middle, last}
 		recordId: recordId
+		status: 'default'
 		plan: {
 			sections: []
 		}
