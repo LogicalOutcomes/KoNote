@@ -128,6 +128,9 @@ load = (win) ->
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
 
+		_updateStatus: (event) ->
+			@setState {status: event.target.value}
+
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
