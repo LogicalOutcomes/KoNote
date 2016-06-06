@@ -545,8 +545,14 @@ load = (win) ->
 					throw new Error "Unknown progNote unit type: #{unit.get('type')}"
 
 			.filterNot (unit) ->
-				# Finally, strip any empty 'basic' notes
-				unit.get('type') is 'basic' and not unit.get('notes') and unit.get('metrics').isEmpty()
+				# Finally, strip any empty 'basic' units, or 'plan' units with 0 sections
+				if unit.get('type') is 'basic'
+					return not unit.get('notes') and unit.get('metrics').isEmpty()
+				else if unit.get('type') is 'plan'
+					return unit.get('sections').isEmpty()
+				else
+					throw new Error "Unknown progNote unit type: #{unit.get('type')}"
+
 
 			return progNote.set('units', progNoteUnits)
 
