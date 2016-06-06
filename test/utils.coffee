@@ -1,5 +1,3 @@
-require 'string.prototype.startswith'
-
 Assert = require 'assert'
 
 {CustomError} = require '../src/utils'
