@@ -427,6 +427,10 @@ load = (win) ->
 										extraPath: ['clientName', 'middle']
 									}
 									{
+										name: "Status"
+										dataPath: ['status']
+									}
+									{
 										name: Config.clientFileRecordId.label
 										dataPath: ['recordId']
 										isDisabled: not Config.clientFileRecordId.isEnabled
