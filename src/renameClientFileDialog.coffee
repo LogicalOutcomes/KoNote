@@ -32,6 +32,7 @@ load = (win) ->
 				middleName: @props.clientFile.getIn(['clientName', 'middle'])
 				lastName: @props.clientFile.getIn(['clientName', 'last'])
 				recordId: @props.clientFile.get('recordId')
+				status: @props.clientFile.get('status')
 			}
 
 		render: ->
@@ -68,6 +69,24 @@ load = (win) ->
 							value: @state.lastName
 							onKeyDown: @_onEnterKeyDown
 						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Client File Status"),
+						R.div({id: 'statusButtons'},
+							R.button({
+								className: 'btn btn-default'
+								
+								},
+							"Default"
+							)
+							R.button({
+								className: 'btn btn-default'
+								
+								},
+							"Deactivated"
+							)
+						)
+
 					)
 					if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
