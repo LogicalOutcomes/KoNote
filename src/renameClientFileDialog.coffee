@@ -75,12 +75,17 @@ load = (win) ->
 						R.div({id: 'statusButtons'},
 							R.button({
 								className: 'btn btn-default'
+								onclick: @_updateStatus
+								value: 'default'
 								
 								},
 							"Default"
 							)
 							R.button({
 								className: 'btn btn-default'
+								onclick: @_updateStatus
+								value: 'deactivated'
+								key: 'deactivated'
 								
 								},
 							"Deactivated"
@@ -143,6 +148,7 @@ load = (win) ->
 			.setIn(['clientName', 'middle'], @state.middleName)
 			.setIn(['clientName', 'last'], @state.lastName)
 			.set('recordId', @state.recordId)
+			.set('status', @state.status)
 
 			global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
