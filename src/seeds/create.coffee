@@ -268,7 +268,6 @@ Create.progNotes = (quantity, props, cb) ->
 		cb null, Imm.List(results)
 	
 Create.planTargets = (targetQuantity, clientFile, metrics, cb) ->
-	
 	sliceSize = Math.floor(metrics.size / targetQuantity)
 	x = 0
 	Async.times targetQuantity, (index, cb) =>
