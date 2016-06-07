@@ -268,38 +268,13 @@ Create.progNotes = (quantity, props, cb) ->
 		cb null, Imm.List(results)
 	
 Create.planTargets = (targetQuantity, clientFile, metrics, cb) ->
-
-
-	# i have targetQuantity, and want to divide metrics into 
-	#  targetQuantity number of smaller arrays
-
-	Array.prototype.eachSlice = (size) ->
-		@arr = []
-		i = 0
-		l = @length
-		while i < l
-			@arr.push @slice(i, i + size)
-			i += size
-		@arr
-
-	console.log "metrics >>>>>>>", metrics.toJS()
-	console.log "targetQuantity >>>>>>>", targetQuantity
-
-	metricArray = metrics.toJS()
-	metricArrays = metricArray.eachSlice(3)
-
-	metricList = Imm.fromJS(metricArray)
-	console.log "metricList back to imm>>>>>", metricList 
-
-	console.log "metricArrays >>>>>>>>>>>>", metricArrays
-
+	
+	sliceSize = Math.floor(metrics.size / targetQuantity)
 	x = 0
 	Async.times targetQuantity, (index, cb) =>
-		targetMetrics = Imm.fromJS(metricArrays[x])
-		console.log "x >>>>>>>", x
-		console.log "targetMetrics>>>>>>>", targetMetrics
+		targetMetrics = metrics.slice(x, x + sliceSize)
 		Create.planTarget(clientFile, targetMetrics, cb)
-		x = x + 1
+		x = x + sliceSize
 	, (err, results) ->
 		if err
 			cb err
