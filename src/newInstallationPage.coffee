@@ -310,6 +310,7 @@ load = (win) ->
 			$nwbrowse = $(@refs.nwbrowse)
 			$nwbrowse
 			.off()
+			.attr('accept', ".zip")
 			.on('change', (event) => @_restoreBackup event.target.value)
 			.click()
 	
@@ -344,14 +345,42 @@ load = (win) ->
 							return
 					return
 				zipfile.on 'close', ->
-					console.log "finish data import"
-					Bootbox.alert {
-						title: "Data Import Successful!"
-						message: "KoNote will now restart..."
-						callback: ->
-							global.isSetUp = true
-							win.close(true)
-					}
+					# zip extracted; check metadata
+					unless Fs.existsSync(path.join(Config.dataDirectory, 'version.json'))
+						Rimraf Config.dataDirectory, (err) =>
+							if err
+								Bootbox.alert """
+									ERROR: '#{err.code}'.
+									Please contact #{Config.productName} technical support.
+								""", @props.closeWindow
+								return
+						Bootbox.alert {
+							title: "Data Import Failed!"
+							message: "Invalid file. Please ensure you have selected the correct backup file."
+						}
+						return
+					appVersion = JSON.parse(Fs.readFileSync('./package.json')).version
+					dataVersion = JSON.parse(Fs.readFileSync(path.join(Config.dataDirectory, 'version.json'))).dataVersion
+					if appVersion is dataVersion
+						Bootbox.alert {
+							title: "Data Import Successful!"
+							message: "KoNote will now restart..."
+							callback: ->
+								global.isSetUp = true
+								win.close(true)
+						}
+					else
+						Rimraf Config.dataDirectory, (err) =>
+							if err
+								Bootbox.alert """
+									ERROR: '#{err.code}'.
+									Please contact #{Config.productName} technical support.
+								""", @props.closeWindow
+								return
+							Bootbox.alert {
+								title: "Data Import Failed!"
+								message: "Backup version (#{dataVersion}) does not match current KoNote version (#{appVersion}). A data migration is required."
+							}
 					return
 				return
 		
