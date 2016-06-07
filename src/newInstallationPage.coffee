@@ -10,6 +10,10 @@ Config = require './config'
 Persist = require './persist'
 Atomic = require './persist/atomic'
 
+yauzl = require('yauzl');
+path = require("path")
+mkdirp = require("mkdirp")
+
 
 load = (win) ->
 	# Libraries from browser context
@@ -185,10 +189,23 @@ load = (win) ->
 						(switch @state.openTab
 							when 'index'
 								R.div({ref: 'index'},
+									# hidden input for opening backup zip
+									R.input({
+										ref: 'nwbrowse'
+										className: 'hidden'
+										type: 'file'
+									})
 									R.h2({}, "Thank you for trying the #{Config.productName} beta!")
 									R.p({}, "To get started, let's set up your user account...")
 									R.br({})
 									R.div({className: 'btn-toolbar'},
+										R.button({
+											className: 'btn btn-lg btn-default'
+											onClick: @_import
+										}, 
+											"Restore Backup"
+											FaIcon('upload right-side')
+										)
 										R.button({
 											className: 'btn btn-lg btn-success'
 											onClick: @_switchTab.bind null, 'createAdmin'
@@ -288,6 +305,56 @@ load = (win) ->
 				)
 			)
 
+		_import: ->
+			# Configures hidden file inputs with custom attributes, and clicks it
+			$nwbrowse = $(@refs.nwbrowse)
+			$nwbrowse
+			.off()
+			.on('change', (event) => @_restoreBackup event.target.value)
+			.click()
+	
+		_restoreBackup: (backupfile) ->
+			console.log "begin data import..."
+			yauzl.open backupfile, { lazyEntries: true }, (err, zipfile, cb) ->
+				if err
+					throw err
+				zipfile.readEntry()
+				zipfile.on 'entry', (entry) ->
+					if /\/$/.test(entry.fileName)
+						# directory file names end with '/'
+						mkdirp entry.fileName, (err) ->
+							if err
+								throw err
+							zipfile.readEntry()
+							return
+					else
+						# file entry
+						zipfile.openReadStream entry, (err, readStream) ->
+							if err
+								throw err
+							# ensure parent directory exists
+							mkdirp path.dirname(entry.fileName), (err) ->
+								if err
+									throw err
+								readStream.pipe Fs.createWriteStream(entry.fileName)
+								readStream.on 'end', ->
+									zipfile.readEntry()
+									return
+								return
+							return
+					return
+				zipfile.on 'close', ->
+					console.log "finish data import"
+					Bootbox.alert {
+						title: "Data Import Successful!"
+						message: "KoNote will now restart..."
+						callback: ->
+							global.isSetUp = true
+							win.close(true)
+					}
+					return
+				return
+		
 		_copyHelpEmail: (emailAddress) ->
 			clipboard = Gui.Clipboard.get()
 			clipboard.set emailAddress
