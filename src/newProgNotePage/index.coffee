@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # UI logic for the progress note creation window
@@ -27,11 +27,11 @@ load = (win, {clientFileId}) ->
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
-	ProgNoteDetailView = require('../progNoteDetailView').load(win)	
+	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	Dialog = require('../dialog').load(win)
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
-	
+
 	{FaIcon, renderName, showWhen, stripMetadata,
 	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
 
@@ -93,7 +93,7 @@ load = (win, {clientFileId}) ->
 			progNoteHeaders = null
 			progEventHeaders = null
 			eventTypeHeaders = null
-			eventTypes = null			
+			eventTypes = null
 
 			Async.series [
 				(cb) =>
@@ -264,7 +264,7 @@ load = (win, {clientFileId}) ->
 										value: ''
 									}
 							}
-						when 'plan'							
+						when 'plan'
 							return Imm.fromJS {
 								type: 'plan'
 								id: unit.get 'id'
@@ -276,12 +276,12 @@ load = (win, {clientFileId}) ->
 									Imm.fromJS {
 										id: section.get 'id'
 										name: section.get 'name'
-										targets: section.get 'targetIds'										
+										targets: section.get 'targetIds'
 										.filter (targetId) =>
 											target = planTargetsById.get targetId
 											lastRev = target.last()
 											return lastRev.get('status') is 'default'
-										.map (targetId) =>											
+										.map (targetId) =>
 											target = planTargetsById.get targetId
 											lastRev = target.last()
 
@@ -300,10 +300,10 @@ load = (win, {clientFileId}) ->
 														value: ''
 													}
 											}
-									}								
+									}
 								.filter (section) => not section.get('targets').isEmpty()
 							}
-			}	
+			}
 
 	NewProgNotePageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -326,7 +326,7 @@ load = (win, {clientFileId}) ->
 			if @hasChanges()
 				Bootbox.dialog {
 					message: "Are you sure you want to cancel this #{Term('progress note')}?"
-					buttons: {						
+					buttons: {
 						cancel: {
 							label: "Cancel"
 							className: 'btn-default'
@@ -347,7 +347,7 @@ load = (win, {clientFileId}) ->
 			hasProgEvents = not @state.progEvents.isEmpty()
 
 			return hasProgNotes or hasProgEvents
-		
+
 		componentWillReceiveProps: (newProps) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
 				@setState {progNote: newProps.progNote}
@@ -355,9 +355,9 @@ load = (win, {clientFileId}) ->
 		componentDidMount: ->
 			setTimeout(=>
 				global.ActiveSession.persist.eventBus.trigger 'newProgNotePage:loaded'
-				
+
 				Window.show()
-				Window.focus()				
+				Window.focus()
 			, 500)
 
 		componentDidUpdate: ->
@@ -404,7 +404,7 @@ load = (win, {clientFileId}) ->
 
 			clientName = renderName @props.clientFile.get('clientName')
 			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) - 
+				#{Config.productName} (#{global.ActiveSession.userName}) -
 				#{clientName}: New #{Term 'Progress Note'}
 			"""
 
@@ -436,10 +436,10 @@ load = (win, {clientFileId}) ->
 									R.div({
 										key: unitId
 										className: [
-											'unit basic isEventRelatable'											
+											'unit basic isEventRelatable'
 											'hoveredEventPlanRelation' if Imm.is unit, @state.hoveredEventPlanRelation
 											'selectedEventPlanRelation' if Imm.is unit, @state.selectedEventPlanRelation
-										].join ' '										
+										].join ' '
 										onMouseOver: @_hoverEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
 										onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
 										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
@@ -476,14 +476,14 @@ load = (win, {clientFileId}) ->
 									},
 										R.h1({className: 'unitName'}, unit.get 'name')
 										R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
-											"This is empty because the client has no active 
+											"This is empty because the client has no active
 											#{Term 'plan'} #{Term 'sections'} or #{Term 'targets'}."
 										)
 										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
 
 											R.section({
-												key: sectionId												
+												key: sectionId
 												className: [
 													'hoveredEventPlanRelation' if Imm.is section, @state.hoveredEventPlanRelation
 													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
@@ -538,7 +538,7 @@ load = (win, {clientFileId}) ->
 																	isEditable: true
 																}
 															)
-														)	
+														)
 													)
 												).toJS()...
 											)
@@ -551,9 +551,9 @@ load = (win, {clientFileId}) ->
 						R.button({
 							id: 'saveNoteButton'
 							className: 'btn btn-success btn-lg animated fadeInUp'
-							disabled: @state.editingWhichEvent?							
+							disabled: @state.editingWhichEvent?
 							onClick: @_save
-						},							
+						},
 							"Save "
 							FaIcon('check')
 						)
@@ -573,17 +573,17 @@ load = (win, {clientFileId}) ->
 							'eventsList'
 							'editMode' if @state.editingWhichEvent?
 						].join ' '
-					},						
+					},
 						(@state.progEvents.map (thisEvent, index) =>
 							isBeingEdited = @state.editingWhichEvent is index
 
-							R.div({								
+							R.div({
 								className: [
 										'eventTab'
 										'isEditing' if isBeingEdited
 								].join ' '
 								key: index
-							}, 
+							},
 								R.div({
 									className: 'icon'
 									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
@@ -607,7 +607,7 @@ load = (win, {clientFileId}) ->
 								})
 							)
 						)
-						R.button({							
+						R.button({
 							className: 'btn btn-default addEventButton'
 							onClick: @_newEventTab
 							disabled: @state.isLoading or @state.editingWhichEvent?
@@ -616,10 +616,10 @@ load = (win, {clientFileId}) ->
 				)
 			)
 
-		_newEventTab: ->			
+		_newEventTab: ->
 			newProgEvent = {}
 			# Add in the new event, select last one
-			@setState {progEvents: @state.progEvents.push newProgEvent}, => 
+			@setState {progEvents: @state.progEvents.push newProgEvent}, =>
 				@setState {editingWhichEvent: @state.progEvents.size - 1}
 
 		_editEventTab: (index) ->
@@ -628,7 +628,7 @@ load = (win, {clientFileId}) ->
 		_saveEventData: (data, index) ->
 			newProgEvents = @state.progEvents.set index, data
 			@setState {progEvents: newProgEvents}, @_cancelEditing
-			
+
 		_cancelEditing: (index) ->
 			# Delete if new event
 			if _.isEmpty @state.progEvents.get(index)
@@ -753,9 +753,14 @@ load = (win, {clientFileId}) ->
 			targetIndex = getPlanTargetIndex @state.progNote, unitIndex, sectionIndex, targetId
 
 			metricIndex = @state.progNote.getIn(
-				['units', unitIndex, 'sections', sectionIndex, 'targets', targetIndex, 'metrics']
+				[
+					'units', unitIndex
+					'sections', sectionIndex
+					'targets', targetIndex,
+					'metrics'
+				]
 			).findIndex (metric) =>
-				return metric.get('id') is metricId			
+				return metric.get('id') is metricId
 
 			@setState {
 				progNote: @state.progNote.setIn(
@@ -787,8 +792,8 @@ load = (win, {clientFileId}) ->
 						progNoteId = obj.get('id')
 						cb()
 				(cb) =>
-					Async.each @state.progEvents.toArray(), (progEvent, cb) =>		
-						# Tack on the new progress note ID to all created events					
+					Async.each @state.progEvents.toArray(), (progEvent, cb) =>
+						# Tack on the new progress note ID to all created events
 						progEvent = Imm.fromJS(progEvent)
 						.set('relatedProgNoteId', progNoteId)
 						.set('clientFileId', clientFileId)
@@ -808,7 +813,7 @@ load = (win, {clientFileId}) ->
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """
-							An error occurred while saving your work.  
+							An error occurred while saving your work.
 							Please check your network connection and try again.
 						"""
 						return
