@@ -1,6 +1,6 @@
 {
-  "name": "konote",
-  "version": "1.6.0",
+  "name": "KoNote",
+  "version": "1.7.0",
   "dependencies": {
     "amdefine": {
       "version": "1.0.0",
@@ -220,6 +220,11 @@
         }
       }
     },
+    "fd-slicer": {
+      "version": "1.0.1",
+      "from": "fd-slicer@>=1.0.1 <1.1.0",
+      "resolved": "https://registry.npmjs.org/fd-slicer/-/fd-slicer-1.0.1.tgz"
+    },
     "font-awesome": {
       "version": "4.6.3",
       "from": "font-awesome@>=4.3.0 <5.0.0",
@@ -436,6 +441,11 @@
       "from": "path-is-absolute@>=1.0.0 <2.0.0",
       "resolved": "https://registry.npmjs.org/path-is-absolute/-/path-is-absolute-1.0.0.tgz"
     },
+    "pend": {
+      "version": "1.2.0",
+      "from": "pend@>=1.2.0 <1.3.0",
+      "resolved": "https://registry.npmjs.org/pend/-/pend-1.2.0.tgz"
+    },
     "pluralize": {
       "version": "1.2.1",
       "from": "pluralize@>=1.1.2 <2.0.0",
@@ -593,6 +603,11 @@
       "version": "4.0.1",
       "from": "xtend@>=4.0.0 <5.0.0",
       "resolved": "https://registry.npmjs.org/xtend/-/xtend-4.0.1.tgz"
+    },
+    "yauzl": {
+      "version": "2.5.0",
+      "from": "yauzl@>=2.5.0 <3.0.0",
+      "resolved": "https://registry.npmjs.org/yauzl/-/yauzl-2.5.0.tgz"
     },
     "zip-stream": {
       "version": "0.8.0",
