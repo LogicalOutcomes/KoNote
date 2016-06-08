@@ -9,14 +9,14 @@
 			margin 20px
 			margin-right 0
 			outline none
-			
+
 			&.btn-link
 				padding-left 0
 				padding-right 0
 
 			> .fa
 				padding-right 8px
-				
+
 			&.saveRevisingProgNote
 				transition all .25s ease
 				padding 6px 30px
@@ -46,10 +46,10 @@
 			overflow auto
 
 			padding 10px 20px
-			
+
 			> .empty
 				text-align center
-				
+
 				> .message
 					padding 100px 80px 50px
 
@@ -59,10 +59,10 @@
 				> .btn
 					clear both
 					margin 15px
-					
+
 					> .fa
 						padding-right 10px
-						
+
 				> .popover
 					max-width none
 
@@ -120,7 +120,7 @@
 				flex 1
 
 				padding-bottom 30px
-				
+
 				&:hover .progNoteToolbar
 					opacity 1
 
@@ -136,37 +136,47 @@
 
 					> .timestamp
 						flex 1
-						
+
+					.selectProgNoteButton
+						color sidebar-borders
+						margin-left 10px
+						cursor pointer
+
+						&:hover
+							color inherit
+							text-decoration underline
+
+
 				h1
 					padding 20px 0 10px 0
 					margin 0
-						
+
 				.progNoteToolbar
 					opacity 0
 					transition all .15s ease
-					
+
 					border-bottom 2px solid sidebar-borders
 					border-left 2px solid sidebar-borders
-					border-bottom-left-radius 10px					
-					
+					border-bottom-left-radius 10px
+
 					background none
 					position absolute
 					top 0
 					right 0
-					padding 5px	
+					padding 5px
 
 					display flex
 
-					a					
+					a
 						opacity 0.75
 						transition all .15s ease
 						display inline-block
-						
+
 						padding 2px 8px
 
 						color black
 						cursor pointer
-						
+
 						&:hover
 							opacity 1
 
@@ -188,17 +198,17 @@
 
 						> .unit
 							padding-bottom 20px
-							
+
 							&:last-child
 								padding-bottom 0px
-							
+
 							h1
 								font-size 26px
-								
+
 							h2
 								font-size 22px
 								font-weight 100
-								
+
 							h3
 								font-weight 600
 								font-size 18px
@@ -206,10 +216,10 @@
 
 							&.basic
 								cursor default
-								
+
 								h3
 									font-size 22px
-									
+
 								&.selected, &:hover
 									h3
 										color #337ab7
@@ -225,24 +235,24 @@
 								> .empty
 									padding 0 2px
 									color #888
-									
+
 								section
 									> .target
 										cursor default
 										padding-left 15px
 										border-left 2px solid #eee
 										transition all .15s ease
-										
+
 										&:hover
 											border-left-color #B6B6B6
-											
+
 											h3
 												color #494949
-										
+
 										&.selected
 											border-left-color #337ab7
 											padding-left 20px
-											
+
 											h3
 												color #337ab7
 

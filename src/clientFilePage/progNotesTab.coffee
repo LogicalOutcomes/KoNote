@@ -898,6 +898,7 @@ load = (win) ->
 
 	ProgNoteHeader = ({progNoteHistory, selectProgNote}) ->
 		hasRevisions = progNoteHistory.size > 1
+		numberOfRevisions = progNoteHistory.size - 1
 		# In this case we use the first revision's data
 		progNote = progNoteHistory.first()
 
@@ -907,10 +908,10 @@ load = (win) ->
 				" (late entry)" if progNote.get('backdate')
 
 				if hasRevisions
-					R.a({
+					R.span({
 						className: 'selectProgNoteButton'
 						onClick: selectProgNote.bind null, progNote
-					}, "(revised)")
+					}, "(#{numberOfRevisions} #{if numberOfRevisions > 1 then 'revisions' else 'revision'})")
 			)
 			R.div({className: 'author'},
 				' by '
