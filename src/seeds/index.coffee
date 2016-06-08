@@ -67,7 +67,7 @@ generateClientFile = (metrics, template, cb) ->
 				section = Imm.fromJS {
 					id: generateId()
 					name: Faker.company.bsBuzz()
-					sectionTargetIds
+					targetIds: sectionTargetIds
 					status
 				}
 				cb null, section

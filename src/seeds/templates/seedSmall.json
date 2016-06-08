@@ -5,7 +5,7 @@
 	"accounts": 2,
 	"programs": 2,
 	"eventTypes": 4,
-	"metrics": 20,
+	"metrics": 50,
 
 	"planTargets": 15,
 	"progNotes": 3,
