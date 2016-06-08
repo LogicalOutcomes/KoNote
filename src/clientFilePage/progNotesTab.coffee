@@ -242,6 +242,7 @@ load = (win) ->
 										cancelRevisingProgNote: @_cancelRevisingProgNote
 										updateBasicUnitNotes: @_updateBasicUnitNotes
 										updatePlanTargetNotes: @_updatePlanTargetNotes
+										updatePlanTargetMetric: @_updatePlanTargetMetric
 										saveProgNoteRevision: @_saveProgNoteRevision
 									})
 								else
@@ -330,6 +331,38 @@ load = (win) ->
 
 			revisingProgNote = @state.revisingProgNote.set 'notes', newNotes
 			@setState {revisingProgNote}
+
+		_isValidMetric: (value) -> value.match /^-?\d*\.?\d*$/
+
+		_updatePlanTargetMetric: (unitId, sectionId, targetId, metricId, newMetricValue) ->
+			return unless @_isValidMetric(newMetricValue)
+
+			unitIndex = getUnitIndex @state.revisingProgNote, unitId
+			sectionIndex = getPlanSectionIndex @state.revisingProgNote, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex @state.revisingProgNote, unitIndex, sectionIndex, targetId
+
+			metricIndex = @state.revisingProgNote.getIn(
+				[
+					'units', unitIndex
+					'sections', sectionIndex
+					'targets', targetIndex,
+					'metrics'
+				]
+			).findIndex (metric) =>
+				return metric.get('id') is metricId
+
+			@setState {
+				revisingProgNote: @state.revisingProgNote.setIn(
+					[
+						'units', unitIndex
+						'sections', sectionIndex
+						'targets', targetIndex
+						'metrics', metricIndex
+						'value'
+					]
+					newMetricValue
+				)
+			}
 
 		_saveProgNoteRevision: ->
 			@props.setIsLoading true
@@ -478,8 +511,7 @@ load = (win) ->
 				# onMouseLeave: @props.setHighlightedQuickNoteId.bind null, null
 			},
 				ProgNoteHeader({
-					progNote
-					hasRevisions
+					progNoteHistory: @props.progNoteHistory
 					selectProgNote: @props.selectProgNote
 				})
 				R.div({
@@ -573,8 +605,7 @@ load = (win) ->
 				# onMouseEnter: @props.setHighlightedProgNoteId.bind null, progNote.get('id')
 			},
 				ProgNoteHeader({
-					progNote
-					hasRevisions
+					progNoteHistory: @props.progNoteHistory
 					selectProgNote: @props.selectProgNote
 				})
 				R.div({className: 'progNoteList'},
@@ -672,7 +703,10 @@ load = (win) ->
 														(if isEditing
 															ExpandingTextArea({
 																value: target.get('notes')
-																onChange: @props.updatePlanTargetNotes.bind null, unitId, sectionId, targetId
+																onChange: @props.updatePlanTargetNotes.bind(
+																	null,
+																	unitId, sectionId, targetId
+																)
 															})
 														else
 															renderLineBreaks target.get('notes')
@@ -680,11 +714,16 @@ load = (win) ->
 													)
 													R.div({className: 'metrics'},
 														(target.get('metrics').map (metric) =>
+															metricId = metric.get('id')
+
 															MetricWidget({
 																isEditable: isEditing
 																tooltipViewport: '.progNotes'
-																# TODO: Modify a metric
-																# onChange: @_updatePlanTargetMetric
+																onChange: @props.updatePlanTargetMetric.bind(
+																	null,
+																	unitId, sectionId, targetId, metricId
+																)
+																onFocus: @_selectPlanSectionTarget.bind(null, unit, section, target)
 																key: metric.get('id')
 																name: metric.get('name')
 																definition: metric.get('definition')
@@ -824,7 +863,11 @@ load = (win) ->
 		_toggleDetails: (event) ->
 			@setState (s) -> {isExpanded: not s.isExpanded}
 
-	ProgNoteHeader = ({progNote, hasRevisions, selectProgNote}) ->
+	ProgNoteHeader = ({progNoteHistory, selectProgNote}) ->
+		hasRevisions = progNoteHistory.size > 1
+		# In this case we use the first revision's data
+		progNote = progNoteHistory.first()
+
 		R.div({className: 'header'},
 			R.div({className: 'timestamp'},
 				formatTimestamp(progNote.get('backdate') or progNote.get('timestamp'))
