@@ -216,6 +216,14 @@
 							&.hasChanges
 								background #C9FFB2
 								border-color #A4D291
+								
+							> .nameContainer, > .descriptionContainer
+								input, textarea
+									border 1px solid #ccc
+									box-shadow inset 0 1px 1px rgba(0, 0, 0, .075)
+							> .nameContainer
+								> .statusButtonGroup
+									display flex
 						
 						&.readOnly
 							input[disabled], textarea[disabled]
@@ -234,6 +242,9 @@
 
 							input, textarea
 								padding 2px 5px
+								border none
+								box-shadow none
+								transition none
 
 						> .nameContainer
 							display flex
@@ -243,8 +254,8 @@
 							font-weight 700
 								
 							> .statusButtonGroup
-								display flex
-															
+								display none
+								
 								> .statusButton
 									flex 1
 									display flex
