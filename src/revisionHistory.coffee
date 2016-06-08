@@ -97,7 +97,7 @@ load = (win) ->
 						pushToChangeLog {
 							property
 							action: 'revised'
-							value
+							value: @_diffStrings(previousValue, value)
 						}
 
 				# Imm List comparison (we assume existence of isList validates Imm.List)
