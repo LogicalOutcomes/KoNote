@@ -44,10 +44,15 @@ generateClientFile = (metrics, template, cb) ->
 
 		# Apply the target to a section, apply to clientFile, save
 		(cb) ->
+			
+			sliceSize = Math.floor(planTargets.size / template.clientFileSections)
+			
 			targetIds = planTargets
 			.map (target) -> target.get('id')
 
-			Async.times template.clientFileSections, (index, cb) ->	
+			x = 0
+			Async.times template.clientFileSections, (index, cb) =>	
+				sectionTargetIds = targetIds.slice(x, x + sliceSize)
 				# randomly chooses a status, with a higher probability of 'default'
 				randomNumber = Math.floor(Math.random() * 10) + 1
 				if randomNumber > 7 
@@ -57,10 +62,12 @@ generateClientFile = (metrics, template, cb) ->
 				else 
 					status = 'default'
 
+				x = x + sliceSize
+
 				section = Imm.fromJS {
 					id: generateId()
 					name: Faker.company.bsBuzz()
-					targetIds
+					sectionTargetIds
 					status
 				}
 				cb null, section
