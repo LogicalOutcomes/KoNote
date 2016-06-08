@@ -33,7 +33,6 @@ load = (win) ->
 		}
 
 		_diffStrings: (oldString, newString) ->
-
 			diffs = diffChars(oldString, newString)
 			diffedString = ""
 
@@ -211,7 +210,9 @@ load = (win) ->
 			.reverse()
 
 			return R.div({className: 'revisionHistory'},
-				R.div({className: 'heading'}, "Revision History")
+				R.div({className: 'heading'},
+					R.h3({}, "Revision History")
+				)
 
 				(if revisions.isEmpty()
 					R.div({className: 'noRevisions'},
@@ -220,8 +221,9 @@ load = (win) ->
 					)
 				else
 					R.div({className: 'revisions'},
-						revisions.map (revision) => RevisionChangeLog({
+						revisions.map (revision, index) => RevisionChangeLog({
 							key: revision.get('revisionId')
+							isFirstRevision: index is (revisions.size - 1)
 							revision
 							metricsById: @props.metricsById
 							dataModelName: @props.dataModelName
@@ -254,7 +256,10 @@ load = (win) ->
 						revision.get('author')
 					)
 					R.div({className: 'timestamp'},
-						formatTimestamp revision.get('timestamp')
+						if @props.isFirstRevision and revision.get('backdate')
+							"#{formatTimestamp revision.get('backdate')} (late entry)"
+						else
+							formatTimestamp revision.get('timestamp')
 					)
 				)
 				R.div({className: 'changeLog'},
@@ -311,7 +316,8 @@ load = (win) ->
 				R.span({className: 'action'},
 					# Different display cases for indication of change
 					(if entry.get('action') is 'created'
-						"#{capitalize entry.get('action')} #{entry.get('property')} as: "
+						"#{capitalize entry.get('action')} #{entry.get('property')}
+						#{if not @props.disableSnapshot then ' as: ' else ''}"
 					else if entry.has('statusReason')
 						"#{capitalize entry.get('value')} #{@props.dataModelName} because: "
 					else if entry.has('parent')
@@ -350,8 +356,7 @@ load = (win) ->
 				)
 			)
 
-	RevisionSnapshot = (props) ->
-		{revision, metricsById, isAnimated} = props
+	RevisionSnapshot = ({revision, metricsById, isAnimated}) ->
 		hasMetrics = revision.get('metricIds')?
 
 		R.div({

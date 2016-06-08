@@ -42,16 +42,18 @@ load = (win) ->
 					progNoteHistory = @props.progNoteHistories.find (progNoteHistory) =>
 						progNoteHistory.last().get('id') is @props.item.get('progNoteId')
 
-					return RevisionHistory({
-						revisions: progNoteHistory.reverse()
-						type: 'progNote'
-						metricsById: @props.metricsById
-						dataModelName: Term 'progress note'
-						terms: {
-							metric: Term 'metric'
-						}
-						disableSnapshot: true
-					})
+					return R.div({className: 'progNoteDetailView'},
+						RevisionHistory({
+							revisions: progNoteHistory.reverse()
+							type: 'progNote'
+							metricsById: @props.metricsById
+							dataModelName: Term 'progress note'
+							terms: {
+								metric: Term 'metric'
+							}
+							disableSnapshot: true
+						})
+					)
 
 				when 'basicUnit'
 					unitId = @props.item.get('unitId')
