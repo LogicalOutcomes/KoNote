@@ -43,7 +43,7 @@ load = (win) ->
 						progNoteHistory.last().get('id') is @props.item.get('progNoteId')
 
 					return RevisionHistory({
-						revisions: progNoteHistory
+						revisions: progNoteHistory.reverse()
 						type: 'progNote'
 						metricsById: @props.metricsById
 						dataModelName: Term 'progress note'
