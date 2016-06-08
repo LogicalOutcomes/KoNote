@@ -185,6 +185,7 @@ load = (win) ->
 									clientFile: @props.clientFile
 									setSelectedItem: @_setSelectedItem
 									selectedItem: @state.selectedItem
+									selectProgNote: @_selectProgNote
 									isReadOnly: @props.isReadOnly
 
 									isEditing
@@ -193,6 +194,7 @@ load = (win) ->
 									cancelRevisingProgNote: @_cancelRevisingProgNote
 									updateBasicUnitNotes: @_updateBasicUnitNotes
 									updatePlanTargetNotes: @_updatePlanTargetNotes
+									updatePlanTargetMetric: @_updatePlanTargetMetric
 									updateQuickNotes: @_updateQuickNotes
 									saveProgNoteRevision: @_saveProgNoteRevision
 								})
@@ -241,6 +243,7 @@ load = (win) ->
 										startRevisingProgNote: @_startRevisingProgNote
 										cancelRevisingProgNote: @_cancelRevisingProgNote
 										updateBasicUnitNotes: @_updateBasicUnitNotes
+										updateBasicMetric: @_updateBasicMetric
 										updatePlanTargetNotes: @_updatePlanTargetNotes
 										updatePlanTargetMetric: @_updatePlanTargetMetric
 										saveProgNoteRevision: @_saveProgNoteRevision
@@ -357,6 +360,26 @@ load = (win) ->
 						'units', unitIndex
 						'sections', sectionIndex
 						'targets', targetIndex
+						'metrics', metricIndex
+						'value'
+					]
+					newMetricValue
+				)
+			}
+
+		_updateBasicMetric: (unitId, metricId, newMetricValue) ->
+			return unless @_isValidMetric(newMetricValue)
+
+			unitIndex = getUnitIndex @state.revisingProgNote, unitId
+
+			metricIndex = @state.revisingProgNote.getIn(['units', unitIndex, 'metrics'])
+			.findIndex (metric) =>
+				return metric.get('id') is metricId
+
+			@setState {
+				progNote: @state.revisingProgNote.setIn(
+					[
+						'units', unitIndex
 						'metrics', metricIndex
 						'value'
 					]
@@ -652,6 +675,11 @@ load = (win) ->
 														key: metric.get('id')
 														name: metric.get('name')
 														definition: metric.get('definition')
+														onFocus: @_selectBasicUnit.bind null, unit
+														onChange: @props.updateBasicMetric.bind(
+															null,
+															unitId, metricId
+														)
 														value: metric.get('value')
 													})
 												).toJS()...
@@ -826,9 +854,11 @@ load = (win) ->
 					switch latestRev.get('type')
 						when 'basic'
 							QuickNoteView({
-								progNote: @props.progNoteHistory.first()
+								progNote: @props.progNoteHistory.last()
+								progNoteHistory: @props.progNoteHistory
 								clientFile: @props.clientFile
 								selectedItem: @props.selectedItem
+								selectProgNote: @props.selectProgNote
 								isReadOnly: true
 
 								isEditing: @props.isEditing
@@ -840,12 +870,14 @@ load = (win) ->
 							})
 						when 'full'
 							ProgNoteView({
-								progNote: @props.progNoteHistory.first()
+								progNote: @props.progNoteHistory.last()
+								progNoteHistory: @props.progNoteHistory
 								progEvents: @props.progEvents
 								eventTypes: @props.eventTypes
 								clientFile: @props.clientFile
 								setSelectedItem: @props.setSelectedItem
 								selectedItem: @props.selectedItem
+								selectProgNote: @props.selectProgNote
 								isReadOnly: true
 
 								isEditing: @props.isEditing
@@ -853,6 +885,7 @@ load = (win) ->
 								startRevisingProgNote: @props.startRevisingProgNote
 								cancelRevisingProgNote: @props.cancelRevisingProgNote
 								updatePlanTargetNotes: @props.updatePlanTargetNotes
+								updatePlanTargetMetric: @props.updatePlanTargetMetric
 								saveProgNoteRevision: @props.saveProgNoteRevision
 							})
 						else
