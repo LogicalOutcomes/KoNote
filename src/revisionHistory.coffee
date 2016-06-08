@@ -66,12 +66,17 @@ load = (win) ->
 					property: @props.dataModelName
 					action: 'created'
 				}
+
 				return changeLog
+
 
 			# Not a first revision, so let's build the diff objects for each property/value
 			# compared to the previous revision (ignoring metadata properties)
 			previousRevision = stripMetadata @props.revisions.reverse().get(index - 1)
 			currentRevision = stripMetadata revision
+
+			console.log "previousRevision", previousRevision.toJS()
+			console.log "currentRevision", currentRevision.toJS()
 
 			currentRevision.entrySeq().forEach ([property, value]) =>
 				previousValue = previousRevision.get(property)
@@ -89,25 +94,106 @@ load = (win) ->
 
 					pushToChangeLog(entry)
 
-				# Imm.List comparison
-				# For now, let's assume this can only be an Imm List of IDs
+				# Imm List comparison (we assume existence of isList validates Imm.List)
 				else if not Imm.is value, previousValue
-					# Generate 'removed' list items
-					previousValue
-					.filterNot (metricId) -> value.contains(metricId)
-					.forEach (arrayItem) -> pushToChangeLog {
-						property
-						action: 'removed'
-						value: arrayItem
-					}
-					# Generate 'added' list items
-					value
-					.filterNot (metricId) -> previousValue.contains(metricId)
-					.forEach (arrayItem) -> pushToChangeLog {
-						property
-						action: 'added'
-						value: arrayItem
-					}
+					console.log "previousValue:", previousValue.toJS()
+
+					switch @props.type
+						when 'planTarget'
+							# Generate 'removed' list items
+							previousValue
+							.filterNot (arrayItem) -> value.contains(arrayItem)
+							.forEach (arrayItem) -> pushToChangeLog {
+								property
+								action: 'removed'
+								value: arrayItem
+							}
+							# Generate 'added' list items
+							value
+							.filterNot (arrayItem) -> previousValue.contains(arrayItem)
+							.forEach (arrayItem) -> pushToChangeLog {
+								property
+								action: 'added'
+								value: arrayItem
+							}
+						when 'progNote'
+							value.forEach (unit, unitIndex) =>
+								console.info "Unit:", unit.toJS()
+
+								if unit.has 'sections' # 'plan' progNote unit
+									console.info "Unit HAS sections:"
+									unit.get('sections').forEach (section, sectionIndex) =>
+										console.log "Section:", section.toJS()
+										section.get('targets').forEach (target, targetIndex) =>
+											console.log "Target", target.toJS()
+											target.entrySeq().forEach ([targetProperty, targetValue]) =>
+												# Grab the same target value from prev revision
+												previousTargetValue = previousValue.getIn [
+													unitIndex
+													'sections', sectionIndex
+													'targets', targetIndex, targetProperty
+												]
+												console.log "Property: #{targetProperty}"
+												console.log "targetValue", targetValue
+												console.log "previousTargetValue", previousTargetValue
+												# Handle regular values
+												if typeof targetValue in ['string', 'number'] and targetValue isnt previousTargetValue
+													pushToChangeLog {
+														parent: target.get('name')
+														property: targetProperty
+														action: 'revised'
+														value: @_diffStrings(previousTargetValue, targetValue)
+													}
+												# Is it an Imm list? (metrics)
+												else if not Imm.is targetValue, previousTargetValue
+													console.log "Need to iterate over list:", targetValue
+
+												console.log "----------------------"
+
+								else # 'basic' progNote unit
+									console.info "Unit doesn't have section"
+									unit.entrySeq().forEach ([unitProperty, unitValue]) =>
+										previousUnitValue = previousValue.get(unitIndex)
+
+										console.log "previousUnitValue", previousUnitValue
+
+										# # Handle regular values
+										# if typeof unitValue in ['string', 'number'] and unitValue isnt previousUnitValue
+										# 	pushToChangeLog {
+										# 		property: unitProperty
+										# 		action: 'revised'
+										# 		value: @_diffStrings(previousUnitValue, unitValue)
+										# 	}
+										# # Is it an Imm list? (metrics)
+										# else if not Imm.is unitValue, previousUnitValue
+										# 	console.log "Need to iterate over list:", unitValue
+
+										# console.log "----------------------"
+
+						else
+							throw new Error "Unknown RevisionHistory 'type': #{@props.type}"
+
+					console.log "previousValue", previousValue.toJS()
+					console.log "value", value.toJS()
+
+					console.log "Change Log:", changeLog.toJS()
+
+					# # Generate 'removed' list items
+					# previousValue
+					# .filterNot (arrayItem) -> value.contains(arrayItem)
+					# .forEach (arrayItem) -> pushToChangeLog {
+					# 	property
+					# 	action: 'removed'
+					# 	value: arrayItem
+					# }
+					# # Generate 'added' list items
+					# value
+					# .filterNot (arrayItem) -> previousValue.contains(arrayItem)
+					# .forEach (arrayItem) -> pushToChangeLog {
+					# 	property
+					# 	action: 'added'
+					# 	value: arrayItem
+					# }
 
 			# Fin.
 			return changeLog
@@ -159,6 +245,8 @@ load = (win) ->
 			revision = @props.revision
 			changeLog = revision.get('changeLog')
 
+			console.log "changeLog", changeLog.toJS()
+
 			return R.section({className: 'revision'},
 				R.div({className: 'header'},
 					R.div({className: 'author'},
@@ -200,6 +288,8 @@ load = (win) ->
 		render: ->
 			entry = @props.entry
 
+			console.log "entry", entry.toJS()
+
 			# Account for terminology metricIds -> metrics
 			if entry.get('property') is 'metricIds'
 				entry = entry.set('property', 'metric')
@@ -222,8 +312,10 @@ load = (win) ->
 					# Different display cases for indication of change
 					(if entry.get('action') is 'created'
 						"#{capitalize entry.get('action')} #{entry.get('property')} as: "
-					else if entry.get('statusReason')
+					else if entry.has('statusReason')
 						"#{capitalize entry.get('value')} #{@props.dataModelName} because: "
+					else if entry.has('parent')
+						"#{capitalize entry.get('action')} #{entry.get('property')} for #{entry.get('parent')}: "
 					else
 						"#{capitalize entry.get('action')} #{entry.get('property')}: "
 					)

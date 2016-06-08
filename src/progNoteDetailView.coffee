@@ -44,6 +44,7 @@ load = (win) ->
 
 					return RevisionHistory({
 						revisions: progNoteHistory
+						type: 'progNote'
 						metricsById: @props.metricsById
 						dataModelName: Term 'progress note'
 						terms: {
