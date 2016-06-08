@@ -78,20 +78,27 @@ load = (win) ->
 			console.log "currentRevision", currentRevision.toJS()
 
 			currentRevision.entrySeq().forEach ([property, value]) =>
-				previousValue = previousRevision.get(property)
+				# Ignore statusReason property, it can't be revised
+				return if property is 'statusReason'
+				# Account for previousRevision not having this property
+				previousValue = previousRevision.get(property) or ""
 
 				# Plain string & number comparison
 				if typeof value in ['string', 'number'] and value isnt previousValue
-					entry = {
-						property
-						action: 'revised'
-						value: @_diffStrings(previousValue, value)
-					}
-					# We'll need the statusReason for 'status' if exists
+					# Unique handling for 'status'
 					if property is 'status' and currentRevision.has('statusReason')
-						entry.statusReason = currentRevision.has('statusReason')
-
-					pushToChangeLog(entry)
+						pushToChangeLog {
+							property
+							action: value
+							value
+							reason: currentRevision.get('statusReason')
+						}
+					else
+						pushToChangeLog {
+							property
+							action: 'revised'
+							value
+						}
 
 				# Imm List comparison (we assume existence of isList validates Imm.List)
 				else if not Imm.is value, previousValue
@@ -318,7 +325,7 @@ load = (win) ->
 					(if entry.get('action') is 'created'
 						"#{capitalize entry.get('action')} #{entry.get('property')}
 						#{if not @props.disableSnapshot then ' as: ' else ''}"
-					else if entry.has('statusReason')
+					else if entry.has('reason')
 						"#{capitalize entry.get('value')} #{@props.dataModelName} because: "
 					else if entry.has('parent')
 						"#{capitalize entry.get('action')} #{entry.get('property')} for #{entry.get('parent')}: "
@@ -347,7 +354,7 @@ load = (win) ->
 					})
 				else
 					# Set HTML because diffing <span>'s may exist
-					__html = entry.get('statusReason') or entry.get('value')
+					__html = entry.get('reason') or entry.get('value')
 
 					R.div({
 						className: 'value'
