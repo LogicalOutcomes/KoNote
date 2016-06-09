@@ -86,11 +86,7 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	progNoteUnit = progNoteTemplate.getIn(['units', 0])
 
 	# Loop over progNote sections
-	console.log "progNote sections before loop >>>>", sections
 	progNoteSections = sections.map (section) ->
-
-		console.log "section in loop >>>>>", section
-
 		# Loop over targetIds, and get the matching planTarget definition
 		targets = section.get('targetIds').map (targetId) ->
 			planTarget = planTargets.find (target) -> target.get('id') is targetId
@@ -144,8 +140,6 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 			}
 		]
 	}
-
-	console.log "creating this progNote >>>>>>", progNote.toJS()
 
 	createData 'progNotes', progNote, cb
 
