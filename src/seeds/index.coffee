@@ -78,6 +78,9 @@ generateClientFile = (metrics, template, cb) ->
 					return
 
 				clientFile = clientFile.setIn(['plan', 'sections'], Imm.List(results).toJS())
+				console.log "results >>>", Imm.List(results).toJS()
+				sections = results
+
 
 				global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
 					if err
@@ -91,6 +94,7 @@ generateClientFile = (metrics, template, cb) ->
 
 		# Write a progNote, write a note and random metric for each target, in each section
 		(cb) ->
+			console.log "sections before creating prognote >>>>>", sections
 			Create.progNotes template.progNotes, {clientFile, sections, planTargets, metrics}, (err, results) ->
 				if err
 					cb err
