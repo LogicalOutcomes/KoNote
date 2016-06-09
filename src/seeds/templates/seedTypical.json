@@ -1,13 +1,13 @@
 {
 	
-	"clientFiles": 100,
-	"clientFileSections": 3,
+	"clientFiles": 75,
+	"clientFileSections": 2,
 	"accounts": 5,
 	"programs": 2,
 	"eventTypes": 0,
 	"metrics": 30,
 
-	"planTargets": 5,
+	"planTargets": 6,
 	"progNotes": 300,
 	"progEvents": 3
 
