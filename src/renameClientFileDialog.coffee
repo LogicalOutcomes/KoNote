@@ -74,7 +74,10 @@ load = (win) ->
 						R.label({}, "Client File Status"),
 						R.div({id: 'statusButtons'},
 							R.button({
-								className: 'btn btn-default'
+								className: 
+									if @state.status is 'active' 
+										'btn btn-primary'
+									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'active'
 								
@@ -82,7 +85,10 @@ load = (win) ->
 							"Active"
 							)
 							R.button({
-								className: 'btn btn-default'
+								className: 
+									if @state.status is 'inactive' 
+										'btn btn-primary'
+									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'inactive'
 								
@@ -90,7 +96,10 @@ load = (win) ->
 							"Inactive"
 							)
 							R.button({
-								className: 'btn btn-default'
+								className:
+									if @state.status is 'discharged' 
+										'btn btn-primary'
+									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'discharged'
 								
@@ -98,7 +107,6 @@ load = (win) ->
 							"Discharged"
 							)
 						)
-						"Status state: ", @state.status
 					)
 					if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
