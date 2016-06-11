@@ -75,7 +75,7 @@ load = (win) ->
 						R.div({id: 'statusButtons'},
 							R.button({
 								className: 'btn btn-default'
-								onclick: @_updateStatus
+								onClick: @_updateStatus
 								value: 'default'
 								
 								},
@@ -83,15 +83,14 @@ load = (win) ->
 							)
 							R.button({
 								className: 'btn btn-default'
-								onclick: @_updateStatus
+								onClick: @_updateStatus
 								value: 'deactivated'
-								key: 'deactivated'
 								
 								},
 							"Deactivated"
 							)
 						)
-
+						"Status state: ", @state.status
 					)
 					if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},

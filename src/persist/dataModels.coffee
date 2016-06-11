@@ -25,7 +25,7 @@ dataModelDefinitions = [
 				middle: Joi.string().allow('')
 				last: Joi.string()
 			})
-			status: ['default', 'deactivated']
+			status: ['active', 'inactive', 'discharged']
 			statusReason: Joi.string().optional()
 			recordId: [Joi.string(), '']
 			plan: Joi.object().keys({
