@@ -76,18 +76,26 @@ load = (win) ->
 							R.button({
 								className: 'btn btn-default'
 								onClick: @_updateStatus
-								value: 'default'
+								value: 'active'
 								
 								},
-							"Default"
+							"Active"
 							)
 							R.button({
 								className: 'btn btn-default'
 								onClick: @_updateStatus
-								value: 'deactivated'
+								value: 'inactive'
 								
 								},
-							"Deactivated"
+							"Inactive"
+							)
+							R.button({
+								className: 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'discharged'
+								
+								},
+							"Discharged"
 							)
 						)
 						"Status state: ", @state.status

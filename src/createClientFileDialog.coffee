@@ -167,6 +167,7 @@ load = (win) ->
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
 			  recordId: recordId
+			  status: 'active'
 			  plan: {
 			    sections: []
 			  }
