@@ -115,6 +115,13 @@ load = (win) ->
 								FaIcon('plus')
 								"Add #{Term 'section'}"
 							)
+							R.button({
+								className: 'createTemplate btn btn-default'
+								onClick: @_createTemplate
+								disabled: @props.isReadOnly
+							},
+								FaIcon('wpforms')
+							)
 							PrintButton({
 								dataSet: [
 									{
@@ -317,6 +324,10 @@ load = (win) ->
 
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
+
+		_createTemplate: ->
+			Bootbox.prompt "Enter a name for the new Template:", (sectionName) =>
+				console.log 'plan >>>>>>>>>>>>>>>>', @state.plan.toJS()
 
 
 		_renameSection: (sectionId) ->
