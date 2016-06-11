@@ -725,6 +725,7 @@ load = (win, {clientFileId}) ->
 						activeTabId
 						onTabChange: @_changeTab
 						programs: @props.programs
+						status: @props.clientFile.get('status')
 					})
 					PlanTab.PlanView({
 						ref: 'planTab'
@@ -801,6 +802,10 @@ load = (win, {clientFileId}) ->
 						@props.clientName
 					)
 				)
+				unless @props.status is 'active'
+					R.div({className: 'clientStatus'},
+						@props.status.toUpperCase()
+					)
 				R.div({className: 'programs'},
 					(@props.programs.map (program) ->
 						R.span({
