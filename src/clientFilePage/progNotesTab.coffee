@@ -523,7 +523,6 @@ load = (win) ->
 
 		render: ->
 			isEditing = @props.isEditing
-			hasRevisions = @props.progNoteHistory.size > 1
 
 			progNote = if isEditing then @props.revisingProgNote else @props.progNote
 
