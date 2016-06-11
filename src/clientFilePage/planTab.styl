@@ -224,6 +224,10 @@
 							> .nameContainer
 								> .statusButtonGroup
 									display flex
+							
+							> .metrics
+								> .addMetricButton
+									display block
 						
 						&.readOnly
 							input[disabled], textarea[disabled]
@@ -231,7 +235,7 @@
 								
 						&.blink
 							background #7ecdfc !important
-							border-color #68AAD2 !important						
+							border-color #68AAD2 !important
 
 						> .nameContainer, > .descriptionContainer
 							> div
@@ -281,6 +285,9 @@
 
 							> .metricWidget
 								margin 5px
+								
+						> .metricLookupContainer
+							display none
 
 	> .targetDetail
 		overflow-y auto
