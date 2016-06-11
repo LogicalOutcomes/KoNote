@@ -153,6 +153,8 @@ load = (win) ->
 						hasTargetChanged: @_hasTargetChanged
 						updateTarget: @_updateTarget
 						setSelectedTarget: @_setSelectedTarget
+						addMetricToTarget: @_addMetricToTarget
+						deleteMetricFromTarget: @_deleteMetricFromTarget
 						getSectionIndex: @_getSectionIndex
 					})
 				)
@@ -163,60 +165,7 @@ load = (win) ->
 							"a #{Term 'target'} on the left."
 						)
 					else
-						currentRev = @state.currentTargetRevisionsById.get(selectedTarget.get('id'))
-						metricDefs = currentRev.get('metricIds').map (metricId) =>
-							return @props.metricsById.get(metricId, null)
-
 						R.div({className: 'targetDetailContainer'},
-							R.div({className: 'metricsSection'},
-								R.div({className: 'header'},
-									R.div({className: 'text'}, Term('Metrics'))
-								)
-								(if metricDefs.size is 0
-									R.div({className: 'noMetrics'},
-										"This #{Term 'target'} has no #{Term 'metrics'} attached."
-										(unless @props.isReadOnly
-											R.button({
-												className: 'btn btn-link addMetricButton'
-												onClick: @_focusMetricLookupField
-											}, FaIcon('plus'))
-										)
-									)									
-								else
-									R.div({className: 'metrics'},
-										(metricDefs.map (metricDef) =>
-											MetricWidget({
-												isEditable: false
-												allowDeleting: not @props.isReadOnly
-												onDelete: @_deleteMetricFromTarget.bind(
-													null, selectedTarget.get('id'), metricDef.get('id')
-												)
-												key: metricDef.get('id')
-												name: metricDef.get('name')
-												definition: metricDef.get('definition')
-											})
-										).toJS()...
-										(unless @props.isReadOnly
-											R.button({
-												className: 'btn btn-link addMetricButton'
-												onClick: @_focusMetricLookupField
-											}, FaIcon('plus'))
-										)
-									)
-								)
-								(unless @props.isReadOnly
-									R.div({},
-										MetricLookupField({
-											metrics: @props.metricsById.valueSeq()
-											onSelection: @_addMetricToTarget.bind(
-												null, selectedTarget.get('id')
-											)
-											placeholder: "Find / Define a #{Term 'Metric'}"
-											isReadOnly: @props.isReadOnly
-										})
-									)
-								)
-							)
 							PlanTargetHistory({
 								revisions: selectedTarget.get('revisions')
 								metricsById: @props.metricsById
@@ -225,8 +174,6 @@ load = (win) ->
 					)
 				)
 			)
-
-		_focusMetricLookupField: -> $('.lookupField').focus()
 
 		blinkUnsaved: ->
 			toggleBlink = -> $('.hasChanges').toggleClass('blink')
@@ -508,6 +455,8 @@ load = (win) ->
 				removeNewTarget
 				removeNewSection
 				setSelectedTarget
+				addMetricToTarget
+				deleteMetricFromTarget
 				getSectionIndex
 			} = @props
 
@@ -540,6 +489,8 @@ load = (win) ->
 							updateTarget
 							removeNewTarget
 							setSelectedTarget
+							addMetricToTarget
+							deleteMetricFromTarget
 							getSectionIndex
 							onRemoveNewSection: removeNewSection.bind null, section
 
@@ -588,6 +539,8 @@ load = (win) ->
 									removeNewSection
 									onRemoveNewSection: removeNewSection.bind null, section
 									setSelectedTarget
+									addMetricToTarget
+									deleteMetricFromTarget
 									getSectionIndex
 
 									sectionOffsets: @state.sectionOffsets
@@ -637,6 +590,8 @@ load = (win) ->
 									removeNewSection
 									onRemoveNewSection: removeNewSection.bind null, section
 									setSelectedTarget
+									addMetricToTarget
+									deleteMetricFromTarget
 									getSectionIndex
 
 									sectionOffsets: @state.sectionOffsets
@@ -704,6 +659,8 @@ load = (win) ->
 				removeNewSection
 				onRemoveNewSection
 				setSelectedTarget
+				addMetricToTarget
+				deleteMetricFromTarget
 				getSectionIndex
 			} = @props
 
@@ -776,6 +733,9 @@ load = (win) ->
 								onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
 								onTargetUpdate: updateTarget.bind null, targetId
 								onTargetSelection: setSelectedTarget.bind null, targetId
+								addMetricToTarget
+								deleteMetricFromTarget
+								targetId
 							})
 						)
 					)
@@ -811,6 +771,9 @@ load = (win) ->
 									onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
 									onTargetUpdate: updateTarget.bind null, targetId
 									onTargetSelection: setSelectedTarget.bind null, targetId
+									addMetricToTarget
+									deleteMetricFromTarget
+									targetId
 								})
 							)
 						)
@@ -847,6 +810,9 @@ load = (win) ->
 									onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
 									onTargetUpdate: updateTarget.bind null, targetId
 									onTargetSelection: setSelectedTarget.bind null, targetId
+									addMetricToTarget
+									deleteMetricFromTarget
+									targetId
 								})
 							)
 						)
@@ -1000,7 +966,7 @@ load = (win) ->
 	PlanTarget = React.createFactory React.createClass
 		displayName: 'PlanTarget'
 		mixins: [React.addons.PureRenderMixin]
-
+			
 		render: ->
 			currentRevision = @props.currentRevision
 			revisionStatus = @props.currentRevision.get('status')
@@ -1127,8 +1093,41 @@ load = (win) ->
 							value: metric.get('value')
 							key: metricId
 							tooltipViewport: '.section'
+							isEditable: false
+							allowDeleting: not @props.isReadOnly and @props.isActive
+							onDelete: @props.deleteMetricFromTarget.bind(
+								null, @props.targetId, metricId
+							)
 						})
 					).toJS()...
+					(unless @props.isReadOnly
+						R.button({
+							className: "btn btn-link addMetricButton #{showWhen @props.isActive}"
+							onClick: @_focusMetricLookupField.bind(null, @props.targetId)
+						},
+							FaIcon('plus')
+							#if currentRevision.get('metricIds').size is 0
+							" Add #{Term 'metric'}"
+						)
+					)
+				)
+				(unless @props.isReadOnly
+					R.div({
+						className: [
+							'metricLookupContainer'
+						].join ' '
+						ref: 'metricLookup'
+					},
+						MetricLookupField({
+							metrics: @props.metricsById.valueSeq()
+							onSelection: @props.addMetricToTarget.bind(
+								null, @props.targetId
+							)
+							placeholder: "Find / Define a #{Term 'Metric'}"
+							isReadOnly: @props.isReadOnly
+							onBlur: @_hideMetricInput
+						})
+					)
 				)
 			)
 
@@ -1138,10 +1137,16 @@ load = (win) ->
 
 		
 		_onTargetClick: (event) ->
-			unless event.target.classList.contains 'field'
+			unless (event.target.classList.contains 'field') or (event.target.classList.contains 'lookupField') or (event.target.classList.contains 'btn')
 				@refs.nameField.focus() unless @props.isReadOnly
 				@props.onTargetSelection()
-	
+		
+		_focusMetricLookupField: ->
+			$(@refs.metricLookup).show()
+			$('.lookupField').focus()
+		
+		_hideMetricInput: ->
+			$(@refs.metricLookup).hide()
 
 	return {PlanView}
 

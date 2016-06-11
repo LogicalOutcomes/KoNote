@@ -111,7 +111,7 @@
 					justify-content space-between
 
 					border-color sidebar-borders
-					border-style none none solid
+					border-style none
 					border-width 1px
 
 					padding 10px 30px 5px
@@ -178,7 +178,7 @@
 					> .inactiveTargetHeader
 						cursor pointer
 						font-size 16px
-						opacity 0.8							
+						opacity 0.5
 						transition opacity .15s ease
 						
 						&:hover
@@ -216,6 +216,18 @@
 							&.hasChanges
 								background #C9FFB2
 								border-color #A4D291
+								
+							> .nameContainer, > .descriptionContainer
+								input, textarea
+									border 1px solid #ccc
+									box-shadow inset 0 1px 1px rgba(0, 0, 0, .075)
+							> .nameContainer
+								> .statusButtonGroup
+									display flex
+							
+							> .metrics
+								> .addMetricButton
+									display block
 						
 						&.readOnly
 							input[disabled], textarea[disabled]
@@ -223,7 +235,7 @@
 								
 						&.blink
 							background #7ecdfc !important
-							border-color #68AAD2 !important						
+							border-color #68AAD2 !important
 
 						> .nameContainer, > .descriptionContainer
 							> div
@@ -232,8 +244,11 @@
 							> .field
 								width 100%
 
+							input, textarea
 								padding 2px 5px
-
+								border none
+								box-shadow none
+								transition none
 
 						> .nameContainer
 							display flex
@@ -243,8 +258,8 @@
 							font-weight 700
 								
 							> .statusButtonGroup
-								display flex
-															
+								display none
+								
 								> .statusButton
 									flex 1
 									display flex
@@ -270,6 +285,9 @@
 
 							> .metricWidget
 								margin 5px
+								
+						> .metricLookupContainer
+							display none
 
 	> .targetDetail
 		overflow-y auto

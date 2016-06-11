@@ -156,6 +156,9 @@ module.exports = function(grunt) {
 				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>',
 				cmd: 'npm install --production --no-optional'
 			},
+			test: {
+				cmd: 'npm test'
+			},
 			nwjswin: {
 				cwd: 'build/releases/temp/',
 				cmd: 'nwb nwbuild -v 0.14.4 -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
@@ -250,6 +253,7 @@ module.exports = function(grunt) {
 	
 	grunt.registerTask('release', function() {
 		grunt.task.run('clean:temp');
+		grunt.task.run('exec:test');
 		release.forEach(function(entry) {
 			grunt.task.run('copy:main:'+entry);
 			grunt.task.run('replace:main:'+entry);

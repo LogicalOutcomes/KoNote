@@ -87,8 +87,7 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	progNoteUnit = progNoteTemplate.getIn(['units', 0])
 
 	# Loop over progNote sections
-	progNoteSections = Imm.List(sections).toJS().map (section) ->
-
+	progNoteSections = sections.map (section) ->
 		# Loop over targetIds, and get the matching planTarget definition
 		targets = section.get('targetIds').map (targetId) ->
 			planTarget = planTargets.find (target) -> target.get('id') is targetId
@@ -146,16 +145,25 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	createData 'progNotes', progNote, cb
 
 
-Create.planTarget = ({clientFile, metrics}, cb) ->
+Create.planTarget = (clientFile, metrics, cb) ->
 	metricIds = metrics
 	.map (metric) -> metric.get('id')
 	.toJS()
+
+	# randomly chooses a status, with a higher probability of 'default'
+	randomNumber = Math.floor(Math.random() * 10) + 1
+	if randomNumber > 7 
+		status = 'deactivated'
+	else if randomNumber < 3 
+		status = 'completed'
+	else 
+		status = 'default'
 
 	target = Imm.fromJS {
 		clientFileId: clientFile.get('id')
 		name: Faker.company.bsBuzz()
 		description: Faker.lorem.paragraph()
-		status: "default"
+		status
 		metricIds
 	}
 
@@ -257,15 +265,19 @@ Create.progNotes = (quantity, props, cb) ->
 		console.log "Created #{quantity} progNotes"
 		cb null, Imm.List(results)
 	
-Create.planTargets = (quantity, props, cb) ->
-	Async.times quantity, (index, cb) ->
-		Create.planTarget(props, cb)
+Create.planTargets = (targetQuantity, clientFile, metrics, cb) ->
+	sliceSize = Math.floor(metrics.size / targetQuantity)
+	x = 0
+	Async.times targetQuantity, (index, cb) =>
+		targetMetrics = metrics.slice(x, x + sliceSize)
+		Create.planTarget(clientFile, targetMetrics, cb)
+		x = x + sliceSize
 	, (err, results) ->
 		if err
 			cb err
 			return
 
-		console.log "Created #{quantity} planTargets"
+		console.log "Created #{targetQuantity} planTargets"
 		cb null, Imm.List(results)
 
 Create.programs = (quantity, cb) ->

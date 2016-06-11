@@ -1,14 +1,14 @@
 {
 	
-	"clientFiles": 6,
+	"clientFiles": 1,
 	"clientFileSections": 2,
-	"accounts": 2,
-	"programs": 2,
+	"accounts": 0,
+	"programs": 1,
 	"eventTypes": 2,
 	"metrics": 8,
 
 	"planTargets": 4,
-	"progNotes": 2,
+	"progNotes": 1,
 	"progEvents": 1
 
 }

@@ -37,7 +37,7 @@
     "grunt-text-replace": "^0.4.0",
     "mocha": "^2.2.5",
     "nw": "0.14.5-sdk",
-	"nwjs-builder": "^1.10.5",
+    "nwjs-builder": "^1.10.5",
     "stylus": "^0.50.0"
   },
   "optionalDependencies": {
@@ -70,9 +70,10 @@
     "react-bootstrap": "^0.29.3",
     "react-dom": "15.0.2",
     "rimraf": "^2.3.4",
-	"source-map-support": "^0.4.0",
+    "source-map-support": "^0.4.0",
     "typeahead.js": "^0.10.5",
-    "underscore": "^1.8.3"
+    "underscore": "^1.8.3",
+    "yauzl": "^2.5.0"
   },
   "scripts": {
     "start": "nw . --enable-logging=stderr --remote-debugging-port=9222",

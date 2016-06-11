@@ -103,6 +103,7 @@ load = (win) ->
 					className: 'lookupField form-control typeahead'
 					ref: 'lookupField'
 					placeholder: @props.placeholder
+					onBlur: @props.onBlur
 				})
 			)
 

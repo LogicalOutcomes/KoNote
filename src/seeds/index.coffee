@@ -33,7 +33,7 @@ generateClientFile = (metrics, template, cb) ->
 
 		# Create planTargets
 		(cb) ->
-			Create.planTargets template.planTargets, {clientFile, metrics}, (err, results) ->
+			Create.planTargets template.planTargets, clientFile, metrics, (err, results) ->
 				if err
 					cb err
 					return
@@ -44,15 +44,31 @@ generateClientFile = (metrics, template, cb) ->
 
 		# Apply the target to a section, apply to clientFile, save
 		(cb) ->
+			
+			sliceSize = Math.floor(planTargets.size / template.clientFileSections)
+			
 			targetIds = planTargets
 			.map (target) -> target.get('id')
 
-			Async.times template.clientFileSections, (index, cb) ->	
+			x = 0
+			Async.times template.clientFileSections, (index, cb) =>	
+				sectionTargetIds = targetIds.slice(x, x + sliceSize)
+				# randomly chooses a status, with a higher probability of 'default'
+				randomNumber = Math.floor(Math.random() * 10) + 1
+				if randomNumber > 7 
+					status = 'deactivated'
+				else if randomNumber < 3 
+					status = 'completed'
+				else 
+					status = 'default'
+
+				x = x + sliceSize
+
 				section = Imm.fromJS {
 					id: generateId()
 					name: Faker.company.bsBuzz()
-					targetIds
-					status: 'default'
+					targetIds: sectionTargetIds
+					status
 				}
 				cb null, section
 			
@@ -62,6 +78,8 @@ generateClientFile = (metrics, template, cb) ->
 					return
 
 				clientFile = clientFile.setIn(['plan', 'sections'], Imm.List(results).toJS())
+				sections = results
+
 
 				global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
 					if err
