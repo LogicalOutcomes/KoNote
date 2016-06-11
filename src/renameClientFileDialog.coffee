@@ -38,7 +38,7 @@ load = (win) ->
 		render: ->
 			Dialog({
 				ref: 'dialog'
-				title: "Rename #{Term 'Client File'}"
+				title: "Edit #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
 				R.div({className: 'renameClientFileDialog'},
