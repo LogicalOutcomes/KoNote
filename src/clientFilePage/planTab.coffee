@@ -1067,6 +1067,7 @@ load = (win) ->
 							R.div({
 								className: 'statusButton'
 								onClick: @props.onRemoveNewTarget
+								title: 'Cancel'
 							},
 								FaIcon 'times'
 							)
