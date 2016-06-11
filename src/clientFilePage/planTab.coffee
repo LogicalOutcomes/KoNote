@@ -966,12 +966,6 @@ load = (win) ->
 	PlanTarget = React.createFactory React.createClass
 		displayName: 'PlanTarget'
 		mixins: [React.addons.PureRenderMixin]
-
-		componentDidMount: ->
-			metricLookupDiv = $(@refs.metricLookup)
-			metricLookupInput = $(@refs.metricLookup.getElementsByTagName('input'))[0]
-			metricLookupInput.onfocusout = ->
-				metricLookupDiv.hide()
 			
 		render: ->
 			currentRevision = @props.currentRevision
@@ -1131,6 +1125,7 @@ load = (win) ->
 							)
 							placeholder: "Find / Define a #{Term 'Metric'}"
 							isReadOnly: @props.isReadOnly
+							onBlur: @_hideMetricInput
 						})
 					)
 				)
@@ -1146,10 +1141,12 @@ load = (win) ->
 				@refs.nameField.focus() unless @props.isReadOnly
 				@props.onTargetSelection()
 		
-		#_focusMetricLookupField: (id)->
 		_focusMetricLookupField: ->
 			$(@refs.metricLookup).show()
-			$(@refs.metricLookup.getElementsByTagName('input'))[0].focus()
+			$('.lookupField').focus()
+		
+		_hideMetricInput: ->
+			$(@refs.metricLookup).hide()
 
 	return {PlanView}
 
