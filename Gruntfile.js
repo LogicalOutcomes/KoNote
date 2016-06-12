@@ -54,6 +54,39 @@ module.exports = function(grunt) {
 				],
 				cwd: '/'
 			},
+			nodemodules: {
+				expand: true,
+				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/node_modules/',
+				src: [
+					'**',
+					'!**/lodash-compat/**', // todo: confirm only required to support ie8...
+					'!**/src/**',
+					'!**/source/**',
+					'!**/spec/**',
+					'!**/test/**',
+					'!**/tests/**',
+					'!**/grunt/**',
+					'!**/doc/**',
+					'!**/docs/**',
+					'!**/samples/**',
+					'!**/examples/**',
+					'!**/example/**',
+					'!**/package.json',
+					'!**/README.md',
+					'!**/readme.md',
+					'!**/changelog.md',
+					'!**/CHANGELOG.md',
+					'!**/changes.md',
+					'!**/CHANGES.md',
+					'!**/contributing.md',
+					'!**/CONTRIBUTING.md',
+					'!**/bower.json',
+					'!**/gulpfile.js',
+					'!**/gruntfile.js',
+					'!**/Gruntfile.js'
+				],
+				dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/temp_node_modules/',
+			},
 			production: {
 				src: 'build/production.json',
 				dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/production.json'
@@ -156,6 +189,10 @@ module.exports = function(grunt) {
 				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>',
 				cmd: 'npm install --production --no-optional'
 			},
+			renamemodules: {
+				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>',
+				cmd: 'mv temp_node_modules node_modules'
+			},
 			test: {
 				cmd: 'npm test'
 			},
@@ -210,6 +247,9 @@ module.exports = function(grunt) {
 			],
 			temp: [
 				"build/releases/temp/**/*"
+			],
+			nodemodules: [
+				"build/releases/temp/<%= grunt.task.current.args[0] %>/node_modules/**"
 			]
 		},
 		uglify: {
@@ -266,6 +306,9 @@ module.exports = function(grunt) {
 				grunt.task.run('copy:griffin:'+entry);
 			}
 			grunt.task.run('exec:npm:'+entry);
+			grunt.task.run('copy:nodemodules:'+entry);
+			grunt.task.run('clean:nodemodules:'+entry);
+			grunt.task.run('exec:renamemodules:'+entry);
 			grunt.task.run('replace:bootstrap:'+entry);
 			grunt.task.run('stylus:compile:'+entry);
 			grunt.task.run('coffee:compileMultiple:'+entry);
