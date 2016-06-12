@@ -50,6 +50,7 @@ load = (win) ->
 							dataModelName: Term 'progress note'
 							terms: {
 								metric: Term 'metric'
+								metrics: Term 'metric'
 							}
 							disableSnapshot: true
 						})

@@ -34,20 +34,17 @@ load = (win) ->
 
 		_diffStrings: (oldString, newString) ->
 			diffs = diffChars(oldString, newString)
-			diffedString = ""
 
-			# Vanilla JS for sake of performance
-			for diff in diffs
-				diffedString += (
+			return R.span({className: 'value'},
+				# Iterate over diffs and assign a diff-span or plain string
+				for diff, key in diffs
 					if diff.added?
-						"<span class='added'>#{diff.value}</span>"
+						R.span({className: 'added', key}, diff.value)
 					else if diff.removed?
-						"<span class='removed'>#{diff.value}</span>"
+						R.span({className: 'removed', key}, diff.value)
 					else
 						diff.value
-				)
-
-			return diffedString
+			)
 
 		_generateChangeLogEntries: (revision, index) ->
 			changeLog = Imm.List()
@@ -59,7 +56,8 @@ load = (win) ->
 					entry.property = @props.terms[entry.property]
 				changeLog = changeLog.push Imm.fromJS(entry)
 
-			# Return creation change if 0-index, check existence to make sure
+
+			# Return only creation change if 0-index, check existence to make sure
 			unless index > 0 and @props.revisions.reverse().get(index - 1)?
 				pushToChangeLog {
 					property: @props.dataModelName
@@ -74,8 +72,8 @@ load = (win) ->
 			previousRevision = stripMetadata @props.revisions.reverse().get(index - 1)
 			currentRevision = stripMetadata revision
 
-			console.log "previousRevision", previousRevision.toJS()
-			console.log "currentRevision", currentRevision.toJS()
+			# console.log "previousRevision", previousRevision.toJS()
+			# console.log "currentRevision", currentRevision.toJS()
 
 			currentRevision.entrySeq().forEach ([property, value]) =>
 				# Ignore statusReason property, it can't be revised
@@ -102,36 +100,31 @@ load = (win) ->
 
 				# Imm List comparison (we assume existence of isList validates Imm.List)
 				else if not Imm.is value, previousValue
-					console.log "previousValue:", previousValue.toJS()
 
 					switch @props.type
 						when 'planTarget'
-							# Generate 'removed' list items
-							previousValue
-							.filterNot (arrayItem) -> value.contains(arrayItem)
-							.forEach (arrayItem) -> pushToChangeLog {
-								property
-								action: 'removed'
-								value: arrayItem
-							}
-							# Generate 'added' list items
-							value
-							.filterNot (arrayItem) -> previousValue.contains(arrayItem)
-							.forEach (arrayItem) -> pushToChangeLog {
-								property
-								action: 'added'
-								value: arrayItem
-							}
+							# Generate 'removed' changes
+							previousValue.forEach (item) ->
+								unless value.contains(item)
+									pushToChangeLog {
+										property
+										action: 'removed'
+										item
+									}
+							# Generate 'added' changes
+							value.forEach (item) ->
+								unless previousValue.contains(item)
+									pushToChangeLog {
+										property
+										action: 'added'
+										item
+									}
 						when 'progNote'
 							value.forEach (unit, unitIndex) =>
-								console.info "Unit:", unit.toJS()
 
 								if unit.has 'sections' # 'plan' progNote unit
-									console.info "Unit HAS sections:"
 									unit.get('sections').forEach (section, sectionIndex) =>
-										console.log "Section:", section.toJS()
 										section.get('targets').forEach (target, targetIndex) =>
-											console.log "Target", target.toJS()
 											target.entrySeq().forEach ([targetProperty, targetValue]) =>
 												# Grab the same target value from prev revision
 												previousTargetValue = previousValue.getIn [
@@ -139,9 +132,6 @@ load = (win) ->
 													'sections', sectionIndex
 													'targets', targetIndex, targetProperty
 												]
-												console.log "Property: #{targetProperty}"
-												console.log "targetValue", targetValue
-												console.log "previousTargetValue", previousTargetValue
 												# Handle regular values
 												if typeof targetValue in ['string', 'number'] and targetValue isnt previousTargetValue
 													pushToChangeLog {
@@ -151,13 +141,25 @@ load = (win) ->
 														value: @_diffStrings(previousTargetValue, targetValue)
 													}
 												# Is it an Imm list? (metrics)
-												else if not Imm.is targetValue, previousTargetValue
-													console.log "Need to iterate over list:", targetValue
+												else if targetProperty in ['metric', 'metrics']
 
-												console.log "----------------------"
+													# Generate 'revised' (metric value) changes
+													targetValue.forEach (arrayItem) =>
+														itemId = arrayItem.get('id')
+														itemValue = arrayItem.get('value')
+														previousItem = previousTargetValue.find (item) -> item.get('id') is itemId
+														previousItemValue = previousItem.get('value')
+
+														if previousItem? and itemValue isnt previousItemValue
+															pushToChangeLog {
+																parent: target.get('name')
+																property: "#{Term 'metric'} value"
+																action: 'revised'
+																item: arrayItem
+																value: @_diffStrings(previousItemValue, itemValue)
+															}
 
 								else # 'basic' progNote unit
-									console.info "Unit doesn't have section"
 									unit.entrySeq().forEach ([unitProperty, unitValue]) =>
 										previousUnitValue = previousValue.get(unitIndex)
 
@@ -179,27 +181,7 @@ load = (win) ->
 						else
 							throw new Error "Unknown RevisionHistory 'type': #{@props.type}"
 
-					console.log "previousValue", previousValue.toJS()
-					console.log "value", value.toJS()
-
 					console.log "Change Log:", changeLog.toJS()
-
-					# # Generate 'removed' list items
-					# previousValue
-					# .filterNot (arrayItem) -> value.contains(arrayItem)
-					# .forEach (arrayItem) -> pushToChangeLog {
-					# 	property
-					# 	action: 'removed'
-					# 	value: arrayItem
-					# }
-					# # Generate 'added' list items
-					# value
-					# .filterNot (arrayItem) -> previousValue.contains(arrayItem)
-					# .forEach (arrayItem) -> pushToChangeLog {
-					# 	property
-					# 	action: 'added'
-					# 	value: arrayItem
-					# }
 
 			# Fin.
 			return changeLog
@@ -327,7 +309,7 @@ load = (win) ->
 						#{if not @props.disableSnapshot then ' as: ' else ''}"
 					else if entry.has('reason')
 						"#{capitalize entry.get('value')} #{@props.dataModelName} because: "
-					else if entry.has('parent')
+					else if entry.has('parent') and not entry.get('parent').has? # Parent isn't an Imm Map obj
 						"#{capitalize entry.get('action')} #{entry.get('property')} for #{entry.get('parent')}: "
 					else
 						"#{capitalize entry.get('action')} #{entry.get('property')}: "
@@ -341,25 +323,33 @@ load = (win) ->
 						dataModelName: @props.dataModelName
 						metricsById: @props.metricsById
 					})
-				else if entry.get('property') is 'metric'
-					# Use widget to display metric
-					metric = @props.metricsById.get(entry.get('value'))
 
+				# Unique handling for metrics
+				else if entry.get('property') in [Term('metric'), "#{Term 'metric'} value"]
+
+					if typeof entry.get('item') is 'string'
+						# This changeLog entry is a single ID string, so fetch latest metric
+						metricId = entry.get('item')
+						metric = @props.metricsById.get metricId
+					else
+						# Assume item is the metric object itself
+						metric = entry.get('item')
+					console.info "metric.get('definition')", metric.get('definition')
 					MetricWidget({
+						value: entry.get('value') # Use diffed value if exists
 						isEditable: false
 						name: metric.get('name')
 						definition: metric.get('definition')
 						tooltipViewport: '.entry'
-						styleClass: 'clear'
+						styleClass: 'clear' unless entry.get('value')
 					})
-				else
-					# Set HTML because diffing <span>'s may exist
-					__html = entry.get('reason') or entry.get('value')
 
-					R.div({
-						className: 'value'
-						dangerouslySetInnerHTML: {__html}
-					})
+				else if entry.get('property') is 'value'
+					metric = entry.get('item')
+
+					console.info "show entry", entry.toJS()
+				else
+					entry.get('reason') or entry.get('value')
 				)
 			)
 
