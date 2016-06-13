@@ -1,8 +1,8 @@
 {
   "name": "KoNote",
   "displayName": "KoNote",
-  "author": "KoNote",
   "version": "1.7.0",
+  "author": "KoNote",
   "main": "src/main.html",
   "chromium-args": "--enable-spell-checking",
   "nwjsBuilder": {
