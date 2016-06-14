@@ -71,7 +71,6 @@ module.exports = function(grunt) {
 					'!**/samples/**',
 					'!**/examples/**',
 					'!**/example/**',
-					'!**/package.json',
 					'!**/README.md',
 					'!**/readme.md',
 					'!**/changelog.md',
