@@ -114,8 +114,11 @@ load = (win) ->
 											return target.get('id') is targetId
 										.map (target) =>
 											progNoteId = progNote.get('id')
-											progEvents = @props.progEvents.filter (progEvent) =>
-												return progEvent.get('relatedProgNoteId') is progNoteId
+											progEvents = @props.progEvents.filter (progEvent) ->
+												progEvent.get('relatedProgNoteId') is progNoteId
+
+											# Metric entry must have a value to display
+											metrics = target.get('metrics').filter (metric) -> metric.get('value')
 
 											return Imm.fromJS {
 												progNoteId
@@ -126,7 +129,7 @@ load = (win) ->
 												backdate: progNote.get('backdate')
 												notes: target.get('notes')
 												progEvents
-												metrics: target.get('metrics')
+												metrics
 											}
 							else
 								throw new Error "unknown prognote type: #{progNote.get('type')}"
