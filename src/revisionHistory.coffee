@@ -126,9 +126,6 @@ load = (win) ->
 
 									when 'basic'
 
-										console.info "BASIC!"
-										console.info "Unit:", unit.toJS()
-
 										unit.entrySeq().forEach ([unitProperty, unitValue]) =>
 											previousUnitValue = previousValue.getIn [unitIndex, unitProperty]
 
@@ -303,8 +300,6 @@ load = (win) ->
 
 		render: ->
 			entry = @props.entry
-
-			console.log "entry", entry.toJS()
 
 			# Account for terminology metricIds -> metrics
 			if entry.get('property') is 'metricIds'
