@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Load in Timeout listeners and trigger warning dialogs
@@ -14,12 +14,12 @@ load = (win) ->
 	R = React.DOM
 	Bootbox = win.bootbox
 	Gui = win.require 'nw.gui'
-	nwWin = Gui.Window.get(win)	
+	nwWin = Gui.Window.get(win)
 
 	Dialog = require('./dialog').load(win)
-	Spinner = require('./spinner').load(win)	
+	Spinner = require('./spinner').load(win)
 	CrashHandler = require('./crashHandler').load(win)
-	
+
 	Moment = require('moment')
 
 	TimeoutWarning = React.createFactory React.createClass
@@ -31,7 +31,7 @@ load = (win) ->
 				isOpen: false
 				isFinalWarning: false
 				isTimedOut: false
-				password: null
+				password: ''
 			}
 
 		_recalculateSeconds: ->
@@ -39,13 +39,13 @@ load = (win) ->
 
 		show: ->
 			@setState =>
-				password: null
+				password: ''
 				isOpen: true
 				expiration: Moment().add(Config.timeout.warnings.initial, 'minutes')
 
 			@_recalculateSeconds()
 
-			@counter = setInterval(=> 
+			@counter = setInterval(=>
 				@_recalculateSeconds()
 			, 1000)
 
@@ -53,7 +53,7 @@ load = (win) ->
 			@setState {isFinalWarning: true}
 
 		reset: ->
-			@setState => 
+			@setState =>
 				isOpen: false
 				isFinalWarning: false
 				isTimedOut: false
@@ -66,10 +66,10 @@ load = (win) ->
 			, 50)
 
 		showTimeoutMessage: ->
-			@setState => 
+			@setState =>
 				isTimedOut: true
-				password: null	
-			@_focusPasswordField()		
+				password: ''
+			@_focusPasswordField()
 
 		_confirmPassword: (event) ->
 			event.preventDefault()
@@ -88,7 +88,7 @@ load = (win) ->
 
 					if err instanceof Persist.Session.DeactivatedAccountError
 						Bootbox.alert "This user account has been deactivated."
-						return					
+						return
 
 					if err instanceof Persist.IOError
 						Bootbox.alert "An error occurred. Please check your network connection and try again.", =>
@@ -100,9 +100,9 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				global.ActiveSession.persist.eventBus.trigger 'timeout:reactivateWindows'				
+				global.ActiveSession.persist.eventBus.trigger 'timeout:reactivateWindows'
 
-		_updatePassword: (event) ->			
+		_updatePassword: (event) ->
 			@setState {password: event.target.value}
 
 		render: ->
@@ -118,11 +118,11 @@ load = (win) ->
 				containerClasses: [
 					'timedOut' if @state.isTimedOut
 					'warning' if @state.isFinalWarning
-				]				
-			},				
-				R.div({className: 'timeoutDialog'},					
-					(if @state.isTimedOut						
-						R.div({className: 'message'},							
+				]
+			},
+				R.div({className: 'timeoutDialog'},
+					(if @state.isTimedOut
+						R.div({className: 'message'},
 							"Please confirm your password for user \"#{global.ActiveSession.userName}\"
 							to restore all windows."
 							R.form({className: 'form-group'},
@@ -138,7 +138,7 @@ load = (win) ->
 										className: 'btn btn-primary btn-lg btn-block'
 										disabled: not @state.password
 										type: 'submit'
-										onClick: @_confirmPassword										
+										onClick: @_confirmPassword
 									}, "Confirm Password")
 								)
 							)
@@ -161,7 +161,7 @@ load = (win) ->
 				)
 			)
 
-	getTimeoutListeners = ->		
+	getTimeoutListeners = ->
 		# Fires 'resetTimeout' event upon any user interaction (move, click, typing, scroll)
 
 		timeoutContainer = win.document.createElement('div')
@@ -181,9 +181,9 @@ load = (win) ->
 					console.log "TIMEOUT: Initial Warning issued"
 
 					global.ActiveSession.initialWarningDelivered = new win.Notification "Inactivity Warning", {
-						body: "Your #{Config.productName} session will end in #{Config.timeout.warnings.initial} 
+						body: "Your #{Config.productName} session will end in #{Config.timeout.warnings.initial}
 						minute#{if Config.timeout.warnings.initial > 1 then 's' else ''}"
-					}					
+					}
 					nwWin.requestAttention(1)
 
 			'timeout:finalWarning': =>
@@ -193,9 +193,9 @@ load = (win) ->
 					console.log "TIMEOUT: Final Warning issued"
 
 					global.ActiveSession.finalWarningDelivered = new win.Notification "Final Warning", {
-						body: "#{Config.productName} will disable all windows in #{Config.timeout.warnings.final} 
+						body: "#{Config.productName} will disable all windows in #{Config.timeout.warnings.final}
 						minute#{if Config.timeout.warnings.final > 1 then 's' else ''} due to inactivity."
-					}					
+					}
 					nwWin.requestAttention(1)
 
 			'timeout:reset': =>
@@ -214,15 +214,15 @@ load = (win) ->
 
 				$('body').bind "mousemove mousedown keypress scroll", (event) ->
 					global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
-			
+
 			'timeout:timedOut': =>
 				console.log "TIMEOUT: Timed out, disabling windows"
 
 				$('body').unbind "mousemove mousedown keypress scroll"
 
-				timeoutComponent.showTimeoutMessage()				
+				timeoutComponent.showTimeoutMessage()
 
-		}		
+		}
 
 	return {getTimeoutListeners}
 
