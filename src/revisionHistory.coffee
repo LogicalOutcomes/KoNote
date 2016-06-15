@@ -83,6 +83,7 @@ load = (win) ->
 
 				# Plain string & number comparison
 				if typeof value in ['string', 'number'] and value isnt previousValue
+					# console.info "Doesn't match", value, previousValue
 					# Unique handling for 'status'
 					if property is 'status' and currentRevision.has('statusReason')
 						pushToChangeLog {
@@ -122,61 +123,68 @@ load = (win) ->
 						when 'progNote'
 							value.forEach (unit, unitIndex) =>
 
-								if unit.has 'sections' # 'plan' progNote unit
-									unit.get('sections').forEach (section, sectionIndex) =>
-										section.get('targets').forEach (target, targetIndex) =>
-											target.entrySeq().forEach ([targetProperty, targetValue]) =>
-												# Grab the same target value from prev revision
-												previousTargetValue = previousValue.getIn [
-													unitIndex
-													'sections', sectionIndex
-													'targets', targetIndex, targetProperty
-												]
-												# Handle regular values
-												if typeof targetValue in ['string', 'number'] and targetValue isnt previousTargetValue
-													pushToChangeLog {
-														parent: target.get('name')
-														property: targetProperty
-														action: 'revised'
-														value: @_diffStrings(previousTargetValue, targetValue)
-													}
-												# Is it an Imm list? (metrics)
-												else if targetProperty in ['metric', 'metrics']
+								switch unit.get('type')
 
-													# Generate 'revised' (metric value) changes
-													targetValue.forEach (arrayItem) =>
-														itemId = arrayItem.get('id')
-														itemValue = arrayItem.get('value')
-														previousItem = previousTargetValue.find (item) -> item.get('id') is itemId
-														previousItemValue = previousItem.get('value')
+									when 'basic'
 
-														if previousItem? and itemValue isnt previousItemValue
-															pushToChangeLog {
-																parent: target.get('name')
-																property: "#{Term 'metric'} value"
-																action: 'revised'
-																item: arrayItem
-																value: @_diffStrings(previousItemValue, itemValue)
-															}
+										console.info "BASIC!"
+										console.info "Unit:", unit.toJS()
 
-								else # 'basic' progNote unit
-									unit.entrySeq().forEach ([unitProperty, unitValue]) =>
-										previousUnitValue = previousValue.get(unitIndex)
+										unit.entrySeq().forEach ([unitProperty, unitValue]) =>
+											previousUnitValue = previousValue.getIn [unitIndex, unitProperty]
 
-										console.log "previousUnitValue", previousUnitValue
+											# console.log unitProperty
 
-										# # Handle regular values
-										# if typeof unitValue in ['string', 'number'] and unitValue isnt previousUnitValue
-										# 	pushToChangeLog {
-										# 		property: unitProperty
-										# 		action: 'revised'
-										# 		value: @_diffStrings(previousUnitValue, unitValue)
-										# 	}
-										# # Is it an Imm list? (metrics)
-										# else if not Imm.is unitValue, previousUnitValue
-										# 	console.log "Need to iterate over list:", unitValue
+											# Handle regular values
+											if typeof unitValue in ['string', 'number'] and unitValue isnt previousUnitValue
+												console.info "Changed:", previousUnitValue, unitValue
 
-										# console.log "----------------------"
+												pushToChangeLog {
+													parent: unit.get('name')
+													property: unitProperty
+													action: 'revised'
+													value: @_diffStrings(previousUnitValue, unitValue)
+												}
+
+									when 'plan'
+
+										unit.get('sections').forEach (section, sectionIndex) =>
+											section.get('targets').forEach (target, targetIndex) =>
+												target.entrySeq().forEach ([targetProperty, targetValue]) =>
+													# Grab the same target value from prev revision
+													previousTargetValue = previousValue.getIn [
+														unitIndex
+														'sections', sectionIndex
+														'targets', targetIndex, targetProperty
+													]
+													# Handle regular values
+													if typeof targetValue in ['string', 'number'] and targetValue isnt previousTargetValue
+														pushToChangeLog {
+															parent: target.get('name')
+															property: targetProperty
+															action: 'revised'
+															value: @_diffStrings(previousTargetValue, targetValue)
+														}
+													# Is it an Imm list? (metrics)
+													else if targetProperty in ['metric', 'metrics']
+														# Generate 'revised' (metric value) changes
+														targetValue.forEach (arrayItem) =>
+															itemId = arrayItem.get('id')
+															itemValue = arrayItem.get('value')
+															previousItem = previousTargetValue.find (item) -> item.get('id') is itemId
+															previousItemValue = previousItem.get('value')
+
+															if previousItem? and itemValue isnt previousItemValue
+																pushToChangeLog {
+																	parent: target.get('name')
+																	property: "#{Term 'metric'} value"
+																	action: 'revised'
+																	item: arrayItem
+																	value: @_diffStrings(previousItemValue, itemValue)
+																}
+
+									else
+										throw new Error "Unknown unit type: #{unit.get('type')}"
 
 						else
 							throw new Error "Unknown RevisionHistory 'type': #{@props.type}"
