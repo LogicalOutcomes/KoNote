@@ -155,17 +155,22 @@
 					opacity 0
 					transition all .15s ease
 
-					border-bottom 2px solid sidebar-borders
-					border-left 2px solid sidebar-borders
-					border-bottom-left-radius 10px
-
 					background none
 					position absolute
 					top 0
 					right 0
-					padding 5px
 
 					display flex
+
+					> div
+						padding 5px
+
+					.actions
+						display flex
+
+						border-bottom 2px solid sidebar-borders
+						border-left 2px solid sidebar-borders
+						border-bottom-left-radius 10px
 
 					a
 						opacity 0.75

@@ -532,10 +532,7 @@ load = (win) ->
 				# onMouseEnter: @props.setHighlightedQuickNoteId.bind null, @props.progNote.get('id')
 				# onMouseLeave: @props.setHighlightedQuickNoteId.bind null, null
 			},
-				ProgNoteHeader({
-					progNoteHistory: @props.progNoteHistory
-					selectProgNote: @props.selectProgNote
-				})
+				ProgNoteHeader({progNoteHistory: @props.progNoteHistory})
 				R.div({
 					className: 'notes'
 					onClick: @_selectQuickNote
@@ -544,10 +541,13 @@ load = (win) ->
 						ProgNoteToolbar({
 							isEditing
 							isReadOnly: @props.isReadOnly
-							startRevisingProgNote: @props.startRevisingProgNote
 							progNote
+							progNoteHistory: @props.progNoteHistory
 							progEvents: @props.progEvents
 							clientFile: @props.clientFile
+
+							startRevisingProgNote: @props.startRevisingProgNote
+							selectProgNote: @props.selectProgNote
 						})
 					)
 					(if isEditing
@@ -619,26 +619,25 @@ load = (win) ->
 
 			# Filter out any empty notes/metrics, unless we're editing
 			progNote = if isEditing then @props.revisingProgNote else @_filterEmptyValues(@props.progNote)
-			hasRevisions = @props.progNoteHistory.size > 1
 
 			R.div({
 				className: 'full progNote'
 				## TODO: Restore hover feature
 				# onMouseEnter: @props.setHighlightedProgNoteId.bind null, progNote.get('id')
 			},
-				ProgNoteHeader({
-					progNoteHistory: @props.progNoteHistory
-					selectProgNote: @props.selectProgNote
-				})
+				ProgNoteHeader({progNoteHistory: @props.progNoteHistory})
 				R.div({className: 'progNoteList'},
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
 						ProgNoteToolbar({
 							isEditing
 							isReadOnly: @props.isReadOnly
-							startRevisingProgNote: @props.startRevisingProgNote
 							progNote: @props.progNote
+							progNoteHistory: @props.progNoteHistory
 							progEvents: @props.progEvents
 							clientFile: @props.clientFile
+
+							startRevisingProgNote: @props.startRevisingProgNote
+							selectProgNote: @props.selectProgNote
 						})
 					)
 					(progNote.get('units').map (unit) =>
@@ -707,7 +706,8 @@ load = (win) ->
 													showWhen section.get('targets').isEmpty()
 												].join ' '
 											},
-												"This #{Term 'section'} is empty because the #{Term 'client'} has no #{Term 'plan targets'}."
+												"This #{Term 'section'} is empty because
+												the #{Term 'client'} has no #{Term 'plan targets'}."
 											)
 											(section.get('targets').map (target) =>
 												targetId = target.get('id')
@@ -895,7 +895,7 @@ load = (win) ->
 		_toggleDetails: (event) ->
 			@setState (s) -> {isExpanded: not s.isExpanded}
 
-	ProgNoteHeader = ({progNoteHistory, selectProgNote}) ->
+	ProgNoteHeader = ({progNoteHistory}) ->
 		hasRevisions = progNoteHistory.size > 1
 		numberOfRevisions = progNoteHistory.size - 1
 		# In this case we use the first revision's data
@@ -905,12 +905,6 @@ load = (win) ->
 			R.div({className: 'timestamp'},
 				formatTimestamp(progNote.get('backdate') or progNote.get('timestamp'))
 				" (late entry)" if progNote.get('backdate')
-
-				if hasRevisions
-					R.span({
-						className: 'selectProgNoteButton'
-						onClick: selectProgNote.bind null, progNote
-					}, "(#{numberOfRevisions} #{if numberOfRevisions > 1 then 'revisions' else 'revision'})")
 			)
 			R.div({className: 'author'},
 				' by '
@@ -922,40 +916,57 @@ load = (win) ->
 		{
 			isEditing
 			isReadOnly
-			startRevisingProgNote
 			progNote
+			progNoteHistory
 			progEvents
 			clientFile
+
+			startRevisingProgNote
+			selectProgNote
 		} = props
 
+		hasRevisions = progNoteHistory.size > 1
+		numberOfRevisions = progNoteHistory.size - 1
+		hasMultipleRevisions = numberOfRevisions > 1
+
 		R.div({className: 'progNoteToolbar'},
-			PrintButton({
-				dataSet: [
-					{
-						format: 'progNote'
-						data: progNote
-						progEvents
-						clientFile
-					}
-				]
-				disabled: isEditing
-				isVisible: true
-				iconOnly: true
-				tooltip: {show: true}
-			})
-			R.a({
-				className: "editNote #{showWhen not isReadOnly}"
-				onClick: startRevisingProgNote.bind null, progNote
-			},
-				"Edit"
+			R.div({className: "revisions #{showWhen hasRevisions}"},
+				R.a({
+					className: 'selectProgNoteButton'
+					onClick: selectProgNote.bind null, progNote
+				},
+					"#{numberOfRevisions} revision#{if hasMultipleRevisions then 's' else ''}"
+				)
 			)
-			OpenDialogLink({
-				className: "cancelNote #{showWhen not isReadOnly}"
-				dialog: CancelProgNoteDialog
-				progNote
-				progEvents
-			},
-				R.a({}, "Cancel")
+			R.div({className: 'actions'},
+				PrintButton({
+					dataSet: [
+						{
+							format: 'progNote'
+							data: progNote
+							progEvents
+							clientFile
+						}
+					]
+					disabled: isEditing
+					isVisible: true
+					iconOnly: true
+					tooltip: {show: true}
+				})
+				R.a({
+					className: "editNote #{showWhen not isReadOnly}"
+					onClick: startRevisingProgNote.bind null, progNote
+				},
+					"Edit"
+				)
+				OpenDialogLink({
+					className: "cancelNote #{showWhen not isReadOnly}"
+					dialog: CancelProgNoteDialog
+					progNote
+					progEvents
+				},
+					R.a({}, "Cancel")
+				)
 			)
 		)
 
