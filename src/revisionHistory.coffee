@@ -83,7 +83,6 @@ load = (win) ->
 
 				# Plain string & number comparison
 				if typeof value in ['string', 'number'] and value isnt previousValue
-					# console.info "Doesn't match", value, previousValue
 					# Unique handling for 'status'
 					if property is 'status' and currentRevision.has('statusReason')
 						pushToChangeLog {
@@ -133,8 +132,6 @@ load = (win) ->
 										unit.entrySeq().forEach ([unitProperty, unitValue]) =>
 											previousUnitValue = previousValue.getIn [unitIndex, unitProperty]
 
-											# console.log unitProperty
-
 											# Handle regular values
 											if typeof unitValue in ['string', 'number'] and unitValue isnt previousUnitValue
 												console.info "Changed:", previousUnitValue, unitValue
@@ -145,6 +142,23 @@ load = (win) ->
 													action: 'revised'
 													value: @_diffStrings(previousUnitValue, unitValue)
 												}
+											# Is it an Imm list? (metrics)
+											else if unitProperty in ['metric', 'metrics']
+												# Generate 'revised' (metric value) changes
+												unitValue.forEach (arrayItem) =>
+													itemId = arrayItem.get('id')
+													itemValue = arrayItem.get('value')
+													previousItem = previousUnitValue.find (item) -> item.get('id') is itemId
+													previousItemValue = previousItem.get('value')
+
+													if previousItem? and itemValue isnt previousItemValue
+														pushToChangeLog {
+															parent: target.get('name')
+															property: "#{Term 'metric'} value"
+															action: 'revised'
+															item: arrayItem
+															value: @_diffStrings(previousItemValue, itemValue)
+														}
 
 									when 'plan'
 
