@@ -169,6 +169,30 @@ dataModelDefinitions = [
 			)
 		})
 	}
+	{
+		name: 'clientFileTemplate'
+		collectionName: 'clientFileTemplates'
+		isMutable: true
+		indexes: [['name']]
+		schema: Joi.object().keys({
+			plan: Joi.object().keys({
+				sections: Joi.array().items(
+					Joi.object().keys({
+						name: Joi.string()
+						status: ['default']
+						targets: Joi.array().items(
+							name: Joi.string()
+							status: ['default']
+							metrics: Joi.array().items(
+								name: Joi.string()
+								definition: Joi.string
+							)
+						)
+					})
+				)
+			})
+		})
+	}
 
 	{
 		name: 'metric'
