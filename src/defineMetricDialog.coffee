@@ -13,7 +13,6 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	ReactDOM = win.ReactDOM
 
 	Config = require('./config')
 	Term = require('./term')
