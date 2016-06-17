@@ -326,8 +326,23 @@ load = (win) ->
 					@_addTargetToSection sectionId
 
 		_createTemplate: ->
-			Bootbox.prompt "Enter a name for the new Template:", (sectionName) =>
-				console.log 'plan >>>>>>>>>>>>>>>>', @state.plan.toJS()
+			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
+				console.log 'plan! >>>>>>>>>>>>>>>>', @state.plan.toJS()
+				
+				@state.plan.get('sections').toJS().map (section) ->
+					console.log "section >>>>", section	
+					# templateSection = {
+					# 	name: section.name
+					# 	status: 'default'
+					# 	targets:
+					# 	}			
+				
+				# console.log "sections! >>>", templateSections.toJS()
+
+				
+				# clientFileTemplate = Imm.fromJS {
+				# 	sections: sectionsArray
+				# }
 
 
 		_renameSection: (sectionId) ->
