@@ -76,7 +76,7 @@
     "yauzl": "^2.5.0"
   },
   "scripts": {
-    "start": "nw . --enable-logging=stderr --remote-debugging-port=9222",
+    "start": "nw . --enable-logging=stderr --remote-debugging-port=9222 --load-extension=scripts/react-devtools-immutable/",
     "test": "mocha --compilers coffee:coffee-script/register --recursive --bail"
   }
 }
