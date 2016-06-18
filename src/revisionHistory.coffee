@@ -128,6 +128,7 @@ load = (win) ->
 				else if not Imm.is value, previousRevisionValue
 
 					switch @props.type
+
 						when 'planTarget'
 							# Generate 'removed' changes
 							previousRevisionValue.forEach (item) ->
@@ -145,9 +146,9 @@ load = (win) ->
 										action: 'added'
 										item
 									}
+
 						when 'progNote'
 							value.forEach (unit, unitIndex) =>
-
 								switch unit.get('type')
 
 									when 'basic'
@@ -178,8 +179,6 @@ load = (win) ->
 
 						else
 							throw new Error "Unknown RevisionHistory 'type': #{@props.type}"
-
-					console.log "Change Log:", changeLog.toJS()
 
 			# Fin.
 			return changeLog
@@ -233,8 +232,6 @@ load = (win) ->
 		render: ->
 			revision = @props.revision
 			changeLog = revision.get('changeLog')
-
-			console.log "changeLog", changeLog.toJS()
 
 			return R.section({className: 'revision'},
 				R.div({className: 'header'},
@@ -330,7 +327,7 @@ load = (win) ->
 					else
 						# Assume item is the metric object itself
 						metric = entry.get('item')
-					console.info "metric.get('definition')", metric.get('definition')
+
 					MetricWidget({
 						value: entry.get('value') # Use diffed value if exists
 						isEditable: false
@@ -343,7 +340,6 @@ load = (win) ->
 				else if entry.get('property') is 'value'
 					metric = entry.get('item')
 
-					console.info "show entry", entry.toJS()
 				else
 					entry.get('reason') or entry.get('value')
 				)
