@@ -539,12 +539,12 @@ load = (win) ->
 				},
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
 						ProgNoteToolbar({
-							isEditing
 							isReadOnly: @props.isReadOnly
 							progNote
 							progNoteHistory: @props.progNoteHistory
 							progEvents: @props.progEvents
 							clientFile: @props.clientFile
+							selectedItem: @props.selectedItem
 
 							startRevisingProgNote: @props.startRevisingProgNote
 							selectProgNote: @props.selectProgNote
@@ -629,12 +629,12 @@ load = (win) ->
 				R.div({className: 'progNoteList'},
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
 						ProgNoteToolbar({
-							isEditing
 							isReadOnly: @props.isReadOnly
 							progNote: @props.progNote
 							progNoteHistory: @props.progNoteHistory
 							progEvents: @props.progEvents
 							clientFile: @props.clientFile
+							selectedItem: @props.selectedItem
 
 							startRevisingProgNote: @props.startRevisingProgNote
 							selectProgNote: @props.selectProgNote
@@ -914,22 +914,25 @@ load = (win) ->
 
 	ProgNoteToolbar = (props) ->
 		{
-			isEditing
 			isReadOnly
 			progNote
 			progNoteHistory
 			progEvents
 			clientFile
+			selectedItem
 
 			startRevisingProgNote
 			selectProgNote
 		} = props
 
+		isViewingRevisions = selectedItem? and selectedItem.get('type') is 'progNote' and selectedItem.get('progNoteId') is progNote.get('id')
 		hasRevisions = progNoteHistory.size > 1
 		numberOfRevisions = progNoteHistory.size - 1
 		hasMultipleRevisions = numberOfRevisions > 1
 
-		R.div({className: 'progNoteToolbar'},
+		R.div({
+			className: "progNoteToolbar #{'active' if isViewingRevisions}"
+		},
 			R.div({className: "revisions #{showWhen hasRevisions}"},
 				R.a({
 					className: 'selectProgNoteButton'
@@ -948,7 +951,6 @@ load = (win) ->
 							clientFile
 						}
 					]
-					disabled: isEditing
 					isVisible: true
 					iconOnly: true
 					tooltip: {show: true}
