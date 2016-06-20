@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # A component for indicating the presence or displaying the value of a metric.
@@ -9,7 +9,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	ReactDOMServer = win.ReactDOMServer
-	
+
 	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
 	MetricWidget = React.createFactory React.createClass
@@ -35,14 +35,17 @@ load = (win) ->
 				].join ' '
 			},
 				(if @props.value?
-					R.input({
-						className: 'value circle'
-						onFocus: @props.onFocus
-						value: @props.value
-						onChange: @_onChange
-						placeholder: if @props.isEditable then '__' else '--'
-						disabled: not @props.isEditable
-					})
+					if typeof @props.value in ['string', 'number']
+						R.input({
+							className: 'value circle'
+							onFocus: @props.onFocus
+							value: @props.value
+							onChange: @_onChange
+							placeholder: if @props.isEditable then '__' else '--'
+							disabled: not @props.isEditable
+						})
+					else
+						R.div({className: 'value circle'}, @props.value)
 				else
 					R.div({className: 'icon circle'},
 						FaIcon 'line-chart'

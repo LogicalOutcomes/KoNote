@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Moment = require 'moment'
@@ -74,6 +74,10 @@ load = (win) ->
 
 	# Converts line breaks to React <br> tags and trims leading or trailing whitespace
 	renderLineBreaks = (text) ->
+		unless text?
+			console.warn "renderLineBreaks received: ", text
+			return ""
+
 		lines = text.trim()
 		.replace(/\r\n/g, '\n') # Windows -> Unix
 		.replace(/\r/g, '\n') # old Mac -> Unix
@@ -106,7 +110,7 @@ load = (win) ->
 		.delete('timestamp')
 
 	formatTimestamp = (timestamp) ->
-		return Moment(timestamp, TimestampFormat).format('Do MMM, YYYY [at] h:mma')
+		return Moment(timestamp, TimestampFormat).format('MMMM Do, YYYY [at] h:mma')
 
 	capitalize = (word) ->
     return word.charAt(0).toUpperCase() + word.slice(1)
@@ -118,6 +122,39 @@ load = (win) ->
 			return text
 
 		return text[...(maxLength - 1)] + '…'
+
+
+	##### Convenience methods for fetching data from a progNote
+
+	getUnitIndex = (progNote, unitId) ->
+		result = progNote.get('units')
+		.findIndex (unit) =>
+			return unit.get('id') is unitId
+
+		if result is -1
+			throw new Error "could not find unit with ID #{JSON.stringify unitId}"
+
+		return result
+
+	getPlanSectionIndex = (progNote, unitIndex, sectionId) ->
+		result = progNote.getIn(['units', unitIndex, 'sections'])
+		.findIndex (section) =>
+			return section.get('id') is sectionId
+
+		if result is -1
+			throw new Error "could not find unit with ID #{JSON.stringify sectionId}"
+
+		return result
+
+	getPlanTargetIndex = (progNote, unitIndex, sectionIndex, targetId) ->
+		result = progNote.getIn(['units', unitIndex, 'sections', sectionIndex, 'targets'])
+		.findIndex (target) =>
+			return target.get('id') is targetId
+
+		if result is -1
+			throw new Error "could not find target with ID #{JSON.stringify targetId}"
+
+		return result
 
 	return {
 		CustomError
@@ -131,7 +168,10 @@ load = (win) ->
 		stripMetadata
 		formatTimestamp
 		capitalize
-		truncateText		
+		truncateText
+		getUnitIndex
+		getPlanSectionIndex
+		getPlanTargetIndex
 	}
 
 module.exports = {

@@ -1,11 +1,16 @@
-.planTargetHistory	
+.revisionHistory
+	overflow auto
 
 	> .heading
 		padding 15px
 		padding-left 25px
-		
-		font-size 24px
-		font-weight 300
+
+		border-bottom 2px solid hsl(202, 34%, 85%)
+
+		> h3
+			margin 10px 0
+			font-size 24px
+			font-weight 300
 
 	> .noRevisions
 		padding 20px
@@ -13,14 +18,14 @@
 		color #888
 		text-align center
 
-	> .revisions		
-		
+	> .revisions
+
 		> section.revision
 			position relative
-			padding 25px
+			padding 25px 20px
 
-			border-bottom 1px solid sidebar-borders
-			
+			border-bottom 1px solid #cadbe5
+
 			.header
 				display flex
 				flex-direction row
@@ -28,12 +33,12 @@
 				.author
 					flex 1
 					font-weight 700
-					
+
 					> .fa
 						color #cadbe5
 						font-size 1.2em
 						margin-right 10px
-					
+
 				.timestamp
 					text-align right
 					font-weight 600
@@ -41,37 +46,37 @@
 
 			&:last-child
 				border-bottom none
-				
+
 			.metricWidget
 				margin 5px
-				
+
 			.snapshot
 				margin-left 23px
 				color #515151
-				padding-top 15px				
-				
+				padding-top 15px
+
 				> .name
 					padding 5px
 					font-size 1.2em
 					font-weight 600
 					line-height 1.5em
 					border-bottom 1px dotted sidebar-borders
-						
+
 				> .description
 					padding 5px
-					
+
 				> .metrics
 					display flex
-					flex-wrap wrap									
-					
+					flex-wrap wrap
+
 			&:hover article.entry .snapshotButton
 				opacity 0.5
-				
+
 			article.entry
 				position relative
 				margin-left 23px
 				padding-top 10px
-				
+
 				> .snapshotButton
 					float right
 					margin 5px
@@ -80,38 +85,38 @@
 					opacity 0
 					transition opacity .15s ease
 					outline none
-					
+
 					&:hover
 						opacity 1
-				
+
 				> .fa
 					position absolute
 					left 0px
 					top 0
 					padding-top 12px
-					
+
 					color #cadbe5
 					font-size 1.1em
 					margin-left -23px
-					
+
 				> .action
 					font-weight 600
 					margin-bottom 5px
-					
+
 				> .metricWidget // Displayed inline with action
 					display inline-flex
-					
-				> .value
+
+				.value
 					display inline-block
 					color #515151
-					
+
 					> .added
 						background #C0F0C0
-						
+
 					> .removed
 						color #FF2727
 						text-decoration line-through
 						opacity 0.75
-					
+
 				> .snapshot
 					margin 0 // Required for consistent display
