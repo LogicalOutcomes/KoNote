@@ -121,8 +121,15 @@
 
 				padding-bottom 30px
 
-				&:hover > .progNoteList > .progNoteToolbar
+				> .notes // Quick Note
+					position relative
+					padding-top 15px
+
+				&:hover .progNoteToolbar
 					opacity 1
+
+					.revisions
+						margin-right 0
 
 				> .header
 					display flex
@@ -150,43 +157,47 @@
 							color inherit
 							text-decoration underline
 
+				.progNoteToolbar
+					opacity 0
+					transition all .15s ease
 
-				> .progNoteList
-					position relative
+					background none
+					position absolute
+					top 0
+					right 0
 
-					> .progNoteToolbar
-						opacity 0
-						transition all .15s ease
+					display flex
 
-						background none
-						position absolute
-						top 0
-						right 0
+					> div
+						padding 5px
 
+					.revisions
+						transition margin-right .25s cubic-bezier(0, 0, 0.2, 1) // Linear out, slow in
+						margin-right -20px
+
+					.actions
 						display flex
 
-						> div
-							padding 5px
+						border-bottom 2px solid sidebar-borders
+						border-left 2px solid sidebar-borders
+						border-bottom-left-radius 10px
 
-						.actions
-							display flex
+					a
+						cursor pointer
+						color #274B6B
+						opacity 0.75
+						transition all .15s ease
+						display inline-block
 
-							border-bottom 2px solid sidebar-borders
-							border-left 2px solid sidebar-borders
-							border-bottom-left-radius 10px
+						padding 2px 8px
 
-						a
-							cursor pointer
-							color #274B6B
-							opacity 0.75
-							transition all .15s ease
-							display inline-block
+						&:hover
+							opacity 1
+							color black
 
-							padding 2px 8px
 
-							&:hover
-								opacity 1
-								color black
+				.progNoteList
+					position relative
 
 					> .unit
 						padding-bottom 20px
