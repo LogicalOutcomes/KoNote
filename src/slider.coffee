@@ -19,6 +19,10 @@ load = (win) ->
 			unless oldProps.ticks.length is @props.ticks.length
 				@_initSlider()
 
+			# Manually change value when props.value does
+			unless oldProps.value is @props.value
+				@slider.slider('setValue', @props.value)
+
 		componentDidMount: ->
 			@_initSlider()
 

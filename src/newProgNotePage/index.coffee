@@ -837,8 +837,7 @@ load = (win, {clientFileId}) ->
 				widgetPositioning: {
 					vertical: 'bottom'
 				}
-			}).on 'dp.change', (e) =>
-				@props.onChange e
+			}).on 'dp.change', @props.onChange
 		render: ->
 			return R.div({className: 'input-group'},
 				R.input({

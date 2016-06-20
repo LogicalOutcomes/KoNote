@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Chart component for analysis tab
@@ -75,8 +75,8 @@ load = (win) ->
 				@_chart.axis.min {x: newMin}
 				@_chart.axis.max {x: newMax}
 
-				
-		componentDidMount: ->			
+
+		componentDidMount: ->
 			@_generateChart()
 			@_refreshSelectedMetrics()
 			@_refreshProgEvents()
@@ -109,7 +109,7 @@ load = (win) ->
 			.map (seriesId) =>
 				return ['y-' + seriesId, seriesNamesById.get(seriesId)]
 			.fromEntrySeq().toMap()
-			
+
 
 			dataSeries = dataSeries.entrySeq().flatMap ([seriesId, dataPoints]) ->
 				# Ensure ordered by earliest-latest
@@ -165,7 +165,7 @@ load = (win) ->
 						text: year
 						position: 'middle'
 						class: 'yearLine'
-					}			
+					}
 
 
 			# Generate and bind the chart
@@ -190,7 +190,7 @@ load = (win) ->
 						show: false
 						max: 1
 					}
-				}				
+				}
 				data: {
 					hide: true
 					xFormat: D3TimestampFormat
@@ -236,7 +236,7 @@ load = (win) ->
 			@_chart.hide()
 
 			@props.selectedMetricIds.forEach (metricId) =>
-				@_chart.show("y-" + metricId)	
+				@_chart.show("y-" + metricId)
 
 		_refreshProgEvents: ->
 			# Generate c3 regions array
@@ -289,12 +289,12 @@ load = (win) ->
 
 					# Let's pluck this progEvent if no rows or timestamps don't conflict
 					if thisRow.size is 0 or (
-						not thisRow.last().get('end')? or 
+						not thisRow.last().get('end')? or
 						thisEvent.start >= thisRow.last().get('end')
 					)
 						# Append class with row number
 						progEvent = Imm.fromJS(thisEvent)
-						newClass = progEvent.get('class') + " row#{rowIndex}"				
+						newClass = progEvent.get('class') + " row#{rowIndex}"
 
 						# Convert single-point event date to a short span
 						if not progEvent.get('end')
@@ -333,7 +333,7 @@ load = (win) ->
 
 			@props.progEvents.forEach (progEvent) =>
 				# Attach hover binding to progEvent region
-				$('.' + progEvent.get('id')).hover((event) =>					
+				$('.' + progEvent.get('id')).hover((event) =>
 
 					eventInfo.addClass('show')
 					eventInfo.find('.title').text progEvent.get('title')
@@ -370,8 +370,8 @@ load = (win) ->
 
 					rect = $('.' + progEvent.get('id')).find('rect')[0]
 					$(rect).attr({
-						style: 
-							"fill: #{eventType.get('colorKeyHex')} !important; 
+						style:
+							"fill: #{eventType.get('colorKeyHex')} !important;
 							stroke: #{eventType.get('colorKeyHex')} !important;"
 					})
 

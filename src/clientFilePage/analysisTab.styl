@@ -1,8 +1,7 @@
 .analysisView
-	// height 100%
 	display flex
 	flex-direction column
-	
+
 	.noData
 		flex 1
 
@@ -16,89 +15,124 @@
 		color #AAA
 		font-size 24px
 		font-weight 700
-		text-align center			
-	
+		text-align center
+
 	.timeScaleToolbar
 		flex none
 		flex-basis 85px
 		display flex
-		flex-direction row		
-		
+		flex-direction row
+
 		// Default styling for slider
-		.slider				
+		.slider
 			width 100%
-			
+
 			.slider-track
 				border-radius 15px
 				height 16px
-			
+
 				.slider-track-low, .slider-track-high
 					border-radius 15px
 					background #e4eff5
-					
-				.slider-selection					
+
+				.slider-selection
 					border-radius 0px
 					box-shadow none
 					background #c8dae4
-				
+
 				.slider-handle
 					transition background 0.2s ease
 					background #607886
 					margin-top -3px
 					border 3px solid white
-					
+
 					&:hover
 						background #3b4e59
-						
+
 			.tooltip
 				margin-top -33px
-				
+
 				.tooltip-inner
 					background sidebar-borders
 					color #4c5d67
 					font-size 13px
 					padding 4px 10px
-				
+
 				.tooltip-arrow
 					border-top-color sidebar-borders
-						
+
 			.slider-tick-label-container
 				margin-left -15% !important
 				margin-right -15% !important
-				
+
 				> .slider-tick-label
 					width 25% !important
 					text-align center !important
-		
+
 		> .timeSpanContainer
-			flex 5
+			flex 4
 			display block
 			position relative
-			padding 35px 30px 0px 30px
-			
-			> .valueDisplay
+			padding 35px 3% 0px 3%
+
+			> .dateDisplay
 				position absolute
 				left 0
 				right 0
-				width 100%
+
 				display flex
+				width 100%
 				padding 20px
-				
-				> div
-					flex 1					
-					
+
+				> .dateContainer
+					flex 1
+
+					&:first-child
+						text-align left
+
 					&:last-child
 						text-align right
-						
-					> span
+
+					> .date
+						position relative
+						transition background .25s ease
+						cursor pointer
 						background #fff
-						padding 5px 10px
+						padding 6px
+
 						border-radius 5px
 						border 1px solid sidebar-borders
-						
+
 						font-weight 400
 						color #5c5c5c
-			
+
+						&:hover
+							background #f9f9f9
+
+							.fa
+								margin 0 2px
+
+						> input // Hidden so span below can represent the date
+							position absolute
+							bottom 0
+							left 0
+							width 2px
+							border 0
+							height 100%
+							padding 0
+							outline none
+							opacity 0
+
+						> span
+							padding 3px 5px
+
+							.fa
+								transition margin .25s ease
+								color #8CA6B5
+								margin 0
+
+
+
 		> .granularContainer
 			flex 2
 
@@ -106,74 +140,77 @@
 		flex 1
 		display flex
 		flex-direction row
-		align-items stetch			
+		align-items stetch
 
 		.chartContainer
 			flex 5
 			display flex
 
-			padding 20px 30px
+			padding 20px 5px
 			border-top 2px solid sidebar-borders
 			border-right 2px solid sidebar-borders
 			border-top-right-radius 25px
 
-			> .chartInner			
+			> .chartInner
 				flex 1
-				
+
 				display flex
 				align-items center
 				justify-content center
-				
+
 				> #eventInfo
 					display none
 					z-index 9999
-					position absolute					
+					position absolute
 					width 150px
 					margin-left -(@width / 2)
-					
+
 					background #fff
-					border 1px solid sidebar-borders						
-					
+					border 1px solid sidebar-borders
+
 					> .title
 						font-weight 600 !important
-						background sidebar-borders						
+						background sidebar-borders
 						padding 5px
-						
+
 						color #4c5d67
 						font-size 14px
-						
+
 					> .info
-						
+
 						> .description
 							font-weight normal
 							padding 5px
 							font-size 12px
-							
+
 						> .timeSpan
 							font-size 10px
-							
+
 							> div
 								text-align right
 								background #eee
 								padding 5px
-				
+
 				.yearLine
 					font-weight bold
-					
+
 					text
 						// Moves year value to right side of yearLine
 						transform rotate(-90deg) translateY(17px)
-					
+
 				.chart
 					flex 1
-						
+
+					svg
+						width 100%
+
 					.c3-zoom-rect
 						display none !important
 
 					.c3-regions
-						
-						.c3-region 
-							
+
+						.c3-region
+
 							> rect
 								// 10% of original height
 								transform scaleY(0.1) !important
@@ -181,61 +218,61 @@
 								fill sidebar-borders
 								stroke sidebar-borders
 								stroke-width 2px
-								
+
 								&:hover
 									fill-opacity 1 !important
 									fill sidebar-borders
-									
+
 							&.singlePoint > rect
 								fill sidebar-borders
 								stroke sidebar-borders
 								stroke-width 2
-								
+
 								&:hover
 									stroke #1d6977
-										
+
 							&.row1 > rect
 								transform scaleY(0.1) translateY(350px) !important
-								
+
 							&.row2 > rect
 								transform scaleY(0.1) translateY(700px) !important
-								
+
 							&.row3 > rect
 								transform scaleY(0.1) translateY(1050px) !important
-								
+
 							&.row4 > rect
 								transform scaleY(0.1) translateY(1400px) !important
-								
+
 							&.row5 > rect
 								transform scaleY(0.1) translateY(1750px) !important
 
-						
+
 
 		.selectionPanel
 			flex 2
 			// display flex
 			flex-direction column
-			padding-top 25px			
+			padding-top 25px
 			overflow-y auto
 			overflow-x hidden
-			
+
 			.noData
 				padding 10px
 				font-size 14px
 				font-weight 400
-			
+
 			.dataType
 				clear both
 				padding-bottom 15px
 
-				h2					
+				h2
 					font-size 24px
 					font-weight 300
 					margin 0
 					padding 15px
 					border-bottom 1px solid sidebar-borders
 					transition all .15s ease
-					
+
 					input[type=checkbox]
 						height 18px
 						margin-right 10px
@@ -246,17 +283,17 @@
 						font-size 10px
 						line-height 24px
 						float right
-											
+
 					&:hover
 						cursor pointer
 						color white
 						background sidebar-borders
 						color #456E86
-						
+
 						.helper
 							opacity 1
 
-						
+
 				h3
 					font-size 13px
 					letter-spacing 1px
@@ -265,24 +302,24 @@
 					padding 15px
 					text-transform uppercase
 					color grey
-					
+
 				.checkbox
 					margin-top 0 !important
 					margin-bottom 5px
-					
+
 				.dataOptions
 					padding 0px 25px
-					
+
 					label
 						color #5c5c5c
-										
+
 				&.metrics
 					h4
 						padding 0
 						margin 0
 						font-size 14px
 						font-weight 600
-						
+
 					section
 						padding-left 15px
 						margin-bottom 15px

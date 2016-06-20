@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # The Analysis tab on the client file page.
@@ -8,6 +8,7 @@
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
+_ = require 'underscore'
 
 Config = require '../config'
 Term = require '../term'
@@ -27,6 +28,7 @@ load = (win) ->
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 	TimeGranularities = ['Day', 'Week', 'Month', 'Year']
+	dateDisplayFormat = 'MMM Do - YYYY'
 
 	AnalysisView = React.createFactory React.createClass
 		displayName: 'AnalysisView'
@@ -36,7 +38,7 @@ load = (win) ->
 				hasEnoughData: null
 				daysOfData: null
 				targetMetricsById: Imm.Map()
-				metricValues: null				
+				metricValues: null
 				selectedMetricIds: Imm.Set()
 				filteredProgEvents: Imm.Set()
 				selectedEventTypeIds: Imm.Set()
@@ -52,7 +54,7 @@ load = (win) ->
 			@_generateAnalysis()
 
 		componentDidUpdate: (oldProps, oldState) ->
-			# TODO: Simpler indicator of important props change			
+			# TODO: Simpler indicator of important props change
 			unless Imm.is oldProps.metricsById, @props.metricsById
 				@_generateAnalysis()
 
@@ -68,6 +70,9 @@ load = (win) ->
 
 			unless Imm.is oldState.selectedEventTypeIds, @state.selectedEventTypeIds
 				@_generateAnalysis()
+
+			unless oldState.timeSpan is @state.timeSpan
+				console.log "TimeSpan:", oldState.timeSpan, "->", @state.timeSpan
 
 		_generateAnalysis: ->
 			console.log "Generating Analysis...."
@@ -106,7 +111,7 @@ load = (win) ->
 			# All metric IDs for which this client file has data
 			metricIdsWithData = metricValues
 			.map (m) -> m.get 'id'
-			.toSet()			
+			.toSet()
 
 			# Build list of inactive metricIds that have data
 			inactiveMetricIds = metricIdsWithData.filterNot (metricId) ->
@@ -122,7 +127,7 @@ load = (win) ->
 
 			# Filter out progEvents that aren't cancelled or excluded
 			filteredProgEvents = @props.progEvents
-			.filter (progEvent) =>				
+			.filter (progEvent) =>
 				switch progEvent.get('status')
 					when 'default'
 						return true
@@ -176,7 +181,7 @@ load = (win) ->
 				filteredProgEvents
 				inactiveMetricIds
 				targetMetricsById
-			}		
+			}
 
 		render: ->
 			hasEnoughData = @state.daysOfData > 0
@@ -187,7 +192,7 @@ load = (win) ->
 					R.div({},
 						R.h1({}, "More Data Needed")
 						R.div({},
-							"Analytics will show up here once #{Term 'metrics'} or #{Term 'events'} 
+							"Analytics will show up here once #{Term 'metrics'} or #{Term 'events'}
 							have been recorded in a #{Term 'progress note'} for #{@props.clientName}."
 						)
 					)
@@ -202,7 +207,7 @@ load = (win) ->
 								ticks: @state.xTicks.pop().toJS()
 								onChange: (event) =>
 									# Force-convert numerical array because this plugin is stupid!
-									timeSpanArray = event.target.value.split(",")									
+									timeSpanArray = event.target.value.split(",")
 									timeSpan = [Number(timeSpanArray[0]), Number(timeSpanArray[1])]
 									@setState {timeSpan}
 								formatter: ([start, end]) =>
@@ -211,12 +216,17 @@ load = (win) ->
 									endTime = Moment(@state.xTicks.get(end)).format('Do MMM')
 									return "#{startTime} - #{endTime}"
 							})
-							R.div({className: 'valueDisplay'},
-								(@state.timeSpan.map (time, index) =>
-									date = Moment(@state.xTicks.get(time)).format('MMM Do - YYYY')
-									return R.div({key: index},
-										R.span({}, date)
-									)
+							R.div({className: 'dateDisplay'},
+								(@state.timeSpan.map (date, index) =>
+
+									TimeSpanDate({
+										key: index
+										index
+										timeSpan: @state.timeSpan
+										xTicks: @state.xTicks
+										format: dateDisplayFormat
+										onChange: @_updateTimeSpanDate
+									})
 								)
 							)
 					)
@@ -236,7 +246,7 @@ load = (win) ->
 								progEvents: @state.filteredProgEvents
 								eventTypes: @props.eventTypes
 								metricsById: @props.metricsById
-								metricValues: @state.metricValues								
+								metricValues: @state.metricValues
 								xTicks: @state.xTicks
 								selectedMetricIds: @state.selectedMetricIds
 								timeSpan: @state.timeSpan
@@ -248,14 +258,14 @@ load = (win) ->
 								R.div({},
 									R.h1({}, "Select Data")
 									R.div({},
-										"Begin your #{Term 'analysis'} by selecting 
+										"Begin your #{Term 'analysis'} by selecting
 										one or more data points from the right panel."
 									)
-								)								
+								)
 							)
 					)
 					R.div({className: 'selectionPanel'},
-						R.div({className: 'dataType progEvents'},							
+						R.div({className: 'dataType progEvents'},
 							progEventsAreSelected = not @state.selectedEventTypeIds.isEmpty()
 							allEventTypesSelected = @state.selectedEventTypeIds.size is (@props.eventTypes.size + 1)
 
@@ -301,10 +311,10 @@ load = (win) ->
 													eventType.get('name')
 												)
 											)
-										)								
+										)
 									)
 								)
-							)							
+							)
 
 							(unless untypedEvents.isEmpty()
 								R.div({},
@@ -316,7 +326,7 @@ load = (win) ->
 													type: 'checkbox'
 													checked: @state.selectedEventTypeIds.contains null
 													onChange: @_updateSelectedEventTypes.bind null, null
-												})													
+												})
 												"(#{untypedEvents.size}) "
 												Term (if untypedEvents.size is 1 then 'Event' else 'Events')
 											)
@@ -489,11 +499,32 @@ load = (win) ->
 		_metricIsExcluded: (metricId) ->
 			targetId = @state.targetMetricsById.findKey (target) =>
 				target.contains metricId
-			
+
 			return targetId? and @state.excludedTargetIds.contains(targetId)
 
 		_updateMetricColors: (metricColors) ->
 			@setState {metricColors}
+
+		_updateTimeSpanDate: (event, index) ->
+			newDate = Moment(event.target.value, dateDisplayFormat)
+
+			timeSpanIndex = @state.xTicks.findIndex (date) -> date.isSame(newDate)
+
+			if timeSpanIndex is -1
+				Bootbox.alert {
+					title: "Invalid Date"
+					message: """
+						Sorry, '#{newDate.format(dateDisplayFormat)}' falls outside
+						the timeline of this #{Term 'client'}.
+					"""
+				}
+				return
+
+			# React hates mutating/ed arrays
+			timeSpan = _.clone(@state.timeSpan)
+			timeSpan[index] = timeSpanIndex
+
+			@setState {timeSpan}
 
 	extractMetricsFromProgNoteHistory = (progNoteHist) ->
 		createdAt = progNoteHist.first().get('timestamp')
@@ -533,6 +564,79 @@ load = (win) ->
 				throw new Error "unknown prognote section type: #{JSON.stringify section.get('type')}"
 
 
+	TimeSpanDate = React.createFactory React.createClass
+		displayName: 'TimeSpanDate'
+		mixins: [React.addons.PureRenderMixin]
+
+		componentDidMount: ->
+			defaultDate = @_getDate()
+
+			# TODO: Refactor
+			if @props.index is 0
+				minDate = @props.xTicks.first()
+				maxDate = @props.xTicks.get @props.timeSpan[1]
+			else
+				minDate = @props.xTicks.get @props.timeSpan[0]
+				maxDate = @props.xTicks.last()
+
+			# Init datetimepicker
+			$(@refs.hiddenDateTimePicker).datetimepicker({
+				format: @props.format
+				defaultDate: @props.dateMoment
+				minDate
+				maxDate
+
+				sideBySide: true
+				showClose: true
+				toolbarPlacement: 'bottom'
+				widgetPositioning: {
+					vertical: 'bottom'
+				}
+			}).on 'dp.change', (event) => @props.onChange(event, @props.index)
+
+			@dateTimePicker = $(@refs.hiddenDateTimePicker).data('DateTimePicker')
+
+		componentDidUpdate: (oldProps) ->
+			timeSpan = @props.timeSpan
+
+			# TODO: Refactor, test Perf
+			# Adjust min/max dates (and current value) to date of changed TimeSpanDate
+			if oldProps.timeSpan[0] isnt @props.timeSpan[0]
+				newDate = @props.xTicks.get(@props.timeSpan[0])
+
+				if @props.index is 1
+					@dateTimePicker.minDate newDate
+				else
+					@dateTimePicker.date newDate
+
+			if oldProps.timeSpan[1] isnt @props.timeSpan[1]
+				newDate = @props.xTicks.get(@props.timeSpan[1])
+
+				if @props.index is 0
+					@dateTimePicker.maxDate newDate
+				else
+					@dateTimePicker.date newDate
+
+
+		_getDate: ->
+			# Use xTicks to look up date moment by timeSpan index
+			@props.xTicks.get @props.timeSpan[@props.index]
+
+		_toggleDateTimePicker: -> @dateTimePicker.toggle()
+
+		render: ->
+			formattedDate = @_getDate().format(@props.format)
+
+			return R.div({className: 'dateContainer'},
+				R.span({
+					onClick: @_toggleDateTimePicker
+					className: 'date'
+				},
+					R.input({ref: 'hiddenDateTimePicker'})
+					R.span({}, formattedDate)
+					R.span({}, FaIcon('caret-down'))
+				)
+			)
 
 	return {AnalysisView}
 
