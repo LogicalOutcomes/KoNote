@@ -13,7 +13,6 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	ReactDOM = win.ReactDOM
 
 	Config = require('./config')
 	Term = require('./term')
@@ -32,8 +31,10 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			refToFocus = if @props.metricQuery? then 'definitionField' else 'nameField'
-			ReactDOM.findDOMNode(@refs[refToFocus]).focus()
+			if @props.metricQuery?
+				@refs.definitionField.refs.textarea.focus()
+			else
+				@refs.nameField.focus()
 			
 		render: ->
 			Dialog({
