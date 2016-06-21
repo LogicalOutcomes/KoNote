@@ -328,21 +328,29 @@ load = (win) ->
 		_createTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
 				console.log 'plan! >>>>>>>>>>>>>>>>', @state.plan.toJS()
-				
-				@state.plan.get('sections').toJS().map (section) ->
-					console.log "section >>>>", section	
-					# templateSection = {
-					# 	name: section.name
-					# 	status: 'default'
-					# 	targets:
-					# 	}			
-				
-				# console.log "sections! >>>", templateSections.toJS()
 
+				template = Imm.fromJS {
+					name: templateName
+					sections: []
+					
+				}
 				
-				# clientFileTemplate = Imm.fromJS {
-				# 	sections: sectionsArray
-				# }
+				@state.plan.get('sections').toJS().map (section) =>
+					console.log "section >>>>", section	
+					# right now just pushes the existing section object into the tempalte
+					# have to map the object to the template datamodel.
+
+					template = template.update 'sections', (sections) =>
+						return sections.push section
+		
+				
+				console.log "Template Object before creation >>> ", template.toJS()
+				# global.ActiveSession.persist.clientFileTemplates.create template, (err) =>
+				# 	if err
+				# 		cb err
+				# 		return
+
+				# 	cb()
 
 
 		_renameSection: (sectionId) ->
