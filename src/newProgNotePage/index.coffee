@@ -64,8 +64,6 @@ load = (win, {clientFileId}) ->
 		suggestClose: ->
 			@refs.ui.suggestClose()
 
-
-
 		render: ->
 			unless @state.status is 'ready' then return R.div({})
 
@@ -87,157 +85,42 @@ load = (win, {clientFileId}) ->
 		_loadData: ->
 			template = progNoteTemplate
 
-			planTargetsById = null
-			metricsById = null
-			planTargetHeaders = null
-			progNoteHeaders = null
-			progEventHeaders = null
-			eventTypeHeaders = null
-			eventTypes = null
+			# This is attached to global by clientFile
+			{
+				clientFile
+				planTargetsById
+				metricsById
+				progNoteHistories
+				progEvents
+				eventTypes
+			} = global.dataStore[clientFileId]
 
-			Async.series [
-				(cb) =>
-					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
-						if err
-							cb err
-							return
+			# Convert data structure of clientFile's planTargetsById
+			planTargetsById = planTargetsById.map (planTarget) ->
+				return planTarget.get('revisions')
 
-						clientFile = revisions.first()
-						@setState {clientFile}
+			# Build progNote with template
+			progNote = @_createProgNoteFromTemplate(
+				template
+				clientFile
+				planTargetsById
+				metricsById
+			)
 
-						cb()
-				(cb) =>
-					ActiveSession.persist.planTargets.list clientFileId, (err, result) =>
-						if err
-							cb err
-							return
+			# Done loading data, we can load in the empty progNote object
+			@setState {
+				status: 'ready'
+				clientFile
+				progNote
 
-						planTargetHeaders = result
-						cb()
-				(cb) =>
-					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
-						ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
-					, (err, planTargets) ->
-						if err
-							cb err
-							return
-
-						pairs = planTargets.map (planTarget) =>
-							return [planTarget.getIn([0, 'id']), planTarget]
-						planTargetsById = Imm.Map(pairs)
-
-						cb()
-				(cb) =>
-					# Figure out which metrics we need to load
-					requiredMetricIds = Imm.Set()
-					.union template.get('units').flatMap (section) =>
-						switch section.get('type')
-							when 'basic'
-								return section.get('metricIds')
-							when 'plan'
-								return []
-							else
-								throw new Error "unknown section type: #{section.get('type')}"
-					.union planTargetsById.valueSeq().flatMap (planTarget) =>
-						return planTarget.last().get('metricIds')
-
-					metricsById = Imm.Map()
-					Async.each requiredMetricIds.toArray(), (metricId, cb) =>
-						ActiveSession.persist.metrics.readLatestRevisions metricId, 1, (err, result) =>
-							if err
-								cb err
-								return
-
-							metricsById = metricsById.set metricId, result.first()
-							cb()
-					, cb
-				(cb) =>
-					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						progNoteHeaders = Imm.fromJS results
-						cb()
-				(cb) =>
-					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
-						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						@setState (state) =>
-							return {progNoteHistories: Imm.List(results)}
-
-						cb()
-				(cb) =>
-					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						progEventHeaders = results
-
-						cb()
-				(cb) =>
-					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
-						ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEventHeader.get('id'), 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						progEvents = Imm.List(results)
-						.map (progEvent) -> stripMetadata progEvent.first()
-
-						@setState {progEvents}
-						cb()
-				(cb) =>
-					ActiveSession.persist.eventTypes.list (err, result) =>
-						if err
-							cb err
-							return
-
-						eventTypeHeaders = result
-						cb()
-				(cb) =>
-					Async.map eventTypeHeaders.toArray(), (eventTypeheader, cb) =>
-						eventTypeId = eventTypeheader.get('id')
-
-						ActiveSession.persist.eventTypes.readLatestRevisions eventTypeId, 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						eventTypes = Imm.List(results).map (eventType) -> stripMetadata eventType.get(0)
-						cb()
-			], (err) =>
-				if err
-					if err instanceof Persist.IOError
-						@setState => {
-							loadErrorType: 'io-error'
-						}
-						return
-
-					CrashHandler.handle err
-					return
-
-				# Build progNote with template
-				progNote = @_createProgNoteFromTemplate(
-					template
-					@state.clientFile
-					planTargetsById
-					metricsById
-				)
-
-				# Done loading data, we can load in the empty progNote object
-				@setState {
-					status: 'ready'
-					progNote
-					eventTypes
-				}
+				planTargetsById
+				metricsById
+				progNoteHistories
+				progEvents
+				eventTypes
+			}, ->
+				# We're done with this dataStore, so delete it to preserve memory
+				delete global.dataStore[clientFileId]
 
 		_createProgNoteFromTemplate: (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {

@@ -448,6 +448,20 @@ load = (win) ->
 			else
 				@props.setIsLoading true
 
+				# Cache data to global, so can access again from newProgNote window
+				# Set up the dataStore if doesn't exist
+				# Store property as clientFile ID to prevent confusion
+				global.dataStore ?= {}
+
+				global.dataStore[@props.clientFileId] = {
+					clientFile: @props.clientFile
+					planTargetsById: @props.planTargetsById
+					metricsById: @props.metricsById
+					progNoteHistories: @props.progNoteHistories
+					progEvents: @props.progEvents
+					eventTypes: @props.eventTypes
+				}
+
 				openWindow {
 					page: 'newProgNote'
 					clientFileId: @props.clientFileId
