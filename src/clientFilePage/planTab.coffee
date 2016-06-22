@@ -78,6 +78,8 @@ load = (win) ->
 			else
 				selectedTarget = null
 
+			hasChanges = @hasChanges()
+
 			return R.div({className: "view planView #{if @props.isVisible then '' else 'hide'}"},
 				R.div({className: 'targetList'},
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
@@ -94,20 +96,27 @@ load = (win) ->
 						)
 					)
 					R.div({className: "toolbar #{showWhen plan.get('sections').size > 0}"},
-						R.span({className: 'leftMenu'},
+						R.div({className: 'leftMenu'},
 							R.button({
 								className: [
-									'save btn'
-									if @hasChanges() then 'btn-success canSave'
+									'btn'
+									if hasChanges then 'btn-success'
+									'saveButton'
 								].join ' '
-								disabled: not @hasChanges() or @props.isReadOnly
+								disabled: not hasChanges or @props.isReadOnly
 								onClick: @_save
 							},
 								FaIcon('save')
 								"Save #{Term 'Plan'}"
 							)
+							R.button({
+								className: "btn btn-link #{showWhen hasChanges}"
+								onClick: @_resetChanges
+							},
+								"Reset Changes"
+							)
 						)
-						R.span({className: 'rightMenu'},
+						R.div({className: 'rightMenu'},
 							R.button({
 								className: 'addSection btn btn-default'
 								onClick: @_addSection
@@ -129,9 +138,9 @@ load = (win) ->
 									}
 								]
 								iconOnly: true
-								disabled: @hasChanges()
+								disabled: hasChanges
 								tooltip: {
-									show: @hasChanges()
+									show: hasChanges
 									placement: 'bottom'
 									title: "Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
 								}
@@ -252,6 +261,13 @@ load = (win) ->
 				.map(@_normalizeTarget)
 
 				@props.updatePlan @state.plan, newPlanTargets, updatedPlanTargets
+
+		_resetChanges: ->
+			Bootbox.confirm "Discard all changes made to the #{Term 'plan'}?", (ok) =>
+				if ok
+					@setState {
+						currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+					}
 
 		_normalizeTargets: ->
 			@setState (state) =>

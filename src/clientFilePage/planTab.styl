@@ -5,7 +5,7 @@
 		flex 1
 		overflow inherit
 		display flex
-		flex-direction column		
+		flex-direction column
 
 		> .empty
 			text-align center
@@ -28,45 +28,43 @@
 
 			padding 30px
 
-			> span
-				flex 1
-				
+			button
+				outline none
+
+				> .fa
+					margin-right 8px
+
+			> div
+
 				&.leftMenu
-					padding-right 5px
-				
+					flex 1
+
+					.saveButton
+						padding-right 30px
+						padding-left 30px
+						transition all 0.5s ease
+
 				&.rightMenu
 					text-align right
-			
-				> .btn
-					
-					> .fa
-						margin-right 8px
-				
-				.save
-					//width 100%
-					transition all 0.5s ease
-					
-				.canSave
-					//width 60%
-					
+
 			@media (max-width: 1150px)
 				display block
 
-				> span
+				> div
 					display block
 					flex none
 					width 100%
-					
-					> .canSave
+
+					> button
 						width 100%
-					
+
 					&.rightMenu
 						margin-top 10px
 						display flex
-						
+
 						> .btn
 							flex 3
-							
+
 						> .printButton
 							flex 1
 
@@ -77,31 +75,31 @@
 			overflow-y auto
 			overflow-x hidden
 			padding 0 25px 25px 25px
-			
+
 			// TODO: Make this multi-use (it's used again in targets!)
 			&.status-completed, &.status-deactivated
 				padding 0
-			
+
 			.inactiveSectionHeader
 				cursor pointer
 				font-size 16px
-				opacity 0.8							
+				opacity 0.8
 				transition opacity .15s ease
-				
+
 				&:hover
 					opacity 1
-				
+
 				.fa
 					font-size 1.25em
 					padding 12px 8px
 					transform rotate(0deg)
 					transition transform .25s ease
-					
+
 					&.expanded
 						transform rotate(90deg)
 
-			.section				
-							
+			.section
+
 				&:last-child
 					padding-bottom 15px
 
@@ -118,7 +116,7 @@
 
 					> .statusButtonGroup
 						display flex
-															
+
 						> .statusButton
 							cursor pointer
 							flex 1
@@ -127,11 +125,11 @@
 							align-items center
 							padding 8px
 							padding-right 2px
-							
+
 							font-size 18px
 							opacity 0.6
 							transition opacity .15s ease
-							
+
 							&:hover
 								opacity 1
 
@@ -170,29 +168,29 @@
 
 				> .targets
 					padding 15px 0
-					
+
 					// TODO: Make this multi-use
 					&.status-completed, &.status-deactivated
 						padding 0
-					
+
 					> .inactiveTargetHeader
 						cursor pointer
 						font-size 16px
 						opacity 0.5
 						transition opacity .15s ease
-						
+
 						&:hover
 							opacity 1
-						
+
 						.fa
 							font-size 1.25em
 							padding 12px 8px
 							transform rotate(0deg)
 							transition transform .25s ease
-							
+
 							&.expanded
 								transform rotate(90deg)
-							
+
 					> .target
 						margin-bottom 20px
 
@@ -202,21 +200,21 @@
 						padding 15px 20px
 
 						transition all 0.15s linear
-						
+
 						&:last-child
 							margin-bottom 0 !important
 
 						&.hasChanges
 							background #EEFFF5
 							border-color #C9FFB2
-							
+
 						&.active
-							background hsl(202, 35%, 94%)							
-							
+							background hsl(202, 35%, 94%)
+
 							&.hasChanges
 								background #C9FFB2
 								border-color #A4D291
-								
+
 							> .nameContainer, > .descriptionContainer
 								input, textarea
 									border 1px solid #ccc
@@ -224,15 +222,15 @@
 							> .nameContainer
 								> .statusButtonGroup
 									display flex
-							
+
 							> .metrics
 								> .addMetricButton
 									display block
-						
+
 						&.readOnly
 							input[disabled], textarea[disabled]
 								background white
-								
+
 						&.blink
 							background #7ecdfc !important
 							border-color #68AAD2 !important
@@ -253,13 +251,13 @@
 						> .nameContainer
 							display flex
 							flex-direction row
-							
+
 							padding-bottom 15px
 							font-weight 700
-								
+
 							> .statusButtonGroup
 								display none
-								
+
 								> .statusButton
 									flex 1
 									display flex
@@ -268,11 +266,11 @@
 									padding 8px
 									padding-left 12px
 									padding-right 2px
-									
+
 									font-size 18px
 									opacity 0.6
 									transition opacity .15s ease
-									
+
 									&:hover
 										opacity 1
 
@@ -286,7 +284,7 @@
 
 							> .metricWidget
 								margin 5px
-								
+
 						> .metricLookupContainer
 							display none
 
@@ -304,17 +302,17 @@
 			text-align center
 
 		> .targetDetailContainer
-			
+
 			> .metricsSection
 				padding 25px
-				
+
 				.addMetricButton
 					color #939393
 					transition color .15s ease
-					
+
 					&:hover
 						color #87FF18
-					
+
 					&:focus
 						background none
 						outline none
