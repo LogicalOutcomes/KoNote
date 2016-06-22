@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Here, we kick off the appropriate page rendering code based on what page ID
@@ -40,7 +40,7 @@ init = (win) ->
 	HotCodeReplace = require('./hotCodeReplace').load(win)
 	{getTimeoutListeners} = require('./timeoutDialog').load(win)
 
-	Gui = win.require 'nw.gui'	
+	Gui = win.require 'nw.gui'
 	nwWin = Gui.Window.get(win)
 
 	# Handle any uncaught errors.
@@ -73,11 +73,11 @@ init = (win) ->
 	process.nextTick =>
 		# Configure if application is just starting
 		global.HCRSavedState ||= {}
-		
+
 		# Render and setup page
 		renderPage(pageParameters)
 		initPage()
-		
+
 
 	renderPage = (requestedPage) =>
 		# Decide what page to render based on the page parameter
@@ -158,7 +158,7 @@ init = (win) ->
 		#win.document.addEventListener 'contextmenu', (event) ->
 		#	event.preventDefault()
 		#	return false
-	
+
 		# User-Facing Utlities
 		devToolsKeyCount = null
 
@@ -167,7 +167,7 @@ init = (win) ->
 			if event.which is 8 and event.target.tagName is 'BODY'
 				event.preventDefault()
 			# TODO: Remove this, since it can't run in production anyway
-			# devTools with Ctrl-Shift-J x5			
+			# devTools with Ctrl-Shift-J x5
 			# if event.ctrlKey and event.shiftKey and event.which is 74
 			# 	unless devToolsKeyCount?
 			# 		devToolsKeyCount = 0
@@ -183,14 +183,22 @@ init = (win) ->
 		# DevMode Utilities
 		if Config.devMode
 
+			# Convenience method for checking React perf
+			# Simply call start(), [do action], stop() on the window console
+			Perf = React.addons.Perf
+			win.start = Perf.start
+			win.stop = ->
+				Perf.stop()
+				Perf.printWasted()
+
 			# Ctrl-Shift-J opens devTools for current window context
-			win.document.addEventListener 'keyup', (event) ->				
+			win.document.addEventListener 'keyup', (event) ->
 				if event.ctrlKey and event.shiftKey and event.which is 74
 					win.nw.Window.get().showDevTools()
 			, false
 
 			# Ctrl-Shift-B opens devTools for background window context
-			win.document.addEventListener 'keyup', (event) ->				
+			win.document.addEventListener 'keyup', (event) ->
 				if event.ctrlKey and event.shiftKey and event.which is 66
 					# From https://github.com/nwjs/nw.js/issues/4881
 					chrome.developerPrivate.openDevTools({
@@ -210,12 +218,12 @@ init = (win) ->
 
 	doHotCodeReplace = =>
 		console.log "Running HCR Reload..."
-		
+
 		# Save the entire page state into a global var
 		global.HCRSavedState[win.location.href] = HotCodeReplace.takeSnapshot pageComponent
 
 		# Unregister page listeners
-		unregisterPageListeners() if isLoggedIn		
+		unregisterPageListeners() if isLoggedIn
 
 		# Unmount components normally, but with no deinit
 		ReactDOM.unmountComponentAtNode containerElem
@@ -234,7 +242,7 @@ init = (win) ->
 		Fs = require 'fs'
 		Stylus = require 'stylus'
 
-		mainStylusCode = Fs.readFileSync './src/main.styl', {encoding: 'utf-8'} 
+		mainStylusCode = Fs.readFileSync './src/main.styl', {encoding: 'utf-8'}
 
 		stylusOpts = {
 			filename: './src/main.styl'
@@ -264,21 +272,21 @@ init = (win) ->
 			global.ActiveSession.persist.eventBus.on name, action
 
 		# Make sure everything is reset
-		global.ActiveSession.persist.eventBus.trigger 'timeout:reset' 
+		global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 
 		# Try registering chokidar for live-refresh capabilities
 		if Config.devMode
 			try
-				Chokidar = require 'chokidar'				
+				Chokidar = require 'chokidar'
 
 				chokidarListener = Chokidar
 				.watch './src'
 				.on 'change', (filePath) =>
-					fileExtension = filePath.split('.').splice(-1)[0]				
+					fileExtension = filePath.split('.').splice(-1)[0]
 					switch fileExtension
 						when 'styl'
 							refreshCSS()
-						when 'coffee' or 'js' 
+						when 'coffee' or 'js'
 							doHotCodeReplace()
 
 				console.info "Live-refresh enabled"
