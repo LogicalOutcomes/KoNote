@@ -111,6 +111,10 @@ load = (win) ->
 				if typeof value in ['string', 'number'] and value isnt previousRevisionValue
 					# Unique handling for 'status'
 					if property is 'status' and currentRevision.has('statusReason')
+
+						# Special case to convert status 'default' -> 'reactivated'
+						if value is 'default' then value = 'reactivated'
+
 						pushToChangeLog {
 							property
 							action: value
@@ -300,8 +304,8 @@ load = (win) ->
 					(if entry.get('action') is 'created'
 						"#{capitalize entry.get('action')} #{entry.get('property')}
 						#{if not @props.disableSnapshot then ' as: ' else ''}"
-					else if entry.has('reason')
-						"#{capitalize entry.get('value')} #{@props.dataModelName} because: "
+					else if entry.has('reason') # Status change
+						"#{capitalize entry.get('value')} #{@props.dataModelName}: "
 					else if entry.has('parent') and not entry.get('parent').has? # Parent isn't an Imm Map obj
 						"#{capitalize entry.get('action')} #{entry.get('property')} for #{entry.get('parent')}: "
 					else
