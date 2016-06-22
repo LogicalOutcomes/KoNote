@@ -105,11 +105,7 @@ load = (win) ->
 								"Cancel"
 							)
 							R.button({
-								className: [
-									'btn btn-link'
-									'cancelRevisingProgNote'
-									showWhen hasChanges
-								].join ' '
+								className: "btn btn-link #{showWhen hasChanges}"
 								onClick: @_resetRevisingProgNote
 							},
 								"Reset Changes"
@@ -271,12 +267,12 @@ load = (win) ->
 			@setState {revisingProgNote}
 
 		_resetRevisingProgNote: ->
-			Bootbox.confirm "Discard changes and start over?", (ok) =>
+			Bootbox.confirm "Discard all changes made to the #{Term 'progress note'}?", (ok) =>
 				if ok then @_startRevisingProgNote @state.revisingProgNote.get('originalRevision')
 
 		_cancelRevisingProgNote: ->
 			if @_revisingProgNoteHasChanges()
-				return Bootbox.confirm "Discard changes and cancel editing?", (ok) =>
+				return Bootbox.confirm "Discard all changes made to the #{Term 'progress note'} and cancel editing?", (ok) =>
 					if ok then @_discardRevisingProgNote()
 
 			@_discardRevisingProgNote()
@@ -939,7 +935,9 @@ load = (win) ->
 			selectProgNote
 		} = props
 
-		isViewingRevisions = selectedItem? and selectedItem.get('type') is 'progNote' and selectedItem.get('progNoteId') is progNote.get('id')
+		selectedItemIsProgNote = selectedItem? and selectedItem.get('progNoteId') is progNote.get('id')
+
+		isViewingRevisions = selectedItemIsProgNote and selectedItem.get('type') is 'progNote'
 		hasRevisions = progNoteHistory.size > 1
 		numberOfRevisions = progNoteHistory.size - 1
 		hasMultipleRevisions = numberOfRevisions > 1
