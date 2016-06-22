@@ -335,10 +335,15 @@ load = (win) ->
 					
 				}
 				
-				@state.plan.get('sections').toJS().map (section) =>
-					console.log "section >>>>", section	
+				@state.plan.get('sections').map (section) =>
+					console.log "section >>>>", section.toJS()
 					# right now just pushes the existing section object into the tempalte
 					# have to map the object to the template datamodel.
+
+					section.get('targetIds').map (targetId) ->
+						target = @props.planTargetsById.get(targetId, null)
+						console.log "target >>>>> ", target
+
 
 					template = template.update 'sections', (sections) =>
 						return sections.push section
