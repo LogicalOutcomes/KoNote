@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # UI logic for the client file window.
@@ -48,7 +48,7 @@ load = (win, {clientFileId}) ->
 			return {
 				status: 'init' # Either init or ready
 				isLoading: false
-				
+
 				headerIndex: 0
 
 				clientFile: null
@@ -95,7 +95,7 @@ load = (win, {clientFileId}) ->
 				metricsById: @state.metricsById
 				programs: @state.programs
 				eventTypes: @state.eventTypes
-				
+
 				headerIndex: @state.headerIndex
 				progNoteTotal: @state.progNoteTotal
 
@@ -104,7 +104,7 @@ load = (win, {clientFileId}) ->
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
 				createQuickNote: @_createQuickNote
-				
+
 				renewAllData: @_renewAllData
 			})
 
@@ -130,7 +130,7 @@ load = (win, {clientFileId}) ->
 			eventTypes = null
 			eventTypeHeaders = null
 
-			checkFileSync = (newData, oldData) => 
+			checkFileSync = (newData, oldData) =>
 				unless fileIsUnsync
 					fileIsUnsync = not Imm.is oldData, newData
 
@@ -138,7 +138,7 @@ load = (win, {clientFileId}) ->
 
 			# Begin the clientFile data load process
 			Async.series [
-				(cb) => 
+				(cb) =>
 					unless @state.clientFileLock?
 						@_acquireLock cb
 					else
@@ -262,7 +262,7 @@ load = (win, {clientFileId}) ->
 						.fromEntrySeq().toMap()
 
 						checkFileSync metricsById, @state.metricsById
-						cb()				
+						cb()
 
 				(cb) =>
 					ActiveSession.persist.clientFileProgramLinks.list (err, results) =>
@@ -286,7 +286,7 @@ load = (win, {clientFileId}) ->
 							return
 
 						programHeaders = results
-						.filter (program) -> 
+						.filter (program) ->
 							thisProgramId = program.get('id')
 							clientFileProgramLinkHeaders.contains thisProgramId
 
@@ -328,12 +328,12 @@ load = (win, {clientFileId}) ->
 				if err
 					# Cancel any lock operations, and show the page in error
 					@_killLocks()
-					global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'					
+					global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
 					Window.show()
 
 					if err instanceof Persist.IOError
 						console.error err
-						console.error err.stack						
+						console.error err.stack
 
 						@setState {loadErrorType: 'io-error', status: 'ready'}
 						return
@@ -357,7 +357,7 @@ load = (win, {clientFileId}) ->
 							title: "Refresh #{Term 'Client File'}?"
 							message: "This #{Term 'client file'} for #{clientName} has been
 								revised since your session timed out. This #{Term 'file'}
-								must be refreshed, and your unsaved changes will be lost! 
+								must be refreshed, and your unsaved changes will be lost!
 								What would you like to do?"
 							buttons: {
 								cancel: {
@@ -378,17 +378,17 @@ load = (win, {clientFileId}) ->
 					@setState {
 						status: 'ready'
 						isLoading: false
-						
+
 						headerIndex: @state.headerIndex+10
 						progNoteTotal
 
-						clientFile						
+						clientFile
 						progressNoteHistories
 						progressEvents
 						metricsById
 						planTargetsById
 						programs
-						eventTypes						
+						eventTypes
 					}, =>
 						setTimeout(=>
 							global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
@@ -531,7 +531,7 @@ load = (win, {clientFileId}) ->
 				}
 
 				@setState (state) => {isLoading: true}
-				
+
 				global.ActiveSession.persist.progNotes.create note, (err) =>
 					@setState (state) => {isLoading: false}
 
@@ -606,7 +606,7 @@ load = (win, {clientFileId}) ->
 				'createRevision:eventType': (newEventTypeRev) =>
 					originalEventType = @state.eventTypes
 					.find (eventType) -> eventType.get('id') is newEventTypeRev.get('id')
-					
+
 					eventTypeIndex = @state.eventTypes.indexOf originalEventType
 					eventTypes = @state.eventTypes.set eventTypeIndex, newEventTypeRev
 					@setState {eventTypes}
@@ -625,7 +625,7 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				activeTabId: 'plan'
-			}			
+			}
 
 		hasChanges: ->
 			# Eventually this will cover more
@@ -648,7 +648,7 @@ load = (win, {clientFileId}) ->
 				Bootbox.dialog {
 					title: "Unsaved Changes to #{Term 'Plan'}"
 					message: """
-						You have unsaved changes in this #{Term 'plan'} for #{clientName}. 
+						You have unsaved changes in this #{Term 'plan'} for #{clientName}.
 						How would you like to proceed?
 					"""
 					buttons: {
@@ -660,13 +660,13 @@ load = (win, {clientFileId}) ->
 						danger: {
 							label: "Discard Changes"
 							className: "btn-danger"
-							callback: => 
+							callback: =>
 								@props.closeWindow()
 						}
 						success: {
 							label: "View #{Term 'Plan'}"
 							className: "btn-success"
-							callback: => 
+							callback: =>
 								Bootbox.hideAll()
 								@setState {activeTabId: 'plan'}, @refs.planTab.blinkUnsaved
 						}
@@ -688,13 +688,13 @@ load = (win, {clientFileId}) ->
 						danger: {
 							label: "Discard Changes"
 							className: "btn-danger"
-							callback: => 
+							callback: =>
 								@props.closeWindow()
 						}
 						success: {
 							label: "View #{Term 'Progress Note'}"
 							className: "btn-success"
-							callback: => 
+							callback: =>
 								Bootbox.hideAll()
 								@setState {activeTabId: 'progressNotes'}
 						}
@@ -771,15 +771,16 @@ load = (win, {clientFileId}) ->
 						clientFileId
 						clientFile: @props.clientFile
 						progNoteHistories: sortedProgNoteHistories
+						planTargetsById: @props.planTargetsById
 						progEvents: @props.progressEvents
 						eventTypes: @props.eventTypes
 						metricsById: @props.metricsById
 						headerIndex: @props.headerIndex
 						progNoteTotal: @props.progNoteTotal
-						
+
 						hasChanges: @hasChanges
 						onTabChange: @_changeTab
-				
+
 						renewAllData: @props.renewAllData
 
 						createQuickNote: @props.createQuickNote
@@ -864,7 +865,7 @@ load = (win, {clientFileId}) ->
 						isActive: activeTabId is 'analysis'
 						onClick: @props.onTabChange.bind null, 'analysis'
 					})
-				)				
+				)
 				BrandWidget()
 			)
 
@@ -889,11 +890,11 @@ load = (win, {clientFileId}) ->
 			msg = switch @props.loadErrorType
 				when 'io-error'
 					"""
-						An error occurred while loading the #{Term 'client file'}. 
+						An error occurred while loading the #{Term 'client file'}.
 						This may be due to a problem with your network connection.
 					"""
 				else
-					"An unknown error occured (loadErrorType: #{@props.loadErrorType}"				
+					"An unknown error occured (loadErrorType: #{@props.loadErrorType}"
 			Bootbox.alert msg, =>
 				@props.closeWindow()
 		render: ->
@@ -905,7 +906,7 @@ load = (win, {clientFileId}) ->
 		render: ->
 			return R.div({
 				className: 'readOnlyNotice'
-			},				
+			},
 				R.div({
 					className: [
 						"notice"
@@ -915,7 +916,7 @@ load = (win, {clientFileId}) ->
 				},
 					@props.data.message
 				)
-				R.div({className: 'mode'}, 
+				R.div({className: 'mode'},
 					@props.data.mode or "Read-Only Mode"
 				)
 			)
