@@ -65,8 +65,8 @@ load = (win) ->
 			# Update timeSpan?
 			sameTimeSpan = @props.timeSpan is oldProps.timeSpan
 			unless sameTimeSpan
-				newMin = @props.xTicks.get @props.timeSpan[0]
-				newMax = @props.xTicks.get @props.timeSpan[1]
+				newMin = @props.timeSpan.start
+				newMax = @props.timeSpan.end
 
 				# C3 requires there's some kind of span (even if it's 1ms)
 				if newMin is newMax
@@ -183,8 +183,8 @@ load = (win) ->
 							fit: false
 							format: '%b %d'
 						}
-						min: @props.xTicks.get @props.timeSpan[0]
-						max: @props.xTicks.get @props.timeSpan[1]
+						min: @props.timeSpan.start
+						max: @props.timeSpan.end
 					}
 					y: {
 						show: false

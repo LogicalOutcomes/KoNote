@@ -24,11 +24,12 @@ load = (win) ->
 	{TimestampFormat} = require('../persist/utils')
 
 	Slider = require('../slider').load(win)
+	TimeSpanDate = require('./timeSpanDate').load(win)
 	Chart = require('./chart').load(win)
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
-	TimeGranularities = ['Day', 'Week', 'Month', 'Year']
 	dateDisplayFormat = 'MMM Do - YYYY'
+	defaultTimeSpan = {start: Moment(), end: Moment()}
 
 	AnalysisView = React.createFactory React.createClass
 		displayName: 'AnalysisView'
@@ -38,6 +39,7 @@ load = (win) ->
 				hasEnoughData: null
 				daysOfData: null
 				targetMetricsById: Imm.Map()
+				inactiveMetricIds: Imm.List()
 				metricValues: null
 				selectedMetricIds: Imm.Set()
 				filteredProgEvents: Imm.Set()
@@ -45,9 +47,7 @@ load = (win) ->
 				excludedTargetIds: Imm.Set()
 				xTicks: Imm.List()
 				xDays: Imm.List()
-				timeSpan: [0, 0]
-
-				isGenerating: true
+				timeSpan: defaultTimeSpan
 			}
 
 		componentWillMount: ->
@@ -59,20 +59,20 @@ load = (win) ->
 				@_generateAnalysis()
 
 			unless Imm.is oldProps.planTargetsById, @props.planTargetsById
-				console.log "Plan targets, regenerating..."
+				console.log "planTargetsById changed, regenerating..."
 				@_generateAnalysis()
 
 			unless Imm.is oldProps.progEvents, @props.progEvents
+				console.log "progEvents changed, regenerating..."
 				@_generateAnalysis()
 
 			unless Imm.is oldProps.progNoteHistories, @props.progNoteHistories
+				console.log "progNoteHistories changed, regenerating..."
 				@_generateAnalysis()
 
 			unless Imm.is oldState.selectedEventTypeIds, @state.selectedEventTypeIds
+				console.log "selectedEventTypeIds changed, regenerating..."
 				@_generateAnalysis()
-
-			unless oldState.timeSpan is @state.timeSpan
-				console.log "TimeSpan:", oldState.timeSpan, "->", @state.timeSpan
 
 		_generateAnalysis: ->
 			console.log "Generating Analysis...."
@@ -166,15 +166,21 @@ load = (win) ->
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
-
-
+			# Assign default timeSpan settings on initial render
+			if @state.timeSpan isnt defaultTimeSpan
+				timeSpan = @state.timeSpan
+			else
+				timeSpan = {
+					start: xTicks.first()
+					end: xTicks.last()
+				}
 
 			# Synchronous to ensure this happens before render
 			@setState => {
 				xDays: xTicks
 				daysOfData: timestampDays.size
-				timeSpan: [0, xTicks.size - 1]
 				xTicks
+				timeSpan
 				metricIdsWithData
 				metricValues
 				progEventIdsWithData
@@ -203,29 +209,34 @@ load = (win) ->
 							Slider({
 								ref: 'timeSpanSlider'
 								isRange: true
-								value: @state.timeSpan
-								ticks: @state.xTicks.pop().toJS()
+								timeSpan: @state.timeSpan
+								xTicks: @state.xTicks
 								onChange: (event) =>
-									# Force-convert numerical array because this plugin is stupid!
+									# Convert event value (string) to JS numerical array
 									timeSpanArray = event.target.value.split(",")
-									timeSpan = [Number(timeSpanArray[0]), Number(timeSpanArray[1])]
+									console.log "Moved to", timeSpanArray
+									# Use index values to fetch moment objects from xTicks
+									start = @state.xTicks.get Number(timeSpanArray[0])
+									end = @state.xTicks.get Number(timeSpanArray[1])
+
+									timeSpan = {start, end}
+									console.log "timespan changing to:", timeSpan
 									@setState {timeSpan}
 								formatter: ([start, end]) =>
 									return unless start? and end?
-									startTime = Moment(@state.xTicks.get(start)).format('Do MMM')
-									endTime = Moment(@state.xTicks.get(end)).format('Do MMM')
+									startTime = Moment(@state.xTicks.get(start)).format('MMM Do')
+									endTime = Moment(@state.xTicks.get(end)).format('MMM Do')
 									return "#{startTime} - #{endTime}"
 							})
 							R.div({className: 'dateDisplay'},
-								(@state.timeSpan.map (date, index) =>
-
+								(for type, date of @state.timeSpan
 									TimeSpanDate({
-										key: index
-										index
+										key: type
+										date
+										type
 										timeSpan: @state.timeSpan
 										xTicks: @state.xTicks
-										format: dateDisplayFormat
-										onChange: @_updateTimeSpanDate
+										updateTimeSpanDate: @_updateTimeSpanDate
 									})
 								)
 							)
@@ -505,24 +516,9 @@ load = (win) ->
 		_updateMetricColors: (metricColors) ->
 			@setState {metricColors}
 
-		_updateTimeSpanDate: (event, index) ->
-			newDate = Moment(event.target.value, dateDisplayFormat)
-
-			timeSpanIndex = @state.xTicks.findIndex (date) -> date.isSame(newDate)
-
-			if timeSpanIndex is -1
-				Bootbox.alert {
-					title: "Invalid Date"
-					message: """
-						Sorry, '#{newDate.format(dateDisplayFormat)}' falls outside
-						the timeline of this #{Term 'client'}.
-					"""
-				}
-				return
-
-			# React hates mutating/ed arrays
+		_updateTimeSpanDate: (newDate, type) ->
 			timeSpan = _.clone(@state.timeSpan)
-			timeSpan[index] = timeSpanIndex
+			timeSpan[type] = newDate
 
 			@setState {timeSpan}
 
@@ -563,80 +559,6 @@ load = (win) ->
 			else
 				throw new Error "unknown prognote section type: #{JSON.stringify section.get('type')}"
 
-
-	TimeSpanDate = React.createFactory React.createClass
-		displayName: 'TimeSpanDate'
-		mixins: [React.addons.PureRenderMixin]
-
-		componentDidMount: ->
-			defaultDate = @_getDate()
-
-			# TODO: Refactor
-			if @props.index is 0
-				minDate = @props.xTicks.first()
-				maxDate = @props.xTicks.get @props.timeSpan[1]
-			else
-				minDate = @props.xTicks.get @props.timeSpan[0]
-				maxDate = @props.xTicks.last()
-
-			# Init datetimepicker
-			$(@refs.hiddenDateTimePicker).datetimepicker({
-				format: @props.format
-				defaultDate: @props.dateMoment
-				minDate
-				maxDate
-
-				sideBySide: true
-				showClose: true
-				toolbarPlacement: 'bottom'
-				widgetPositioning: {
-					vertical: 'bottom'
-				}
-			}).on 'dp.change', (event) => @props.onChange(event, @props.index)
-
-			@dateTimePicker = $(@refs.hiddenDateTimePicker).data('DateTimePicker')
-
-		componentDidUpdate: (oldProps) ->
-			timeSpan = @props.timeSpan
-
-			# TODO: Refactor, test Perf
-			# Adjust min/max dates (and current value) to date of changed TimeSpanDate
-			if oldProps.timeSpan[0] isnt @props.timeSpan[0]
-				newDate = @props.xTicks.get(@props.timeSpan[0])
-
-				if @props.index is 1
-					@dateTimePicker.minDate newDate
-				else
-					@dateTimePicker.date newDate
-
-			if oldProps.timeSpan[1] isnt @props.timeSpan[1]
-				newDate = @props.xTicks.get(@props.timeSpan[1])
-
-				if @props.index is 0
-					@dateTimePicker.maxDate newDate
-				else
-					@dateTimePicker.date newDate
-
-
-		_getDate: ->
-			# Use xTicks to look up date moment by timeSpan index
-			@props.xTicks.get @props.timeSpan[@props.index]
-
-		_toggleDateTimePicker: -> @dateTimePicker.toggle()
-
-		render: ->
-			formattedDate = @_getDate().format(@props.format)
-
-			return R.div({className: 'dateContainer'},
-				R.span({
-					onClick: @_toggleDateTimePicker
-					className: 'date'
-				},
-					R.input({ref: 'hiddenDateTimePicker'})
-					R.span({}, formattedDate)
-					R.span({}, FaIcon('caret-down'))
-				)
-			)
 
 	return {AnalysisView}
 
