@@ -365,12 +365,13 @@ load = (win) ->
 		
 				
 				console.log "Template Object before creation >>> ", template.toJS()
-				# global.ActiveSession.persist.clientFileTemplates.create template, (err) =>
-				# 	if err
-				# 		cb err
-				# 		return
+				global.ActiveSession.persist.planTemplates.create template, (err, obj) =>
+					if err
+						cb err
+						return
 
-				# 	cb()
+					console.log "created template >>>> ", obj.toJS()
+				
 
 
 		_renameSection: (sectionId) ->
