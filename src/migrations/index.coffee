@@ -47,7 +47,7 @@ copyRecursiveSync = (src, dest) ->
 		Fs.linkSync src, dest
 	return
 
-writeDataVersion = (dataDir, toVersion, cb) ->	
+writeDataVersion = (dataDir, toVersion, cb) ->
 	versionPath = Path.join dataDir, 'version.json'
 	metadata = null
 
@@ -58,11 +58,11 @@ writeDataVersion = (dataDir, toVersion, cb) ->
 					cb err
 					return
 
-				metadata = result
+				metadata = JSON.parse result
 				metadata.dataVersion = toVersion
 				cb()
 		(cb) ->
-			Fs.writeFile versionPath, metadata, (err) ->
+			Fs.writeFile versionPath, JSON.stringify(metadata), (err) ->
 				if err
 					cb err
 					return
@@ -101,11 +101,11 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 				# Ensure fromVersions match
 				if dataDirMetadata.dataVersion isnt fromVersion
 					console.error """
-						Version Mismatch! Data directory is currently 
+						Version Mismatch! Data directory is currently
 						v#{dataDirMetadata.dataVersion}, but trying to install from #{fromVersion}."
 					"""
 					cb err
-					return				
+					return
 
 				# Ensure srcVersion (package.json) matches toVersion
 				# In other words, the files are ready for the new DB version
@@ -120,7 +120,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 						return
 					else
 						console.warn """
-							Developer Mode! The last migration step run was 
+							Developer Mode! The last migration step run was
 							Step ##{dataDirMetadata.lastMigrationStep}, so we'll
 							start from Step ##{dataDirMetadata.lastMigrationStep + 1}
 							if exists.
@@ -130,7 +130,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 				# Ensure fromVersion is numerically earlier than toVersion
 				unless numerical(fromVersion) < numerical(toVersion)
 					console.error """
-						Oops! Looks like you're trying to migrate backwards, 
+						Oops! Looks like you're trying to migrate backwards,
 						from v#{fromVersion} to v#{toVersion}
 					"""
 					cb err
@@ -156,7 +156,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 				console.info "3. Data migration successful."
 				cb()
 
-		(cb) -> # Move (rename) live database to app directory			
+		(cb) -> # Move (rename) live database to app directory
 			Fs.rename dataDir, backupDataDir, (err) ->
 				if err
 					console.error "Database backup error!"
@@ -168,7 +168,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 
 		(cb) -> # Move staged (migrated) database to destination
 			Fs.rename stagedDataDir, dataDir, (err) ->
-				if err					
+				if err
 					console.error "Database commit to destination error!"
 
 					# Fail-safe: Since it wasn't successful, restore the original database dir
@@ -221,7 +221,7 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, lastMigrationSte
 			cb new Error "Could not run migration #{fromVersion}-#{toVersion}"
 			return
 
-		writeDataVersion dataDir, fromVersion, ->			
+		writeDataVersion dataDir, toVersion, ->
 			console.log "Done migrating v#{fromVersion} -> v#{toVersion}."
 			cb()
 
