@@ -325,28 +325,43 @@ load = (win) ->
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
 
-		_createTemplate: ->
+		_createTemplate: (planTargetsById) ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
 				console.log 'plan! >>>>>>>>>>>>>>>>', @state.plan.toJS()
 
 				template = Imm.fromJS {
 					name: templateName
 					sections: []
-					
 				}
 				
 				@state.plan.get('sections').map (section) =>
 					console.log "section >>>>", section.toJS()
 					# right now just pushes the existing section object into the tempalte
 					# have to map the object to the template datamodel.
+					templateSection = Imm.fromJS {
+						name: section.get('name')
+						targets: []
+					}
 
-					section.get('targetIds').map (targetId) ->
+					console.log "templateSection >>>", templateSection.toJS()
+					section.get('targetIds').map (targetId) =>
 						target = @props.planTargetsById.get(targetId, null)
-						console.log "target >>>>> ", target
+						console.log "target >>>>> ", target.toJS()
+						currentRev = @state.currentTargetRevisionsById.get(targetId)
+						console.log "currentRev >>>", currentRev.toJS()
+						# must get lates revision first
+						templateTarget = Imm.fromJS {
+							name: currentRev.get('name')
+							description: currentRev.get('description')
+							metricIds: currentRev.get('metricIds')
+						}
+						console.log "templateTarget >>>", templateTarget.toJS()
+						templateSection = templateSection.update 'targets', (targets) =>
+							return targets.push templateTarget
 
-
+							# template = template.update
 					template = template.update 'sections', (sections) =>
-						return sections.push section
+						return sections.push templateSection
 		
 				
 				console.log "Template Object before creation >>> ", template.toJS()
