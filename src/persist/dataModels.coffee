@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Joi = require 'joi'
@@ -47,7 +47,7 @@ dataModelDefinitions = [
 				indexes: [['status'], ['relatedProgNoteId']]
 				schema: Joi.object().keys({
 					title: Joi.string()
-					description: Joi.string().allow('')			
+					description: Joi.string().allow('')
 					startTimestamp: Joi.date().format(TimestampFormat).raw()
 					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 					typeId: IdSchema.allow('')
@@ -123,7 +123,7 @@ dataModelDefinitions = [
 													id: IdSchema
 													name: Joi.string()
 													# TODO: Migrate from current target description, so not optional
-													description: Joi.string().optional()
+													description: Joi.string()
 													notes: Joi.string().allow('')
 													metrics: Joi.array().items(
 														Joi.object().keys({

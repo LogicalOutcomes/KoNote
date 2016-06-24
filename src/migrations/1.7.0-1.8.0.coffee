@@ -370,6 +370,130 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 
 # //////////////// Version-Specific Utilities /////////////////
 
+addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
+		planTargetsDirPath = Path.join(clientFileDirPath, 'planTargets')
+		progNotesDirPath = Path.join(clientFileDirPath, 'progNotes')
+
+		# This is where we'll store our planTarget objects, by ID
+		planTargetsById = Imm.Map()
+
+		Async.series [
+			(cb) ->
+				# Store all planTargets to memory
+				# We assume the latest revision of each planTarget will suffice
+				forEachFileIn planTargetsDirPath, (planTargetDir, cb) ->
+					planTargetDirPath = Path.join(planTargetsDirPath, planTargetDir)
+
+					latestPlanTargetRevPath = null
+
+					Async.series [
+						(cb) ->
+							Fs.readdir planTargetDirPath, (err, result) ->
+								if err
+									cb err
+									return
+
+								fileNames = Imm.fromJS(result)
+
+								# Order filenames by timestamp in milliseconds
+								sortedFileNames = fileNames.sortBy (fileName) ->
+									fileNamePath = Path.join(planTargetDirPath, fileName)
+
+									planTargetIndexes = decryptFileName planTargetDir, 2, globalEncryptionKey
+									timestampMs = +Moment(planTargetIndexes[0], TimestampFormat)
+
+									return timestampMs
+
+								# Grab the last one, which would be the latest
+								latestPlanTargetFileName = sortedFileNames.last()
+								console.info "latestPlanTargetFileName", latestPlanTargetFileName
+								latestPlanTargetRevPath = Path.join(planTargetDirPath, latestPlanTargetFileName)
+								cb()
+
+						(cb) ->
+							Fs.readFile latestPlanTargetRevPath, (err, result) ->
+								if err
+									cb err
+									return
+
+								planTarget = Imm.fromJS(JSON.parse globalEncryptionKey.decrypt result)
+								planTargetsById = planTargetsById.set planTarget.get('id'), planTarget
+								console.info "planTargetsById", planTargetsById.toJS()
+								cb()
+						, cb
+
+				, cb
+
+			(cb) ->
+				forEachFileIn progNotesDirPath, (progNoteDir, cb) ->
+					progNoteDirPath = Path.join(progNotesDirPath, progNoteDir)
+
+					forEachFileIn progNoteDirPath, (progNoteRev, cb) ->
+						progNoteRevPath = Path.join(progNoteDirPath, progNoteRev)
+
+						Async.series [
+							(cb) ->
+								Fs.readFile progNoteRevPath, (err, result) ->
+									if err
+										cb err
+										return
+
+									# Decrypt progNote object
+									progNote = Imm.fromJS(JSON.parse globalEncryptionKey.decrypt result)
+
+									console.info "Pre:", progNote.toJS()
+
+									# We only want to process full progNotes
+									if progNote.get('type') is 'full'
+										console.info "Pre:", progNote.toJS()
+										progNoteUnits = progNote.get('units').map (unit) ->
+											return unit if unit.get('type') is 'basic'
+
+											unitSections = unit.get('sections').map (section) ->
+												planTargets = section.get('targets').map (target) ->
+													# Nothing to do if already has a description
+													if target.has('description')
+														console.info "Already has target, skipping..."
+														return target
+
+													# Grab & add description from matching planTarget latest revision
+													targetId = target.get('id')
+													latestDescription = planTargetsById.getIn([targetId, 'description')
+
+													return target.set('description', latestDescription)
+
+												return section.set('targets', planTargets)
+
+											return unit.set('sections', unitSections)
+
+										return progNote.set('units', progNoteUnits)
+										console.info "Post:", progNote.toJS()
+
+									else
+										console.warn "Skipped 'basic' progNote..."
+
+									cb()
+
+							(cb) ->
+								# Re-encrypt progNote
+								progNote = globalEncryptionKey.encrypt(JSON.stringify progNote)
+
+								Fs.writeFile progNoteRevPath, progNote, cb
+
+						], cb
+
+					, cb
+				, cb
+
+		], cb
+	, (err) ->
+		if err
+			cb err
+			return
+
+			finalizeMigrationStep(dataDir, cb)
 
 # ////////////////////// Migration Series //////////////////////
 
@@ -380,7 +504,10 @@ module.exports = {
 
 		# This is where we add the migration series steps
 		migrationSeries = [
-
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "1. Add 'description' from latest planTarget to progNote targets"
+				addProgNoteTargetDescription dataDir, globalEncryptionKey, cb
 		]
 
 
