@@ -1,6 +1,6 @@
 Imm = require 'immutable'
 Faker = require 'faker'
-Async = require 'async'	
+Async = require 'async'
 Moment = require 'moment'
 
 {Users, TimestampFormat, generateId } = require '../persist'
@@ -10,7 +10,7 @@ Config = require '../config'
 
 Create = {}
 
-# util 
+# util
 
 createData = (dataCollection, obj, cb) ->
 	global.ActiveSession.persist[dataCollection].create obj, cb
@@ -44,8 +44,8 @@ Create.progEvent = ({clientFile, progNote}, cb) ->
 	clientFileId = clientFile.get('id')
 
 	progEvent = Imm.fromJS {
-		title: Faker.company.bsBuzz()		
-		description: Faker.lorem.paragraph()		
+		title: Faker.company.bsBuzz()
+		description: Faker.lorem.paragraph()
 		startTimestamp: randomBackdate.format(TimestampFormat)
 		endTimestamp: randomEnddate.format(TimestampFormat)
 		status: 'default'
@@ -111,6 +111,7 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 			return {
 				id: planTarget.get('id')
 				name: planTarget.get('name')
+				description: planTarget.get('description')
 				notes: Faker.lorem.paragraph()
 				metrics: metricNotes.toJS()
 			}
@@ -151,11 +152,11 @@ Create.planTarget = (clientFile, metrics, cb) ->
 
 	# randomly chooses a status, with a higher probability of 'default'
 	randomNumber = Math.floor(Math.random() * 10) + 1
-	if randomNumber > 7 
+	if randomNumber > 7
 		status = 'deactivated'
-	else if randomNumber < 3 
+	else if randomNumber < 3
 		status = 'completed'
-	else 
+	else
 		status = 'default'
 
 	target = Imm.fromJS {
@@ -177,7 +178,7 @@ Create.program = (index, cb) ->
 	})
 
 	createData 'programs', program, cb
-	
+
 Create.clientFileProgramLink = (clientFile, program, cb) ->
 	link = Imm.fromJS({
 		clientFileId: clientFile.get('id')
@@ -186,7 +187,7 @@ Create.clientFileProgramLink = (clientFile, program, cb) ->
 	})
 
 	createData 'clientFileProgramLinks', link, cb
-	
+
 Create.metric = (index, cb) ->
 	metric = Imm.fromJS ({
 		name: Faker.company.bsBuzz()
@@ -194,9 +195,9 @@ Create.metric = (index, cb) ->
 	})
 
 	createData 'metrics', metric, cb
-	
 
-Create.eventType = (index, cb) ->	
+
+Create.eventType = (index, cb) ->
 	eventType = Imm.fromJS ({
 		name: Faker.company.bsBuzz()
 		# chooses a hexColor randomly from an imported list of hexcolors
@@ -263,7 +264,7 @@ Create.progNotes = (quantity, props, cb) ->
 
 		console.log "Created #{quantity} progNotes"
 		cb null, Imm.List(results)
-	
+
 Create.planTargets = (targetQuantity, clientFile, metrics, cb) ->
 	sliceSize = Math.floor(metrics.size / targetQuantity)
 	x = 0
@@ -291,7 +292,7 @@ Create.programs = (quantity, cb) ->
 Create.clientFileProgramLinks = (clientFiles, program, cb) ->
 	Async.map clientFiles.toArray(), (clientFile, cb) ->
 		Create.clientFileProgramLink clientFile, program, (err, result) ->
-			if err 
+			if err
 				cb err
 				return
 
