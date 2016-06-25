@@ -368,7 +368,7 @@ load = (win) ->
 							R.h3({}, "Plan")
 							R.div({className: 'dataOptions'},
 								(@props.plan.get('sections').map (section) =>
-									R.div({},
+									R.div({key: section.get('id')},
 										R.h4({}, section.get('name'))
 										R.section({key: section.get('id')},
 											(section.get('targetIds').map (targetId) =>
