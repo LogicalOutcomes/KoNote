@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # A dialog for allowing the user to create a new client file
@@ -21,6 +21,8 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 	ProgramBubbles = require('./programBubbles').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
+
+	{renderName, renderRecordId} = require('./utils').load(win)
 
 	CreateClientFileDialog = React.createFactory React.createClass
 		displayName: 'CreateClientFileDialog'
@@ -74,7 +76,7 @@ load = (win) ->
 							onKeyDown: @_onEnterKeyDown
 						})
 					)
-					
+
 					(unless @props.programs.isEmpty()
 						R.div({className: 'form-group'},
 							R.label({}, "Assign to #{Term 'Program'}(s)")
@@ -83,7 +85,7 @@ load = (win) ->
 									isSelected = @state.programIds.contains(program.get('id'))
 									R.button({
 										className: 'btn btn-default programOptionButton'
-										onClick: 
+										onClick:
 											(if isSelected then @_removeFromPrograms else @_pushToPrograms)
 											.bind null, program.get('id')
 										key: program.get('id')
@@ -117,7 +119,7 @@ load = (win) ->
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
-							onClick: @_cancel							
+							onClick: @_cancel
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-primary'
@@ -162,21 +164,68 @@ load = (win) ->
 			first = @state.firstName
 			middle = @state.middleName
 			last = @state.lastName
-			recordId = @state.recordId			
+			recordId = @state.recordId
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
-			  recordId: recordId
+			  recordId
 			  plan: {
 			    sections: []
 			  }
-			}			
+			}
 
+			clientFileHeaders = null
 			newClientFileObj = null
 
 			Async.series [
 				(cb) =>
-					# Create the clientFile, 
+					# First pull the latest clientFile headers for uniqueness comparison
+					ActiveSession.persist.clientFiles.list (err, result) =>
+						if err
+							cb err
+							return
+
+						clientFileHeaders = result
+
+						# Enforce uniqueness of clientFileRecordId
+						matchingClientRecordId = clientFileHeaders.find (clientFile) ->
+							clientFile.get('recordId') and (clientFile.get('recordId') is recordId)
+
+						if matchingClientRecordId
+							@refs.dialog.setIsLoading(false) if @refs.dialog?
+
+							Bootbox.alert """
+								Sorry, #{renderRecordId recordId} is already in use by
+								#{renderName matchingClientRecordId.get('clientName')}.
+								Please try again with a unique #{Config.clientFileRecordId.label}.
+							"""
+							return
+
+						# Warn if first & last name already used, but may continue
+						matchingClientName = clientFileHeaders.find (clientFile) ->
+							sameFirstName = clientFile.getIn(['clientName', 'first']).toLowerCase() is first.toLowerCase()
+							sameLastName = clientFile.getIn(['clientName', 'last']).toLowerCase()  is last.toLowerCase()
+							return sameFirstName and sameLastName
+
+						if matchingClientName
+							@refs.dialog.setIsLoading(false) if @refs.dialog?
+
+							matchingClientRecordId = if Config.clientFileRecordId.isEnabled
+								" #{renderRecordId matchingClientName.get('recordId')}"
+							else
+								""
+
+							Bootbox.confirm """
+								The name \"#{first} #{last} matches an existing #{Term 'client file'}
+								in the database
+								(#{renderName matchingClientName.get('clientName')}#{matchingClientRecordId}).
+								Would you like to create this new #{Term 'client file'} anyway?
+							""", (ok) ->
+								if ok then cb() else return
+						else
+							cb()
+				(cb) =>
+					# Create the clientFile,
 					global.ActiveSession.persist.clientFiles.create clientFile, (err, result) =>
 						if err
 							cb err
@@ -215,7 +264,7 @@ load = (win) ->
 				# UI will be auto-updated with new file/links by page listeners
 				@props.onSuccess()
 
-						
+
 	return CreateClientFileDialog
 
 module.exports = {load}
