@@ -239,10 +239,16 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 					
-				if newAccountType is 'admin'
-					Bootbox.alert "Administrator privileges granted to #{userName}."
-				else
-					Bootbox.alert "Administrator privileges revoked from #{userName}."
+				# refresh accounts state
+				userAccountIndex = @state.userAccounts.indexOf userAccount
+				updatedUserAccount = userAccount.setIn(['publicInfo', 'accountType'], newAccountType)
+				userAccounts = @state.userAccounts.set userAccountIndex, updatedUserAccount
+
+				@setState {userAccounts}, ->
+					if newAccountType is 'admin'
+						Bootbox.alert "Administrator privileges granted to #{userName}."
+					else
+						Bootbox.alert "Administrator privileges revoked from #{userName}."
 
 		_deactivateAccount: (userAccount) ->
 			console.log "userAccount", userAccount.toJS()
