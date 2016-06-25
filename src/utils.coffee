@@ -60,7 +60,7 @@ load = (win) ->
 
 	# Returns the clientFileId with label
 	# Setting 2nd param as true returns nothing if id is empty/nonexistent
-	renderFileId = (id, hidden) ->
+	renderRecordId = (id, hidden) ->
 		result = []
 		result.push Config.clientFileRecordId.label
 
@@ -163,7 +163,7 @@ load = (win) ->
 		openWindow
 		renderLineBreaks
 		renderName
-		renderFileId
+		renderRecordId
 		showWhen
 		stripMetadata
 		formatTimestamp

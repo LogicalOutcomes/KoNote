@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Base64url = require 'base64url'
@@ -49,7 +49,7 @@ class CustomError extends Error
 
 class ObjectNotFoundError extends CustomError
 	constructor: ->
-		super
+		super()
 
 class IOError extends CustomError
 	constructor: (cause) ->

@@ -40,7 +40,7 @@ load = (win, {clientFileId}) ->
 	OpenDialogLink = require('../openDialogLink').load(win)
 	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
 
-	{FaIcon, renderName, renderFileId, showWhen, stripMetadata} = require('../utils').load(win)
+	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
 
 	ClientFilePage = React.createFactory React.createClass
 		displayName: 'ClientFilePage'
@@ -844,7 +844,7 @@ load = (win, {clientFileId}) ->
 					)
 				)
 				R.div({className: 'recordId'},
-					R.span({}, renderFileId @props.recordId, true)
+					R.span({}, renderRecordId @props.recordId, true)
 				)
 				R.div({className: 'tabStrip'},
 					SidebarTab({
