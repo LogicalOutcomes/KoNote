@@ -123,10 +123,15 @@ load = (win) ->
 											dialog: ResetPasswordDialog
 										}
 										{
+											className: 'btn btn-default'
+											text: "Change Account Type"
+											onClick: (userAccount) => @_changeAccountType.bind null, userAccount
+										}
+										{
 											className: 'btn btn-danger'
 											text: "Deactivate"
 											onClick: (userAccount) => @_deactivateAccount.bind null, userAccount
-										}									
+										}
 									]
 								}
 							]
@@ -170,6 +175,74 @@ load = (win) ->
 		_toggleDisplayDeactivated: ->
 			displayDeactivated = not @state.displayDeactivated
 			@setState {displayDeactivated}
+
+		_changeAccountType: (userAccount) ->
+			userName = userAccount.get('userName')
+			
+			if userAccount.get('publicInfo').get('accountType') is 'admin'
+				newAccountType = 'normal'
+			else
+				newAccountType = 'admin'
+
+			dataDirectory = global.ActiveSession.account.dataDirectory
+			userAccountOp = null
+			decryptedUserAccount = null
+
+			Async.series [
+				(cb) =>
+					if newAccountType is 'admin'
+						Bootbox.confirm "Grant admin privileges to #{userName}?", (result) =>
+							if result
+								cb()
+							else
+								return
+					else if newAccountType is 'normal'
+						Bootbox.confirm "Revoke admin privileges for #{userName}?", (result) =>
+							if result
+								cb()
+							else
+								return
+				(cb) =>
+					Persist.Users.Account.read dataDirectory, userName, (err, account) =>
+						if err
+							cb err
+							return
+
+						userAccountOp = account
+						cb()
+				(cb) =>
+					userAccountOp.decryptWithSystemKey global.ActiveSession.account, (err, result) =>
+						if err
+							cb err
+							return
+						decryptedUserAccount = result
+						cb()
+				(cb) =>
+					decryptedUserAccount.changeAccountType decryptedUserAccount, global.ActiveSession.account, newAccountType, (err) =>
+						if err
+							cb err
+							return
+						cb()
+			], (err) =>
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+					
+					if err instanceof Persist.Users.AccountTypeError
+						Bootbox.alert {
+							title: "Error modifying account"
+							message: err.message
+						}
+						return
+
+					CrashHandler.handle err
+					return
+					
+				if newAccountType is 'admin'
+					Bootbox.alert "Administrator privileges granted to #{userName}."
+				else
+					Bootbox.alert "Administrator privileges revoked from #{userName}."
 
 		_deactivateAccount: (userAccount) ->
 			console.log "userAccount", userAccount.toJS()
