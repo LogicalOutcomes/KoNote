@@ -1,4 +1,4 @@
-{	
+{
 	"devMode": true,
 	"productName": "KoNote",
 	"supportEmailAddress": "help@konode.ca",
@@ -6,14 +6,14 @@
 	"customerLogoSm": "customer-logo-sm.png",
 	"logoSubtitle": "beta",
 	"logoSubtitleColor": "hsl(205, 78%, 47%)",
-	
+
 	"clientFileRecordId": {
 		"isEnabled": true,
 		"label": "ID#"
 	},
-	
+
 	"dataDirectory": "data",
-	
+
 	"timeout": {
 		"duration": 25,
 		"warnings": {
