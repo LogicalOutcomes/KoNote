@@ -72,11 +72,11 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Client File Status"),
-						R.div({id: 'statusButtons'},
+						R.div({className: 'btn-toolbar'},
 							R.button({
 								className: 
 									if @state.status is 'active' 
-										'btn btn-primary'
+										'btn btn-success'
 									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'active'
@@ -87,7 +87,7 @@ load = (win) ->
 							R.button({
 								className: 
 									if @state.status is 'inactive' 
-										'btn btn-primary'
+										'btn btn-warning'
 									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'inactive'
@@ -98,7 +98,7 @@ load = (win) ->
 							R.button({
 								className:
 									if @state.status is 'discharged' 
-										'btn btn-primary'
+										'btn btn-danger'
 									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'discharged'
