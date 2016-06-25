@@ -408,7 +408,6 @@ addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 
 								# Grab the last one, which would be the latest
 								latestPlanTargetFileName = sortedFileNames.last()
-								console.info "latestPlanTargetFileName", latestPlanTargetFileName
 								latestPlanTargetRevPath = Path.join(planTargetDirPath, latestPlanTargetFileName)
 								cb()
 
@@ -420,9 +419,8 @@ addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 
 								planTarget = Imm.fromJS(JSON.parse globalEncryptionKey.decrypt result)
 								planTargetsById = planTargetsById.set planTarget.get('id'), planTarget
-								console.info "planTargetsById", planTargetsById.toJS()
 								cb()
-						, cb
+					], cb
 
 				, cb
 
@@ -432,6 +430,7 @@ addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 
 					forEachFileIn progNoteDirPath, (progNoteRev, cb) ->
 						progNoteRevPath = Path.join(progNoteDirPath, progNoteRev)
+						progNote = null
 
 						Async.series [
 							(cb) ->
@@ -443,11 +442,8 @@ addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 									# Decrypt progNote object
 									progNote = Imm.fromJS(JSON.parse globalEncryptionKey.decrypt result)
 
-									console.info "Pre:", progNote.toJS()
-
 									# We only want to process full progNotes
 									if progNote.get('type') is 'full'
-										console.info "Pre:", progNote.toJS()
 										progNoteUnits = progNote.get('units').map (unit) ->
 											return unit if unit.get('type') is 'basic'
 
@@ -455,12 +451,12 @@ addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 												planTargets = section.get('targets').map (target) ->
 													# Nothing to do if already has a description
 													if target.has('description')
-														console.info "Already has target, skipping..."
+														console.warn "Already has description, skipping..."
 														return target
 
 													# Grab & add description from matching planTarget latest revision
 													targetId = target.get('id')
-													latestDescription = planTargetsById.getIn([targetId, 'description')
+													latestDescription = planTargetsById.getIn([targetId, 'description'])
 
 													return target.set('description', latestDescription)
 
@@ -468,8 +464,8 @@ addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 
 											return unit.set('sections', unitSections)
 
-										return progNote.set('units', progNoteUnits)
-										console.info "Post:", progNote.toJS()
+										progNote = progNote.set('units', progNoteUnits)
+										console.log "Added description to progNote Rev", progNoteRev
 
 									else
 										console.warn "Skipped 'basic' progNote..."
@@ -478,7 +474,7 @@ addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 
 							(cb) ->
 								# Re-encrypt progNote
-								progNote = globalEncryptionKey.encrypt(JSON.stringify progNote)
+								progNote = globalEncryptionKey.encrypt(JSON.stringify progNote.toJS())
 
 								Fs.writeFile progNoteRevPath, progNote, cb
 
@@ -493,7 +489,7 @@ addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 			cb err
 			return
 
-			finalizeMigrationStep(dataDir, cb)
+		finalizeMigrationStep(dataDir, cb)
 
 # ////////////////////// Migration Series //////////////////////
 
