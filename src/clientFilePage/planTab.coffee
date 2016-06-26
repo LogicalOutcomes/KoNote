@@ -325,54 +325,36 @@ load = (win) ->
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
 
-		_createTemplate: (planTargetsById) ->
+		_createTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
-				console.log 'plan! >>>>>>>>>>>>>>>>', @state.plan.toJS()
-
-				template = Imm.fromJS {
-					name: templateName
-					sections: []
-				}
 				
-				@state.plan.get('sections').map (section) =>
-					console.log "section >>>>", section.toJS()
-					# right now just pushes the existing section object into the tempalte
-					# have to map the object to the template datamodel.
-					templateSection = Imm.fromJS {
+				# unless templateName
+				
+				templateSections = @state.plan.get('sections').map (section) =>
+					sectionTargets = section.get('targetIds').map (targetId) =>
+						target = @state.currentTargetRevisionsById.get(targetId)
+						# Removing irrelevant data from object
+						return target
+						.remove('status')
+						.remove('statusReason')
+
+					section = Imm.fromJS {
 						name: section.get('name')
-						targets: []
+						targets: sectionTargets
 					}
 
-					console.log "templateSection >>>", templateSection.toJS()
-					section.get('targetIds').map (targetId) =>
-						target = @props.planTargetsById.get(targetId, null)
-						console.log "target >>>>> ", target.toJS()
-						currentRev = @state.currentTargetRevisionsById.get(targetId)
-						console.log "currentRev >>>", currentRev.toJS()
-						# must get lates revision first
-						templateTarget = Imm.fromJS {
-							name: currentRev.get('name')
-							description: currentRev.get('description')
-							metricIds: currentRev.get('metricIds')
-						}
-						console.log "templateTarget >>>", templateTarget.toJS()
-						templateSection = templateSection.update 'targets', (targets) =>
-							return targets.push templateTarget
-
-							# template = template.update
-					template = template.update 'sections', (sections) =>
-						return sections.push templateSection
-		
+				planTemplate = Imm.fromJS {
+					name: templateName
+					sections: templateSections
+				}
 				
-				console.log "Template Object before creation >>> ", template.toJS()
-				global.ActiveSession.persist.planTemplates.create template, (err, obj) =>
+				console.log "Template Object before creation >>> ", planTemplate.toJS()
+				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
 					if err
 						cb err
 						return
 
 					console.log "created template >>>> ", obj.toJS()
-				
-
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
