@@ -375,6 +375,10 @@ load = (win) ->
 												FaIcon('folder-open')
 											)
 										)
+										R.button({
+											className: 'btn btn-default'
+											onClick: @_hideDormant
+										}, "Hide Dormant")
 									)
 								)
 							)
@@ -605,6 +609,12 @@ load = (win) ->
 
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
+		_hideDormant: ->
+			queryResults = @props.clientFileHeaders
+			.filter (clientFile) ->
+				status = clientFile.getIn(['status']) is 'active'
+
+			@setState {queryResults}
 
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
