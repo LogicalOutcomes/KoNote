@@ -7,7 +7,7 @@ Fs = require 'fs'
 {Users, Persist, generateId} = require '../persist'
 Create = require './create'
 
-generateClientFile = (metrics, template, cb) ->
+generateClientFile = (metrics, template, eventTypes, cb) ->
 	console.group('Generated Client File')
 
 	clientFile = null
@@ -105,7 +105,7 @@ generateClientFile = (metrics, template, cb) ->
 		# Create a # of progEvents for each progNote in the clientFile
 		(cb) ->
 			Async.map progNotes.toArray(), (progNote, cb) ->
-				Create.progEvents template.progEvents, {clientFile, progNote}, (err, results) ->
+				Create.progEvents template.progEvents, {clientFile, progNote, eventTypes}, (err, results) ->
 					if err
 						cb err
 						return
@@ -130,9 +130,9 @@ generateClientFile = (metrics, template, cb) ->
 		cb(null, clientFile)
 
 
-generateClientFiles = (quantity, metrics, template, cb) ->	
+generateClientFiles = (quantity, metrics, template, eventTypes, cb) ->	
 	Async.timesSeries quantity, (quantityPosition, cb) ->
-		generateClientFile(metrics, template, cb)
+		generateClientFile(metrics, template, eventTypes, cb)
 	, (err, results) ->
 		if err
 			cb err
@@ -211,7 +211,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 
 		(cb) ->
 			console.group('Client Files')
-			generateClientFiles template.clientFiles, metrics, template, (err, results) ->
+			generateClientFiles template.clientFiles, metrics, template, eventTypes, (err, results) ->
 				if err
 					cb err
 					return

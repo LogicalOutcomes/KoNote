@@ -33,13 +33,20 @@ Create.clientFile = (cb) ->
 
 #children functions
 
-Create.progEvent = ({clientFile, progNote}, cb) ->
+Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 	earliestDate = Moment().subtract(2, 'months')
 	daySpan = Moment().diff(earliestDate, 'days')
 	randomDay = Math.floor(Math.random() * daySpan) + 1
 	randomBackdate = Moment().subtract(randomDay, 'days')
 	randomEnddate = Moment().subtract(randomDay, 'days').add(3, 'days')
 
+	console.log "EVENTTYPES >>>>> ", eventTypes.toJS()
+	eventTypeIds = eventTypes
+	.map (eventType) -> eventType.get('id')
+	.toJS()
+
+	randomIndex = Math.floor(Math.random() * eventTypeIds.length)
+	randomTypeId = eventTypeIds[randomIndex]
 	relatedProgNoteId = progNote.get('id')
 	clientFileId = clientFile.get('id')
 
@@ -50,7 +57,7 @@ Create.progEvent = ({clientFile, progNote}, cb) ->
 		endTimestamp: randomEnddate.format(TimestampFormat)
 		status: 'default'
 		# statusReason: optional
-		typeId: ''
+		typeId: randomTypeId
 		relatedProgNoteId
 		clientFileId
 		relatedElement: ''
