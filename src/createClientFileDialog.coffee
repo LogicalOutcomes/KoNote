@@ -17,7 +17,7 @@ load = (win) ->
 	R = React.DOM
 
 	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
-	{FaIcon} = require('./utils').load(win)
+	{FaIcon, stripMetadata} = require('./utils').load(win)
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -273,19 +273,20 @@ load = (win) ->
 					
 					if selectedPlanTemplateHeaders?
 						
-						console.log "Applying planTemplate to new clientFile > > > > > > > > > > >"
 						console.log "selectedPlanTemplateHeaders IN SERIES >>>>", selectedPlanTemplateHeaders.toJS()
 						
-						ActiveSession.persist.planTemplates.readRevisions @state.templateId, (err, result) =>
+						ActiveSession.persist.planTemplates.readLatestRevisions @state.templateId, 1, (err, result) ->
 							if err
 								cb err
 								return
-							selectedPlanTemplate = result
+							selectedPlanTemplate = stripMetadata Imm.List(result).get(0)
 							console.log "selectedPlanTemplate upon reading revision >>>>>>>", selectedPlanTemplate.toJS()
 							cb()
+					else cb()
 				(cb) =>
 						console.log "Applying Template: step 2 >>>"
 						console.log "selectedPlanTemplate IN SERIES step 2 >>>>", selectedPlanTemplate.toJS()
+
 						selectedPlanTemplate.get('sections').forEach (templateSection) =>
 							targetIds = []
 							templateSection.get('targets').forEach (templateTarget) =>
