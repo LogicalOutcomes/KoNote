@@ -16,6 +16,8 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
+
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
@@ -37,6 +39,7 @@ load = (win) ->
 				recordId: ''
 				programIds: Imm.List()
 				clientfileId: ''
+				planTemplate: ''
 			}
 
 		render: ->
@@ -101,6 +104,16 @@ load = (win) ->
 						)
 					)
 
+					# unless @props.planTemplates.isEmpty()
+						R.div({className: 'form-group'},
+							R.label({}, "Select Plan Template"),
+							R.div({className: "template-container"}
+								B.DropdownButton({
+									title: if selectedPlanTemplate? then selectedPlanTemplate.get('name') else "No Template"
+								})
+							)
+						)
+
 					(if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
 							R.label({}, Config.clientFileRecordId.label),
@@ -152,6 +165,8 @@ load = (win) ->
 			programIds = @state.programIds.splice(index, 1)
 			@setState {programIds}
 
+		_updatePlanTemplate: ->
+
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
@@ -182,13 +197,13 @@ load = (win) ->
 							cb err
 							return
 
-						newClientFileObj = result
+						newClientFile = result
 						cb()
 				(cb) =>
 					# Build the link objects
 					clientFileProgramLinks = @state.programIds.map (programId) ->
 						Imm.fromJS {
-							clientFileId: newClientFileObj.get('id')
+							clientFileId: newClientFile.get('id')
 							status: 'enrolled'
 							programId
 						}
@@ -197,6 +212,43 @@ load = (win) ->
 					Async.each clientFileProgramLinks.toArray(), (link, cb) ->
 						global.ActiveSession.persist.clientFileProgramLinks.create link, cb
 					, cb
+				(cb) =>
+					# Apply template if template selected
+					# if temlplteSelceted?
+					planTemplate.get('sections').map (templateSection) =>
+						targetIds = []
+						templateSection.get('targets').map (templateTarget) =>
+							target = Imm.fromJS {
+								clientFileId: newClientFile.get('id')
+								name: templateTarget.get('id')
+								description: templateTarget.get('description')
+								status: 'default'
+								metricIds: templateTarget.get('metricIds')
+							}
+							# Creating each target
+							global.ActiveSession.persist.planTargets.create target, (err, result) =>
+								if err
+									cb err
+									return
+								newTarget = result
+							
+							targetIds.push newTarget.get('id')
+
+						# Creating each section
+						section = Imm.fromJS {
+							id: generateId()
+							name: templateSection.get('name')
+							targetIds
+							status: 'default'
+						}
+
+						clientFile = newClientFile.setIn(['plan', 'sections'], section)
+
+					global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
+						if err
+							cb err
+							return
+					cb()
 
 			], (err) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
