@@ -337,6 +337,8 @@ load = (win) ->
 						return target
 						.remove('status')
 						.remove('statusReason')
+						.remove('clientFileId')
+						.remove('id')
 
 					section = Imm.fromJS {
 						name: section.get('name')
@@ -350,8 +352,11 @@ load = (win) ->
 				
 				console.log "Template Object before creation >>> ", planTemplate.toJS()
 				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
-					if err
-						cb err
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again
+						"""
 						return
 
 					console.log "created template >>>> ", obj.toJS()
