@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # A dialog for allowing the user to create a new client file
@@ -60,7 +60,7 @@ load = (win) ->
 
 		render: ->
 			selectedPlanTemplateHeaders = @state.planTemplateHeaders.find (template) => template.get('id') is @state.templateId
-	
+
 			# if selectedPlanTemplateHeaders?
 			# 	console.log "selectedPlanTemplateHeaders >>>>", selectedPlanTemplateHeaders.toJS()
 			# 	ActiveSession.persist.planTemplates.readRevisions @state.templateId, (err, result) =>
@@ -104,7 +104,7 @@ load = (win) ->
 							onKeyDown: @_onEnterKeyDown
 						})
 					)
-					
+
 					(unless @props.programs.isEmpty()
 						R.div({className: 'form-group'},
 							R.label({}, "Assign to #{Term 'Program'}(s)")
@@ -113,7 +113,7 @@ load = (win) ->
 									isSelected = @state.programIds.contains(program.get('id'))
 									R.button({
 										className: 'btn btn-default programOptionButton'
-										onClick: 
+										onClick:
 											(if isSelected then @_removeFromPrograms else @_pushToPrograms)
 											.bind null, program.get('id')
 										key: program.get('id')
@@ -182,7 +182,7 @@ load = (win) ->
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
-							onClick: @_cancel							
+							onClick: @_cancel
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-primary'
@@ -230,7 +230,7 @@ load = (win) ->
 			first = @state.firstName
 			middle = @state.middleName
 			last = @state.lastName
-			recordId = @state.recordId		
+			recordId = @state.recordId
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
@@ -238,13 +238,14 @@ load = (win) ->
 			  plan: {
 			    sections: []
 			  }
-			}			
+			}
 
-			newClientFileObj = null
+			newClientFile = null
+			selectedPlanTemplate = null
 
 			Async.series [
 				(cb) =>
-					# Create the clientFile, 
+					# Create the clientFile,
 					global.ActiveSession.persist.clientFiles.create clientFile, (err, result) =>
 						if err
 							cb err
@@ -252,6 +253,7 @@ load = (win) ->
 
 						newClientFile = result
 						cb()
+
 				(cb) =>
 					# Build the link objects
 					clientFileProgramLinks = @state.programIds.map (programId) ->
@@ -265,24 +267,26 @@ load = (win) ->
 					Async.each clientFileProgramLinks.toArray(), (link, cb) ->
 						global.ActiveSession.persist.clientFileProgramLinks.create link, cb
 					, cb
-				(cb) =>
 
+				(cb) =>
 					# Apply template if template selected
 					console.log "Applying Template: step 1 >>>"
-					selectedPlanTemplateHeaders = @state.planTemplateHeaders.find (template) => template.get('id') is @state.templateId
-					
-					if selectedPlanTemplateHeaders?
-						
-						console.log "selectedPlanTemplateHeaders IN SERIES >>>>", selectedPlanTemplateHeaders.toJS()
-						
-						ActiveSession.persist.planTemplates.readLatestRevisions @state.templateId, 1, (err, result) ->
-							if err
-								cb err
-								return
-							selectedPlanTemplate = stripMetadata Imm.List(result).get(0)
-							console.log "selectedPlanTemplate upon reading revision >>>>>>>", selectedPlanTemplate.toJS()
-							cb()
-					else cb()
+					selectedPlanTemplateHeader = @state.planTemplateHeaders.find (template) =>
+						template.get('id') is @state.templateId
+
+					cb() unless selectedPlanTemplateHeader?
+
+					console.log "selectedPlanTemplateHeader IN SERIES >>>>", selectedPlanTemplateHeader.toJS()
+
+					ActiveSession.persist.planTemplates.readLatestRevisions @state.templateId, 1, (err, result) ->
+						if err
+							cb err
+							return
+
+						selectedPlanTemplate = stripMetadata result.get(0)
+						console.log "selectedPlanTemplate upon reading revision >>>>>>>", selectedPlanTemplate.toJS()
+						cb()
+
 				(cb) =>
 						console.log "Applying Template: step 2 >>>"
 						console.log "selectedPlanTemplate IN SERIES step 2 >>>>", selectedPlanTemplate.toJS()
@@ -303,7 +307,7 @@ load = (win) ->
 										cb err
 										return
 									newTarget = result
-								
+
 								targetIds.push newTarget.get('id')
 
 							# Creating each section
@@ -339,7 +343,7 @@ load = (win) ->
 				# UI will be auto-updated with new file/links by page listeners
 				@props.onSuccess()
 
-						
+
 	return CreateClientFileDialog
 
 module.exports = {load}
