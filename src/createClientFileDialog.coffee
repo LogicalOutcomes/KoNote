@@ -61,16 +61,14 @@ load = (win) ->
 		render: ->
 			selectedPlanTemplateHeaders = @state.planTemplateHeaders.find (template) => template.get('id') is @state.templateId
 	
-			if selectedPlanTemplateHeaders?
-				console.log "selectedPlanTemplateHeaders >>>>", selectedPlanTemplateHeaders.toJS()
-				ActiveSession.persist.planTemplates.readRevisions @state.templateId, (err, result) =>
-					if err
-						cb err
-						return
-					selectedPlanTemplate = result
-					console.log "selectedPlanTemplate >>>>>>>>>>>>>", selectedPlanTemplate.toJS()
-
-			#now get actual template object from templateID = selectedPlanTemplate
+			# if selectedPlanTemplateHeaders?
+			# 	console.log "selectedPlanTemplateHeaders >>>>", selectedPlanTemplateHeaders.toJS()
+			# 	ActiveSession.persist.planTemplates.readRevisions @state.templateId, (err, result) =>
+			# 		if err
+			# 			cb err
+			# 			return
+			# 		selectedPlanTemplate = result
+			# 		console.log "selectedPlanTemplate >>>>>>>>>>>>>", selectedPlanTemplate.toJS()
 
 			Dialog({
 				ref: 'dialog'
@@ -232,7 +230,7 @@ load = (win) ->
 			first = @state.firstName
 			middle = @state.middleName
 			last = @state.lastName
-			recordId = @state.recordId			
+			recordId = @state.recordId		
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
@@ -268,9 +266,26 @@ load = (win) ->
 						global.ActiveSession.persist.clientFileProgramLinks.create link, cb
 					, cb
 				(cb) =>
+
 					# Apply template if template selected
-					if selectedPlanTemplate?
+					console.log "Applying Template: step 1 >>>"
+					selectedPlanTemplateHeaders = @state.planTemplateHeaders.find (template) => template.get('id') is @state.templateId
+					
+					if selectedPlanTemplateHeaders?
+						
 						console.log "Applying planTemplate to new clientFile > > > > > > > > > > >"
+						console.log "selectedPlanTemplateHeaders IN SERIES >>>>", selectedPlanTemplateHeaders.toJS()
+						
+						ActiveSession.persist.planTemplates.readRevisions @state.templateId, (err, result) =>
+							if err
+								cb err
+								return
+							selectedPlanTemplate = result
+							console.log "selectedPlanTemplate upon reading revision >>>>>>>", selectedPlanTemplate.toJS()
+							cb()
+				(cb) =>
+						console.log "Applying Template: step 2 >>>"
+						console.log "selectedPlanTemplate IN SERIES step 2 >>>>", selectedPlanTemplate.toJS()
 						selectedPlanTemplate.get('sections').forEach (templateSection) =>
 							targetIds = []
 							templateSection.get('targets').forEach (templateTarget) =>
@@ -304,7 +319,7 @@ load = (win) ->
 							if err
 								cb err
 								return
-					cb()
+							cb()
 
 			], (err) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
