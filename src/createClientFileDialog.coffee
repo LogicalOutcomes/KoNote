@@ -242,6 +242,7 @@ load = (win) ->
 
 			newClientFile = null
 			selectedPlanTemplate = null
+			templateSections = null
 
 			Async.series [
 				(cb) =>
@@ -291,40 +292,70 @@ load = (win) ->
 						console.log "Applying Template: step 2 >>>"
 						console.log "selectedPlanTemplate IN SERIES step 2 >>>>", selectedPlanTemplate.toJS()
 
-						selectedPlanTemplate.get('sections').forEach (templateSection) =>
-							targetIds = []
-							templateSection.get('targets').forEach (templateTarget) =>
-								target = Imm.fromJS {
+						# Step 1
+						templateSections = selectedPlanTemplate.get('sections').map (section) ->
+							templateTargets = section.get('targets').map (target) ->
+								Imm.fromJS {
 									clientFileId: newClientFile.get('id')
-									name: templateTarget.get('id')
+									name: templateTarget.get('name')
 									description: templateTarget.get('description')
 									status: 'default'
 									metricIds: templateTarget.get('metricIds')
 								}
-								# Creating each target
-								global.ActiveSession.persist.planTargets.create target, (err, result) =>
+
+							return section.set 'targets', templateTargets
+
+						console.info "templateSections", templateSections.toJS()
+
+						Async.map templateSections.toArray(), (section, cb) ->
+							Async.map section.get('targets').toArray(), (target, cb) ->
+								global.ActiveSession.persist.planTargets.create target, (err, result) ->
 									if err
 										cb err
 										return
-									newTarget = result
 
-								targetIds.push newTarget.get('id')
+									console.info "Created target:", result.toJS()
 
-							# Creating each section
-							section = Imm.fromJS {
-								id: generateId()
-								name: templateSection.get('name')
-								targetIds
-								status: 'default'
-							}
+									cb null, result.get('id')
+							, (err, results) ->
+								if err
+									cb err
+									return
 
-							clientFile = newClientFile.setIn(['plan', 'sections'], section)
+								targetIds = Imm.List(results)
 
-						global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
+								console.info "Received targetIds", targetIds.toJS()
+
+								newSection = Imm.fromJS {
+									id: generateId()
+									name: templateSection.get('name')
+									targetIds: results
+									status: 'default'
+								}
+
+								cb null, newSection
+
+						, (err, results) ->
 							if err
 								cb err
 								return
+
+							console.info "Converted templateSections:", templateSections.toJS()
+
+							templateSections = Imm.List(results)
 							cb()
+
+				(cb) =>
+					clientFile = newClientFile.setIn(['plan', 'sections'], templateSections)
+
+					global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
+						if err
+							cb err
+							return
+
+						console.info "Revised clientFile with new plan:", clientFile.toJS()
+
+						cb()
 
 			], (err) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
