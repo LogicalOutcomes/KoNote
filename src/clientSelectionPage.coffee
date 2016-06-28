@@ -241,6 +241,7 @@ load = (win) ->
 
 				queryText: ''
 				queryResults: Imm.List()
+				showingDormant: true
 
 				orderedQueryResults: Imm.List()
 				hoverClientId: null
@@ -388,10 +389,16 @@ load = (win) ->
 												FaIcon('folder-open')
 											)
 										)
-										R.button({
-											className: 'btn btn-default'
-											onClick: @_hideDormant
-										}, "Hide Dormant")
+										R.div({
+											onClick: @_toggleDormant
+										},
+											R.input({
+												type: 'checkbox'
+												checked: @state.showingDormant
+											})
+											if @state.showingDormant is true then "Hide Dormant Clients" 
+											else "Show Dormant Targets"
+										)
 									)
 								)
 							)
@@ -622,13 +629,17 @@ load = (win) ->
 
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
-		_hideDormant: ->
-			queryResults = @props.clientFileHeaders
-			.filter (clientFile) ->
-				status = clientFile.getIn(['status']) is 'active'
-
-			@setState {queryResults}
-
+		_toggleDormant: ->
+			if @state.showingDormant is true
+				queryResults = @props.clientFileHeaders
+				.filter (clientFile) ->
+					status = clientFile.getIn(['status']) is 'active'
+				showingDormant = false
+				@setState {queryResults, showingDormant}
+			else
+				queryResults = @props.clientFileHeaders
+				showingDormant = true
+				@setState {queryResults, showingDormant}
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
 		_home: ->
