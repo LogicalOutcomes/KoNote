@@ -201,7 +201,10 @@ load = (win) ->
 									R.div({className: 'btn-toolbar'},
 										R.button({
 											className: 'btn btn-lg btn-default'
-											onClick: @_import
+											onClick: @_import.bind null, {
+												extension: 'zip'
+												onImport: @_confirmRestore
+											}
 										}, 
 											"Restore Backup"
 											FaIcon('upload right-side')
@@ -305,85 +308,172 @@ load = (win) ->
 				)
 			)
 
-		_import: ->
+		_import: ({extension, onImport}) ->
 			# Configures hidden file inputs with custom attributes, and clicks it
 			$nwbrowse = $(@refs.nwbrowse)
 			$nwbrowse
 			.off()
-			.attr('accept', ".zip")
-			.on('change', (event) => @_restoreBackup event.target.value)
+			.attr('accept', ".#{extension}")			
+			.on('change', (event) => onImport event.target.value)
 			.click()
 	
+		_confirmRestore: (backupfile) ->
+			Bootbox.confirm {
+				title: "Warning"
+				message: "Restoring from a backup will OVERWRITE ANY EXISTING DATA. Are you sure you want to continue?"
+				callback: (confirmed) =>
+					unless confirmed
+						return
+					@setState {
+						isLoading: true
+						installProgress: {message: "Restoring data file. This may take some time..."}
+					}
+					@_restoreBackup(backupfile)
+			}
+
 		_restoreBackup: (backupfile) ->
-			console.log "begin data import..."
-			yauzl.open backupfile, { lazyEntries: true }, (err, zipfile, cb) ->
-				if err
-					throw err
-				zipfile.readEntry()
-				zipfile.on 'entry', (entry) ->
-					if /\/$/.test(entry.fileName)
-						# directory file names end with '/'
-						mkdirp entry.fileName, (err) ->
-							if err
-								throw err
-							zipfile.readEntry()
+			dataDir = Config.dataDirectory
+			backupDir = dataDir + '_tmp_backup-' + Date.now()
+			tmpDir = dataDir + '_tmp_import'
+			atomicOp = null
+			
+			Async.series [
+				(cb) =>
+					Fs.rename dataDir, backupDir, (err) =>
+						if err
+							@setState {
+								isLoading: false
+							}
+							Bootbox.alert {
+								title: "Error"
+								message: "Unable to create temp data directory. Import aborted."
+							}
+							cb err
 							return
-					else
-						# file entry
-						zipfile.openReadStream entry, (err, readStream) ->
-							if err
-								throw err
-							# ensure parent directory exists
-							mkdirp path.dirname(entry.fileName), (err) ->
-								if err
-									throw err
-								readStream.pipe Fs.createWriteStream(entry.fileName)
-								readStream.on 'end', ->
+						cb()
+
+				(cb) =>
+					Atomic.writeDirectoryNormally dataDir, tmpDir, (err, op) =>
+						if err 
+							if err instanceof Persist.IOError and err.cause.code is 'EEXIST'
+							# previous import data still exists: overwrite
+								Rimraf tmpDir, (err) =>
+									if err
+										cb err
+										return
+									@_restoreBackup(backupfile)
+								return
+							cb err
+							return
+
+						# atomic operation
+						atomicOp = op
+						cb()
+				
+				(cb) =>
+					yauzl.open backupfile, { lazyEntries: true }, (err, zipfile) =>
+						if err
+							@setState {
+								isLoading: false
+							}
+							Bootbox.alert {
+								title: "Error"
+								message: "Unable to open zip file. Please check that you have a valid data file."
+							}
+							cb err
+							return
+						zipfile.readEntry()
+						
+						zipfile.on 'entry', (entry) =>
+							if /\/$/.test(entry.fileName)
+								# directory (filename ends with /)
+								mkdirp path.join(tmpDir, entry.fileName), (err) =>
+									if err
+										cb err
+										return
 									zipfile.readEntry()
 									return
+							else
+								# file
+								zipfile.openReadStream entry, (err, readStream) =>
+									if err
+										cb err
+										return
+									readStream.pipe Fs.createWriteStream(path.join(tmpDir, entry.fileName))
+									readStream.on 'end', =>
+										zipfile.readEntry()
+										return
+									return
 								return
-							return
-					return
-				zipfile.on 'close', ->
-					# zip extracted; check metadata
-					unless Fs.existsSync(path.join(Config.dataDirectory, 'version.json'))
-						Rimraf Config.dataDirectory, (err) =>
-							if err
-								Bootbox.alert """
-									ERROR: '#{err.code}'.
-									Please contact #{Config.productName} technical support.
-								""", @props.closeWindow
+						
+						zipfile.on 'close', =>
+							# zip extracted; check metadata
+							unless Fs.existsSync(path.join(tmpDir, 'version.json')) and Fs.existsSync('./package.json')
+								@setState {isLoading: false}
+								Bootbox.alert {
+									title: "Data Import Failed!"
+									message: "Invalid data version. Please ensure you have selected the correct backup file and try again."
+								}
+								cb err
 								return
+							cb()
+							
+				(cb) =>
+					appVersion = JSON.parse(Fs.readFileSync('./package.json')).version
+					dataVersion = JSON.parse(Fs.readFileSync(path.join(tmpDir, 'version.json'))).dataVersion
+					unless appVersion is dataVersion
+						@setState {isLoading: false}
 						Bootbox.alert {
 							title: "Data Import Failed!"
-							message: "Invalid file. Please ensure you have selected the correct backup file."
+							message: "Invalid data version. Please ensure you have selected the correct backup file and try again."
 						}
+						cb err
 						return
-					appVersion = JSON.parse(Fs.readFileSync('./package.json')).version
-					dataVersion = JSON.parse(Fs.readFileSync(path.join(Config.dataDirectory, 'version.json'))).dataVersion
-					if appVersion is dataVersion
+					cb()
+
+				(cb) =>
+					atomicOp.commit cb
+
+			], (err) =>
+				if err
+					@setState {isLoading: false}
+
+					if err instanceof Persist.IOError
 						Bootbox.alert {
-							title: "Data Import Successful!"
-							message: "KoNote will now restart..."
-							callback: ->
-								global.isSetUp = true
-								win.close(true)
+							title: "Connection Error (IOError)"
+							message: "Please check your network connection and try again."
 						}
-					else
-						Rimraf Config.dataDirectory, (err) =>
-							if err
-								Bootbox.alert """
-									ERROR: '#{err.code}'.
-									Please contact #{Config.productName} technical support.
-								""", @props.closeWindow
-								return
-							Bootbox.alert {
-								title: "Data Import Failed!"
-								message: "Backup version (#{dataVersion}) does not match current KoNote version (#{appVersion}). A data migration is required."
-							}
+						console.error err
+						return
+
+					errCode = [
+						err.name or ''
+						err.code or err.cause.code
+					].join ' '
+
+					Bootbox.alert {
+						title: "Data Import Failed"
+						message: """
+							Sorry, #{Config.productName} was unable to restore the data file.
+							Please check your network connection and try again. If the problem persists,
+							please contact technical support at <u>#{Config.supportEmailAddress}</u> 
+							with the Error Code: \"#{errCode}\".
+						"""
+					}
+
+					console.error err
 					return
-				return
-		
+
+				console.log "data import successfull"
+				Bootbox.alert {
+					title: "Data Import Successful!"
+					message: "KoNote will now restart..."
+					callback: ->
+						global.isSetUp = true
+						win.close(true)
+				}
+
+
 		_copyHelpEmail: (emailAddress) ->
 			clipboard = Gui.Clipboard.get()
 			clipboard.set emailAddress
