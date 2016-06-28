@@ -182,14 +182,14 @@ runSeries = (templateFileName = 'seedSmall') ->
 				accounts = results
 				cb()
 
-		(cb) ->
-			Create.planTemplates template.planTemplates, (err, results) ->
-				if err
-					cb err
-					return
+		# (cb) ->
+		# 	Create.planTemplates template.planTemplates, (err, results) ->
+		# 		if err
+		# 			cb err
+		# 			return
 
-				planTemplates = results
-				cb()
+		# 		planTemplates = results
+		# 		cb()
 
 		(cb) ->
 			Create.programs template.programs, (err, results) ->
