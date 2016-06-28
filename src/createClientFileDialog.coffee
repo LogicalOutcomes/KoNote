@@ -297,10 +297,10 @@ load = (win) ->
 							templateTargets = section.get('targets').map (target) ->
 								Imm.fromJS {
 									clientFileId: newClientFile.get('id')
-									name: templateTarget.get('name')
-									description: templateTarget.get('description')
+									name: target.get('name')
+									description: target.get('description')
 									status: 'default'
-									metricIds: templateTarget.get('metricIds')
+									metricIds: target.get('metricIds')
 								}
 
 							return section.set 'targets', templateTargets
@@ -327,8 +327,8 @@ load = (win) ->
 								console.info "Received targetIds", targetIds.toJS()
 
 								newSection = Imm.fromJS {
-									id: generateId()
-									name: templateSection.get('name')
+									id: Persist.generateId()
+									name: section.get('name')
 									targetIds: results
 									status: 'default'
 								}
