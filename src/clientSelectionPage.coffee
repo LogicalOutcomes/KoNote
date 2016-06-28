@@ -185,6 +185,19 @@ load = (win) ->
 					@setState {clientFileHeaders}
 					@_openClientFile(newFile.get('id')) unless global.isSeeding
 
+				'createRevision:clientFile': (newRev) =>
+					existingClientFileHeader = @state.clientFileHeaders
+					.find (clientFileHeader) -> clientFileHeader.get('id') is newRev.get('id')
+					
+					@setState (state) ->
+						if existingClientFileHeader?
+							clientFileIndex = state.programs.indexOf existingClientFileHeader
+							clientFileHeaders = state.clientFileHeaders.set clientFileIndex, newRev
+						else
+							clientFileheaders = state.clientFileheaders.push newRev
+
+						return {clientFileHeaders}
+
 				'create:program createRevision:program': (newRev) =>
 					programId = newRev.get('id')
 					# Updating or creating program?
