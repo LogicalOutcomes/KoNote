@@ -389,17 +389,24 @@ load = (win) ->
 												FaIcon('folder-open')
 											)
 										)
-										R.div({
-											onClick: @_toggleDormant
-										},
-											R.input({
-												type: 'checkbox'
-												checked: @state.showingDormant
-											})
-											if @state.showingDormant is true then "Hide Dormant Clients" 
-											else "Show Dormant Targets"
-										)
 									)
+									R.label({className: "checkbox-inline"},	
+										R.input({
+											onChange: @_toggleDormant
+											type: 'checkbox'
+											checked: @state.showingDormant
+										})
+										"Show Dormant Clients",
+									)
+									# R.label({},	
+									# 	R.button({
+									# 		onClick: @_toggleDormant
+									# 		type: 'checkbox'
+									# 		checked: @state.showingDormant
+									# 	})
+									# 	if @state.showingDormant is true then "Hide Dormant Clients" 
+									# 	else "Show Dormant Clients",
+									# )
 								)
 							)
 						)
