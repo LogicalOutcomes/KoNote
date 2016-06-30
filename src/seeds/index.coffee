@@ -44,22 +44,22 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 
 		# Apply the target to a section, apply to clientFile, save
 		(cb) ->
-			
+
 			sliceSize = Math.floor(planTargets.size / template.clientFileSections)
-			
+
 			targetIds = planTargets
 			.map (target) -> target.get('id')
 
 			x = 0
-			Async.times template.clientFileSections, (index, cb) =>	
+			Async.times template.clientFileSections, (index, cb) =>
 				sectionTargetIds = targetIds.slice(x, x + sliceSize)
 				# randomly chooses a status, with a higher probability of 'default'
 				randomNumber = Math.floor(Math.random() * 10) + 1
-				if randomNumber > 7 
+				if randomNumber > 7
 					status = 'deactivated'
-				else if randomNumber < 3 
+				else if randomNumber < 3
 					status = 'completed'
-				else 
+				else
 					status = 'default'
 
 				x = x + sliceSize
@@ -71,7 +71,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 					status
 				}
 				cb null, section
-			
+
 			, (err, results) ->
 				if err
 					cb err
@@ -130,7 +130,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 		cb(null, clientFile)
 
 
-generateClientFiles = (quantity, metrics, template, eventTypes, cb) ->	
+generateClientFiles = (quantity, metrics, template, eventTypes, cb) ->
 	Async.timesSeries quantity, (quantityPosition, cb) ->
 		generateClientFile(metrics, template, eventTypes, cb)
 	, (err, results) ->
@@ -142,7 +142,7 @@ generateClientFiles = (quantity, metrics, template, eventTypes, cb) ->
 		cb(null, clientFiles)
 
 
-runSeries = (templateFileName = 'seedSmall') -> 
+runSeries = (templateFileName = 'seedSmall') ->
 	# First tell the system that we're seeding, to prevent
 	# event-driven operations such opening a clientFile
 	global.isSeeding = true
@@ -159,8 +159,8 @@ runSeries = (templateFileName = 'seedSmall') ->
 	planTargets = null
 
 	Async.series [
-		(cb) -> 
-			Fs.readFile "./src/seeds/templates/#{templateFileName}.json", (err, result) -> 
+		(cb) ->
+			Fs.readFile "./src/seeds/templates/#{templateFileName}.json", (err, result) ->
 				if err
 					if err.code is "ENOENT"
 						console.error "#{templateFileName}: Template does not exist."
@@ -189,7 +189,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 					return
 
 				programs = results
-				cb()		
+				cb()
 
 		(cb) ->
 			Create.eventTypes template.eventTypes, (err, results) ->
@@ -198,7 +198,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 					return
 
 				eventTypes = results
-				cb()		
+				cb()
 
 		(cb) ->
 			Create.metrics template.metrics, (err, results) ->
@@ -225,7 +225,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 			console.group('Program Links')
 			Async.map programs.toArray(), (program, cb) ->
 				Create.clientFileProgramLinks clientFiles, program, (err, result) ->
-					if err 
+					if err
 						cb err
 						return
 
@@ -241,12 +241,12 @@ runSeries = (templateFileName = 'seedSmall') ->
 				cb()
 
 	], (err) ->
+		# Remove our isSeeding property entirely from global
+		delete global.isSeeding
+
 		if err
 			console.error "Problem running seeding series:", err
 			return
-
-		# Remove our isSeeding property entirely from global
-		delete global.isSeeding
 
 		console.log "Finished Seeding Series!"
 
