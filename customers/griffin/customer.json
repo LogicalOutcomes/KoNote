@@ -5,13 +5,14 @@
 
 	"clientFileRecordId": {
 		"isEnabled": true,
+		"isRequired": true,
 		"label": "CR#"
 	},
-	
+
 	"terminology": {
 		"metric": "indicator"
 	},
-	
+
 	"useTemplate": "clientLog",
 
 	"templates": {

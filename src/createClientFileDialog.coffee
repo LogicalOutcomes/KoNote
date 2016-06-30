@@ -124,11 +124,15 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-							disabled: not @state.firstName or not @state.lastName
+							disabled: @_formIsValid
 						}, "Create #{Term 'Client File'}")
 					)
 				)
 			)
+
+		_formIsValid: ->
+			recordIdRequired = Config.clientFileRecordId.isRequired
+			return not @state.firstName or not @state.lastName or (recordIdRequired and not @state.recordId)
 
 		_cancel: ->
 			@props.onCancel()

@@ -9,6 +9,7 @@
 
 	"clientFileRecordId": {
 		"isEnabled": true,
+		"isRequired": false,
 		"label": "ID#"
 	},
 
