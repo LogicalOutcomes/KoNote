@@ -42,6 +42,9 @@ load = (win) ->
 			}
 
 		render: ->
+			recordIdIsRequired = Config.clientFileRecordId.isRequired
+			formIsValid = @state.firstName and @state.lastName and (recordIdIsRequired and @state.recordId)
+
 			Dialog({
 				ref: 'dialog'
 				title: "Create New #{Term 'Client File'}"
@@ -110,7 +113,7 @@ load = (win) ->
 								className: 'form-control'
 								onChange: @_updateRecordId
 								value: @state.recordId
-								placeholder: "(optional)"
+								placeholder: "(optional)" unless recordIdIsRequired
 								onKeyDown: @_onEnterKeyDown
 							})
 						)
@@ -124,15 +127,11 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-							disabled: @_formIsValid
+							disabled: not formIsValid
 						}, "Create #{Term 'Client File'}")
 					)
 				)
 			)
-
-		_formIsValid: ->
-			recordIdRequired = Config.clientFileRecordId.isRequired
-			return not @state.firstName or not @state.lastName or (recordIdRequired and not @state.recordId)
 
 		_cancel: ->
 			@props.onCancel()
