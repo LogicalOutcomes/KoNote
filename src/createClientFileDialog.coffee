@@ -42,8 +42,7 @@ load = (win) ->
 			}
 
 		render: ->
-			recordIdIsRequired = Config.clientFileRecordId.isRequired
-			formIsValid = @state.firstName and @state.lastName and (recordIdIsRequired and @state.recordId)
+			formIsValid = @_formIsValid()
 
 			Dialog({
 				ref: 'dialog'
@@ -113,7 +112,7 @@ load = (win) ->
 								className: 'form-control'
 								onChange: @_updateRecordId
 								value: @state.recordId
-								placeholder: "(optional)" unless recordIdIsRequired
+								placeholder: "(optional)" unless Config.clientFileRecordId.isRequired
 								onKeyDown: @_onEnterKeyDown
 							})
 						)
@@ -132,6 +131,10 @@ load = (win) ->
 					)
 				)
 			)
+
+		_formIsValid: ->
+			recordIdIsRequired = Config.clientFileRecordId.isRequired
+			return @state.firstName and @state.lastName and (recordIdIsRequired and @state.recordId)
 
 		_cancel: ->
 			@props.onCancel()
@@ -158,7 +161,7 @@ load = (win) ->
 			@setState {programIds}
 
 		_onEnterKeyDown: (event) ->
-			if event.which is 13 and @state.firstName and @state.lastName
+			if event.which is 13 and @_formIsValid()
 				@_submit()
 
 		_submit: ->
