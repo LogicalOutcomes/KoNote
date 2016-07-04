@@ -339,6 +339,11 @@ load = (win) ->
 			
 			Async.series [
 				(cb) =>
+					unless Fs.existsSync(Config.dataDirectory)
+						mkdirp Config.dataDirectory, (err) =>
+							if err
+								cb err
+								return
 					Fs.rename dataDir, backupDir, (err) =>
 						if err
 							@setState {

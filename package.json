@@ -59,7 +59,6 @@
     "diff": "^2.2.2",
     "eonasdan-bootstrap-datetimepicker": "https://github.com/konode001/bootstrap-datetimepicker",
     "font-awesome": "^4.3.0",
-    "get-folder-size": "^1.0.0",
     "immutable": "3.7.2",
     "joi": "^6.4.3",
     "jquery": "^2.1.4",
