@@ -328,8 +328,9 @@ load = (win) ->
 		_createTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
 				
-				# unless templateName
-				
+				unless templateName
+					return
+					
 				templateSections = @state.plan.get('sections').map (section) =>
 					sectionTargets = section.get('targetIds').map (targetId) =>
 						target = @state.currentTargetRevisionsById.get(targetId)
@@ -350,7 +351,6 @@ load = (win) ->
 					sections: templateSections
 				}
 				
-				console.log "Template Object before creation >>> ", planTemplate.toJS()
 				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
 					if err instanceof Persist.IOError
 						console.error err
@@ -358,8 +358,6 @@ load = (win) ->
 							Please check your network connection and try again
 						"""
 						return
-
-					console.log "created template >>>> ", obj.toJS()
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
