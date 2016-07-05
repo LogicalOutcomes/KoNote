@@ -47,14 +47,12 @@ load = (win) ->
 
 		_loadData: ->
 			planTemplateHeaders = null
-			console.log "Loading Data >>>>>>>>>>>>>>>>"
 			ActiveSession.persist.planTemplates.list (err, result) =>
 				if err
 					cb err
 					return
 
 				planTemplateHeaders = result
-				console.log "planTempHeaders >>>>>", planTemplateHeaders.toJS()
 
 				@setState {planTemplateHeaders}
 
@@ -270,29 +268,27 @@ load = (win) ->
 					, cb
 
 				(cb) =>
-					# Apply template if template selected
-					console.log "Applying Template: step 1 >>>"
-					selectedPlanTemplateHeader = @state.planTemplateHeaders.find (template) =>
-						template.get('id') is @state.templateId
+					
+					if @state.templateId is '' then cb()
+					else
 
-					cb() unless selectedPlanTemplateHeader?
+						# Apply template if template selected
+						selectedPlanTemplateHeader = @state.planTemplateHeaders.find (template) =>
+							template.get('id') is @state.templateId
 
-					console.log "selectedPlanTemplateHeader IN SERIES >>>>", selectedPlanTemplateHeader.toJS()
+						cb() unless selectedPlanTemplateHeader?
 
-					ActiveSession.persist.planTemplates.readLatestRevisions @state.templateId, 1, (err, result) ->
-						if err
-							cb err
-							return
+						ActiveSession.persist.planTemplates.readLatestRevisions @state.templateId, 1, (err, result) ->
+							if err
+								cb err
+								return
 
-						selectedPlanTemplate = stripMetadata result.get(0)
-						console.log "selectedPlanTemplate upon reading revision >>>>>>>", selectedPlanTemplate.toJS()
-						cb()
+							selectedPlanTemplate = stripMetadata result.get(0)
+							cb()
 
 				(cb) =>
-						console.log "Applying Template: step 2 >>>"
-						console.log "selectedPlanTemplate IN SERIES step 2 >>>>", selectedPlanTemplate.toJS()
-
-						# Step 1
+					if @state.templateId is '' then cb()
+					else
 						templateSections = selectedPlanTemplate.get('sections').map (section) ->
 							templateTargets = section.get('targets').map (target) ->
 								Imm.fromJS {
@@ -305,16 +301,12 @@ load = (win) ->
 
 							return section.set 'targets', templateTargets
 
-						console.info "templateSections", templateSections.toJS()
-
 						Async.map templateSections.toArray(), (section, cb) ->
 							Async.map section.get('targets').toArray(), (target, cb) ->
 								global.ActiveSession.persist.planTargets.create target, (err, result) ->
 									if err
 										cb err
 										return
-
-									console.info "Created target:", result.toJS()
 
 									cb null, result.get('id')
 							, (err, results) ->
@@ -323,8 +315,6 @@ load = (win) ->
 									return
 
 								targetIds = Imm.List(results)
-
-								console.info "Received targetIds", targetIds.toJS()
 
 								newSection = Imm.fromJS {
 									id: Persist.generateId()
@@ -340,22 +330,19 @@ load = (win) ->
 								cb err
 								return
 
-							console.info "Converted templateSections:", templateSections.toJS()
-
 							templateSections = Imm.List(results)
 							cb()
 
 				(cb) =>
-					clientFile = newClientFile.setIn(['plan', 'sections'], templateSections)
+					if @state.templateId is '' then cb()
+					else
+						clientFile = newClientFile.setIn(['plan', 'sections'], templateSections)
 
-					global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
-						if err
-							cb err
-							return
-
-						console.info "Revised clientFile with new plan:", clientFile.toJS()
-
-						cb()
+						global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
+							if err
+								cb err
+								return
+							cb()
 
 			], (err) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
