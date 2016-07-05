@@ -169,6 +169,30 @@ dataModelDefinitions = [
 			)
 		})
 	}
+	{
+		name: 'planTemplate'
+		collectionName: 'planTemplates'
+		isMutable: true
+		indexes: [['name'], ['status']]
+		schema: Joi.object().keys({
+			name: Joi.string()
+			status: ['default', 'cancelled']
+			sections: Joi.array().items(
+				[
+					Joi.object().keys({
+						name: Joi.string()
+						targets: Joi.array().items(
+							name: Joi.string()
+							description: Joi.string()
+							metricIds: Joi.array().items(
+								IdSchema
+							)
+						)
+					})
+				]
+			)
+		})
+	}
 
 	{
 		name: 'metric'

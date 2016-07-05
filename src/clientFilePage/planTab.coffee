@@ -125,6 +125,13 @@ load = (win) ->
 								FaIcon('plus')
 								"Add #{Term 'section'}"
 							)
+							R.a({
+								className: 'createTemplate'
+								onClick: @_createTemplate
+								disabled: @props.isReadOnly
+							},
+								FaIcon('wpforms')
+							)
 							PrintButton({
 								dataSet: [
 									{
@@ -340,6 +347,40 @@ load = (win) ->
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
 
+		_createTemplate: ->
+			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
+				
+				unless templateName
+					return
+
+				templateSections = @state.plan.get('sections').map (section) =>
+					sectionTargets = section.get('targetIds').map (targetId) =>
+						target = @state.currentTargetRevisionsById.get(targetId)
+						# Removing irrelevant data from object
+						return target
+						.remove('status')
+						.remove('statusReason')
+						.remove('clientFileId')
+						.remove('id')
+
+					section = Imm.fromJS {
+						name: section.get('name')
+						targets: sectionTargets
+					}
+
+				planTemplate = Imm.fromJS {
+					name: templateName
+					status: 'default'
+					sections: templateSections
+				}
+				
+				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again
+						"""
+						return
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId

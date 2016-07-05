@@ -16,6 +16,9 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
+	{FaIcon, stripMetadata} = require('./utils').load(win)
+
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
@@ -30,6 +33,7 @@ load = (win) ->
 
 		componentDidMount: ->
 			@refs.firstNameField.focus()
+			@_loadData()
 
 		getInitialState: ->
 			return {
@@ -39,10 +43,33 @@ load = (win) ->
 				recordId: ''
 				programIds: Imm.List()
 				clientfileId: ''
+				templateId: ''
+				planTemplateHeaders: Imm.List()
 			}
+
+		_loadData: ->
+			planTemplateHeaders = null
+			ActiveSession.persist.planTemplates.list (err, result) =>
+				if err
+					cb err
+					return
+
+				planTemplateHeaders = result
+
+				@setState {planTemplateHeaders}
 
 		render: ->
 			formIsValid = @_formIsValid()
+			selectedPlanTemplateHeaders = @state.planTemplateHeaders.find (template) => template.get('id') is @state.templateId
+
+			# if selectedPlanTemplateHeaders?
+			# 	console.log "selectedPlanTemplateHeaders >>>>", selectedPlanTemplateHeaders.toJS()
+			# 	ActiveSession.persist.planTemplates.readRevisions @state.templateId, (err, result) =>
+			# 		if err
+			# 			cb err
+			# 			return
+			# 		selectedPlanTemplate = result
+			# 		console.log "selectedPlanTemplate >>>>>>>>>>>>>", selectedPlanTemplate.toJS()
 
 			Dialog({
 				ref: 'dialog'
@@ -105,6 +132,41 @@ load = (win) ->
 						)
 					)
 
+					unless @state.planTemplateHeaders.isEmpty()
+						R.div({className: 'form-group'},
+							R.label({}, "Select Plan Template"),
+							R.div({className: "template-container"}
+
+								B.DropdownButton({
+									title: if selectedPlanTemplateHeaders? then selectedPlanTemplateHeaders.get('name') else "No Template"
+								},
+									if selectedPlanTemplateHeaders?
+										[
+											B.MenuItem({
+												onClick: @_updatePlanTemplate.bind null, ''
+											},
+												"None "
+												FaIcon('ban')
+											)
+											B.MenuItem({divider: true})
+										]
+									(@state.planTemplateHeaders.map (planTemplateHeader) =>
+										B.MenuItem({
+											key: planTemplateHeader.get('id')
+											onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+										},
+											R.div({
+												onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+											},
+												planTemplateHeader.get('name')
+
+											)
+										)
+									)
+								)
+							)
+						)
+
 					(if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
 							R.label({}, Config.clientFileRecordId.label),
@@ -126,7 +188,7 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-							disabled: not formIsValid
+							# disabled: not formIsValid
 						}, "Create #{Term 'Client File'}")
 					)
 				)
@@ -160,6 +222,9 @@ load = (win) ->
 			programIds = @state.programIds.splice(index, 1)
 			@setState {programIds}
 
+		_updatePlanTemplate: (templateId) ->
+			@setState {templateId}
+
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @_formIsValid()
 				@_submit()
@@ -182,6 +247,10 @@ load = (win) ->
 
 			clientFileHeaders = null
 			newClientFileObj = null
+
+			newClientFile = null
+			selectedPlanTemplate = null
+			templateSections = null
 
 			Async.series [
 				(cb) =>
@@ -237,13 +306,14 @@ load = (win) ->
 							cb err
 							return
 
-						newClientFileObj = result
+						newClientFile = result
 						cb()
+
 				(cb) =>
 					# Build the link objects
 					clientFileProgramLinks = @state.programIds.map (programId) ->
 						Imm.fromJS {
-							clientFileId: newClientFileObj.get('id')
+							clientFileId: newClientFile.get('id')
 							status: 'enrolled'
 							programId
 						}
@@ -252,6 +322,83 @@ load = (win) ->
 					Async.each clientFileProgramLinks.toArray(), (link, cb) ->
 						global.ActiveSession.persist.clientFileProgramLinks.create link, cb
 					, cb
+
+				(cb) =>
+					
+					if @state.templateId is '' then cb()
+					else
+
+						# Apply template if template selected
+						selectedPlanTemplateHeader = @state.planTemplateHeaders.find (template) =>
+							template.get('id') is @state.templateId
+
+						cb() unless selectedPlanTemplateHeader?
+
+						ActiveSession.persist.planTemplates.readLatestRevisions @state.templateId, 1, (err, result) ->
+							if err
+								cb err
+								return
+
+							selectedPlanTemplate = stripMetadata result.get(0)
+							cb()
+
+				(cb) =>
+					if @state.templateId is '' then cb()
+					else
+						templateSections = selectedPlanTemplate.get('sections').map (section) ->
+							templateTargets = section.get('targets').map (target) ->
+								Imm.fromJS {
+									clientFileId: newClientFile.get('id')
+									name: target.get('name')
+									description: target.get('description')
+									status: 'default'
+									metricIds: target.get('metricIds')
+								}
+
+							return section.set 'targets', templateTargets
+
+						Async.map templateSections.toArray(), (section, cb) ->
+							Async.map section.get('targets').toArray(), (target, cb) ->
+								global.ActiveSession.persist.planTargets.create target, (err, result) ->
+									if err
+										cb err
+										return
+
+									cb null, result.get('id')
+							, (err, results) ->
+								if err
+									cb err
+									return
+
+								targetIds = Imm.List(results)
+
+								newSection = Imm.fromJS {
+									id: Persist.generateId()
+									name: section.get('name')
+									targetIds: results
+									status: 'default'
+								}
+
+								cb null, newSection
+
+						, (err, results) ->
+							if err
+								cb err
+								return
+
+							templateSections = Imm.List(results)
+							cb()
+
+				(cb) =>
+					if @state.templateId is '' then cb()
+					else
+						clientFile = newClientFile.setIn(['plan', 'sections'], templateSections)
+
+						global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
+							if err
+								cb err
+								return
+							cb()
 
 			], (err) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?

@@ -226,6 +226,33 @@ Create.account = (index, cb) ->
 
 		cb null, newAccount
 
+Create.planTemplate = (index, cb) ->
+	planTemplate = Imm.fromJS {
+		name: Faker.company.bsBuzz()
+		sections: [
+			{
+				name: Faker.company.bsBuzz()
+				targets: [
+					{
+						name: Faker.company.bsBuzz()
+						description: Faker.lorem.paragraph()
+						metricIds: []
+					}
+				]
+			},
+			{
+				name: Faker.company.bsBuzz()
+				targets: [
+					{
+						name: Faker.company.bsBuzz()
+						description: Faker.lorem.paragraph()
+						metricIds: []
+					}
+				]
+			}
+		]
+	}
+
 
 # wrappers
 
@@ -333,6 +360,15 @@ Create.accounts = (quantity, cb) ->
 
 		console.log "Created #{quantity} accounts"
 		cb null, Imm.List(accounts)
+
+Create.planTemplates = (quantity, cb) ->
+	Async.times quantity, Create.planTemplate, (err, planTemplates) ->
+		if err
+			cb err
+			return
+
+		console.log "Created #{quantity} planTemplates"
+		cb null, Imm.List(planTemplates)
 
 
 module.exports = Create
