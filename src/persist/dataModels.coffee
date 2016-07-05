@@ -173,9 +173,10 @@ dataModelDefinitions = [
 		name: 'planTemplate'
 		collectionName: 'planTemplates'
 		isMutable: true
-		indexes: [['name']]
+		indexes: [['name'], ['status']]
 		schema: Joi.object().keys({
 			name: Joi.string()
+			status: ['default', 'cancelled']
 			sections: Joi.array().items(
 				[
 					Joi.object().keys({

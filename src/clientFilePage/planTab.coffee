@@ -330,7 +330,7 @@ load = (win) ->
 				
 				unless templateName
 					return
-					
+
 				templateSections = @state.plan.get('sections').map (section) =>
 					sectionTargets = section.get('targetIds').map (targetId) =>
 						target = @state.currentTargetRevisionsById.get(targetId)
@@ -348,6 +348,7 @@ load = (win) ->
 
 				planTemplate = Imm.fromJS {
 					name: templateName
+					status: 'default'
 					sections: templateSections
 				}
 				
