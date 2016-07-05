@@ -51,7 +51,7 @@ load = (win) ->
 			planTemplateHeaders = null
 			ActiveSession.persist.planTemplates.list (err, result) =>
 				if err
-					cb err
+					CrashHandler.handle err
 					return
 
 				planTemplateHeaders = result
@@ -188,7 +188,7 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-							# disabled: not formIsValid
+							disabled: not formIsValid
 						}, "Create #{Term 'Client File'}")
 					)
 				)
@@ -196,8 +196,10 @@ load = (win) ->
 
 		_formIsValid: ->
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
-			return @state.firstName and @state.lastName and (recordIdIsRequired and @state.recordId)
-
+			if recordIdIsRequired
+				return @state.firstName and @state.lastName and @state.recordId
+			else
+				return @state.firstName and @state.lastName
 		_cancel: ->
 			@props.onCancel()
 
