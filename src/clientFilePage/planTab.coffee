@@ -115,8 +115,8 @@ load = (win) ->
 								FaIcon('plus')
 								"Add #{Term 'section'}"
 							)
-							R.button({
-								className: 'createTemplate btn btn-default'
+							R.a({
+								className: 'createTemplate'
 								onClick: @_createTemplate
 								disabled: @props.isReadOnly
 							},
