@@ -486,6 +486,13 @@ load = (win) ->
 										isActive: @state.managerLayer is 'metricDefinitionManagerTab'
 									})
 									UserMenuItem({
+										isvisible: isAdmin
+										title: "Plan Templates"
+										icon: 'wpforms'
+										onClick: @_updateManagerLayer.bind null, 'planTemplateManagerTab'
+										isActive: @state.managerLayer is 'planTemplateManagerTab'
+										})
+									UserMenuItem({
 										isVisible: isAdmin
 										title: "Export Data"
 										icon: 'upload'
