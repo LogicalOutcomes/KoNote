@@ -87,11 +87,26 @@ load = (win) ->
 								dataPath: ['status']
 								cellClass: 'statusCell'
 							}
+							{
+								name: "Options"
+								# nameIsVisible: false
+								buttons: [
+									{
+										className: 'btn btn-default'
+										text: 'Deactivate'
+										onClick: (planTemplate) => @_deactivateTemplate.bind null, planTemplate
+									}
+
+								]
+							}
 						]
 
 					})
 				)
 			)
+
+		_deactivateTemplate: (planTemplate) ->
+			console.log "planTemplate"
 
 
 
