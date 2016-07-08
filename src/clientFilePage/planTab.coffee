@@ -125,6 +125,7 @@ load = (win) ->
 								FaIcon('plus')
 								"Add #{Term 'section'}"
 							)
+							# style this button
 							R.a({
 								className: 'createTemplate'
 								onClick: @_createTemplate
