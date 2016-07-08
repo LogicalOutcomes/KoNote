@@ -47,6 +47,8 @@ load = (win) ->
 
 						planTemplateHeaders = result
 						cb()
+
+						console.log "planTemplateHeaders", planTemplateHeaders.toJS()
 				# (cb) =>
 				# 	Async.map planTemplateHeaders.toArray(), (planTemplateHeader, cb) =>
 				# 		planTemplateId = planTemplateHeader.get('id')
@@ -69,21 +71,26 @@ load = (win) ->
 				R.div({className: 'header'},
 					R.h1({}, 'Plan Templates')
 				)
-				# R.div({className: 'main'},
-				# 	OrderableTable({
-				# 		tableData: @state.planTemplateHeaders
-				# 		noMatchesMessage: "No Plan Templates defined yet"
-				# 		sortByData: ['name']
-				# 		columns: [
-				# 			{
-				# 				name: "Template Name"
-				# 				dataPath: ['name']
-				# 				cellClass: 'nameCell'
-				# 			}
-				# 		]
+				R.div({className: 'main'},
+					OrderableTable({
+						tableData: @state.planTemplateHeaders
+						noMatchesMessage: "No Plan Templates defined yet"
+						sortByData: ['name']
+						columns: [
+							{
+								name: "Template Name"
+								dataPath: ['name']
+								cellClass: 'nameCell'
+							}
+							{
+								name: "Status"
+								dataPath: ['status']
+								cellClass: 'statusCell'
+							}
+						]
 
-				# 	})
-				# )
+					})
+				)
 			)
 
 
