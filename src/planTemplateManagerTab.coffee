@@ -33,11 +33,14 @@ load = (win) ->
 
 		componentWillMount: ->
 			# Load planTemplate headers
+			planTemplateHeaders = null
+
 			# putting this in an Async Series since we will expand functionality soon.
+
 
 			Async.series [
 				(cb) =>
-					ActiveSesstion.persist.planTemplates.list (err, result) =>
+					ActiveSession.persist.planTemplates.list (err, result) =>
 						if err
 							cb err
 							return
@@ -63,9 +66,9 @@ load = (win) ->
 
 		render: ->
 			return R.div({className: 'planTemplateManagerTab'},
-				# R.div({className: 'header'},
-				# 	R.h1({}, 'Plan Templates')
-				# )
+				R.div({className: 'header'},
+					R.h1({}, 'Plan Templates')
+				)
 				# R.div({className: 'main'},
 				# 	OrderableTable({
 				# 		tableData: @state.planTemplateHeaders
