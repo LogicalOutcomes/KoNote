@@ -68,6 +68,12 @@ load = (win) ->
 
 		render: ->
 			planTemplateHeaders = @state.planTemplateHeaders
+
+			console.log "planTemplateHeaders in render", planTemplateHeaders
+
+			# planTemplateHeaders = planTemplateHeaders.filter (template) ->
+			# 	template.get['status'] is 'default'
+				
 			return R.div({className: 'planTemplateManagerTab'},
 				R.div({className: 'header'},
 					R.h1({}, 'Plan Templates')
@@ -108,26 +114,47 @@ load = (win) ->
 
 		_deactivateTemplate: (planTemplateHeader) ->
 			console.log "planTemplateHeader in deactivate method", planTemplateHeader.toJS()
-			planTemplateId = planTemplateHeader.get('id')
+			
 			planTemplate = null
+			planTemplateId = planTemplateHeader.get('id')
 
-			ActiveSession.persist.planTemplates.readLatestRevisions planTemplateId, 1, (err, result) =>
+			Async.series [
+				(cb) =>
+					Bootbox.confirm "Permanently deactivate Plan Template?", (result) =>
+						if result
+							cb()
+						else 
+							return
+				(cb) =>
+					ActiveSession.persist.planTemplates.readLatestRevisions planTemplateId, 1, (err, result) =>
+						if err
+							console.error err
+							return
+
+						planTemplate = stripMetadata result.get(0)
+						console.log "planTemplate in deactivate method", planTemplate.toJS()
+						cb()
+				(cb) =>
+					newTemplate = planTemplate.setIn(['status'], 'cancelled')
+					console.log "newTemplate", newTemplate.toJS()
+
+					ActiveSession.persist.planTemplates.createRevision newTemplate, (err, result) ->
+						if err
+							console.error err
+							return
+						cb()
+			], (err) =>
 				if err
-					console.error err
-					return
-
-				planTemplate = stripMetadata result.get(0)
-				console.log "planTemplate in deactivate method", planTemplate.toJS()
-
-				newTemplate = planTemplate.setIn(['status'], 'cancelled')
-				console.log "newTemplate", newTemplate.toJS()
-
-				ActiveSession.persist.planTemplates.createRevision newTemplate, (err, result) ->
-					if err
-						console.error err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
 						return
+				
+				planTemplateIndex = @state.planTemplateHeaders.indexOf planTemplateHeader
+				updatedPlanTemplateHeader = planTemplateHeader.setIn(['status'], 'cancelled')
+				planTemplateHeaders = @state.planTemplateHeaders.set planTemplateIndex, updatedPlanTemplateHeader
 
-
+				@setState {planTemplateHeaders}, ->
+					Bootbox.alert "This Template has been deactivated."
 
 
 
