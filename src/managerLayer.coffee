@@ -17,6 +17,7 @@ load = (win) ->
 	MyAccountManagerTab = require('./myAccountManagerTab').load(win)
 	EventTypeManagerTab = require('./eventTypeManagerTab').load(win)
 	MetricDefinitionManagerTab = require('./metricDefinitionManagerTab').load(win)
+	PlanTemplateManagerTab = require('./planTemplateManagerTab').load(win)
 
 	ManagerLayer = React.createFactory React.createClass
 		displayName: 'ManagerLayer'
@@ -36,6 +37,8 @@ load = (win) ->
 					EventTypeManagerTab
 				when 'metricDefinitionManagerTab'
 					MetricDefinitionManagerTab
+				when 'planTemplateManagerTab'
+					PlanTemplateManagerTab
 
 			return R.div({className: 'managerLayer'},
 				R.div({className: 'managerLayerContainer'},
