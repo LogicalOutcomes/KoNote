@@ -18,7 +18,7 @@ load = (win) ->
 	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	Spinner = require('./spinner').load(win)
-	{FaIcon, showWhen} = require('./utils').load(win)
+	{FaIcon, stripMetadata, showWhen} = require('./utils').load(win)
 
 	PlanTemplateManagerTab = React.createFactory React.createClass
 		displayName: 'PlanTemplateManagerTab'
@@ -67,13 +67,14 @@ load = (win) ->
 					@setState {planTemplateHeaders}
 
 		render: ->
+			planTemplateHeaders = @state.planTemplateHeaders
 			return R.div({className: 'planTemplateManagerTab'},
 				R.div({className: 'header'},
 					R.h1({}, 'Plan Templates')
 				)
 				R.div({className: 'main'},
 					OrderableTable({
-						tableData: @state.planTemplateHeaders
+						tableData: planTemplateHeaders
 						noMatchesMessage: "No Plan Templates defined yet"
 						sortByData: ['name']
 						columns: [
@@ -89,12 +90,12 @@ load = (win) ->
 							}
 							{
 								name: "Options"
-								# nameIsVisible: false
+								nameIsVisible: false
 								buttons: [
 									{
-										className: 'btn btn-default'
+										className: 'btn btn-danger'
 										text: 'Deactivate'
-										onClick: (planTemplate) => @_deactivateTemplate.bind null, planTemplate
+										onClick: (planTemplateHeader) => @_deactivateTemplate.bind null, planTemplateHeader
 									}
 
 								]
@@ -105,8 +106,28 @@ load = (win) ->
 				)
 			)
 
-		_deactivateTemplate: (planTemplate) ->
-			console.log "planTemplate"
+		_deactivateTemplate: (planTemplateHeader) ->
+			console.log "planTemplateHeader in deactivate method", planTemplateHeader.toJS()
+			planTemplateId = planTemplateHeader.get('id')
+			planTemplate = null
+
+			ActiveSession.persist.planTemplates.readLatestRevisions planTemplateId, 1, (err, result) =>
+				if err
+					console.error err
+					return
+
+				planTemplate = stripMetadata result.get(0)
+				console.log "planTemplate in deactivate method", planTemplate.toJS()
+
+				newTemplate = planTemplate.setIn(['status'], 'cancelled')
+				console.log "newTemplate", newTemplate.toJS()
+
+				ActiveSession.persist.planTemplates.createRevision newTemplate, (err, result) ->
+					if err
+						console.error err
+						return
+
+
 
 
 
