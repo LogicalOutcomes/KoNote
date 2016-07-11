@@ -117,21 +117,24 @@ load = (win) ->
 							)
 						)
 						R.div({className: 'rightMenu'},
-							R.button({
-								className: 'addSection btn btn-default'
-								onClick: @_addSection
-								disabled: @props.isReadOnly
-							},
-								FaIcon('plus')
-								"Add #{Term 'section'}"
-							)
-							# style this button
-							R.a({
-								className: 'createTemplate'
-								onClick: @_createTemplate
-								disabled: @props.isReadOnly
-							},
-								FaIcon('wpforms')
+							R.div({className: 'btn-group btn-group'},	
+								R.button({
+									className: 'addSection btn btn-default'
+									onClick: @_addSection
+									disabled: @props.isReadOnly
+								},
+									FaIcon('plus')
+									"Add #{Term 'section'}"
+								)
+								# style this button
+								R.button({
+									className: 'createTemplate btn btn-default'
+									onClick: @_createTemplate
+									disabled: @props.isReadOnly
+								},
+									FaIcon('wpforms')
+									"New #{Term 'plan'} template"
+								)
 							)
 							PrintButton({
 								dataSet: [
@@ -152,7 +155,7 @@ load = (win) ->
 									placement: 'bottom'
 									title: "Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
 								}
-							})
+							})	
 						)
 					)
 					SectionsView({
