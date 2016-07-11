@@ -385,6 +385,7 @@ load = (win) ->
 							Please check your network connection and try again
 						"""
 						return
+					Bootbox.alert "New template created."
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
