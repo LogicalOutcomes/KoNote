@@ -1,9 +1,14 @@
+# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
+# that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
+# The Plan tab on the client file page.
+
 Async = require 'async'	
 Imm = require 'immutable'
 
 Persist = require './persist'
 Config = require './config'
-
 
 load = (win) ->
 	$ = win.jQuery
@@ -14,11 +19,8 @@ load = (win) ->
 	Config = require './config'
 	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
-	Dialog = require('./dialog').load(win)
 	OrderableTable = require('./orderableTable').load(win)
-	OpenDialogLink = require('./openDialogLink').load(win)
-	Spinner = require('./spinner').load(win)
-	{FaIcon, stripMetadata, showWhen} = require('./utils').load(win)
+	{stripMetadata} = require('./utils').load(win)
 
 	PlanTemplateManagerTab = React.createFactory React.createClass
 		displayName: 'PlanTemplateManagerTab'
@@ -26,17 +28,15 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				planTemplateHeaders: null
+				planTemplateHeaders: Imm.List()
 				planTemplates: null
-
 			}
 
 		componentWillMount: ->
 			# Load planTemplate headers
-			planTemplateHeaders = null
-
 			# putting this in an Async Series since we will expand functionality soon.
-
+			
+			planTemplateHeaders = null
 
 			Async.series [
 				(cb) =>
@@ -48,7 +48,6 @@ load = (win) ->
 						planTemplateHeaders = result
 						cb()
 
-						console.log "planTemplateHeaders", planTemplateHeaders.toJS()
 				# (cb) =>
 				# 	Async.map planTemplateHeaders.toArray(), (planTemplateHeader, cb) =>
 				# 		planTemplateId = planTemplateHeader.get('id')
@@ -68,12 +67,8 @@ load = (win) ->
 
 		render: ->
 			planTemplateHeaders = @state.planTemplateHeaders
+			.filter (template) -> template.get('status') is 'default'
 
-			console.log "planTemplateHeaders in render", planTemplateHeaders
-
-			# planTemplateHeaders = planTemplateHeaders.filter (template) ->
-			# 	template.get['status'] is 'default'
-				
 			return R.div({className: 'planTemplateManagerTab'},
 				R.div({className: 'header'},
 					R.h1({}, 'Plan Templates')
