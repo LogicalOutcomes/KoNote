@@ -55,6 +55,7 @@ load = (win) ->
 					return
 
 				planTemplateHeaders = result
+				.filter (template) -> template.get('status') is 'default'
 
 				@setState {planTemplateHeaders}
 
