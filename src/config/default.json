@@ -47,6 +47,7 @@
 
 		"metric": "metric",
 		"event": "event",
+		"global event": "global event",
 		"event type": "event type",
 		"program": "program",
 
