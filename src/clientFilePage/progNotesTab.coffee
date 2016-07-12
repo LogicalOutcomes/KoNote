@@ -424,13 +424,16 @@ load = (win) ->
 						default: {
 							label: "Cancel"
 							className: "btn-default"
-							callback: => Bootbox.hideAll()
+							callback: =>
+								Bootbox.hideAll()
+								return
 						}
 						danger: {
 							label: "Ignore"
 							className: "btn-danger"
 							callback: =>
 								openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
+								return
 						}
 						success: {
 							label: "View #{Term 'Plan'}"
@@ -438,6 +441,7 @@ load = (win) ->
 							callback: =>
 								Bootbox.hideAll()
 								@props.onTabChange 'plan'
+								return
 						}
 					}
 				}
