@@ -186,23 +186,13 @@ load = (win) ->
 					@_openClientFile(newFile.get('id')) unless global.isSeeding
 
 				'createRevision:clientFile': (newRev) =>
-					console.log "clientFule revision listener >>> "
 					clientFileId = newRev.get('id')
-					console.log "newRev >>>.", newRev
-					console.log "newRevId (clientfileId) ", clientFileId
-					console.log "@state.clientFileheaders  >>>>", @state.clientFileHeaders.toArray()
 					existingClientFileHeader = @state.clientFileHeaders
 					.find (clientFileHeader) -> clientFileHeader.get('id') is newRev.get('id')
-					
-					if existingClientFileHeader?
-						console.log "existingClientFileHeader >>>>", existingClientFileHeader.toJS()
-					else
-						console.log "was not existing client file header"
 					
 					@setState (state) ->
 						if existingClientFileHeader?
 							clientFileIndex = state.clientFileHeaders.indexOf existingClientFileHeader
-							console.log "clientFileIndex >>>>> ", clientFileIndex 
 							clientFileHeaders = state.clientFileHeaders.set clientFileIndex, newRev
 						else
 							# clientFileHeaders = state.clientFileHeaders.push newRev
@@ -218,7 +208,6 @@ load = (win) ->
 					@setState (state) ->
 						if existingProgram?
 							programIndex = state.programs.indexOf existingProgram
-							console.log "programIndex >>>>", programIndex
 							programs = state.programs.set programIndex, newRev
 						else
 							programs = state.programs.push newRev
@@ -262,7 +251,6 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			console.log "mounted >>> "
 			@_refreshResults()
 
 			# Show and focus this window
@@ -275,7 +263,6 @@ load = (win) ->
 			@_attachKeyBindings()
 
 		componentDidUpdate: (oldProps, oldState) ->
-			console.log "updated >>> "
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
 				@_refreshResults()
 
@@ -286,15 +273,10 @@ load = (win) ->
 			isAdmin = global.ActiveSession.isAdmin()
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
 
-			console.log "showingDormant in render", @state.showingDormant	
-
 			# Add in all program objects this clientFile's a member of
 		
 			queryResults = @state.queryResults
-
-			console.log " state queryResults in render", queryResults.toJS()
-
-			queryResults = queryResults.map (clientFile) =>
+			.map (clientFile) =>
 				clientFileId = clientFile.get('id')
 
 				programMemberships = @props.clientFileProgramLinks
@@ -623,10 +605,8 @@ load = (win) ->
 				@setState {menuIsOpen: true}
 
 		_refreshResults: ->
-			console.log "refreshed >>> "
 			# Return all results if search query is empty
 			if @state.queryText.trim().length is 0
-				console.log "showingDormant in refresh", @state.showingDormant
 				if @state.showingDormant is false
 					queryResults = @props.clientFileHeaders
 					.filter (clientFile) ->
@@ -635,7 +615,6 @@ load = (win) ->
 				else
 					queryResults = @props.clientFileHeaders
 				@setState {queryResults}
-				console.log "queryResults in refresh >>>", queryResults.toJS()	
 				return
 			else
 				# Split into query parts
@@ -665,6 +644,7 @@ load = (win) ->
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
 		_toggleDormant: ->
+			# this should be able to be refactored to use the _refresh method, but i couldn't get it to work.
 			if @state.showingDormant is true
 				queryResults = @props.clientFileHeaders
 				.filter (clientFile) ->
