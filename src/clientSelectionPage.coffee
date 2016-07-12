@@ -186,15 +186,26 @@ load = (win) ->
 					@_openClientFile(newFile.get('id')) unless global.isSeeding
 
 				'createRevision:clientFile': (newRev) =>
+					console.log "clientFule revision listener >>> "
+					clientFileId = newRev.get('id')
+					console.log "newRev >>>.", newRev
+					console.log "newRevId (clientfileId) ", clientFileId
+					console.log "@state.clientFileheaders  >>>>", @state.clientFileHeaders.toArray()
 					existingClientFileHeader = @state.clientFileHeaders
 					.find (clientFileHeader) -> clientFileHeader.get('id') is newRev.get('id')
 					
+					if existingClientFileHeader?
+						console.log "existingClientFileHeader >>>>", existingClientFileHeader.toJS()
+					else
+						console.log "was not existing client file header"
+					
 					@setState (state) ->
 						if existingClientFileHeader?
-							clientFileIndex = state.programs.indexOf existingClientFileHeader
+							clientFileIndex = state.clientFileHeaders.indexOf existingClientFileHeader
+							console.log "clientFileIndex >>>>> ", clientFileIndex 
 							clientFileHeaders = state.clientFileHeaders.set clientFileIndex, newRev
 						else
-							# clientFileheaders = state.clientFileheaders.push newRev
+							# clientFileHeaders = state.clientFileHeaders.push newRev
 							return
 						return {clientFileHeaders}
 
@@ -207,6 +218,7 @@ load = (win) ->
 					@setState (state) ->
 						if existingProgram?
 							programIndex = state.programs.indexOf existingProgram
+							console.log "programIndex >>>>", programIndex
 							programs = state.programs.set programIndex, newRev
 						else
 							programs = state.programs.push newRev
@@ -250,6 +262,7 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
+			console.log "mounted >>> "
 			@_refreshResults()
 
 			# Show and focus this window
@@ -262,6 +275,7 @@ load = (win) ->
 			@_attachKeyBindings()
 
 		componentDidUpdate: (oldProps, oldState) ->
+			console.log "updated >>> "
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
 				@_refreshResults()
 
@@ -270,10 +284,17 @@ load = (win) ->
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
-			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet	
+			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
+
+			console.log "showingDormant in render", @state.showingDormant	
 
 			# Add in all program objects this clientFile's a member of
-			queryResults = @state.queryResults.map (clientFile) =>
+		
+			queryResults = @state.queryResults
+
+			console.log " state queryResults in render", queryResults.toJS()
+
+			queryResults = queryResults.map (clientFile) =>
 				clientFileId = clientFile.get('id')
 
 				programMemberships = @props.clientFileProgramLinks
@@ -390,14 +411,6 @@ load = (win) ->
 											)
 										)
 									)
-									# R.label({className: "checkbox-inline"},	
-									# 	R.input({
-									# 		onChange: @_toggleDormant
-									# 		type: 'checkbox'
-									# 		checked: @state.showingDormant
-									# 	})
-									# 	"Show Dormant Clients",
-									# )
 								)
 							)
 						)
@@ -610,31 +623,41 @@ load = (win) ->
 				@setState {menuIsOpen: true}
 
 		_refreshResults: ->
+			console.log "refreshed >>> "
 			# Return all results if search query is empty
 			if @state.queryText.trim().length is 0
-				@setState {queryResults: @props.clientFileHeaders}
+				console.log "showingDormant in refresh", @state.showingDormant
+				if @state.showingDormant is false
+					queryResults = @props.clientFileHeaders
+					.filter (clientFile) ->
+						clientFile.get('status') is 'active'
+					@setState {queryResults}
+				else
+					queryResults = @props.clientFileHeaders
+				@setState {queryResults}
+				console.log "queryResults in refresh >>>", queryResults.toJS()	
 				return
+			else
+				# Split into query parts
+				queryParts = Imm.fromJS(@state.queryText.split(' '))
+				.map (p) -> p.toLowerCase()
 
-			# Split into query parts
-			queryParts = Imm.fromJS(@state.queryText.split(' '))
-			.map (p) -> p.toLowerCase()
+				# Calculate query results
+				queryResults = @props.clientFileHeaders
+				.filter (clientFile) ->
+					firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
+					middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
+					lastName = clientFile.getIn(['clientName', 'last']).toLowerCase()
+					recordId = clientFile.getIn(['recordId']).toLowerCase()
 
-			# Calculate query results
-			queryResults = @props.clientFileHeaders
-			.filter (clientFile) ->
-				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
-				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
-				lastName = clientFile.getIn(['clientName', 'last']).toLowerCase()
-				recordId = clientFile.getIn(['recordId']).toLowerCase()
+					return queryParts
+					.every (part) ->
+						return firstName.includes(part) or
+							middleName.includes(part) or
+							lastName.includes(part) or
+							recordId.includes(part)
 
-				return queryParts
-				.every (part) ->
-					return firstName.includes(part) or
-						middleName.includes(part) or
-						lastName.includes(part) or
-						recordId.includes(part)			
-
-			@setState {queryResults}
+				@setState {queryResults}
 
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
@@ -645,7 +668,7 @@ load = (win) ->
 			if @state.showingDormant is true
 				queryResults = @props.clientFileHeaders
 				.filter (clientFile) ->
-					status = clientFile.getIn(['status']) is 'active'
+					clientFile.get('status') is 'active'
 				showingDormant = false
 				@setState {queryResults, showingDormant}
 			else
