@@ -125,6 +125,8 @@ load = (win) ->
 
 				password: ''
 				passwordConfirmation: ''
+
+				authkey: ''
 			}
 
 		componentDidUpdate: (oldProps, oldState) ->
@@ -210,11 +212,47 @@ load = (win) ->
 											FaIcon('upload right-side')
 										)
 										R.button({
-											className: 'btn btn-lg btn-success'
+											className: 'btn btn-lg btn-default'
 											onClick: @_switchTab.bind null, 'createAdmin'
 										}, 
 											"Create Admin Account"
 											FaIcon('arrow-right right-side')
+										)
+									)
+									R.div({className: 'btn-toolbar'},
+										R.br({})
+										R.button({
+											className: 'btn btn-lg btn-success'
+											onClick: @_switchTab.bind null, 'joinCloud'
+										}, 
+											"Use a KoNote Cloud account"
+											FaIcon('cloud right-side')
+										)
+									)
+								)
+							when 'joinCloud'
+								R.div({ref: 'joinCloud'},
+									R.p({}, "To continue, please enter your authentication key:")
+									R.div({},
+										R.textarea({
+											style: {minWidth: 600, minHeight: 200}
+											ref: 'authkey'
+											id: 'authkey'
+											className: 'form-control'
+											type: 'text'
+											placeholder: "Paste your private key here. The first line should be: ------BEGIN RSA PRIVATE KEY------"
+											value: @state.authkey
+											onChange: @_updateAuthkey
+										})
+									)
+									R.div({className: 'btn-toolbar'},
+										R.br({})
+										R.button({
+											className: 'btn btn-lg btn-success'
+											onClick: @_syncCloud
+										},
+											"Connect"
+											FaIcon('arrow-right')
 										)
 									)
 								)
@@ -488,6 +526,9 @@ load = (win) ->
 				message: "\"#{emailAddress}\" copied to your clipboard!"
 			}
 
+		_updateAuthkey: (event) ->
+			@setState {authkey: event.target.value}
+
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
 
@@ -525,6 +566,23 @@ load = (win) ->
 				isLoading: true
 				installProgress: {percent, message}
 			}
+
+		_syncCloud: ->
+			exec = require('child_process').exec;
+			key = @state.authkey
+			# private key requires strict permissions or ssh ignores it
+			exec 'chmod 600 konodekey.txt', (err) ->
+				if err
+					throw err
+				return
+			rs = "rsync -a -e 'ssh -i konodekey.txt' konode@159.203.47.223:data ."
+			exec rs, (err, stdout, stderr) ->
+				if err
+					throw err
+				else
+					console.log 'done'
+				return
+			
 
 		_install: ->
 			if @state.password isnt @state.passwordConfirmation
