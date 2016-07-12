@@ -802,10 +802,6 @@ load = (win, {clientFileId}) ->
 						@props.clientName
 					)
 				)
-				unless @props.status is 'active'
-					R.div({className: 'clientStatus'},
-						@props.status.toUpperCase()
-					)
 				R.div({className: 'programs'},
 					(@props.programs.map (program) ->
 						R.span({
@@ -820,6 +816,10 @@ load = (win, {clientFileId}) ->
 				R.div({className: 'recordId'},
 					R.span({}, renderFileId @props.recordId, true)
 				)
+				unless @props.status is 'active'
+					R.div({className: 'clientStatus'},
+						@props.status.toUpperCase()
+					)
 				R.div({className: 'tabStrip'},
 					SidebarTab({
 						name: Term('Plan')
