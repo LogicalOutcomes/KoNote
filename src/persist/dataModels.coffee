@@ -242,6 +242,23 @@ dataModelDefinitions = [
 			status: ['enrolled', 'unenrolled']
 		})
 	}
+
+	{
+		name: 'globalEvent'
+		collectionName: 'globalEvents'
+		isMutable: true
+		indexes: [['status'], ['relatedProgEventId']]
+		schema: Joi.object().keys({
+			title: Joi.string()
+			description: Joi.string().allow('')
+			startTimestamp: Joi.date().format(TimestampFormat).raw()
+			endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+			typeId: IdSchema.allow('')
+			relatedProgEventId: IdSchema
+			status: ['default', 'cancelled']
+			statusReason: Joi.string().optional()
+		})
+	}
 ]
 
 
