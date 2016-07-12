@@ -46,14 +46,13 @@ sidebar-borders = darken(sidebar-bg, 10%)
 			&:hover > .fa
 				color #0075C0
 				
-	
 	> #mainContainer
 		flex 4
 		position relative		
 		display flex
 		height 100%
-		flex-direction column		
-		
+		flex-direction column	
+				
 		> #main
 			margin auto 0
 			height 100%
@@ -85,6 +84,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 				transition-timing-function ease
 				transition-duration duration-to-big1
 				transition-delay 0
+				
 				
 				.brandContainer
 					position absolute
@@ -144,41 +144,47 @@ sidebar-borders = darken(sidebar-bg, 10%)
 			.results
 				flex 1
 				display flex
+			
+				#filterSelectionContainer
+					text-align right
+					
+					#toggleDeactivated
+						font-size 14px
 						
-			.orderableTable
-				height 550px
+				.orderableTable
+					height 550px
 				
 
-				.tableCell
-					&:first-child, &:last-child
-						flex 0.5
-						text-align right !important
-						
-					.dataValue
-						flex 1
-						
+					.tableCell
+						&:first-child, &:last-child
+							flex 0.5
+							text-align right !important
+							
+						.dataValue
+							flex 1
+							
 				
-				.tableBody
-						
-					.tableRow
-						transition background .15s ease-in-out
-						background white
-						cursor pointer
-						
-						&.active
+					.tableBody
+							
+						.tableRow
+							transition background .15s ease-in-out
+							background white
+							cursor pointer
+							
+							&.active
+								.tableCell
+									color hsl(200, 80%, 20%) !important
+									background hsl(200, 80%, 80%) !important
+								
+							&:hover
+								background hsl(200, 80%, 90%)
+								
+
 							.tableCell
-								color hsl(200, 80%, 20%) !important
-								background hsl(200, 80%, 80%) !important
-							
-						&:hover
-							background hsl(200, 80%, 90%)
-							
-
-						.tableCell
-							transition all .1s ease
-							
-							.popover
-								color black
+								transition all .1s ease
+								
+								.popover
+									color black
 								
 					
 	> #menuContainer

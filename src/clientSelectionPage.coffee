@@ -194,8 +194,8 @@ load = (win) ->
 							clientFileIndex = state.programs.indexOf existingClientFileHeader
 							clientFileHeaders = state.clientFileHeaders.set clientFileIndex, newRev
 						else
-							clientFileheaders = state.clientFileheaders.push newRev
-
+							# clientFileheaders = state.clientFileheaders.push newRev
+							return
 						return {clientFileHeaders}
 
 				'create:program createRevision:program': (newRev) =>
@@ -241,7 +241,7 @@ load = (win) ->
 
 				queryText: ''
 				queryResults: Imm.List()
-				showingDormant: true
+				showingDormant: false
 
 				orderedQueryResults: Imm.List()
 				hoverClientId: null
@@ -293,7 +293,6 @@ load = (win) ->
 					isVisible: @props.isLoading
 					message: @props.loadingMessage
 				}
-
 				R.a({
 					id: 'expandMenuButton'
 					className: 'menuIsOpen' if @state.menuIsOpen
@@ -329,7 +328,8 @@ load = (win) ->
 							className: [
 								if smallHeader then 'small' else ''
 							].join ' '
-						},								
+						},	
+
 							R.div({className: 'logoContainer'},
 								R.img({src: Config.customerLogoLg})
 								R.div({
@@ -390,22 +390,13 @@ load = (win) ->
 											)
 										)
 									)
-									R.label({className: "checkbox-inline"},	
-										R.input({
-											onChange: @_toggleDormant
-											type: 'checkbox'
-											checked: @state.showingDormant
-										})
-										"Show Dormant Clients",
-									)
-									# R.label({},	
-									# 	R.button({
-									# 		onClick: @_toggleDormant
+									# R.label({className: "checkbox-inline"},	
+									# 	R.input({
+									# 		onChange: @_toggleDormant
 									# 		type: 'checkbox'
 									# 		checked: @state.showingDormant
 									# 	})
-									# 	if @state.showingDormant is true then "Hide Dormant Clients" 
-									# 	else "Show Dormant Clients",
+									# 	"Show Dormant Clients",
 									# )
 								)
 							)
@@ -427,6 +418,20 @@ load = (win) ->
 								if smallHeader then 'show' else 'hidden'
 							].join ' '
 						},
+							R.div({id: 'filterSelectionContainer'}
+								R.span({id: 'toggleDeactivated'},
+									R.div({className: "checkbox"},	
+										R.label({}
+											R.input({
+												onChange: @_toggleDormant
+												type: 'checkbox'
+												checked: @state.showingDormant
+											})
+											"Show deactivated",
+										)
+									)
+								)
+							)
 							OrderableTable({
 								tableData: queryResults
 								noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
