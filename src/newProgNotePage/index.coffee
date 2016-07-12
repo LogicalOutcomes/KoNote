@@ -479,7 +479,7 @@ load = (win, {clientFileId}) ->
 									eventTypes: @props.eventTypes
 									atIndex: index
 									progNote: @state.progNote
-									save: @_saveEventData
+									saveProgEvent: @_saveProgEvent
 									cancel: @_cancelEditing
 									editMode: @state.editingWhichEvent?
 									isBeingEdited
@@ -508,7 +508,7 @@ load = (win, {clientFileId}) ->
 		_editEventTab: (index) ->
 			@setState {editingWhichEvent: index}
 
-		_saveEventData: (data, index) ->
+		_saveProgEvent: (data, index) ->
 			newProgEvents = @state.progEvents.set index, data
 			@setState {progEvents: newProgEvents}, @_cancelEditing
 
@@ -682,7 +682,37 @@ load = (win, {clientFileId}) ->
 						.set('clientFileId', clientFileId)
 						.set('status', 'default')
 
-						ActiveSession.persist.progEvents.create progEvent, cb
+						globalEvent = progEvent.get('globalEvent')
+
+						if globalEvent
+							progEvent = progEvent.remove('globalEvent')
+
+
+						progEventId = null
+
+						Async.series [
+							(cb) =>
+								ActiveSession.persist.progEvents.create progEvent, (err, result) ->
+									if err
+										cb err
+										return
+
+									progEventId = result.get('id')
+									cb()
+
+							(cb) =>
+								if not globalEvent
+									cb()
+									return
+
+								globalEvent = globalEvent
+								.set('relatedProgEventId', progEventId)
+								.set('status', 'default')
+								.remove('relatedElement')
+
+								ActiveSession.persist.globalEvents.create globalEvent, cb
+
+						], cb
 
 					, (err) =>
 						if err

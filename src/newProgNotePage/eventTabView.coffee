@@ -1,8 +1,13 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Read/Write event information view contained within eventTab
+
+Imm = require 'immutable'
+Moment = require 'moment'
+_ = require 'underscore'
+Term = require '../term'
 
 load = (win) ->
 	$ = win.jQuery
@@ -12,12 +17,8 @@ load = (win) ->
 
 	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
-	Moment = require 'moment'
-	_ = require 'underscore'
-	Term = require '../term'
-
 	ExpandingTextArea = require('../expandingTextArea').load(win)
-	{FaIcon, renderName, showWhen} = require('../utils').load(win)
+	{FaIcon, renderName, showWhen, formatTimestamp} = require('../utils').load(win)
 	{TimestampFormat} = require '../persist/utils'
 
 	EventTabView = React.createFactory React.createClass
@@ -34,6 +35,7 @@ load = (win) ->
 				title: ''
 				description: ''
 				typeId: ''
+				isGlobalEvent: null
 
 				startDate
 				startTime: ''
@@ -67,10 +69,10 @@ load = (win) ->
 			$startTime.datetimepicker({
 				useCurrent: false
 				format: 'hh:mm a'
-				widgetPositioning: {					
+				widgetPositioning: {
 					horizontal: 'right'
 				}
-			}).on 'dp.change', (thisInput) =>				
+			}).on 'dp.change', (thisInput) =>
 				@setState {startTime: thisInput.date}
 
 
@@ -78,7 +80,7 @@ load = (win) ->
 				minDate: @state.startDate.toDate()
 				useCurrent: false
 				format: 'Do MMM, \'YY'
-				widgetPositioning: {					
+				widgetPositioning: {
 					horizontal: 'right'
 				}
 			}).on 'dp.change', (thisInput) =>
@@ -88,11 +90,11 @@ load = (win) ->
 			$endTime.datetimepicker({
 				useCurrent: false
 				format: 'hh:mm a'
-				widgetPositioning: {					
+				widgetPositioning: {
 					horizontal: 'right'
 				}
 			}).on 'dp.change', (thisInput) =>
-				@setState {endTime: thisInput.date}	
+				@setState {endTime: thisInput.date}
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Provide parent with relatedElement isBeingEdited
@@ -110,7 +112,7 @@ load = (win) ->
 					R.button({
 						className: 'btn btn-danger closeButton'
 						onClick: @_closeForm
-					}, 
+					},
 						FaIcon('times')
 					)
 					R.div({className: 'form-group'},
@@ -137,7 +139,7 @@ load = (win) ->
 					# 		title: (
 					# 			if @props.selectedEventPlanRelation? and @props.selectedEventPlanRelation.get('name')?
 					# 				@props.selectedEventPlanRelation.get('name')
-					# 			else 
+					# 			else
 					# 				"No Relationship"
 					# 		)
 					# 		onToggle: @props.updateEventPlanRelationMode
@@ -147,7 +149,7 @@ load = (win) ->
 					# 				R.li({
 					# 					onClick: @props.selectEventPlanRelation.bind null, null
 					# 					onMouseOver: @props.hoverEventPlanRelation.bind null, null
-					# 				}, 
+					# 				},
 					# 					R.a({},
 					# 						"None "
 					# 						FaIcon('ban')
@@ -155,7 +157,7 @@ load = (win) ->
 					# 				)
 					# 				MenuItem({divider: true})
 					# 			]
-					# 		)							
+					# 		)
 					# 		(@props.progNote.get('units').map (unit) =>
 					# 			switch unit.get('type')
 					# 				when 'basic'
@@ -163,7 +165,7 @@ load = (win) ->
 					# 						key: unit.get('id')
 					# 						onClick: @props.selectEventPlanRelation.bind null, unit
 					# 						onMouseOver: @props.hoverEventPlanRelation.bind null, unit
-					# 					}, 
+					# 					},
 					# 						R.a({}, unit.get('name'))
 					# 					)
 					# 				when 'plan'
@@ -196,11 +198,11 @@ load = (win) ->
 					# 		)
 					# 	)
 					# )
-					
+
 					unless @props.eventTypes.isEmpty()
 						R.div({className: 'form-group eventTypeContainer'},
 							R.label({}, "Select #{Term 'Event Type'}")
-							
+
 							B.DropdownButton({
 								title: if selectedEventType? then selectedEventType.get('name') else "No Type"
 							},
@@ -208,7 +210,7 @@ load = (win) ->
 									[
 										B.MenuItem({
 											onClick: @_updateTypeId.bind null, ''
-										}, 
+										},
 											"None "
 											FaIcon('ban')
 										)
@@ -219,7 +221,7 @@ load = (win) ->
 									B.MenuItem({
 										key: eventType.get('id')
 										onClick: @_updateTypeId.bind null, eventType.get('id')
-									}, 
+									},
 										R.div({
 											onClick: @_updateTypeId.bind null, eventType.get('id')
 											style:
@@ -231,6 +233,20 @@ load = (win) ->
 								)
 							)
 						)
+
+					R.div({className: 'form-group globalEventContainer'},
+						R.div({className: 'checkbox'},
+							R.label({},
+								R.input({
+									type: 'checkbox'
+									onClick: @_toggleIsGlobalEvent
+									checked: @state.isGlobalEvent
+								})
+								"Make a #{Term 'global event'}"
+								FaIcon('question-circle')
+							)
+						)
+					)
 
 					R.div({className: "dateGroup"},
 						R.div({className: 'form-group date'},
@@ -253,23 +269,23 @@ load = (win) ->
 								className: 'form-control'
 								type: 'text'
 								placeholder: "00:00 --"
-							})						
+							})
 						)
 						R.div({className: "form-group useTimeOfDay #{showWhen not @state.usesTimeOfDay}"}
 							R.button({
-								className: 'btn btn-default'									
+								className: 'btn btn-default'
 								onClick: @_toggleUsesTimeOfDay
 							}, FaIcon('clock-o'))
 						)
-					)					
+					)
 					R.div({className: "dateGroup #{showWhen @state.isDateSpan}"},
 						R.div({
-							className: 'form-group removeDateSpan'							
+							className: 'form-group removeDateSpan'
 						}
 							R.span({onClick: @_toggleIsDateSpan},
 								FaIcon('arrow-right')
 								FaIcon('times')
-							)							
+							)
 						)
 						R.div({className: 'form-group date'},
 							R.label({}, "End Date")
@@ -292,7 +308,7 @@ load = (win) ->
 								className: 'form-control'
 								type: 'text'
 								placeholder: "00:00 --"
-							})						
+							})
 						)
 						R.div({className: "form-group useTimeOfDay #{showWhen not @state.usesTimeOfDay}"}
 							R.button({
@@ -314,30 +330,31 @@ load = (win) ->
 							className: "btn btn-success #{'fullWidth' if @state.isDateSpan}"
 							type: 'submit'
 							onClick: @_saveEventData
+							# TODO: Refactor this to function called at top of render
 							disabled: not @state.title or not @state.startDate or (@state.isDateSpan and not @state.endDate) or (@state.usesTimeOfDay and not @state.startTime) or (@state.usesTimeOfDay and @state.isDateSpan and not @state.endTime)
-						}, 
+						},
 							"Save "
 							FaIcon('check')
 						)
-					)					
+					)
 				)
 
 				R.div({className: "details #{showWhen not @props.isBeingEdited}"},
 					R.div({className: 'title'}, @props.data.title)
 					R.div({className: 'description'}, @props.data.description)
 					R.div({className: 'timeSpan'},
-						R.div({className: 'start'}, 
+						R.div({className: 'start'},
 							"From: " if @props.data.endTimestamp
 							@_showTimestamp @props.data.startTimestamp
 						)
 						(if @props.data.endTimestamp
-							R.div({className: 'end'}, 
+							R.div({className: 'end'},
 								"Until: "
 								@_showTimestamp @props.data.endTimestamp
 							)
 						)
 					)
-				)				
+				)
 		)
 
 		_toggleUsesTimeOfDay: (event) ->
@@ -348,7 +365,7 @@ load = (win) ->
 			moment = Moment(timestamp, TimestampFormat)
 
 			if moment.isValid
-				return Moment(moment, TimestampFormat).format('Do MMMM [at] h:mm A')
+				return formatTimestamp(timestamp)
 			else
 				return "Invalid Moment"
 
@@ -367,6 +384,9 @@ load = (win) ->
 
 		_updateTypeId: (typeId) ->
 			@setState {typeId}
+
+		_toggleIsGlobalEvent: ->
+			@setState {isGlobalEvent: not @state.isGlobalEvent}
 
 		_closeForm: (event) ->
 			event.preventDefault()
@@ -401,7 +421,7 @@ load = (win) ->
 			else
 				startTimestamp = startTimestamp.startOf('day')
 
-				if @state.isDateSpan					
+				if @state.isDateSpan
 					endTimestamp = endTimestamp.endOf('day')
 				else
 					# If only a single date was provided, assume it's an all-day event
@@ -432,7 +452,7 @@ load = (win) ->
 			# Provide relatedElement to local state for later
 			@setState => {relatedElement: @props.selectedEventPlanRelation}
 
-			progEventObject = {	
+			progEventObject = {
 				title: @state.title
 				description: @state.description
 				typeId: @state.typeId
@@ -458,7 +478,45 @@ load = (win) ->
 					Bootbox.alert "Please select an end date/time later than #{startDateTime}"
 					return
 
-			@props.save newData, @props.atIndex
+			if @state.isGlobalEvent
+				Bootbox.dialog {
+					title: "Amend for #{Term 'Global Event'}"
+					message: """
+						Please remove any sensitive and/or #{Term 'client'}-specific information
+						to be saved in the #{Term 'global event'} copy, which will be visible
+						in all #{Term 'client files'}.
+						<br><br>
+						<label>Title</label>
+						<input class="form-control" id="amendedTitle" value="#{newData.title}">
+						<br><br>
+						<label>Description</label>
+						<textarea class="form-control" id="amendedDescription">#{newData.description}</textarea>
+					"""
+					buttons: {
+						cancel: {
+							label: "Cancel"
+							callback: ->
+								Bootbox.hideAll()
+								return
+						}
+						success: {
+							label: "Done"
+							callback: =>
+								amendedTitle = $('#amendedTitle').val()
+								amendedDescription = $('#amendedDescription').val()
+
+								globalEvent = Imm.fromJS(newData)
+								.set('title', amendedTitle)
+								.set('description', amendedDescription)
+
+								newData.globalEvent = globalEvent
+
+								@props.saveProgEvent newData, @props.atIndex
+						}
+					}
+				}
+			else
+				@props.saveProgEvent newData, @props.atIndex
 
 	return EventTabView
 
