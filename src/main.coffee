@@ -158,8 +158,9 @@ init = (win) ->
 			# cloud sync
 			pull = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
 			push = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
-			setTimeout(=>
-				# pull remote data
+			
+			# pull remote data
+			sync = =>
 				exec pull, (err, stdout, stderr) =>
 					if err
 						throw err
@@ -172,7 +173,11 @@ init = (win) ->
 								throw err
 							else
 								console.log 'sync (push) done'
-			, 10000)
+								setTimeout(=>
+									sync()
+								, 10000)
+
+			sync()
 
 		# Disable context menu
 		#win.document.addEventListener 'contextmenu', (event) ->
