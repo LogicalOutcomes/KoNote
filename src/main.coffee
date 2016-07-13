@@ -172,7 +172,7 @@ init = (win) ->
 								throw err
 							else
 								console.log 'sync (push) done'
-			, 30000)
+			, 5000)
 
 		# Disable context menu
 		#win.document.addEventListener 'contextmenu', (event) ->

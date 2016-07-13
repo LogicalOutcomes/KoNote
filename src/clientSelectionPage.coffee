@@ -109,7 +109,6 @@ load = (win) ->
 							return
 
 						clientFileHeaders = result
-						console.log clientFileHeaders.toJS()
 						cb()
 				(cb) =>
 					# TODO: Lazy load this
@@ -181,7 +180,7 @@ load = (win) ->
 		getPageListeners: ->
 			return {
 
-				'pulled': =>
+				'clientSelectionPage:pulled': =>
 					ActiveSession.persist.clientFiles.list (err, result) =>
 						if err
 							throw err
