@@ -570,19 +570,23 @@ load = (win) ->
 		_syncCloud: ->
 			exec = require('child_process').exec;
 			key = @state.authkey
-			# private key requires strict permissions or ssh ignores it
-			exec 'chmod 600 konodekey.txt', (err) ->
+
+			# write key to user's temp directory
+			Fs.writeFile 'authkey', key, (err) ->
 				if err
 					throw err
-				return
-			rs = "rsync -a -e 'ssh -i konodekey.txt' konode@159.203.47.223:data ."
-			exec rs, (err, stdout, stderr) ->
-				if err
-					throw err
-				else
-					console.log 'done'
-				return
-			
+				# key requires strict permissions or ssh ignores it
+				exec 'chmod 600 authkey', (err) ->
+					if err
+						throw err
+					rs = "rsync -a -e 'ssh -i authkey' konode@159.203.47.223:data ."
+					# pull remote data
+					exec rs, (err, stdout, stderr) ->
+						if err
+							throw err
+						else
+							console.log 'done'
+						return
 
 		_install: ->
 			if @state.password isnt @state.passwordConfirmation
