@@ -572,20 +572,32 @@ load = (win) ->
 			key = @state.authkey
 
 			# write key to user's temp directory
-			Fs.writeFile 'authkey', key, (err) ->
+			Fs.writeFile 'authkey', key, (err) =>
 				if err
 					throw err
 				# key requires strict permissions or ssh ignores it
-				exec 'chmod 600 authkey', (err) ->
+				exec 'chmod 600 authkey', (err) =>
 					if err
 						throw err
 					rs = "rsync -a -e 'ssh -i authkey' konode@159.203.47.223:data ."
 					# pull remote data
-					exec rs, (err, stdout, stderr) ->
+					@setState {
+						isLoading: true
+						installProgress: {message: "Syncing with Cloud (this may take some time)..."}
+					}
+					exec rs, (err, stdout, stderr) =>
 						if err
 							throw err
 						else
-							console.log 'done'
+							console.log 'sync done'
+							@setState {isLoading: false}
+							Bootbox.alert {
+								title: "Cloud sync complete!"
+								message: "KoNote will now restart..."
+								callback: =>
+									global.isSetUp = true
+									win.close(true)
+								}
 						return
 
 		_install: ->
