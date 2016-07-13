@@ -248,6 +248,12 @@ load = (win) ->
 									R.div({className: 'btn-toolbar'},
 										R.br({})
 										R.button({
+											className: 'btn btn-lg btn-default'
+											onClick: @_switchTab.bind null, 'index'
+										}, 
+											"Cancel"
+										)
+										R.button({
 											className: 'btn btn-lg btn-success'
 											onClick: @_syncCloud
 										},
