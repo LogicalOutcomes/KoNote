@@ -9,6 +9,7 @@
 # has been require()'d can't rely on `window` being set to the correct object.
 # It seems that only code that was included via a <script> tag can rely on
 # `window` being set correctly.
+exec = require('child_process').exec;
 
 _ = require 'underscore'
 
@@ -153,6 +154,18 @@ init = (win) ->
 		if global.ActiveSession
 			isLoggedIn = true
 			registerPageListeners()
+
+			# cloud sync
+			pull = "rsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+			#push = "rsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' data konode@cloud.konote.ca:data"
+			setTimeout(=>
+				# pull remote data
+				exec pull, (err, stdout, stderr) =>
+					if err
+						throw err
+					else
+						console.log 'sync done'
+			, 60000)
 
 		# Disable context menu
 		#win.document.addEventListener 'contextmenu', (event) ->
