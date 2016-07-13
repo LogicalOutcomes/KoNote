@@ -156,16 +156,21 @@ init = (win) ->
 			registerPageListeners()
 
 			# cloud sync
-			pull = "rsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
-			#push = "rsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' data konode@cloud.konote.ca:data"
+			pull = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+			push = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
 			setTimeout(=>
 				# pull remote data
 				exec pull, (err, stdout, stderr) =>
 					if err
 						throw err
 					else
-						console.log 'sync done'
-			, 60000)
+						console.log 'sync (pull) done'
+						exec push, (err, stdout, stderr) =>
+							if err
+								throw err
+							else
+								console.log 'sync (push) done'
+			, 30000)
 
 		# Disable context menu
 		#win.document.addEventListener 'contextmenu', (event) ->
