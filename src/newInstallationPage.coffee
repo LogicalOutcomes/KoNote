@@ -585,7 +585,8 @@ load = (win) ->
 				exec 'chmod 600 authkey', (err) =>
 					if err
 						throw err
-					rs = "rsync -a -e 'ssh -i authkey' konode@cloud.konote.ca:data ."
+					# if we dont disable host check, on first connect user gets a warning
+					rs = "rsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
 					# pull remote data
 					@setState {
 						isLoading: true
