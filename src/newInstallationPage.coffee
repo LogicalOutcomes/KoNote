@@ -585,7 +585,7 @@ load = (win) ->
 				exec 'chmod 600 authkey', (err) =>
 					if err
 						throw err
-					rs = "rsync -a -e 'ssh -i authkey' konode@159.203.47.223:data ."
+					rs = "rsync -a -e 'ssh -i authkey' konode@cloud.konote.ca:data ."
 					# pull remote data
 					@setState {
 						isLoading: true
