@@ -165,6 +165,8 @@ init = (win) ->
 						throw err
 					else
 						console.log 'sync (pull) done'
+						global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:pulled'
+						# push our data
 						exec push, (err, stdout, stderr) =>
 							if err
 								throw err
