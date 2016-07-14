@@ -595,6 +595,8 @@ load = (win) ->
 					# disable host check to prevent warning message
 					if process.platform is 'win32'
 						rs = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+						Fs.writeFileSync 'rs.cmd', rs
+						rs = 'rs.cmd'
 					else
 						rs = "rsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
 					# pull remote data
@@ -602,9 +604,6 @@ load = (win) ->
 						isLoading: true
 						installProgress: {message: "Syncing with Cloud (this may take some time)..."}
 					}
-					if process.platform is 'win32'
-						Fs.writeFileSync 'rs.cmd', rs
-						rs = 'rs.cmd'
 					exec rs, (err, stdout, stderr) =>
 						if err
 							throw err

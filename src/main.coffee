@@ -9,6 +9,7 @@
 # has been require()'d can't rely on `window` being set to the correct object.
 # It seems that only code that was included via a <script> tag can rely on
 # `window` being set correctly.
+Fs = require 'fs'
 exec = require('child_process').exec;
 
 _ = require 'underscore'
@@ -156,8 +157,17 @@ init = (win) ->
 			registerPageListeners()
 
 			# cloud sync
-			pull = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
-			push = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
+			if process.platform is 'win32'
+				pull = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+				Fs.writeFileSync 'pull.cmd', pull
+				pull = 'pull.cmd'
+
+				push = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
+				Fs.writeFileSync 'push.cmd', push
+				push = 'push.cmd'
+			else
+				pull = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+				push = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
 			
 			# pull remote data
 			sync = =>
@@ -175,7 +185,7 @@ init = (win) ->
 								console.log 'sync (push) done'
 								setTimeout(=>
 									sync()
-								, 10000)
+								, 30000)
 
 			sync()
 
