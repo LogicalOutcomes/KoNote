@@ -582,11 +582,19 @@ load = (win) ->
 				if err
 					throw err
 				# key requires strict permissions or ssh ignores it
-				exec 'chmod 600 authkey', (err) =>
+				# unfortunately no cross-platform way to set this
+				if process.platform is 'win32'
+					changeperm = 'icacls authkey /inheritance:r /grant:r #{process.env.user}:(F)'
+				else
+					changeperm = 'chmod 600 authkey'
+				exec changeperm, (err) =>
 					if err
 						throw err
-					# if we dont disable host check, on first connect user gets a warning
-					rs = "rsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+					# disable host check to prevent warning message
+					if process.platform is 'win32'
+						rs = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+					else
+						rs = "rsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
 					# pull remote data
 					@setState {
 						isLoading: true
