@@ -4,7 +4,11 @@
 	overflow hidden
 	border-bottom 1px solid #eee
 	font-size 1.1em
-	
+
+	.colorKeyBubble > .bubbleContents
+		width 1.6em
+		height 1.6em
+
 	&.noMatchesMessage
 		height 200px
 		text-align center
@@ -12,18 +16,18 @@
 		padding 50px
 		font-weight 300
 		opacity 0.5
-		
+
 	.tableCell
 		flex 1
 		display flex
 		align-items center
 		padding 10px
-		
+
 	.tableHead
 		display flex
 		display block
 		border-bottom 1px solid #eee
-		
+
 		.tableRow
 			display flex
 
@@ -31,38 +35,45 @@
 				height 40px
 				opacity .8
 				cursor pointer
-				
+
 				.fa
 					padding 5px
-				
+
 				&:hover
 					opacity 1
-						
+
 	.tableBodyContainer
 		flex 1
 		overflow-y auto
-		
+
 	.tableBody
 		width 100%
 		clear both
 		height 100%
-		
+
 		.tableRow
 			display flex
-		
-			.tableCell		
+
+			.tableCell
 				min-height 50px
 				word-wrap break-word
-					
+
 				&.noValue
 					font-weight 300
 					opacity 0.5
 					font-style italic
 					letter-spacing 2px
-					
-						
+
+	// Extra spacing for each side
 	.tableRow .tableCell
-			&:first-child
-				padding-left 25px
-			&:last-child
-				padding-right 25px
+		&:first-child
+			padding-left 25px
+		&:last-child
+			padding-right 25px
+
+	// Enable standard hover if clickable
+	&.hoverEffect .tableBody .tableRow:hover
+		background hsl(200, 80%, 90%)
+
+		.tableCell
+			cursor pointer

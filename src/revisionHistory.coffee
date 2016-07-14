@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
+ImmPropTypes = require 'react-immutable-proptypes'
 Term = require './term'
 {diffWordsWithSpace} = require 'diff'
 
@@ -13,6 +14,7 @@ load = (win) ->
 	R = React.DOM
 
 	MetricWidget = require('./metricWidget').load(win)
+	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
 	{FaIcon, renderLineBreaks, showWhen,
 	stripMetadata, formatTimestamp, capitalize} = require('./utils').load(win)
@@ -28,8 +30,9 @@ load = (win) ->
 		}
 
 		propTypes: -> {
-			dataModelName: React.PropTypes.string()
-			revisions: React.PropTypes.instanceOf Imm.List
+			dataModelName: React.PropTypes.string().isRequired()
+			revisions: ImmPropTypes.list.isRequired()
+			programsById: ImmPropTypes.map.isRequired()
 		}
 
 		_diffStrings: (oldString, newString) ->
@@ -216,6 +219,7 @@ load = (win) ->
 							isFirstRevision: index is (revisions.size - 1)
 							revision
 							metricsById: @props.metricsById
+							programsById: @props.programsById
 							dataModelName: @props.dataModelName
 							disableSnapshot: @props.disableSnapshot
 						})
@@ -237,6 +241,9 @@ load = (win) ->
 			revision = @props.revision
 			changeLog = revision.get('changeLog')
 
+			userProgramId = revision.get('authorProgramId')
+			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
+
 			return R.section({className: 'revision'},
 				R.div({className: 'header'},
 					R.div({className: 'author'},
@@ -248,6 +255,15 @@ load = (win) ->
 							"#{formatTimestamp revision.get('backdate')} (late entry)"
 						else
 							formatTimestamp revision.get('timestamp')
+
+						ColorKeyBubble({
+							colorKeyHex: userProgram.get('colorKeyHex')
+							popup: {
+								title: userProgram.get('name')
+								content: userProgram.get('description')
+								placement: 'left'
+							}
+						})
 					)
 				)
 				R.div({className: 'changeLog'},

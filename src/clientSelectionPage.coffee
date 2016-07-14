@@ -1,9 +1,10 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Libraries from Node.js context
+# Node libs
 Imm = require 'immutable'
+ImmPropTypes = require 'react-immutable-proptypes'
 Async = require 'async'
 _ = require 'underscore'
 
@@ -12,21 +13,25 @@ Term = require './term'
 Persist = require './persist'
 
 load = (win) ->
-	# Libraries from browser context
+	# Window libs
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
+	{PropTypes} = React
+	ReactDOM = win.ReactDOM
 	R = React.DOM
+
 	Gui = win.require 'nw.gui'
 	Window = Gui.Window.get()
 
-	ManagerLayer = require('./managerLayer').load(win)		
 	Spinner = require('./spinner').load(win)
-	BrandWidget = require('./brandWidget').load(win)	
+	MainMenu = require('./mainMenu').load(win)
+	BrandWidget = require('./brandWidget').load(win)
 	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ProgramBubbles = require('./programBubbles').load(win)
 
+	ManagerLayer = require('./managerLayer').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 
 	CrashHandler = require('./crashHandler').load(win)
@@ -42,6 +47,8 @@ load = (win) ->
 				loadingMessage: ""
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
+				userProgramOverride: null
+				userProgramLinks: Imm.List()
 				clientFileProgramLinks: Imm.List()
 			}
 
@@ -52,27 +59,46 @@ load = (win) ->
 			@_loadData()
 
 		deinit: (cb=(->)) ->
-			# Nothing need be done
+			# Nothing to deinit
 			cb()
 
 		suggestClose: ->
-			@props.closeWindow()		
+			@props.closeWindow()
 
 		render: ->
 			unless @state.status is 'ready' then return R.div({})
 
+			userProgram = @_getUserProgram()
+
 			return ClientSelectionPageUi {
 				openClientFile: @_openClientFile
 
-				status: @state.status				
+				status: @state.status
 				isLoading: @state.isLoading
 				loadingMessage: @state.loadingMessage
 
 				clientFileHeaders: @state.clientFileHeaders
 				clientFileProgramLinks: @state.clientFileProgramLinks
 				programs: @state.programs
+				userProgram
+				userProgramLinks: @state.userProgramLinks
 				metricDefinitions: @state.metricDefinitions
 			}
+
+		_getUserProgram: ->
+			# Use the userProgramOverride if exists
+			if @state.userProgramOverride?
+				return @state.userProgramOverride
+			else
+				# Find assigned userProgramLink
+				currentUserProgramLink = @state.userProgramLinks.find (link) ->
+					link.get('userName') is global.ActiveSession.userName and link.get('status') is 'assigned'
+
+				if currentUserProgramLink?
+					return @state.programs.find (program) ->
+						program.get('id') is currentUserProgramLink.get('programId')
+				else
+					return null
 
 		_openClientFile: (clientFileId) ->
 			@setState {
@@ -98,6 +124,8 @@ load = (win) ->
 			clientFileHeaders = null
 			programHeaders = null
 			programs = null
+			programsById = null
+			userProgramLinks = null
 			clientFileProgramLinkHeaders = null
 			clientFileProgramLinks = null
 
@@ -132,6 +160,20 @@ load = (win) ->
 									return
 
 								programs = Imm.List(results).map (program) -> stripMetadata program.get(0)
+
+								programsById = programs
+								.map (program) -> [program.get('id'), program]
+								.fromEntrySeq().toMap()
+
+								cb()
+						(cb) =>
+							ActiveSession.persist.userProgramLinks.list (err, result) ->
+								if err
+									cb err
+									return
+
+								userProgramLinks = result.map (link) -> stripMetadata(link)
+
 								cb()
 					], cb
 				(cb) =>
@@ -156,7 +198,7 @@ load = (win) ->
 
 								clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
 								cb()
-					], cb					
+					], cb
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -171,14 +213,46 @@ load = (win) ->
 				# Load in data
 				@setState {
 					status: 'ready'
-
 					programs
+					programsById
+					userProgramLinks
 					clientFileHeaders
 					clientFileProgramLinks
 				}
 
 		getPageListeners: ->
+
 			return {
+				# Custom listener for overriding userProgram in ActiveSession
+				'override:userProgram': (userProgram) =>
+					if userProgram?
+						console.log "Overriding userProgram to:", userProgram.toJS()
+
+					global.ActiveSession.programId = if userProgram? then userProgram.get('id') else null
+					@setState {userProgramOverride: userProgram}
+
+				'create:userProgramLink createRevision:userProgramLink': (userProgramLink) =>
+					isForCurrentUser = userProgramLink.get('userName') is global.ActiveSession.userName
+
+					if isForCurrentUser
+						if userProgramLink.get('status') is 'assigned'
+							# Trigger override userProgram for current user
+							userProgram = @state.programsById.get userProgramLink.get('programId')
+							global.ActiveSession.persist.eventBus.trigger 'override:userProgram', userProgram
+						else
+							global.ActiveSession.persist.eventBus.trigger 'override:userProgram', null
+
+					# Does a revision of the link already exist?
+					existingLink = @state.userProgramLinks.find (link) -> link.get('id') is userProgramLink.get('id')
+
+					if existingLink?
+						# Overwrite existing link in state
+						linkIndex = @state.userProgramLinks.indexOf existingLink
+						userProgramLinks = @state.userProgramLinks.set linkIndex, userProgramLink
+					else
+						userProgramLinks = @state.userProgramLinks.push userProgramLink
+
+					@setState {userProgramLinks}
 
 				'create:clientFile': (newFile) =>
 					clientFileHeaders = @state.clientFileHeaders.push newFile
@@ -214,8 +288,10 @@ load = (win) ->
 							clientFileProgramLinks = state.clientFileProgramLinks.push newRev
 
 						return {clientFileProgramLinks}
-						
+
 			}
+
+
 
 	ClientSelectionPageUi = React.createFactory React.createClass
 		displayName: 'ClientSelectionPageUi'
@@ -256,7 +332,7 @@ load = (win) ->
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
-			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet	
+			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
 
 			# Add in all program objects this clientFile's a member of
 			queryResults = @state.queryResults.map (clientFile) =>
@@ -269,6 +345,7 @@ load = (win) ->
 					@props.programs.find (program) -> program.get('id') is link.get('programId')
 
 				clientFile.set('programs', programMemberships)
+
 
 			return R.div({
 					id: 'clientSelectionPage'
@@ -293,15 +370,14 @@ load = (win) ->
 						"Menu"
 				)
 				R.div({
-					id: 'mainContainer'					
+					id: 'mainContainer'
 				},
 					(if @state.managerLayer?
 						ManagerLayer({
-							# Settings
 							name: @state.managerLayer
-							# Data
-							clientFileHeaders: @props.clientFileHeaders							
+							clientFileHeaders: @props.clientFileHeaders
 							programs: @props.programs
+							userProgramLinks: @props.userProgramLinks
 							clientFileProgramLinks: @props.clientFileProgramLinks
 						})
 					)
@@ -315,7 +391,7 @@ load = (win) ->
 							className: [
 								if smallHeader then 'small' else ''
 							].join ' '
-						},								
+						},
 							R.div({className: 'logoContainer'},
 								R.img({src: Config.customerLogoLg})
 								R.div({
@@ -355,7 +431,7 @@ load = (win) ->
 												"Search for a #{Term 'client'}'s profile..."
 											else
 												"No #{Term 'client files'} to search yet..."
-										onChange: @_updateQueryText									
+										onChange: @_updateQueryText
 										value: @state.queryText
 									})
 
@@ -415,7 +491,8 @@ load = (win) ->
 										isNotOrderable: true
 										nameIsVisible: false
 										value: (dataPoint) ->
-											ProgramBubbles({programs: dataPoint.get('programs')})
+											programs = dataPoint.get('programs')
+											ProgramBubbles({programs})
 									}
 									{
 										name: "Last Name"
@@ -438,77 +515,15 @@ load = (win) ->
 				)
 
 				(if @state.menuIsOpen
-					R.aside({
-						id: 'menuContainer'
+					MainMenu({
 						ref: 'userMenu'
 						className: 'menuIsOpen animated fadeInRight'
-					},
-						R.div({id: 'menuContent'},
-							R.div({id: 'userMenu'},
-								R.div({},
-									R.div({id: 'avatar'}, FaIcon('user'))
-									R.h3({}, global.ActiveSession.userName)
-								)
-							)
-							R.div({id: 'featureMenu'},
-								R.ul({},
-									UserMenuItem({									
-										title: "New #{Term 'Client File'}"
-										icon: 'folder-open'
-										dialog: CreateClientFileDialog
-										programs: @props.programs
-										onClick: @_updateManagerLayer.bind null, null
-									})
-									UserMenuItem({
-										isVisible: isAdmin
-										title: "User #{Term 'Accounts'}"
-										icon: 'key'
-										onClick: @_updateManagerLayer.bind null, 'accountManagerTab'
-										isActive: @state.managerLayer is 'accountManagerTab'
-									})
-									UserMenuItem({
-										title: Term 'Programs'
-										icon: 'users'
-										onClick: @_updateManagerLayer.bind null, 'programManagerTab'
-										isActive: @state.managerLayer is 'programManagerTab'
-									})								
-									UserMenuItem({
-										isVisible: isAdmin
-										title: "#{Term 'Event'} Types"
-										icon: 'calendar-o'
-										onClick: @_updateManagerLayer.bind null, 'eventTypeManagerTab'
-										isActive: @state.managerLayer is 'eventTypeManagerTab'
-									})
-									UserMenuItem({
-										title: Term 'Metrics'
-										icon: 'line-chart'
-										onClick: @_updateManagerLayer.bind null, 'metricDefinitionManagerTab'
-										isActive: @state.managerLayer is 'metricDefinitionManagerTab'
-									})
-									UserMenuItem({
-										isvisible: isAdmin
-										title: "Plan Templates"
-										icon: 'wpforms'
-										onClick: @_updateManagerLayer.bind null, 'planTemplateManagerTab'
-										isActive: @state.managerLayer is 'planTemplateManagerTab'
-										})
-									UserMenuItem({
-										isVisible: isAdmin
-										title: "Export Data"
-										icon: 'upload'
-										onClick: @_updateManagerLayer.bind null, 'exportManagerTab'
-										isActive: @state.managerLayer is 'exportManagerTab'
-									})
-									UserMenuItem({
-										title: "My #{Term 'Account'}"
-										icon: 'cog'
-										onClick: @_updateManagerLayer.bind null, 'myAccountManagerTab'
-										isActive: @state.managerLayer is 'myAccountManagerTab'
-									})
-								)
-							)
-						)
-					)
+						programs: @props.programs
+						userProgram: @props.userProgram
+						managerLayer: @state.managerLayer
+
+						updateManagerLayer: @_updateManagerLayer
+					})
 				)
 			)
 
@@ -564,14 +579,13 @@ load = (win) ->
 
 		_toggleUserMenu: ->
 			if @state.menuIsOpen
-				$(@refs.userMenu).addClass('slideOutRight')
+				mainMenuNode = ReactDOM.findDOMNode(@refs.userMenu)
+				$(mainMenuNode).addClass('slideOutRight')
 
 				@setState {managerLayer: null}
 
 				setTimeout(=>
-					@setState {
-						menuIsOpen: false						
-					}
+					@setState {menuIsOpen: false}
 				, 400)
 			else
 				@setState {menuIsOpen: true}
@@ -599,7 +613,7 @@ load = (win) ->
 					return firstName.includes(part) or
 						middleName.includes(part) or
 						lastName.includes(part) or
-						recordId.includes(part)			
+						recordId.includes(part)
 
 			@setState {queryResults}
 
@@ -617,38 +631,6 @@ load = (win) ->
 			@setState {hoverClientId: clientFileId}
 			@props.openClientFile(clientFileId)
 
-
-	UserMenuItem = React.createFactory React.createClass
-		displayName: 'UserMenuItem'
-		mixins: [React.addons.PureRenderMixin]
-
-		getDefaultProps: ->
-			return {
-				isVisible: true
-				isActive: false
-				onClick: ->
-				dialog: null
-			}
-
-		render: ->
-			return R.li({
-				className: [
-					'active' if @props.isActive
-					showWhen @props.isVisible
-				].join ' '
-				onClick: @props.onClick
-			},
-				if @props.dialog?
-					OpenDialogLink(@props,
-						FaIcon(@props.icon)
-						@props.title
-					)
-				else
-					R.div({},
-						FaIcon(@props.icon)
-						@props.title
-					)
-			)	
 
 
 	return ClientSelectionPage

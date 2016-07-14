@@ -5,6 +5,7 @@
 Assert = require 'assert'
 Imm = require 'immutable'
 Moment = require 'moment'
+Async = require 'async'
 
 Config = require '../config'
 Term = require '../term'
@@ -15,8 +16,11 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	ReactDOMServer = win.ReactDOMServer
 
 	CancelProgNoteDialog = require('./cancelProgNoteDialog').load(win)
+	ColorKeyBubble = require('../colorKeyBubble').load(win)
+
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
@@ -26,7 +30,7 @@ load = (win) ->
 	PrintButton = require('../printButton').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 
-	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp
+	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName
 	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
 
 	ProgNotesView = React.createFactory React.createClass
@@ -123,7 +127,7 @@ load = (win) ->
 							)
 							R.button({
 								className: "addQuickNote btn btn-default #{showWhen @props.progNoteHistories.size > 0}"
-								onClick: @_toggleQuickNotePopover
+								onClick: @_openNewQuickNote
 								disabled: @props.isReadOnly
 							},
 								FaIcon 'plus'
@@ -155,7 +159,7 @@ load = (win) ->
 									'addQuickNote'
 									showWhen (@props.progNoteHistories.size is 0)
 								].join ' '
-								onClick: @_toggleQuickNotePopover
+								onClick: @_openNewQuickNote
 								disabled: @props.isReadOnly
 							},
 								FaIcon 'plus'
@@ -165,6 +169,10 @@ load = (win) ->
 						(progNoteHistories.map (progNoteHistory) =>
 							progNote = progNoteHistory.last()
 							progNoteId = progNote.get('id')
+
+							firstProgNoteRev = progNoteHistory.first()
+							userProgramId = firstProgNoteRev.get('authorProgramId')
+							userProgram = @props.programsById.get(userProgramId) or Imm.Map()
 
 							isEditing = @state.revisingProgNote? and @state.revisingProgNote.get('id') is progNoteId
 
@@ -179,6 +187,7 @@ load = (win) ->
 									progEvents
 									eventTypes: @props.eventTypes
 									clientFile: @props.clientFile
+									userProgram
 									setSelectedItem: @_setSelectedItem
 									selectedItem: @state.selectedItem
 									selectProgNote: @_selectProgNote
@@ -203,6 +212,7 @@ load = (win) ->
 										key: progNote.get('id')
 										progNote
 										progNoteHistory
+										userProgram
 										clientFile: @props.clientFile
 										selectedItem: @state.selectedItem
 										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
@@ -223,6 +233,7 @@ load = (win) ->
 										progNote
 										progNoteHistory
 										progEvents
+										userProgram
 										eventTypes: @props.eventTypes
 										clientFile: @props.clientFile
 										setSelectedItem: @_setSelectedItem
@@ -248,6 +259,7 @@ load = (win) ->
 									throw new Error "unknown prognote type: #{progNote.get('type')}"
 						).toJS()...
 					)
+
 					ProgNoteDetailView({
 						item: @state.selectedItem
 						highlightedProgNoteId: @state.highlightedProgNoteId
@@ -257,6 +269,7 @@ load = (win) ->
 						progEvents: @props.progEvents
 						eventTypes: @props.eventTypes
 						metricsById: @props.metricsById
+						programsById: @props.programsById
 					})
 				)
 			)
@@ -412,59 +425,171 @@ load = (win) ->
 		_setHighlightedTargetId: (highlightedTargetId) ->
 			@setState {highlightedTargetId}
 
-		_openNewProgNote: ->
-			if @props.hasChanges()
-				Bootbox.dialog {
-					title: "Unsaved Changes to #{Term 'Plan'}"
-					message: """
-						You have unsaved changes in the #{Term 'plan'} that will not be reflected in this
-						#{Term 'progress note'}. How would you like to proceed?
-					"""
-					buttons: {
-						default: {
-							label: "Cancel"
-							className: "btn-default"
-							callback: => Bootbox.hideAll()
-						}
-						danger: {
-							label: "Ignore"
-							className: "btn-danger"
-							callback: =>
-								openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}
-						}
-						success: {
-							label: "View #{Term 'Plan'}"
-							className: "btn-success"
-							callback: =>
-								Bootbox.hideAll()
-								@props.onTabChange 'plan'
-						}
+		_checkUserProgram: (cb) ->
+			# Continue if no userProgram or clientProgram(s)
+			userProgramId = global.ActiveSession.programId
+			noProgramsPresent = not userProgramId? or @props.clientPrograms.isEmpty()
+
+			if noProgramsPresent
+				cb()
+				return
+
+			# Continue if userProgram matches one of the clientPrograms
+			matchingUserProgram = @props.clientPrograms.find (program) ->
+				userProgramId is program.get('id')
+
+			if matchingUserProgram
+				cb()
+				return
+
+			clientName = renderName @props.clientFile.get('clientName')
+			userProgramName = @props.programsById.getIn [userProgramId, 'name']
+
+			# Build programDropdown markup
+			programDropdown = ReactDOMServer.renderToString(
+				R.select({
+					id: 'programDropdown'
+					className: 'form-control '
+				},
+					R.option({value: ''}, "Select a #{Term 'client'} #{Term 'program'}")
+					(@props.clientPrograms.map (program) ->
+						R.option({value: program.get('id')}, program.get('name'))
+					)
+				)
+			)
+
+			focusPopover = -> setTimeout (=> $('.popover textarea')[0].focus()), 500
+
+			# Prompt user about temporarily overriding their program
+			Bootbox.dialog {
+				title: "Switch to #{Term 'client'} #{Term 'program'}?"
+				message: """
+					#{clientName} is not enrolled in your assigned #{Term 'program'}: "<b>#{userProgramName}</b>".
+					<br><br>
+					Override your assigned #{Term 'program'} below, or click "Ignore".
+					<br><br>
+					#{programDropdown}
+				"""
+				buttons: {
+					cancel: {
+						label: "Cancel"
+						className: "btn-default"
+						callback: =>
+							Bootbox.hideAll()
+							cb null
+					}
+					ignore: {
+						label: "Ignore"
+						className: "btn-warning"
+						callback: ->
+							focusPopover()
+							cb()
+					}
+					success: {
+						label: "Override #{Term 'Program'}"
+						className: "btn-success"
+						callback: =>
+							userProgramId = $('#programDropdown').val()
+
+							if not userProgramId? or userProgramId.length is 0
+								Bootbox.alert "No #{Term 'program'} was selected, please try again."
+								cb null
+								return
+
+							userProgram = @props.programsById.get userProgramId
+
+							# Override the user's program
+							global.ActiveSession.persist.eventBus.trigger 'override:userProgram', userProgram
+
+							focusPopover()
+							cb()
 					}
 				}
-			else
-				@props.setIsLoading true
+			}
 
-				# Cache data to global, so can access again from newProgNote window
-				# Set up the dataStore if doesn't exist
-				# Store property as clientFile ID to prevent confusion
-				global.dataStore ?= {}
+		_checkPlanChanges: (cb) ->
+			# Check for unsaved changes to the client plan
+			if not @props.hasChanges()
+				cb()
+				return
 
-				global.dataStore[@props.clientFileId] = {
-					clientFile: @props.clientFile
-					planTargetsById: @props.planTargetsById
-					metricsById: @props.metricsById
-					progNoteHistories: @props.progNoteHistories
-					progEvents: @props.progEvents
-					eventTypes: @props.eventTypes
+			# Prompt user about unsaved changes
+			Bootbox.dialog {
+				title: "Unsaved Changes to #{Term 'Plan'}"
+				message: """
+					You have unsaved changes in the #{Term 'plan'} that will not be reflected in this
+					#{Term 'progress note'}. How would you like to proceed?
+				"""
+				buttons: {
+					default: {
+						label: "Cancel"
+						className: "btn-default"
+						callback: =>
+							Bootbox.hideAll()
+							cb null
+							return
+					}
+					danger: {
+						label: "Ignore"
+						className: "btn-danger"
+						callback: -> cb()
+					}
+					success: {
+						label: "View #{Term 'Plan'}"
+						className: "btn-success"
+						callback: =>
+							Bootbox.hideAll()
+							@props.onTabChange 'plan'
+							cb null
+							return
+					}
 				}
+			}
 
-				openWindow {
-					page: 'newProgNote'
-					clientFileId: @props.clientFileId
-				}
 
-				global.ActiveSession.persist.eventBus.once 'newProgNotePage:loaded', =>
-					@props.setIsLoading false
+		_openNewProgNote: ->
+			Async.series [
+				@_checkPlanChanges
+				@_checkUserProgram
+				(cb) =>
+					@props.setIsLoading true
+
+					# Cache data to global, so can access again from newProgNote window
+					# Set up the dataStore if doesn't exist
+					# Store property as clientFile ID to prevent confusion
+					global.dataStore ?= {}
+
+					global.dataStore[@props.clientFileId] = {
+						clientFile: @props.clientFile
+						planTargetsById: @props.planTargetsById
+						metricsById: @props.metricsById
+						progNoteHistories: @props.progNoteHistories
+						progEvents: @props.progEvents
+						eventTypes: @props.eventTypes
+					}
+
+					openWindow {
+						page: 'newProgNote'
+						clientFileId: @props.clientFileId
+					}
+
+					global.ActiveSession.persist.eventBus.once 'newProgNotePage:loaded', cb
+
+			], (err) =>
+				if err
+					CrashHandler.handle err
+					return
+
+				@props.setIsLoading false
+
+		_openNewQuickNote: ->
+			Async.series [
+				@_checkUserProgram
+				@_toggleQuickNotePopover
+			], (err) ->
+				if err
+					CrashHandler.handle err
+					return
 
 		_toggleQuickNotePopover: ->
 			quickNoteToggle = $('.addQuickNote:not(.hide)')
@@ -481,7 +606,7 @@ load = (win) ->
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
-					@props.createQuickNote popover.find('textarea').val(), @state.backdate, (err) =>
+					@_createQuickNote popover.find('textarea').val(), @state.backdate, (err) =>
 						@setState {backdate: ''}
 						if err
 							if err instanceof Persist.IOError
@@ -495,6 +620,7 @@ load = (win) ->
 
 						quickNoteToggle.popover('hide')
 						quickNoteToggle.data('isVisible', false)
+
 
 				popover.find('.backdate.date').datetimepicker({
 					format: 'MMM-DD-YYYY h:mm A'
@@ -516,6 +642,30 @@ load = (win) ->
 					quickNoteToggle.data('isVisible', false)
 
 				popover.find('textarea').focus()
+
+		_createQuickNote: (notes, backdate, cb) ->
+			unless notes
+				Bootbox.alert "Cannot create an empty #{Term 'quick note'}."
+				return
+
+			@props.setIsLoading true
+
+			quickNote = Imm.fromJS {
+				type: 'basic'
+				status: 'default'
+				clientFileId: @props.clientFileId
+				notes
+				backdate
+				authorProgramId: global.ActiveSession.programId or ''
+			}
+
+			global.ActiveSession.persist.progNotes.create quickNote, (err) =>
+				@props.setIsLoading false
+				if err
+					cb err
+					return
+
+				cb()
 
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
@@ -542,11 +692,11 @@ load = (win) ->
 				# onMouseEnter: @props.setHighlightedQuickNoteId.bind null, @props.progNote.get('id')
 				# onMouseLeave: @props.setHighlightedQuickNoteId.bind null, null
 			},
-				ProgNoteHeader({progNoteHistory: @props.progNoteHistory})
-				R.div({
-					className: 'notes'
-					onClick: @_selectQuickNote
-				},
+				ProgNoteHeader({
+					progNoteHistory: @props.progNoteHistory
+					userProgram: @props.userProgram
+				})
+				R.div({className: 'notes'},
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
 						ProgNoteToolbar({
 							isReadOnly: @props.isReadOnly
@@ -560,13 +710,15 @@ load = (win) ->
 							selectProgNote: @props.selectProgNote
 						})
 					)
-					(if isEditing
-						ExpandingTextArea({
-							value: progNote.get('notes')
-							onChange: @props.updateQuickNotes
-						})
-					else
-						renderLineBreaks progNote.get('notes')
+					R.div({onClick: @_selectQuickNote},
+						(if isEditing
+							ExpandingTextArea({
+								value: progNote.get('notes')
+								onChange: @props.updateQuickNotes
+							})
+						else
+							renderLineBreaks progNote.get('notes')
+						)
 					)
 				)
 			)
@@ -635,7 +787,10 @@ load = (win) ->
 				## TODO: Restore hover feature
 				# onMouseEnter: @props.setHighlightedProgNoteId.bind null, progNote.get('id')
 			},
-				ProgNoteHeader({progNoteHistory: @props.progNoteHistory})
+				ProgNoteHeader({
+					progNoteHistory: @props.progNoteHistory
+					userProgram: @props.userProgram
+				})
 				R.div({className: 'progNoteList'},
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
 						ProgNoteToolbar({
@@ -868,6 +1023,7 @@ load = (win) ->
 								clientFile: @props.clientFile
 								selectedItem: @props.selectedItem
 								selectProgNote: @props.selectProgNote
+								userProgram: @props.userProgram
 								isReadOnly: true
 
 								isEditing: @props.isEditing
@@ -883,6 +1039,7 @@ load = (win) ->
 								progNoteHistory: @props.progNoteHistory
 								progEvents: @props.progEvents
 								eventTypes: @props.eventTypes
+								userProgram: @props.userProgram
 								clientFile: @props.clientFile
 								setSelectedItem: @props.setSelectedItem
 								selectedItem: @props.selectedItem
@@ -905,15 +1062,24 @@ load = (win) ->
 		_toggleDetails: (event) ->
 			@setState (s) -> {isExpanded: not s.isExpanded}
 
-	ProgNoteHeader = ({progNoteHistory}) ->
+	ProgNoteHeader = ({progNoteHistory, userProgram}) ->
 		hasRevisions = progNoteHistory.size > 1
 		numberOfRevisions = progNoteHistory.size - 1
-		# In this case we use the first revision's data
-		progNote = progNoteHistory.first()
+
+		progNote = progNoteHistory.first() # Use original revision's data
+		timestamp = progNote.get('backdate') or progNote.get('timestamp')
 
 		R.div({className: 'header'},
 			R.div({className: 'timestamp'},
-				formatTimestamp(progNote.get('backdate') or progNote.get('timestamp'))
+				ColorKeyBubble({
+					colorKeyHex: userProgram.get('colorKeyHex')
+					popover: {
+						title: userProgram.get('name')
+						content: userProgram.get('description')
+						placement: 'left'
+					}
+				})
+				formatTimestamp(timestamp)
 				" (late entry)" if progNote.get('backdate')
 			)
 			R.div({className: 'author'},
@@ -943,7 +1109,7 @@ load = (win) ->
 		hasMultipleRevisions = numberOfRevisions > 1
 
 		R.div({
-			className: "progNoteToolbar #{'active' if isViewingRevisions}"
+			className: "progNoteToolbar #{if isViewingRevisions then 'active' else ''}"
 		},
 			R.div({className: "revisions #{showWhen hasRevisions}"},
 				R.a({

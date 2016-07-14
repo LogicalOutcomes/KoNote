@@ -22,6 +22,7 @@
 				padding 6px 30px
 
 		.popover
+			z-index 1001
 			max-width none
 
 			.popover-content
@@ -148,6 +149,12 @@
 					> .timestamp
 						flex 1
 
+						.colorKeyBubble > .bubbleContents
+							opacity 0.5
+							width 0.5em
+							height 0.5em
+							margin-right 0.5em
+
 					.selectProgNoteButton
 						color sidebar-borders
 						margin-left 10px
@@ -161,6 +168,7 @@
 					display flex
 					opacity 0
 					transition all .15s ease
+					z-index 1000
 
 					background none
 					position absolute
@@ -230,6 +238,9 @@
 							font-weight 600
 							font-size 18px
 							opacity 0.75
+
+						.notes
+							overflow-wrap break-word
 
 						&.basic
 							cursor default

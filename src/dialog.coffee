@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # A generic dialog component
@@ -12,14 +12,16 @@
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
-	{FaIcon} = require('./utils').load(win)
 
 	Spinner = require('./spinner').load(win)
+	{FaIcon} = require('./utils').load(win)
 
 	Dialog = React.createFactory React.createClass
 		displayName: 'Dialog'
 		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				isLoading: false
@@ -28,7 +30,15 @@ load = (win) ->
 		getDefaultProps: ->
 			return {
 				containerClasses: []
+				onClose: ->
+				disableCancel: false
 			}
+
+		propTypes: {
+			containerClasses: PropTypes.array
+			onClose: PropTypes.func
+			disableCancel: PropTypes.bool
+		}
 
 		render: ->
 			return R.div({
@@ -36,7 +46,7 @@ load = (win) ->
 					'dialogContainer'
 					@props.containerClasses.join(' ')
 				].join(' ')
-				onClick: unless @props.disableCancel or @props.disableBackgroundClick then @_onBackgroundClick
+				onClick: if not @props.disableCancel or not @props.disableBackgroundClick then @_onBackgroundClick
 			},
 				Spinner({
 					isVisible: @state.isLoading
@@ -56,10 +66,10 @@ load = (win) ->
 						@props.children
 					)
 				)
-			)	
+			)
 
-		setIsLoading: (newState) ->
-			@setState => {isLoading: newState}
+		setIsLoading: (isLoading) ->
+			@setState -> {isLoading}
 
 		isLoading: -> @state.isLoading
 
@@ -67,6 +77,7 @@ load = (win) ->
 			# If click was on background, not the dialog itself
 			if event.target.classList.contains 'dialogContainer'
 				@props.onClose()
+
 
 	return Dialog
 

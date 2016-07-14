@@ -26,15 +26,16 @@ load = (win) ->
 			return variable
 
 	# Shortcut for using Font Awesome icons in React
-	FaIcon = (name, customProps) ->
-		properties = customProps or {}
+	FaIcon = (name, props = {}) ->
+		className = "fa fa-#{name}"
 
-		if customProps?
-			properties.className = "fa fa-#{name} #{properties.className}"
-		else
-			properties.className = "fa fa-#{name}"
+		# Extend with className from props if any
+		if props.className?
+			className += " #{properties.className}"
 
-		return R.i(properties)
+		props.className = className
+
+		return R.i(props)
 
 	# A convenience method for opening a new window
 	# Callback function (optional) provides window context as argument
@@ -108,6 +109,7 @@ load = (win) ->
 		.delete('revisionId')
 		.delete('author')
 		.delete('timestamp')
+		.delete('_dirPath')
 
 	formatTimestamp = (timestamp) ->
 		return Moment(timestamp, TimestampFormat).format('MMMM Do, YYYY [at] h:mma')

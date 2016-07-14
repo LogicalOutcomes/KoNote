@@ -1,20 +1,23 @@
 .colorKeyBubble
 	display inline-block
-		
+
 	.bubbleContents
 		display flex
 		justify-content center
 		align-items center
-		
-		width 30px
-		height 30px
+
+		transition all .25s ease
+		opacity 1
+
+		&:hover
+			opacity 1 !important
+
+		background transparent
+
+		width 1em
+		height 1em
 		border-radius 50%
 		border 2px solid white
-		transition border-color .15s ease
-		
-		&:hover
-			border-color hsla(0, 0, 0, 0.3)
-			
+
 		.fa
 			color white
-		

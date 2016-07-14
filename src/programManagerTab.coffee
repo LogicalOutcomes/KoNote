@@ -1,8 +1,8 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-Async = require 'async' 
+Async = require 'async'
 Imm = require 'immutable'
 _ = require 'underscore'
 
@@ -15,7 +15,7 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	R = React.DOM 
+	R = React.DOM
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -24,8 +24,9 @@ load = (win) ->
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
+	ColorKeySelection = require('./colorKeySelection').load(win)
 
-	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)	
+	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
 	ProgramManagerTab = React.createFactory React.createClass
 		displayName: 'ProgramManagerTab'
@@ -57,10 +58,16 @@ load = (win) ->
 							{
 								name: "Colour Key"
 								nameIsVisible: false
-								dataPath: ['colorKeyHex']               
+								dataPath: ['colorKeyHex']
 								cellClass: 'colorKeyCell'
 								value: (dataPoint) ->
-									ColorKeyBubble({colorKeyHex: dataPoint.get('colorKeyHex')})
+									ColorKeyBubble({
+										colorKeyHex: dataPoint.get('colorKeyHex')
+										popover: {
+											title: dataPoint.get('name')
+											content: dataPoint.get('description')
+										}
+									})
 							}
 							{
 								name: "Program Name"
@@ -104,7 +111,7 @@ load = (win) ->
 										text: null
 										icon: 'wrench'
 										dialog: ModifyProgramDialog
-										data: 
+										data:
 											clientFileProgramLinks: @props.clientFileProgramLinks
 											programs: @props.programs
 									}
@@ -128,7 +135,7 @@ load = (win) ->
 							"New #{Term 'Program'} "
 						)
 					)
-			) 
+			)
 
 	CreateProgramDialog = React.createFactory React.createClass
 		displayName: 'CreateProgramDialog'
@@ -165,22 +172,12 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Color Key")
-						R.div({},
-							ProgramColors.map (colorKeyHex) =>
-								isSelected = @state.colorKeyHex is colorKeyHex
-								alreadyInUse = @_colorInUse(colorKeyHex)
-
-								ColorKeyBubble({
-									colorKeyHex
-									isSelected
-									alreadyInUse
-									hideContent: true
-									onClick: (colorKeyHex) =>
-										# Allow toggling behaviour
-										colorKeyHex = null if @state.colorKeyHex is colorKeyHex
-										@setState {colorKeyHex}
-								})
-						)
+						ColorKeySelection({
+							colors: ProgramColors
+							data: @props.data.programs
+							selectedColorKeyHex: @state.colorKeyHex
+							onSelect: @_updateColorKeyHex
+						})
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
@@ -191,7 +188,7 @@ load = (win) ->
 							onChange: @_updateDescription
 							rows: 3
 						})
-					)         
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -201,7 +198,7 @@ load = (win) ->
 							className: 'btn btn-success'
 							disabled: not @state.name or not @state.description or not @state.colorKeyHex
 							onClick: @_submit
-						}, 
+						},
 							"Create #{Term 'Program'}"
 						)
 					)
@@ -214,9 +211,8 @@ load = (win) ->
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
 
-		_colorInUse: (colorKeyHex) ->
-			@props.data.programs.find (program) ->
-				program.get('colorKeyHex') is colorKeyHex
+		_updateColorKeyHex: (colorKeyHex) ->
+			@setState {colorKeyHex}
 
 		_buildProgramObject: ->
 			return Imm.fromJS({
@@ -229,21 +225,7 @@ load = (win) ->
 			event.preventDefault()
 
 			newProgram = @_buildProgramObject()
-			alreadyInUse = @_colorInUse(newProgram.get('colorKeyHex'))
-
-			if alreadyInUse
-				Bootbox.confirm {
-					title: "Colour key already assigned"
-					message: "
-						This colour key has already been assigned 
-						to the #{Term 'program'} \"#{alreadyInUse.get('name')}\". 
-						Are you sure you want to use this colour?
-					"
-					callback: (selectedOk) =>
-						if selectedOk then @_createProgram(newProgram)
-				}
-			else
-				@_createProgram(newProgram)
+			@_createProgram(newProgram)
 
 		_createProgram: (newProgram) ->
 			@refs.dialog.setIsLoading(true)
@@ -259,8 +241,9 @@ load = (win) ->
 				@props.onSuccess()
 
 
+	# TODO: Combine with createProgramDialog
 	ModifyProgramDialog = React.createFactory React.createClass
-		displayName: 'ModifyProgramDialog'		
+		displayName: 'ModifyProgramDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -280,7 +263,7 @@ load = (win) ->
 				onClose: @props.onCancel
 			},
 				R.div({className: 'createProgramDialog'},
-					R.div({className: 'form-group'},            
+					R.div({className: 'form-group'},
 						R.label({}, "Name")
 						R.input({
 							className: 'form-control'
@@ -294,22 +277,12 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Colour Key")
-						R.div({},
-							ProgramColors.map (colorKeyHex) =>
-								isSelected = @state.colorKeyHex is colorKeyHex
-								alreadyInUse = @_colorInUse(colorKeyHex) unless colorKeyHex is @props.rowData.get('colorKeyHex')
-
-								ColorKeyBubble({
-									colorKeyHex
-									isSelected
-									alreadyInUse
-									hideContent: true
-									onClick: (colorKeyHex) =>
-										# Allow toggling behaviour
-										colorKeyHex = null if @state.colorKeyHex is colorKeyHex
-										@setState {colorKeyHex}
-								})
-						)
+						ColorKeySelection({
+							colors: ProgramColors
+							data: @props.programs
+							selectedColorKeyHex: @state.colorKeyHex
+							onSelect: @_updateColorKeyHex
+						})
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
@@ -320,7 +293,7 @@ load = (win) ->
 							onChange: @_updateDescription
 							rows: 3
 						})
-					)         
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -332,7 +305,7 @@ load = (win) ->
 								not @state.name or not @state.description or not @state.colorKeyHex
 							) or not @_hasChanges()
 							onClick: @_submit
-						}, 
+						},
 							"Finished"
 						)
 					)
@@ -345,9 +318,8 @@ load = (win) ->
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
 
-		_colorInUse: (colorKeyHex) ->
-			@props.programs.find (program) ->
-				program.get('colorKeyHex') is colorKeyHex			
+		_updateColorKeyHex: (colorKeyHex) ->
+			@setState {colorKeyHex}
 
 		_buildModifiedProgramObject: ->
 			return Imm.fromJS({
@@ -368,27 +340,10 @@ load = (win) ->
 			return not Imm.is originalProgramObject, modifiedProgramObject
 
 		_submit: (event) ->
-			event.preventDefault()			
+			event.preventDefault()
 
 			modifiedProgram = @_buildModifiedProgramObject()
-
-			# Check for color existing usage, unless color hasn't changed
-			newColorKeyHex = modifiedProgram.get('colorKeyHex')
-			alreadyInUse = @_colorInUse(newColorKeyHex) if newColorKeyHex isnt @props.rowData.get('colorKeyHex')
-
-			if alreadyInUse
-				Bootbox.confirm {
-					title: "Colour key already assigned"
-					message: "
-						This colour key has already been assigned 
-						to the #{Term 'program'} \"#{alreadyInUse.get('name')}\". 
-						Are you sure you want to use this colour?
-					"
-					callback: (selectedOk) =>
-						if selectedOk then @_modifyProgram(modifiedProgram)
-				}
-			else
-				@_modifyProgram(modifiedProgram)
+			@_modifyProgram(modifiedProgram)
 
 		_modifyProgram: (modifiedProgram) ->
 			@refs.dialog.setIsLoading(true)
@@ -465,7 +420,7 @@ load = (win) ->
 
 										R.tr({key: clientFileId},
 											if Config.clientFileRecordId?
-												R.td({}, 
+												R.td({},
 													(if recordId.length > 0
 														recordId
 													else
@@ -473,7 +428,7 @@ load = (win) ->
 													)
 												)
 											R.td({}, renderName client.get('clientName'))
-											R.td({}, 
+											R.td({},
 												R.button({
 													className: 'btn btn-danger btn-sm'
 													onClick: @_unenrollClient.bind null, clientFileId
@@ -492,14 +447,14 @@ load = (win) ->
 							R.label({}, "Search")
 							R.input({
 								className: 'form-control'
-								placeholder: "by #{Term 'client'} name" + 
+								placeholder: "by #{Term 'client'} name" +
 								(" or #{Config.clientFileRecordId.label}" if Config.clientFileRecordId?)
 								onChange: @_updateSearchQuery
 								ref: 'clientSearchBox'
 							})
 						)
 						(if searchResults.isEmpty()
-							R.div({className: 'panel-body noData'}, 
+							R.div({className: 'panel-body noData'},
 								"No #{Term 'client'} matches for \"#{@state.searchQuery}\""
 							)
 						else
@@ -515,12 +470,12 @@ load = (win) ->
 										clientFileId = result.get('id')
 										recordId = result.get('recordId')
 
-										clientIsEnrolled = enrolledLinks.find (link) ->                         
+										clientIsEnrolled = enrolledLinks.find (link) ->
 											link.get('clientFileId') is clientFileId
 
 										R.tr({key: clientFileId},
 											if Config.clientFileRecordId?
-												R.td({}, 
+												R.td({},
 													(if recordId.length > 0
 														recordId
 													else
@@ -544,7 +499,7 @@ load = (win) ->
 								)
 							)
 						)
-					)         
+					)
 				)
 				R.div({className: 'btn-toolbar pull-right'},
 					R.button({
@@ -556,7 +511,7 @@ load = (win) ->
 					R.button({
 						className: 'btn btn-success btn-large'
 						onClick: @_submit
-					}, 
+					},
 						"Finished "
 						FaIcon('check')
 					)
@@ -627,7 +582,7 @@ load = (win) ->
 				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
 				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
 				lastName = clientFile.getIn(['clientName', 'last']).toLowerCase()
-				recordId = clientFile.getIn(['recordId']).toLowerCase()       
+				recordId = clientFile.getIn(['recordId']).toLowerCase()
 
 				return queryParts
 				.every (part) ->

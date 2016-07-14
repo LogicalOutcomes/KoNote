@@ -62,15 +62,7 @@ load = (win) ->
 		render: ->
 			formIsValid = @_formIsValid()
 			selectedPlanTemplateHeaders = @state.planTemplateHeaders.find (template) => template.get('id') is @state.templateId
-
-			# if selectedPlanTemplateHeaders?
-			# 	console.log "selectedPlanTemplateHeaders >>>>", selectedPlanTemplateHeaders.toJS()
-			# 	ActiveSession.persist.planTemplates.readRevisions @state.templateId, (err, result) =>
-			# 		if err
-			# 			cb err
-			# 			return
-			# 		selectedPlanTemplate = result
-			# 		console.log "selectedPlanTemplate >>>>>>>>>>>>>", selectedPlanTemplate.toJS()
+			recordIdIsRequired = Config.clientFileRecordId.isRequired
 
 			Dialog({
 				ref: 'dialog'
@@ -120,11 +112,10 @@ load = (win) ->
 											.bind null, program.get('id')
 										key: program.get('id')
 										value: program.get('id')
-										},
+									},
 										ColorKeyBubble({
 											isSelected
 											data: program
-											key: program.get('id')
 										})
 										program.get('name')
 									)
@@ -175,7 +166,7 @@ load = (win) ->
 								className: 'form-control'
 								onChange: @_updateRecordId
 								value: @state.recordId
-								placeholder: "(optional)" unless Config.clientFileRecordId.isRequired
+								placeholder: "(optional)" unless recordIdIsRequired
 								onKeyDown: @_onEnterKeyDown
 							})
 						)
@@ -327,7 +318,7 @@ load = (win) ->
 					, cb
 
 				(cb) =>
-					
+
 					if @state.templateId is '' then cb()
 					else
 

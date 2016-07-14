@@ -491,6 +491,98 @@ addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 
 		finalizeMigrationStep(dataDir, cb)
 
+
+	addProgNoteAuthorProgramIdField = (dataDir, globalEncryptionKey, cb) ->
+		forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+			clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+			forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+				progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
+
+				progNoteObjectFilePath = null
+				progNoteObject = null
+
+				Async.series [
+					(cb) =>
+						Fs.readdir progNotePath, (err, revisions) ->
+							if err
+								cb err
+								return
+
+							progNoteObjectFilePath = Path.join(progNotePath, revisions[0])
+							cb()
+
+					(cb) =>
+						Fs.readFile progNoteObjectFilePath, (err, result) ->
+							if err
+								cb err
+								return
+
+							progNoteObject = JSON.parse globalEncryptionKey.decrypt result
+							cb()
+
+					(cb) =>
+						progNoteObject.authorProgramId = ''
+						encryptedObj = globalEncryptionKey.encrypt JSON.stringify progNoteObject
+
+						Fs.writeFile progNoteObjectFilePath, encryptedObj, cb
+
+				], cb
+
+			, cb
+		, (err) ->
+			if err
+				cb err
+				return
+
+			finalizeMigrationStep(dataDir, cb)
+
+
+	addProgEventAuthorProgramIdField = (dataDir, globalEncryptionKey, cb) ->
+		forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+			clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+			forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+				progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
+
+				progEventObjectFilePath = null
+				progEventObject = null
+
+				Async.series [
+					(cb) =>
+						Fs.readdir progEventPath, (err, revisions) ->
+							if err
+								cb err
+								return
+
+							progEventObjectFilePath = Path.join(progEventPath, revisions[0])
+							cb()
+
+					(cb) =>
+						Fs.readFile progEventObjectFilePath, (err, result) ->
+							if err
+								cb err
+								return
+
+							progEventObject = JSON.parse globalEncryptionKey.decrypt result
+							cb()
+
+					(cb) =>
+						progEventObject.authorProgramId = ''
+						encryptedObj = globalEncryptionKey.encrypt JSON.stringify progEventObject
+
+						Fs.writeFile progEventObjectFilePath, encryptedObj, cb
+
+				], cb
+
+			, cb
+		, (err) ->
+			if err
+				cb err
+				return
+
+			finalizeMigrationStep(dataDir, cb)
+
 # ////////////////////// Migration Series //////////////////////
 
 
@@ -504,6 +596,22 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "1. Add 'description' from latest planTarget to progNote targets"
 				addProgNoteTargetDescription dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "2. Create empty 'userProgramLinks' dataModel directory"
+				createEmptyDirectory dataDir, 'userProgramLinks', cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "3. Add 'authorProgramId' field to progNotes"
+				addProgEventAuthorProgramIdField dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "4. Add 'authorProgramId' field to progEvents"
+				addProgEventAuthorProgramIdField dataDir, globalEncryptionKey, cb
+
 		]
 
 

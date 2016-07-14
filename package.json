@@ -39,7 +39,7 @@
     "nw": "0.14.6-sdk",
     "nwjs-builder": "^1.10.5",
     "string.prototype.startswith": "^0.2.0",
-    "stylus": "^0.50.0"
+    "stylus": "^0.54.5"
   },
   "optionalDependencies": {
     "grunt-appdmg": "^0.4.0"
@@ -69,6 +69,7 @@
     "react": "15.0.2",
     "react-bootstrap": "^0.29.3",
     "react-dom": "15.0.2",
+    "react-immutable-proptypes": "^1.7.1",
     "rimraf": "^2.3.4",
     "source-map-support": "^0.4.0",
     "typeahead.js": "^0.10.5",

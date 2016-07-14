@@ -52,6 +52,7 @@ dataModelDefinitions = [
 					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 					typeId: IdSchema.allow('')
 					relatedProgNoteId: IdSchema
+					authorProgramId: IdSchema.allow('')
 					relatedElement: Joi.object().keys({
 						id: IdSchema
 						type: ['progNoteUnit', 'planSection', 'planTarget']
@@ -87,6 +88,7 @@ dataModelDefinitions = [
 						statusReason: Joi.string().optional()
 						notes: Joi.string()
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
+						authorProgramId: IdSchema.allow('')
 					})
 					Joi.object().keys({
 						type: 'full'
@@ -94,6 +96,7 @@ dataModelDefinitions = [
 						statusReason: Joi.string().optional()
 						templateId: IdSchema
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
+						authorProgramId: IdSchema.allow('')
 						units: Joi.array().items(
 							[
 								Joi.object().keys({
@@ -122,7 +125,6 @@ dataModelDefinitions = [
 												Joi.object().keys({
 													id: IdSchema
 													name: Joi.string()
-													# TODO: Migrate from current target description, so not optional
 													description: Joi.string()
 													notes: Joi.string().allow('')
 													metrics: Joi.array().items(
@@ -230,7 +232,8 @@ dataModelDefinitions = [
 		})
 	}
 
-	# Link a clientFileId to 1 or more programIds
+	## Program Links
+
 	{
 		name: 'clientFileProgramLink'
 		collectionName: 'clientFileProgramLinks'
@@ -240,6 +243,17 @@ dataModelDefinitions = [
 			clientFileId: IdSchema
 			programId: IdSchema
 			status: ['enrolled', 'unenrolled']
+		})
+	}
+	{
+		name: 'userProgramLink'
+		collectionName: 'userProgramLinks'
+		isMutable: true
+		indexes: [['status'], ['userName'], ['programId']]
+		schema: Joi.object().keys({
+			userName: IdSchema
+			programId: IdSchema
+			status: ['assigned', 'unassigned']
 		})
 	}
 ]

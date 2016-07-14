@@ -129,6 +129,7 @@ load = (win, {clientFileId}) ->
 				clientFileId: clientFile.get('id')
 				templateId: template.get('id')
 				backdate: ''
+				authorProgramId: global.ActiveSession.programId or ''
 				units: template.get('units').map (unit) =>
 					switch unit.get('type')
 						when 'basic'
@@ -680,16 +681,11 @@ load = (win, {clientFileId}) ->
 						progEvent = Imm.fromJS(progEvent)
 						.set('relatedProgNoteId', progNoteId)
 						.set('clientFileId', clientFileId)
+						.set('authorProgramId', global.ActiveSession.programId)
 						.set('status', 'default')
 
 						ActiveSession.persist.progEvents.create progEvent, cb
-
-					, (err) =>
-						if err
-							cb err
-							return
-
-						cb()
+					, cb
 			], (err) =>
 				@setState {isLoading: false}
 
@@ -709,6 +705,7 @@ load = (win, {clientFileId}) ->
 	BackdateWidget = React.createFactory React.createClass
 		displayName: 'BackdateWidget'
 		mixins: [React.addons.PureRenderMixin]
+
 		componentDidMount: ->
 			$(@refs.backdate).datetimepicker({
 				format: 'MMM-DD-YYYY h:mm A'
@@ -721,6 +718,7 @@ load = (win, {clientFileId}) ->
 					vertical: 'bottom'
 				}
 			}).on 'dp.change', @props.onChange
+
 		render: ->
 			return R.div({className: 'input-group'},
 				R.input({

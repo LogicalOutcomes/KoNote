@@ -78,6 +78,7 @@ Create.quickNote = (clientFile, cb) ->
 		notes: Faker.lorem.paragraph()
 		timestamp: randomBackdate.format(TimestampFormat)
 		backdate: ''
+		authorProgramId: ''
 	}
 
 	createData 'progNotes', note, cb
@@ -139,6 +140,7 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 		templateId: progNoteTemplate.get('id')
 		backdate: ''
 		timestamp: randomBackdate.format(TimestampFormat)
+		authorProgramId: ''
 		units: [
 			{
 				id: progNoteUnit.get('id')

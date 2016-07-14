@@ -60,6 +60,7 @@ load = (win, {clientFileId}) ->
 				progNoteTotal: null
 				progressEvents: null
 				planTargetsById: Imm.Map()
+				programsById: Imm.Map()
 				metricsById: Imm.Map()
 				loadErrorType: null
 				loadErrorData: null
@@ -94,6 +95,8 @@ load = (win, {clientFileId}) ->
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
 				programs: @state.programs
+				programsById: @state.programsById
+				clientFileProgramLinkHeaders: @state.clientFileProgramLinkHeaders
 				eventTypes: @state.eventTypes
 
 				headerIndex: @state.headerIndex
@@ -127,6 +130,7 @@ load = (win, {clientFileId}) ->
 			clientFileProgramLinkHeaders = null
 			programHeaders = null
 			programs = null
+			programsById = null
 			eventTypes = null
 			eventTypeHeaders = null
 
@@ -274,8 +278,6 @@ load = (win, {clientFileId}) ->
 						.filter (link) ->
 							link.get('clientFileId') is clientFileId and
 							link.get('status') is "enrolled"
-						.map (link) ->
-							link.get('programId')
 
 						cb()
 
@@ -286,9 +288,6 @@ load = (win, {clientFileId}) ->
 							return
 
 						programHeaders = results
-						.filter (program) ->
-							thisProgramId = program.get('id')
-							clientFileProgramLinkHeaders.contains thisProgramId
 
 						cb()
 				(cb) =>
@@ -301,6 +300,10 @@ load = (win, {clientFileId}) ->
 
 						programs = Imm.List(results)
 						.map (program) -> stripMetadata program.get(0)
+
+						programsById = programs
+						.map (program) -> [program.get('id'), program]
+						.fromEntrySeq().toMap()
 
 						checkFileSync programs, @state.programs
 						cb()
@@ -388,6 +391,8 @@ load = (win, {clientFileId}) ->
 						metricsById
 						planTargetsById
 						programs
+						programsById
+						clientFileProgramLinkHeaders
 						eventTypes
 					}, =>
 						setTimeout(=>
@@ -519,27 +524,6 @@ load = (win, {clientFileId}) ->
 				# Nothing else to do.
 				# Persist operations will automatically trigger event listeners
 				# that update the UI.
-
-		_createQuickNote: (notes, backdate, cb) ->
-			if notes != ''
-				note = Imm.fromJS {
-					type: 'basic'
-					status: 'default'
-					clientFileId
-					notes
-					backdate
-				}
-
-				@setState (state) => {isLoading: true}
-
-				global.ActiveSession.persist.progNotes.create note, (err) =>
-					@setState (state) => {isLoading: false}
-
-					if err
-						cb err
-						return
-
-					cb()
 
 		getPageListeners: ->
 			return {
@@ -734,7 +718,10 @@ load = (win, {clientFileId}) ->
 				return Moment createdAt, Persist.TimestampFormat
 			.reverse()
 
-			# Filter out cancelled progEvents
+			# Use programLinks to determine program membership(s)
+			clientPrograms = @props.clientFileProgramLinkHeaders.map (link) =>
+				programId = link.get('programId')
+				@props.programsById.get programId
 
 			return R.div({className: 'clientFilePage'},
 				Spinner {
@@ -749,10 +736,10 @@ load = (win, {clientFileId}) ->
 					Sidebar({
 						clientFile: @props.clientFile
 						clientName
+						clientPrograms
 						recordId
 						activeTabId
 						onTabChange: @_changeTab
-						programs: @props.programs
 					})
 					PlanTab.PlanView({
 						ref: 'planTab'
@@ -770,6 +757,7 @@ load = (win, {clientFileId}) ->
 						isVisible: activeTabId is 'progressNotes'
 						clientFileId
 						clientFile: @props.clientFile
+						clientPrograms
 						progNoteHistories: sortedProgNoteHistories
 						planTargetsById: @props.planTargetsById
 						progEvents: @props.progressEvents
@@ -777,6 +765,7 @@ load = (win, {clientFileId}) ->
 						metricsById: @props.metricsById
 						headerIndex: @props.headerIndex
 						progNoteTotal: @props.progNoteTotal
+						programsById: @props.programsById
 
 						hasChanges: @hasChanges
 						onTabChange: @_changeTab
@@ -811,6 +800,7 @@ load = (win, {clientFileId}) ->
 	Sidebar = React.createFactory React.createClass
 		displayName: 'Sidebar'
 		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			activeTabId = @props.activeTabId
 
@@ -833,7 +823,7 @@ load = (win, {clientFileId}) ->
 					)
 				)
 				R.div({className: 'programs'},
-					(@props.programs.map (program) ->
+					(@props.clientPrograms.map (program) ->
 						R.span({
 							key: program.get('id')
 							style:

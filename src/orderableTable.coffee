@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Table component with toggleable ordering
@@ -28,7 +28,7 @@ load = (win) ->
 				rowKey: ['id']
 				onClickRow: ->
 				rowClass: ->
-				rowIsVisible: -> return true				
+				rowIsVisible: -> return true
 			}
 
 		getInitialState: ->
@@ -41,7 +41,7 @@ load = (win) ->
 			}
 
 		componentDidUpdate: (oldProps, oldState) ->
-			@_updateParentData() unless Imm.is oldProps.tableData, @props.tableData				
+			@_updateParentData() unless Imm.is oldProps.tableData, @props.tableData
 
 		componentDidMount: ->
 			@_updateParentData()
@@ -53,10 +53,10 @@ load = (win) ->
 
 		_reorderData: (tableData) ->
 			orderedData = tableData
-			.sortBy (dataPoint) => 
+			.sortBy (dataPoint) =>
 				value = dataPoint.getIn(@state.sortByData)
 				if typeof value is 'string' then value.toLowerCase() else value
-			.filter (dataPoint) => @props.rowIsVisible(dataPoint)	
+			.filter (dataPoint) => @props.rowIsVisible(dataPoint)
 
 			if @state.isSortAsc
 				orderedData = orderedData.reverse()
@@ -76,12 +76,13 @@ load = (win) ->
 
 			# We have data, let's put it in order
 			orderedData = @_reorderData(@props.tableData)
-			
-			return R.div({className: 'orderableTable animated fadeIn'},
+
+			return R.div({className: "orderableTable animated fadeIn #{'hoverEffect' if @props.openDialog?}"},
 				R.div({className: 'tableHead'},
 					R.div({className: 'tableRow'},
 						(@props.columns.map (column) =>
 							return if column.isDisabled
+
 							R.div({
 								className: 'tableCell'
 								key: column.name
@@ -89,7 +90,7 @@ load = (win) ->
 								R.div({
 									className: 'dataValue'
 									onClick: @_sortByData.bind(null, column.dataPath) unless column.isNotOrderable
-								}, 
+								},
 									column.name unless column.nameIsVisible? and not column.nameIsVisible
 
 									if column.dataPath? and _.isEqual(@state.sortByData, column.dataPath)
@@ -106,14 +107,24 @@ load = (win) ->
 						className: 'tableBody'
 					},
 						(orderedData.map (dataPoint) =>
-							R.div({
+							# Work out props for the row, whether it opens a dialog or not
+							rowProps = {
 								className: [
 									'tableRow'
 									executeIfFunction @props.rowClass(dataPoint)
 								].join ' '
 								key: dataPoint.getIn(@props.rowKey)
 								onClick: @props.onClickRow dataPoint
-							},
+							}
+
+							if @props.openDialog?
+								rowDiv = OpenDialogLink
+								rowProps = _.extend(rowProps, {dataPoint, dialog: @props.openDialog.dialog}, @props.openDialog.props)
+							else
+								rowDiv = R.div
+
+
+							rowDiv(rowProps,
 								(@props.columns.map (column) =>
 									return if column.isDisabled
 									R.div({
@@ -122,9 +133,9 @@ load = (win) ->
 											'tableCell'
 											'hasButtons' if column.buttons?
 											column.cellClass if column.cellClass?
-										].join ' '									
+										].join ' '
 									},
-										hasDataValue = column.dataPath? and dataPoint.getIn(column.dataPath).toString().length > 0
+										hasDataValue = column.dataPath? and dataPoint.getIn(column.dataPath)? and dataPoint.getIn(column.dataPath).toString().length > 0
 										hasExtraDataValue = column.extraPath? and dataPoint.getIn(column.extraPath).toString().length > 0
 
 										R.div({
@@ -177,7 +188,7 @@ load = (win) ->
 														R.button({
 															className: button.className
 															onClick: button.onClick(dataPoint)
-														}, 
+														},
 															button.text if button.text?
 															FaIcon(button.icon) if button.icon?
 														)

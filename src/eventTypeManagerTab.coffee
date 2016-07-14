@@ -1,8 +1,8 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-Async = require 'async'	
+Async = require 'async'
 Imm = require 'immutable'
 
 Persist = require './persist'
@@ -14,7 +14,7 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	R = React.DOM	
+	R = React.DOM
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -23,8 +23,10 @@ load = (win) ->
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
-	
+	ColorKeySelection = require('./colorKeySelection').load(win)
+
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
+
 
 	EventTypeManagerTab = React.createFactory React.createClass
 		displayName: 'EventTypeManagerTab'
@@ -117,7 +119,7 @@ load = (win) ->
 										className: 'btn btn-warning'
 										text: null
 										icon: 'wrench'
-										dialog: ModifyEventTypeDialog										
+										dialog: ModifyEventTypeDialog
 										data: {
 											onSuccess: @_modifyEventType
 											eventTypes: @state.eventTypes
@@ -146,14 +148,13 @@ load = (win) ->
 			@setState {eventTypes: @state.eventTypes.push newEventType}
 
 		_modifyEventType: (modifiedEventType) ->
-			console.log "modifiedEventType", modifiedEventType
-
 			originalEventType = @state.eventTypes
 			.find (eventType) -> eventType.get('id') is modifiedEventType.get('id')
-			
+
 			eventTypeIndex = @state.eventTypes.indexOf originalEventType
 
 			@setState {eventTypes: @state.eventTypes.set(eventTypeIndex, modifiedEventType)}
+
 
 	CreateEventTypeDialog = React.createFactory React.createClass
 		displayName: 'CreateEventTypeDialog'
@@ -190,21 +191,12 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Color Key")
-						R.div({},
-							EventTypeColors.map (colorKeyHex) =>
-								isSelected = @state.colorKeyHex is colorKeyHex
-								alreadyInUse = @_colorInUse(colorKeyHex)
-
-								ColorKeyBubble({
-									colorKeyHex
-									isSelected
-									alreadyInUse
-									onClick: (colorKeyHex) =>
-										# Allow toggling behaviour
-										colorKeyHex = null if @state.colorKeyHex is colorKeyHex
-										@setState {colorKeyHex}
-								})
-						)
+						ColorKeySelection({
+							colors: EventTypeColors
+							data: @props.data.eventTypes
+							selectedColorKeyHex: @state.colorKeyHex
+							onSelect: @_updateColorKeyHex
+						})
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
@@ -215,7 +207,7 @@ load = (win) ->
 							onChange: @_updateDescription
 							rows: 3
 						})
-					)					
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -225,7 +217,7 @@ load = (win) ->
 							className: 'btn btn-success'
 							disabled: not @state.name or not @state.description or not @state.colorKeyHex
 							onClick: @_submit
-						}, 
+						},
 							"Create #{Term 'Event Type'}"
 						)
 					)
@@ -238,9 +230,8 @@ load = (win) ->
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
 
-		_colorInUse: (colorKeyHex) ->
-			@props.data.eventTypes.find (eventType) ->
-				eventType.get('colorKeyHex') is colorKeyHex
+		_updateColorKeyHex: (colorKeyHex) ->
+			@setState {colorKeyHex}
 
 		_buildEventTypeObject: ->
 			return Imm.fromJS {
@@ -254,21 +245,7 @@ load = (win) ->
 			event.preventDefault()
 
 			newEventType = @_buildEventTypeObject()
-			alreadyInUse = @_colorInUse(newEventType.get('colorKeyHex'))
-
-			if alreadyInUse
-				Bootbox.confirm {
-					title: "Colour key already assigned"
-					message: "
-						This colour key has already been assigned 
-						to the #{Term 'event type'} \"#{alreadyInUse.get('name')}\". 
-						Are you sure you want to use this colour?
-					"
-					callback: (selectedOk) =>
-						if selectedOk then @_createEventType(newEventType)
-				}
-			else
-				@_createEventType(newEventType)
+			@_createEventType(newEventType)
 
 		_createEventType: (newEventType) ->
 			@refs.dialog.setIsLoading true
@@ -276,7 +253,7 @@ load = (win) ->
 			# Create the new eventType
 			ActiveSession.persist.eventTypes.create newEventType, (err, result) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
-				
+
 				if err
 					CrashHandler.handle err
 					return
@@ -321,21 +298,12 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Colour Key")
-						R.div({},
-							EventTypeColors.map (colorKeyHex) =>
-								isSelected = @state.colorKeyHex is colorKeyHex
-								alreadyInUse = @_colorInUse(colorKeyHex) unless colorKeyHex is @props.rowData.get('colorKeyHex')
-
-								ColorKeyBubble({
-									colorKeyHex
-									isSelected
-									alreadyInUse
-									onClick: (colorKeyHex) =>
-										# Allow toggling behaviour
-										colorKeyHex = null if @state.colorKeyHex is colorKeyHex
-										@setState {colorKeyHex}
-								})
-						)
+						ColorKeySelection({
+							colors: EventTypeColors
+							onSelect: @_updateColorKeyHex
+							data: @props.eventTypes
+							selectedColorKeyHex: @state.colorKeyHex
+						})
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
@@ -346,7 +314,7 @@ load = (win) ->
 							onChange: @_updateDescription
 							rows: 3
 						})
-					)					
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -358,7 +326,7 @@ load = (win) ->
 								not @state.name or not @state.description or not @state.colorKeyHex
 							) or not @_hasChanges()
 							onClick: @_submit
-						}, 
+						},
 							"Finished"
 						)
 					)
@@ -371,9 +339,8 @@ load = (win) ->
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
 
-		_colorInUse: (colorKeyHex) ->
-			@props.eventTypes.find (eventType) ->
-				eventType.get('colorKeyHex') is colorKeyHex	
+		_updateColorKeyHex: (colorKeyHex) ->
+			@setState {colorKeyHex}
 
 		_buildModifiedEventTypeObject: ->
 			return Imm.fromJS({
@@ -388,27 +355,10 @@ load = (win) ->
 			return not Imm.is @props.rowData, @_buildModifiedEventTypeObject()
 
 		_submit: (event) ->
-			event.preventDefault()			
+			event.preventDefault()
 
 			modifiedEventType = @_buildModifiedEventTypeObject()
-
-			# Check for color existing usage, unless color hasn't changed
-			newColorKeyHex = modifiedEventType.get('colorKeyHex')
-			alreadyInUse = @_colorInUse(newColorKeyHex) if newColorKeyHex isnt @props.rowData.get('colorKeyHex')
-
-			if alreadyInUse
-				Bootbox.confirm {
-					title: "Colour key already assigned"
-					message: "
-						This colour key has already been assigned 
-						to the #{Term 'event type'} \"#{alreadyInUse.get('name')}\". 
-						Are you sure you want to use this colour?
-					"
-					callback: (selectedOk) =>
-						if selectedOk then @_modifyEventType(modifiedEventType)
-				}
-			else
-				@_modifyEventType(modifiedEventType)
+			@_modifyEventType(modifiedEventType)
 
 		_modifyEventType: (modifiedEventType) ->
 			@refs.dialog.setIsLoading(true)
@@ -416,14 +366,12 @@ load = (win) ->
 			# Update the eventType revision, and close
 			ActiveSession.persist.eventTypes.createRevision modifiedEventType, (err, result) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
-				
+
 				if err
 					CrashHandler.handle err
 					return
 
 				# Deliver directly to manager, no top-level listeners available (yet)
-				console.log "@props.onSuccess", @props.onSuccess
-				console.log "result", result
 				@props.onSuccess result
 				@props.onClose()
 
