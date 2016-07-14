@@ -584,7 +584,9 @@ load = (win) ->
 				# key requires strict permissions or ssh ignores it
 				# unfortunately no cross-platform way to set this
 				if process.platform is 'win32'
-					changeperm = 'icacls authkey /inheritance:r /grant:r #{process.env.user}:(F)'
+					user = process.env.username
+					console.log user
+					changeperm = "icacls authkey /inheritance:r /grant:r #{process.env.username}:(F)"
 				else
 					changeperm = 'chmod 600 authkey'
 				exec changeperm, (err) =>
@@ -600,6 +602,9 @@ load = (win) ->
 						isLoading: true
 						installProgress: {message: "Syncing with Cloud (this may take some time)..."}
 					}
+					if process.platform is 'win32'
+						Fs.writeFileSync 'rs.cmd', rs
+						rs = 'rs.cmd'
 					exec rs, (err, stdout, stderr) =>
 						if err
 							throw err
