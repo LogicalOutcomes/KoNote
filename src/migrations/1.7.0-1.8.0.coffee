@@ -32,7 +32,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 			Fs.readdir userDir, (err, fileNames) ->
 				if err
 					if err.code is 'ENOENT'
-						cb new UnknownUserNameError()
+						cb new Error "Unknown Username"
 						return
 
 					cb err
@@ -71,7 +71,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 					console.error err.stack
 
 					# If decryption fails, we're probably using the wrong key
-					cb new IncorrectPasswordError()
+					cb new Error "Incorrect Password"
 					return
 
 				accountKey = SymmetricEncryptionKey.import(accountKeyBuf.toString())

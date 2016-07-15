@@ -196,6 +196,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password, cb=(->)) ->
 			console.error "Migration failed:"
 			console.error err
 			console.error err.stack
+			cb err
 			return
 
 		console.info "------ Migration Complete! ------"
