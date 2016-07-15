@@ -9,6 +9,7 @@ Rimraf = require 'rimraf'
 Config = require './config'
 Persist = require './persist'
 Atomic = require './persist/atomic'
+Migration = require './migrations'
 
 yauzl = require('yauzl');
 path = require("path")
@@ -333,9 +334,10 @@ load = (win) ->
 
 		_restoreBackup: (backupfile) ->
 			dataDir = Config.dataDirectory
-			backupDir = dataDir + '_tmp_backup-' + Date.now()
-			tmpDir = dataDir + '_tmp_import'
+			tmpDir = dataDir + '_tmp_import' + Date.now()
 			atomicOp = null
+			dataVersion = null
+			appVersion = null
 			
 			Async.series [
 				(cb) =>
@@ -344,18 +346,7 @@ load = (win) ->
 							if err
 								cb err
 								return
-					Fs.rename dataDir, backupDir, (err) =>
-						if err
-							@setState {
-								isLoading: false
-							}
-							Bootbox.alert {
-								title: "Error"
-								message: "Unable to create temp data directory. Import aborted."
-							}
-							cb err
-							return
-						cb()
+							cb()
 
 				(cb) =>
 					Atomic.writeDirectoryNormally dataDir, tmpDir, (err, op) =>
@@ -378,13 +369,6 @@ load = (win) ->
 				(cb) =>
 					yauzl.open backupfile, { lazyEntries: true }, (err, zipfile) =>
 						if err
-							@setState {
-								isLoading: false
-							}
-							Bootbox.alert {
-								title: "Error"
-								message: "Unable to open zip file. Please check that you have a valid data file."
-							}
 							cb err
 							return
 						zipfile.readEntry()
@@ -414,62 +398,94 @@ load = (win) ->
 						zipfile.on 'close', =>
 							# zip extracted; check metadata
 							unless Fs.existsSync(path.join(tmpDir, 'version.json')) and Fs.existsSync('./package.json')
-								@setState {isLoading: false}
-								Bootbox.alert {
-									title: "Data Import Failed!"
-									message: "Invalid data version. Please ensure you have selected the correct backup file and try again."
-								}
-								cb err
+								cb new Error 'Invalid Data Version'
 								return
 							cb()
 							
 				(cb) =>
-					appVersion = JSON.parse(Fs.readFileSync('./package.json')).version
-					dataVersion = JSON.parse(Fs.readFileSync(path.join(tmpDir, 'version.json'))).dataVersion
-					unless appVersion is dataVersion
-						@setState {isLoading: false}
-						Bootbox.alert {
-							title: "Data Import Failed!"
-							message: "Invalid data version. Please ensure you have selected the correct backup file and try again."
-						}
-						cb err
-						return
-					cb()
+					Fs.readFile './package.json', (err, result) =>
+						if err
+							cb err
+						appVersion = JSON.parse(result).version
+						cb()
+				
+				(cb) =>
+					Fs.readFile path.join(tmpDir, 'version.json'), (err, result) =>
+						if err
+							cb err
+						try
+							dataVersion = JSON.parse(result).dataVersion
+							cb()
+						catch err
+							cb new Error "Invalid Data Version"
 
 				(cb) =>
-					atomicOp.commit cb
+					if appVersion is dataVersion
+						console.log "versions match"
+						@setState {isLoading: false}
+						atomicOp.commit cb
+						cb()
+					else
+						@setState {isLoading: false}
+						Bootbox.dialog {
+							title: "Migration Required"
+							message: "You are attempting to import data from a previous version of KoNote. " + 
+								"The data will be migrated to the current version. To continue, please log in with an administrator account: <br><br>" +
+								'<input id="username" name="username" type="text" placeholder="username" class="form-control input-md"> <br>' +
+								'<input id="password" name="password" type="password" placeholder="password" class="form-control input-md"> <br>'
+							buttons: {
+								cancel: {
+									label: "Cancel"
+									className: 'btn-default'	
+									callback: =>
+										cb new Error 'Data migration aborted'
+								}
+								continue: {
+									label: "Continue"
+									className: 'btn-primary'
+									callback: =>
+										@setState {
+											isLoading: true
+											installProgress: {message: "Upgrading data to current version..."}
+										}
+										username = $('#username').val()
+										password = $('#password').val()
+										Migration.runMigration tmpDir, dataVersion, appVersion, username, password, (err) =>
+											if err
+												cb err
+											atomicOp.commit cb
+											cb()
+								}
+							}
+						}
 
 			], (err) =>
 				if err
 					@setState {isLoading: false}
+					console.error err
+
+					Rimraf tmpDir, (err) =>
+						if err
+							console.error err
+							return
 
 					if err instanceof Persist.IOError
 						Bootbox.alert {
 							title: "Connection Error (IOError)"
 							message: "Please check your network connection and try again."
 						}
-						console.error err
 						return
-
-					errCode = [
-						err.name or ''
-						err.code or err.cause.code
-					].join ' '
 
 					Bootbox.alert {
 						title: "Data Import Failed"
 						message: """
 							Sorry, #{Config.productName} was unable to restore the data file.
-							Please check your network connection and try again. If the problem persists,
-							please contact technical support at <u>#{Config.supportEmailAddress}</u> 
-							with the Error Code: \"#{errCode}\".
+							If the problem persists, please contact technical support at <u>#{Config.supportEmailAddress}</u> 
+							and include the following: \"#{err}\".
 						"""
 					}
-
-					console.error err
 					return
 
-				console.log "data import successfull"
 				Bootbox.alert {
 					title: "Data Import Successful!"
 					message: "KoNote will now restart..."
