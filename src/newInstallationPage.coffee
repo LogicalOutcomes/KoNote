@@ -460,8 +460,8 @@ load = (win) ->
 						}
 
 			], (err) =>
+				@setState {isLoading: false}
 				if err
-					@setState {isLoading: false}
 					console.error err
 
 					Rimraf tmpDir, (err) =>
