@@ -20,7 +20,6 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 
 	Async.series [
 		# Create the empty clientFile
-
 		(cb) ->
 			Create.clientFile (err, result) ->
 				if err
@@ -44,13 +43,13 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 
 		# Apply the target to a section, apply to clientFile, save
 		(cb) ->
-
 			sliceSize = Math.floor(planTargets.size / template.clientFileSections)
 
 			targetIds = planTargets
 			.map (target) -> target.get('id')
 
 			x = 0
+
 			Async.times template.clientFileSections, (index, cb) =>
 				sectionTargetIds = targetIds.slice(x, x + sliceSize)
 				# randomly chooses a status, with a higher probability of 'default'
@@ -99,7 +98,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 					return
 
 				progNotes = results
-				console.log "Created progNotes", progNotes.toJS()
+				console.log "Created #{progNotes.size} progNotes"
 				cb()
 
 		# Create a # of progEvents for each progNote in the clientFile
@@ -118,7 +117,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 					return
 
 				progEvents = Imm.List(results)
-				console.log "Created #{progEvents.size} sets of progEvents in total", progEvents.toJS()
+				console.log "Created #{template.progEvents} progEvents for each progNote"
 				cb()
 
 	], (err) ->
@@ -163,13 +162,13 @@ runSeries = (templateFileName = 'seedSmall') ->
 			Fs.readFile "./src/seeds/templates/#{templateFileName}.json", (err, result) ->
 				if err
 					if err.code is "ENOENT"
-						console.error "#{templateFileName}: Template does not exist."
+						cb new Error "Template \"#{templateFileName}.json\" does not exist in /templates"
 
 					cb err
 					return
 
-				console.log JSON.parse(result)
 				template = JSON.parse(result)
+				console.table template
 
 				cb()
 
@@ -226,7 +225,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 					return
 
 				clientFiles = results
-				console.log "#{clientFiles.size} clientFiles generated:", clientFiles.toJS()
+				console.log "#{clientFiles.size} clientFiles generated"
 				console.groupEnd('Client Files')
 				cb()
 
@@ -245,7 +244,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 					return
 
 				links = Imm.List(result)
-				console.log "Created #{clientFiles.size} link(s) for each of the #{programs.size} program(s)"
+				console.log "Created #{clientFiles.size} link(s) for each of #{programs.size} program(s)"
 				console.groupEnd('Program Links')
 				cb()
 
@@ -254,10 +253,17 @@ runSeries = (templateFileName = 'seedSmall') ->
 		delete global.isSeeding
 
 		if err
-			console.error "Problem running seeding series:", err
+			# Close any currently open logging groups to make sure the error is seen
+			# Yeah, this sucks.
+			for i in [0...1000]
+				console.groupEnd()
+
+			console.error "Seeding failed:"
+			console.error err
+			console.error err.stack
 			return
 
-		console.log "Finished Seeding Series!"
+		console.info "------ Seeding Complete! ------"
 
 
 module.exports = {runSeries}

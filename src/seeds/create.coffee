@@ -40,7 +40,6 @@ Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 	randomBackdate = Moment().subtract(randomDay, 'days')
 	randomEnddate = Moment().subtract(randomDay, 'days').add(3, 'days')
 
-	console.log "EVENTTYPES >>>>> ", eventTypes.toJS()
 	eventTypeIds = eventTypes
 	.map (eventType) -> eventType.get('id')
 	.toJS()
@@ -59,6 +58,7 @@ Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 		# statusReason: optional
 		typeId: randomTypeId
 		relatedProgNoteId
+		authorProgramId: ''
 		clientFileId
 		relatedElement: ''
 	}
@@ -301,10 +301,11 @@ Create.progNotes = (quantity, props, cb) ->
 		console.log "Created #{quantity} progNotes"
 		cb null, Imm.List(results)
 
-Create.planTargets = (targetQuantity, clientFile, metrics, cb) ->
-	sliceSize = Math.floor(metrics.size / targetQuantity)
+Create.planTargets = (quantity, clientFile, metrics, cb) ->
+	sliceSize = Math.floor(metrics.size / quantity)
 	x = 0
-	Async.times targetQuantity, (index, cb) =>
+
+	Async.times quantity, (index, cb) =>
 		targetMetrics = metrics.slice(x, x + sliceSize)
 		Create.planTarget(clientFile, targetMetrics, cb)
 		x = x + sliceSize
@@ -313,7 +314,7 @@ Create.planTargets = (targetQuantity, clientFile, metrics, cb) ->
 			cb err
 			return
 
-		console.log "Created #{targetQuantity} planTargets"
+		console.log "Created #{quantity} planTargets"
 		cb null, Imm.List(results)
 
 Create.programs = (quantity, cb) ->
@@ -332,7 +333,6 @@ Create.clientFileProgramLinks = (clientFiles, program, cb) ->
 				cb err
 				return
 
-			console.log "Linked clientFile \"#{clientFile.getIn(['clientName', 'last'])}\" to program \"#{program.get('name')}\""
 			cb null, Imm.List(result)
 	, cb
 
