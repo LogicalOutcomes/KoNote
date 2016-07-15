@@ -136,6 +136,7 @@ load = (win) ->
 				$password.focus()
 
 		suggestClose: ->
+			@setState {isLoading: false}
 			if global.isSetUp
 				@props.closeWindow()
 			else
