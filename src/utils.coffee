@@ -49,10 +49,9 @@ load = (win) ->
 		}, cb
 
 	renderName = (name) ->
-		result = []
-		result.push name.get('first')
+		result = [name.get('first')]
 
-		if name.has('middle') and name.get('middle').size
+		if name.get('middle')
 			result.push name.get('middle')
 
 		result.push name.get('last')
