@@ -300,7 +300,6 @@ Create.progNotes = (quantity, props, cb) ->
 			cb err
 			return
 
-		console.log "Created #{quantity} progNotes"
 		cb null, Imm.List(results)
 
 Create.planTargets = (quantity, clientFile, metrics, cb) ->
