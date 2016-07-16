@@ -181,13 +181,11 @@ load = (win) ->
 							onChange: (event) =>
 								# Convert event value (string) to JS numerical array
 								timeSpanArray = event.target.value.split(",")
-								console.log "Moved to", timeSpanArray
 								# Use index values to fetch moment objects from xTicks
 								start = xTicks.get Number(timeSpanArray[0])
 								end = xTicks.get Number(timeSpanArray[1])
 
 								newTimeSpan = Imm.Map {start, end}
-								console.log "timespan changing to:", newTimeSpan.toJS()
 								@setState {timeSpan: newTimeSpan}
 							formatter: ([start, end]) =>
 								return unless start? and end?

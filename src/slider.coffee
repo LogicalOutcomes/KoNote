@@ -53,13 +53,7 @@ load = (win) ->
 			# Destroy it if already exists
 			if @slider? then @slider.slider('destroy')
 
-			console.log "Slider timeSpan:", @props.timeSpan.toJS()
-
-			return unless @props.timeSpan.get('start') and @props.timeSpan.get('end')
-
 			value = @_calculateIndexValues(@props.timeSpan)
-
-			console.log "Slider value:", value
 
 			@slider = $(@refs.slider).slider({
 				enabled: true
