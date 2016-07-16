@@ -1,4 +1,4 @@
-# Copyright (c) Konode. All rights reserved.
+	# Copyright (c) Konode. All rights reserved.
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
@@ -117,7 +117,7 @@ load = (win) ->
 							)
 						)
 						R.div({className: 'rightMenu'},
-							R.div({className: 'btn-group btn-group'},	
+							R.div({className: 'btn-group btn-group'},
 								R.button({
 									className: 'addSection btn btn-default'
 									onClick: @_addSection
@@ -155,7 +155,7 @@ load = (win) ->
 									placement: 'bottom'
 									title: "Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
 								}
-							})	
+							})
 						)
 					)
 					SectionsView({
@@ -353,7 +353,7 @@ load = (win) ->
 
 		_createTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
-				
+
 				unless templateName
 					return
 
@@ -377,7 +377,7 @@ load = (win) ->
 					status: 'default'
 					sections: templateSections
 				}
-				
+
 				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
 					if err instanceof Persist.IOError
 						console.error err

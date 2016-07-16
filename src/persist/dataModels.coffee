@@ -17,6 +17,7 @@ dataModelDefinitions = [
 			['clientName', 'middle']
 			['clientName', 'last']
 			['recordId']
+			['status']
 		]
 		schema: Joi.object().keys({
 			clientName: Joi.object().keys({
@@ -24,6 +25,8 @@ dataModelDefinitions = [
 				middle: Joi.string().allow('')
 				last: Joi.string()
 			})
+			status: ['active', 'inactive', 'discharged']
+			statusReason: Joi.string().optional()
 			recordId: [Joi.string(), '']
 			plan: Joi.object().keys({
 				sections: Joi.array().items(

@@ -259,6 +259,20 @@ load = (win) ->
 					@setState {clientFileHeaders}
 					@_openClientFile(newFile.get('id')) unless global.isSeeding
 
+				'createRevision:clientFile': (newRev) =>
+					clientFileId = newRev.get('id')
+					existingClientFileHeader = @state.clientFileHeaders
+					.find (clientFileHeader) -> clientFileHeader.get('id') is newRev.get('id')
+
+					@setState (state) ->
+						if existingClientFileHeader?
+							clientFileIndex = state.clientFileHeaders.indexOf existingClientFileHeader
+							clientFileHeaders = state.clientFileHeaders.set clientFileIndex, newRev
+						else
+							# clientFileHeaders = state.clientFileHeaders.push newRev
+							return
+						return {clientFileHeaders}
+
 				'create:program createRevision:program': (newRev) =>
 					programId = newRev.get('id')
 					# Updating or creating program?
@@ -304,6 +318,7 @@ load = (win) ->
 
 				queryText: ''
 				queryResults: Imm.List()
+				showingDormant: false
 
 				orderedQueryResults: Imm.List()
 				hoverClientId: null
@@ -335,7 +350,9 @@ load = (win) ->
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
 
 			# Add in all program objects this clientFile's a member of
-			queryResults = @state.queryResults.map (clientFile) =>
+
+			queryResults = @state.queryResults
+			.map (clientFile) =>
 				clientFileId = clientFile.get('id')
 
 				programMemberships = @props.clientFileProgramLinks
@@ -356,7 +373,6 @@ load = (win) ->
 					isVisible: @props.isLoading
 					message: @props.loadingMessage
 				}
-
 				R.a({
 					id: 'expandMenuButton'
 					className: 'menuIsOpen' if @state.menuIsOpen
@@ -472,6 +488,20 @@ load = (win) ->
 								if smallHeader then 'show' else 'hidden'
 							].join ' '
 						},
+							R.div({id: 'filterSelectionContainer'}
+								R.span({id: 'toggleDeactivated'},
+									R.div({className: "checkbox"},
+										R.label({}
+											R.input({
+												onChange: @_toggleDormant
+												type: 'checkbox'
+												checked: @state.showingDormant
+											})
+											"Show deactivated",
+										)
+									)
+								)
+							)
 							OrderableTable({
 								tableData: queryResults
 								noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
@@ -502,6 +532,10 @@ load = (win) ->
 										name: "Given Name(s)"
 										dataPath: ['clientName', 'first']
 										extraPath: ['clientName', 'middle']
+									}
+									{
+										name: "Status"
+										dataPath: ['status']
 									}
 									{
 										name: Config.clientFileRecordId.label
@@ -593,7 +627,16 @@ load = (win) ->
 		_refreshResults: ->
 			# Return all results if search query is empty
 			if @state.queryText.trim().length is 0
-				@setState {queryResults: @props.clientFileHeaders}
+				if @state.showingDormant is false
+					# TODO: Move this logic to render
+					queryResults = @props.clientFileHeaders
+					.filter (clientFile) ->
+						clientFile.get('status') is 'active'
+
+					@setState {queryResults}
+				else
+					queryResults = @props.clientFileHeaders
+				@setState {queryResults}
 				return
 
 			# Split into query parts
@@ -622,7 +665,18 @@ load = (win) ->
 
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
-
+		_toggleDormant: ->
+			# this should be able to be refactored to use the _refresh method, but i couldn't get it to work.
+			if @state.showingDormant is true
+				queryResults = @props.clientFileHeaders
+				.filter (clientFile) ->
+					clientFile.get('status') is 'active'
+				showingDormant = false
+				@setState {queryResults, showingDormant}
+			else
+				queryResults = @props.clientFileHeaders
+				showingDormant = true
+				@setState {queryResults, showingDormant}
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
 		_home: ->

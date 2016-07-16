@@ -739,6 +739,8 @@ load = (win, {clientFileId}) ->
 						clientPrograms
 						recordId
 						activeTabId
+						programs: @props.programs
+						status: @props.clientFile.get('status')
 						onTabChange: @_changeTab
 					})
 					PlanTab.PlanView({
@@ -836,6 +838,10 @@ load = (win, {clientFileId}) ->
 				R.div({className: 'recordId'},
 					R.span({}, renderRecordId @props.recordId, true)
 				)
+				unless @props.status is 'active'
+					R.div({className: 'clientStatus'},
+						@props.status.toUpperCase()
+					)
 				R.div({className: 'tabStrip'},
 					SidebarTab({
 						name: Term('Plan')

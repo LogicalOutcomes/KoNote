@@ -1,6 +1,6 @@
 /*
 Copyright (c) Konode. All rights reserved.
-This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+This source code is subject to the terms of the Mozilla Public License, v. 2.0
 that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 grunt task for release builds of konote
@@ -15,7 +15,7 @@ var release = [];
 module.exports = function(grunt) {
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
-		
+
 		prompt: {
 			platformType: {
 				options: {
@@ -269,9 +269,9 @@ module.exports = function(grunt) {
 					ext: '.js'
 				}]
 			}
-    	}	
+    	}
 	});
-	
+
 	// load the plugins
 	grunt.loadNpmTasks('grunt-exec');
 	grunt.loadNpmTasks('grunt-contrib-copy');
@@ -284,12 +284,12 @@ module.exports = function(grunt) {
 	if (process.platform == 'darwin') {
 		grunt.loadNpmTasks('grunt-appdmg');
 	}
-	
+
 	grunt.registerTask('build', function() {
 		grunt.task.run('prompt');
 		grunt.task.run('release');
 	});
-	
+
 	grunt.registerTask('release', function() {
 		grunt.task.run('clean:temp');
 		grunt.task.run('exec:test');

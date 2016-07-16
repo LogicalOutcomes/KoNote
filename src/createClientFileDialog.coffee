@@ -17,7 +17,6 @@ load = (win) ->
 	R = React.DOM
 
 	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
-	{FaIcon, stripMetadata} = require('./utils').load(win)
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -25,7 +24,7 @@ load = (win) ->
 	ProgramBubbles = require('./programBubbles').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
-	{renderName, renderRecordId} = require('./utils').load(win)
+	{renderName, renderRecordId, FaIcon, stripMetadata} = require('./utils').load(win)
 
 	CreateClientFileDialog = React.createFactory React.createClass
 		displayName: 'CreateClientFileDialog'
@@ -233,7 +232,8 @@ load = (win) ->
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
-			  recordId
+			  recordId: recordId
+			  status: 'active'
 			  plan: {
 			    sections: []
 			  }

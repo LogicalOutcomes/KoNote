@@ -44,7 +44,6 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 		# Apply the target to a section, apply to clientFile, save
 		(cb) ->
 			sliceSize = Math.floor(planTargets.size / template.clientFileSections)
-
 			targetIds = planTargets
 			.map (target) -> target.get('id')
 

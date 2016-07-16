@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Fs = require 'fs'
@@ -11,10 +11,9 @@ Persist = require './persist'
 Atomic = require './persist/atomic'
 Migration = require './migrations'
 
-yauzl = require('yauzl');
-path = require("path")
-mkdirp = require("mkdirp")
-
+yauzl = require 'yauzl'
+path = require 'path'
+mkdirp = require 'mkdirp'
 
 load = (win) ->
 	# Libraries from browser context
@@ -35,7 +34,7 @@ load = (win) ->
 		displayName: 'NewInstallationPage'
 		mixins: [React.addons.PureRenderMixin]
 
-		init: ->			
+		init: ->
 			@_testDataDirectory()
 			@_testLocalWritePermissions()
 
@@ -58,7 +57,7 @@ load = (win) ->
 					title: "Database folder not found"
 					message: """
 						The destination folder specified for the database installation
-						can not be found on the file system. 
+						can not be found on the file system.
 						Please check the 'dataDirectory' path in your configuration file.
 					"""
 					callback: =>
@@ -145,7 +144,7 @@ load = (win) ->
 					buttons: {
 						cancel: {
 							label: "No"
-							className: 'btn-default'							
+							className: 'btn-default'
 						}
 						discard: {
 							label: "Yes"
@@ -182,7 +181,7 @@ load = (win) ->
 								src: './assets/brand/logo.png'
 							})
 							R.div({id: 'version'}, "v#{Config.version}")
-						)						
+						)
 					)
 					R.div({
 						id: 'contentContainer'
@@ -207,14 +206,14 @@ load = (win) ->
 												extension: 'zip'
 												onImport: @_confirmRestore
 											}
-										}, 
+										},
 											"Restore Backup"
 											FaIcon('upload right-side')
 										)
 										R.button({
 											className: 'btn btn-lg btn-success'
 											onClick: @_switchTab.bind null, 'createAdmin'
-										}, 
+										},
 											"Create Admin Account"
 											FaIcon('arrow-right right-side')
 										)
@@ -223,7 +222,7 @@ load = (win) ->
 							when 'createAdmin'
 								R.div({ref: 'createAdmin'},
 									R.h2({}, "Your username will be \"admin\"")
-									R.p({}, 								
+									R.p({},
 										"Please choose a password"
 									)
 									R.div({
@@ -244,10 +243,10 @@ load = (win) ->
 													ref: 'password'
 													id: 'password'
 													className: 'form-control'
-													type: 'password'											
+													type: 'password'
 													placeholder: "Set Password"
 													value: @state.password
-													onChange: @_updatePassword											
+													onChange: @_updatePassword
 												})
 												R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
 											)
@@ -269,7 +268,7 @@ load = (win) ->
 													ref: 'passwordConfirmation'
 													id: 'passwordConfirmation'
 													className: 'form-control'
-													type: 'password'											
+													type: 'password'
 													placeholder: "Password again"
 													value: @state.passwordConfirmation
 													onChange: @_updatePasswordConfirmation
@@ -298,8 +297,8 @@ load = (win) ->
 					R.div({
 						id: 'helpContainer'
 						className: 'animated fadeIn'
-					}, 
-						"Contact us:"						
+					},
+						"Contact us:"
 						R.a({
 							href: "#"
 							onClick: @_copyHelpEmail.bind null, Config.supportEmailAddress
@@ -310,15 +309,16 @@ load = (win) ->
 				)
 			)
 
+
 		_import: ({extension, onImport}) ->
 			# Configures hidden file inputs with custom attributes, and clicks it
 			$nwbrowse = $(@refs.nwbrowse)
 			$nwbrowse
 			.off()
-			.attr('accept', ".#{extension}")			
+			.attr('accept', ".#{extension}")
 			.on('change', (event) => onImport event.target.value)
 			.click()
-	
+
 		_confirmRestore: (backupfile) ->
 			Bootbox.confirm {
 				title: "Warning"
@@ -339,7 +339,7 @@ load = (win) ->
 			atomicOp = null
 			dataVersion = null
 			appVersion = null
-			
+
 			Async.series [
 				(cb) =>
 					unless Fs.existsSync(Config.dataDirectory)
@@ -351,7 +351,7 @@ load = (win) ->
 
 				(cb) =>
 					Atomic.writeDirectoryNormally dataDir, tmpDir, (err, op) =>
-						if err 
+						if err
 							if err instanceof Persist.IOError and err.cause.code is 'EEXIST'
 							# previous import data still exists: overwrite
 								Rimraf tmpDir, (err) =>
@@ -366,14 +366,14 @@ load = (win) ->
 						# atomic operation
 						atomicOp = op
 						cb()
-				
+
 				(cb) =>
 					yauzl.open backupfile, { lazyEntries: true }, (err, zipfile) =>
 						if err
 							cb err
 							return
 						zipfile.readEntry()
-						
+
 						zipfile.on 'entry', (entry) =>
 							if /\/$/.test(entry.fileName)
 								# directory (filename ends with /)
@@ -395,21 +395,21 @@ load = (win) ->
 										return
 									return
 								return
-						
+
 						zipfile.on 'close', =>
 							# zip extracted; check metadata
 							unless Fs.existsSync(path.join(tmpDir, 'version.json')) and Fs.existsSync('./package.json')
 								cb new Error 'Invalid Data Version'
 								return
 							cb()
-							
+
 				(cb) =>
 					Fs.readFile './package.json', (err, result) =>
 						if err
 							cb err
 						appVersion = JSON.parse(result).version
 						cb()
-				
+
 				(cb) =>
 					Fs.readFile path.join(tmpDir, 'version.json'), (err, result) =>
 						if err
@@ -430,14 +430,14 @@ load = (win) ->
 						@setState {isLoading: false}
 						Bootbox.dialog {
 							title: "Migration Required"
-							message: "You are attempting to import data from a previous version of KoNote. " + 
+							message: "You are attempting to import data from a previous version of KoNote. " +
 								"The data will be migrated to the current version. To continue, please log in with an administrator account: <br><br>" +
 								'<input id="username" name="username" type="text" placeholder="username" class="form-control input-md"> <br>' +
 								'<input id="password" name="password" type="password" placeholder="password" class="form-control input-md"> <br>'
 							buttons: {
 								cancel: {
 									label: "Cancel"
-									className: 'btn-default'	
+									className: 'btn-default'
 									callback: =>
 										cb new Error 'Data migration aborted'
 								}
@@ -481,7 +481,7 @@ load = (win) ->
 						title: "Data Import Failed"
 						message: """
 							Sorry, #{Config.productName} was unable to restore the data file.
-							If the problem persists, please contact technical support at <u>#{Config.supportEmailAddress}</u> 
+							If the problem persists, please contact technical support at <u>#{Config.supportEmailAddress}</u>
 							and include the following: \"#{err}\".
 						"""
 					}
@@ -494,7 +494,6 @@ load = (win) ->
 						global.isSetUp = true
 						win.close(true)
 				}
-
 
 		_copyHelpEmail: (emailAddress) ->
 			clipboard = Gui.Clipboard.get()
@@ -518,7 +517,7 @@ load = (win) ->
 			# TODO: Make this some kind of flexible component/mixin
 			openTab = @state.openTab
 			isIndex = openTab is 'index'
-			
+
 			# Animation directions
 			offDirection = if isIndex then 'Left' else 'Right'
 			onDirection = if isIndex then 'Right' else 'Left'
@@ -555,12 +554,12 @@ load = (win) ->
 			tempDataDirectoryPath = 'data_tmp'
 
 			atomicOp = null
-	
+
 			Async.series [
 				(cb) =>
 					# Write data folder to temporary local directory, before moving to destination
 					Atomic.writeDirectoryNormally destDataDirectoryPath, tempDataDirectoryPath, (err, op) =>
-						if err 
+						if err
 							# data_tmp folder already exists from a failed install
 							if err instanceof Persist.IOError	and err.cause.code is 'EEXIST'
 								Bootbox.confirm {
@@ -597,9 +596,9 @@ load = (win) ->
 							return
 
 						cb()
-				(cb) =>					
+				(cb) =>
 					@_updateProgress 25, "Generating secure encryption keys (this may take a while...)"
-										
+
 					isDone = false
 					# Only fires if async setUp
 					setTimeout(=>
@@ -654,7 +653,7 @@ load = (win) ->
 						message: """
 							Sorry, we seem to be having some trouble installing #{Config.productName}.
 							Please check your network connection and try again, otherwise contact
-							technical support at <u>#{Config.supportEmailAddress}</u> 
+							technical support at <u>#{Config.supportEmailAddress}</u>
 							with the Error Code: \"#{errCode}\" .
 						"""
 					}

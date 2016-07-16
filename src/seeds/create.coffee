@@ -24,6 +24,7 @@ Create.clientFile = (cb) ->
 	clientFile = Imm.fromJS {
 		clientName: {first, middle, last}
 		recordId: recordId
+		status: 'active'
 		plan: {
 			sections: []
 		}
@@ -161,6 +162,7 @@ Create.planTarget = (clientFile, metrics, cb) ->
 
 	# randomly chooses a status, with a higher probability of 'default'
 	randomNumber = Math.floor(Math.random() * 10) + 1
+
 	if randomNumber > 7
 		status = 'deactivated'
 	else if randomNumber < 3
@@ -314,7 +316,7 @@ Create.planTargets = (quantity, clientFile, metrics, cb) ->
 			cb err
 			return
 
-		console.log "Created #{quantity} planTargets"
+		console.log "Created #{targetQuantity} planTargets"
 		cb null, Imm.List(results)
 
 Create.programs = (quantity, cb) ->
