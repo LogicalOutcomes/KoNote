@@ -84,13 +84,15 @@ load = (win) ->
 
 		render: ->
 			# Tack on program assignment to userAccounts
-			userAccounts = @state.userAccounts.map (userAccount) =>
+			userAccounts = @state.userAccounts
+			.map (userAccount) =>
 				userName = userAccount.get('userName')
 
 				programLink = @props.userProgramLinks.find (link) ->
 					userName is link.get('userName') and link.get('status') is 'assigned'
 
-				return userAccount unless programLink?
+				unless programLink
+					return userAccount
 
 				matchingProgram = @props.programs.find (program) ->
 					program.get('id') is programLink.get('programId')
@@ -98,8 +100,8 @@ load = (win) ->
 				return userAccount.set 'program', matchingProgram
 
 			# Filter out deactivated accounts
-			if userAccounts? and not @state.displayDeactivated
-				userAccounts = userAccounts.filter (userAccount) ->
+			unless @state.displayDeactivated
+				userAccounts = userAccounts.filter (userAccount) =>
 					userAccount.getIn(['publicInfo', 'isActive'])
 
 
@@ -197,10 +199,14 @@ load = (win) ->
 			@setState {userAccounts}
 
 		_updateAccount: (userAccount, cb=(->)) ->
+			console.log "Updating account:", userAccount
+			console.log "@state.userAccounts", @state.userAccounts.toJS()
+
 			matchingUserAccount = @state.userAccounts.find (account) ->
-				account.getIn(['publicInfo', 'userName']) is userAccount.getIn(['publicInfo', 'userName'])
+				account.get('userName') is userAccount.get('userName')
 
 			userAccountIndex = @state.userAccounts.indexOf matchingUserAccount
+			console.log "userAccountIndex", userAccountIndex
 			userAccounts = @state.userAccounts.set userAccountIndex, userAccount
 
 			@setState {userAccounts}, cb
