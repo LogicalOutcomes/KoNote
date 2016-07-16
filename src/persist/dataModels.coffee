@@ -273,6 +273,7 @@ dataModelDefinitions = [
 			endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 			typeId: IdSchema.allow('')
 			relatedProgEventId: IdSchema
+			authorProgramId: IdSchema.allow('')
 			status: ['default', 'cancelled']
 			statusReason: Joi.string().optional()
 		})

@@ -77,6 +77,7 @@ load = (win, {clientFileId}) ->
 				progNoteHistories: @state.progNoteHistories
 				progEvents: @state.progEvents
 				eventTypes: @state.eventTypes
+				programsById: @state.programsById
 
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
@@ -93,6 +94,7 @@ load = (win, {clientFileId}) ->
 				progNoteHistories
 				progEvents
 				eventTypes
+				programsById
 			} = global.dataStore[clientFileId]
 
 			# Convert data structure of clientFile's planTargetsById
@@ -115,6 +117,7 @@ load = (win, {clientFileId}) ->
 
 				planTargetsById
 				metricsById
+				programsById
 				progNoteHistories
 				progEvents
 				eventTypes
@@ -129,7 +132,6 @@ load = (win, {clientFileId}) ->
 				clientFileId: clientFile.get('id')
 				templateId: template.get('id')
 				backdate: ''
-				authorProgramId: global.ActiveSession.programId or ''
 				units: template.get('units').map (unit) =>
 					switch unit.get('type')
 						when 'basic'
@@ -448,6 +450,7 @@ load = (win, {clientFileId}) ->
 					progNoteHistories: @props.progNoteHistories
 					progEvents: @props.progEvents
 					eventTypes: @props.eventTypes
+					programsById: @props.programsById
 				})
 
 				R.div({className: 'eventsPanel'},
@@ -665,10 +668,17 @@ load = (win, {clientFileId}) ->
 			@setState {isLoading: true}
 
 			progNoteId = null
+			authorProgramId = global.ActiveSession.programId or ''
+
+			progNote = @state.progNote
+			.set('authorProgramId', authorProgramId)
+
+			console.log "progNote", progNote.toJS()
 
 			Async.series [
 				(cb) =>
-					ActiveSession.persist.progNotes.create @state.progNote, (err, obj) =>
+					console.log "Creating progNote..."
+					ActiveSession.persist.progNotes.create progNote, (err, obj) =>
 						if err
 							cb err
 							return
@@ -676,12 +686,13 @@ load = (win, {clientFileId}) ->
 						progNoteId = obj.get('id')
 						cb()
 				(cb) =>
+					console.log "Creating progEvents..."
 					Async.each @state.progEvents.toArray(), (progEvent, cb) =>
 						# Tack on the new progress note ID to all created events
 						progEvent = Imm.fromJS(progEvent)
 						.set('relatedProgNoteId', progNoteId)
 						.set('clientFileId', clientFileId)
-						.set('authorProgramId', global.ActiveSession.programId)
+						.set('authorProgramId', authorProgramId)
 						.set('status', 'default')
 
 						globalEvent = progEvent.get('globalEvent')
@@ -691,6 +702,7 @@ load = (win, {clientFileId}) ->
 
 
 						progEventId = null
+						console.log "Creating globalEvents..."
 
 						Async.series [
 							(cb) =>
@@ -709,6 +721,7 @@ load = (win, {clientFileId}) ->
 
 								globalEvent = globalEvent
 								.set('relatedProgEventId', progEventId)
+								.set('authorProgramId', authorProgramId)
 								.set('status', 'default')
 								.remove('relatedElement')
 
@@ -716,12 +729,7 @@ load = (win, {clientFileId}) ->
 
 						], cb
 
-					, (err) =>
-						if err
-							cb err
-							return
-
-						cb()
+					, cb
 
 			], (err) =>
 				@setState {isLoading: false}
