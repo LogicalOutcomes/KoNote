@@ -551,7 +551,7 @@ load = (win, {clientFileId}) ->
 
 					@setState (state) =>
 						return {
-							progressNoteHistories: state.progressNoteHistories.push Imm.List([newProgNote])
+							progNoteHistories: state.progNoteHistories.push Imm.List([newProgNote])
 						}
 
 				'createRevision:progNote': (newProgNoteRev) =>
@@ -559,7 +559,7 @@ load = (win, {clientFileId}) ->
 
 					@setState (state) =>
 						return {
-							progressNoteHistories: state.progressNoteHistories.map (progNoteHist) =>
+							progNoteHistories: state.progNoteHistories.map (progNoteHist) =>
 								if progNoteHist.first().get('id') is newProgNoteRev.get('id')
 									return progNoteHist.push newProgNoteRev
 
