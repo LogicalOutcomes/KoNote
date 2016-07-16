@@ -80,7 +80,7 @@ load = (win) ->
 
 			hasChanges = @hasChanges()
 
-			return R.div({className: "view planView #{if @props.isVisible then '' else 'hide'}"},
+			return R.div({className: "planView"},
 				R.div({className: 'targetList'},
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
 						R.div({className: 'message'},

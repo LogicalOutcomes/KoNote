@@ -16,7 +16,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			colorKeyHex: PropTypes.string.isRequired
+			colorKeyHex: PropTypes.string
 			popover: PropTypes.shape {
 				placement: PropTypes.oneOf ['left', 'right', 'top', 'bottom']
 				container: PropTypes.string

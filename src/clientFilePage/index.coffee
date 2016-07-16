@@ -56,7 +56,7 @@ load = (win, {clientFileId}) ->
 				readOnlyData: null
 				lockOperation: null
 
-				progressNoteHistories: null
+				progNoteHistories: null
 				progNoteTotal: null
 				progressEvents: null
 				planTargetsById: Imm.Map()
@@ -81,6 +81,13 @@ load = (win, {clientFileId}) ->
 		render: ->
 			if @state.status isnt 'ready' then return R.div({})
 
+			clientName = renderName(@state.clientFile.get('clientName'))
+
+			progNoteHistories = @state.progNoteHistories.sortBy (history) ->
+				createdAt = history.last().get('backdate') or history.first().get('timestamp')
+				return Moment createdAt, Persist.TimestampFormat
+			.reverse()
+
 			return ClientFilePageUi({
 				ref: 'ui'
 
@@ -90,7 +97,9 @@ load = (win, {clientFileId}) ->
 				loadErrorType: @state.loadErrorType
 
 				clientFile: @state.clientFile
-				progressNoteHistories: @state.progressNoteHistories
+				clientName
+
+				progNoteHistories
 				progressEvents: @state.progressEvents
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
@@ -121,7 +130,7 @@ load = (win, {clientFileId}) ->
 			planTargetsById = null
 			planTargetHeaders = null
 			progNoteHeaders = null
-			progressNoteHistories = null
+			progNoteHistories = null
 			progNoteTotal = null
 			progEventHeaders = null
 			progressEvents = null
@@ -214,9 +223,9 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						progressNoteHistories = Imm.List(results)
+						progNoteHistories = Imm.List(results)
 
-						checkFileSync progressNoteHistories, @state.progressNoteHistories
+						checkFileSync progNoteHistories, @state.progNoteHistories
 						cb()
 
 				(cb) =>
@@ -375,9 +384,6 @@ load = (win, {clientFileId}) ->
 							}
 						}
 				else
-					# Load in clientFile data
-					if @state.clientFile?
-						progressNoteHistories = @state.progressNoteHistories.concat progressNoteHistories
 					@setState {
 						status: 'ready'
 						isLoading: false
@@ -386,7 +392,7 @@ load = (win, {clientFileId}) ->
 						progNoteTotal
 
 						clientFile
-						progressNoteHistories
+						progNoteHistories
 						progressEvents
 						metricsById
 						planTargetsById
@@ -394,12 +400,7 @@ load = (win, {clientFileId}) ->
 						programsById
 						clientFileProgramLinkHeaders
 						eventTypes
-					}, =>
-						setTimeout(=>
-							global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
-							Window.show()
-							Window.focus()
-						, 500)
+					}
 
 		_acquireLock: (cb=(->)) ->
 			lockFormat = "clientFile-#{clientFileId}"
@@ -602,6 +603,8 @@ load = (win, {clientFileId}) ->
 					@_renewAllData()
 			}
 
+
+
 	ClientFilePageUi = React.createFactory React.createClass
 		displayName: 'ClientFilePageUi'
 		mixins: [React.addons.PureRenderMixin]
@@ -690,9 +693,13 @@ load = (win, {clientFileId}) ->
 		componentDidMount: ->
 			setTimeout(=>
 				global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
+
+				@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
+
 				Window.maximize()
 				Window.show()
 				Window.focus()
+
 			, 500)
 
 		render: ->
@@ -705,18 +712,7 @@ load = (win, {clientFileId}) ->
 			activeTabId = @state.activeTabId
 			isReadOnly = @props.readOnlyData?
 
-			clientName = renderName @props.clientFile.get('clientName')
 			recordId = @props.clientFile.get('recordId')
-			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}
-			"""
-
-			# Sort progNotes by timestamp unixMs (backdate if exists)
-			sortedProgNoteHistories = @props.progressNoteHistories
-			.sortBy (progNoteHist) ->
-				createdAt = progNoteHist.last().get('backdate') or progNoteHist.first().get('timestamp')
-				return Moment createdAt, Persist.TimestampFormat
-			.reverse()
 
 			# Use programLinks to determine program membership(s)
 			clientPrograms = @props.clientFileProgramLinkHeaders.map (link) =>
@@ -735,7 +731,7 @@ load = (win, {clientFileId}) ->
 				R.div({className: 'wrapper'},
 					Sidebar({
 						clientFile: @props.clientFile
-						clientName
+						clientName: @props.clientName
 						clientPrograms
 						recordId
 						activeTabId
@@ -743,61 +739,78 @@ load = (win, {clientFileId}) ->
 						status: @props.clientFile.get('status')
 						onTabChange: @_changeTab
 					})
-					PlanTab.PlanView({
-						ref: 'planTab'
-						isVisible: activeTabId is 'plan'
-						clientFileId
-						clientFile: @props.clientFile
-						plan: @props.clientFile.get('plan')
-						planTargetsById: @props.planTargetsById
-						metricsById: @props.metricsById
-						updatePlan: @props.updatePlan
-						isReadOnly
-					})
-					ProgNotesTab.ProgNotesView({
-						ref: 'progNotesTab'
-						isVisible: activeTabId is 'progressNotes'
-						clientFileId
-						clientFile: @props.clientFile
-						clientPrograms
-						progNoteHistories: sortedProgNoteHistories
-						planTargetsById: @props.planTargetsById
-						progEvents: @props.progressEvents
-						eventTypes: @props.eventTypes
-						metricsById: @props.metricsById
-						headerIndex: @props.headerIndex
-						progNoteTotal: @props.progNoteTotal
-						programsById: @props.programsById
+					R.div({
+						className: [
+							'view'
+							showWhen(activeTabId is 'plan')
+						].join ' '
+					},
+						PlanTab.PlanView({
+							ref: 'planTab'
+							clientFileId
+							clientFile: @props.clientFile
+							plan: @props.clientFile.get('plan')
+							planTargetsById: @props.planTargetsById
+							metricsById: @props.metricsById
+							updatePlan: @props.updatePlan
+							isReadOnly
+						})
+					)
+					R.div({
+						className: [
+							'view'
+							showWhen(activeTabId is 'progressNotes')
+						].join ' '
+					},
+						ProgNotesTab.ProgNotesView({
+							ref: 'progNotesTab'
+							clientFileId
+							clientFile: @props.clientFile
+							clientPrograms
+							progNoteHistories: @props.progNoteHistories
+							planTargetsById: @props.planTargetsById
+							progEvents: @props.progressEvents
+							eventTypes: @props.eventTypes
+							metricsById: @props.metricsById
+							headerIndex: @props.headerIndex
+							progNoteTotal: @props.progNoteTotal
+							programsById: @props.programsById
 
-						hasChanges: @hasChanges
-						onTabChange: @_changeTab
+							hasChanges: @hasChanges
+							onTabChange: @_changeTab
 
-						renewAllData: @props.renewAllData
+							renewAllData: @props.renewAllData
 
-						createQuickNote: @props.createQuickNote
-						isLoading: @props.isLoading
-						setIsLoading: @props.setIsLoading
-						isReadOnly
-					})
-					AnalysisTab.AnalysisView({
-						ref: 'analysisTab'
-						isVisible: activeTabId is 'analysis'
-						clientFileId
-						clientName
-						plan: @props.clientFile.get('plan')
-						planTargetsById: @props.planTargetsById
-						progNoteHistories: sortedProgNoteHistories
-						progEvents: @props.progressEvents
-						eventTypes: @props.eventTypes
-						metricsById: @props.metricsById
-						isReadOnly
-					})
+							createQuickNote: @props.createQuickNote
+							isLoading: @props.isLoading
+							setIsLoading: @props.setIsLoading
+							isReadOnly
+						})
+					)
+					R.div({
+						className: [
+							'view'
+							showWhen(activeTabId is 'analysis')
+						].join ' '
+					},
+						AnalysisTab.AnalysisView({
+							ref: 'analysisTab'
+							clientFileId
+							clientName: @props.clientName
+							plan: @props.clientFile.get('plan')
+							planTargetsById: @props.planTargetsById
+							progNoteHistories: @props.progNoteHistories
+							progEvents: @props.progressEvents
+							eventTypes: @props.eventTypes
+							metricsById: @props.metricsById
+							isReadOnly
+						})
+					)
 				)
 			)
-		_changeTab: (newTabId) ->
-			@setState {
-				activeTabId: newTabId
-			}
+
+		_changeTab: (activeTabId) ->
+			@setState {activeTabId}
 
 	Sidebar = React.createFactory React.createClass
 		displayName: 'Sidebar'

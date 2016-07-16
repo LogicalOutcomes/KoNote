@@ -86,7 +86,7 @@ load = (win) ->
 					progNote = progNoteHistory.last()
 					return progNote.get('id') is @state.revisingProgNote.get('id')
 
-			return R.div({className: "view progNotesView #{showWhen @props.isVisible}"},
+			return R.div({className: "progNotesView"},
 				R.div({className: "toolbar #{showWhen @props.progNoteHistories.size > 0}"},
 					(if @state.revisingProgNote?
 						R.div({},
@@ -1062,31 +1062,37 @@ load = (win) ->
 		_toggleDetails: (event) ->
 			@setState (s) -> {isExpanded: not s.isExpanded}
 
-	ProgNoteHeader = ({progNoteHistory, userProgram}) ->
-		hasRevisions = progNoteHistory.size > 1
-		numberOfRevisions = progNoteHistory.size - 1
+	ProgNoteHeader = React.createFactory React.createClass
+		displayName: 'ProgNoteHeader'
+		mixins: [React.addons.PureRenderMixin]
 
-		progNote = progNoteHistory.first() # Use original revision's data
-		timestamp = progNote.get('backdate') or progNote.get('timestamp')
+		render: ->
+			{userProgram, progNoteHistory} = @props
 
-		R.div({className: 'header'},
-			R.div({className: 'timestamp'},
-				ColorKeyBubble({
-					colorKeyHex: userProgram.get('colorKeyHex')
-					popover: {
-						title: userProgram.get('name')
-						content: userProgram.get('description')
-						placement: 'left'
-					}
-				})
-				formatTimestamp(timestamp)
-				" (late entry)" if progNote.get('backdate')
+			hasRevisions = progNoteHistory.size > 1
+			numberOfRevisions = progNoteHistory.size - 1
+
+			progNote = progNoteHistory.first() # Use original revision's data
+			timestamp = progNote.get('backdate') or progNote.get('timestamp')
+
+			R.div({className: 'header'},
+				R.div({className: 'timestamp'},
+					ColorKeyBubble({
+						colorKeyHex: userProgram.get('colorKeyHex')
+						popover: {
+							title: userProgram.get('name')
+							content: userProgram.get('description')
+							placement: 'left'
+						}
+					})
+					formatTimestamp(timestamp)
+					" (late entry)" if progNote.get('backdate')
+				)
+				R.div({className: 'author'},
+					' by '
+					progNote.get('author')
+				)
 			)
-			R.div({className: 'author'},
-				' by '
-				progNote.get('author')
-			)
-		)
 
 	ProgNoteToolbar = (props) ->
 		{
