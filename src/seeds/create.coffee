@@ -278,7 +278,7 @@ Create.progEvents = (quantity, props, cb) ->
 			cb err
 			return
 
-		console.log "Created #{quantity} progEvents"
+		# console.log "Created #{quantity} progEvents"
 		cb null, Imm.List(results)
 
 Create.quickNotes = (clientFile, numberOfNotes, cb) ->
@@ -316,7 +316,7 @@ Create.planTargets = (quantity, clientFile, metrics, cb) ->
 			cb err
 			return
 
-		console.log "Created #{targetQuantity} planTargets"
+		console.log "Created #{quantity} planTargets"
 		cb null, Imm.List(results)
 
 Create.programs = (quantity, cb) ->
