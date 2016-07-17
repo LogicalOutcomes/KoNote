@@ -492,96 +492,96 @@ addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 		finalizeMigrationStep(dataDir, cb)
 
 
-	addProgNoteAuthorProgramIdField = (dataDir, globalEncryptionKey, cb) ->
-		forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
-			clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+addProgNoteAuthorProgramIdField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
 
-			forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
-				progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
+		forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+			progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
 
-				progNoteObjectFilePath = null
-				progNoteObject = null
+			progNoteObjectFilePath = null
+			progNoteObject = null
 
-				Async.series [
-					(cb) =>
-						Fs.readdir progNotePath, (err, revisions) ->
-							if err
-								cb err
-								return
+			Async.series [
+				(cb) =>
+					Fs.readdir progNotePath, (err, revisions) ->
+						if err
+							cb err
+							return
 
-							progNoteObjectFilePath = Path.join(progNotePath, revisions[0])
-							cb()
+						progNoteObjectFilePath = Path.join(progNotePath, revisions[0])
+						cb()
 
-					(cb) =>
-						Fs.readFile progNoteObjectFilePath, (err, result) ->
-							if err
-								cb err
-								return
+				(cb) =>
+					Fs.readFile progNoteObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
 
-							progNoteObject = JSON.parse globalEncryptionKey.decrypt result
-							cb()
+						progNoteObject = JSON.parse globalEncryptionKey.decrypt result
+						cb()
 
-					(cb) =>
-						progNoteObject.authorProgramId = ''
-						encryptedObj = globalEncryptionKey.encrypt JSON.stringify progNoteObject
+				(cb) =>
+					progNoteObject.authorProgramId = ''
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progNoteObject
 
-						Fs.writeFile progNoteObjectFilePath, encryptedObj, cb
+					Fs.writeFile progNoteObjectFilePath, encryptedObj, cb
 
-				], cb
+			], cb
 
-			, cb
-		, (err) ->
-			if err
-				cb err
-				return
+		, cb
+	, (err) ->
+		if err
+			cb err
+			return
 
-			finalizeMigrationStep(dataDir, cb)
+		finalizeMigrationStep(dataDir, cb)
 
 
-	addProgEventAuthorProgramIdField = (dataDir, globalEncryptionKey, cb) ->
-		forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
-			clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+addProgEventAuthorProgramIdField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
 
-			forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
-				progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
+		forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+			progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
 
-				progEventObjectFilePath = null
-				progEventObject = null
+			progEventObjectFilePath = null
+			progEventObject = null
 
-				Async.series [
-					(cb) =>
-						Fs.readdir progEventPath, (err, revisions) ->
-							if err
-								cb err
-								return
+			Async.series [
+				(cb) =>
+					Fs.readdir progEventPath, (err, revisions) ->
+						if err
+							cb err
+							return
 
-							progEventObjectFilePath = Path.join(progEventPath, revisions[0])
-							cb()
+						progEventObjectFilePath = Path.join(progEventPath, revisions[0])
+						cb()
 
-					(cb) =>
-						Fs.readFile progEventObjectFilePath, (err, result) ->
-							if err
-								cb err
-								return
+				(cb) =>
+					Fs.readFile progEventObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
 
-							progEventObject = JSON.parse globalEncryptionKey.decrypt result
-							cb()
+						progEventObject = JSON.parse globalEncryptionKey.decrypt result
+						cb()
 
-					(cb) =>
-						progEventObject.authorProgramId = ''
-						encryptedObj = globalEncryptionKey.encrypt JSON.stringify progEventObject
+				(cb) =>
+					progEventObject.authorProgramId = ''
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progEventObject
 
-						Fs.writeFile progEventObjectFilePath, encryptedObj, cb
+					Fs.writeFile progEventObjectFilePath, encryptedObj, cb
 
-				], cb
+			], cb
 
-			, cb
-		, (err) ->
-			if err
-				cb err
-				return
+		, cb
+	, (err) ->
+		if err
+			cb err
+			return
 
-			finalizeMigrationStep(dataDir, cb)
+		finalizeMigrationStep(dataDir, cb)
 
 # ////////////////////// Migration Series //////////////////////
 
