@@ -599,7 +599,7 @@ module.exports = {
 
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "2. Create empty 'userProgramLinks' dataModel directory"
+				console.groupCollapsed "2. Create empty 'userProgramLinks' dataModel collection directory"
 				createEmptyDirectory dataDir, 'userProgramLinks', cb
 
 			(cb) ->
@@ -611,6 +611,11 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "4. Add 'authorProgramId' field to progEvents"
 				addProgEventAuthorProgramIdField dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "5. Create empty 'globalEvents' dataModel collection directory"
+				createEmptyDirectory dataDir, 'globalEvents', cb
 
 		]
 
