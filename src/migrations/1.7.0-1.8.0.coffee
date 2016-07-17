@@ -605,7 +605,7 @@ module.exports = {
 			(cb) ->
 				console.groupEnd()
 				console.groupCollapsed "3. Add 'authorProgramId' field to progNotes"
-				addProgEventAuthorProgramIdField dataDir, globalEncryptionKey, cb
+				addProgNoteAuthorProgramIdField dataDir, globalEncryptionKey, cb
 
 			(cb) ->
 				console.groupEnd()
