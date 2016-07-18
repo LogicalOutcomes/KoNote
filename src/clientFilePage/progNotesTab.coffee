@@ -105,7 +105,7 @@ load = (win) ->
 						return Imm.fromJS {
 							type: 'globalEvent'
 							id: globalEvent.get('id')
-							timestamp: globalEvent.get('timestamp')
+							timestamp: globalEvent.get('startTimestamp')
 							data: globalEvent
 						}
 				)
@@ -1235,7 +1235,6 @@ load = (win) ->
 			globalEvent = @props.globalEvent
 
 			return R.div({},
-				R.h1({}, globalEvent.get('title'))
 				R.p({}, globalEvent.get('description'))
 			)
 
