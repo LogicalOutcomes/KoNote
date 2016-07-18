@@ -263,13 +263,7 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						clientFileCreated = Moment clientFile.get('timestamp'), Persist.TimestampFormat
-
-						# Filter out any globalEvents that occurred before clientFile was created
-						globalEventHeaders = results.filter (globalEventHeader) ->
-							globalEventCreated = Moment globalEventHeader.get('timestamp'), Persist.TimestampFormat
-							return clientFileCreated.isBefore globalEventCreated
-
+						globalEventHeaders = results
 						cb()
 
 				(cb) =>
@@ -760,9 +754,17 @@ load = (win, {clientFileId}) ->
 				programId = link.get('programId')
 				@props.programsById.get programId
 
-			# Filter out global events reported by this clientFile
+
+			clientFileCreated = Moment @props.clientFile.get('timestamp'), Persist.TimestampFormat
+
+			# Filter out global events that either belong to this clientFile,
+			# or span (entirely) outside its history
 			globalEvents = @props.globalEvents.filterNot (globalEvent) =>
-				globalEvent.get('clientFileId') is clientFileId
+				return true if globalEvent.get('clientFileId') is clientFileId
+
+				eventStarted = Moment globalEvent.get('startTimestamp'), Persist.TimestampFormat
+				eventEnded = Moment globalEvent.get('endTimestamp'), Persist.TimestampFormat
+				return eventStarted.isAfter(clientFileCreated) or eventEnded.isAfter(clientFileCreated)
 
 
 			return R.div({className: 'clientFilePage'},
