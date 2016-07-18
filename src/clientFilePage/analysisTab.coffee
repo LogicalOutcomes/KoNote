@@ -112,6 +112,7 @@ load = (win) ->
 
 			# Filter out progEvents that aren't cancelled or excluded
 			filteredProgEvents = @props.progEvents
+			.concat @props.globalEvents
 			.filter (progEvent) =>
 				switch progEvent.get('status')
 					when 'default'

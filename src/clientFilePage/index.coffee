@@ -263,7 +263,13 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						globalEventHeaders = results
+						clientFileCreated = Moment clientFile.get('timestamp'), Persist.TimestampFormat
+
+						# Filter out any globalEvents that occurred before clientFile was created
+						globalEventHeaders = results.filter (globalEventHeader) ->
+							globalEventCreated = Moment globalEventHeader.get('timestamp'), Persist.TimestampFormat
+							return clientFileCreated.isBefore globalEventCreated
+
 						cb()
 
 				(cb) =>
@@ -758,6 +764,7 @@ load = (win, {clientFileId}) ->
 			globalEvents = @props.globalEvents.filterNot (globalEvent) =>
 				globalEvent.get('clientFileId') is clientFileId
 
+
 			return R.div({className: 'clientFilePage'},
 				Spinner {
 					isOverlay: true
@@ -844,6 +851,7 @@ load = (win, {clientFileId}) ->
 							progEvents: @props.progressEvents
 							eventTypes: @props.eventTypes
 							metricsById: @props.metricsById
+							globalEvents
 							isReadOnly
 						})
 					)
