@@ -478,6 +478,7 @@ load = (win) ->
 			@setState {metricColors}
 
 		_updateTimeSpanDate: (newDate, type) ->
+			return unless @state.timeSpan
 			timeSpan = @state.timeSpan.set(type, newDate)
 			@setState {timeSpan}
 
