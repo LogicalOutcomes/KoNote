@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # This module handles unexpected errors caused by bugs in the application.
@@ -24,9 +24,9 @@ load = (win) ->
 	handle = (err) ->
 		# Show NW window, in case it's still hidden
 		# Exclude loginPage, since it's meant to be hidden
-		if not win.pageParameters.page is 'login' and global.ActiveSession?
+		if win.pageParameters and not win.pageParameters.page is 'login' and global.ActiveSession?
 			nwWin.show()
-		
+
 		# Record where this function was actually called from.
 		# Sometimes this additional info is useful, because async calls often
 		# obscure what caused an error.
@@ -104,7 +104,7 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-default'
 							onClick: @_copyCrashTrace
-						}, 
+						},
 							"Copy "
 							FaIcon('copy')
 						)
