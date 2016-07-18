@@ -218,6 +218,7 @@ load = (win) ->
 							key: revision.get('revisionId')
 							isFirstRevision: index is (revisions.size - 1)
 							revision
+							type: @props.type
 							metricsById: @props.metricsById
 							programsById: @props.programsById
 							dataModelName: @props.dataModelName
@@ -266,26 +267,43 @@ load = (win) ->
 						})
 					)
 				)
-				R.div({className: 'changeLog'},
-					(changeLog.map (entry, index) =>
-						ChangeLogEntry({
-							key: index
-							index
-							entry
-							revision
-							dataModelName: @props.dataModelName
-							metricsById: @props.metricsById
-							onToggleSnapshot: @_toggleSnapshot
-							isSnapshotVisible: @state.isSnapshotVisible
-							disableSnapshot: @props.disableSnapshot
-						})
+
+				# TODO: Refactor this to something a little nicer
+				(if @props.type is 'planTarget'
+
+					R.div({className: 'changeLog'},
+						(changeLog.map (entry, index) =>
+							RevisionSnapshot({
+								revision
+								metricsById: @props.metricsById
+								isAnimated: false
+							})
+						)
 					)
-					(if @state.isSnapshotVisible and not @props.disableSnapshot
-						RevisionSnapshot({
-							revision
-							metricsById: @props.metricsById
-							isAnimated: true
-						})
+
+				else
+
+					R.div({className: 'changeLog'},
+						(changeLog.map (entry, index) =>
+							ChangeLogEntry({
+								key: index
+								index
+								entry
+								revision
+								dataModelName: @props.dataModelName
+								metricsById: @props.metricsById
+								onToggleSnapshot: @_toggleSnapshot
+								isSnapshotVisible: @state.isSnapshotVisible
+								disableSnapshot: @props.disableSnapshot
+							})
+						)
+						(if @state.isSnapshotVisible and not @props.disableSnapshot
+							RevisionSnapshot({
+								revision
+								metricsById: @props.metricsById
+								isAnimated: true
+							})
+						)
 					)
 				)
 			)
