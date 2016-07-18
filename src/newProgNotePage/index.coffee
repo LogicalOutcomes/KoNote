@@ -479,6 +479,7 @@ load = (win, {clientFileId}) ->
 								)
 								EventTabView({
 									data: thisEvent
+									clientFileId: @props.clientFile.get('id')
 									backdate: @state.progNote.get('backdate')
 									eventTypes: @props.eventTypes
 									atIndex: index
@@ -487,6 +488,7 @@ load = (win, {clientFileId}) ->
 									cancel: @_cancelEditing
 									editMode: @state.editingWhichEvent?
 									isBeingEdited
+
 									updateEventPlanRelationMode: @_updateEventPlanRelationMode
 									selectedEventPlanRelation: @state.selectedEventPlanRelation
 									selectEventPlanRelation: @_selectEventPlanRelation

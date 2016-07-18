@@ -274,6 +274,7 @@ dataModelDefinitions = [
 			typeId: IdSchema.allow('')
 			relatedProgEventId: IdSchema
 			authorProgramId: IdSchema.allow('')
+			clientFileId: IdSchema
 			status: ['default', 'cancelled']
 			statusReason: Joi.string().optional()
 		})

@@ -8,6 +8,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 _ = require 'underscore'
 Term = require '../term'
+{TimestampFormat} = require '../persist/utils'
 
 load = (win) ->
 	$ = win.jQuery
@@ -19,7 +20,7 @@ load = (win) ->
 
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	{FaIcon, renderName, showWhen, formatTimestamp} = require('../utils').load(win)
-	{TimestampFormat} = require '../persist/utils'
+
 
 	EventTabView = React.createFactory React.createClass
 		displayName: 'EventTabView'
@@ -508,6 +509,7 @@ load = (win) ->
 								globalEvent = Imm.fromJS(newData)
 								.set('title', amendedTitle)
 								.set('description', amendedDescription)
+								.set('clientFileId', @props.clientFileId)
 
 								newData.globalEvent = globalEvent
 

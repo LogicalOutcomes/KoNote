@@ -33,7 +33,7 @@ load = (win) ->
 	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName
 	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
 
-	ProgNotesView = React.createFactory React.createClass
+	ProgNotesTab = React.createFactory React.createClass
 		displayName: 'ProgNotesView'
 		mixins: [React.addons.PureRenderMixin]
 
@@ -51,7 +51,7 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			progNotesPane = $('.progNotes')
+			progNotesPane = $('.historyEntries')
 			progNotesPane.on 'scroll', =>
 				if @props.isLoading is false and @props.headerIndex < @props.progNoteTotal
 					if progNotesPane.scrollTop() + (progNotesPane.innerHeight() * 2) >= progNotesPane[0].scrollHeight
@@ -80,11 +80,39 @@ load = (win) ->
 			progNoteHistories = @props.progNoteHistories
 			hasChanges = @_revisingProgNoteHasChanges()
 
-			# Only show the single progNote while editing
-			if @state.revisingProgNote?
-				progNoteHistories = progNoteHistories.filter (progNoteHistory) =>
-					progNote = progNoteHistory.last()
-					return progNote.get('id') is @state.revisingProgNote.get('id')
+			historyEntries = progNoteHistories
+			.map (progNoteHistory) ->
+				timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
+
+				return Imm.fromJS {
+					type: 'progNote'
+					id: progNoteHistory.last().get('id')
+					timestamp
+					data: progNoteHistory
+				}
+
+			historyEntries = if @state.revisingProgNote?
+				# Only show the single progNote while editing
+				historyEntries
+				.find (entry) => entry.get('id') is @state.revisingProgNote.get('id')
+				.toList()
+			else
+				historyEntries
+				.concat(
+					@props.globalEvents
+					.filterNot (globalEvent) => globalEvent.get('clientFileId') is @props.clientFileId
+					.map (globalEvent) ->
+						return Imm.fromJS {
+							type: 'globalEvent'
+							id: globalEvent.get('id')
+							timestamp: globalEvent.get('timestamp')
+							data: globalEvent
+						}
+				)
+				.sortBy (entry) -> entry.get('timestamp')
+
+			# Reverse order so most recent is first
+			historyEntries = historyEntries.reverse()
 
 			return R.div({className: "progNotesView"},
 				R.div({className: "toolbar #{showWhen @props.progNoteHistories.size > 0}"},
@@ -137,10 +165,7 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'panes'},
-					R.div({
-						className: 'progNotes'
-						ref: 'progNotes'
-					},
+					R.div({className: 'historyEntries'},
 						R.div({className: "empty #{showWhen (@props.progNoteHistories.size is 0)}"},
 							R.div({className: 'message'},
 								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
@@ -166,76 +191,22 @@ load = (win) ->
 								"Add #{Term 'quick note'}"
 							)
 						)
-						(progNoteHistories.map (progNoteHistory) =>
-							progNote = progNoteHistory.last()
-							progNoteId = progNote.get('id')
+						(historyEntries.map (entry) =>
+							switch entry.get('type')
+								when 'progNote'
+									ProgNoteContainer({
+										key: entry.get('id')
 
-							firstProgNoteRev = progNoteHistory.first()
-							userProgramId = firstProgNoteRev.get('authorProgramId')
-							userProgram = @props.programsById.get(userProgramId) or Imm.Map()
-
-							isEditing = @state.revisingProgNote? and @state.revisingProgNote.get('id') is progNoteId
-
-							# Filter out only events for this progNote
-							progEvents = @props.progEvents.filter (progEvent) =>
-								return progEvent.get('relatedProgNoteId') is progNote.get('id')
-
-							if progNote.get('status') is 'cancelled'
-								return CancelledProgNoteView({
-									key: progNote.get('id')
-									progNoteHistory
-									progEvents
-									eventTypes: @props.eventTypes
-									clientFile: @props.clientFile
-									userProgram
-									setSelectedItem: @_setSelectedItem
-									selectedItem: @state.selectedItem
-									selectProgNote: @_selectProgNote
-									isReadOnly: @props.isReadOnly
-
-									isEditing
-									revisingProgNote: @state.revisingProgNote
-									startRevisingProgNote: @_startRevisingProgNote
-									cancelRevisingProgNote: @_cancelRevisingProgNote
-									updateBasicUnitNotes: @_updateBasicUnitNotes
-									updatePlanTargetNotes: @_updatePlanTargetNotes
-									updatePlanTargetMetric: @_updatePlanTargetMetric
-									updateQuickNotes: @_updateQuickNotes
-									saveProgNoteRevision: @_saveProgNoteRevision
-								})
-
-							Assert.equal progNote.get('status'), 'default'
-
-							switch progNote.get('type')
-								when 'basic'
-									QuickNoteView({
-										key: progNote.get('id')
-										progNote
-										progNoteHistory
-										userProgram
-										clientFile: @props.clientFile
-										selectedItem: @state.selectedItem
-										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
-										setSelectedItem: @_setSelectedItem
-										selectProgNote: @_selectProgNote
-										isReadOnly: @props.isReadOnly
-
-										isEditing
-										revisingProgNote: @state.revisingProgNote
-										startRevisingProgNote: @_startRevisingProgNote
-										cancelRevisingProgNote: @_cancelRevisingProgNote
-										updateQuickNotes: @_updateQuickNotes
-										saveProgNoteRevision: @_saveProgNoteRevision
-									})
-								when 'full'
-									ProgNoteView({
-										key: progNote.get('id')
-										progNote
-										progNoteHistory
-										progEvents
-										userProgram
+										progNoteHistory: entry.get('data')
 										eventTypes: @props.eventTypes
 										clientFile: @props.clientFile
+
+										progEvents: @props.progEvents
+										programsById: @props.programsById
+
+										revisingProgNote: @state.revisingProgNote
+										isReadOnly: @props.isReadOnly
+
 										setSelectedItem: @_setSelectedItem
 										selectProgNote: @_selectProgNote
 										setEditingProgNoteId: @_setEditingProgNoteId
@@ -243,20 +214,22 @@ load = (win) ->
 										setHighlightedProgNoteId: @_setHighlightedProgNoteId
 										setHighlightedTargetId: @_setHighlightedTargetId
 										selectedItem: @state.selectedItem
-										isReadOnly: @props.isReadOnly
 
-										isEditing
-										revisingProgNote: @state.revisingProgNote
 										startRevisingProgNote: @_startRevisingProgNote
 										cancelRevisingProgNote: @_cancelRevisingProgNote
 										updateBasicUnitNotes: @_updateBasicUnitNotes
 										updateBasicMetric: @_updateBasicMetric
-										updatePlanTargetNotes: @_updatePlanTargetNotes
 										updatePlanTargetMetric: @_updatePlanTargetMetric
 										saveProgNoteRevision: @_saveProgNoteRevision
+										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
+									})
+								when 'globalEvent'
+									GlobalEventView({
+										key: entry.get('id')
+										globalEvent: entry.get('data')
 									})
 								else
-									throw new Error "unknown prognote type: #{progNote.get('type')}"
+									throw new Error "Unknown historyEntry type #{entry.get('type')}"
 						).toJS()...
 					)
 
@@ -678,6 +651,101 @@ load = (win) ->
 			}
 
 
+	ProgNoteContainer = React.createFactory React.createClass
+		displayName: 'ProgNoteContainer'
+		mixins: [React.addons.PureRenderMixin]
+
+		render: ->
+			progNote = @props.progNoteHistory.last()
+			progNoteId = progNote.get('id')
+
+			firstProgNoteRev = @props.progNoteHistory.first()
+			userProgramId = firstProgNoteRev.get('authorProgramId')
+			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
+
+			isEditing = @props.revisingProgNote? and @props.revisingProgNote.get('id') is progNoteId
+
+			# Filter out only events for this progNote
+			progEvents = @props.progEvents.filter (progEvent) =>
+				return progEvent.get('relatedProgNoteId') is progNote.get('id')
+
+			# TODO: Pass props down in a more efficient manner, maybe by grouping them together
+
+			if progNote.get('status') is 'cancelled'
+				return CancelledProgNoteView({
+					progNoteHistory: @props.progNoteHistory
+					progEvents
+					eventTypes: @props.eventTypes
+					clientFile: @props.clientFile
+					userProgram
+					setSelectedItem: @props.setSelectedItem
+					selectedItem: @props.selectedItem
+					selectProgNote: @props.selectProgNote
+					isReadOnly: @props.isReadOnly
+
+					isEditing: @props.isEditing
+					revisingProgNote: @props.revisingProgNote
+					startRevisingProgNote: @props.startRevisingProgNote
+					cancelRevisingProgNote: @props.cancelRevisingProgNote
+					updateBasicUnitNotes: @props.updateBasicUnitNotes
+					updatePlanTargetNotes: @props.updatePlanTargetNotes
+					updatePlanTargetMetric: @props.updatePlanTargetMetric
+					updateQuickNotes: @props.updateQuickNotes
+					saveProgNoteRevision: @props.saveProgNoteRevision
+				})
+
+			Assert.equal progNote.get('status'), 'default'
+
+			switch progNote.get('type')
+				when 'basic'
+					QuickNoteView({
+						progNote
+						progNoteHistory: @props.progNoteHistory
+						userProgram
+						clientFile: @props.clientFile
+						selectedItem: @props.selectedItem
+						setHighlightedQuickNoteId: @props.setHighlightedQuickNoteId
+						setSelectedItem: @props.setSelectedItem
+						selectProgNote: @props.selectProgNote
+						isReadOnly: @props.isReadOnly
+
+						isEditing: @props.isEditing
+						revisingProgNote: @props.revisingProgNote
+						startRevisingProgNote: @props.startRevisingProgNote
+						cancelRevisingProgNote: @props.cancelRevisingProgNote
+						updateQuickNotes: @props.updateQuickNotes
+						saveProgNoteRevision: @props.saveProgNoteRevision
+					})
+				when 'full'
+					ProgNoteView({
+						progNote
+						progNoteHistory: @props.progNoteHistory
+						progEvents
+						userProgram
+						eventTypes: @props.eventTypes
+						clientFile: @props.clientFile
+						setSelectedItem: @props.setSelectedItem
+						selectProgNote: @props.selectProgNote
+						setEditingProgNoteId: @props.setEditingProgNoteId
+						updatePlanTargetNotes: @props.updatePlanTargetNotes
+						setHighlightedProgNoteId: @props.setHighlightedProgNoteId
+						setHighlightedTargetId: @props.setHighlightedTargetId
+						selectedItem: @props.selectedItem
+						isReadOnly: @props.isReadOnly
+
+						isEditing: @props.isEditing
+						revisingProgNote: @props.revisingProgNote
+						startRevisingProgNote: @props.startRevisingProgNote
+						cancelRevisingProgNote: @props.cancelRevisingProgNote
+						updateBasicUnitNotes: @props.updateBasicUnitNotes
+						updateBasicMetric: @props.updateBasicMetric
+						updatePlanTargetMetric: @props.updatePlanTargetMetric
+						saveProgNoteRevision: @props.saveProgNoteRevision
+					})
+				else
+					throw new Error "unknown prognote type: #{progNote.get('type')}"
+
+
 	QuickNoteView = React.createFactory React.createClass
 		displayName: 'QuickNoteView'
 		mixins: [React.addons.PureRenderMixin]
@@ -729,6 +797,7 @@ load = (win) ->
 				type: 'quickNote'
 				progNoteId: @props.progNote.get('id')
 			}
+
 
 	ProgNoteView = React.createFactory React.createClass
 		displayName: 'ProgNoteView'
@@ -911,7 +980,7 @@ load = (win) ->
 
 															MetricWidget({
 																isEditable: isEditing
-																tooltipViewport: '.progNotes'
+																tooltipViewport: '.historyEntries'
 																onChange: @props.updatePlanTargetMetric.bind(
 																	null,
 																	unitId, sectionId, targetId, metricId
@@ -963,7 +1032,6 @@ load = (win) ->
 				targetName: target.get('name')
 				progNoteId: @props.progNote.get('id')
 			}
-
 
 
 	CancelledProgNoteView = React.createFactory React.createClass
@@ -1063,6 +1131,7 @@ load = (win) ->
 		_toggleDetails: (event) ->
 			@setState (s) -> {isExpanded: not s.isExpanded}
 
+
 	ProgNoteHeader = React.createFactory React.createClass
 		displayName: 'ProgNoteHeader'
 		mixins: [React.addons.PureRenderMixin]
@@ -1157,6 +1226,20 @@ load = (win) ->
 			)
 		)
 
-	return {ProgNotesView}
+
+	GlobalEventView = React.createFactory React.createClass
+		displayName: 'GlobalEventView'
+		mixins: [React.addons.PureRenderMixin]
+
+		render: ->
+			globalEvent = @props.globalEvent
+
+			return R.div({},
+				R.h1({}, globalEvent.get('title'))
+				R.p({}, globalEvent.get('description'))
+			)
+
+
+	return ProgNotesTab
 
 module.exports = {load}
