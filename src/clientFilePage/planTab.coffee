@@ -191,6 +191,7 @@ load = (win) ->
 								revisions: selectedTarget.get('revisions')
 								type: 'planTarget'
 								metricsById: @props.metricsById
+								programsById: @props.programsById
 								dataModelName: 'target'
 								terms: {
 									metric: Term 'metric'

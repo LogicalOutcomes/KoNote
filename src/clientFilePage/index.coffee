@@ -751,6 +751,7 @@ load = (win, {clientFileId}) ->
 							clientFile: @props.clientFile
 							plan: @props.clientFile.get('plan')
 							planTargetsById: @props.planTargetsById
+							programsById: @props.programsById
 							metricsById: @props.metricsById
 							updatePlan: @props.updatePlan
 							isReadOnly
