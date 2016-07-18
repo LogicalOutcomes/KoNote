@@ -671,12 +671,17 @@ module.exports = {
 
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "6. Add 'status': 'default' field to clientFile objects"
+				console.groupCollapsed "6. Create empty 'planTemplates' dataModel collection directory"
+				createEmptyDirectory dataDir, 'planTemplates', cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "7. Add 'status': 'default' field to clientFile objects"
 				addClientFileStatusField dataDir, globalEncryptionKey, cb
 
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "7. Append 'default' status index to clientFile headers"
+				console.groupCollapsed "8. Append 'default' status index to clientFile headers"
 				addClientFileStatusIndex dataDir, globalEncryptionKey, cb
 
 		]
