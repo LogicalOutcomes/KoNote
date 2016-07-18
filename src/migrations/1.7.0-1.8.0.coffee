@@ -374,24 +374,28 @@ addClientFileStatusField = (dataDir, globalEncryptionKey, cb) ->
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
 		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
 
-		Async.series [
-			(cb) =>
-				# Read clientFile object
-				Fs.readFile clientFileDirPath, (err, result) ->
-					if err
-						cb err
-						return
+		forEachFileIn clientFileDirPath, (clientFileRev, cb) ->
+			clientFileRevPath = Path.join(clientFileDirPath, clientFileRev)
+			clientFileRevObject = null
 
-					clientFileObject = JSON.parse globalEncryptionKey.decrypt result
+			Async.series [
+				(cb) =>
+					# Read clientFile object
+					Fs.readFile clientFileRevPath, (err, result) ->
+						if err
+							cb err
+							return
 
-					cb()
-			(cb) =>
-				# Add 'status' property
-				clientFileObject.status = 'active'
-				encryptedObj = globalEncryptionKey.encrypt JSON.stringify clientFileObject
+						clientFileRevObject = JSON.parse globalEncryptionKey.decrypt result
 
-				Fs.writeFile clientFileDirPath, encryptedObj, cb
-		], cb
+						cb()
+				(cb) =>
+					# Add 'status' property
+					clientFileRevObject.status = 'active'
+					encryptedObj = globalEncryptionKey.encrypt(JSON.stringify clientFileRevObject)
+					Fs.writeFile clientFileRevPath, encryptedObj, cb
+			], cb
+		, cb
 	, (err) ->
 		if err
 			console.info "Problem with clientFile status"
@@ -401,22 +405,30 @@ addClientFileStatusField = (dataDir, globalEncryptionKey, cb) ->
 		finalizeMigrationStep(dataDir, cb)	
 
 addClientFileStatusIndex = (dataDir, globalEncryptionKey, cb) ->
+	console.log "start"
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
 		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
+		console.log "clientFileDirPath >>>>>>>>> ", clientFileDirPath
 
-		# Decrypt, add index, re-encrypt
-		indexes = decryptFileName clientFileDirPath, 1, globalEncryptionKey
-		indexes.unshift 'active'
-		encryptedIndexes = encryptFileName indexes, globalEncryptionKey
+		forEachFileIn clientFileDirPath, (clientFileRev, cb) ->
+			clientFileRevPath = Path.join(clientFileDirPath, clientFileRev)
+			console.log "clientFileRevPath >>>>>>>  ", clientFileRevPath
 
-		# Build new path
-		newClientFilePath = Path.join(clientFileDirPath, encryptedIndexes)
-
-		# Rename to new path
-		Fs.rename clientFileDirPath, newClientFilePath, cb
+			# Decrypt, add index, re-encrypt
+			indexes = decryptFileName clientFileRevPath, 1, globalEncryptionKey
+			console.log "indexes", indexes
+			indexes.unshift 'active'
+			encryptedIndexes = encryptFileName indexes, globalEncryptionKey
+		
+			# Build new path
+			newClientFilerevPath = Path.join(clientFileRevPath, encryptedIndexes)
+			
+			# Rename to new path
+			Fs.rename clientFileRevPath, newClientFileRevPath, cb
 
 	, (err) ->
 		if err
+			console.info "problem with clientFile status index"
 			cb err
 			return
 
@@ -676,7 +688,7 @@ module.exports = {
 
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "7. Add 'status': 'default' field to clientFile objects"
+				console.groupCollapsed "7. Add 'status': 'active' field to clientFile objects"
 				addClientFileStatusField dataDir, globalEncryptionKey, cb
 
 			(cb) ->
