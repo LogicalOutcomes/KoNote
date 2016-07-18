@@ -406,7 +406,7 @@ addClientFileStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 
 		# Decrypt, add index, re-encrypt
 		indexes = decryptFileName clientFileDirPath, 1, globalEncryptionKey
-		indexes.unshift 'default'
+		indexes.unshift 'active'
 		encryptedIndexes = encryptFileName indexes, globalEncryptionKey
 
 		# Build new path
