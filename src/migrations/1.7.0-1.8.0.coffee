@@ -666,19 +666,18 @@ module.exports = {
 
 			(cb) ->
 				console.groupEnd()
-<<<<<<< HEAD
 				console.groupCollapsed "5. Create empty 'globalEvents' dataModel collection directory"
 				createEmptyDirectory dataDir, 'globalEvents', cb
-=======
-				console.groupCollapsed "5. Add 'status': 'default' field to clientFile objects"
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "6. Add 'status': 'default' field to clientFile objects"
 				addClientFileStatusField dataDir, globalEncryptionKey, cb
 
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "6. Append 'default' status index to clientFile headers"
+				console.groupCollapsed "7. Append 'default' status index to clientFile headers"
 				addClientFileStatusIndex dataDir, globalEncryptionKey, cb
-
->>>>>>> develop
 
 		]
 
