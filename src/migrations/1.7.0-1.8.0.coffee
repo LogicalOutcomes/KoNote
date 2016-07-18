@@ -370,6 +370,58 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 
 # //////////////// Version-Specific Utilities /////////////////
 
+addClientFileStatusField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		Async.series [
+			(cb) =>
+				# Read clientFile object
+				Fs.readFile clientFileDirPath, (err, result) ->
+					if err
+						cb err
+						return
+
+					clientFileObject = JSON.parse globalEncryptionKey.decrypt result
+
+					cb()
+			(cb) =>
+				# Add 'status' property
+				clientFileObject.status = 'default'
+				encryptedObj = globalEncryptionKey.encrypt JSON.stringify clientFileObject
+
+				Fs.writeFile clientFileDirPath, encryptedObj, cb
+		], cb
+	, (err) ->
+		if err
+			console.info "Problem with clientFile status"
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)	
+
+addClientFileStatusIndex = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		# Decrypt, add index, re-encrypt
+		indexes = decryptFileName clientFileDirPath, 1, globalEncryptionKey
+		indexes.unshift 'default'
+		encryptedIndexes = encryptFileName indexes, globalEncryptionKey
+
+		# Build new path
+		newClientFilePath = Path.join(clientFileDirPath, encryptedIndexes)
+
+		# Rename to new path
+		Fs.rename clientFileDirPath, newClientFilePath, cb
+
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
 addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
 		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
@@ -614,8 +666,19 @@ module.exports = {
 
 			(cb) ->
 				console.groupEnd()
+<<<<<<< HEAD
 				console.groupCollapsed "5. Create empty 'globalEvents' dataModel collection directory"
 				createEmptyDirectory dataDir, 'globalEvents', cb
+=======
+				console.groupCollapsed "5. Add 'status': 'default' field to clientFile objects"
+				addClientFileStatusField dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "6. Append 'default' status index to clientFile headers"
+				addClientFileStatusIndex dataDir, globalEncryptionKey, cb
+
+>>>>>>> develop
 
 		]
 
