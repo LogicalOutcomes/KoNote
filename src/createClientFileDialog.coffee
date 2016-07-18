@@ -104,17 +104,21 @@ load = (win) ->
 							R.div({id: 'programsContainer'},
 								(@props.programs.map (program) =>
 									isSelected = @state.programIds.contains(program.get('id'))
+
 									R.button({
 										className: 'btn btn-default programOptionButton'
 										onClick:
 											(if isSelected then @_removeFromPrograms else @_pushToPrograms)
 											.bind null, program.get('id')
 										key: program.get('id')
-										value: program.get('id')
 									},
 										ColorKeyBubble({
-											isSelected
-											data: program
+											colorKeyHex: program.get('colorKeyHex')
+											popover: {
+												title: program.get('name')
+												content: program.get('description')
+											}
+											icon: 'check' if isSelected
 										})
 										program.get('name')
 									)
