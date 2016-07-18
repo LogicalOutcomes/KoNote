@@ -1235,7 +1235,16 @@ load = (win) ->
 			globalEvent = @props.globalEvent
 
 			return R.div({},
+				R.h3({},
+					"Global Event: "
+					globalEvent.get('title')
+				)
 				R.p({}, globalEvent.get('description'))
+				R.p({},
+					formatTimestamp globalEvent.get('startTimestamp')
+					' until '
+					formatTimestamp globalEvent.get('endTimestamp')
+				)
 			)
 
 
