@@ -31,7 +31,7 @@ load = (win) ->
 
 		# Extend with className from props if any
 		if props.className?
-			className += " #{properties.className}"
+			className += " #{props.className}"
 
 		props.className = className
 
