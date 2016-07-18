@@ -387,7 +387,7 @@ addClientFileStatusField = (dataDir, globalEncryptionKey, cb) ->
 					cb()
 			(cb) =>
 				# Add 'status' property
-				clientFileObject.status = 'default'
+				clientFileObject.status = 'active'
 				encryptedObj = globalEncryptionKey.encrypt JSON.stringify clientFileObject
 
 				Fs.writeFile clientFileDirPath, encryptedObj, cb
