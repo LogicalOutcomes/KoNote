@@ -274,7 +274,7 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						globalEvents = Imm.List(results).map (globalEvent) -> stripMetadata globalEvent.first()
+						globalEvents = Imm.List(results).map (revisions) -> stripMetadata revisions.first()
 						cb()
 
 				(cb) =>
@@ -627,6 +627,10 @@ load = (win, {clientFileId}) ->
 					eventTypes = @state.eventTypes.set eventTypeIndex, newEventTypeRev
 					@setState {eventTypes}
 
+				'create:globalEvent': (globalEvent) =>
+					globalEvents = @state.globalEvents.push globalEvent
+					@setState {globalEvents}
+
 				'timeout:timedOut': =>
 					@_killLocks Bootbox.hideAll
 
@@ -750,6 +754,10 @@ load = (win, {clientFileId}) ->
 				programId = link.get('programId')
 				@props.programsById.get programId
 
+			# Filter out global events reported by this clientFile
+			globalEvents = @props.globalEvents.filterNot (globalEvent) =>
+				globalEvent.get('clientFileId') is clientFileId
+
 			return R.div({className: 'clientFilePage'},
 				Spinner {
 					isOverlay: true
@@ -799,6 +807,7 @@ load = (win, {clientFileId}) ->
 							clientFileId
 							clientFile: @props.clientFile
 							clientPrograms
+							globalEvents
 							progNoteHistories: @props.progNoteHistories
 							planTargetsById: @props.planTargetsById
 							progEvents: @props.progressEvents
@@ -807,7 +816,6 @@ load = (win, {clientFileId}) ->
 							headerIndex: @props.headerIndex
 							progNoteTotal: @props.progNoteTotal
 							programsById: @props.programsById
-							globalEvents: @props.globalEvents
 
 							hasChanges: @hasChanges
 							onTabChange: @_changeTab

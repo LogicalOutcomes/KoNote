@@ -98,11 +98,10 @@ load = (win) ->
 				.find (entry) => entry.get('id') is @state.revisingProgNote.get('id')
 				.toList()
 			else
+				# Tack on the globalEvents, and sort!
 				historyEntries
 				.concat(
-					@props.globalEvents
-					.filterNot (globalEvent) => globalEvent.get('clientFileId') is @props.clientFileId
-					.map (globalEvent) ->
+					@props.globalEvents.map (globalEvent) ->
 						return Imm.fromJS {
 							type: 'globalEvent'
 							id: globalEvent.get('id')
@@ -112,7 +111,7 @@ load = (win) ->
 				)
 				.sortBy (entry) -> entry.get('timestamp')
 
-			# Reverse order so most recent is first
+			# Reverse order so by newest -> oldest
 			historyEntries = historyEntries.reverse()
 
 			return R.div({className: "progNotesView"},
