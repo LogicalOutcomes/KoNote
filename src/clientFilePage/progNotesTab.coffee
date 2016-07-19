@@ -192,6 +192,7 @@ load = (win) ->
 							)
 						)
 						(historyEntries.map (entry) =>
+
 							switch entry.get('type')
 								when 'progNote'
 									ProgNoteContainer({
@@ -227,6 +228,7 @@ load = (win) ->
 									GlobalEventView({
 										key: entry.get('id')
 										globalEvent: entry.get('data')
+										programsById: @props.programsById
 									})
 								else
 									throw new Error "Unknown historyEntry type #{entry.get('type')}"
@@ -761,8 +763,8 @@ load = (win) ->
 				# onMouseEnter: @props.setHighlightedQuickNoteId.bind null, @props.progNote.get('id')
 				# onMouseLeave: @props.setHighlightedQuickNoteId.bind null, null
 			},
-				ProgNoteHeader({
-					progNoteHistory: @props.progNoteHistory
+				EntryHeader({
+					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
 				})
 				R.div({className: 'notes'},
@@ -857,8 +859,8 @@ load = (win) ->
 				## TODO: Restore hover feature
 				# onMouseEnter: @props.setHighlightedProgNoteId.bind null, progNote.get('id')
 			},
-				ProgNoteHeader({
-					progNoteHistory: @props.progNoteHistory
+				EntryHeader({
+					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
 				})
 				R.div({className: 'progNoteList'},
@@ -1132,20 +1134,24 @@ load = (win) ->
 			@setState (s) -> {isExpanded: not s.isExpanded}
 
 
-	ProgNoteHeader = React.createFactory React.createClass
-		displayName: 'ProgNoteHeader'
+	EntryHeader = React.createFactory React.createClass
+		displayName: 'EntryHeader'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			{userProgram, progNoteHistory} = @props
+			{userProgram, revisionHistory} = @props
 
-			hasRevisions = progNoteHistory.size > 1
-			numberOfRevisions = progNoteHistory.size - 1
+			hasRevisions = revisionHistory.size > 1
+			numberOfRevisions = revisionHistory.size - 1
 
-			progNote = progNoteHistory.first() # Use original revision's data
-			timestamp = progNote.get('backdate') or progNote.get('timestamp')
+			firstRevision = revisionHistory.first() # Use original revision's data
+			timestamp = (
+				firstRevision.get('startTimestamp') or
+				firstRevision.get('backdate') or
+				firstRevision.get('timestamp')
+			)
 
-			R.div({className: 'header'},
+			R.div({className: 'entryHeader'},
 				R.div({className: 'timestamp'},
 					ColorKeyBubble({
 						colorKeyHex: userProgram.get('colorKeyHex')
@@ -1156,11 +1162,11 @@ load = (win) ->
 						}
 					})
 					formatTimestamp(timestamp)
-					" (late entry)" if progNote.get('backdate')
+					" (late entry)" if firstRevision.get('backdate')
 				)
 				R.div({className: 'author'},
 					' by '
-					progNote.get('author')
+					firstRevision.get('author')
 				)
 			)
 
@@ -1232,18 +1238,28 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			globalEvent = @props.globalEvent
+			{globalEvent} = @props
+			userProgramId = globalEvent.get('userProgramId')
 
-			return R.div({},
+			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
+			timestamp = globalEvent.get('backdate') or globalEvent.get('timestamp')
+
+			return R.div({className: 'globalEventView'},
+				EntryHeader({
+					revisionHistory: Imm.List([globalEvent.set('')])
+					userProgram
+				})
 				R.h3({},
-					"Global Event: "
+					FaIcon('globe')
+					" Global Event: "
 					globalEvent.get('title')
 				)
 				R.p({}, globalEvent.get('description'))
 				R.p({},
-					formatTimestamp globalEvent.get('startTimestamp')
-					' until '
-					formatTimestamp globalEvent.get('endTimestamp')
+					"Reported by "
+					globalEvent.get('author')
+					" on "
+					formatTimestamp timestamp
 				)
 			)
 

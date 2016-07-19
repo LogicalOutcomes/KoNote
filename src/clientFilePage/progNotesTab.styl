@@ -49,6 +49,39 @@
 
 			padding 10px 20px
 
+			.entryHeader
+				display flex
+
+				border-bottom 2px solid sidebar-borders
+
+				padding 5px 0
+
+				font-size 24px
+				font-weight 300
+
+				h1
+					padding 20px 0 10px 0
+					margin 0
+
+				> .timestamp
+					flex 1
+
+					.colorKeyBubble > .bubbleContents
+						opacity 0.5
+						width 0.5em
+						height 0.5em
+						margin-right 0.5em
+
+				.selectProgNoteButton
+					color sidebar-borders
+					margin-left 10px
+					cursor pointer
+
+					&:hover
+						color inherit
+						text-decoration underline
+
+
 			> .empty
 				text-align center
 
@@ -118,6 +151,13 @@
 					> .progNote
 						padding 20px 0 0 !important
 
+
+			> .globalEventView
+
+				h3
+					.fa
+						color blue
+
 			> .progNote, > .cancelStub > .details > .progNote
 				flex 1
 
@@ -132,38 +172,6 @@
 
 					.revisions
 						margin-right 0
-
-				> .header
-					display flex
-
-					border-bottom 2px solid sidebar-borders
-
-					padding 5px 0
-
-					font-size 24px
-					font-weight 300
-
-					h1
-						padding 20px 0 10px 0
-						margin 0
-
-					> .timestamp
-						flex 1
-
-						.colorKeyBubble > .bubbleContents
-							opacity 0.5
-							width 0.5em
-							height 0.5em
-							margin-right 0.5em
-
-					.selectProgNoteButton
-						color sidebar-borders
-						margin-left 10px
-						cursor pointer
-
-						&:hover
-							color inherit
-							text-decoration underline
 
 				.progNoteToolbar
 					display flex
