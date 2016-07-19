@@ -13,11 +13,11 @@ dataModelDefinitions = [
 		collectionName: 'clientFiles'
 		isMutable: true
 		indexes: [
+			['status']
 			['clientName', 'first']
 			['clientName', 'middle']
 			['clientName', 'last']
 			['recordId']
-			['status']
 		]
 		schema: Joi.object().keys({
 			clientName: Joi.object().keys({
