@@ -274,7 +274,7 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						globalEvents = Imm.List(results).map (revisions) -> stripMetadata revisions.first()
+						globalEvents = Imm.List(results).map (revisions) -> revisions.first()
 						cb()
 
 				(cb) =>
