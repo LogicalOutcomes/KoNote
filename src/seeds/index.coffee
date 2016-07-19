@@ -243,7 +243,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 					return
 
 				links = Imm.List(result)
-				console.log "Created #{clientFiles.size} link(s) for each of #{programs.size} program(s)"
+				console.log "Created #{programs.size} program link(s) for each clientFile"
 				console.groupEnd('Program Links')
 				cb()
 
