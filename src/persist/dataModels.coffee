@@ -265,16 +265,18 @@ dataModelDefinitions = [
 		name: 'globalEvent'
 		collectionName: 'globalEvents'
 		isMutable: true
-		indexes: [['status'], ['relatedProgEventId']]
+		indexes: [['status'], ['backdate']]
 		schema: Joi.object().keys({
 			title: Joi.string()
 			description: Joi.string().allow('')
 			startTimestamp: Joi.date().format(TimestampFormat).raw()
 			endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 			typeId: IdSchema.allow('')
-			relatedProgEventId: IdSchema
-			authorProgramId: IdSchema.allow('')
 			clientFileId: IdSchema
+			relatedProgNoteId: IdSchema.allow('')
+			relatedProgEventId: IdSchema.allow('')
+			authorProgramId: IdSchema.allow('')
+			backdate: Joi.date().format(TimestampFormat).raw().allow('')
 			status: ['default', 'cancelled']
 			statusReason: Joi.string().optional()
 		})

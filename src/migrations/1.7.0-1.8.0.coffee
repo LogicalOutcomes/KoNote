@@ -402,7 +402,7 @@ addClientFileStatusField = (dataDir, globalEncryptionKey, cb) ->
 			cb err
 			return
 
-		finalizeMigrationStep(dataDir, cb)	
+		finalizeMigrationStep(dataDir, cb)
 
 addClientFileStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 	console.log "start"
@@ -419,10 +419,10 @@ addClientFileStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 			console.log "indexes", indexes
 			indexes.unshift 'active'
 			encryptedIndexes = encryptFileName indexes, globalEncryptionKey
-		
+
 			# Build new path
 			newClientFilerevPath = Path.join(clientFileRevPath, encryptedIndexes)
-			
+
 			# Rename to new path
 			Fs.rename clientFileRevPath, newClientFileRevPath, cb
 
@@ -647,6 +647,46 @@ addProgEventAuthorProgramIdField = (dataDir, globalEncryptionKey, cb) ->
 
 		finalizeMigrationStep(dataDir, cb)
 
+
+addProgEventBackdateField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEventDir, cb) ->
+			progEventDirPath = Path.join(clientFilePath, 'progEvents', progEventDir)
+
+			forEachFileIn progEventDirPath, (progEvent, cb) ->
+				progEventObjectFilePath = Path.join(progEventDirPath, progEvent)
+				progEventObject = null
+
+				Async.series [
+					(cb) =>
+						# Read and decrypt progEvent object
+						Fs.readFile progEventObjectFilePath, (err, result) ->
+							if err
+								cb err
+								return
+
+							progEventObject = JSON.parse globalEncryptionKey.decrypt result
+
+							cb()
+					(cb) =>
+						# Add 'backdate' property
+						progEventObject.backdate = ''
+						encryptedObj = globalEncryptionKey.encrypt JSON.stringify progEventObject
+
+						Fs.writeFile progEventObjectFilePath, encryptedObj, cb
+				], cb
+			, cb
+		, cb
+	, (err) ->
+		if err
+			console.info "Problem with progEvents"
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
 # ////////////////////// Migration Series //////////////////////
 
 
@@ -695,6 +735,11 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "8. Append 'default' status index to clientFile headers"
 				addClientFileStatusIndex dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "9. Add 'backdate' field to progEvent objects"
+				addProgEventBackdateField dataDir, globalEncryptionKey, cb
 
 		]
 
