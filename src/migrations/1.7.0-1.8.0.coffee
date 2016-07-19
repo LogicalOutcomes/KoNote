@@ -415,16 +415,17 @@ addClientFileStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 			console.log "clientFileRevPath >>>>>>>  ", clientFileRevPath
 
 			# Decrypt, add index, re-encrypt
-			indexes = decryptFileName clientFileRevPath, 1, globalEncryptionKey
+			indexes = decryptFileName clientFile, 5, globalEncryptionKey
 			console.log "indexes", indexes
 			indexes.unshift 'active'
 			encryptedIndexes = encryptFileName indexes, globalEncryptionKey
 
 			# Build new path
-			newClientFilerevPath = Path.join(clientFileRevPath, encryptedIndexes)
+			newClientFileRevPath = Path.join(clientFileDirPath, encryptedIndexes)
 
 			# Rename to new path
 			Fs.rename clientFileRevPath, newClientFileRevPath, cb
+		, cb
 
 	, (err) ->
 		if err
