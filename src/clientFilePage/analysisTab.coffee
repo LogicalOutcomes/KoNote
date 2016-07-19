@@ -50,19 +50,18 @@ load = (win) ->
 				timeSpan: null
 			}
 
-		componentDidUpdate: (oldProps, oldState) ->
+		# componentDidUpdate: (oldProps, oldState) ->
+		# 	# Figure out what changed
+		# 	for property of @props
+		# 		# console.log "property", property
+		# 		if @props[property] isnt oldProps[property]
+		# 			console.log "#{property} changed"
 
-			# for property of @props
-			# 	# console.log "property", property
-			# 	if @props[property] isnt oldProps[property]
-			# 		console.log "#{property} changed"
-
-			# for property of @state
-			# 	if @state[property] isnt oldState[property]
-			# 		console.log "#{property} changed"
+		# 	for property of @state
+		# 		if @state[property] isnt oldState[property]
+		# 			console.log "#{property} changed"
 
 		render: ->
-			console.info "Render"
 
 			# Build targets list as targetId:[metricIds]
 			targetMetricsById = @props.plan.get('sections').flatMap (section) =>
