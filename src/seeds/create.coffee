@@ -34,12 +34,22 @@ Create.clientFile = (cb) ->
 
 #children functions
 
+Create.globalEvent = ({clientFile, progNote, progEvent}, cb) ->
+	globalEvent = progEvent
+	.set('clientFileId', clientFile.get('id'))
+	.set('relatedProgNoteId', progNote.get('id'))
+	.set('relatedProgEventId', progEvent.get('id'))
+	.remove('relatedElement')
+
+	createData 'globalEvents', globalEvent, cb
+
 Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 	earliestDate = Moment().subtract(2, 'months')
 	daySpan = Moment().diff(earliestDate, 'days')
 	randomDay = Math.floor(Math.random() * daySpan) + 1
 	randomBackdate = Moment().subtract(randomDay, 'days')
-	randomEnddate = Moment().subtract(randomDay, 'days').add(3, 'days')
+	randomDaySpan = Math.floor(Math.random() * 10) + 1
+	randomEnddate = Moment().subtract(randomDay, 'days').add(randomDaySpan, 'days')
 
 	eventTypeIds = eventTypes
 	.map (eventType) -> eventType.get('id')
