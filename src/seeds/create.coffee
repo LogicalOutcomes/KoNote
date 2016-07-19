@@ -57,6 +57,7 @@ Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 		endTimestamp: randomEnddate.format(TimestampFormat)
 		status: 'default'
 		# statusReason: optional
+		backdate: progNote.get('backdate')
 		typeId: randomTypeId
 		relatedProgNoteId
 		authorProgramId: ''
