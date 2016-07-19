@@ -1254,7 +1254,15 @@ load = (win) ->
 					" Global Event: "
 					globalEvent.get('title')
 				)
-				R.p({}, globalEvent.get('description'))
+				R.p({},
+					"From "
+					formatTimestamp globalEvent.get('startTimestamp')
+					" to "
+					formatTimestamp globalEvent.get('endTimestamp')
+				)
+				(if globalEvent.get('description')
+					R.p({}, globalEvent.get('description'))
+				)
 				R.p({},
 					"Reported by "
 					globalEvent.get('author')
