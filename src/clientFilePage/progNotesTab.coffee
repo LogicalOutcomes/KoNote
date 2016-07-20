@@ -1262,22 +1262,22 @@ load = (win) ->
 				})
 				R.h3({},
 					FaIcon('globe')
-					" Global Event: "
+					"Global Event: "
 					globalEvent.get('title')
-				)
-				R.p({},
-					"From "
-					formatTimestamp globalEvent.get('startTimestamp')
-					" to "
-					formatTimestamp globalEvent.get('endTimestamp')
 				)
 				(if globalEvent.get('description')
 					R.p({}, globalEvent.get('description'))
 				)
+				(if globalEvent.get('endTimestamp') and not isFullDay
+					R.p({},
+						"From: "
+						formatTimestamp globalEvent.get('startTimestamp')
+						" until "
+						formatTimestamp globalEvent.get('endTimestamp')
+					)
+				)
 				R.p({},
-					"Reported by "
-					globalEvent.get('author')
-					" on "
+					"Reported: "
 					formatTimestamp timestamp
 				)
 			)
