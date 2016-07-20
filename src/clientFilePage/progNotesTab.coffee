@@ -30,8 +30,9 @@ load = (win) ->
 	PrintButton = require('../printButton').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 
-	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName
+	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName, makeMoment
 	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
+
 
 	ProgNotesTab = React.createFactory React.createClass
 		displayName: 'ProgNotesView'
@@ -1161,7 +1162,7 @@ load = (win) ->
 							placement: 'left'
 						}
 					})
-					formatTimestamp(timestamp)
+					formatTimestamp(timestamp, @props.dateFormat)
 					" (late entry)" if firstRevision.get('backdate')
 				)
 				R.div({className: 'author'},
@@ -1244,10 +1245,20 @@ load = (win) ->
 			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
 			timestamp = globalEvent.get('backdate') or globalEvent.get('timestamp')
 
+			startTimestamp = makeMoment globalEvent.get('startTimestamp')
+			endTimestamp = makeMoment globalEvent.get('endTimestamp')
+
+			# A full day is 12:00AM to 11:59PM
+			isFullDay = (
+				startTimestamp.isSame(startTimestamp.startOf 'day') and
+				endTimestamp.isSame(endTimestamp.endOf 'day')
+			)
+
 			return R.div({className: 'globalEventView'},
 				EntryHeader({
-					revisionHistory: Imm.List([globalEvent.set('')])
+					revisionHistory: Imm.List [globalEvent]
 					userProgram
+					dateFormat: 'MMMM Do, YYYY' if isFullDay
 				})
 				R.h3({},
 					FaIcon('globe')
