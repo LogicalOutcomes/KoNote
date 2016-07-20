@@ -405,27 +405,21 @@ addClientFileStatusField = (dataDir, globalEncryptionKey, cb) ->
 		finalizeMigrationStep(dataDir, cb)
 
 addClientFileStatusIndex = (dataDir, globalEncryptionKey, cb) ->
-	console.log "start"
-	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
-		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
-		console.log "clientFileDirPath >>>>>>>>> ", clientFileDirPath
+	clientFilesDir = Path.join(dataDir, 'clientFiles')
 
-		forEachFileIn clientFileDirPath, (clientFileRev, cb) ->
-			clientFileRevPath = Path.join(clientFileDirPath, clientFileRev)
-			console.log "clientFileRevPath >>>>>>>  ", clientFileRevPath
+	forEachFileIn clientFilesDir, (clientFile, cb) ->
+		clientFileDirPath = Path.join(clientFilesDir, clientFile)
 
-			# Decrypt, add index, re-encrypt
-			indexes = decryptFileName clientFile, 5, globalEncryptionKey
-			console.log "indexes", indexes
-			indexes.unshift 'active'
-			encryptedIndexes = encryptFileName indexes, globalEncryptionKey
+		# Decrypt, add index, re-encrypt
+		indexes = decryptFileName clientFile, 5, globalEncryptionKey
+		indexes.unshift 'active'
+		encryptedIndexes = encryptFileName indexes, globalEncryptionKey
 
-			# Build new path
-			newClientFileRevPath = Path.join(clientFileDirPath, encryptedIndexes)
+		# Build new path
+		newClientFileDirPath = Path.join(clientFilesDir, encryptedIndexes)
 
-			# Rename to new path
-			Fs.rename clientFileRevPath, newClientFileRevPath, cb
-		, cb
+		# Rename to new path
+		Fs.rename clientFileDirPath, newClientFileDirPath, cb
 
 	, (err) ->
 		if err
