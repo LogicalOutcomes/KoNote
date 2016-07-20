@@ -18,6 +18,7 @@ load = (win) ->
 
 	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
+	WithTooltip = require('../withTooltip').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	{FaIcon, renderName, showWhen, formatTimestamp} = require('../utils').load(win)
 
@@ -243,8 +244,14 @@ load = (win) ->
 									onClick: @_toggleIsGlobalEvent
 									checked: @state.isGlobalEvent
 								})
-								"Make a #{Term 'global event'}"
-								FaIcon('question-circle')
+								"Make this a #{Term 'global event'}"
+								WithTooltip({
+									title: """
+										A copy of this #{Term 'event'} will visible to all #{Term 'client files'}
+									"""
+								},
+									FaIcon('question-circle')
+								)
 							)
 						)
 					)
