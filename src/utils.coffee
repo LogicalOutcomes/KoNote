@@ -111,7 +111,7 @@ load = (win) ->
 		.delete('_dirPath')
 
 	formatTimestamp = (timestamp, customFormat = '') ->
-		return Moment(timestamp, TimestampFormat).format(customFormat or 'MMMM Do, YYYY [at] h:mma')
+		return Moment(timestamp, TimestampFormat).format(customFormat or Config.timestampFormat)
 
 	capitalize = (word) ->
     return word.charAt(0).toUpperCase() + word.slice(1)
