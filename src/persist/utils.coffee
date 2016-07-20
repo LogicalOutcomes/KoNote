@@ -26,6 +26,16 @@ isValidJSON = (jsonString) ->
 		console.error "Invalid JSON:", jsonString
 		return false
 
+# Persistent objects come with metadata that makes it difficult to compare
+# revisions (e.g. timestamp).  This method removes those attributes.
+stripMetadata = (persistObj) ->
+	return persistObj
+	.delete('revisionId')
+	.delete('author')
+	.delete('timestamp')
+	.delete('_dirPath')
+
+
 # This class allows new error types to be created easily without breaking stack
 # traces, toString, etc.
 #
@@ -71,4 +81,5 @@ module.exports = {
 	TimestampFormat
 	generateId
 	isValidJSON
+	stripMetadata
 }

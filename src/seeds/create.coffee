@@ -3,17 +3,21 @@ Faker = require 'faker'
 Async = require 'async'
 Moment = require 'moment'
 
-{Users, TimestampFormat, generateId } = require '../persist'
-{ProgramColors, EventTypeColors} = require '../colors'
 Config = require '../config'
+{Users, TimestampFormat, generateId} = require '../persist'
+{ProgramColors, EventTypeColors} = require '../colors'
+{stripMetadata} = require '../persist/utils'
 
 
 Create = {}
 
-# util
+# Utilities
 
 createData = (dataCollection, obj, cb) ->
 	global.ActiveSession.persist[dataCollection].create obj, cb
+
+
+# Singular create functions
 
 Create.clientFile = (cb) ->
 	first = Faker.name.firstName()
@@ -32,13 +36,12 @@ Create.clientFile = (cb) ->
 
 	createData 'clientFiles', clientFile, cb
 
-#children functions
-
-Create.globalEvent = ({clientFile, progNote, progEvent}, cb) ->
-	globalEvent = progEvent
-	.set('clientFileId', clientFile.get('id'))
-	.set('relatedProgNoteId', progNote.get('id'))
+Create.globalEvent = ({progEvent}, cb) ->
+	globalEvent = stripMetadata(progEvent)
+	.set('clientFileId', progEvent.get('clientFileId'))
+	.set('relatedProgNoteId', progEvent.get('relatedProgNoteId'))
 	.set('relatedProgEventId', progEvent.get('id'))
+	.remove('id')
 	.remove('relatedElement')
 
 	createData 'globalEvents', globalEvent, cb
@@ -227,6 +230,7 @@ Create.eventType = (index, cb) ->
 		description: Faker.lorem.paragraph()
 		status: 'default'
 	})
+
 	createData 'eventTypes', eventType, cb
 
 Create.account = (index, cb) ->
@@ -234,12 +238,7 @@ Create.account = (index, cb) ->
 	password = 'password'
 	accountType = 'normal'
 
-	Users.Account.create global.ActiveSession.account, userName, password, accountType, (err, newAccount) ->
-		if err
-			cb err
-			return
-
-		cb null, newAccount
+	Users.Account.create global.ActiveSession.account, userName, password, accountType, cb
 
 Create.planTemplate = (index, cb) ->
 	planTemplate = Imm.fromJS {
@@ -269,12 +268,12 @@ Create.planTemplate = (index, cb) ->
 	}
 
 
-# wrappers
+
+# Multi create functions
 
 Create.clientFiles = (quantity, cb=(->)) ->
 	Async.times quantity, Create.clientFile, (err, clientFiles) ->
 		if err
-			console.error err
 			cb err
 			return
 
@@ -320,7 +319,7 @@ Create.planTargets = (quantity, clientFile, metrics, cb) ->
 	Async.times quantity, (index, cb) =>
 		targetMetrics = metrics.slice(x, x + sliceSize)
 		Create.planTarget(clientFile, targetMetrics, cb)
-		x = x + sliceSize
+		x += sliceSize
 	, (err, results) ->
 		if err
 			cb err

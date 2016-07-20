@@ -7,16 +7,18 @@ Fs = require 'fs'
 {Users, Persist, generateId} = require '../persist'
 Create = require './create'
 
+randomNumberUpTo = (max) -> Math.floor(Math.random() * max) + 1
+
 generateClientFile = (metrics, template, eventTypes, cb) ->
-	console.group('Generated Client File')
+	console.group('Generate Client File')
 
 	clientFile = null
 	planTargets = null
 	sections = null
 	targetIds = null
 	planTargets = null
-	progEvents = null
 	progNotes = null
+	progEventsSet = null
 
 	Async.series [
 		# Create the empty clientFile
@@ -44,15 +46,15 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 		# Apply the target to a section, apply to clientFile, save
 		(cb) ->
 			sliceSize = Math.floor(planTargets.size / template.clientFileSections)
-			targetIds = planTargets
-			.map (target) -> target.get('id')
+			targetIds = planTargets.map (target) -> target.get('id')
 
 			x = 0
 
 			Async.times template.clientFileSections, (index, cb) =>
 				sectionTargetIds = targetIds.slice(x, x + sliceSize)
 				# randomly chooses a status, with a higher probability of 'default'
-				randomNumber = Math.floor(Math.random() * 10) + 1
+				randomNumber = randomNumberUpTo 10
+
 				if randomNumber > 7
 					status = 'deactivated'
 				else if randomNumber < 3
@@ -60,7 +62,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 				else
 					status = 'default'
 
-				x = x + sliceSize
+				x += sliceSize
 
 				section = Imm.fromJS {
 					id: generateId()
@@ -115,8 +117,37 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 					cb err
 					return
 
-				progEvents = Imm.List(results)
+				progEventsSet = Imm.List(results)
 				console.log "Created #{template.progEvents} progEvents for each progNote"
+				cb()
+
+		# 1/5 chance that a globalEvent is created from a progEvent
+		(cb) ->
+			Async.map progEventsSet.toArray(), (progEvents, cb) ->
+				Async.map progEvents.toArray(), (progEvent, cb) ->
+
+					if randomNumberUpTo(5) is 1
+						Create.globalEvent {progEvent}, cb
+					else
+						cb null
+
+				, (err, results) ->
+					if err
+						cb err
+						return
+
+					cb null, Imm.List(results)
+
+			, (err, results) ->
+				if err
+					cb err
+					return
+
+				globalEvents = Imm.List(results)
+				.flatten(true)
+				.filter (globalEvent) -> globalEvent?
+
+				console.log "Created #{globalEvents.size} globalEvents from progEvents (1/5 chance)"
 				cb()
 
 	], (err) ->
@@ -124,7 +155,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 			cb err
 			return
 
-		console.groupEnd('Generated Client File')
+		console.groupEnd('Generate Client File')
 		cb(null, clientFile)
 
 
