@@ -515,6 +515,7 @@ load = (win) ->
 								key: ['id']
 								rowClass: (dataPoint) =>
 									'active' if @state.hoverClientId is dataPoint.get('id')
+									'deactivatedClientFile' unless dataPoint.get('status') is 'active'
 								onClickRow: (dataPoint) =>
 									@_onResultSelection.bind null, dataPoint.get('id')
 
