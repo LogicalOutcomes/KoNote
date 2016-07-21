@@ -319,6 +319,7 @@ load = (win) ->
 				queryText: ''
 				queryResults: Imm.List()
 				showingDormant: false
+				quantityDormant: 0
 
 				orderedQueryResults: Imm.List()
 				hoverClientId: null
@@ -501,7 +502,7 @@ load = (win) ->
 													type: 'checkbox'
 													checked: @state.showingDormant
 												})
-												"Show deactivated",
+												"Show deactivated (#{@state.quantityDormant})",
 											)
 										)
 									)
@@ -687,6 +688,8 @@ load = (win) ->
 			if @props.clientFileHeaders.size is activeHeaders.size
 				return false
 			else
+				quantityDormant = @props.clientFileHeaders.size - activeHeaders.size
+				@setState {quantityDormant}
 				return true
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
