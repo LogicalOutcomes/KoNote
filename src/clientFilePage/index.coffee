@@ -38,6 +38,7 @@ load = (win, {clientFileId}) ->
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
+	WithTooltip = require('../withTooltip').load(win)
 	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
 
 	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
@@ -877,12 +878,14 @@ load = (win, {clientFileId}) ->
 				)
 				R.div({className: 'clientName'},
 					(if ActiveSession.accountType is 'admin'
-						OpenDialogLink({
-							dialog: RenameClientFileDialog
-							clientFile: @props.clientFile
-							className: 'clientNameField'
-						},
-							@props.clientName
+						WithTooltip({title: "Edit Client Information", placement: 'top', container: 'body'},
+							OpenDialogLink({
+								dialog: RenameClientFileDialog
+								clientFile: @props.clientFile
+								className: 'clientNameField'
+							},
+								@props.clientName
+							)
 						)
 					else
 						@props.clientName
