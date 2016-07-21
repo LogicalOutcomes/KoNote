@@ -538,9 +538,11 @@ load = (win) ->
 										dataPath: ['clientName', 'first']
 										extraPath: ['clientName', 'middle']
 									}
+
 									{
 										name: "Status"
 										dataPath: ['status']
+										isDisabled: not @state.showingDormant
 									}
 									{
 										name: Config.clientFileRecordId.label
