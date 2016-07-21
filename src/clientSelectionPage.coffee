@@ -684,7 +684,7 @@ load = (win) ->
 			activeHeaders = @props.clientFileHeaders
 				.filter (clientFile) ->
 					clientFile.get('status') is 'active'
-			if @props.clientFileHeaders.length is activeHeaders.length
+			if @props.clientFileHeaders.size is activeHeaders.size
 				return false
 			else
 				return true
