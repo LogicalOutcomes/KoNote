@@ -354,7 +354,6 @@ load = (win) ->
 
 		_createTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
-
 				unless templateName
 					return
 
@@ -386,7 +385,7 @@ load = (win) ->
 							Please check your network connection and try again
 						"""
 						return
-					Bootbox.alert "New template created."
+					Bootbox.alert "New template: '#{templateName}' created."
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
