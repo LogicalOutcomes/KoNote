@@ -327,16 +327,19 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			@_refreshResults()
+			setTimeout(=>
+				@_refreshResults()
 
-			# Show and focus this window
-			Window.show()
-			Window.focus()
+				# Show and focus this window
+				Window.show()
+				Window.focus()
 
-			# Fire 'loaded' event for loginPage to hide itself
-			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
+				# Fire 'loaded' event for loginPage to hide itself
+				global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
 
-			@_attachKeyBindings()
+				@_attachKeyBindings()
+
+			, 250)
 
 		componentDidUpdate: (oldProps, oldState) ->
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders

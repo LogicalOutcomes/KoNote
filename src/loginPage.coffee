@@ -176,11 +176,13 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			@props.activateWindow()
+			setTimeout(=>
+				@props.activateWindow()
 
-			if @props.isNewSetUp
-				@setState {userName: 'admin'}
-				@refs.passwordField.focus()
+				if @props.isNewSetUp
+					@setState {userName: 'admin'}
+					@refs.passwordField.focus()
+			, 200)
 
 		onLoginError: (type) ->
 			switch type

@@ -735,7 +735,7 @@ load = (win, {clientFileId}) ->
 				Window.show()
 				Window.focus()
 
-			, 500)
+			, 250)
 
 		render: ->
 			if @props.loadErrorType
