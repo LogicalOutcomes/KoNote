@@ -491,20 +491,21 @@ load = (win) ->
 								if smallHeader then 'show' else 'hidden'
 							].join ' '
 						},
-							R.div({id: 'filterSelectionContainer'}
-								R.span({id: 'toggleDeactivated'},
-									R.div({className: "checkbox"},
-										R.label({}
-											R.input({
-												onChange: @_toggleDormant
-												type: 'checkbox'
-												checked: @state.showingDormant
-											})
-											"Show deactivated",
+							if @_hasDormant()	
+								R.div({id: 'filterSelectionContainer'}
+									R.span({id: 'toggleDeactivated'},
+										R.div({className: "checkbox"},
+											R.label({}
+												R.input({
+													onChange: @_toggleDormant
+													type: 'checkbox'
+													checked: @state.showingDormant
+												})
+												"Show deactivated",
+											)
 										)
 									)
 								)
-							)
 							OrderableTable({
 								tableData: queryResults
 								noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
@@ -669,7 +670,6 @@ load = (win) ->
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
 		_toggleDormant: ->
-			# this should be able to be refactored to use the _refresh method, but i couldn't get it to work.
 			if @state.showingDormant is true
 				queryResults = @props.clientFileHeaders
 				.filter (clientFile) ->
@@ -680,6 +680,14 @@ load = (win) ->
 				queryResults = @props.clientFileHeaders
 				showingDormant = true
 				@setState {queryResults, showingDormant}
+		_hasDormant: ->
+			activeHeaders = @props.clientFileHeaders
+				.filter (clientFile) ->
+					clientFile.get('status') is 'active'
+			if @props.clientFileHeaders.length is activeHeaders.length
+				return false
+			else
+				return true
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
 		_home: ->
