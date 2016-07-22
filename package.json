@@ -13,7 +13,7 @@
     "title": "KoNote",
     "width": 400,
     "height": 500,
-    "show": false,
+    "show": true,
     "frame": false,
     "resizable": false,
     "transparent": true,
