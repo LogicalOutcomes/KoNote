@@ -189,7 +189,7 @@ load = (win) ->
 							Your session will expire in #{Config.timeout.warnings.initial}
 							minute#{if Config.timeout.warnings.initial > 1 then 's' else ''}
 						"""
-						icon: 'icon.png'
+						icon: 'icon-notification.jpg'
 					}
 
 			'timeout:finalWarning': =>
@@ -203,7 +203,7 @@ load = (win) ->
 							Your session will expire in #{Config.timeout.warnings.final}
 							minute#{if Config.timeout.warnings.final > 1 then 's' else ''}.
 						"""
-						icon: 'icon.png'
+						icon: 'icon-notification.jpg'
 					}
 					nwWin.requestAttention(1)
 

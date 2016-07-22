@@ -413,7 +413,7 @@ load = (win) ->
 							].join ' '
 						},
 							R.div({className: 'logoContainer'},
-								R.img({src: Config.customerLogoLg})
+								R.img({src: Config.logoCustomerLg})
 								R.div({
 									className: 'subtitle'
 									style: {color: Config.logoSubtitleColor}
@@ -482,7 +482,7 @@ load = (win) ->
 							].join ' '
 						},
 							R.img({
-								src: Config.customerLogoLg
+								src: Config.logoCustomerLg
 								onClick: @_home
 							})
 						)
@@ -492,7 +492,7 @@ load = (win) ->
 								if smallHeader then 'show' else 'hidden'
 							].join ' '
 						},
-							if @_hasDormant()	
+							if @_hasDormant()
 								R.div({id: 'filterSelectionContainer'}
 									R.span({id: 'toggleDeactivated'},
 										R.div({className: "checkbox"},

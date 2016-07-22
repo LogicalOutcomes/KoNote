@@ -162,7 +162,7 @@ load = (win, {dataSet}) ->
 					R.div({},
 						R.img({
 							className: 'logo'
-							src: Config.customerLogoLg
+							src: Config.logoCustomerLg
 						})
 					)
 				)
