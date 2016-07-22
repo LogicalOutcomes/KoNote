@@ -905,8 +905,12 @@ load = (win, {clientFileId}) ->
 				R.div({className: 'recordId'},
 					R.span({}, renderRecordId @props.recordId, true)
 				)
-				unless @props.status is 'active'
-					R.div({className: 'clientStatus'},
+				if @props.status is 'inactive'
+					R.div({className: 'inactiveStatus'},
+						@props.status.toUpperCase()
+					)
+				else if @props.status is 'discharged'
+					R.div({className: 'dischargedStatus'},
 						@props.status.toUpperCase()
 					)
 				R.div({className: 'tabStrip'},
