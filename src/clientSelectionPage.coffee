@@ -319,7 +319,6 @@ load = (win) ->
 				queryText: ''
 				queryResults: Imm.List()
 				showingDormant: false
-				quantityDormant: 0
 
 				orderedQueryResults: Imm.List()
 				hoverClientId: null
@@ -492,7 +491,7 @@ load = (win) ->
 								if smallHeader then 'show' else 'hidden'
 							].join ' '
 						},
-							if @_hasDormant()
+							if @_hasDormant() > 0
 								R.div({id: 'filterSelectionContainer'}
 									R.span({id: 'toggleDeactivated'},
 										R.div({className: "checkbox"},
@@ -502,7 +501,7 @@ load = (win) ->
 													type: 'checkbox'
 													checked: @state.showingDormant
 												})
-												"Show deactivated (#{@state.quantityDormant})",
+												"Show deactivated (#{@_hasDormant()})",
 											)
 										)
 									)
@@ -688,12 +687,8 @@ load = (win) ->
 			activeHeaders = @props.clientFileHeaders
 				.filter (clientFile) ->
 					clientFile.get('status') is 'active'
-			if @props.clientFileHeaders.size is activeHeaders.size
-				return false
-			else
 				quantityDormant = @props.clientFileHeaders.size - activeHeaders.size
-				@setState {quantityDormant}
-				return true
+				return quantityDormant
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
 		_home: ->
