@@ -113,7 +113,7 @@ load = (win) ->
 								className: "btn btn-link #{showWhen hasChanges}"
 								onClick: @_resetChanges
 							},
-								"Reset Changes"
+								"Discard Changes"
 							)
 						)
 						R.div({className: 'rightMenu'},
@@ -126,14 +126,13 @@ load = (win) ->
 									FaIcon('plus')
 									"Add #{Term 'section'}"
 								)
-								# style this button
 								R.button({
 									className: 'createTemplate btn btn-default'
 									onClick: @_createTemplate
 									disabled: @props.isReadOnly
 								},
 									FaIcon('wpforms')
-									"New #{Term 'plan'} template"
+									"Create template"
 								)
 							)
 							PrintButton({
