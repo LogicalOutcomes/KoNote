@@ -121,18 +121,21 @@ load = (win) ->
 								R.button({
 									className: 'addSection btn btn-default'
 									onClick: @_addSection
-									disabled: @props.isReadOnly
+									disabled: hasChanges or @props.isReadOnly
 								},
 									FaIcon('plus')
 									"Add #{Term 'section'}"
 								)
+							)
+							WithTooltip({
+								placement: 'bottom'
+								title: "Create plan template"
+							},
 								R.button({
-									className: 'createTemplate btn btn-default'
+									className: 'btn createTemplateButton'
 									onClick: @_createTemplate
-									disabled: @props.isReadOnly
 								},
 									FaIcon('wpforms')
-									"Create template"
 								)
 							)
 							PrintButton({
@@ -148,11 +151,16 @@ load = (win) ->
 									}
 								]
 								iconOnly: true
-								disabled: hasChanges
+								disabled: hasChanges or @props.isReadOnly
 								tooltip: {
-									show: hasChanges
+									show: true
 									placement: 'bottom'
-									title: "Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
+									title: (
+										if hasChanges or @props.isReadOnly
+											"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
+										else
+											"Print"
+									)
 								}
 							})
 						)
@@ -711,7 +719,6 @@ load = (win) ->
 				displayCompletedTargets: null
 			}
 
-
 		render: ->
 			{
 				section
@@ -736,7 +743,7 @@ load = (win) ->
 				getSectionIndex
 			} = @props
 
-			sectionId = @props.section.get('id')
+			sectionId = section.get('id')
 			headerState = 'inline'
 
 			# Group targetIds into an object, with a property for each status
@@ -927,6 +934,8 @@ load = (win) ->
 			isExistingSection = clientFile.getIn(['plan','sections'])
 			.some (obj) => obj.get('id') is section.get('id')
 
+			sectionIsInactive = section.get('status') isnt 'default'
+
 			return R.div({
 				className: [
 					'sectionHeader'
@@ -944,20 +953,19 @@ load = (win) ->
 					R.button({
 						className: 'renameSection btn btn-default'
 						onClick: renameSection.bind null, section.get('id')
-						disabled: isReadOnly
+						disabled: isReadOnly or sectionIsInactive
 					},
 						"Rename"
 					)
 					R.button({
 						className: 'addTarget btn btn-primary'
 						onClick: addTargetToSection.bind null, section.get('id')
-						disabled: isReadOnly
+						disabled: isReadOnly or sectionIsInactive
 					},
 						FaIcon('plus')
 						"Add #{Term 'target'}"
 					)
 				)
-
 				(if isExistingSection
 					unless @props.targetIdsByStatus.has('default')
 						if sectionStatus is 'default'
