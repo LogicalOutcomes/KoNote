@@ -86,6 +86,12 @@ module.exports = function(grunt) {
 				],
 				dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/temp_node_modules/',
 			},
+
+			cwrsync: {
+				src: 'cwrsync/**',
+				dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/'
+			},
+			
 			production: {
 				src: 'build/production.json',
 				dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/production.json'
@@ -299,6 +305,7 @@ module.exports = function(grunt) {
 			grunt.task.run('replace:config:'+entry);
 			grunt.task.run('copy:production:'+entry);
 			if (entry == "generic-win") {
+				grunt.task.run('copy:cwrsync:'+entry);
 				grunt.task.run('copy:generic:'+entry);
 			}
 			if (entry == "griffin-mac" || entry == "griffin-win") {
