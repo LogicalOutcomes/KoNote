@@ -123,10 +123,12 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 
 		# 1/5 chance that a globalEvent is created from a progEvent
 		(cb) ->
+			chanceOfGlobalEvent = 1/10
+
 			Async.map progEventsSet.toArray(), (progEvents, cb) ->
 				Async.map progEvents.toArray(), (progEvent, cb) ->
 
-					if randomNumberUpTo(5) is 1
+					if randomNumberUpTo(1/chanceOfGlobalEvent) is 1
 						Create.globalEvent {progEvent}, cb
 					else
 						cb null
@@ -147,7 +149,9 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 				.flatten(true)
 				.filter (globalEvent) -> globalEvent?
 
-				console.log "Created #{globalEvents.size} globalEvents from progEvents (1/5 chance)"
+				console.log "Generated #{globalEvents.size} globalEvents from progEvents
+				(#{chanceOfGlobalEvent}% chance)"
+
 				cb()
 
 	], (err) ->
