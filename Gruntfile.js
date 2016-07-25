@@ -298,7 +298,7 @@ module.exports = function(grunt) {
 	
 	grunt.registerTask('release', function() {
 		grunt.task.run('clean:temp');
-		grunt.task.run('exec:test');
+		//grunt.task.run('exec:test');
 		release.forEach(function(entry) {
 			grunt.task.run('copy:main:'+entry);
 			grunt.task.run('replace:main:'+entry);

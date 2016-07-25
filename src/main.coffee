@@ -160,33 +160,42 @@ init = (win) ->
 			if process.platform is 'win32'
 				pull = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
 				Fs.writeFileSync 'pull.cmd', pull
-				pull = 'pull.cmd'
+				global.pull = 'pull.cmd'
 
 				push = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
 				Fs.writeFileSync 'push.cmd', push
-				push = 'push.cmd'
+				global.push = 'push.cmd'
 			else
-				pull = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
-				push = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
+				global.pull = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+				global.push = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
+				global.pushLocks = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/_locks/ konode@cloud.konote.ca:data/_locks"
+				global.pullLocks = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data/_locks data/"
 			
 			# pull remote data
 			sync = =>
-				exec pull, (err, stdout, stderr) =>
+				exec global.pullLocks, (err, stdout, stderr) =>
 					if err
-						throw err
+						console.error err
+						sync()
 					else
-						console.log 'sync (pull) done'
-						global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:pulled'
-						# push our data
-						exec push, (err, stdout, stderr) =>
+						console.log 'sync (pull locks) done'
+						exec global.pull, (err, stdout, stderr) =>
 							if err
-								throw err
+								console.error err
+								sync()
 							else
-								console.log 'sync (push) done'
-								setTimeout(=>
-									sync()
-								, 30000)
-
+								console.log 'sync (pull) done'
+								global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:pulled'
+								# push our data
+								exec global.push, (err, stdout, stderr) =>
+									if err
+										console.error err
+										sync()
+									else
+										console.log 'sync (push) done'
+										setTimeout(=>
+											sync()
+										, 30000)
 			sync()
 
 		# Disable context menu

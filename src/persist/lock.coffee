@@ -10,6 +10,8 @@ Imm = require 'immutable'
 Moment = require 'moment'
 Path = require 'path'
 
+exec = require('child_process').exec;
+
 Atomic = require './atomic'
 
 {CustomError, IOError, TimestampFormat} = require './utils'
@@ -46,6 +48,13 @@ class Lock
 
 		Async.series [
 			(cb) ->
+				exec global.pullLocks, (err, stdout, stderr) =>
+					if err
+						cb err
+					else
+						console.log 'sync (pull locks) done'
+						cb()
+			(cb) ->
 				Atomic.writeDirectory lockDirDest, tmpDirPath, (err, tmpLockDir, op) ->
 					if err
 						cb err
@@ -80,6 +89,13 @@ class Lock
 						return
 
 					cb()
+			(cb) ->
+				exec global.pushLocks, (err, stdout, stderr) =>
+					if err
+						cb err
+					else
+						console.log 'sync (push locks) done'
+						cb()
 		], (err) ->
 			if err
 				cb err
@@ -248,6 +264,12 @@ class Lock
 		@_released = true
 
 		Atomic.deleteDirectory @_path, @_tmpDirPath, cb
+
+		exec global.pushLocks, (err, stdout, stderr) =>
+			if err
+				console.error err
+			else
+				console.log 'sync (pull locks) done'
 
 	_hasLeaseExpired: ->
 		return Moment(@_nextExpiryTimestamp, TimestampFormat).isBefore Moment()
