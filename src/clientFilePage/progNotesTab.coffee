@@ -115,7 +115,6 @@ load = (win) ->
 			# Reverse order so by newest -> oldest
 			historyEntries = historyEntries.reverse()
 
-			console.log "historyEntries", historyEntries.toJS()
 
 			return R.div({className: "progNotesView"},
 				R.div({className: "toolbar #{showWhen @props.progNoteHistories.size > 0}"},
