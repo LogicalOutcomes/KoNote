@@ -95,9 +95,9 @@ load = (win) ->
 
 			historyEntries = if @state.revisingProgNote?
 				# Only show the single progNote while editing
-				historyEntries
-				.find (entry) => entry.get('id') is @state.revisingProgNote.get('id')
-				.toList()
+				Imm.List [
+					historyEntries.find (entry) => entry.get('id') is @state.revisingProgNote.get('id')
+				]
 			else
 				# Tack on the globalEvents, and sort!
 				historyEntries
@@ -114,6 +114,8 @@ load = (win) ->
 
 			# Reverse order so by newest -> oldest
 			historyEntries = historyEntries.reverse()
+
+			console.log "historyEntries", historyEntries.toJS()
 
 			return R.div({className: "progNotesView"},
 				R.div({className: "toolbar #{showWhen @props.progNoteHistories.size > 0}"},
@@ -686,7 +688,7 @@ load = (win) ->
 					selectProgNote: @props.selectProgNote
 					isReadOnly: @props.isReadOnly
 
-					isEditing: @props.isEditing
+					isEditing
 					revisingProgNote: @props.revisingProgNote
 					startRevisingProgNote: @props.startRevisingProgNote
 					cancelRevisingProgNote: @props.cancelRevisingProgNote
@@ -712,7 +714,7 @@ load = (win) ->
 						selectProgNote: @props.selectProgNote
 						isReadOnly: @props.isReadOnly
 
-						isEditing: @props.isEditing
+						isEditing
 						revisingProgNote: @props.revisingProgNote
 						startRevisingProgNote: @props.startRevisingProgNote
 						cancelRevisingProgNote: @props.cancelRevisingProgNote
@@ -736,7 +738,7 @@ load = (win) ->
 						selectedItem: @props.selectedItem
 						isReadOnly: @props.isReadOnly
 
-						isEditing: @props.isEditing
+						isEditing
 						revisingProgNote: @props.revisingProgNote
 						startRevisingProgNote: @props.startRevisingProgNote
 						cancelRevisingProgNote: @props.cancelRevisingProgNote
