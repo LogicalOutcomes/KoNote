@@ -82,6 +82,7 @@ load = (win, {clientFileId}) ->
 		render: ->
 			if @state.status isnt 'ready' then return R.div({})
 
+
 			clientName = renderName(@state.clientFile.get('clientName'))
 
 			# Order each individual progNoteHistory, then the overall histories
@@ -92,6 +93,22 @@ load = (win, {clientFileId}) ->
 				createdAt = history.last().get('backdate') or history.first().get('timestamp')
 				return Moment createdAt, Persist.TimestampFormat
 			.reverse()
+
+			# Use programLinks to determine program membership(s)
+			clientPrograms = @state.clientFileProgramLinkHeaders.map (link) =>
+				programId = link.get('programId')
+				@state.programsById.get programId
+
+			clientFileCreated = Moment @state.clientFile.get('timestamp'), Persist.TimestampFormat
+
+			# Filter out global events that either belong to this clientFile,
+			# or span (entirely) outside its history
+			globalEvents = @state.globalEvents.filterNot (globalEvent) =>
+				return true if globalEvent.get('clientFileId') is clientFileId
+
+				eventStarted = Moment globalEvent.get('startTimestamp'), Persist.TimestampFormat
+				eventEnded = Moment globalEvent.get('endTimestamp'), Persist.TimestampFormat
+				return eventStarted.isAfter(clientFileCreated) or eventEnded.isAfter(clientFileCreated)
 
 
 			return ClientFilePageUi({
@@ -104,6 +121,7 @@ load = (win, {clientFileId}) ->
 
 				clientFile: @state.clientFile
 				clientName
+				clientPrograms
 
 				progNoteHistories
 				progressEvents: @state.progressEvents
@@ -113,7 +131,7 @@ load = (win, {clientFileId}) ->
 				programsById: @state.programsById
 				clientFileProgramLinkHeaders: @state.clientFileProgramLinkHeaders
 				eventTypes: @state.eventTypes
-				globalEvents: @state.globalEvents
+				globalEvents
 
 				headerIndex: @state.headerIndex
 				progNoteTotal: @state.progNoteTotal
@@ -750,23 +768,6 @@ load = (win, {clientFileId}) ->
 
 			recordId = @props.clientFile.get('recordId')
 
-			# Use programLinks to determine program membership(s)
-			clientPrograms = @props.clientFileProgramLinkHeaders.map (link) =>
-				programId = link.get('programId')
-				@props.programsById.get programId
-
-
-			clientFileCreated = Moment @props.clientFile.get('timestamp'), Persist.TimestampFormat
-
-			# Filter out global events that either belong to this clientFile,
-			# or span (entirely) outside its history
-			globalEvents = @props.globalEvents.filterNot (globalEvent) =>
-				return true if globalEvent.get('clientFileId') is clientFileId
-
-				eventStarted = Moment globalEvent.get('startTimestamp'), Persist.TimestampFormat
-				eventEnded = Moment globalEvent.get('endTimestamp'), Persist.TimestampFormat
-				return eventStarted.isAfter(clientFileCreated) or eventEnded.isAfter(clientFileCreated)
-
 
 			return R.div({className: 'clientFilePage'},
 				Spinner {
@@ -781,7 +782,7 @@ load = (win, {clientFileId}) ->
 					Sidebar({
 						clientFile: @props.clientFile
 						clientName: @props.clientName
-						clientPrograms
+						clientPrograms: @props.clientPrograms
 						recordId
 						activeTabId
 						programs: @props.programs
@@ -816,8 +817,8 @@ load = (win, {clientFileId}) ->
 							ref: 'progNotesTab'
 							clientFileId
 							clientFile: @props.clientFile
-							clientPrograms
-							globalEvents
+							clientPrograms: @props.clientPrograms
+							globalEvents: @props.globalEvents
 							progNoteHistories: @props.progNoteHistories
 							planTargetsById: @props.planTargetsById
 							progEvents: @props.progressEvents
@@ -854,7 +855,7 @@ load = (win, {clientFileId}) ->
 							progEvents: @props.progressEvents
 							eventTypes: @props.eventTypes
 							metricsById: @props.metricsById
-							globalEvents
+							globalEvents: @props.globalEvents
 							isReadOnly
 						})
 					)
