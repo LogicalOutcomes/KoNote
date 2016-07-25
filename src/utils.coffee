@@ -75,7 +75,7 @@ load = (win) ->
 	# Converts line breaks to React <br> tags and trims leading or trailing whitespace
 	renderLineBreaks = (text) ->
 		unless text?
-			console.warn "renderLineBreaks received: ", text
+			console.warn "renderLineBreaks received no input: ", text
 			return ""
 
 		lines = text.trim()
