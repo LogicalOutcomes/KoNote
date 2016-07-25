@@ -159,7 +159,7 @@ load = (win) ->
 										if hasChanges or @props.isReadOnly
 											"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
 										else
-											"Print"
+											"Print plan"
 									)
 								}
 							})
