@@ -182,7 +182,7 @@ load = (win) ->
 				if @props.isNewSetUp
 					@setState {userName: 'admin'}
 					@refs.passwordField.focus()
-			, 200)
+			, 350)
 
 		onLoginError: (type) ->
 			switch type
