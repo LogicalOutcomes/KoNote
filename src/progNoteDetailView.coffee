@@ -47,6 +47,7 @@ load = (win) ->
 						RevisionHistory({
 							revisions: progNoteHistory.reverse()
 							type: 'progNote'
+							disableSnapshot: true
 							metricsById: @props.metricsById
 							programsById: @props.programsById
 							dataModelName: Term 'progress note'
@@ -54,7 +55,6 @@ load = (win) ->
 								metric: Term 'metric'
 								metrics: Term 'metric'
 							}
-							disableSnapshot: true
 						})
 					)
 
