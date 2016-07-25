@@ -286,6 +286,7 @@ load = (win) ->
 				if ok
 					@setState {
 						currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+						plan: @props.plan
 					}
 
 		_normalizeTargets: ->
