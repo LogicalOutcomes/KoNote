@@ -878,7 +878,7 @@ load = (win, {clientFileId}) ->
 				)
 				R.div({className: 'clientName'},
 					(if ActiveSession.accountType is 'admin'
-						WithTooltip({title: "Edit Client Information", placement: 'top', container: 'body'},
+						WithTooltip({title: "Edit Client Information", placement: 'right', container: 'body'},
 							OpenDialogLink({
 								dialog: RenameClientFileDialog
 								clientFile: @props.clientFile
