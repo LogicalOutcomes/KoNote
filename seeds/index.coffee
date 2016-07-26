@@ -4,7 +4,7 @@ Async = require 'async'
 Moment = require 'moment'
 Fs = require 'fs'
 
-{Users, Persist, generateId} = require '../persist'
+{Users, Persist, generateId} = require '../src/persist'
 Create = require './create'
 
 randomNumberUpTo = (max) -> Math.floor(Math.random() * max) + 1
@@ -193,7 +193,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 
 	Async.series [
 		(cb) ->
-			Fs.readFile "./src/seeds/templates/#{templateFileName}.json", (err, result) ->
+			Fs.readFile "./seeds/templates/#{templateFileName}.json", (err, result) ->
 				if err
 					if err.code is "ENOENT"
 						cb new Error "Template \"#{templateFileName}.json\" does not exist in /templates"

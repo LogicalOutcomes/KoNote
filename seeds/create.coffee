@@ -3,10 +3,10 @@ Faker = require 'faker'
 Async = require 'async'
 Moment = require 'moment'
 
-Config = require '../config'
-{Users, TimestampFormat, generateId} = require '../persist'
-{ProgramColors, EventTypeColors} = require '../colors'
-{stripMetadata} = require '../persist/utils'
+Config = require '../src/config'
+{Users, TimestampFormat, generateId} = require '../src/persist'
+{ProgramColors, EventTypeColors} = require '../src/colors'
+{stripMetadata} = require '../src/persist/utils'
 
 
 Create = {}
