@@ -115,9 +115,11 @@ load = (win) ->
 			# Reverse order so by newest -> oldest
 			historyEntries = historyEntries.reverse()
 
+			hasEnoughData = (@props.progNoteHistories.size + @props.globalEvents.size) > 0
+
 
 			return R.div({className: "progNotesView"},
-				R.div({className: "toolbar #{showWhen @props.progNoteHistories.size > 0}"},
+				R.div({className: "toolbar #{showWhen hasEnoughData}"},
 					(if @state.revisingProgNote?
 						R.div({},
 							R.button({
@@ -156,7 +158,7 @@ load = (win) ->
 								"New #{Term 'progress note'}"
 							)
 							R.button({
-								className: "addQuickNote btn btn-default #{showWhen @props.progNoteHistories.size > 0}"
+								className: "addQuickNote btn btn-default #{showWhen hasEnoughData}"
 								onClick: @_openNewQuickNote
 								disabled: @props.isReadOnly
 							},
@@ -168,7 +170,7 @@ load = (win) ->
 				)
 				R.div({className: 'panes'},
 					R.div({className: 'historyEntries'},
-						R.div({className: "empty #{showWhen (@props.progNoteHistories.size is 0)}"},
+						R.div({className: "empty #{showWhen not hasEnoughData}"},
 							R.div({className: 'message'},
 								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
 							)
@@ -181,11 +183,7 @@ load = (win) ->
 								"New #{Term 'progress note'}"
 							)
 							R.button({
-								className: [
-									'btn btn-default btn-lg'
-									'addQuickNote'
-									showWhen (@props.progNoteHistories.size is 0)
-								].join ' '
+								className: 'btn btn-default btn-lg addQuickNote'
 								onClick: @_openNewQuickNote
 								disabled: @props.isReadOnly
 							},
