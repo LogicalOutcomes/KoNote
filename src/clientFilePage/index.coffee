@@ -890,19 +890,23 @@ load = (win, {clientFileId}) ->
 						@props.clientName
 					)
 				)
-				R.div({className: 'programs'},
-					(@props.clientPrograms.map (program) ->
-						R.span({
-							key: program.get('id')
-							style:
-								borderBottomColor: program.get('colorKeyHex')
-						},
-							program.get('name')
+				(if not @props.clientPrograms.isEmpty()
+					R.div({className: 'programs'},
+						(@props.clientPrograms.map (program) ->
+							R.span({
+								key: program.get('id')
+								style:
+									borderBottomColor: program.get('colorKeyHex')
+							},
+								program.get('name')
+							)
 						)
 					)
 				)
-				R.div({className: 'recordId'},
-					R.span({}, renderRecordId @props.recordId, true)
+				(if @props.recordId
+					R.div({className: 'recordId'},
+						R.span({}, renderRecordId @props.recordId, true)
+					)
 				)
 				if @props.status is 'inactive'
 					R.div({className: 'inactiveStatus'},
