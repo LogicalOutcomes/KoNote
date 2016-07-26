@@ -1,19 +1,23 @@
 Imm = require 'immutable'
 Faker = require 'faker'
-Async = require 'async'	
+Async = require 'async'
 Moment = require 'moment'
 
-{Users, TimestampFormat, generateId } = require '../persist'
-{ProgramColors, EventTypeColors} = require '../colors'
-Config = require '../config'
+Config = require '../src/config'
+{Users, TimestampFormat, generateId} = require '../src/persist'
+{ProgramColors, EventTypeColors} = require '../src/colors'
+{stripMetadata} = require '../src/persist/utils'
 
 
 Create = {}
 
-# util 
+# Utilities
 
 createData = (dataCollection, obj, cb) ->
 	global.ActiveSession.persist[dataCollection].create obj, cb
+
+
+# Singular create functions
 
 Create.clientFile = (cb) ->
 	first = Faker.name.firstName()
@@ -24,6 +28,7 @@ Create.clientFile = (cb) ->
 	clientFile = Imm.fromJS {
 		clientName: {first, middle, last}
 		recordId: recordId
+		status: 'active'
 		plan: {
 			sections: []
 		}
@@ -31,27 +36,44 @@ Create.clientFile = (cb) ->
 
 	createData 'clientFiles', clientFile, cb
 
-#children functions
+Create.globalEvent = ({progEvent}, cb) ->
+	globalEvent = stripMetadata(progEvent)
+	.set('clientFileId', progEvent.get('clientFileId'))
+	.set('relatedProgNoteId', progEvent.get('relatedProgNoteId'))
+	.set('relatedProgEventId', progEvent.get('id'))
+	.remove('id')
+	.remove('relatedElement')
 
-Create.progEvent = ({clientFile, progNote}, cb) ->
+	createData 'globalEvents', globalEvent, cb
+
+Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 	earliestDate = Moment().subtract(2, 'months')
 	daySpan = Moment().diff(earliestDate, 'days')
 	randomDay = Math.floor(Math.random() * daySpan) + 1
 	randomBackdate = Moment().subtract(randomDay, 'days')
-	randomEnddate = Moment().subtract(randomDay, 'days').add(3, 'days')
+	randomDaySpan = Math.floor(Math.random() * 10) + 1
+	randomEnddate = Moment().subtract(randomDay, 'days').add(randomDaySpan, 'days')
 
+	eventTypeIds = eventTypes
+	.map (eventType) -> eventType.get('id')
+	.toJS()
+
+	randomIndex = Math.floor(Math.random() * eventTypeIds.length)
+	randomTypeId = eventTypeIds[randomIndex]
 	relatedProgNoteId = progNote.get('id')
 	clientFileId = clientFile.get('id')
 
 	progEvent = Imm.fromJS {
-		title: Faker.company.bsBuzz()		
-		description: Faker.lorem.paragraph()		
+		title: Faker.company.bsBuzz()
+		description: Faker.lorem.paragraph()
 		startTimestamp: randomBackdate.format(TimestampFormat)
 		endTimestamp: randomEnddate.format(TimestampFormat)
 		status: 'default'
 		# statusReason: optional
-		typeId: ''
+		backdate: progNote.get('backdate')
+		typeId: randomTypeId
 		relatedProgNoteId
+		authorProgramId: ''
 		clientFileId
 		relatedElement: ''
 	}
@@ -64,16 +86,18 @@ Create.quickNote = (clientFile, cb) ->
 	randomDay = Math.floor(Math.random() * daySpan) + 1
 	randomBackdate = Moment().subtract(randomDay, 'days')
 
-	note = Imm.fromJS {
+	quickNote = Imm.fromJS {
 		type: 'basic'
 		status: 'default'
 		clientFileId: clientFile.get('id')
 		notes: Faker.lorem.paragraph()
 		timestamp: randomBackdate.format(TimestampFormat)
 		backdate: ''
+		authorProgramId: ''
+		beginTimestamp: ''
 	}
 
-	createData 'progNotes', note, cb
+	createData 'progNotes', quickNote, cb
 
 Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	earliestDate = Moment().subtract(2, 'months')
@@ -86,8 +110,7 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	progNoteUnit = progNoteTemplate.getIn(['units', 0])
 
 	# Loop over progNote sections
-	progNoteSections = Imm.List(sections).toJS().map (section) ->
-
+	progNoteSections = sections.map (section) ->
 		# Loop over targetIds, and get the matching planTarget definition
 		targets = section.get('targetIds').map (targetId) ->
 			planTarget = planTargets.find (target) -> target.get('id') is targetId
@@ -112,6 +135,7 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 			return {
 				id: planTarget.get('id')
 				name: planTarget.get('name')
+				description: planTarget.get('description')
 				notes: Faker.lorem.paragraph()
 				metrics: metricNotes.toJS()
 			}
@@ -132,6 +156,8 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 		templateId: progNoteTemplate.get('id')
 		backdate: ''
 		timestamp: randomBackdate.format(TimestampFormat)
+		authorProgramId: ''
+		beginTimestamp: ''
 		units: [
 			{
 				id: progNoteUnit.get('id')
@@ -145,16 +171,26 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	createData 'progNotes', progNote, cb
 
 
-Create.planTarget = ({clientFile, metrics}, cb) ->
+Create.planTarget = (clientFile, metrics, cb) ->
 	metricIds = metrics
 	.map (metric) -> metric.get('id')
 	.toJS()
+
+	# randomly chooses a status, with a higher probability of 'default'
+	randomNumber = Math.floor(Math.random() * 10) + 1
+
+	if randomNumber > 7
+		status = 'deactivated'
+	else if randomNumber < 3
+		status = 'completed'
+	else
+		status = 'default'
 
 	target = Imm.fromJS {
 		clientFileId: clientFile.get('id')
 		name: Faker.company.bsBuzz()
 		description: Faker.lorem.paragraph()
-		status: "default"
+		status
 		metricIds
 	}
 
@@ -169,7 +205,7 @@ Create.program = (index, cb) ->
 	})
 
 	createData 'programs', program, cb
-	
+
 Create.clientFileProgramLink = (clientFile, program, cb) ->
 	link = Imm.fromJS({
 		clientFileId: clientFile.get('id')
@@ -178,7 +214,7 @@ Create.clientFileProgramLink = (clientFile, program, cb) ->
 	})
 
 	createData 'clientFileProgramLinks', link, cb
-	
+
 Create.metric = (index, cb) ->
 	metric = Imm.fromJS ({
 		name: Faker.company.bsBuzz()
@@ -186,9 +222,9 @@ Create.metric = (index, cb) ->
 	})
 
 	createData 'metrics', metric, cb
-	
 
-Create.eventType = (index, cb) ->	
+
+Create.eventType = (index, cb) ->
 	eventType = Imm.fromJS ({
 		name: Faker.company.bsBuzz()
 		# chooses a hexColor randomly from an imported list of hexcolors
@@ -196,27 +232,50 @@ Create.eventType = (index, cb) ->
 		description: Faker.lorem.paragraph()
 		status: 'default'
 	})
+
 	createData 'eventTypes', eventType, cb
 
 Create.account = (index, cb) ->
-	userName = Faker.lorem.word()
+	userName = 'user' + Faker.random.number()
 	password = 'password'
 	accountType = 'normal'
 
-	Users.Account.create global.ActiveSession.account, userName, password, accountType, (err, newAccount) ->
-		if err
-			cb err
-			return
+	Users.Account.create global.ActiveSession.account, userName, password, accountType, cb
 
-		cb null, newAccount
+Create.planTemplate = (index, cb) ->
+	planTemplate = Imm.fromJS {
+		name: Faker.company.bsBuzz()
+		sections: [
+			{
+				name: Faker.company.bsBuzz()
+				targets: [
+					{
+						name: Faker.company.bsBuzz()
+						description: Faker.lorem.paragraph()
+						metricIds: []
+					}
+				]
+			},
+			{
+				name: Faker.company.bsBuzz()
+				targets: [
+					{
+						name: Faker.company.bsBuzz()
+						description: Faker.lorem.paragraph()
+						metricIds: []
+					}
+				]
+			}
+		]
+	}
 
 
-# wrappers
+
+# Multi create functions
 
 Create.clientFiles = (quantity, cb=(->)) ->
 	Async.times quantity, Create.clientFile, (err, clientFiles) ->
 		if err
-			console.error err
 			cb err
 			return
 
@@ -231,7 +290,7 @@ Create.progEvents = (quantity, props, cb) ->
 			cb err
 			return
 
-		console.log "Created #{quantity} progEvents"
+		# console.log "Created #{quantity} progEvents"
 		cb null, Imm.List(results)
 
 Create.quickNotes = (clientFile, numberOfNotes, cb) ->
@@ -253,12 +312,16 @@ Create.progNotes = (quantity, props, cb) ->
 			cb err
 			return
 
-		console.log "Created #{quantity} progNotes"
 		cb null, Imm.List(results)
-	
-Create.planTargets = (quantity, props, cb) ->
-	Async.times quantity, (index, cb) ->
-		Create.planTarget(props, cb)
+
+Create.planTargets = (quantity, clientFile, metrics, cb) ->
+	sliceSize = Math.floor(metrics.size / quantity)
+	x = 0
+
+	Async.times quantity, (index, cb) =>
+		targetMetrics = metrics.slice(x, x + sliceSize)
+		Create.planTarget(clientFile, targetMetrics, cb)
+		x += sliceSize
 	, (err, results) ->
 		if err
 			cb err
@@ -279,11 +342,10 @@ Create.programs = (quantity, cb) ->
 Create.clientFileProgramLinks = (clientFiles, program, cb) ->
 	Async.map clientFiles.toArray(), (clientFile, cb) ->
 		Create.clientFileProgramLink clientFile, program, (err, result) ->
-			if err 
+			if err
 				cb err
 				return
 
-			console.log "Linked clientFile \"#{clientFile.getIn(['clientName', 'last'])}\" to program \"#{program.get('name')}\""
 			cb null, Imm.List(result)
 	, cb
 
@@ -313,6 +375,15 @@ Create.accounts = (quantity, cb) ->
 
 		console.log "Created #{quantity} accounts"
 		cb null, Imm.List(accounts)
+
+Create.planTemplates = (quantity, cb) ->
+	Async.times quantity, Create.planTemplate, (err, planTemplates) ->
+		if err
+			cb err
+			return
+
+		console.log "Created #{quantity} planTemplates"
+		cb null, Imm.List(planTemplates)
 
 
 module.exports = Create

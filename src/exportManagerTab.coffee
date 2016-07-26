@@ -7,9 +7,9 @@ _ = require 'underscore'
 Imm = require 'immutable'
 Persist = require './persist'
 Fs = require 'fs'
+Path = require 'path'
 Archiver = require 'archiver'
 CSVConverter = require 'json-2-csv'
-GetSize = require 'get-folder-size'
 
 load = (win) ->
 	$ = win.jQuery
@@ -100,8 +100,7 @@ load = (win) ->
 					percent
 					message: message or @state.exportProgress.message
 				}
-			}, =>
-				console.log "loading state changed to: ",  @state.isLoading, @state.exportProgress
+			}
 
 		
 		_export: ({defaultName, extension, runExport}) ->
@@ -455,99 +454,82 @@ load = (win) ->
 								isConfirmClosed = true
 				
 		
-		_saveBackup: (path) ->
-			isConfirmClosed = false
-			@_updateProgress 0, "Backing up data..."
-			totalSize = 0
+		_saveBackup: (savepath) ->
 			
-			# Destination path must exist in order to save
-			if path.length > 1
+			totalFiles = 0
+
+			@setState {
+				isLoading: true
+				exportProgress: {message: "Preparing to archive... "}
+			}
+
+			walkSync = (dir) =>
+				files = Fs.readdirSync(dir)
+				files.forEach (file) ->
+					if Fs.statSync(Path.join(dir, file)).isDirectory()
+						totalFiles++
+						walkSync(Path.join(dir, file))
+					else
+						totalFiles++
+					return
+
+			Async.series [
+
+				(cb) =>
+					unless savepath.length > 1
+						err = new Error('nopath')
+						cb err
+						return
+					
+					walkSync(Config.dataDirectory)
+					cb()
+					
+				(cb) =>
+					unless totalFiles > 0
+						err = new Error('nofiles')
+						cb err
+						return
+					cb()
 				
-				GetSize 'data', (err, size) ->
-					if err
-						Bootbox.dialog {
-							title: "Error Calculating Filesize"
-							message: """
-								The backup may be incomplete!
-								<br><br>
-								<span class='error'>#{err}</span>
-							"""
-							buttons: {
-								proceed: {
-									label: "Ok"
-									className: 'btn-primary'
-								}
-							}
-						}
-						console.error err
-					totalSize = size or 0
-
-				output = Fs.createWriteStream(path)
-				archive = Archiver('zip')
-
-				output.on 'finish', =>
-					clearInterval(progressCheck)
-					@_updateProgress 100
-					@setState {isLoading: false}
-
-					backupSize = @_prettySize output.bytesWritten
-					if isConfirmClosed isnt true
+				(cb) =>
+					output = Fs.createWriteStream(savepath)
+					archive = Archiver('zip', {store:true})
+					.on 'error', (err) =>
+						cb err
+						return
+					.on 'finish', (err) =>
+						clearInterval(progressCheck)
+						@setState {isLoading: false}
 						Bootbox.alert {
-							title: "Backup Complete (#{backupSize})"
-							message: "Saved to: #{path}"
+							title: "Backup Complete (#{@_prettySize output.bytesWritten})!"
+							message: "Saved to: #{savepath}"
 						}
-						isConfirmClosed = true
-				.on 'error', (err) =>
-					clearInterval(progress)
+						cb()
+					
+					archive.directory(Config.dataDirectory, '')
+					archive.finalize()
+					archive.pipe(output)
+
+					progressCheck = setInterval =>
+						@setState {
+							exportProgress: {message: "Writing #{@_prettySize(archive.pointer())} to #{Path.basename(savepath)}..." }
+						}
+					, 200
+			
+			], (err) =>
+				if err
 					@setState {isLoading: false}
 
+					Bootbox.alert {
+						title: "Data Backup Failed"
+						message: """
+							Unable to create archive. Please check your network connection and try again.
+							If the problem persists, contact #{Config.productName} support with the following error:
+							\"#{err}\".
+						"""
+					}
 					console.error err
-					Bootbox.alert {
-						title: "Error Saving File"
-						message: """
-							<span class='error'>#{err}</span>
-							<br>
-							Please try again.
-						"""
-					}
-
-				archive.on 'error', (err) =>
-					@setState {isLoading: false}
-
-					Bootbox.alert {
-						title: "Error Saving File"
-						message: """
-							<span class='error'>#{err}</span>
-							<br>
-							Please try again.
-						"""
-					}
-
-				archive.bulk [{
-					expand: true
-					cwd: Config.dataDirectory
-					src: ['**/*']
-					dest: 'data'
-				}]
-
-				archive.finalize()
-				archive.pipe(output)
-
-				progressCheck = setInterval =>
-					written = archive.pointer()
-					writtenProgress = Math.floor((written / totalSize) * 100)
-					console.log written, totalSize
-					console.log "Written progress: #{writtenProgress}"
-					messageText = "Writing Data: (#{@_prettySize(written)})"
-
-					if writtenProgress is 100
-						messageText = "Zipping data directory..."
-
-					# KB progress only goes up to 75%
-					currentProgress = writtenProgress * 0.75
-
-					@_updateProgress currentProgress, messageText
-				, 100
+					return
 			
 	return ExportManagerTab
 

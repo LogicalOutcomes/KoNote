@@ -1,6 +1,5 @@
-require 'string.prototype.startswith'
-
 Assert = require 'assert'
+require 'string.prototype.startswith'
 
 {CustomError} = require '../src/utils'
 

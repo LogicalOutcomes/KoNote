@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Chart component for analysis tab
@@ -55,7 +55,6 @@ load = (win) ->
 			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 			unless sameSelectedMetrics
 				@_refreshSelectedMetrics()
-				@_refreshProgEvents()
 
 			# Update selected progEvents?
 			sameProgEvents = Imm.is @props.progEvents, oldProps.progEvents
@@ -63,10 +62,10 @@ load = (win) ->
 				@_refreshProgEvents()
 
 			# Update timeSpan?
-			sameTimeSpan = @props.timeSpan is oldProps.timeSpan
+			sameTimeSpan = Imm.is @props.timeSpan, oldProps.timeSpan
 			unless sameTimeSpan
-				newMin = @props.xTicks.get @props.timeSpan[0]
-				newMax = @props.xTicks.get @props.timeSpan[1]
+				newMin = @props.timeSpan.get('start')
+				newMax = @props.timeSpan.get('end')
 
 				# C3 requires there's some kind of span (even if it's 1ms)
 				if newMin is newMax
@@ -75,8 +74,8 @@ load = (win) ->
 				@_chart.axis.min {x: newMin}
 				@_chart.axis.max {x: newMax}
 
-				
-		componentDidMount: ->			
+
+		componentDidMount: ->
 			@_generateChart()
 			@_refreshSelectedMetrics()
 			@_refreshProgEvents()
@@ -109,7 +108,7 @@ load = (win) ->
 			.map (seriesId) =>
 				return ['y-' + seriesId, seriesNamesById.get(seriesId)]
 			.fromEntrySeq().toMap()
-			
+
 
 			dataSeries = dataSeries.entrySeq().flatMap ([seriesId, dataPoints]) ->
 				# Ensure ordered by earliest-latest
@@ -165,7 +164,7 @@ load = (win) ->
 						text: year
 						position: 'middle'
 						class: 'yearLine'
-					}			
+					}
 
 
 			# Generate and bind the chart
@@ -183,14 +182,14 @@ load = (win) ->
 							fit: false
 							format: '%b %d'
 						}
-						min: @props.xTicks.get @props.timeSpan[0]
-						max: @props.xTicks.get @props.timeSpan[1]
+						min: @props.timeSpan.get('start')
+						max: @props.timeSpan.get('end')
 					}
 					y: {
 						show: false
 						max: 1
 					}
-				}				
+				}
 				data: {
 					hide: true
 					xFormat: D3TimestampFormat
@@ -233,23 +232,29 @@ load = (win) ->
 					@props.updateMetricColors @state.metricColors
 
 		_refreshSelectedMetrics: ->
+			console.log "Refreshing selected metrics..."
 			@_chart.hide()
 
 			@props.selectedMetricIds.forEach (metricId) =>
-				@_chart.show("y-" + metricId)	
+				@_chart.show("y-" + metricId)
 
 		_refreshProgEvents: ->
+			console.log "Refreshing progEvents..."
 			# Generate c3 regions array
 			progEventRegions = @_generateProgEventRegions()
 
 			# Flush and re-apply regions to c3 chart
 			@_chart.regions.remove()
-			@_chart.regions.add progEventRegions.toJS()
+
+			# C3 Regions have some kind of animation attached, which
+			# messes up remove/add
+			setTimeout(=>
+				@_chart.regions progEventRegions.toJS()
+				@_attachKeyBindings()
+			, 500)
 
 			# Bind user interaction events
-			@_attachKeyBindings()
-
-			@setState => {progEventRegions}
+			# @_attachKeyBindings()
 
 		_generateProgEventRegions: ->
 			# Build Imm.List of region objects
@@ -289,12 +294,12 @@ load = (win) ->
 
 					# Let's pluck this progEvent if no rows or timestamps don't conflict
 					if thisRow.size is 0 or (
-						not thisRow.last().get('end')? or 
+						not thisRow.last().get('end')? or
 						thisEvent.start >= thisRow.last().get('end')
 					)
 						# Append class with row number
 						progEvent = Imm.fromJS(thisEvent)
-						newClass = progEvent.get('class') + " row#{rowIndex}"				
+						newClass = progEvent.get('class') + " row#{rowIndex}"
 
 						# Convert single-point event date to a short span
 						if not progEvent.get('end')
@@ -311,7 +316,7 @@ load = (win) ->
 						remainingEvents = remainingEvents.delete(liveIndex)
 
 
-				# Cancat to final (flat) output for c3
+				# Concat to final (flat) output for c3
 				progEvents = progEvents.concat eventRows.get(rowIndex)
 
 				rowIndex++
@@ -333,7 +338,7 @@ load = (win) ->
 
 			@props.progEvents.forEach (progEvent) =>
 				# Attach hover binding to progEvent region
-				$('.' + progEvent.get('id')).hover((event) =>					
+				$('.' + progEvent.get('id')).hover((event) =>
 
 					eventInfo.addClass('show')
 					eventInfo.find('.title').text progEvent.get('title')
@@ -370,8 +375,8 @@ load = (win) ->
 
 					rect = $('.' + progEvent.get('id')).find('rect')[0]
 					$(rect).attr({
-						style: 
-							"fill: #{eventType.get('colorKeyHex')} !important; 
+						style:
+							"fill: #{eventType.get('colorKeyHex')} !important;
 							stroke: #{eventType.get('colorKeyHex')} !important;"
 					})
 

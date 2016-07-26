@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Print preview page receives data from the printButton's data,
@@ -22,8 +22,8 @@ load = (win, {dataSet}) ->
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	ProgEventsWidget = require('./progEventsWidget').load(win)
-	{FaIcon,renderLineBreaks, renderName, 
-	renderFileId, showWhen, formatTimestamp} = require('./utils').load(win)
+	{FaIcon,renderLineBreaks, renderName,
+	renderRecordId, showWhen, formatTimestamp} = require('./utils').load(win)
 
 	PrintPreviewPage = React.createFactory React.createClass
 		displayName: 'PrintPreviewPage'
@@ -55,16 +55,19 @@ load = (win, {dataSet}) ->
 
 		componentDidMount: ->
 			# Without timeout, print() triggers before DOM renders
-			Window.show()
-			Window.focus()
-			
-			setTimeout ->
-				win.print()
-			, 1000
+			setTimeout(->
+				Window.show()
+				Window.focus()
+
+				setTimeout(->
+					win.print()
+				, 250)
+
+			, 250)
 
 		render: ->
-			R.div({className: 'printPreview'},				
-				(@props.printDataSet.map (printObj) =>					
+			R.div({className: 'printPreview'},
+				(@props.printDataSet.map (printObj) =>
 					clientFile = printObj.get('clientFile')
 					data = printObj.get('data')
 					progEvents = printObj.get('progEvents')
@@ -118,23 +121,23 @@ load = (win, {dataSet}) ->
 
 			return R.header({className: 'header'},
 				R.div({className: 'basicInfo'},
-					R.h1({className: 'title'},						
+					R.h1({className: 'title'},
 						FaIcon('pencil-square-o')
 						switch @props.format
 							when 'progNote' then "Progress Note"
 							when 'plan' then "Care Plan"
 					)
-					R.h3({className: 'clientName'}, 
+					R.h3({className: 'clientName'},
 						renderName @props.clientFile.get('clientName')
 					)
 					R.span({className: 'clientRecordId'},
-						renderFileId @props.clientFile.get('recordId')
+						renderRecordId @props.clientFile.get('recordId')
 					)
 				)
-				R.div({className: 'authorInfo'},					
+				R.div({className: 'authorInfo'},
 					(if @props.format isnt 'plan'
 						R.ul({},
-							R.li({}, 
+							R.li({},
 								FaIcon('user')
 								"Authored by: "
 								# TODO: Include user's full name + username ("Andrew Appleby (aappleby)")
@@ -159,7 +162,7 @@ load = (win, {dataSet}) ->
 					R.div({},
 						R.img({
 							className: 'logo'
-							src: Config.customerLogoLg
+							src: Config.logoCustomerLg
 						})
 					)
 				)
@@ -168,8 +171,8 @@ load = (win, {dataSet}) ->
 	BasicProgNoteView = React.createFactory React.createClass
 		displayName: 'BasicProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
-		render: ->			
-			R.div({className: 'basic progNote'},				
+		render: ->
+			R.div({className: 'basic progNote'},
 				R.div({className: 'notes'},
 					renderLineBreaks @props.progNote.get('notes')
 				)

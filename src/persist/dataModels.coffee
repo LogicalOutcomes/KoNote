@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Joi = require 'joi'
@@ -13,6 +13,7 @@ dataModelDefinitions = [
 		collectionName: 'clientFiles'
 		isMutable: true
 		indexes: [
+			['status']
 			['clientName', 'first']
 			['clientName', 'middle']
 			['clientName', 'last']
@@ -24,6 +25,8 @@ dataModelDefinitions = [
 				middle: Joi.string().allow('')
 				last: Joi.string()
 			})
+			status: ['active', 'inactive', 'discharged']
+			statusReason: Joi.string().optional()
 			recordId: [Joi.string(), '']
 			plan: Joi.object().keys({
 				sections: Joi.array().items(
@@ -47,11 +50,13 @@ dataModelDefinitions = [
 				indexes: [['status'], ['relatedProgNoteId']]
 				schema: Joi.object().keys({
 					title: Joi.string()
-					description: Joi.string().allow('')			
+					description: Joi.string().allow('')
 					startTimestamp: Joi.date().format(TimestampFormat).raw()
 					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 					typeId: IdSchema.allow('')
 					relatedProgNoteId: IdSchema
+					authorProgramId: IdSchema.allow('')
+					backdate: Joi.date().format(TimestampFormat).raw().allow('')
 					relatedElement: Joi.object().keys({
 						id: IdSchema
 						type: ['progNoteUnit', 'planSection', 'planTarget']
@@ -87,6 +92,8 @@ dataModelDefinitions = [
 						statusReason: Joi.string().optional()
 						notes: Joi.string()
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
+						authorProgramId: IdSchema.allow('')
+						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 					})
 					Joi.object().keys({
 						type: 'full'
@@ -94,6 +101,8 @@ dataModelDefinitions = [
 						statusReason: Joi.string().optional()
 						templateId: IdSchema
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
+						authorProgramId: IdSchema.allow('')
+						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 						units: Joi.array().items(
 							[
 								Joi.object().keys({
@@ -122,8 +131,7 @@ dataModelDefinitions = [
 												Joi.object().keys({
 													id: IdSchema
 													name: Joi.string()
-													# TODO: Migrate from current target description, so not optional
-													description: Joi.string().optional()
+													description: Joi.string()
 													notes: Joi.string().allow('')
 													metrics: Joi.array().items(
 														Joi.object().keys({
@@ -169,6 +177,30 @@ dataModelDefinitions = [
 			)
 		})
 	}
+	{
+		name: 'planTemplate'
+		collectionName: 'planTemplates'
+		isMutable: true
+		indexes: [['status'], ['name']]
+		schema: Joi.object().keys({
+			name: Joi.string()
+			status: ['default', 'cancelled']
+			sections: Joi.array().items(
+				[
+					Joi.object().keys({
+						name: Joi.string()
+						targets: Joi.array().items(
+							name: Joi.string()
+							description: Joi.string()
+							metricIds: Joi.array().items(
+								IdSchema
+							)
+						)
+					})
+				]
+			)
+		})
+	}
 
 	{
 		name: 'metric'
@@ -206,7 +238,8 @@ dataModelDefinitions = [
 		})
 	}
 
-	# Link a clientFileId to 1 or more programIds
+	## Program Links
+
 	{
 		name: 'clientFileProgramLink'
 		collectionName: 'clientFileProgramLinks'
@@ -216,6 +249,39 @@ dataModelDefinitions = [
 			clientFileId: IdSchema
 			programId: IdSchema
 			status: ['enrolled', 'unenrolled']
+		})
+	}
+
+	{
+		name: 'userProgramLink'
+		collectionName: 'userProgramLinks'
+		isMutable: true
+		indexes: [['status'], ['userName'], ['programId']]
+		schema: Joi.object().keys({
+			userName: IdSchema
+			programId: IdSchema
+			status: ['assigned', 'unassigned']
+		})
+	}
+
+	{
+		name: 'globalEvent'
+		collectionName: 'globalEvents'
+		isMutable: true
+		indexes: [['status'], ['backdate']]
+		schema: Joi.object().keys({
+			title: Joi.string()
+			description: Joi.string().allow('')
+			startTimestamp: Joi.date().format(TimestampFormat).raw()
+			endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+			typeId: IdSchema.allow('')
+			clientFileId: IdSchema
+			relatedProgNoteId: IdSchema.allow('')
+			relatedProgEventId: IdSchema.allow('')
+			authorProgramId: IdSchema.allow('')
+			backdate: Joi.date().format(TimestampFormat).raw().allow('')
+			status: ['default', 'cancelled']
+			statusReason: Joi.string().optional()
 		})
 	}
 ]

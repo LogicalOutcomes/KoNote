@@ -607,6 +607,52 @@ class DecryptedAccount extends Account
 
 		@_userDir = getUserDir @dataDirectory, @userName		
 
+	# Change account Type: Admin -> Normal | Normal -> Admin.
+	#
+	# Errors:
+	# - AccountTypeError if the logged-in account tries to change its own type
+	# - IOError
+	#
+	# (DecryptedAccount, loggedInAccount, string newType, function cb(err)) -> undefined
+	changeAccountType: (DecryptedAccount, loggedInAccount, newType, cb) ->
+		publicInfo = @publicInfo
+		privateInfo = @privateInfo
+		publicInfoPath = Path.join(@_userDir, 'public-info')
+		privateInfoPath = Path.join(@_userDir, 'private-info')
+		
+		unless loggedInAccount.publicInfo.accountType is 'admin'
+			cb new Error "only admins can change account types"
+			return
+		unless newType in ['normal', 'admin']
+			cb new Error "unknown account type: #{JSON.stringify newType}"
+			return
+		# prevent admin from demoting themselves
+		if loggedInAccount.userName == @userName
+			cb new AccountTypeError "you cannot change your own account type"
+			return
+		
+		Async.series [
+			(cb) =>
+				publicInfo.accountType = newType
+				Fs.writeFile publicInfoPath, JSON.stringify(publicInfo), (err) =>
+					if err
+						cb new IOError err
+						return
+					cb()
+			(cb) =>
+				if newType is 'admin'
+					privateInfo.systemPrivateKey = PrivateKey.import(loggedInAccount.privateInfo.systemPrivateKey)
+				else
+					privateInfo.systemPrivateKey = null
+
+				encryptedData = @_accountKey.encrypt JSON.stringify privateInfo
+				Fs.writeFile privateInfoPath, encryptedData, (err) =>
+					if err
+						cb new IOError err
+						return
+					cb()
+		], cb
+	
 	# Updates this user account's password.
 	#
 	# Errors:
@@ -669,6 +715,7 @@ class UnknownUserNameError extends CustomError
 class InvalidUserNameError extends CustomError
 class IncorrectPasswordError extends CustomError
 class DeactivatedAccountError extends CustomError
+class AccountTypeError extends CustomError
 
 module.exports = {
 	isAccountSystemSetUp
@@ -681,4 +728,5 @@ module.exports = {
 	InvalidUserNameError
 	IncorrectPasswordError
 	DeactivatedAccountError
+	AccountTypeError
 }

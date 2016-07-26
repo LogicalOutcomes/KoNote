@@ -1,5 +1,5 @@
-# Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+	# Copyright (c) Konode. All rights reserved.
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # The Plan tab on the client file page.
@@ -21,7 +21,7 @@ load = (win) ->
 	ReactDOM = win.ReactDOM
 
 	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
-	PlanTargetHistory = require('./planTargetHistory').load(win)
+	RevisionHistory = require('../revisionHistory').load(win)
 	ModifySectionStatusDialog = require('./modifySectionStatusDialog').load(win)
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
@@ -50,7 +50,7 @@ load = (win) ->
 			# Regenerate transient data when plan is updated
 			planChanged = not Imm.is(newProps.plan, @props.plan)
 			planTargetsChanged = not Imm.is(newProps.planTargetsById, @props.planTargetsById)
-			
+
 			if planChanged or planTargetsChanged
 				@setState {
 					plan: newProps.plan
@@ -78,12 +78,14 @@ load = (win) ->
 			else
 				selectedTarget = null
 
-			return R.div({className: "view planView #{if @props.isVisible then '' else 'hide'}"},
+			hasChanges = @hasChanges()
+
+			return R.div({className: "planView"},
 				R.div({className: 'targetList'},
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
 						R.div({className: 'message'},
 							"This #{Term 'client'} does not currently have any #{Term 'plan targets'}."
-						)						
+						)
 						R.button({
 							className: 'addSection btn btn-success btn-lg'
 							onClick: @_addSection
@@ -94,27 +96,47 @@ load = (win) ->
 						)
 					)
 					R.div({className: "toolbar #{showWhen plan.get('sections').size > 0}"},
-						R.span({className: 'leftMenu'},
+						R.div({className: 'leftMenu'},
 							R.button({
 								className: [
-									'save btn'
-									if @hasChanges() then 'btn-success canSave'
+									'btn'
+									if hasChanges then 'btn-success'
+									'saveButton'
 								].join ' '
-								disabled: not @hasChanges() or @props.isReadOnly
+								disabled: not hasChanges or @props.isReadOnly
 								onClick: @_save
 							},
 								FaIcon('save')
 								"Save #{Term 'Plan'}"
-							)	
-						)
-						R.span({className: 'rightMenu'},							
+							)
 							R.button({
-								className: 'addSection btn btn-default'
-								onClick: @_addSection
-								disabled: @props.isReadOnly
+								className: "btn btn-link #{showWhen hasChanges}"
+								onClick: @_resetChanges
 							},
-								FaIcon('plus')
-								"Add #{Term 'section'}"
+								"Discard Changes"
+							)
+						)
+						R.div({className: 'rightMenu'},
+							R.div({className: 'btn-group btn-group'},
+								R.button({
+									className: 'addSection btn btn-default'
+									onClick: @_addSection
+									disabled: hasChanges or @props.isReadOnly
+								},
+									FaIcon('plus')
+									"Add #{Term 'section'}"
+								)
+							)
+							WithTooltip({
+								placement: 'bottom'
+								title: "Create plan template"
+							},
+								R.button({
+									className: 'btn createTemplateButton'
+									onClick: @_createTemplate
+								},
+									FaIcon('wpforms')
+								)
 							)
 							PrintButton({
 								dataSet: [
@@ -129,13 +151,18 @@ load = (win) ->
 									}
 								]
 								iconOnly: true
-								disabled: @hasChanges()
+								disabled: hasChanges or @props.isReadOnly
 								tooltip: {
-									show: @hasChanges()
+									show: true
 									placement: 'bottom'
-									title: "Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
+									title: (
+										if hasChanges or @props.isReadOnly
+											"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
+										else
+											"Print plan"
+									)
 								}
-							})					
+							})
 						)
 					)
 					SectionsView({
@@ -154,6 +181,8 @@ load = (win) ->
 						hasTargetChanged: @_hasTargetChanged
 						updateTarget: @_updateTarget
 						setSelectedTarget: @_setSelectedTarget
+						addMetricToTarget: @_addMetricToTarget
+						deleteMetricFromTarget: @_deleteMetricFromTarget
 						getSectionIndex: @_getSectionIndex
 					})
 				)
@@ -164,70 +193,21 @@ load = (win) ->
 							"a #{Term 'target'} on the left."
 						)
 					else
-						currentRev = @state.currentTargetRevisionsById.get(selectedTarget.get('id'))
-						metricDefs = currentRev.get('metricIds').map (metricId) =>
-							return @props.metricsById.get(metricId, null)
-
 						R.div({className: 'targetDetailContainer'},
-							R.div({className: 'metricsSection'},
-								R.div({className: 'header'},
-									R.div({className: 'text'}, Term('Metrics'))
-								)
-								(if metricDefs.size is 0
-									R.div({className: 'noMetrics'},
-										"This #{Term 'target'} has no #{Term 'metrics'} attached."
-										(unless @props.isReadOnly
-											R.button({
-												className: 'btn btn-link addMetricButton'
-												onClick: @_focusMetricLookupField
-											}, FaIcon('plus'))
-										)
-									)									
-								else
-									R.div({className: 'metrics'},
-										(metricDefs.map (metricDef) =>
-											MetricWidget({
-												isEditable: false
-												allowDeleting: not @props.isReadOnly
-												onDelete: @_deleteMetricFromTarget.bind(
-													null, selectedTarget.get('id'), metricDef.get('id')
-												)
-												key: metricDef.get('id')
-												name: metricDef.get('name')
-												definition: metricDef.get('definition')
-											})
-										).toJS()...
-										(unless @props.isReadOnly
-											R.button({
-												className: 'btn btn-link addMetricButton'
-												onClick: @_focusMetricLookupField
-											}, FaIcon('plus'))
-										)
-									)
-								)
-								(unless @props.isReadOnly
-									R.div({},
-										MetricLookupField({
-											metrics: @props.metricsById.valueSeq()
-											onSelection: @_addMetricToTarget.bind(
-												null, selectedTarget.get('id')
-											)
-											placeholder: "Find / Define a #{Term 'Metric'}"
-											isReadOnly: @props.isReadOnly
-										})
-									)
-								)
-							)
-							PlanTargetHistory({
+							RevisionHistory({
 								revisions: selectedTarget.get('revisions')
+								type: 'planTarget'
 								metricsById: @props.metricsById
+								programsById: @props.programsById
+								dataModelName: 'target'
+								terms: {
+									metric: Term 'metric'
+								}
 							})
 						)
 					)
 				)
 			)
-
-		_focusMetricLookupField: -> $('.lookupField').focus()
 
 		blinkUnsaved: ->
 			toggleBlink = -> $('.hasChanges').toggleClass('blink')
@@ -301,6 +281,14 @@ load = (win) ->
 
 				@props.updatePlan @state.plan, newPlanTargets, updatedPlanTargets
 
+		_resetChanges: ->
+			Bootbox.confirm "Discard all changes made to the #{Term 'plan'}?", (ok) =>
+				if ok
+					@setState {
+						currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+						plan: @props.plan
+					}
+
 		_normalizeTargets: ->
 			@setState (state) =>
 				return {
@@ -372,6 +360,40 @@ load = (win) ->
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
 
+		_createTemplate: ->
+			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
+				unless templateName
+					return
+
+				templateSections = @state.plan.get('sections').map (section) =>
+					sectionTargets = section.get('targetIds').map (targetId) =>
+						target = @state.currentTargetRevisionsById.get(targetId)
+						# Removing irrelevant data from object
+						return target
+						.remove('status')
+						.remove('statusReason')
+						.remove('clientFileId')
+						.remove('id')
+
+					section = Imm.fromJS {
+						name: section.get('name')
+						targets: sectionTargets
+					}
+
+				planTemplate = Imm.fromJS {
+					name: templateName
+					status: 'default'
+					sections: templateSections
+				}
+
+				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again
+						"""
+						return
+					Bootbox.alert "New template: '#{templateName}' created."
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
@@ -448,7 +470,7 @@ load = (win) ->
 		_setSelectedTarget: (targetId) ->
 			@setState {selectedTargetId: targetId}
 
-		_addMetricToTarget: (targetId, metricId) ->			
+		_addMetricToTarget: (targetId, metricId) ->
 			# Current target already has this metric
 			if @state.currentTargetRevisionsById.getIn([targetId, 'metricIds']).contains metricId
 				Bootbox.alert "This #{Term 'metric'} has already been added to the selected #{Term 'target'}."
@@ -490,7 +512,7 @@ load = (win) ->
 		componentDidMount: ->
 			sectionsDom = @refs.sections
 			sectionsDom.addEventListener 'scroll', (event) =>
-				@_recalculateOffsets()		
+				@_recalculateOffsets()
 
 		render: ->
 			{
@@ -509,6 +531,8 @@ load = (win) ->
 				removeNewTarget
 				removeNewSection
 				setSelectedTarget
+				addMetricToTarget
+				deleteMetricFromTarget
 				getSectionIndex
 			} = @props
 
@@ -519,7 +543,7 @@ load = (win) ->
 
 			return R.div({className: 'sections', ref: 'sections'},
 				(if sectionsByStatus.has('default')
-					
+
 					# Default status
 					(sectionsByStatus.get('default').map (section) =>
 						SectionView({
@@ -534,20 +558,22 @@ load = (win) ->
 							planTargetsById
 							selectedTargetId
 							isReadOnly
-							
+
 							renameSection
 							addTargetToSection
 							hasTargetChanged
 							updateTarget
 							removeNewTarget
 							setSelectedTarget
+							addMetricToTarget
+							deleteMetricFromTarget
 							getSectionIndex
 							onRemoveNewSection: removeNewSection.bind null, section
 
 							sectionOffsets: @state.sectionOffsets
 							sectionsScrollTop: @state.sectionsScrollTop
 						})
-					)				
+					)
 				)
 				(if sectionsByStatus.has('completed')
 					R.div({className: 'sections status-completed'},
@@ -563,10 +589,10 @@ load = (win) ->
 							" Completed "
 							Term (
 								if sectionsByStatus.get('completed').size > 1 then 'Sections' else 'Section'
-							)									
+							)
 						)
 						(if @state.displayCompletedSections
-							# Completed status	
+							# Completed status
 							(sectionsByStatus.get('completed').map (section) =>
 								SectionView({
 									key: section.get('id')
@@ -589,13 +615,15 @@ load = (win) ->
 									removeNewSection
 									onRemoveNewSection: removeNewSection.bind null, section
 									setSelectedTarget
+									addMetricToTarget
+									deleteMetricFromTarget
 									getSectionIndex
 
 									sectionOffsets: @state.sectionOffsets
 									sectionsScrollTop: @state.sectionsScrollTop
 								})
 							)
-						)	
+						)
 					)
 				)
 				(if sectionsByStatus.has('deactivated')
@@ -612,10 +640,10 @@ load = (win) ->
 							" Deactivated "
 							Term (
 								if sectionsByStatus.get('deactivated').size > 1 then 'Sections' else 'Section'
-							)									
+							)
 						)
 						(if @state.displayDeactivatedSections
-							# Deactivated status	
+							# Deactivated status
 							(sectionsByStatus.get('deactivated').map (section) =>
 								SectionView({
 									key: section.get('id')
@@ -638,13 +666,15 @@ load = (win) ->
 									removeNewSection
 									onRemoveNewSection: removeNewSection.bind null, section
 									setSelectedTarget
+									addMetricToTarget
+									deleteMetricFromTarget
 									getSectionIndex
 
 									sectionOffsets: @state.sectionOffsets
 									sectionsScrollTop: @state.sectionsScrollTop
 								})
 							)
-						)	
+						)
 					)
 				)
 			)
@@ -690,7 +720,6 @@ load = (win) ->
 				displayCompletedTargets: null
 			}
 
-
 		render: ->
 			{
 				section
@@ -710,10 +739,12 @@ load = (win) ->
 				removeNewSection
 				onRemoveNewSection
 				setSelectedTarget
+				addMetricToTarget
+				deleteMetricFromTarget
 				getSectionIndex
 			} = @props
 
-			sectionId = @props.section.get('id')
+			sectionId = section.get('id')
 			headerState = 'inline'
 
 			# Group targetIds into an object, with a property for each status
@@ -734,7 +765,7 @@ load = (win) ->
 
 			return R.div({
 				className: "section status-#{section.get('status')}"
-				key: section.get('id')				
+				key: section.get('id')
 			},
 				SectionHeader({
 					clientFile
@@ -746,6 +777,7 @@ load = (win) ->
 					getSectionIndex
 					addTargetToSection
 					onRemoveNewSection
+					targetIdsByStatus
 				})
 				SectionHeader({
 					clientFile
@@ -758,6 +790,7 @@ load = (win) ->
 					getSectionIndex
 					addTargetToSection
 					onRemoveNewSection
+					targetIdsByStatus # TODO is this faster as a prop or to recalculate from section?
 				})
 				(if section.get('targetIds').size is 0
 					R.div({className: 'noTargets'},
@@ -782,6 +815,9 @@ load = (win) ->
 								onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
 								onTargetUpdate: updateTarget.bind null, targetId
 								onTargetSelection: setSelectedTarget.bind null, targetId
+								addMetricToTarget
+								deleteMetricFromTarget
+								targetId
 							})
 						)
 					)
@@ -800,7 +836,7 @@ load = (win) ->
 							" Completed "
 							Term (
 								if targetIdsByStatus.get('completed').size > 1 then 'Targets' else 'Target'
-							)									
+							)
 						)
 						(if @state.displayCompletedTargets
 							# Completed status
@@ -817,6 +853,9 @@ load = (win) ->
 									onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
 									onTargetUpdate: updateTarget.bind null, targetId
 									onTargetSelection: setSelectedTarget.bind null, targetId
+									addMetricToTarget
+									deleteMetricFromTarget
+									targetId
 								})
 							)
 						)
@@ -836,7 +875,7 @@ load = (win) ->
 							" Deactivated "
 							Term (
 								if targetIdsByStatus.get('deactivated').size > 1 then 'Targets' else 'Target'
-							)									
+							)
 						)
 						(if @state.displayCancelledTargets
 							# Cancelled statuses
@@ -853,6 +892,9 @@ load = (win) ->
 									onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
 									onTargetUpdate: updateTarget.bind null, targetId
 									onTargetSelection: setSelectedTarget.bind null, targetId
+									addMetricToTarget
+									deleteMetricFromTarget
+									targetId
 								})
 							)
 						)
@@ -892,7 +934,9 @@ load = (win) ->
 			# Figure out whether already exists in plan
 			isExistingSection = clientFile.getIn(['plan','sections'])
 			.some (obj) => obj.get('id') is section.get('id')
-		
+
+			sectionIsInactive = section.get('status') isnt 'default'
+
 			return R.div({
 				className: [
 					'sectionHeader'
@@ -910,85 +954,85 @@ load = (win) ->
 					R.button({
 						className: 'renameSection btn btn-default'
 						onClick: renameSection.bind null, section.get('id')
-						disabled: isReadOnly
+						disabled: isReadOnly or sectionIsInactive
 					},
 						"Rename"
 					)
 					R.button({
 						className: 'addTarget btn btn-primary'
 						onClick: addTargetToSection.bind null, section.get('id')
-						disabled: isReadOnly
+						disabled: isReadOnly or sectionIsInactive
 					},
 						FaIcon('plus')
 						"Add #{Term 'target'}"
 					)
 				)
-
 				(if isExistingSection
-					if sectionStatus is 'default'
-						R.div({className: 'statusButtonGroup'},
-							WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
-								OpenDialogLink({
-									clientFile
-									className: 'statusButton'
-									dialog: ModifySectionStatusDialog
-									newStatus: 'deactivated'
-									sectionIndex: getSectionIndex section.get('id')
-									# sectionTargetIds: section.get('targetIds')
-									title: "Deactivate #{Term 'Section'}"
-									message: """
-										This will remove the #{Term 'section'} from the #{Term 'client'} 
-										#{Term 'plan'}, and future #{Term 'progress notes'}. 
-										It may be re-activated again later.
-									"""
-									reasonLabel: "Reason for deactivation:"									
-									disabled: @props.isReadOnly or @props.hasTargetChanged
-								},
-									FaIcon 'ban'
+					unless @props.targetIdsByStatus.has('default')
+						if sectionStatus is 'default'
+							R.div({className: 'statusButtonGroup'},
+								WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
+									OpenDialogLink({
+										clientFile
+										className: 'statusButton'
+										dialog: ModifySectionStatusDialog
+										newStatus: 'deactivated'
+										sectionIndex: getSectionIndex section.get('id')
+										# sectionTargetIds: section.get('targetIds')
+										title: "Deactivate #{Term 'Section'}"
+										message: """
+											This will remove the #{Term 'section'} from the #{Term 'client'}
+											#{Term 'plan'}, and future #{Term 'progress notes'}.
+											It may be re-activated again later.
+										"""
+										reasonLabel: "Reason for deactivation:"
+										disabled: @props.isReadOnly or @props.hasTargetChanged
+									},
+										FaIcon 'times'
+									)
+								)
+								WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
+									OpenDialogLink({
+										clientFile
+										className: 'statusButton'
+										dialog: ModifySectionStatusDialog
+										newStatus: 'completed'
+										sectionIndex: getSectionIndex section.get('id')
+										# sectionTargetIds: section.get('targetIds')
+										title: "Complete #{Term 'Section'}"
+										message: """
+											This will set the #{Term 'section'} as 'completed'. This often
+											means that the desired outcome has been reached.
+										"""
+										reasonLabel: "Reason for completion:"
+										disabled: @props.isReadOnly or @props.hasTargetChanged
+									},
+										FaIcon 'check'
+									)
 								)
 							)
-							WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
-								OpenDialogLink({
-									clientFile
-									className: 'statusButton'
-									dialog: ModifySectionStatusDialog
-									newStatus: 'completed'
-									sectionIndex: getSectionIndex section.get('id')
-									# sectionTargetIds: section.get('targetIds')
-									title: "Complete #{Term 'Section'}"
-									message: """
-										This will set the #{Term 'section'} as 'completed'. This often 
-										means that the desired outcome has been reached.
-									"""
-									reasonLabel: "Reason for completion:"
-									disabled: @props.isReadOnly or @props.hasTargetChanged
-								},
-									FaIcon 'check'
+						else
+							R.div({className: 'statusButtonGroup'},
+								WithTooltip({title: "Reactivate #{Term 'Section'}", placement: 'top', container: 'body'},
+									OpenDialogLink({
+										clientFile
+										className: 'statusButton'
+										dialog: ModifySectionStatusDialog
+										newStatus: 'default'
+										sectionIndex: getSectionIndex section.get('id')
+										# sectionTargetIds: section.get('targetIds')
+										title: "Reactivate #{Term 'Section'}"
+										message: """
+											This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'}
+											#{Term 'plan'}, and future #{Term 'progress notes'}.
+										"""
+										reasonLabel: "Reason for reactivation:"
+										disabled: @props.isReadOnly or @props.hasTargetChanged
+									},
+										FaIcon 'sign-in'
+									)
 								)
 							)
-						)
-					else 
-						R.div({className: 'statusButtonGroup'},
-							WithTooltip({title: "Reactivate #{Term 'Section'}", placement: 'top', container: 'body'},
-								OpenDialogLink({
-									clientFile
-									className: 'statusButton'
-									dialog: ModifySectionStatusDialog
-									newStatus: 'default'
-									sectionIndex: getSectionIndex section.get('id')
-									# sectionTargetIds: section.get('targetIds')
-									title: "Reactivate #{Term 'Section'}"
-									message: """
-										This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'} 
-										#{Term 'plan'}, and future #{Term 'progress notes'}. 
-									"""
-									reasonLabel: "Reason for reactivation:"									
-									disabled: @props.isReadOnly or @props.hasTargetChanged
-								},
-									FaIcon 'sign-in'
-								)
-							)
-						)
 				else
 					R.div({className: 'statusButtonGroup'},
 						R.div({
@@ -1001,7 +1045,7 @@ load = (win) ->
 				)
 
 			)
-			
+
 
 	PlanTarget = React.createFactory React.createClass
 		displayName: 'PlanTarget'
@@ -1022,7 +1066,7 @@ load = (win) ->
 				].join ' '
 				onClick: @_onTargetClick
 			},
-				
+
 				R.div({className: 'nameContainer'},
 					R.input({
 						type: 'text'
@@ -1035,10 +1079,10 @@ load = (win) ->
 						onFocus: @props.onTargetSelection unless @props.isReadOnly or @props.isInactive
 						onClick: @props.onTargetSelection if @props.isReadOnly or @props.isInactive
 
-					})					
+					})
 
 					(if @props.isExistingTarget
-						# Can cancel/complete a 'default' target					
+						# Can cancel/complete a 'default' target
 						(if revisionStatus is 'default'
 							R.div({className: 'statusButtonGroup'},
 								WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
@@ -1049,14 +1093,14 @@ load = (win) ->
 										newStatus: 'deactivated'
 										title: "Deactivate #{Term 'Target'}"
 										message: """
-											This will remove the #{Term 'target'} from the #{Term 'client'} 
-											#{Term 'plan'}, and future #{Term 'progress notes'}. 
+											This will remove the #{Term 'target'} from the #{Term 'client'}
+											#{Term 'plan'}, and future #{Term 'progress notes'}.
 											It may be re-activated again later.
 										"""
-										reasonLabel: "Reason for deactivation:"									
+										reasonLabel: "Reason for deactivation:"
 										disabled: @props.isReadOnly or @props.hasTargetChanged
 									},
-										FaIcon 'ban'
+										FaIcon 'times'
 									)
 								)
 								WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
@@ -1067,7 +1111,7 @@ load = (win) ->
 										newStatus: 'completed'
 										title: "Complete #{Term 'Target'}"
 										message: """
-											This will set the #{Term 'target'} as 'completed'. This often 
+											This will set the #{Term 'target'} as 'completed'. This often
 											means that the desired outcome has been reached.
 										"""
 										reasonLabel: "Reason for completion:"
@@ -1085,10 +1129,10 @@ load = (win) ->
 										dialog: ModifyTargetStatusDialog
 										planTarget: @props.currentRevision
 										newStatus: 'default'
-										title: "Re-Activate #{Term 'Target'}"									
+										title: "Re-Activate #{Term 'Target'}"
 										message: """
-											This will re-activate the #{Term 'target'}, so it appears 
-											in the #{Term 'client'} #{Term 'plan'} and 
+											This will re-activate the #{Term 'target'}, so it appears
+											in the #{Term 'client'} #{Term 'plan'} and
 											future #{Term 'progress notes'}.
 										"""
 										reasonLabel: "Reason for activation:"
@@ -1104,6 +1148,7 @@ load = (win) ->
 							R.div({
 								className: 'statusButton'
 								onClick: @props.onRemoveNewTarget
+								title: 'Cancel'
 							},
 								FaIcon 'times'
 							)
@@ -1133,8 +1178,40 @@ load = (win) ->
 							value: metric.get('value')
 							key: metricId
 							tooltipViewport: '.section'
+							isEditable: false
+							allowDeleting: not @props.isReadOnly and @props.isActive and not @props.isInactive
+							onDelete: @props.deleteMetricFromTarget.bind(
+								null, @props.targetId, metricId
+							)
 						})
 					).toJS()...
+					(if not @props.isReadOnly and not @props.isInactive
+						R.button({
+							className: "btn btn-link addMetricButton #{showWhen @props.isActive}"
+							onClick: @_focusMetricLookupField.bind(null, @props.targetId)
+						},
+							FaIcon('plus')
+							" Add #{Term 'metric'}"
+						)
+					)
+				)
+				(if not @props.isReadOnly and not @props.isInactive
+					R.div({
+						className: [
+							'metricLookupContainer'
+						].join ' '
+						ref: 'metricLookup'
+					},
+						MetricLookupField({
+							metrics: @props.metricsById.valueSeq()
+							onSelection: @props.addMetricToTarget.bind(
+								null, @props.targetId
+							)
+							placeholder: "Find / Define a #{Term 'Metric'}"
+							isReadOnly: @props.isReadOnly
+							onBlur: @_hideMetricInput
+						})
+					)
 				)
 			)
 
@@ -1142,12 +1219,18 @@ load = (win) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
 
-		
+
 		_onTargetClick: (event) ->
-			unless event.target.classList.contains 'field'
+			unless (event.target.classList.contains 'field') or (event.target.classList.contains 'lookupField') or (event.target.classList.contains 'btn')
 				@refs.nameField.focus() unless @props.isReadOnly
 				@props.onTargetSelection()
-	
+
+		_focusMetricLookupField: ->
+			$(@refs.metricLookup).show()
+			$('.lookupField').focus()
+
+		_hideMetricInput: ->
+			$(@refs.metricLookup).hide()
 
 	return {PlanView}
 

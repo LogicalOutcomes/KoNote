@@ -1,13 +1,13 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+_ = require 'underscore'
 Moment = require 'moment'
 
 {TimestampFormat} = require './persist'
-Config = require './config'
-_ = require 'underscore'
 {CustomError} = require './persist/utils'
+Config = require './config'
 
 load = (win) ->
 	$ = win.jQuery
@@ -26,15 +26,16 @@ load = (win) ->
 			return variable
 
 	# Shortcut for using Font Awesome icons in React
-	FaIcon = (name, customProps) ->
-		properties = customProps or {}
+	FaIcon = (name, props = {}) ->
+		className = "fa fa-#{name}"
 
-		if customProps?
-			properties.className = "fa fa-#{name} #{properties.className}"
-		else
-			properties.className = "fa fa-#{name}"
+		# Extend with className from props if any
+		if props.className?
+			className += " #{props.className}"
 
-		return R.i(properties)
+		props.className = className
+
+		return R.i(props)
 
 	# A convenience method for opening a new window
 	# Callback function (optional) provides window context as argument
@@ -48,10 +49,9 @@ load = (win) ->
 		}, cb
 
 	renderName = (name) ->
-		result = []
-		result.push name.get('first')
+		result = [name.get('first')]
 
-		if name.has('middle') and name.get('middle').size
+		if name.get('middle')
 			result.push name.get('middle')
 
 		result.push name.get('last')
@@ -60,7 +60,7 @@ load = (win) ->
 
 	# Returns the clientFileId with label
 	# Setting 2nd param as true returns nothing if id is empty/nonexistent
-	renderFileId = (id, hidden) ->
+	renderRecordId = (id, hidden) ->
 		result = []
 		result.push Config.clientFileRecordId.label
 
@@ -74,6 +74,10 @@ load = (win) ->
 
 	# Converts line breaks to React <br> tags and trims leading or trailing whitespace
 	renderLineBreaks = (text) ->
+		unless text?
+			console.warn "renderLineBreaks received no input: ", text
+			return ""
+
 		lines = text.trim()
 		.replace(/\r\n/g, '\n') # Windows -> Unix
 		.replace(/\r/g, '\n') # old Mac -> Unix
@@ -104,9 +108,10 @@ load = (win) ->
 		.delete('revisionId')
 		.delete('author')
 		.delete('timestamp')
+		.delete('_dirPath')
 
-	formatTimestamp = (timestamp) ->
-		return Moment(timestamp, TimestampFormat).format('Do MMM, YYYY [at] h:mma')
+	formatTimestamp = (timestamp, customFormat = '') ->
+		return Moment(timestamp, TimestampFormat).format(customFormat or Config.timestampFormat)
 
 	capitalize = (word) ->
     return word.charAt(0).toUpperCase() + word.slice(1)
@@ -119,6 +124,40 @@ load = (win) ->
 
 		return text[...(maxLength - 1)] + '…'
 
+	makeMoment = (timestamp) -> Moment timestamp, TimestampFormat
+
+	##### Convenience methods for fetching data from a progNote
+
+	getUnitIndex = (progNote, unitId) ->
+		result = progNote.get('units')
+		.findIndex (unit) =>
+			return unit.get('id') is unitId
+
+		if result is -1
+			throw new Error "could not find unit with ID #{JSON.stringify unitId}"
+
+		return result
+
+	getPlanSectionIndex = (progNote, unitIndex, sectionId) ->
+		result = progNote.getIn(['units', unitIndex, 'sections'])
+		.findIndex (section) =>
+			return section.get('id') is sectionId
+
+		if result is -1
+			throw new Error "could not find unit with ID #{JSON.stringify sectionId}"
+
+		return result
+
+	getPlanTargetIndex = (progNote, unitIndex, sectionIndex, targetId) ->
+		result = progNote.getIn(['units', unitIndex, 'sections', sectionIndex, 'targets'])
+		.findIndex (target) =>
+			return target.get('id') is targetId
+
+		if result is -1
+			throw new Error "could not find target with ID #{JSON.stringify targetId}"
+
+		return result
+
 	return {
 		CustomError
 		executeIfFunction
@@ -126,12 +165,16 @@ load = (win) ->
 		openWindow
 		renderLineBreaks
 		renderName
-		renderFileId
+		renderRecordId
 		showWhen
 		stripMetadata
 		formatTimestamp
 		capitalize
-		truncateText		
+		truncateText
+		makeMoment
+		getUnitIndex
+		getPlanSectionIndex
+		getPlanTargetIndex
 	}
 
 module.exports = {

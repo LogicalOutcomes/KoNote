@@ -1,17 +1,18 @@
 {
-	"customerLogoLg": "gc-logo.svg",
-	"customerLogoSm": "gc-logo.svg",
+	"logoCustomerLg": "gc-logo.svg",
+	"logoCustomerSm": "gc-logo.svg",
 	"logoSubtitle": "DSSS",
 
 	"clientFileRecordId": {
 		"isEnabled": true,
+		"isRequired": true,
 		"label": "CR#"
 	},
-	
+
 	"terminology": {
 		"metric": "indicator"
 	},
-	
+
 	"useTemplate": "clientLog",
 
 	"templates": {

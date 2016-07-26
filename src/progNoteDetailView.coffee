@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
@@ -12,9 +12,13 @@ Persist = require './persist'
 load = (win) ->
 	React = win.React
 	R = React.DOM
+
 	ProgEventsWidget = require('./progEventsWidget').load(win)
 	MetricWidget = require('./metricWidget').load(win)
-	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
+	RevisionHistory = require('./revisionHistory').load(win)
+	ColorKeyBubble = require('./colorKeyBubble').load(win)
+
+	{FaIcon, renderLineBreaks, showWhen, formatTimestamp} = require('./utils').load(win)
 
 	ProgNoteDetailView = React.createFactory React.createClass
 		displayName: 'ProgNoteDetailView'
@@ -34,6 +38,26 @@ load = (win) ->
 				)
 
 			switch @props.item.get('type')
+				when 'progNote'
+					# First figure out which progNote history to diff through
+					progNoteHistory = @props.progNoteHistories.find (progNoteHistory) =>
+						progNoteHistory.last().get('id') is @props.item.get('progNoteId')
+
+					return R.div({className: 'progNoteDetailView'},
+						RevisionHistory({
+							revisions: progNoteHistory.reverse()
+							type: 'progNote'
+							disableSnapshot: true
+							metricsById: @props.metricsById
+							programsById: @props.programsById
+							dataModelName: Term 'progress note'
+							terms: {
+								metric: Term 'metric'
+								metrics: Term 'metric'
+							}
+						})
+					)
+
 				when 'basicUnit'
 					unitId = @props.item.get('unitId')
 					itemName = @props.item.get('unitName')
@@ -46,7 +70,7 @@ load = (win) ->
 						switch progNote.get('type')
 							when 'basic'
 								return Imm.List()
-							when 'full'								
+							when 'full'
 								return progNote.get('units')
 								.filter (unit) => # find relevant units
 									return unit.get('id') is unitId
@@ -92,19 +116,25 @@ load = (win) ->
 											return target.get('id') is targetId
 										.map (target) =>
 											progNoteId = progNote.get('id')
-											progEvents = @props.progEvents.filter (progEvent) =>
-												return progEvent.get('relatedProgNoteId') is progNoteId
+											progEvents = @props.progEvents.filter (progEvent) ->
+												progEvent.get('relatedProgNoteId') is progNoteId
+
+											# Metric entry must have a value to display
+											metrics = target.get('metrics').filter (metric) -> metric.get('value')
+
+											authorProgram = @props.programsById.get progNote.get('authorProgramId')
 
 											return Imm.fromJS {
 												progNoteId
 												status: progNote.get('status')
 												targetId: target.get('id')
 												author: initialAuthor
+												authorProgram
 												timestamp: createdTimestamp
 												backdate: progNote.get('backdate')
 												notes: target.get('notes')
 												progEvents
-												metrics: target.get('metrics')
+												metrics
 											}
 							else
 								throw new Error "unknown prognote type: #{progNote.get('type')}"
@@ -115,7 +145,7 @@ load = (win) ->
 					# Extract all quickNote entries
 					entries = @props.progNoteHistories
 					.filter (progNoteHistory) -> progNoteHistory.last().get('type') is 'basic'
-					.map (progNoteHistory) ->
+					.map (progNoteHistory) =>
 						initialAuthor = progNoteHistory.first().get('author')
 						createdTimestamp = progNoteHistory.first().get('timestamp')
 						progNote = progNoteHistory.last()
@@ -124,25 +154,27 @@ load = (win) ->
 						# TODO: progEvents = @props.progEvents.filter (progEvent) =>
 						# 	return progEvent.get('relatedProgNoteId') is progNoteId
 
+						authorProgram = @props.programsById.get progNote.get('authorProgramId')
+
 						return Imm.fromJS {
 							progNoteId
-							status: progNote.get('status')							
+							status: progNote.get('status')
 							author: initialAuthor
+							authorProgram
 							timestamp: createdTimestamp
 							backdate: progNote.get('backdate')
 							notes: progNote.get('notes')
-							# TODO: progEvents
 						}
 						return progNote
 						.set('author', initialAuthor)
 						.set('timestamp', createdTimestamp)
-					
+
 				else
 					throw new Error "unknown item type: #{JSON.stringify @props.item?.get('type')}"
 
 			# Filter out blank & cancelled notes, and sort by date/backdate
 			entries = entries
-			.filter (entry) -> 
+			.filter (entry) ->
 				entry.get('notes').trim().length > 0 and
 				entry.get('status') isnt 'cancelled'
 			.sortBy (entry) ->
@@ -158,7 +190,7 @@ load = (win) ->
 						},
 							(if itemDescription?
 								R.span({
-									className: 'toggleDescriptionButton'								
+									className: 'toggleDescriptionButton'
 								},
 									if @state.descriptionIsVisible then "Hide" else "Click to view"
 									" description"
@@ -189,6 +221,10 @@ load = (win) ->
 						# else if @props.highlightedTargetId?
 						# 	isHovered = (entry.get('targetId') is @props.highlightedTargetId) and isHighlighted
 
+						timestamp = entry.get('backdate') or entry.get('timestamp')
+
+						authorProgram = entry.get('authorProgram') or Imm.Map()
+
 						R.div({
 							key: entryId
 							className: [
@@ -200,12 +236,16 @@ load = (win) ->
 						},
 							R.div({className: 'header'},
 								R.div({className: 'timestamp'},
-									if entry.get('backdate') != ''
-										Moment(entry.get('backdate'), Persist.TimestampFormat)
-										.format('MMMM D, YYYY [at] HH:mm') + ' (late entry)'
-									else
-										Moment(entry.get('timestamp'), Persist.TimestampFormat)
-										.format('MMMM D, YYYY [at] HH:mm')
+									formatTimestamp(timestamp)
+
+									ColorKeyBubble({
+										colorKeyHex: authorProgram.get('colorKeyHex')
+										popover: {
+											title: authorProgram.get('name')
+											content: authorProgram.get('description')
+											placement: 'top'
+										}
+									})
 								)
 								R.div({className: 'author'},
 									FaIcon('user')
@@ -217,7 +257,7 @@ load = (win) ->
 							)
 
 							if entry.get('metrics')
-								R.div({className: 'metrics'},								
+								R.div({className: 'metrics'},
 									entry.get('metrics').map (metric) =>
 										MetricWidget({
 											isEditable: false

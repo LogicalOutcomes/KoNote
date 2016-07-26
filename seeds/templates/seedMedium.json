@@ -1,0 +1,14 @@
+{
+	
+	"clientFiles": 20,
+	"clientFileSections": 5,
+	"accounts": 5,
+	"programs": 5,
+	"eventTypes": 10,
+	"metrics": 60,
+
+	"planTargets": 50,
+	"progNotes": 8,
+	"progEvents": 8
+
+}

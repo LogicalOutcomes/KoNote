@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # UI logic for the progress note creation window
@@ -27,11 +27,13 @@ load = (win, {clientFileId}) ->
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
-	ProgNoteDetailView = require('../progNoteDetailView').load(win)	
+	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	Dialog = require('../dialog').load(win)
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
-	{FaIcon, renderName, showWhen, stripMetadata} = require('../utils').load(win)
+
+	{FaIcon, renderName, showWhen, stripMetadata,
+	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
 
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
@@ -62,8 +64,6 @@ load = (win, {clientFileId}) ->
 		suggestClose: ->
 			@refs.ui.suggestClose()
 
-
-
 		render: ->
 			unless @state.status is 'ready' then return R.div({})
 
@@ -77,6 +77,7 @@ load = (win, {clientFileId}) ->
 				progNoteHistories: @state.progNoteHistories
 				progEvents: @state.progEvents
 				eventTypes: @state.eventTypes
+				programsById: @state.programsById
 
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
@@ -85,157 +86,44 @@ load = (win, {clientFileId}) ->
 		_loadData: ->
 			template = progNoteTemplate
 
-			planTargetsById = null
-			metricsById = null
-			planTargetHeaders = null
-			progNoteHeaders = null
-			progEventHeaders = null
-			eventTypeHeaders = null
-			eventTypes = null			
+			# This is attached to global by clientFile
+			{
+				clientFile
+				planTargetsById
+				metricsById
+				progNoteHistories
+				progEvents
+				eventTypes
+				programsById
+			} = global.dataStore[clientFileId]
 
-			Async.series [
-				(cb) =>
-					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
-						if err
-							cb err
-							return
+			# Convert data structure of clientFile's planTargetsById
+			planTargetsById = planTargetsById.map (planTarget) ->
+				return planTarget.get('revisions')
 
-						clientFile = revisions.first()
-						@setState {clientFile}
+			# Build progNote with template
+			progNote = @_createProgNoteFromTemplate(
+				template
+				clientFile
+				planTargetsById
+				metricsById
+			)
 
-						cb()
-				(cb) =>
-					ActiveSession.persist.planTargets.list clientFileId, (err, result) =>
-						if err
-							cb err
-							return
+			# Done loading data, we can load in the empty progNote object
+			@setState {
+				status: 'ready'
+				clientFile
+				progNote
 
-						planTargetHeaders = result
-						cb()
-				(cb) =>
-					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
-						ActiveSession.persist.planTargets.readRevisions clientFileId, planTargetHeader.get('id'), cb
-					, (err, planTargets) ->
-						if err
-							cb err
-							return
-
-						pairs = planTargets.map (planTarget) =>
-							return [planTarget.getIn([0, 'id']), planTarget]
-						planTargetsById = Imm.Map(pairs)
-
-						cb()
-				(cb) =>
-					# Figure out which metrics we need to load
-					requiredMetricIds = Imm.Set()
-					.union template.get('units').flatMap (section) =>
-						switch section.get('type')
-							when 'basic'
-								return section.get('metricIds')
-							when 'plan'
-								return []
-							else
-								throw new Error "unknown section type: #{section.get('type')}"
-					.union planTargetsById.valueSeq().flatMap (planTarget) =>
-						return planTarget.last().get('metricIds')
-
-					metricsById = Imm.Map()
-					Async.each requiredMetricIds.toArray(), (metricId, cb) =>
-						ActiveSession.persist.metrics.readLatestRevisions metricId, 1, (err, result) =>
-							if err
-								cb err
-								return
-
-							metricsById = metricsById.set metricId, result.first()
-							cb()
-					, cb
-				(cb) =>
-					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						progNoteHeaders = Imm.fromJS results
-						cb()
-				(cb) =>
-					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
-						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						@setState (state) =>
-							return {progNoteHistories: Imm.List(results)}
-
-						cb()
-				(cb) =>
-					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						progEventHeaders = results
-
-						cb()
-				(cb) =>
-					Async.map progEventHeaders.toArray(), (progEventHeader, cb) =>
-						ActiveSession.persist.progEvents.readLatestRevisions clientFileId, progEventHeader.get('id'), 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						progEvents = Imm.List(results)
-						.map (progEvent) -> stripMetadata progEvent.first()
-
-						@setState {progEvents}
-						cb()
-				(cb) =>
-					ActiveSession.persist.eventTypes.list (err, result) =>
-						if err
-							cb err
-							return
-
-						eventTypeHeaders = result
-						cb()
-				(cb) =>
-					Async.map eventTypeHeaders.toArray(), (eventTypeheader, cb) =>
-						eventTypeId = eventTypeheader.get('id')
-
-						ActiveSession.persist.eventTypes.readLatestRevisions eventTypeId, 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						eventTypes = Imm.List(results).map (eventType) -> stripMetadata eventType.get(0)
-						cb()
-			], (err) =>
-				if err
-					if err instanceof Persist.IOError
-						@setState => {
-							loadErrorType: 'io-error'
-						}
-						return
-
-					CrashHandler.handle err
-					return
-
-				# Build progNote with template
-				progNote = @_createProgNoteFromTemplate(
-					template
-					@state.clientFile
-					planTargetsById
-					metricsById
-				)
-
-				# Done loading data, we can load in the empty progNote object
-				@setState {
-					status: 'ready'
-					progNote
-					eventTypes
-				}
+				planTargetsById
+				metricsById
+				programsById
+				progNoteHistories
+				progEvents
+				eventTypes
+			}, ->
+				# We're done with this dataStore, so delete it to preserve memory
+				delete global.dataStore[clientFileId]
 
 		_createProgNoteFromTemplate: (template, clientFile, planTargetsById, metricsById) ->
 			return Imm.fromJS {
@@ -262,7 +150,7 @@ load = (win, {clientFileId}) ->
 										value: ''
 									}
 							}
-						when 'plan'							
+						when 'plan'
 							return Imm.fromJS {
 								type: 'plan'
 								id: unit.get 'id'
@@ -274,12 +162,12 @@ load = (win, {clientFileId}) ->
 									Imm.fromJS {
 										id: section.get 'id'
 										name: section.get 'name'
-										targets: section.get 'targetIds'										
+										targets: section.get 'targetIds'
 										.filter (targetId) =>
 											target = planTargetsById.get targetId
 											lastRev = target.last()
 											return lastRev.get('status') is 'default'
-										.map (targetId) =>											
+										.map (targetId) =>
 											target = planTargetsById.get targetId
 											lastRev = target.last()
 
@@ -298,10 +186,10 @@ load = (win, {clientFileId}) ->
 														value: ''
 													}
 											}
-									}								
+									}
 								.filter (section) => not section.get('targets').isEmpty()
 							}
-			}	
+			}
 
 	NewProgNotePageUi = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
@@ -324,7 +212,7 @@ load = (win, {clientFileId}) ->
 			if @hasChanges()
 				Bootbox.dialog {
 					message: "Are you sure you want to cancel this #{Term('progress note')}?"
-					buttons: {						
+					buttons: {
 						cancel: {
 							label: "Cancel"
 							className: 'btn-default'
@@ -345,7 +233,7 @@ load = (win, {clientFileId}) ->
 			hasProgEvents = not @state.progEvents.isEmpty()
 
 			return hasProgNotes or hasProgEvents
-		
+
 		componentWillReceiveProps: (newProps) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
 				@setState {progNote: newProps.progNote}
@@ -353,9 +241,12 @@ load = (win, {clientFileId}) ->
 		componentDidMount: ->
 			setTimeout(=>
 				global.ActiveSession.persist.eventBus.trigger 'newProgNotePage:loaded'
-				
+
 				Window.show()
-				Window.focus()				
+				Window.focus()
+
+				# Store beginTimestamp as class var, since it wont change
+				@beginTimestamp = Moment().format(Persist.TimestampFormat)
 			, 500)
 
 		componentDidUpdate: ->
@@ -402,7 +293,7 @@ load = (win, {clientFileId}) ->
 
 			clientName = renderName @props.clientFile.get('clientName')
 			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) - 
+				#{Config.productName} (#{global.ActiveSession.userName}) -
 				#{clientName}: New #{Term 'Progress Note'}
 			"""
 
@@ -434,10 +325,10 @@ load = (win, {clientFileId}) ->
 									R.div({
 										key: unitId
 										className: [
-											'unit basic isEventRelatable'											
+											'unit basic isEventRelatable'
 											'hoveredEventPlanRelation' if Imm.is unit, @state.hoveredEventPlanRelation
 											'selectedEventPlanRelation' if Imm.is unit, @state.selectedEventPlanRelation
-										].join ' '										
+										].join ' '
 										onMouseOver: @_hoverEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
 										onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
 										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
@@ -474,14 +365,14 @@ load = (win, {clientFileId}) ->
 									},
 										R.h1({className: 'unitName'}, unit.get 'name')
 										R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
-											"This is empty because the client has no active 
+											"This is empty because the client has no active
 											#{Term 'plan'} #{Term 'sections'} or #{Term 'targets'}."
 										)
 										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
 
 											R.section({
-												key: sectionId												
+												key: sectionId
 												className: [
 													'hoveredEventPlanRelation' if Imm.is section, @state.hoveredEventPlanRelation
 													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
@@ -536,7 +427,7 @@ load = (win, {clientFileId}) ->
 																	isEditable: true
 																}
 															)
-														)	
+														)
 													)
 												).toJS()...
 											)
@@ -549,9 +440,9 @@ load = (win, {clientFileId}) ->
 						R.button({
 							id: 'saveNoteButton'
 							className: 'btn btn-success btn-lg animated fadeInUp'
-							disabled: @state.editingWhichEvent?							
+							disabled: @state.editingWhichEvent?
 							onClick: @_save
-						},							
+						},
 							"Save "
 							FaIcon('check')
 						)
@@ -562,6 +453,7 @@ load = (win, {clientFileId}) ->
 					progNoteHistories: @props.progNoteHistories
 					progEvents: @props.progEvents
 					eventTypes: @props.eventTypes
+					programsById: @props.programsById
 				})
 
 				R.div({className: 'eventsPanel'},
@@ -571,17 +463,17 @@ load = (win, {clientFileId}) ->
 							'eventsList'
 							'editMode' if @state.editingWhichEvent?
 						].join ' '
-					},						
+					},
 						(@state.progEvents.map (thisEvent, index) =>
 							isBeingEdited = @state.editingWhichEvent is index
 
-							R.div({								
+							R.div({
 								className: [
 										'eventTab'
 										'isEditing' if isBeingEdited
 								].join ' '
 								key: index
-							}, 
+							},
 								R.div({
 									className: 'icon'
 									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
@@ -590,14 +482,16 @@ load = (win, {clientFileId}) ->
 								)
 								EventTabView({
 									data: thisEvent
+									clientFileId: @props.clientFile.get('id')
 									backdate: @state.progNote.get('backdate')
 									eventTypes: @props.eventTypes
 									atIndex: index
 									progNote: @state.progNote
-									save: @_saveEventData
+									saveProgEvent: @_saveProgEvent
 									cancel: @_cancelEditing
 									editMode: @state.editingWhichEvent?
 									isBeingEdited
+
 									updateEventPlanRelationMode: @_updateEventPlanRelationMode
 									selectedEventPlanRelation: @state.selectedEventPlanRelation
 									selectEventPlanRelation: @_selectEventPlanRelation
@@ -605,7 +499,7 @@ load = (win, {clientFileId}) ->
 								})
 							)
 						)
-						R.button({							
+						R.button({
 							className: 'btn btn-default addEventButton'
 							onClick: @_newEventTab
 							disabled: @state.isLoading or @state.editingWhichEvent?
@@ -614,19 +508,19 @@ load = (win, {clientFileId}) ->
 				)
 			)
 
-		_newEventTab: ->			
+		_newEventTab: ->
 			newProgEvent = {}
 			# Add in the new event, select last one
-			@setState {progEvents: @state.progEvents.push newProgEvent}, => 
+			@setState {progEvents: @state.progEvents.push newProgEvent}, =>
 				@setState {editingWhichEvent: @state.progEvents.size - 1}
 
 		_editEventTab: (index) ->
 			@setState {editingWhichEvent: index}
 
-		_saveEventData: (data, index) ->
+		_saveProgEvent: (data, index) ->
 			newProgEvents = @state.progEvents.set index, data
 			@setState {progEvents: newProgEvents}, @_cancelEditing
-			
+
 		_cancelEditing: (index) ->
 			# Delete if new event
 			if _.isEmpty @state.progEvents.get(index)
@@ -657,37 +551,6 @@ load = (win, {clientFileId}) ->
 
 		_updateEventPlanRelationMode: (isEventPlanRelationMode) ->
 			@setState {isEventPlanRelationMode}
-			
-		_getUnitIndex: (unitId) ->
-			result = @state.progNote.get('units')
-			.findIndex (unit) =>
-				return unit.get('id') is unitId
-
-			if result is -1
-				throw new Error "could not find unit with ID #{JSON.stringify unitId}"
-
-			return result
-
-		_getPlanSectionIndex: (unitIndex, sectionId) ->
-			result = @state.progNote.getIn(['units', unitIndex, 'sections'])
-			.findIndex (section) =>
-				return section.get('id') is sectionId
-
-			if result is -1
-				throw new Error "could not find unit with ID #{JSON.stringify sectionId}"
-
-			return result
-
-		_getPlanTargetIndex: (unitIndex, sectionIndex, targetId) ->
-			result = @state.progNote.getIn(['units', unitIndex, 'sections', sectionIndex, 'targets'])
-			.findIndex (target) =>
-				return target.get('id') is targetId
-
-			if result is -1
-				throw new Error "could not find target with ID #{JSON.stringify targetId}"
-
-			return result
-
 
 		_selectBasicUnit: (unit) ->
 			@setState {
@@ -715,14 +578,14 @@ load = (win, {clientFileId}) ->
 		_updateBackdate: (event) ->
 			if event
 				newBackdate = Moment(event.date).format(Persist.TimestampFormat)
-				@setState {progNote: @state.progNote.setIn ['backdate'], newBackdate}
+				@setState {progNote: @state.progNote.set 'backdate', newBackdate}
 			else
-				@setState {progNote: @state.progNote.setIn ['backdate'], ''}
+				@setState {progNote: @state.progNote.set 'backdate', ''}
 
 		_updateBasicNotes: (unitId, event) ->
 			newNotes = event.target.value
 
-			unitIndex = @_getUnitIndex unitId
+			unitIndex = getUnitIndex @state.progNote, unitId
 			progNote = @state.progNote.setIn ['units', unitIndex, 'notes'], event.target.value
 
 			@setState {
@@ -738,7 +601,7 @@ load = (win, {clientFileId}) ->
 		_updateBasicMetric: (unitId, metricId, newMetricValue) ->
 			return unless @_isValidMetric(newMetricValue)
 
-			unitIndex = @_getUnitIndex unitId
+			unitIndex = getUnitIndex @state.progNote, unitId
 
 			metricIndex = @state.progNote.getIn(['units', unitIndex, 'metrics'])
 			.findIndex (metric) =>
@@ -758,9 +621,9 @@ load = (win, {clientFileId}) ->
 		_updatePlanTargetNotes: (unitId, sectionId, targetId, event) ->
 			newNotes = event.target.value
 
-			unitIndex = @_getUnitIndex unitId
-			sectionIndex = @_getPlanSectionIndex unitIndex, sectionId
-			targetIndex = @_getPlanTargetIndex unitIndex, sectionIndex, targetId
+			unitIndex = getUnitIndex @state.progNote, unitId
+			sectionIndex = getPlanSectionIndex @state.progNote, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex @state.progNote, unitIndex, sectionIndex, targetId
 
 			@setState {
 				progNote: @state.progNote.setIn(
@@ -777,14 +640,19 @@ load = (win, {clientFileId}) ->
 		_updatePlanTargetMetric: (unitId, sectionId, targetId, metricId, newMetricValue) ->
 			return unless @_isValidMetric(newMetricValue)
 
-			unitIndex = @_getUnitIndex unitId
-			sectionIndex = @_getPlanSectionIndex unitIndex, sectionId
-			targetIndex = @_getPlanTargetIndex unitIndex, sectionIndex, targetId
+			unitIndex = getUnitIndex @state.progNote, unitId
+			sectionIndex = getPlanSectionIndex @state.progNote, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex @state.progNote, unitIndex, sectionIndex, targetId
 
 			metricIndex = @state.progNote.getIn(
-				['units', unitIndex, 'sections', sectionIndex, 'targets', targetIndex, 'metrics']
+				[
+					'units', unitIndex
+					'sections', sectionIndex
+					'targets', targetIndex,
+					'metrics'
+				]
 			).findIndex (metric) =>
-				return metric.get('id') is metricId			
+				return metric.get('id') is metricId
 
 			@setState {
 				progNote: @state.progNote.setIn(
@@ -804,40 +672,79 @@ load = (win, {clientFileId}) ->
 		_save: ->
 			@setState {isLoading: true}
 
+			authorProgramId = global.ActiveSession.programId or ''
+			progNote = @state.progNote
+			.set('authorProgramId', authorProgramId)
+			.set('beginTimestamp', @beginTimestamp)
+
 			progNoteId = null
+			createdProgNote = null
 
 			Async.series [
 				(cb) =>
-					ActiveSession.persist.progNotes.create @state.progNote, (err, obj) =>
+					ActiveSession.persist.progNotes.create progNote, (err, result) =>
 						if err
 							cb err
 							return
 
-						progNoteId = obj.get('id')
+						createdProgNote = result
+						progNoteId = createdProgNote.get('id')
 						cb()
+
 				(cb) =>
-					Async.each @state.progEvents.toArray(), (progEvent, cb) =>		
-						# Tack on the new progress note ID to all created events					
+					Async.each @state.progEvents.toArray(), (progEvent, cb) =>
+						# Tack on contextual information about progNote & client
 						progEvent = Imm.fromJS(progEvent)
 						.set('relatedProgNoteId', progNoteId)
 						.set('clientFileId', clientFileId)
+						.set('authorProgramId', authorProgramId)
+						.set('backdate', createdProgNote.get('backdate'))
 						.set('status', 'default')
 
-						ActiveSession.persist.progEvents.create progEvent, cb
+						globalEvent = progEvent.get('globalEvent')
 
-					, (err) =>
-						if err
-							cb err
-							return
+						if globalEvent
+							progEvent = progEvent.remove('globalEvent')
 
-						cb()
+						progEventId = null
+
+						Async.series [
+							(cb) =>
+								ActiveSession.persist.progEvents.create progEvent, (err, result) ->
+									if err
+										cb err
+										return
+
+									progEventId = result.get('id')
+									cb()
+
+							(cb) =>
+								if not globalEvent
+									cb()
+									return
+
+								# Tack on contextual information about the original progEvent
+								globalEvent = globalEvent
+								.set('relatedProgEventId', progEventId)
+								.set('relatedProgNoteId', createdProgNote.get('id'))
+								.set('authorProgramId', authorProgramId)
+								.set('backdate', createdProgNote.get('backdate'))
+								.set('status', 'default')
+								.remove('relatedElement')
+
+								ActiveSession.persist.globalEvents.create globalEvent, cb
+
+						], cb
+
+					, cb
+
 			], (err) =>
 				@setState {isLoading: false}
 
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """
-							An error occurred while saving your work.  
+							An error occurred while saving your work.
 							Please check your network connection and try again.
 						"""
 						return
@@ -850,6 +757,7 @@ load = (win, {clientFileId}) ->
 	BackdateWidget = React.createFactory React.createClass
 		displayName: 'BackdateWidget'
 		mixins: [React.addons.PureRenderMixin]
+
 		componentDidMount: ->
 			$(@refs.backdate).datetimepicker({
 				format: 'MMM-DD-YYYY h:mm A'
@@ -861,8 +769,8 @@ load = (win, {clientFileId}) ->
 				widgetPositioning: {
 					vertical: 'bottom'
 				}
-			}).on 'dp.change', (e) =>
-				@props.onChange e
+			}).on 'dp.change', @props.onChange
+
 		render: ->
 			return R.div({className: 'input-group'},
 				R.input({

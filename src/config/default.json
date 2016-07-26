@@ -1,19 +1,25 @@
-{	
+{
 	"devMode": true,
 	"productName": "KoNote",
-	"supportEmailAddress": "help@konode.ca",
-	"customerLogoLg": "customer-logo-lg.png",
-	"customerLogoSm": "customer-logo-sm.png",
+	"supportEmailAddress": "help@konote.ca",
+
+	"logoCustomerLg": "customer-logo-lg.png",
+	"logoCustomerSm": "customer-logo-sm.png",
+	"iconNotification": "logo-notification.jpg",
+
 	"logoSubtitle": "beta",
 	"logoSubtitleColor": "hsl(205, 78%, 47%)",
-	
+
 	"clientFileRecordId": {
 		"isEnabled": true,
+		"isRequired": false,
 		"label": "ID#"
 	},
-	
+
 	"dataDirectory": "data",
-	
+
+	"timestampFormat": "MMMM Do, YYYY [at] h:mma",
+
 	"timeout": {
 		"duration": 25,
 		"warnings": {
@@ -46,6 +52,7 @@
 
 		"metric": "metric",
 		"event": "event",
+		"global event": "global event",
 		"event type": "event type",
 		"program": "program",
 
