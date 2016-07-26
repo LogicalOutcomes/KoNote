@@ -1179,24 +1179,23 @@ load = (win) ->
 							key: metricId
 							tooltipViewport: '.section'
 							isEditable: false
-							allowDeleting: not @props.isReadOnly and @props.isActive
+							allowDeleting: not @props.isReadOnly and @props.isActive and not @props.isInactive
 							onDelete: @props.deleteMetricFromTarget.bind(
 								null, @props.targetId, metricId
 							)
 						})
 					).toJS()...
-					(unless @props.isReadOnly
+					(if not @props.isReadOnly and not @props.isInactive
 						R.button({
 							className: "btn btn-link addMetricButton #{showWhen @props.isActive}"
 							onClick: @_focusMetricLookupField.bind(null, @props.targetId)
 						},
 							FaIcon('plus')
-							#if currentRevision.get('metricIds').size is 0
 							" Add #{Term 'metric'}"
 						)
 					)
 				)
-				(unless @props.isReadOnly
+				(if not @props.isReadOnly and not @props.isInactive
 					R.div({
 						className: [
 							'metricLookupContainer'
