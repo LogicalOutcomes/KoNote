@@ -185,10 +185,12 @@ load = (win) ->
 					console.log "TIMEOUT: Initial Warning issued"
 
 					global.ActiveSession.initialWarningDelivered = new win.Notification "Inactivity Warning", {
-						body: "Your session will expire in #{Config.timeout.warnings.initial}
-						minute#{if Config.timeout.warnings.initial > 1 then 's' else ''}"
+						body: """
+							Your session will expire in #{Config.timeout.warnings.initial}
+							minute#{if Config.timeout.warnings.initial > 1 then 's' else ''}
+						"""
+						icon: Config.iconNotification
 					}
-					nwWin.requestAttention(1)
 
 			'timeout:finalWarning': =>
 				timeoutComponent.showFinalWarning()
@@ -197,8 +199,11 @@ load = (win) ->
 					console.log "TIMEOUT: Final Warning issued"
 
 					global.ActiveSession.finalWarningDelivered = new win.Notification "Final Warning", {
-						body: "#{Config.productName} will disable all windows in #{Config.timeout.warnings.final}
-						minute#{if Config.timeout.warnings.final > 1 then 's' else ''} due to inactivity."
+						body: """
+							Your session will expire in #{Config.timeout.warnings.final}
+							minute#{if Config.timeout.warnings.final > 1 then 's' else ''}.
+						"""
+						icon: Config.iconNotification
 					}
 					nwWin.requestAttention(1)
 

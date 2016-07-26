@@ -27,7 +27,7 @@
 
 			border-bottom 1px solid sidebar-borders
 
-			padding 30px
+			padding 21px 25px
 
 			button
 				outline none
@@ -47,6 +47,20 @@
 
 				&.rightMenu
 					text-align right
+
+					.createTemplateButton
+						border none
+						background white
+						margin-left 15px
+
+						transition all 0.25 ease
+
+						&:hover, &:focus
+							outline none
+							color #286090
+
+						> .fa
+							margin 0
 
 			@media (max-width: 1150px)
 				display block
@@ -177,7 +191,7 @@
 					> .inactiveTargetHeader
 						cursor pointer
 						font-size 16px
-						opacity 0.5
+						opacity 0.8
 						transition opacity .15s ease
 
 						&:hover

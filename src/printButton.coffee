@@ -16,10 +16,11 @@ load = (win) ->
 		getDefaultProps: ->
 			return {
 				tooltip: {
-					show: false
+					show: true
 					placement: 'top'
 					title: "Print"
 				}
+				disabled: false
 			}
 
 		render: ->
@@ -28,13 +29,11 @@ load = (win) ->
 				placement: @props.tooltip.placement
 				title: @props.tooltip.title
 			},
-				R.a({
-					className: [
-						'printButton'
-						'disabled' if @props.disabled
-					].join ' '
+				R.button({
+					className: 'btn printButton'
 					onClick: @_print
 					ref: 'printButton'
+					disabled: @props.disabled
 				},
 					R.span({}, if not @props.iconOnly then "Print")
 					FaIcon('print')

@@ -244,6 +244,9 @@ load = (win, {clientFileId}) ->
 
 				Window.show()
 				Window.focus()
+
+				# Store beginTimestamp as class var, since it wont change
+				@beginTimestamp = Moment().format(Persist.TimestampFormat)
 			, 500)
 
 		componentDidUpdate: ->
@@ -479,6 +482,7 @@ load = (win, {clientFileId}) ->
 								)
 								EventTabView({
 									data: thisEvent
+									clientFileId: @props.clientFile.get('id')
 									backdate: @state.progNote.get('backdate')
 									eventTypes: @props.eventTypes
 									atIndex: index
@@ -487,6 +491,7 @@ load = (win, {clientFileId}) ->
 									cancel: @_cancelEditing
 									editMode: @state.editingWhichEvent?
 									isBeingEdited
+
 									updateEventPlanRelationMode: @_updateEventPlanRelationMode
 									selectedEventPlanRelation: @state.selectedEventPlanRelation
 									selectEventPlanRelation: @_selectEventPlanRelation
@@ -573,9 +578,9 @@ load = (win, {clientFileId}) ->
 		_updateBackdate: (event) ->
 			if event
 				newBackdate = Moment(event.date).format(Persist.TimestampFormat)
-				@setState {progNote: @state.progNote.setIn ['backdate'], newBackdate}
+				@setState {progNote: @state.progNote.set 'backdate', newBackdate}
 			else
-				@setState {progNote: @state.progNote.setIn ['backdate'], ''}
+				@setState {progNote: @state.progNote.set 'backdate', ''}
 
 		_updateBasicNotes: (unitId, event) ->
 			newNotes = event.target.value
@@ -667,32 +672,33 @@ load = (win, {clientFileId}) ->
 		_save: ->
 			@setState {isLoading: true}
 
-			progNoteId = null
 			authorProgramId = global.ActiveSession.programId or ''
-
 			progNote = @state.progNote
 			.set('authorProgramId', authorProgramId)
+			.set('beginTimestamp', @beginTimestamp)
 
-			console.log "progNote", progNote.toJS()
+			progNoteId = null
+			createdProgNote = null
 
 			Async.series [
 				(cb) =>
-					console.log "Creating progNote..."
-					ActiveSession.persist.progNotes.create progNote, (err, obj) =>
+					ActiveSession.persist.progNotes.create progNote, (err, result) =>
 						if err
 							cb err
 							return
 
-						progNoteId = obj.get('id')
+						createdProgNote = result
+						progNoteId = createdProgNote.get('id')
 						cb()
+
 				(cb) =>
-					console.log "Creating progEvents..."
 					Async.each @state.progEvents.toArray(), (progEvent, cb) =>
-						# Tack on the new progress note ID to all created events
+						# Tack on contextual information about progNote & client
 						progEvent = Imm.fromJS(progEvent)
 						.set('relatedProgNoteId', progNoteId)
 						.set('clientFileId', clientFileId)
 						.set('authorProgramId', authorProgramId)
+						.set('backdate', createdProgNote.get('backdate'))
 						.set('status', 'default')
 
 						globalEvent = progEvent.get('globalEvent')
@@ -700,9 +706,7 @@ load = (win, {clientFileId}) ->
 						if globalEvent
 							progEvent = progEvent.remove('globalEvent')
 
-
 						progEventId = null
-						console.log "Creating globalEvents..."
 
 						Async.series [
 							(cb) =>
@@ -719,9 +723,12 @@ load = (win, {clientFileId}) ->
 									cb()
 									return
 
+								# Tack on contextual information about the original progEvent
 								globalEvent = globalEvent
 								.set('relatedProgEventId', progEventId)
+								.set('relatedProgNoteId', createdProgNote.get('id'))
 								.set('authorProgramId', authorProgramId)
+								.set('backdate', createdProgNote.get('backdate'))
 								.set('status', 'default')
 								.remove('relatedElement')
 

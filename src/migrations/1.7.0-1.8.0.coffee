@@ -6,10 +6,7 @@ Imm = require 'immutable'
 Path = require 'path'
 Moment = require 'moment'
 
-{
-	SymmetricEncryptionKey
-	WeakSymmetricEncryptionKey
-} = require '../persist/crypto'
+{SymmetricEncryptionKey, WeakSymmetricEncryptionKey} = require '../persist/crypto'
 {TimestampFormat} = require '../persist/utils'
 
 lastMigrationStep = 0
@@ -374,49 +371,56 @@ addClientFileStatusField = (dataDir, globalEncryptionKey, cb) ->
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
 		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
 
-		Async.series [
-			(cb) =>
-				# Read clientFile object
-				Fs.readFile clientFileDirPath, (err, result) ->
-					if err
-						cb err
-						return
+		forEachFileIn clientFileDirPath, (clientFileRev, cb) ->
+			clientFileRevPath = Path.join(clientFileDirPath, clientFileRev)
+			clientFileRevObject = null
 
-					clientFileObject = JSON.parse globalEncryptionKey.decrypt result
+			Async.series [
+				(cb) =>
+					# Read clientFile object
+					Fs.readFile clientFileRevPath, (err, result) ->
+						if err
+							cb err
+							return
 
-					cb()
-			(cb) =>
-				# Add 'status' property
-				clientFileObject.status = 'default'
-				encryptedObj = globalEncryptionKey.encrypt JSON.stringify clientFileObject
+						clientFileRevObject = JSON.parse globalEncryptionKey.decrypt result
 
-				Fs.writeFile clientFileDirPath, encryptedObj, cb
-		], cb
+						cb()
+				(cb) =>
+					# Add 'status' property
+					clientFileRevObject.status = 'active'
+					encryptedObj = globalEncryptionKey.encrypt(JSON.stringify clientFileRevObject)
+					Fs.writeFile clientFileRevPath, encryptedObj, cb
+			], cb
+		, cb
 	, (err) ->
 		if err
 			console.info "Problem with clientFile status"
 			cb err
 			return
 
-		finalizeMigrationStep(dataDir, cb)	
+		finalizeMigrationStep(dataDir, cb)
 
 addClientFileStatusIndex = (dataDir, globalEncryptionKey, cb) ->
-	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
-		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
+	clientFilesDir = Path.join(dataDir, 'clientFiles')
+
+	forEachFileIn clientFilesDir, (clientFile, cb) ->
+		clientFileDirPath = Path.join(clientFilesDir, clientFile)
 
 		# Decrypt, add index, re-encrypt
-		indexes = decryptFileName clientFileDirPath, 1, globalEncryptionKey
-		indexes.unshift 'default'
+		indexes = decryptFileName clientFile, 5, globalEncryptionKey
+		indexes.unshift 'active'
 		encryptedIndexes = encryptFileName indexes, globalEncryptionKey
 
 		# Build new path
-		newClientFilePath = Path.join(clientFileDirPath, encryptedIndexes)
+		newClientFileDirPath = Path.join(clientFilesDir, encryptedIndexes)
 
 		# Rename to new path
-		Fs.rename clientFileDirPath, newClientFilePath, cb
+		Fs.rename clientFileDirPath, newClientFileDirPath, cb
 
 	, (err) ->
 		if err
+			console.info "problem with clientFile status index"
 			cb err
 			return
 
@@ -544,96 +548,182 @@ addProgNoteTargetDescription = (dataDir, globalEncryptionKey, cb) ->
 		finalizeMigrationStep(dataDir, cb)
 
 
-	addProgNoteAuthorProgramIdField = (dataDir, globalEncryptionKey, cb) ->
-		forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
-			clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+addProgNoteAuthorProgramIdField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
 
-			forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
-				progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
+		forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+			progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
 
-				progNoteObjectFilePath = null
-				progNoteObject = null
+			progNoteObjectFilePath = null
+			progNoteObject = null
 
-				Async.series [
-					(cb) =>
-						Fs.readdir progNotePath, (err, revisions) ->
-							if err
-								cb err
-								return
+			Async.series [
+				(cb) =>
+					Fs.readdir progNotePath, (err, revisions) ->
+						if err
+							cb err
+							return
 
-							progNoteObjectFilePath = Path.join(progNotePath, revisions[0])
-							cb()
+						progNoteObjectFilePath = Path.join(progNotePath, revisions[0])
+						cb()
 
-					(cb) =>
-						Fs.readFile progNoteObjectFilePath, (err, result) ->
-							if err
-								cb err
-								return
+				(cb) =>
+					Fs.readFile progNoteObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
 
-							progNoteObject = JSON.parse globalEncryptionKey.decrypt result
-							cb()
+						progNoteObject = JSON.parse globalEncryptionKey.decrypt result
+						cb()
 
-					(cb) =>
-						progNoteObject.authorProgramId = ''
-						encryptedObj = globalEncryptionKey.encrypt JSON.stringify progNoteObject
+				(cb) =>
+					progNoteObject.authorProgramId = ''
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progNoteObject
 
-						Fs.writeFile progNoteObjectFilePath, encryptedObj, cb
+					Fs.writeFile progNoteObjectFilePath, encryptedObj, cb
 
-				], cb
+			], cb
 
-			, cb
-		, (err) ->
-			if err
-				cb err
-				return
+		, cb
+	, (err) ->
+		if err
+			cb err
+			return
 
-			finalizeMigrationStep(dataDir, cb)
+		finalizeMigrationStep(dataDir, cb)
 
 
-	addProgEventAuthorProgramIdField = (dataDir, globalEncryptionKey, cb) ->
-		forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
-			clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+addProgEventAuthorProgramIdField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
 
-			forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
-				progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
+		forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+			progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
 
-				progEventObjectFilePath = null
+			progEventObjectFilePath = null
+			progEventObject = null
+
+			Async.series [
+				(cb) =>
+					Fs.readdir progEventPath, (err, revisions) ->
+						if err
+							cb err
+							return
+
+						progEventObjectFilePath = Path.join(progEventPath, revisions[0])
+						cb()
+
+				(cb) =>
+					Fs.readFile progEventObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
+
+						progEventObject = JSON.parse globalEncryptionKey.decrypt result
+						cb()
+
+				(cb) =>
+					progEventObject.authorProgramId = ''
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progEventObject
+
+					Fs.writeFile progEventObjectFilePath, encryptedObj, cb
+
+			], cb
+
+		, cb
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+
+addProgEventBackdateField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEventDir, cb) ->
+			progEventDirPath = Path.join(clientFilePath, 'progEvents', progEventDir)
+
+			forEachFileIn progEventDirPath, (progEvent, cb) ->
+				progEventObjectFilePath = Path.join(progEventDirPath, progEvent)
 				progEventObject = null
 
 				Async.series [
 					(cb) =>
-						Fs.readdir progEventPath, (err, revisions) ->
-							if err
-								cb err
-								return
-
-							progEventObjectFilePath = Path.join(progEventPath, revisions[0])
-							cb()
-
-					(cb) =>
+						# Read and decrypt progEvent object
 						Fs.readFile progEventObjectFilePath, (err, result) ->
 							if err
 								cb err
 								return
 
 							progEventObject = JSON.parse globalEncryptionKey.decrypt result
-							cb()
 
+							cb()
 					(cb) =>
-						progEventObject.authorProgramId = ''
+						# Add 'backdate' property
+						progEventObject.backdate = ''
 						encryptedObj = globalEncryptionKey.encrypt JSON.stringify progEventObject
 
 						Fs.writeFile progEventObjectFilePath, encryptedObj, cb
-
 				], cb
-
 			, cb
-		, (err) ->
-			if err
-				cb err
-				return
+		, cb
+	, (err) ->
+		if err
+			console.info "Problem with progEvents"
+			cb err
+			return
 
-			finalizeMigrationStep(dataDir, cb)
+		finalizeMigrationStep(dataDir, cb)
+
+
+addProgNoteBeginTimestampField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+			progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
+
+			progNoteObjectFilePath = null
+			progNoteObject = null
+
+			Async.series [
+				(cb) =>
+					Fs.readdir progNotePath, (err, revisions) ->
+						if err
+							cb err
+							return
+
+						progNoteObjectFilePath = Path.join(progNotePath, revisions[0])
+						cb()
+
+				(cb) =>
+					Fs.readFile progNoteObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
+
+						progNoteObject = JSON.parse globalEncryptionKey.decrypt result
+						cb()
+
+				(cb) =>
+					progNoteObject.beginTimestamp = ''
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progNoteObject
+
+					Fs.writeFile progNoteObjectFilePath, encryptedObj, cb
+
+			], cb
+
+		, cb
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
 
 # ////////////////////// Migration Series //////////////////////
 
@@ -651,13 +741,13 @@ module.exports = {
 
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "2. Create empty 'userProgramLinks' dataModel directory"
+				console.groupCollapsed "2. Create empty 'userProgramLinks' dataModel collection directory"
 				createEmptyDirectory dataDir, 'userProgramLinks', cb
 
 			(cb) ->
 				console.groupEnd()
 				console.groupCollapsed "3. Add 'authorProgramId' field to progNotes"
-				addProgEventAuthorProgramIdField dataDir, globalEncryptionKey, cb
+				addProgNoteAuthorProgramIdField dataDir, globalEncryptionKey, cb
 
 			(cb) ->
 				console.groupEnd()
@@ -666,14 +756,33 @@ module.exports = {
 
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "5. Add 'status': 'default' field to clientFile objects"
+				console.groupCollapsed "5. Create empty 'globalEvents' dataModel collection directory"
+				createEmptyDirectory dataDir, 'globalEvents', cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "6. Create empty 'planTemplates' dataModel collection directory"
+				createEmptyDirectory dataDir, 'planTemplates', cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "7. Add 'status': 'active' field to clientFile objects"
 				addClientFileStatusField dataDir, globalEncryptionKey, cb
 
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "6. Append 'default' status index to clientFile headers"
+				console.groupCollapsed "8. Append 'default' status index to clientFile headers"
 				addClientFileStatusIndex dataDir, globalEncryptionKey, cb
 
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "9. Add 'backdate' field to progEvent objects"
+				addProgEventBackdateField dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "10. Add 'beginTimestamp' field to progNote objects"
+				addProgNoteBeginTimestampField dataDir, globalEncryptionKey, cb
 
 		]
 

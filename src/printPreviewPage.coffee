@@ -55,12 +55,15 @@ load = (win, {dataSet}) ->
 
 		componentDidMount: ->
 			# Without timeout, print() triggers before DOM renders
-			Window.show()
-			Window.focus()
+			setTimeout(->
+				Window.show()
+				Window.focus()
 
-			setTimeout ->
-				win.print()
-			, 1000
+				setTimeout(->
+					win.print()
+				, 250)
+
+			, 250)
 
 		render: ->
 			R.div({className: 'printPreview'},
@@ -159,7 +162,7 @@ load = (win, {dataSet}) ->
 					R.div({},
 						R.img({
 							className: 'logo'
-							src: Config.customerLogoLg
+							src: Config.logoCustomerLg
 						})
 					)
 				)

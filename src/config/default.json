@@ -2,8 +2,11 @@
 	"devMode": true,
 	"productName": "KoNote",
 	"supportEmailAddress": "help@konote.ca",
-	"customerLogoLg": "customer-logo-lg.png",
-	"customerLogoSm": "customer-logo-sm.png",
+
+	"logoCustomerLg": "customer-logo-lg.png",
+	"logoCustomerSm": "customer-logo-sm.png",
+	"iconNotification": "logo-notification.jpg",
+
 	"logoSubtitle": "beta",
 	"logoSubtitleColor": "hsl(205, 78%, 47%)",
 
@@ -14,6 +17,8 @@
 	},
 
 	"dataDirectory": "data",
+
+	"timestampFormat": "MMMM Do, YYYY [at] h:mma",
 
 	"timeout": {
 		"duration": 25,

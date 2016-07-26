@@ -104,17 +104,21 @@ load = (win) ->
 							R.div({id: 'programsContainer'},
 								(@props.programs.map (program) =>
 									isSelected = @state.programIds.contains(program.get('id'))
+
 									R.button({
 										className: 'btn btn-default programOptionButton'
 										onClick:
 											(if isSelected then @_removeFromPrograms else @_pushToPrograms)
 											.bind null, program.get('id')
 										key: program.get('id')
-										value: program.get('id')
 									},
 										ColorKeyBubble({
-											isSelected
-											data: program
+											colorKeyHex: program.get('colorKeyHex')
+											popover: {
+												title: program.get('name')
+												content: program.get('description')
+											}
+											icon: 'check' if isSelected
 										})
 										program.get('name')
 									)
@@ -255,44 +259,52 @@ load = (win) ->
 							return
 
 						clientFileHeaders = result
+						cb()
 
+				(cb) =>
 						# Enforce uniqueness of clientFileRecordId
-						matchingClientRecordId = clientFileHeaders.find (clientFile) ->
+						clientsWithRecordId = clientFileHeaders.filter (clientFile) ->
 							clientFile.get('recordId') and (clientFile.get('recordId') is recordId)
 
-						if matchingClientRecordId
-							@refs.dialog.setIsLoading(false) if @refs.dialog?
+						return cb() if clientsWithRecordId.isEmpty()
 
-							Bootbox.alert """
-								Sorry, #{renderRecordId recordId} is already in use by
-								#{renderName matchingClientRecordId.get('clientName')}.
-								Please try again with a unique #{Config.clientFileRecordId.label}.
-							"""
-							return
 
+						clientsByStatus = clientsWithRecordId.groupBy (clientFile) -> clientFile.get('status')
+
+						clientList = clientsByStatus
+						.map (clients, status) ->
+							clients.map (clientFile) -> "<b>#{renderName clientFile.get('clientName')}</b> (#{status})"
+						.flatten()
+						.toList()
+
+						Bootbox.confirm """
+							The #{renderRecordId recordId} is already in use by #{clientList.toJS().join(', ')}.
+							Would you like to continue creating a duplicate #{Config.clientFileRecordId.label}?
+						""", (ok) ->
+							if ok then cb() else cb('CANCEL')
+
+					(cb) =>
 						# Warn if first & last name already used, but may continue
 						matchingClientName = clientFileHeaders.find (clientFile) ->
 							sameFirstName = clientFile.getIn(['clientName', 'first']).toLowerCase() is first.toLowerCase()
 							sameLastName = clientFile.getIn(['clientName', 'last']).toLowerCase()  is last.toLowerCase()
 							return sameFirstName and sameLastName
 
-						if matchingClientName
-							@refs.dialog.setIsLoading(false) if @refs.dialog?
+						return cb() unless matchingClientName
 
-							matchingClientRecordId = if Config.clientFileRecordId.isEnabled
-								" #{renderRecordId matchingClientName.get('recordId')}"
-							else
-								""
 
-							Bootbox.confirm """
-								The name \"#{first} #{last} matches an existing #{Term 'client file'}
-								in the database
-								(#{renderName matchingClientName.get('clientName')}#{matchingClientRecordId}).
-								Would you like to create this new #{Term 'client file'} anyway?
-							""", (ok) ->
-								if ok then cb() else return
+						matchingClientRecordId = if Config.clientFileRecordId.isEnabled
+							" #{renderRecordId matchingClientName.get('recordId')}"
 						else
-							cb()
+							""
+
+						Bootbox.confirm """
+							The name \"#{first} #{last}\" matches an existing #{Term 'client file'}
+							\"<b>#{renderName matchingClientName.get('clientName')}</b>\" #{matchingClientRecordId}).
+							Would you like to create this new #{Term 'client file'} anyway?
+						""", (ok) ->
+							if ok then cb() else cb('CANCEL')
+
 				(cb) =>
 					# Create the clientFile,
 					global.ActiveSession.persist.clientFiles.create clientFile, (err, result) =>
@@ -318,86 +330,83 @@ load = (win) ->
 					, cb
 
 				(cb) =>
+					return cb() unless @state.templateId
 
-					if @state.templateId is '' then cb()
-					else
+					# Apply template if template selected
+					selectedPlanTemplateHeader = @state.planTemplateHeaders.find (template) =>
+						template.get('id') is @state.templateId
 
-						# Apply template if template selected
-						selectedPlanTemplateHeader = @state.planTemplateHeaders.find (template) =>
-							template.get('id') is @state.templateId
+					cb() unless selectedPlanTemplateHeader?
 
-						cb() unless selectedPlanTemplateHeader?
+					ActiveSession.persist.planTemplates.readLatestRevisions @state.templateId, 1, (err, result) ->
+						if err
+							cb err
+							return
 
-						ActiveSession.persist.planTemplates.readLatestRevisions @state.templateId, 1, (err, result) ->
-							if err
-								cb err
-								return
-
-							selectedPlanTemplate = stripMetadata result.get(0)
-							cb()
+						selectedPlanTemplate = stripMetadata result.get(0)
+						cb()
 
 				(cb) =>
-					if @state.templateId is '' then cb()
-					else
-						templateSections = selectedPlanTemplate.get('sections').map (section) ->
-							templateTargets = section.get('targets').map (target) ->
-								Imm.fromJS {
-									clientFileId: newClientFile.get('id')
-									name: target.get('name')
-									description: target.get('description')
-									status: 'default'
-									metricIds: target.get('metricIds')
-								}
+					return cb() unless @state.templateId
 
-							return section.set 'targets', templateTargets
+					templateSections = selectedPlanTemplate.get('sections').map (section) ->
+						templateTargets = section.get('targets').map (target) ->
+							Imm.fromJS {
+								clientFileId: newClientFile.get('id')
+								name: target.get('name')
+								description: target.get('description')
+								status: 'default'
+								metricIds: target.get('metricIds')
+							}
 
-						Async.map templateSections.toArray(), (section, cb) ->
-							Async.map section.get('targets').toArray(), (target, cb) ->
-								global.ActiveSession.persist.planTargets.create target, (err, result) ->
-									if err
-										cb err
-										return
+						return section.set 'targets', templateTargets
 
-									cb null, result.get('id')
-							, (err, results) ->
+					Async.map templateSections.toArray(), (section, cb) ->
+						Async.map section.get('targets').toArray(), (target, cb) ->
+							global.ActiveSession.persist.planTargets.create target, (err, result) ->
 								if err
 									cb err
 									return
 
-								targetIds = Imm.List(results)
-
-								newSection = Imm.fromJS {
-									id: Persist.generateId()
-									name: section.get('name')
-									targetIds: results
-									status: 'default'
-								}
-
-								cb null, newSection
+								cb null, result.get('id')
 
 						, (err, results) ->
 							if err
 								cb err
 								return
 
-							templateSections = Imm.List(results)
-							cb()
+							targetIds = Imm.List(results)
+
+							newSection = Imm.fromJS {
+								id: Persist.generateId()
+								name: section.get('name')
+								targetIds: results
+								status: 'default'
+							}
+
+							cb null, newSection
+
+					, (err, results) ->
+						if err
+							cb err
+							return
+
+						templateSections = Imm.List(results)
+						cb()
 
 				(cb) =>
-					if @state.templateId is '' then cb()
-					else
-						clientFile = newClientFile.setIn(['plan', 'sections'], templateSections)
+					return cb() unless @state.templateId
 
-						global.ActiveSession.persist.clientFiles.createRevision clientFile, (err, result) ->
-							if err
-								cb err
-								return
-							cb()
+					clientFile = newClientFile.setIn(['plan', 'sections'], templateSections)
+
+					global.ActiveSession.persist.clientFiles.createRevision clientFile, cb
 
 			], (err) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
+					if err is 'CANCEL' then return
+
 					if err instanceof Persist.IOError
 						console.error err
 						Bootbox.alert """

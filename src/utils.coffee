@@ -2,12 +2,12 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+_ = require 'underscore'
 Moment = require 'moment'
 
 {TimestampFormat} = require './persist'
-Config = require './config'
-_ = require 'underscore'
 {CustomError} = require './persist/utils'
+Config = require './config'
 
 load = (win) ->
 	$ = win.jQuery
@@ -31,7 +31,7 @@ load = (win) ->
 
 		# Extend with className from props if any
 		if props.className?
-			className += " #{properties.className}"
+			className += " #{props.className}"
 
 		props.className = className
 
@@ -75,7 +75,7 @@ load = (win) ->
 	# Converts line breaks to React <br> tags and trims leading or trailing whitespace
 	renderLineBreaks = (text) ->
 		unless text?
-			console.warn "renderLineBreaks received: ", text
+			console.warn "renderLineBreaks received no input: ", text
 			return ""
 
 		lines = text.trim()
@@ -110,8 +110,8 @@ load = (win) ->
 		.delete('timestamp')
 		.delete('_dirPath')
 
-	formatTimestamp = (timestamp) ->
-		return Moment(timestamp, TimestampFormat).format('MMMM Do, YYYY [at] h:mma')
+	formatTimestamp = (timestamp, customFormat = '') ->
+		return Moment(timestamp, TimestampFormat).format(customFormat or Config.timestampFormat)
 
 	capitalize = (word) ->
     return word.charAt(0).toUpperCase() + word.slice(1)
@@ -124,6 +124,7 @@ load = (win) ->
 
 		return text[...(maxLength - 1)] + '…'
 
+	makeMoment = (timestamp) -> Moment timestamp, TimestampFormat
 
 	##### Convenience methods for fetching data from a progNote
 
@@ -170,6 +171,7 @@ load = (win) ->
 		formatTimestamp
 		capitalize
 		truncateText
+		makeMoment
 		getUnitIndex
 		getPlanSectionIndex
 		getPlanTargetIndex

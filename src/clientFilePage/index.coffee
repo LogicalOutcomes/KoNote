@@ -38,6 +38,7 @@ load = (win, {clientFileId}) ->
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
+	WithTooltip = require('../withTooltip').load(win)
 	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
 
 	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
@@ -81,12 +82,34 @@ load = (win, {clientFileId}) ->
 		render: ->
 			if @state.status isnt 'ready' then return R.div({})
 
+
 			clientName = renderName(@state.clientFile.get('clientName'))
 
-			progNoteHistories = @state.progNoteHistories.sortBy (history) ->
+			# Order each individual progNoteHistory, then the overall histories
+			progNoteHistories = @state.progNoteHistories
+			.map (history) ->
+				return history.sortBy (revision) -> +Moment(revision.get('timestamp'), Persist.TimestampFormat)
+			.sortBy (history) ->
 				createdAt = history.last().get('backdate') or history.first().get('timestamp')
 				return Moment createdAt, Persist.TimestampFormat
 			.reverse()
+
+			# Use programLinks to determine program membership(s)
+			clientPrograms = @state.clientFileProgramLinkHeaders.map (link) =>
+				programId = link.get('programId')
+				@state.programsById.get programId
+
+			clientFileCreated = Moment @state.clientFile.get('timestamp'), Persist.TimestampFormat
+
+			# Filter out global events that either belong to this clientFile,
+			# or span (entirely) outside its history
+			globalEvents = @state.globalEvents.filterNot (globalEvent) =>
+				return true if globalEvent.get('clientFileId') is clientFileId
+
+				eventStarted = Moment globalEvent.get('startTimestamp'), Persist.TimestampFormat
+				eventEnded = Moment globalEvent.get('endTimestamp'), Persist.TimestampFormat
+				return eventStarted.isAfter(clientFileCreated) or eventEnded.isAfter(clientFileCreated)
+
 
 			return ClientFilePageUi({
 				ref: 'ui'
@@ -98,6 +121,7 @@ load = (win, {clientFileId}) ->
 
 				clientFile: @state.clientFile
 				clientName
+				clientPrograms
 
 				progNoteHistories
 				progressEvents: @state.progressEvents
@@ -107,6 +131,7 @@ load = (win, {clientFileId}) ->
 				programsById: @state.programsById
 				clientFileProgramLinkHeaders: @state.clientFileProgramLinkHeaders
 				eventTypes: @state.eventTypes
+				globalEvents
 
 				headerIndex: @state.headerIndex
 				progNoteTotal: @state.progNoteTotal
@@ -115,7 +140,6 @@ load = (win, {clientFileId}) ->
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
-				createQuickNote: @_createQuickNote
 
 				renewAllData: @_renewAllData
 			})
@@ -140,8 +164,10 @@ load = (win, {clientFileId}) ->
 			programHeaders = null
 			programs = null
 			programsById = null
-			eventTypes = null
 			eventTypeHeaders = null
+			eventTypes = null
+			globalEventHeaders = null
+			globalEvents = null
 
 			checkFileSync = (newData, oldData) =>
 				unless fileIsUnsync
@@ -206,13 +232,11 @@ load = (win, {clientFileId}) ->
 						# lazyloading
 						progNoteTotal = results.size
 						progNoteHeaders = results
-						###
-						.sortBy (header) ->
-							createdAt = header.get('backdate') or header.get('timestamp')
-							return Moment createdAt, Persist.TimestampFormat
-						.reverse()
-						.slice(@state.headerIndex, @state.headerIndex+10)
-						###
+						# .sortBy (header) ->
+						# 	createdAt = header.get('backdate') or header.get('timestamp')
+						# 	return Moment createdAt, Persist.TimestampFormat
+						# .reverse()
+						# .slice(@state.headerIndex, @state.headerIndex+10)
 						cb()
 
 				(cb) =>
@@ -249,6 +273,26 @@ load = (win, {clientFileId}) ->
 						.map (progEvent) -> stripMetadata progEvent.first()
 
 						checkFileSync progressEvents, @state.progressEvents
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.globalEvents.list (err, results) =>
+						if err
+							cb err
+							return
+
+						globalEventHeaders = results
+						cb()
+
+				(cb) =>
+					Async.map globalEventHeaders.toArray(), (globalEventHeader, cb) =>
+						ActiveSession.persist.globalEvents.readLatestRevisions globalEventHeader.get('id'), 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						globalEvents = Imm.List(results).map (revisions) -> revisions.first()
 						cb()
 
 				(cb) =>
@@ -299,6 +343,7 @@ load = (win, {clientFileId}) ->
 						programHeaders = results
 
 						cb()
+
 				(cb) =>
 					Async.map programHeaders.toArray(), (programHeader, cb) =>
 						ActiveSession.persist.programs.readLatestRevisions programHeader.get('id'), 1, cb
@@ -316,6 +361,7 @@ load = (win, {clientFileId}) ->
 
 						checkFileSync programs, @state.programs
 						cb()
+
 				(cb) =>
 					ActiveSession.persist.eventTypes.list (err, result) =>
 						if err
@@ -324,6 +370,7 @@ load = (win, {clientFileId}) ->
 
 						eventTypeHeaders = result
 						cb()
+
 				(cb) =>
 					Async.map eventTypeHeaders.toArray(), (eventTypeheader, cb) =>
 						eventTypeId = eventTypeheader.get('id')
@@ -336,6 +383,7 @@ load = (win, {clientFileId}) ->
 
 						eventTypes = Imm.List(results).map (eventType) -> stripMetadata eventType.get(0)
 						cb()
+
 			], (err) =>
 				if err
 					# Cancel any lock operations, and show the page in error
@@ -394,6 +442,7 @@ load = (win, {clientFileId}) ->
 						clientFile
 						progNoteHistories
 						progressEvents
+						globalEvents
 						metricsById
 						planTargetsById
 						programs
@@ -596,6 +645,10 @@ load = (win, {clientFileId}) ->
 					eventTypes = @state.eventTypes.set eventTypeIndex, newEventTypeRev
 					@setState {eventTypes}
 
+				'create:globalEvent': (globalEvent) =>
+					globalEvents = @state.globalEvents.push globalEvent
+					@setState {globalEvents}
+
 				'timeout:timedOut': =>
 					@_killLocks Bootbox.hideAll
 
@@ -700,7 +753,7 @@ load = (win, {clientFileId}) ->
 				Window.show()
 				Window.focus()
 
-			, 500)
+			, 250)
 
 		render: ->
 			if @props.loadErrorType
@@ -714,10 +767,6 @@ load = (win, {clientFileId}) ->
 
 			recordId = @props.clientFile.get('recordId')
 
-			# Use programLinks to determine program membership(s)
-			clientPrograms = @props.clientFileProgramLinkHeaders.map (link) =>
-				programId = link.get('programId')
-				@props.programsById.get programId
 
 			return R.div({className: 'clientFilePage'},
 				Spinner {
@@ -732,7 +781,7 @@ load = (win, {clientFileId}) ->
 					Sidebar({
 						clientFile: @props.clientFile
 						clientName: @props.clientName
-						clientPrograms
+						clientPrograms: @props.clientPrograms
 						recordId
 						activeTabId
 						programs: @props.programs
@@ -751,6 +800,7 @@ load = (win, {clientFileId}) ->
 							clientFile: @props.clientFile
 							plan: @props.clientFile.get('plan')
 							planTargetsById: @props.planTargetsById
+							programsById: @props.programsById
 							metricsById: @props.metricsById
 							updatePlan: @props.updatePlan
 							isReadOnly
@@ -762,11 +812,12 @@ load = (win, {clientFileId}) ->
 							showWhen(activeTabId is 'progressNotes')
 						].join ' '
 					},
-						ProgNotesTab.ProgNotesView({
+						ProgNotesTab({
 							ref: 'progNotesTab'
 							clientFileId
 							clientFile: @props.clientFile
-							clientPrograms
+							clientPrograms: @props.clientPrograms
+							globalEvents: @props.globalEvents
 							progNoteHistories: @props.progNoteHistories
 							planTargetsById: @props.planTargetsById
 							progEvents: @props.progressEvents
@@ -781,7 +832,6 @@ load = (win, {clientFileId}) ->
 
 							renewAllData: @props.renewAllData
 
-							createQuickNote: @props.createQuickNote
 							isLoading: @props.isLoading
 							setIsLoading: @props.setIsLoading
 							isReadOnly
@@ -803,6 +853,7 @@ load = (win, {clientFileId}) ->
 							progEvents: @props.progressEvents
 							eventTypes: @props.eventTypes
 							metricsById: @props.metricsById
+							globalEvents: @props.globalEvents
 							isReadOnly
 						})
 					)
@@ -820,18 +871,20 @@ load = (win, {clientFileId}) ->
 			activeTabId = @props.activeTabId
 
 			return R.div({className: 'sidebar'},
-				R.img({src: Config.customerLogoLg}),
+				R.img({src: Config.logoCustomerLg}),
 				R.div({className: 'logoSubtitle'},
 					Config.logoSubtitle
 				)
 				R.div({className: 'clientName'},
 					(if ActiveSession.accountType is 'admin'
-						OpenDialogLink({
-							dialog: RenameClientFileDialog
-							clientFile: @props.clientFile
-							className: 'clientNameField'
-						},
-							@props.clientName
+						WithTooltip({title: "Edit Client Information", placement: 'right', container: 'body'},
+							OpenDialogLink({
+								dialog: RenameClientFileDialog
+								clientFile: @props.clientFile
+								className: 'clientNameField'
+							},
+								@props.clientName
+							)
 						)
 					else
 						@props.clientName
@@ -851,8 +904,12 @@ load = (win, {clientFileId}) ->
 				R.div({className: 'recordId'},
 					R.span({}, renderRecordId @props.recordId, true)
 				)
-				unless @props.status is 'active'
-					R.div({className: 'clientStatus'},
+				if @props.status is 'inactive'
+					R.div({className: 'inactiveStatus'},
+						@props.status.toUpperCase()
+					)
+				else if @props.status is 'discharged'
+					R.div({className: 'dischargedStatus'},
 						@props.status.toUpperCase()
 					)
 				R.div({className: 'tabStrip'},
@@ -913,9 +970,7 @@ load = (win, {clientFileId}) ->
 		displayName: 'ReadOnlyNotice'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
-			return R.div({
-				className: 'readOnlyNotice'
-			},
+			return R.div({className: 'readOnlyNotice'},
 				R.div({
 					className: [
 						"notice"

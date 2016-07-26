@@ -327,16 +327,19 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			@_refreshResults()
+			setTimeout(=>
+				@_refreshResults()
 
-			# Show and focus this window
-			Window.show()
-			Window.focus()
+				# Show and focus this window
+				Window.show()
+				Window.focus()
 
-			# Fire 'loaded' event for loginPage to hide itself
-			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
+				# Fire 'loaded' event for loginPage to hide itself
+				global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
 
-			@_attachKeyBindings()
+				@_attachKeyBindings()
+
+			, 250)
 
 		componentDidUpdate: (oldProps, oldState) ->
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
@@ -409,7 +412,7 @@ load = (win) ->
 							].join ' '
 						},
 							R.div({className: 'logoContainer'},
-								R.img({src: Config.customerLogoLg})
+								R.img({src: Config.logoCustomerLg})
 								R.div({
 									className: 'subtitle'
 									style: {color: Config.logoSubtitleColor}
@@ -478,7 +481,7 @@ load = (win) ->
 							].join ' '
 						},
 							R.img({
-								src: Config.customerLogoLg
+								src: Config.logoCustomerLg
 								onClick: @_home
 							})
 						)
@@ -488,20 +491,21 @@ load = (win) ->
 								if smallHeader then 'show' else 'hidden'
 							].join ' '
 						},
-							R.div({id: 'filterSelectionContainer'}
-								R.span({id: 'toggleDeactivated'},
-									R.div({className: "checkbox"},
-										R.label({}
-											R.input({
-												onChange: @_toggleDormant
-												type: 'checkbox'
-												checked: @state.showingDormant
-											})
-											"Show deactivated",
+							if @_hasDormant() > 0
+								R.div({id: 'filterSelectionContainer'}
+									R.span({id: 'toggleDeactivated'},
+										R.div({className: "checkbox"},
+											R.label({}
+												R.input({
+													onChange: @_toggleDormant
+													type: 'checkbox'
+													checked: @state.showingDormant
+												})
+												"Show deactivated (#{@_hasDormant()})",
+											)
 										)
 									)
 								)
-							)
 							OrderableTable({
 								tableData: queryResults
 								noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
@@ -509,7 +513,10 @@ load = (win) ->
 								sortByData: ['clientName', 'last']
 								key: ['id']
 								rowClass: (dataPoint) =>
-									'active' if @state.hoverClientId is dataPoint.get('id')
+									[
+										'active' if @state.hoverClientId is dataPoint.get('id')
+										'deactivatedClientFile' unless dataPoint.get('status') is 'active'
+									].join ' '
 								onClickRow: (dataPoint) =>
 									@_onResultSelection.bind null, dataPoint.get('id')
 
@@ -533,9 +540,11 @@ load = (win) ->
 										dataPath: ['clientName', 'first']
 										extraPath: ['clientName', 'middle']
 									}
+
 									{
 										name: "Status"
 										dataPath: ['status']
+										isDisabled: not @state.showingDormant
 									}
 									{
 										name: Config.clientFileRecordId.label
@@ -666,7 +675,6 @@ load = (win) ->
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
 		_toggleDormant: ->
-			# this should be able to be refactored to use the _refresh method, but i couldn't get it to work.
 			if @state.showingDormant is true
 				queryResults = @props.clientFileHeaders
 				.filter (clientFile) ->
@@ -677,6 +685,12 @@ load = (win) ->
 				queryResults = @props.clientFileHeaders
 				showingDormant = true
 				@setState {queryResults, showingDormant}
+		_hasDormant: ->
+			activeHeaders = @props.clientFileHeaders
+				.filter (clientFile) ->
+					clientFile.get('status') is 'active'
+				quantityDormant = @props.clientFileHeaders.size - activeHeaders.size
+				return quantityDormant
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
 		_home: ->

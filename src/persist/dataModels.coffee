@@ -13,11 +13,11 @@ dataModelDefinitions = [
 		collectionName: 'clientFiles'
 		isMutable: true
 		indexes: [
+			['status']
 			['clientName', 'first']
 			['clientName', 'middle']
 			['clientName', 'last']
 			['recordId']
-			['status']
 		]
 		schema: Joi.object().keys({
 			clientName: Joi.object().keys({
@@ -56,6 +56,7 @@ dataModelDefinitions = [
 					typeId: IdSchema.allow('')
 					relatedProgNoteId: IdSchema
 					authorProgramId: IdSchema.allow('')
+					backdate: Joi.date().format(TimestampFormat).raw().allow('')
 					relatedElement: Joi.object().keys({
 						id: IdSchema
 						type: ['progNoteUnit', 'planSection', 'planTarget']
@@ -92,6 +93,7 @@ dataModelDefinitions = [
 						notes: Joi.string()
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						authorProgramId: IdSchema.allow('')
+						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 					})
 					Joi.object().keys({
 						type: 'full'
@@ -100,6 +102,7 @@ dataModelDefinitions = [
 						templateId: IdSchema
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						authorProgramId: IdSchema.allow('')
+						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 						units: Joi.array().items(
 							[
 								Joi.object().keys({
@@ -178,7 +181,7 @@ dataModelDefinitions = [
 		name: 'planTemplate'
 		collectionName: 'planTemplates'
 		isMutable: true
-		indexes: [['name'], ['status']]
+		indexes: [['status'], ['name']]
 		schema: Joi.object().keys({
 			name: Joi.string()
 			status: ['default', 'cancelled']
@@ -265,15 +268,18 @@ dataModelDefinitions = [
 		name: 'globalEvent'
 		collectionName: 'globalEvents'
 		isMutable: true
-		indexes: [['status'], ['relatedProgEventId']]
+		indexes: [['status'], ['backdate']]
 		schema: Joi.object().keys({
 			title: Joi.string()
 			description: Joi.string().allow('')
 			startTimestamp: Joi.date().format(TimestampFormat).raw()
 			endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 			typeId: IdSchema.allow('')
-			relatedProgEventId: IdSchema
+			clientFileId: IdSchema
+			relatedProgNoteId: IdSchema.allow('')
+			relatedProgEventId: IdSchema.allow('')
 			authorProgramId: IdSchema.allow('')
+			backdate: Joi.date().format(TimestampFormat).raw().allow('')
 			status: ['default', 'cancelled']
 			statusReason: Joi.string().optional()
 		})
