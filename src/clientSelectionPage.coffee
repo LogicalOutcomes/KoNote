@@ -351,6 +351,7 @@ load = (win) ->
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
+			inactiveClientFiles = @_getInactiveClientFiles()
 
 			# Add in all program objects this clientFile's a member of
 
@@ -491,7 +492,7 @@ load = (win) ->
 								if smallHeader then 'show' else 'hidden'
 							].join ' '
 						},
-							if @_hasDormant() > 0
+							(if not inactiveClientFiles.isEmpty()
 								R.div({id: 'filterSelectionContainer'}
 									R.span({id: 'toggleDeactivated'},
 										R.div({className: "checkbox"},
@@ -501,11 +502,12 @@ load = (win) ->
 													type: 'checkbox'
 													checked: @state.showingDormant
 												})
-												"Show deactivated (#{@_hasDormant()})",
+												"Show deactivated (#{inactiveClientFiles.size})",
 											)
 										)
 									)
 								)
+							)
 							OrderableTable({
 								tableData: queryResults
 								noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
@@ -685,12 +687,9 @@ load = (win) ->
 				queryResults = @props.clientFileHeaders
 				showingDormant = true
 				@setState {queryResults, showingDormant}
-		_hasDormant: ->
-			activeHeaders = @props.clientFileHeaders
-				.filter (clientFile) ->
-					clientFile.get('status') is 'active'
-				quantityDormant = @props.clientFileHeaders.size - activeHeaders.size
-				return quantityDormant
+		_getInactiveClientFiles: ->
+			return @props.clientFileHeaders.filter (clientFile) ->
+				clientFile.get('status') isnt 'active'
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
 		_home: ->
