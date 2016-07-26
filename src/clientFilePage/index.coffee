@@ -140,7 +140,6 @@ load = (win, {clientFileId}) ->
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
-				createQuickNote: @_createQuickNote
 
 				renewAllData: @_renewAllData
 			})
@@ -833,7 +832,6 @@ load = (win, {clientFileId}) ->
 
 							renewAllData: @props.renewAllData
 
-							createQuickNote: @props.createQuickNote
 							isLoading: @props.isLoading
 							setIsLoading: @props.setIsLoading
 							isReadOnly
@@ -972,9 +970,7 @@ load = (win, {clientFileId}) ->
 		displayName: 'ReadOnlyNotice'
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
-			return R.div({
-				className: 'readOnlyNotice'
-			},
+			return R.div({className: 'readOnlyNotice'},
 				R.div({
 					className: [
 						"notice"
