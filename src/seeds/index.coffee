@@ -121,7 +121,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 				console.log "Created #{template.progEvents} progEvents for each progNote"
 				cb()
 
-		# 1/5 chance that a globalEvent is created from a progEvent
+		# 1/10 chance that a globalEvent is created from a progEvent
 		(cb) ->
 			chanceOfGlobalEvent = 1/10
 
@@ -150,7 +150,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 				.filter (globalEvent) -> globalEvent?
 
 				console.log "Generated #{globalEvents.size} globalEvents from progEvents
-				(#{chanceOfGlobalEvent}% chance)"
+				(#{chanceOfGlobalEvent*100}% chance)"
 
 				cb()
 
