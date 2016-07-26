@@ -1,6 +1,6 @@
 {
   "name": "KoNote",
-  "version": "1.7.0",
+  "version": "1.8.0-RC1",
   "dependencies": {
     "amdefine": {
       "version": "1.0.0",
