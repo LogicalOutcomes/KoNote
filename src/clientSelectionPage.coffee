@@ -492,7 +492,7 @@ load = (win) ->
 								if smallHeader then 'show' else 'hidden'
 							].join ' '
 						},
-							if inactiveClientFiles.size > 0
+							(if not inactiveClientFiles.isEmpty()
 								R.div({id: 'filterSelectionContainer'}
 									R.span({id: 'toggleDeactivated'},
 										R.div({className: "checkbox"},
@@ -507,6 +507,7 @@ load = (win) ->
 										)
 									)
 								)
+							)
 							OrderableTable({
 								tableData: queryResults
 								noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
@@ -688,7 +689,7 @@ load = (win) ->
 				@setState {queryResults, showingDormant}
 		_getInactiveClientFiles: ->
 			return @props.clientFileHeaders.filter (clientFile) ->
-				clientFile.get('status') isnt 'active'		
+				clientFile.get('status') isnt 'active'
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
 		_home: ->
