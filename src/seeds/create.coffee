@@ -86,7 +86,7 @@ Create.quickNote = (clientFile, cb) ->
 	randomDay = Math.floor(Math.random() * daySpan) + 1
 	randomBackdate = Moment().subtract(randomDay, 'days')
 
-	note = Imm.fromJS {
+	quickNote = Imm.fromJS {
 		type: 'basic'
 		status: 'default'
 		clientFileId: clientFile.get('id')
@@ -94,9 +94,10 @@ Create.quickNote = (clientFile, cb) ->
 		timestamp: randomBackdate.format(TimestampFormat)
 		backdate: ''
 		authorProgramId: ''
+		beginTimestamp: ''
 	}
 
-	createData 'progNotes', note, cb
+	createData 'progNotes', quickNote, cb
 
 Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	earliestDate = Moment().subtract(2, 'months')
@@ -156,6 +157,7 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 		backdate: ''
 		timestamp: randomBackdate.format(TimestampFormat)
 		authorProgramId: ''
+		beginTimestamp: ''
 		units: [
 			{
 				id: progNoteUnit.get('id')

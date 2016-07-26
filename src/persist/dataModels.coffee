@@ -93,6 +93,7 @@ dataModelDefinitions = [
 						notes: Joi.string()
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						authorProgramId: IdSchema.allow('')
+						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 					})
 					Joi.object().keys({
 						type: 'full'
@@ -101,6 +102,7 @@ dataModelDefinitions = [
 						templateId: IdSchema
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						authorProgramId: IdSchema.allow('')
+						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
 						units: Joi.array().items(
 							[
 								Joi.object().keys({

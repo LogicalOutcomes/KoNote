@@ -621,6 +621,9 @@ load = (win) ->
 
 				popover.find('textarea').focus()
 
+				# Store quickNoteBeginTimestamp as class var, since it wont change
+				@quickNoteBeginTimestamp = Moment().format(Persist.TimestampFormat)
+
 		_createQuickNote: (notes, backdate, cb) ->
 			unless notes
 				Bootbox.alert "Cannot create an empty #{Term 'quick note'}."
@@ -635,6 +638,7 @@ load = (win) ->
 				notes
 				backdate
 				authorProgramId: global.ActiveSession.programId or ''
+				beginTimestamp: @quickNoteBeginTimestamp
 			}
 
 			global.ActiveSession.persist.progNotes.create quickNote, (err) =>

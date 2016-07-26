@@ -244,6 +244,9 @@ load = (win, {clientFileId}) ->
 
 				Window.show()
 				Window.focus()
+
+				# Store beginTimestamp as class var, since it wont change
+				@beginTimestamp = Moment().format(Persist.TimestampFormat)
 			, 500)
 
 		componentDidUpdate: ->
@@ -670,7 +673,9 @@ load = (win, {clientFileId}) ->
 			@setState {isLoading: true}
 
 			authorProgramId = global.ActiveSession.programId or ''
-			progNote = @state.progNote.set('authorProgramId', authorProgramId)
+			progNote = @state.progNote
+			.set('authorProgramId', authorProgramId)
+			.set('beginTimestamp', @beginTimestamp)
 
 			progNoteId = null
 			createdProgNote = null

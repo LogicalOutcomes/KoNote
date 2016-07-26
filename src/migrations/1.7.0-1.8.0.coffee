@@ -6,10 +6,7 @@ Imm = require 'immutable'
 Path = require 'path'
 Moment = require 'moment'
 
-{
-	SymmetricEncryptionKey
-	WeakSymmetricEncryptionKey
-} = require '../persist/crypto'
+{SymmetricEncryptionKey, WeakSymmetricEncryptionKey} = require '../persist/crypto'
 {TimestampFormat} = require '../persist/utils'
 
 lastMigrationStep = 0
@@ -682,6 +679,52 @@ addProgEventBackdateField = (dataDir, globalEncryptionKey, cb) ->
 
 		finalizeMigrationStep(dataDir, cb)
 
+
+addProgNoteBeginTimestampField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+			progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
+
+			progNoteObjectFilePath = null
+			progNoteObject = null
+
+			Async.series [
+				(cb) =>
+					Fs.readdir progNotePath, (err, revisions) ->
+						if err
+							cb err
+							return
+
+						progNoteObjectFilePath = Path.join(progNotePath, revisions[0])
+						cb()
+
+				(cb) =>
+					Fs.readFile progNoteObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
+
+						progNoteObject = JSON.parse globalEncryptionKey.decrypt result
+						cb()
+
+				(cb) =>
+					progNoteObject.beginTimestamp = ''
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progNoteObject
+
+					Fs.writeFile progNoteObjectFilePath, encryptedObj, cb
+
+			], cb
+
+		, cb
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
 # ////////////////////// Migration Series //////////////////////
 
 
@@ -735,6 +778,11 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "9. Add 'backdate' field to progEvent objects"
 				addProgEventBackdateField dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "10. Add 'beginTimestamp' field to progNote objects"
+				addProgNoteBeginTimestampField dataDir, globalEncryptionKey, cb
 
 		]
 
