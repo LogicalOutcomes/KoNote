@@ -513,8 +513,10 @@ load = (win) ->
 								sortByData: ['clientName', 'last']
 								key: ['id']
 								rowClass: (dataPoint) =>
-									'active' if @state.hoverClientId is dataPoint.get('id')
-									'deactivatedClientFile' unless dataPoint.get('status') is 'active'
+									[
+										'active' if @state.hoverClientId is dataPoint.get('id')
+										'deactivatedClientFile' unless dataPoint.get('status') is 'active'
+									].join ' '
 								onClickRow: (dataPoint) =>
 									@_onResultSelection.bind null, dataPoint.get('id')
 
