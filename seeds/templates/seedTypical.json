@@ -4,7 +4,7 @@
 	"clientFileSections": 2,
 	"accounts": 100,
 	"programs": 2,
-	"eventTypes": 0,
+	"eventTypes": 1,
 	"metrics": 30,
 
 	"planTargets": 5,
