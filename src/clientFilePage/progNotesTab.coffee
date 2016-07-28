@@ -534,9 +534,13 @@ load = (win) ->
 					# Store property as clientFile ID to prevent confusion
 					global.dataStore ?= {}
 
+					# Only needs to pass latest revisions of each planTarget
+					# In this case, index [0] is the latest revision
+					planTargetsById = @props.planTargetsById.map (target) -> target.get('revisions').first()
+
 					global.dataStore[@props.clientFileId] = {
 						clientFile: @props.clientFile
-						planTargetsById: @props.planTargetsById
+						planTargetsById
 						metricsById: @props.metricsById
 						progNoteHistories: @props.progNoteHistories
 						progEvents: @props.progEvents

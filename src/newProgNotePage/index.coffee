@@ -97,10 +97,6 @@ load = (win, {clientFileId}) ->
 				programsById
 			} = global.dataStore[clientFileId]
 
-			# Convert data structure of clientFile's planTargetsById
-			planTargetsById = planTargetsById.map (planTarget) ->
-				return planTarget.get('revisions')
-
 			# Build progNote with template
 			progNote = @_createProgNoteFromTemplate(
 				template
@@ -165,18 +161,16 @@ load = (win, {clientFileId}) ->
 										targets: section.get 'targetIds'
 										.filter (targetId) =>
 											target = planTargetsById.get targetId
-											lastRev = target.last()
-											return lastRev.get('status') is 'default'
+											return target.get('status') is 'default'
 										.map (targetId) =>
 											target = planTargetsById.get targetId
-											lastRev = target.last()
 
 											return Imm.fromJS {
-												id: lastRev.get 'id'
-												name: lastRev.get 'name'
-												description: lastRev.get 'description'
+												id: target.get 'id'
+												name: target.get 'name'
+												description: target.get 'description'
 												notes: ''
-												metrics: lastRev.get('metricIds').map (metricId) =>
+												metrics: target.get('metricIds').map (metricId) =>
 													metric = metricsById.get metricId
 
 													return Imm.fromJS {
