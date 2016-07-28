@@ -1080,77 +1080,78 @@ load = (win) ->
 						onClick: @props.onTargetSelection if @props.isReadOnly or @props.isInactive
 
 					})
-
-					(if @props.isExistingTarget
-						# Can cancel/complete a 'default' target
-						(if revisionStatus is 'default'
-							R.div({className: 'statusButtonGroup'},
-								WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
-									OpenDialogLink({
-										className: 'statusButton'
-										dialog: ModifyTargetStatusDialog
-										planTarget: @props.currentRevision
-										newStatus: 'deactivated'
-										title: "Deactivate #{Term 'Target'}"
-										message: """
-											This will remove the #{Term 'target'} from the #{Term 'client'}
-											#{Term 'plan'}, and future #{Term 'progress notes'}.
-											It may be re-activated again later.
-										"""
-										reasonLabel: "Reason for deactivation:"
-										disabled: @props.isReadOnly or @props.hasTargetChanged
-									},
-										FaIcon 'times'
+					(if not @props.hasTargetChanged and @props.isExistingTarget
+						(if @props.isExistingTarget
+							# Can cancel/complete a 'default' target
+							(if revisionStatus is 'default'
+								R.div({className: 'statusButtonGroup'},
+									WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
+										OpenDialogLink({
+											className: 'statusButton'
+											dialog: ModifyTargetStatusDialog
+											planTarget: @props.currentRevision
+											newStatus: 'deactivated'
+											title: "Deactivate #{Term 'Target'}"
+											message: """
+												This will remove the #{Term 'target'} from the #{Term 'client'}
+												#{Term 'plan'}, and future #{Term 'progress notes'}.
+												It may be re-activated again later.
+											"""
+											reasonLabel: "Reason for deactivation:"
+											disabled: @props.isReadOnly or @props.hasTargetChanged
+										},
+											FaIcon 'times'
+										)
+									)
+									WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
+										OpenDialogLink({
+											className: 'statusButton'
+											dialog: ModifyTargetStatusDialog
+											planTarget: @props.currentRevision
+											newStatus: 'completed'
+											title: "Complete #{Term 'Target'}"
+											message: """
+												This will set the #{Term 'target'} as 'completed'. This often
+												means that the desired outcome has been reached.
+											"""
+											reasonLabel: "Reason for completion:"
+											disabled: @props.isReadOnly or @props.hasTargetChanged
+										},
+											FaIcon 'check'
+										)
 									)
 								)
-								WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
-									OpenDialogLink({
-										className: 'statusButton'
-										dialog: ModifyTargetStatusDialog
-										planTarget: @props.currentRevision
-										newStatus: 'completed'
-										title: "Complete #{Term 'Target'}"
-										message: """
-											This will set the #{Term 'target'} as 'completed'. This often
-											means that the desired outcome has been reached.
-										"""
-										reasonLabel: "Reason for completion:"
-										disabled: @props.isReadOnly or @props.hasTargetChanged
-									},
-										FaIcon 'check'
+							else
+								R.div({className: 'statusButtonGroup'},
+									WithTooltip({title: "Re-Activate #{Term 'Target'}", placement: 'top'},
+										OpenDialogLink({
+											className: 'statusButton'
+											dialog: ModifyTargetStatusDialog
+											planTarget: @props.currentRevision
+											newStatus: 'default'
+											title: "Re-Activate #{Term 'Target'}"
+											message: """
+												This will re-activate the #{Term 'target'}, so it appears
+												in the #{Term 'client'} #{Term 'plan'} and
+												future #{Term 'progress notes'}.
+											"""
+											reasonLabel: "Reason for activation:"
+											disabled: @props.isReadOnly
+										},
+											FaIcon 'sign-in'
+										)
 									)
 								)
 							)
 						else
 							R.div({className: 'statusButtonGroup'},
-								WithTooltip({title: "Re-Activate #{Term 'Target'}", placement: 'top'},
-									OpenDialogLink({
-										className: 'statusButton'
-										dialog: ModifyTargetStatusDialog
-										planTarget: @props.currentRevision
-										newStatus: 'default'
-										title: "Re-Activate #{Term 'Target'}"
-										message: """
-											This will re-activate the #{Term 'target'}, so it appears
-											in the #{Term 'client'} #{Term 'plan'} and
-											future #{Term 'progress notes'}.
-										"""
-										reasonLabel: "Reason for activation:"
-										disabled: @props.isReadOnly
-									},
-										FaIcon 'sign-in'
-									)
+								R.div({
+									className: 'statusButton'
+									onClick: @props.onRemoveNewTarget
+									title: 'Cancel'
+								},
+									FaIcon 'times'
 								)
-							)
-						)
-					else
-						R.div({className: 'statusButtonGroup'},
-							R.div({
-								className: 'statusButton'
-								onClick: @props.onRemoveNewTarget
-								title: 'Cancel'
-							},
-								FaIcon 'times'
 							)
 						)
 					)
