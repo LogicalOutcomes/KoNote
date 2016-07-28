@@ -1192,6 +1192,7 @@ load = (win) ->
 		} = props
 
 		selectedItemIsProgNote = selectedItem? and selectedItem.get('progNoteId') is progNote.get('id')
+		userIsAuthor = progNote.get('author') is global.ActiveSession.userName
 
 		isViewingRevisions = selectedItemIsProgNote and selectedItem.get('type') is 'progNote'
 		hasRevisions = progNoteHistory.size > 1
@@ -1223,11 +1224,13 @@ load = (win) ->
 					iconOnly: true
 					tooltip: {show: true}
 				})
-				R.a({
-					className: "editNote #{showWhen not isReadOnly}"
-					onClick: startRevisingProgNote.bind null, progNote
-				},
-					"Edit"
+				(if userIsAuthor
+					R.a({
+						className: "editNote #{showWhen not isReadOnly}"
+						onClick: startRevisingProgNote.bind null, progNote
+					},
+						"Edit"
+					)
 				)
 				OpenDialogLink({
 					className: "cancelNote #{showWhen not isReadOnly}"
