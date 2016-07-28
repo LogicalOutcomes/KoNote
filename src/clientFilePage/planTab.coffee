@@ -751,6 +751,8 @@ load = (win) ->
 			targetIdsByStatus = section.get('targetIds').groupBy (targetId) ->
 				return currentTargetRevisionsById.getIn([targetId, 'status'])
 
+			sectionIsInactive = section.get('status') isnt 'default'
+
 			# Recalculate sticky header
 			if @props.sectionOffsets and @props.sectionOffsets.get(section.get('id'))
 				scrollTop = @props.sectionsScrollTop
@@ -810,6 +812,7 @@ load = (win) ->
 								hasTargetChanged: hasTargetChanged targetId
 								key: targetId
 								isActive: targetId is selectedTargetId
+								sectionIsInactive
 								isExistingTarget: planTargetsById.has(targetId)
 								isReadOnly
 								onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
@@ -847,6 +850,7 @@ load = (win) ->
 									hasTargetChanged: hasTargetChanged targetId
 									key: targetId
 									isActive: targetId is selectedTargetId
+									sectionIsInactive
 									isExistingTarget: planTargetsById.has(targetId)
 									isReadOnly
 									isInactive: true
@@ -886,6 +890,7 @@ load = (win) ->
 									hasTargetChanged: hasTargetChanged targetId
 									key: targetId
 									isActive: targetId is selectedTargetId
+									sectionIsInactive
 									isExistingTarget: planTargetsById.has(targetId)
 									isReadOnly
 									isInactive: true
@@ -968,71 +973,71 @@ load = (win) ->
 					)
 				)
 				(if isExistingSection
-					unless @props.targetIdsByStatus.has('default')
-						if sectionStatus is 'default'
-							R.div({className: 'statusButtonGroup'},
-								WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
-									OpenDialogLink({
-										clientFile
-										className: 'statusButton'
-										dialog: ModifySectionStatusDialog
-										newStatus: 'deactivated'
-										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
-										title: "Deactivate #{Term 'Section'}"
-										message: """
-											This will remove the #{Term 'section'} from the #{Term 'client'}
-											#{Term 'plan'}, and future #{Term 'progress notes'}.
-											It may be re-activated again later.
-										"""
-										reasonLabel: "Reason for deactivation:"
-										disabled: @props.isReadOnly or @props.hasTargetChanged
-									},
-										FaIcon 'times'
-									)
-								)
-								WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
-									OpenDialogLink({
-										clientFile
-										className: 'statusButton'
-										dialog: ModifySectionStatusDialog
-										newStatus: 'completed'
-										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
-										title: "Complete #{Term 'Section'}"
-										message: """
-											This will set the #{Term 'section'} as 'completed'. This often
-											means that the desired outcome has been reached.
-										"""
-										reasonLabel: "Reason for completion:"
-										disabled: @props.isReadOnly or @props.hasTargetChanged
-									},
-										FaIcon 'check'
-									)
+					(if sectionStatus is 'default'
+						R.div({className: 'statusButtonGroup'},
+							WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
+								OpenDialogLink({
+									clientFile
+									className: 'statusButton'
+									dialog: ModifySectionStatusDialog
+									newStatus: 'deactivated'
+									sectionIndex: getSectionIndex section.get('id')
+									# sectionTargetIds: section.get('targetIds')
+									title: "Deactivate #{Term 'Section'}"
+									message: """
+										This will remove the #{Term 'section'} from the #{Term 'client'}
+										#{Term 'plan'}, and future #{Term 'progress notes'}.
+										It may be re-activated again later.
+									"""
+									reasonLabel: "Reason for deactivation:"
+									disabled: @props.isReadOnly or @props.hasTargetChanged
+								},
+									FaIcon 'times'
 								)
 							)
-						else
-							R.div({className: 'statusButtonGroup'},
-								WithTooltip({title: "Reactivate #{Term 'Section'}", placement: 'top', container: 'body'},
-									OpenDialogLink({
-										clientFile
-										className: 'statusButton'
-										dialog: ModifySectionStatusDialog
-										newStatus: 'default'
-										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
-										title: "Reactivate #{Term 'Section'}"
-										message: """
-											This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'}
-											#{Term 'plan'}, and future #{Term 'progress notes'}.
-										"""
-										reasonLabel: "Reason for reactivation:"
-										disabled: @props.isReadOnly or @props.hasTargetChanged
-									},
-										FaIcon 'sign-in'
-									)
+							WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
+								OpenDialogLink({
+									clientFile
+									className: 'statusButton'
+									dialog: ModifySectionStatusDialog
+									newStatus: 'completed'
+									sectionIndex: getSectionIndex section.get('id')
+									# sectionTargetIds: section.get('targetIds')
+									title: "Complete #{Term 'Section'}"
+									message: """
+										This will set the #{Term 'section'} as 'completed'. This often
+										means that the desired outcome has been reached.
+									"""
+									reasonLabel: "Reason for completion:"
+									disabled: @props.isReadOnly or @props.hasTargetChanged
+								},
+									FaIcon 'check'
 								)
 							)
+						)
+					else
+						R.div({className: 'statusButtonGroup'},
+							WithTooltip({title: "Reactivate #{Term 'Section'}", placement: 'top', container: 'body'},
+								OpenDialogLink({
+									clientFile
+									className: 'statusButton'
+									dialog: ModifySectionStatusDialog
+									newStatus: 'default'
+									sectionIndex: getSectionIndex section.get('id')
+									# sectionTargetIds: section.get('targetIds')
+									title: "Reactivate #{Term 'Section'}"
+									message: """
+										This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'}
+										#{Term 'plan'}, and future #{Term 'progress notes'}.
+									"""
+									reasonLabel: "Reason for reactivation:"
+									disabled: @props.isReadOnly or @props.hasTargetChanged
+								},
+									FaIcon 'sign-in'
+								)
+							)
+						)
+					)
 				else
 					R.div({className: 'statusButtonGroup'},
 						R.div({
@@ -1080,7 +1085,7 @@ load = (win) ->
 						onClick: @props.onTargetSelection if @props.isReadOnly or @props.isInactive
 
 					})
-					(if not @props.hasTargetChanged and @props.isExistingTarget
+					(if not @props.hasTargetChanged and @props.isExistingTarget and not @props.sectionIsInactive
 						(if @props.isExistingTarget
 							# Can cancel/complete a 'default' target
 							(if revisionStatus is 'default'
