@@ -12,6 +12,7 @@ Lock = require './lock'
 Session = require './session'
 Users = require './users'
 Utils = require './utils'
+Sync = require './sync'
 
 module.exports = {
 	buildDataDirectory
@@ -22,4 +23,5 @@ module.exports = {
 	Lock
 	Session
 	Users
+	Sync
 }

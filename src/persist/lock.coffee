@@ -10,9 +10,8 @@ Imm = require 'immutable'
 Moment = require 'moment'
 Path = require 'path'
 
-exec = require('child_process').exec;
-
 Atomic = require './atomic'
+Sync = require './sync'
 
 {CustomError, IOError, TimestampFormat} = require './utils'
 
@@ -48,12 +47,11 @@ class Lock
 
 		Async.series [
 			(cb) ->
-				exec global.pullLocks, (err, stdout, stderr) =>
+				Sync.pull 0, (err) ->
 					if err
-						cb new IOError
-					else
-						console.log 'sync (pull locks) done'
-						cb()
+						cb err
+						return
+					cb()
 			(cb) ->
 				Atomic.writeDirectory lockDirDest, tmpDirPath, (err, tmpLockDir, op) ->
 					if err
@@ -90,11 +88,10 @@ class Lock
 
 					cb()
 			(cb) ->
-				exec global.pushLocks, (err, stdout, stderr) =>
+				Sync.push 0, (err, stdout, stderr) =>
 					if err
-						cb new IOError
+						cb err
 					else
-						console.log 'sync (push locks) done'
 						cb()
 		], (err) ->
 			if err
@@ -265,11 +262,10 @@ class Lock
 
 		Atomic.deleteDirectory @_path, @_tmpDirPath, cb
 
-		exec global.pushLocks, (err, stdout, stderr) =>
+		Sync.push 0, (err, stdout, stderr) =>
 			if err
 				console.error err
-			else
-				console.log 'sync (pull locks) done'
+				return
 
 	_hasLeaseExpired: ->
 		return Moment(@_nextExpiryTimestamp, TimestampFormat).isBefore Moment()
