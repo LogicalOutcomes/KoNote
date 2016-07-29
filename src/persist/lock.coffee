@@ -50,7 +50,7 @@ class Lock
 			(cb) ->
 				exec global.pullLocks, (err, stdout, stderr) =>
 					if err
-						cb err
+						cb new IOError
 					else
 						console.log 'sync (pull locks) done'
 						cb()
