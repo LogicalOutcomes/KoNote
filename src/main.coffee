@@ -10,7 +10,6 @@
 # It seems that only code that was included via a <script> tag can rely on
 # `window` being set correctly.
 Fs = require 'fs'
-exec = require('child_process').exec;
 
 _ = require 'underscore'
 
@@ -157,58 +156,6 @@ init = (win) ->
 		if global.ActiveSession
 			isLoggedIn = true
 			registerPageListeners()
-
-			# cloud sync
-			if process.platform is 'win32'
-				pull = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
-				Fs.writeFileSync 'pull.cmd', pull
-				global.pull = 'pull.cmd'
-
-				pullLocks = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data/_locks data/"
-				Fs.writeFileSync 'pullLocks.cmd', pullLocks
-				global.pullLocks = 'pullLocks.cmd'
-
-				push = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
-				Fs.writeFileSync 'push.cmd', push
-				global.push = 'push.cmd'
-
-				pushLocks = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/_locks/ konode@cloud.konote.ca:data/_locks"
-				Fs.writeFileSync 'pushLocks.cmd', pushLocks
-				global.pushLocks = 'pushLocks.cmd'
-
-			else
-				global.pull = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
-				global.push = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
-				global.pushLocks = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/_locks/ konode@cloud.konote.ca:data/_locks"
-				global.pullLocks = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data/_locks data/"
-			
-			# pull remote data
-			sync = =>
-				exec global.pullLocks, (err, stdout, stderr) =>
-					if err
-						console.error err
-						global.online = false
-						sync()
-					else
-						console.log 'sync (pull locks) done'
-						exec global.pull, (err, stdout, stderr) =>
-							if err
-								console.error err
-								global.online = false
-								sync()
-							else
-								console.log 'sync (pull) done'
-								global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:pulled'
-								# push our data
-								exec global.push, (err, stdout, stderr) =>
-									if err
-										console.error err
-										global.online = false
-										sync()
-									else
-										console.log 'sync (push) done'
-										global.online = true
-			sync()
 
 		# Disable context menu
 		#win.document.addEventListener 'contextmenu', (event) ->

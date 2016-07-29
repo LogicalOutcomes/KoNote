@@ -43,7 +43,7 @@ pull = (count, cb) ->
                     global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:pulled'
                 cb()
     else
-        cb new IOError
+        cb new IOError "Network unavailable"
 
 push = (count, cb) ->
     if count < 3
