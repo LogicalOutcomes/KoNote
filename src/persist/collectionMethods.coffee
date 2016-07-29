@@ -24,6 +24,8 @@ Imm = require 'immutable'
 Moment = require 'moment'
 Path = require 'path'
 
+exec = require('child_process').exec;
+
 Atomic = require './atomic'
 Cache = require './cache'
 Crypto = require './crypto'
@@ -83,441 +85,516 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 	# These methods correspond to what is documented in the wiki.
 	# See the wiki for instructions on their use.
 
+	pull = (count, cb) ->
+		if count < 3
+			exec global.pull, (err, stdout, stderr) =>
+				if err
+					count++
+					console.log "pull failed, retrying... " + count
+					pull count, cb
+				else
+					console.log "sync success"
+					cb()
+		else
+			cb new IOError
+
+	push = (count, cb) ->
+		if count < 3
+			exec global.push, (err, stdout, stderr) =>
+				if err
+					count++
+					console.error err
+					push count, cb
+				else
+					console.log "sync success"
+					cb()
+		else
+			cb new IOError
+
 	create = (obj, cb) ->
 		# The object hasn't been created yet, so it shouldn't have any of these
 		# metadata fields.  If it does, it probably indicates a bug.
 
-		if obj.has('id')
-			cb new Error "new objects cannot already have an ID"
-			return
-
-		if obj.has('revisionId')
-			cb new Error "new objects cannot already have a revision ID"
-			return
-
-		# We allow explicit metadata for development purposes, such as seeding.
-		if process.env.NODE_ENV isnt 'development'
-			if obj.has('author')
-				cb new Error "new objects cannot already have an author"
+		pull 0, (err) =>
+			if err
+				cb new IOError
 				return
 
-			if obj.has('timestamp')
-				cb new Error "new objects cannot already have a timestamp"
+			if obj.has('id')
+				cb new Error "new objects cannot already have an ID"
 				return
 
-		# Pull out the IDs of this object's ancestors
-		# E.g. if we're creating a prognote, extract clientFileId
-		contextualIds = extractContextualIds obj
+			if obj.has('revisionId')
+				cb new Error "new objects cannot already have a revision ID"
+				return
 
-		# Add metadata fields
-		obj = obj
-		.set 'id', generateId()
-		.set 'revisionId', generateId()
-		.set 'author', obj.get('author') or session.userName
-		.set 'timestamp', obj.get('timestamp') or Moment().format(TimestampFormat)
+			# We allow explicit metadata for development purposes, such as seeding.
+			if process.env.NODE_ENV isnt 'development'
+				if obj.has('author')
+					cb new Error "new objects cannot already have an author"
+					return
 
-		destObjDir = null
-		objDir = null
-		objDirOp = null
-		header = null
+				if obj.has('timestamp')
+					cb new Error "new objects cannot already have a timestamp"
+					return
 
-		Async.series [
-			(cb) ->
-				# Figure out what directory contains this collection.
-				# This depends on whether this collection has a parent,
-				# so pass in the contextualIds.
-				getParentDir contextualIds, (err, parentDir) ->
-					if err
-						cb err
-						return
+			# Pull out the IDs of this object's ancestors
+			# E.g. if we're creating a prognote, extract clientFileId
+			contextualIds = extractContextualIds obj
 
-					# Generate this object's future directory name
-					header = encodeObjectHeader(obj, modelDef.indexes)
-					fileName = Base64url.encode fileNameEncryptionKey.encrypt header
+			# Add metadata fields
+			obj = obj
+			.set 'id', generateId()
+			.set 'revisionId', generateId()
+			.set 'author', obj.get('author') or session.userName
+			.set 'timestamp', obj.get('timestamp') or Moment().format(TimestampFormat)
 
-					# Generate this object's future directory path
-					destObjDir = Path.join(
-						parentDir
-						modelDef.collectionName
-						fileName
-					)
+			destObjDir = null
+			objDir = null
+			objDirOp = null
+			header = null
 
-					cb()
-			(cb) ->
-				# In order to make the operation atomic, we write to a
-				# temporary object directory first, then commit it later.
-				Atomic.writeDirectory destObjDir, tmpDirPath, (err, tmpObjDir, op) ->
-					if err
-						cb err
-						return
-
-					objDir = tmpObjDir
-					objDirOp = op
-					cb()
-			(cb) ->
-				# Create subdirs for subcollection
-				Async.each modelDef.children, (child, cb) ->
-					childDir = Path.join(objDir, child.collectionName)
-
-					Fs.mkdir childDir, (err) ->
+			Async.series [
+				(cb) ->
+					# Figure out what directory contains this collection.
+					# This depends on whether this collection has a parent,
+					# so pass in the contextualIds.
+					getParentDir contextualIds, (err, parentDir) ->
 						if err
-							cb new IOError err
+							cb err
 							return
 
+						# Generate this object's future directory name
+						header = encodeObjectHeader(obj, modelDef.indexes)
+						fileName = Base64url.encode fileNameEncryptionKey.encrypt header
+
+						# Generate this object's future directory path
+						destObjDir = Path.join(
+							parentDir
+							modelDef.collectionName
+							fileName
+						)
+
 						cb()
-				, cb
-			(cb) ->
-				# Create the first revision of this new object
+				(cb) ->
+					# In order to make the operation atomic, we write to a
+					# temporary object directory first, then commit it later.
+					Atomic.writeDirectory destObjDir, tmpDirPath, (err, tmpObjDir, op) ->
+						if err
+							cb err
+							return
 
-				# Generate the revision file name and path
-				revHeader = encodeObjectRevisionHeader(obj)
-				revFileName = Base64url.encode fileNameEncryptionKey.encrypt revHeader
+						objDir = tmpObjDir
+						objDirOp = op
+						cb()
+				(cb) ->
+					# Create subdirs for subcollection
+					Async.each modelDef.children, (child, cb) ->
+						childDir = Path.join(objDir, child.collectionName)
 
-				# The revision file will go in the object directory
-				revFilePath = Path.join(objDir, revFileName)
+						Fs.mkdir childDir, (err) ->
+							if err
+								cb new IOError err
+								return
 
-				writeObjectRevisionFile obj, revFilePath, contextualIds, cb
-			(cb) ->
-				# Done preparing the object directory, finish the operation atomically
-				objDirOp.commit cb
-		], (err) ->
-			if err
-				cb err
-				return
+							cb()
+					, cb
+				(cb) ->
+					# Create the first revision of this new object
 
-			# Update list cache to include new object
-			listCache.update getListCacheKey(contextualIds), (oldHeaders) ->
-				# Add header of this new object to cached list
-				return oldHeaders.push decodeObjectHeader(header, modelDef.indexes, destObjDir)
+					# Generate the revision file name and path
+					revHeader = encodeObjectRevisionHeader(obj)
+					revFileName = Base64url.encode fileNameEncryptionKey.encrypt revHeader
 
-			# Dispatch event via event bus, notifying the app of the change
-			eventBus.trigger "create:#{modelDef.name}", obj
+					# The revision file will go in the object directory
+					revFilePath = Path.join(objDir, revFileName)
 
-			# Return a copy of the newly created object, complete with metadata
-			cb null, obj
+					writeObjectRevisionFile obj, revFilePath, contextualIds, cb
+				(cb) ->
+					# Done preparing the object directory, finish the operation atomically
+					objDirOp.commit cb
+				(cb) ->
+					push 0, (err) =>
+						if err
+							cb new IOError
+							return
+						cb()
+			], (err) ->
+				if err
+					cb err
+					return
+
+				# Update list cache to include new object
+				listCache.update getListCacheKey(contextualIds), (oldHeaders) ->
+					# Add header of this new object to cached list
+					return oldHeaders.push decodeObjectHeader(header, modelDef.indexes, destObjDir)
+
+				# Dispatch event via event bus, notifying the app of the change
+				eventBus.trigger "create:#{modelDef.name}", obj
+
+				# Return a copy of the newly created object, complete with metadata
+				cb null, obj
 
 	list = (contextualIds..., cb) ->
 		# API user must provide IDs for each of the ancestor objects,
 		# otherwise, we don't know where to look
-		if contextualIds.length isnt context.size
-			cb new Error "wrong number of arguments"
-			return
 
-		# Check cache
-		cacheKey = getListCacheKey(contextualIds)
-		cachedResult = listCache.get(cacheKey)
-		if cachedResult?
-			cb null, cachedResult
-			return
-
-		collectionDir = null
-		fileNames = null
-
-		Async.series [
-			(cb) ->
-				# Get path to directory that contains this collection
-				getParentDir contextualIds, (err, parentDir) ->
-					if err
-						cb err
-						return
-
-					collectionDir = Path.join(
-						parentDir
-						modelDef.collectionName
-					)
-					cb()
-			(cb) ->
-				# Each file in the collection dir is an object
-				Fs.readdir collectionDir, (err, results) ->
-					if err
-						cb new IOError err
-						return
-
-					fileNames = results
-					cb()
-		], (err) ->
+		pull 0, (err) =>
 			if err
-				cb err
+				cb new IOError
 				return
 
-			# Decrypt/parse the file names
-			headers = Imm.List(fileNames)
-				.filter isValidFileName
-				.map (fileName) ->
-					# Decrypt file name
-					decryptedFileName = fileNameEncryptionKey.decrypt(
-						Base64url.toBuffer fileName
-					)
+			if contextualIds.length isnt context.size
+				cb new Error "wrong number of arguments"
+				return
 
-					# Parse file name
-					return decodeObjectHeader(
-						decryptedFileName, modelDef.indexes,
-						Path.join(collectionDir, fileName)
-					)
+			# Check cache
+			cacheKey = getListCacheKey(contextualIds)
+			cachedResult = listCache.get(cacheKey)
+			if cachedResult?
+				cb null, cachedResult
+				return
 
-			# Store result in cache
-			listCache.set(cacheKey, headers)
+			collectionDir = null
+			fileNames = null
 
-			cb null, headers
+			Async.series [
+				(cb) ->
+					# Get path to directory that contains this collection
+					getParentDir contextualIds, (err, parentDir) ->
+						if err
+							cb err
+							return
+
+						collectionDir = Path.join(
+							parentDir
+							modelDef.collectionName
+						)
+						cb()
+				(cb) ->
+					# Each file in the collection dir is an object
+					Fs.readdir collectionDir, (err, results) ->
+						if err
+							cb new IOError err
+							return
+
+						fileNames = results
+						cb()
+			], (err) ->
+				if err
+					cb err
+					return
+
+				# Decrypt/parse the file names
+				headers = Imm.List(fileNames)
+					.filter isValidFileName
+					.map (fileName) ->
+						# Decrypt file name
+						decryptedFileName = fileNameEncryptionKey.decrypt(
+							Base64url.toBuffer fileName
+						)
+
+						# Parse file name
+						return decodeObjectHeader(
+							decryptedFileName, modelDef.indexes,
+							Path.join(collectionDir, fileName)
+						)
+
+				# Store result in cache
+				listCache.set(cacheKey, headers)
+
+				cb null, headers
 
 	read = (contextualIds..., id, cb) ->
 		# API user must provide enough IDs to figure out where this collection
 		# is located.
-		if contextualIds.length isnt context.size
-			cb new Error "wrong number of arguments"
-			return
-
-		# Get the path of the object directory corresponding to this ID
-		lookupObjDirById contextualIds, id, (err, objDir) ->
+		pull 0, (err) =>
 			if err
-				cb err
+				cb new IOError
+				return
+		
+			if contextualIds.length isnt context.size
+				cb new Error "wrong number of arguments"
 				return
 
-			# List the directory to see all revisions
-			Fs.readdir objDir, (err, revisionFiles) ->
+			# Get the path of the object directory corresponding to this ID
+			lookupObjDirById contextualIds, id, (err, objDir) ->
 				if err
-					cb new IOError err
+					cb err
 					return
 
-				# Object directories can also contain other collections,
-				# so we need to filter those out first
-				# Ensure validFileName first
-				revisionFiles = revisionFiles.filter (fileName) ->
-					return isValidFileName(fileName) and not childCollectionNames.contains(fileName)
+				# List the directory to see all revisions
+				Fs.readdir objDir, (err, revisionFiles) ->
+					if err
+						cb new IOError err
+						return
 
-				# The read method is only available to immutable collections
-				if revisionFiles.length > 1
-					cb new Error "object at #{JSON.stringify objDir} is immutable but has multiple revisions"
-					return
+					# Object directories can also contain other collections,
+					# so we need to filter those out first
+					# Ensure validFileName first
+					revisionFiles = revisionFiles.filter (fileName) ->
+						return isValidFileName(fileName) and not childCollectionNames.contains(fileName)
 
-				# There should always be exactly one revision
-				if revisionFiles.length < 1
-					# This should be impossible, because object creation is
-					# implemented atomically.  If this occurs, it is likely due
-					# to a failed migration.
-					cb new Error "missing revisions in #{JSON.stringify objDir}"
-					return
+					# The read method is only available to immutable collections
+					if revisionFiles.length > 1
+						cb new Error "object at #{JSON.stringify objDir} is immutable but has multiple revisions"
+						return
 
-				# Get the only revision of this object
-				revisionFile = revisionFiles[0]
-				revisionFilePath = Path.join(objDir, revisionFile)
+					# There should always be exactly one revision
+					if revisionFiles.length < 1
+						# This should be impossible, because object creation is
+						# implemented atomically.  If this occurs, it is likely due
+						# to a failed migration.
+						cb new Error "missing revisions in #{JSON.stringify objDir}"
+						return
 
-				# Read the only revision
-				readObjectRevisionFile revisionFilePath, contextualIds, id, cb
+					# Get the only revision of this object
+					revisionFile = revisionFiles[0]
+					revisionFilePath = Path.join(objDir, revisionFile)
+
+					# Read the only revision
+					readObjectRevisionFile revisionFilePath, contextualIds, id, cb
 
 	createRevision = (obj, cb) ->
-		# The object should already have been created, so it should already
-		# have an ID.
-		unless obj.has('id')
-			cb new Error "missing property 'id'"
-			return
+		
+		pull 0, (err) =>
+			if err
+				cb new IOError
+				return
+		
+			# The object should already have been created, so it should already
+			# have an ID.
+			unless obj.has('id')
+				cb new Error "missing property 'id'"
+				return
 
-		objId = obj.get('id')
+			objId = obj.get('id')
 
-		# Use the model definition to determine what IDs are needed to figure
-		# out where this object's collection is located.
-		contextualIds = extractContextualIds obj
+			# Use the model definition to determine what IDs are needed to figure
+			# out where this object's collection is located.
+			contextualIds = extractContextualIds obj
 
-		# Add the relevant metadata fields
-		obj = obj
-		.set 'revisionId', generateId()
-		.set 'author', session.userName
-		.set 'timestamp', Moment().format(TimestampFormat)
+			# Add the relevant metadata fields
+			obj = obj
+			.set 'revisionId', generateId()
+			.set 'author', session.userName
+			.set 'timestamp', Moment().format(TimestampFormat)
 
-		objDir = null
+			objDir = null
 
-		Async.series [
-			(cb) ->
-				# Find where this object's directory is located
-				lookupObjDirById contextualIds, objId, (err, result) ->
-					if err
-						cb err
+			Async.series [
+				(cb) ->
+					# Find where this object's directory is located
+					lookupObjDirById contextualIds, objId, (err, result) ->
+						if err
+							cb err
+							return
+
+						objDir = result
+						cb()
+				(cb) ->
+					# Determine file name and path for this revision
+					revHeader = encodeObjectRevisionHeader(obj)
+					revFileName = Base64url.encode fileNameEncryptionKey.encrypt revHeader
+					revFilePath = Path.join(objDir, revFileName)
+
+					# Write the revision to a file
+					writeObjectRevisionFile obj, revFilePath, contextualIds, cb
+				(cb) ->
+					# When an indexed property changes, we need to rename the object directory
+					# so that the change shows up when `list()` is used.
+
+					parentDirPath = Path.dirname objDir
+
+					# This is what the object header should be when we're done.
+					expectedHeader = encodeObjectHeader(obj, modelDef.indexes)
+
+					# Decrypt the current header
+					currentDirName = Path.basename objDir
+					currentHeader = fileNameEncryptionKey.decrypt(
+						Base64url.toBuffer currentDirName
+					)
+
+					# Does the current header match what we want?
+					if BufferEq(expectedHeader, currentHeader)
+						# OK, no update needed
+						cb()
 						return
 
-					objDir = result
-					cb()
-			(cb) ->
-				# Determine file name and path for this revision
-				revHeader = encodeObjectRevisionHeader(obj)
-				revFileName = Base64url.encode fileNameEncryptionKey.encrypt revHeader
-				revFilePath = Path.join(objDir, revFileName)
+					# Expectations didn't meet reality, so we gotta fix it.
 
-				# Write the revision to a file
-				writeObjectRevisionFile obj, revFilePath, contextualIds, cb
-			(cb) ->
-				# When an indexed property changes, we need to rename the object directory
-				# so that the change shows up when `list()` is used.
+					# Take the expected header, encrypt it
+					currentDirPath = Path.join(parentDirPath, currentDirName)
+					newDirName = Base64url.encode fileNameEncryptionKey.encrypt expectedHeader
+					newDirPath = Path.join(parentDirPath, newDirName)
 
-				parentDirPath = Path.dirname objDir
+					# Rename the object directory to the new encrypted name
+					objDir = newDirPath
+					Fs.rename currentDirPath, newDirPath, (err) ->
+						if err
+							cb new IOError err
+							return
 
-				# This is what the object header should be when we're done.
-				expectedHeader = encodeObjectHeader(obj, modelDef.indexes)
+						# Update list cache to reflect new objDir name
+						listCache.update getListCacheKey(contextualIds), (oldHeaders) ->
+							return oldHeaders.map (oldHeader) ->
+								if oldHeader.get('id') != objId
+									return oldHeader
 
-				# Decrypt the current header
-				currentDirName = Path.basename objDir
-				currentHeader = fileNameEncryptionKey.decrypt(
-					Base64url.toBuffer currentDirName
-				)
+								# Replace this old header with the new updated header
+								return decodeObjectHeader(expectedHeader, modelDef.indexes, objDir)
 
-				# Does the current header match what we want?
-				if BufferEq(expectedHeader, currentHeader)
-					# OK, no update needed
-					cb()
+						cb()
+				(cb) ->
+					push 0, (err) =>
+						if err
+							cb new IOError
+							return
+						cb()
+			], (err) ->
+				if err
+					cb err
 					return
 
-				# Expectations didn't meet reality, so we gotta fix it.
+				# Dispatch event via event bus to notify the rest of the app
+				# about the change
+				eventBus.trigger "createRevision:#{modelDef.name}", obj
 
-				# Take the expected header, encrypt it
-				currentDirPath = Path.join(parentDirPath, currentDirName)
-				newDirName = Base64url.encode fileNameEncryptionKey.encrypt expectedHeader
-				newDirPath = Path.join(parentDirPath, newDirName)
-
-				# Rename the object directory to the new encrypted name
-				objDir = newDirPath
-				Fs.rename currentDirPath, newDirPath, (err) ->
-					if err
-						cb new IOError err
-						return
-
-					# Update list cache to reflect new objDir name
-					listCache.update getListCacheKey(contextualIds), (oldHeaders) ->
-						return oldHeaders.map (oldHeader) ->
-							if oldHeader.get('id') != objId
-								return oldHeader
-
-							# Replace this old header with the new updated header
-							return decodeObjectHeader(expectedHeader, modelDef.indexes, objDir)
-
-					cb()
-		], (err) ->
-			if err
-				cb err
-				return
-
-			# Dispatch event via event bus to notify the rest of the app
-			# about the change
-			eventBus.trigger "createRevision:#{modelDef.name}", obj
-
-			cb null, obj
+				cb null, obj
 
 	listRevisions = (contextualIds..., id, cb) ->
-		# Need enough context to locate this object's collection
-		if contextualIds.length isnt context.size
-			cb new Error "wrong number of arguments"
-			return
-
-		objDir = null
-		revisions = null
-		revObjs = null
-
-		Async.series [
-			(cb) ->
-				# Locate the object's directory
-				lookupObjDirById contextualIds, id, (err, result) ->
-					if err
-						cb err
-						return
-
-					objDir = result
-
-					cb()
-			(cb) ->
-				# List the revision files inside the object dir
-				Fs.readdir objDir, (err, fileNames) ->
-					if err
-						cb new IOError err
-						return
-
-					revisions = Imm.List(fileNames)
-					.filter (fileName) ->
-						# Object directories can also contain child collections.
-						# These need to be filtered out.
-						# Ensure validFileName first
-						return isValidFileName(fileName) and not childCollectionNames.contains(fileName)
-					.map (fileName) ->
-						# Decrypt the revision header
-						encodedRevisionHeader = fileNameEncryptionKey.decrypt(
-							Base64url.toBuffer fileName
-						)
-
-						# Parse the revision header, and add some fields for internal use
-						revisionHeader = decodeObjectRevisionHeader(encodedRevisionHeader)
-							.set('_fileName', fileName)
-							.set('_filePath', Path.join(objDir, fileName))
-						return revisionHeader
-					# Sort the results from earliest to latest
-					.sortBy (rev) -> Moment(rev.get('timestamp'), TimestampFormat)
-
-					cb()
-		], (err) ->
+		pull 0, (err) =>
 			if err
-				cb err
+				cb new IOError
+				return
+					
+			# Need enough context to locate this object's collection
+			if contextualIds.length isnt context.size
+				cb new Error "wrong number of arguments"
 				return
 
-			cb null, revisions
+			objDir = null
+			revisions = null
+			revObjs = null
+
+			Async.series [
+				(cb) ->
+					# Locate the object's directory
+					lookupObjDirById contextualIds, id, (err, result) ->
+						if err
+							cb err
+							return
+
+						objDir = result
+
+						cb()
+				(cb) ->
+					# List the revision files inside the object dir
+					Fs.readdir objDir, (err, fileNames) ->
+						if err
+							cb new IOError err
+							return
+
+						revisions = Imm.List(fileNames)
+						.filter (fileName) ->
+							# Object directories can also contain child collections.
+							# These need to be filtered out.
+							# Ensure validFileName first
+							return isValidFileName(fileName) and not childCollectionNames.contains(fileName)
+						.map (fileName) ->
+							# Decrypt the revision header
+							encodedRevisionHeader = fileNameEncryptionKey.decrypt(
+								Base64url.toBuffer fileName
+							)
+
+							# Parse the revision header, and add some fields for internal use
+							revisionHeader = decodeObjectRevisionHeader(encodedRevisionHeader)
+								.set('_fileName', fileName)
+								.set('_filePath', Path.join(objDir, fileName))
+							return revisionHeader
+						# Sort the results from earliest to latest
+						.sortBy (rev) -> Moment(rev.get('timestamp'), TimestampFormat)
+
+						cb()
+			], (err) ->
+				if err
+					cb err
+					return
+
+				cb null, revisions
 
 	readRevisions = (contextualIds..., id, cb) ->
 		unless cb
 			cb new Error "readRevisions must be provided a callback"
 			return
 
-		# Need enough information to determine where this object's collection
-		# is located
-		if contextualIds.length isnt context.size
-			cb new Error "wrong number of arguments"
-			return
-
-		# List all of this object's revisions
-		listRevisions contextualIds..., id, (err, revisions) ->
+		pull 0, (err) =>
 			if err
-				cb err
+				cb new IOError
+				return
+		
+			# Need enough information to determine where this object's collection
+			# is located
+			if contextualIds.length isnt context.size
+				cb new Error "wrong number of arguments"
 				return
 
-			# Read the revision files one-by-one
-			Async.map revisions.toArray(), (rev, cb) ->
-				readObjectRevisionFile rev.get('_filePath'), contextualIds, id, cb
-			, (err, results) ->
+			# List all of this object's revisions
+			listRevisions contextualIds..., id, (err, revisions) ->
 				if err
 					cb err
 					return
 
-				cb null, Imm.List(results)
+				# Read the revision files one-by-one
+				Async.map revisions.toArray(), (rev, cb) ->
+					readObjectRevisionFile rev.get('_filePath'), contextualIds, id, cb
+				, (err, results) ->
+					if err
+						cb err
+						return
+
+					cb null, Imm.List(results)
 
 	readLatestRevisions = (contextualIds..., id, maxRevisionCount, cb) ->
 		unless cb
 			throw new Error "readLatestRevisions must be provided a callback"
 
-		# Need object IDs of any ancestor objects in order to locate this
-		# object's collection
-		if contextualIds.length isnt context.size
-			cb new Error "wrong number of arguments"
-			return
-
-		if maxRevisionCount < 0
-			cb new Error "maxRevisionCount must be >= 0"
-			return
-
-		# We could theoretically optimize for maxRevisionCount=0 here.
-		# However, this would cause requests for non-existant objects to succeed.
-
-		# List all of the object's revisions
-		listRevisions contextualIds..., id, (err, revisions) ->
+		pull 0, (err) =>
 			if err
-				cb err
+				cb new IOError
+				return
+		
+			# Need object IDs of any ancestor objects in order to locate this
+			# object's collection
+			if contextualIds.length isnt context.size
+				cb new Error "wrong number of arguments"
 				return
 
-			# Only access the most recent revisions
-			revisions = revisions.takeLast maxRevisionCount
+			if maxRevisionCount < 0
+				cb new Error "maxRevisionCount must be >= 0"
+				return
 
-			# Read only those revision files
-			Async.map revisions.toArray(), (rev, cb) ->
-				readObjectRevisionFile rev.get('_filePath'), contextualIds, id, cb
-			, (err, results) ->
+			# We could theoretically optimize for maxRevisionCount=0 here.
+			# However, this would cause requests for non-existant objects to succeed.
+
+			# List all of the object's revisions
+			listRevisions contextualIds..., id, (err, revisions) ->
 				if err
 					cb err
 					return
 
-				cb null, Imm.List(results)
+				# Only access the most recent revisions
+				revisions = revisions.takeLast maxRevisionCount
+
+				# Read only those revision files
+				Async.map revisions.toArray(), (rev, cb) ->
+					readObjectRevisionFile rev.get('_filePath'), contextualIds, id, cb
+				, (err, results) ->
+					if err
+						cb err
+						return
+
+					cb null, Imm.List(results)
 
 	# Private utility methods
 

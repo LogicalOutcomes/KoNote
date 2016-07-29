@@ -45,6 +45,8 @@ init = (win) ->
 	Gui = win.require 'nw.gui'
 	nwWin = Gui.Window.get(win)
 
+	global.online = null
+
 	# Handle any uncaught errors.
 	# Generally, errors should be passed directly to CrashHandler instead of
 	# being thrown so that the error brings down only one window.  Errors that
@@ -158,16 +160,25 @@ init = (win) ->
 
 			# cloud sync
 			if process.platform is 'win32'
-				pull = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+				pull = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
 				Fs.writeFileSync 'pull.cmd', pull
 				global.pull = 'pull.cmd'
 
-				push = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
+				pullLocks = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data/_locks data/"
+				Fs.writeFileSync 'pullLocks.cmd', pullLocks
+				global.pullLocks = 'pullLocks.cmd'
+
+				push = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
 				Fs.writeFileSync 'push.cmd', push
 				global.push = 'push.cmd'
+
+				pushLocks = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/_locks/ konode@cloud.konote.ca:data/_locks"
+				Fs.writeFileSync 'pushLocks.cmd', pushLocks
+				global.pushLocks = 'pushLocks.cmd'
+
 			else
-				global.pull = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
-				global.push = "rsync -azP --partial -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
+				global.pull = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+				global.push = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
 				global.pushLocks = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/_locks/ konode@cloud.konote.ca:data/_locks"
 				global.pullLocks = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data/_locks data/"
 			
@@ -176,12 +187,14 @@ init = (win) ->
 				exec global.pullLocks, (err, stdout, stderr) =>
 					if err
 						console.error err
+						global.online = false
 						sync()
 					else
 						console.log 'sync (pull locks) done'
 						exec global.pull, (err, stdout, stderr) =>
 							if err
 								console.error err
+								global.online = false
 								sync()
 							else
 								console.log 'sync (pull) done'
@@ -190,12 +203,11 @@ init = (win) ->
 								exec global.push, (err, stdout, stderr) =>
 									if err
 										console.error err
+										global.online = false
 										sync()
 									else
 										console.log 'sync (push) done'
-										setTimeout(=>
-											sync()
-										, 30000)
+										global.online = true
 			sync()
 
 		# Disable context menu

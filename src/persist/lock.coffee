@@ -92,7 +92,7 @@ class Lock
 			(cb) ->
 				exec global.pushLocks, (err, stdout, stderr) =>
 					if err
-						cb err
+						cb new IOError
 					else
 						console.log 'sync (push locks) done'
 						cb()
