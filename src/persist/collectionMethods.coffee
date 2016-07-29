@@ -24,11 +24,11 @@ Imm = require 'immutable'
 Moment = require 'moment'
 Path = require 'path'
 
-exec = require('child_process').exec;
-
 Atomic = require './atomic'
 Cache = require './cache'
 Crypto = require './crypto'
+
+Sync = require './sync'
 
 {
 	IOError
@@ -85,39 +85,13 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 	# These methods correspond to what is documented in the wiki.
 	# See the wiki for instructions on their use.
 
-	pull = (count, cb) ->
-		if count < 3
-			exec global.pull, (err, stdout, stderr) =>
-				if err
-					count++
-					console.log "pull failed, retrying... " + count
-					pull count, cb
-				else
-					console.log "sync success"
-					cb()
-		else
-			cb new IOError
-
-	push = (count, cb) ->
-		if count < 3
-			exec global.push, (err, stdout, stderr) =>
-				if err
-					count++
-					console.error err
-					push count, cb
-				else
-					console.log "sync success"
-					cb()
-		else
-			cb new IOError
-
 	create = (obj, cb) ->
 		# The object hasn't been created yet, so it shouldn't have any of these
 		# metadata fields.  If it does, it probably indicates a bug.
 
-		pull 0, (err) =>
+		Sync.pull 0, (err) =>
 			if err
-				cb new IOError
+				cb err
 				return
 
 			if obj.has('id')
@@ -214,9 +188,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 					# Done preparing the object directory, finish the operation atomically
 					objDirOp.commit cb
 				(cb) ->
-					push 0, (err) =>
+					Sync.push 0, (err) =>
 						if err
-							cb new IOError
+							cb err
 							return
 						cb()
 			], (err) ->
@@ -239,9 +213,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		# API user must provide IDs for each of the ancestor objects,
 		# otherwise, we don't know where to look
 
-		pull 0, (err) =>
+		Sync.pull 0, (err) =>
 			if err
-				cb new IOError
+				cb err
 				return
 
 			if contextualIds.length isnt context.size
@@ -308,9 +282,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 	read = (contextualIds..., id, cb) ->
 		# API user must provide enough IDs to figure out where this collection
 		# is located.
-		pull 0, (err) =>
+		Sync.pull 0, (err) =>
 			if err
-				cb new IOError
+				cb err
 				return
 		
 			if contextualIds.length isnt context.size
@@ -357,9 +331,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 	createRevision = (obj, cb) ->
 		
-		pull 0, (err) =>
+		Sync.pull 0, (err) =>
 			if err
-				cb new IOError
+				cb err
 				return
 		
 			# The object should already have been created, so it should already
@@ -446,9 +420,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 
 						cb()
 				(cb) ->
-					push 0, (err) =>
+					Sync.push 0, (err) =>
 						if err
-							cb new IOError
+							cb err
 							return
 						cb()
 			], (err) ->
@@ -463,9 +437,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 				cb null, obj
 
 	listRevisions = (contextualIds..., id, cb) ->
-		pull 0, (err) =>
+		Sync.pull 0, (err) =>
 			if err
-				cb new IOError
+				cb err
 				return
 					
 			# Need enough context to locate this object's collection
@@ -528,9 +502,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 			cb new Error "readRevisions must be provided a callback"
 			return
 
-		pull 0, (err) =>
+		Sync.pull 0, (err) =>
 			if err
-				cb new IOError
+				cb err
 				return
 		
 			# Need enough information to determine where this object's collection
@@ -559,9 +533,9 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		unless cb
 			throw new Error "readLatestRevisions must be provided a callback"
 
-		pull 0, (err) =>
+		Sync.pull 0, (err) =>
 			if err
-				cb new IOError
+				cb err
 				return
 		
 			# Need object IDs of any ancestor objects in order to locate this
