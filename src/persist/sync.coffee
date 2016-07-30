@@ -3,7 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 exec = require('child_process').exec;
-
+Fs = require 'fs'
 {IOError} = require './utils'
 
 if process.platform is 'win32'
