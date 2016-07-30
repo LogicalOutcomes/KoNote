@@ -7,7 +7,7 @@ exec = require('child_process').exec;
 {IOError} = require './utils'
 
 if process.platform is 'win32'
-    pullCmd = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+    pullCmd = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -azP --partial --delete --exclude 'data/_tmp' -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
     Fs.writeFileSync 'pull.cmd', pullCmd
     pullCmd = 'pull.cmd'
 
@@ -24,13 +24,14 @@ if process.platform is 'win32'
     pushLocksCmd = 'pushLocks.cmd'
 
 else
-    pullCmd = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
+    pullCmd = "rsync -azP --partial --delete --exclude 'data/_tmp' -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
     pushCmd = "rsync -azP --partial --delete --exclude 'data/_tmp' -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/ konode@cloud.konote.ca:data"
     pushLocksCmd = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' data/_locks/ konode@cloud.konote.ca:data/_locks"
     pullLocksCmd = "rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data/_locks data/"
 
 
 pull = (count, cb) ->
+    console.log "pulling data..."
     if count < 2
         exec pullCmd, (err, stdout, stderr) =>
             if err
@@ -44,6 +45,7 @@ pull = (count, cb) ->
         cb new IOError "Pull failed"
 
 push = (count, cb) ->
+    console.log "pushing data..."
     if count < 2
         exec pushCmd, (err, stdout, stderr) =>
             if err
