@@ -38,6 +38,7 @@ pull = (count, cb) ->
             exec pullCmd, (err, stdout, stderr) =>
                 if err
                     count++
+                    global.syncing = false
                     pull count, cb
                 else
                     if global.ActiveSession
@@ -50,6 +51,7 @@ pull = (count, cb) ->
             setTimeout (->
                 global.syncing = false
             ), 1000
+            console.log "pull failure"
             cb new IOError "Pull failed"
     else
         cb()
@@ -61,6 +63,7 @@ push = (count, cb) ->
         exec pushCmd, (err, stdout, stderr) =>
             if err
                 count++
+                global.syncing = false
                 push count, cb
             else
                 global.syncing = false

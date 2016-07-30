@@ -592,29 +592,32 @@ load = (win) ->
 				exec changeperm, (err) =>
 					if err
 						throw err
-					# pull remote data
-					@setState {
-						isLoading: true
-						installProgress: {message: "Syncing with Cloud (this may take some time)..."}
-					}
-					Persist.Sync.pull 0, (err) =>
-						@setState {isLoading: false}
+					Persist.buildDataDirectory Config.dataDirectory, (err) =>
 						if err
-							Bootbox.alert {
-								title: "Cloud sync failed!"
-								message: "Please check your network connection and try again."
-							}
-							return
-						else
-							console.log 'sync done'
-							Bootbox.alert {
-								title: "Cloud sync complete!"
-								message: "KoNote will now restart..."
-								callback: =>
-									global.isSetUp = true
-									win.close(true)
+							throw err
+						# pull remote data
+						@setState {
+							isLoading: true
+							installProgress: {message: "Syncing with Cloud (this may take some time)..."}
+						}
+						Persist.Sync.pull 0, (err) =>
+							@setState {isLoading: false}
+							if err
+								Bootbox.alert {
+									title: "Cloud sync failed!"
+									message: "Please check your network connection and try again."
 								}
-						return
+								return
+							else
+								console.log 'sync done'
+								Bootbox.alert {
+									title: "Cloud sync complete!"
+									message: "KoNote will now restart..."
+									callback: =>
+										global.isSetUp = true
+										win.close(true)
+									}
+							return
 
 		_install: ->
 			if @state.password isnt @state.passwordConfirmation
