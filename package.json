@@ -3,10 +3,12 @@
   "displayName": "KoNote",
   "version": "1.7.0",
   "author": "KoNote",
+  "description": "KoNote",
   "main": "src/main.html",
   "chromium-args": "--enable-spell-checking",
   "nwjsBuilder": {
-    "companyName": "KoNote"
+    "companyName": "KoNote",
+    "copyright": "Copyright 2016 Konode"
   },
   "window": {
     "icon": "src/icon.png",
