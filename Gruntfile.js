@@ -203,11 +203,11 @@ module.exports = function(grunt) {
 			},
 			nwjswin: {
 				cwd: 'build/releases/temp/',
-				cmd: 'nwb nwbuild -v 0.14.6 -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cmd: 'nwb nwbuild -v 0.14.7 -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			},
 			nwjsosx: {
 				cwd: 'build/releases/temp/',
-				cmd: 'nwb nwbuild -v 0.14.6 -p osx64 --mac-icns ./<%= grunt.task.current.args[0] %>/src/icon.icns -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cmd: 'nwb nwbuild -v 0.14.7 -p osx64 --mac-icns ./<%= grunt.task.current.args[0] %>/src/icon.icns -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			}
 		},
 		appdmg: {
