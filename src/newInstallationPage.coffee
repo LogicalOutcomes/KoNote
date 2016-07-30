@@ -592,24 +592,21 @@ load = (win) ->
 				exec changeperm, (err) =>
 					if err
 						throw err
-					# disable host check to prevent warning message
-					if process.platform is 'win32'
-						rs = "set PATH=%PATH%;#{process.cwd()}\\cwrsync\nrsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
-						Fs.writeFileSync 'rs.cmd', rs
-						rs = 'rs.cmd'
-					else
-						rs = "rsync -a -e 'ssh -o StrictHostKeyChecking=no -i authkey' konode@cloud.konote.ca:data ."
 					# pull remote data
 					@setState {
 						isLoading: true
 						installProgress: {message: "Syncing with Cloud (this may take some time)..."}
 					}
-					exec rs, (err, stdout, stderr) =>
+					Persist.Sync.pull 0, (err) ->
+						@setState {isLoading: false}
 						if err
-							throw err
+							Bootbox.alert {
+								title: "Cloud sync failed!"
+								message: "Please check your network connection and try again."
+							}
+							return
 						else
 							console.log 'sync done'
-							@setState {isLoading: false}
 							Bootbox.alert {
 								title: "Cloud sync complete!"
 								message: "KoNote will now restart..."
