@@ -31,30 +31,42 @@ else
 
 
 pull = (count, cb) ->
-    console.log "pulling data..."
-    if count < 2
-        exec pullCmd, (err, stdout, stderr) =>
-            if err
-                count++
-                pull count, cb
-            else
-                if global.ActiveSession
-                    global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:pulled'
-                cb()
+    if global.syncing is false
+        console.log "pulling data..."
+        global.syncing = true
+        if count < 2
+            exec pullCmd, (err, stdout, stderr) =>
+                if err
+                    count++
+                    pull count, cb
+                else
+                    if global.ActiveSession
+                        global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:pulled'
+                    global.syncing = false
+                    cb()
+        else
+            global.syncing = false
+            cb new IOError "Pull failed"
     else
-        cb new IOError "Pull failed"
+        cb()
 
 push = (count, cb) ->
-    console.log "pushing data..."
-    if count < 2
-        exec pushCmd, (err, stdout, stderr) =>
-            if err
-                count++
-                push count, cb
-            else
-                cb()
+    if global.syncing is false
+        console.log "pushing data..."
+        global.syncing = true
+        if count < 2
+            exec pushCmd, (err, stdout, stderr) =>
+                if err
+                    count++
+                    push count, cb
+                else
+                    global.syncing = false
+                    cb()
+        else
+            global.syncing = false
+            cb new IOError "Push failed"
     else
-        cb new IOError "Push failed"
+        cb()
 
 
 module.exports = {
