@@ -16,6 +16,7 @@ Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
 Atomic = require './atomic'
+Sync = require './sync'
 
 {
 	generateSalt
@@ -160,6 +161,11 @@ class Account
 			cb new Error "unknown account type #{JSON.stringify accountType}"
 			return
 
+		Sync.pull 0, (err) =>
+			if err
+				cb new IOError "Network unavailable"
+				return
+				
 		if accountType is 'admin'
 			Assert.strictEqual loggedInAccount.publicInfo.accountType, 'admin', 'only admins can create admins'
 
@@ -289,6 +295,13 @@ class Account
 						return
 
 					cb()
+			(cb) ->
+				#push to cloud
+				Sync.push 0, (err) =>
+					if err
+						cb err
+						return
+					cb()
 		], (err) ->
 			if err
 				cb err
@@ -350,6 +363,12 @@ class Account
 
 		Async.series [
 			(cb) =>
+				Sync.pull 0, (err) =>
+					if err
+						cb new IOError "Network unavailable"
+						return
+					cb()
+			(cb) =>
 				# Get existing public-info from user
 				Fs.readFile publicInfoPath, (err, buf) =>
 					if err
@@ -390,6 +409,12 @@ class Account
 
 						cb()
 				, cb
+			(cb) =>
+				Sync.push 0, (err) =>
+					if err
+						cb err
+						return
+					cb()
 		], cb
 
 	# Check if the specified password is valid for this user account.
@@ -633,6 +658,12 @@ class DecryptedAccount extends Account
 		
 		Async.series [
 			(cb) =>
+				Sync.pull 0, (err) =>
+					if err
+						cb new IOError "Network unavailable"
+						return
+					cb()
+			(cb) =>
 				publicInfo.accountType = newType
 				Fs.writeFile publicInfoPath, JSON.stringify(publicInfo), (err) =>
 					if err
@@ -649,6 +680,12 @@ class DecryptedAccount extends Account
 				Fs.writeFile privateInfoPath, encryptedData, (err) =>
 					if err
 						cb new IOError err
+						return
+					cb()
+			(cb) =>
+				Sync.push 0, (err) =>
+					if err
+						cb err
 						return
 					cb()
 		], cb
@@ -691,6 +728,13 @@ class DecryptedAccount extends Account
 				nextAccountKeyPath = Path.join(@_userDir, "account-key-#{nextAccountKeyId}")
 
 				Atomic.writeJSONToFile nextAccountKeyPath, tmpDirPath, JSON.stringify(data), cb
+
+			(cb) =>
+				Sync.push 0, (err) =>
+					if err
+						cb err
+						return
+					cb()
 		], cb
 
 generateKdfParams = ->

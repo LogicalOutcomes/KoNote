@@ -27,7 +27,6 @@ Path = require 'path'
 Atomic = require './atomic'
 Cache = require './cache'
 Crypto = require './crypto'
-
 Sync = require './sync'
 
 {
