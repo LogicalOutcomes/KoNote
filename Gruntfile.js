@@ -68,11 +68,13 @@ module.exports = function(grunt) {
 					'!**/grunt/**',
 					'!**/doc/**',
 					'!**/docs/**',
+					'!**/htdocs/**',
 					'!**/samples/**',
 					'!**/examples/**',
 					'!**/example/**',
 					'!**/README.md',
 					'!**/readme.md',
+					'!**/readme.markdown',
 					'!**/changelog.md',
 					'!**/CHANGELOG.md',
 					'!**/changes.md',
@@ -82,7 +84,8 @@ module.exports = function(grunt) {
 					'!**/bower.json',
 					'!**/gulpfile.js',
 					'!**/gruntfile.js',
-					'!**/Gruntfile.js'
+					'!**/Gruntfile.js',
+					'!**/Makefile'
 				],
 				dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/temp_node_modules/',
 			},
