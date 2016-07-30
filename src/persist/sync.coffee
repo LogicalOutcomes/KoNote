@@ -31,32 +31,28 @@ else
 
 
 pull = (count, cb) ->
-    if count < 3
+    if count < 2
         exec pullCmd, (err, stdout, stderr) =>
             if err
                 count++
-                setTimeout (->
-                    pull count, cb
-                ), 500
+                pull count, cb
             else
                 if global.ActiveSession
                     global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:pulled'
                 cb()
     else
-        cb new IOError "Network unavailable"
+        cb new IOError "Pull failed"
 
 push = (count, cb) ->
-    if count < 3
+    if count < 2
         exec pushCmd, (err, stdout, stderr) =>
             if err
                 count++
-                setTimeout (->
-                    push count, cb
-                ), 500
+                push count, cb
             else
                 cb()
     else
-        cb new IOError
+        cb new IOError "Push failed"
 
 
 module.exports = {
