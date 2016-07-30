@@ -597,7 +597,7 @@ load = (win) ->
 						isLoading: true
 						installProgress: {message: "Syncing with Cloud (this may take some time)..."}
 					}
-					Persist.Sync.pull 0, (err) ->
+					Persist.Sync.pull 0, (err) =>
 						@setState {isLoading: false}
 						if err
 							Bootbox.alert {
