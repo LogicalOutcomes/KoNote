@@ -250,12 +250,6 @@ load = (win, {clientFileId}) ->
 				$('#saveNoteButton').tooltip 'destroy'
 
 		render: ->
-			if @props.status is 'init'
-				return R.div({className: 'newProgNotePage'},
-					Spinner({
-						isOverlay: true
-					})
-				)
 
 			if @props.loadErrorType?
 				return R.div({className: 'newProgNotePage'},

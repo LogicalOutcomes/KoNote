@@ -762,7 +762,7 @@ load = (win, {clientFileId}) ->
 			recordId = @props.clientFile.get('recordId')
 
 
-			return R.div({className: 'clientFilePage'},
+			return R.div({className: 'clientFilePage animated fadeIn'},
 				Spinner {
 					isOverlay: true
 					isVisible: @props.isLoading
