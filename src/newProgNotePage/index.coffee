@@ -233,15 +233,11 @@ load = (win, {clientFileId}) ->
 				@setState {progNote: newProps.progNote}
 
 		componentDidMount: ->
-			setTimeout(=>
-				global.ActiveSession.persist.eventBus.trigger 'newProgNotePage:loaded'
+			global.ActiveSession.persist.eventBus.trigger 'newProgNotePage:loaded'
+			Window.focus()
 
-				Window.show()
-				Window.focus()
-
-				# Store beginTimestamp as class var, since it wont change
-				@beginTimestamp = Moment().format(Persist.TimestampFormat)
-			, 500)
+			# Store beginTimestamp as class var, since it wont change
+			@beginTimestamp = Moment().format(Persist.TimestampFormat)
 
 		componentDidUpdate: ->
 			if @state.editingWhichEvent?

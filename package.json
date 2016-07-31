@@ -16,9 +16,7 @@
     "width": 400,
     "height": 500,
     "show": false,
-    "frame": false,
     "resizable": false,
-    "transparent": true,
     "position": "center"
   },
   "private": true,

@@ -15,44 +15,13 @@ load = (win) ->
 		displayName: 'Spinner'
 		mixins: [React.addons.PureRenderMixin]
 
-		componentDidChange: (oldProps, oldState) ->
-			# Inform console about loading progress
-			if oldProps.message isnt @props.message
-				console.log "Message:", @props.message
-
-			if oldProps.percent isnt @props.percent
-				console.log "Percent", @props.percent + "%"
-
 		render: ->
 			spinner = R.div({
 				className: [
 					"spinnerComponent"
-					'animated fadeOut' if @props.percent? and @props.percent >= 100
 					showWhen @props.isVisible
 				].join ' '
 			},
-				R.div({
-					className: 'inner'
-				},
-					R.div({className: 'container container1'},
-						R.div({className: 'circle circle1'})
-						R.div({className: 'circle circle2'})
-						R.div({className: 'circle circle3'})
-						R.div({className: 'circle circle4'})
-					)
-					R.div({className: 'container container2'},
-						R.div({className: 'circle circle1'})
-						R.div({className: 'circle circle2'})
-						R.div({className: 'circle circle3'})
-						R.div({className: 'circle circle4'})
-					)
-					R.div({className: 'container container3'},
-						R.div({className: 'circle circle1'})
-						R.div({className: 'circle circle2'})
-						R.div({className: 'circle circle3'})
-						R.div({className: 'circle circle4'})
-					)
-				)
 
 				R.div({
 					className: [
