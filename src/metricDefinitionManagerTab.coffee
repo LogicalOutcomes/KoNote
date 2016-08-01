@@ -78,7 +78,6 @@ load = (win) ->
 			unless @state.displayDeactivated
 				metrics = metrics.filter (metric) =>
 					metric.get('status') is 'default'
-				console.log "metricDefinitions", metrics
 
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
