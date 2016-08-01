@@ -30,12 +30,13 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: -> {
-			metricDefinitions: null
+			metricDefinitions: Imm.List()
+			displayDeactivated: false
 		}
 
 		componentWillMount: ->
 			metricDefinitionHeaders = null
-			metricDefinitions = null
+			metricDefinitions = Imm.List()
 
 			Async.series [
 				(cb) =>
@@ -73,14 +74,33 @@ load = (win) ->
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
+			metrics = @state.metricDefinitions
+			unless @state.displayDeactivated
+				metrics = metrics.filter (metric) =>
+					metric.get('status') is 'default'
+				console.log "metricDefinitions", metrics
 
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
-					R.h1({}, "#{Term 'Metric'} Definitions")
+					R.h1({},
+						R.span({id: 'toggleDisplayDeactivated'},
+							R.div({className: 'checkbox'},
+								R.label({},
+									R.input({
+										type: 'checkbox'
+										checked: @state.displayDeactivated
+										onClick: @_toggleDisplayDeactivated
+									})
+									"Show deactivated"
+								)
+							)
+						)
+						"#{Term 'Metric'} Definitions"
+					)
 				)
 				R.div({className: 'main'},
 					OrderableTable({
-						tableData: @state.metricDefinitions
+						tableData: metrics
 						noMatchesMessage: "No #{Term 'metrics'} defined yet"
 						sortByData: ['name']
 						columns: [
@@ -151,6 +171,10 @@ load = (win) ->
 		_onCreateMetric: (createdMetric) ->
 			metricDefinitions = @state.metricDefinitions.push createdMetric
 			@setState {metricDefinitions}
+
+		_toggleDisplayDeactivated: ->
+			displayDeactivated = not @state.displayDeactivated
+			@setState {displayDeactivated}
 
 	ModifyMetricDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
