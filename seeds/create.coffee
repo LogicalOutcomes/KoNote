@@ -219,6 +219,7 @@ Create.metric = (index, cb) ->
 	metric = Imm.fromJS ({
 		name: Faker.company.bsBuzz()
 		definition: Faker.lorem.paragraph()
+		status: 'default'
 	})
 
 	createData 'metrics', metric, cb
