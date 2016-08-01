@@ -1,8 +1,8 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-Async = require 'async'	
+Async = require 'async'
 Imm = require 'immutable'
 
 Persist = require './persist'
@@ -13,7 +13,7 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	R = React.DOM	
+	R = React.DOM
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -38,7 +38,7 @@ load = (win) ->
 			metricDefinitions = null
 
 			Async.series [
-				(cb) =>							
+				(cb) =>
 					ActiveSession.persist.metrics.list (err, result) =>
 						if err
 							cb err
@@ -101,6 +101,11 @@ load = (win) ->
 										return definition
 							}
 							{
+								name: "Status"
+								dataPath: ['status']
+								cellClass: 'statusCell'
+							}
+							{
 								name: "Options"
 								nameIsVisible: false
 								isDisabled: not isAdmin
@@ -157,7 +162,7 @@ load = (win) ->
 
 		componentDidMount: ->
 			@refs.nameField.focus()
-			
+
 		render: ->
 			Dialog({
 				ref: 'dialog'
@@ -179,7 +184,7 @@ load = (win) ->
 						ExpandingTextArea({
 							ref: 'definitionField'
 							onChange: @_updateDefinition
-							value: @state.definition							
+							value: @state.definition
 						})
 					)
 					R.div({className: 'btn-toolbar pull-right'},
