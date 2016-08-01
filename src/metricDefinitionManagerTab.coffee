@@ -102,6 +102,8 @@ load = (win) ->
 						tableData: metrics
 						noMatchesMessage: "No #{Term 'metrics'} defined yet"
 						sortByData: ['name']
+						rowClass: (dataPoint) ->
+							'deactivatedMetric' unless dataPoint.get('status') is 'default'
 						columns: [
 							{
 								name: "Name"
