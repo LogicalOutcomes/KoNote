@@ -1209,7 +1209,7 @@ load = (win) ->
 						ref: 'metricLookup'
 					},
 						MetricLookupField({
-							metrics: @props.metricsById.valueSeq()
+							metrics: @props.metricsById.valueSeq().filter (metric) => metric.get('status') is 'default'
 							onSelection: @props.addMetricToTarget.bind(
 								null, @props.targetId
 							)
