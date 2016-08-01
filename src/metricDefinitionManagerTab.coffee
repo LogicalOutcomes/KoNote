@@ -158,6 +158,7 @@ load = (win) ->
 			return {
 				name: @props.rowData.get('name')
 				definition: @props.rowData.get('definition')
+				status: @props.rowData.get('status')
 			}
 
 		componentDidMount: ->
@@ -187,6 +188,33 @@ load = (win) ->
 							value: @state.definition
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "Client File Status"),
+						R.div({className: 'btn-toolbar'},
+							R.button({
+								className:
+									if @state.status is 'default'
+										'btn btn-success'
+									else 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'default'
+
+								},
+							"Default"
+							)
+							R.button({
+								className:
+									if @state.status is 'deactivated'
+										'btn btn-warning'
+									else 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'deactivated'
+
+								},
+							"Deactivated"
+							)
+						)
+					)
 					R.div({className: 'btn-toolbar pull-right'},
 						R.button({
 							className: 'btn btn-default'
@@ -209,6 +237,9 @@ load = (win) ->
 		_updateDefinition: (event) ->
 			@setState {definition: event.target.value}
 
+		_updateStatus: (event) ->
+			@setState {status: event.target.value}
+
 		_submit: ->
 			unless @state.name.trim()
 				Bootbox.alert "#{Term 'Metric'} name is required"
@@ -224,6 +255,7 @@ load = (win) ->
 				id: @props.rowData.get('id')
 				name: @state.name.trim()
 				definition: @state.definition.trim()
+				status: @state.status
 			}
 
 			ActiveSession.persist.metrics.createRevision newMetricRevision, (err, result) =>
