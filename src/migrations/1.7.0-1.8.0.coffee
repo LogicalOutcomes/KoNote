@@ -766,7 +766,7 @@ addMetricStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 		metricDirPath = Path.join(metricsDir, metric)
 
 		# Decrypt, add index, re-encrypt
-		indexes = decryptFileName metric, 1, globalEncryptionKey
+		indexes = decryptFileName metric, 2, globalEncryptionKey
 		indexes.unshift 'default'
 		encryptedIndexes = encryptFileName indexes, globalEncryptionKey
 
