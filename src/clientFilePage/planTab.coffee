@@ -1,4 +1,4 @@
-	# Copyright (c) Konode. All rights reserved.
+# Copyright (c) Konode. All rights reserved.
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
@@ -503,16 +503,12 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				sectionsScrollTop: 0
-				sectionOffsets: null
 				displayDeactivatedSections: null
 				displayCompletedSections: null
 			}
 
 		componentDidMount: ->
 			sectionsDom = @refs.sections
-			sectionsDom.addEventListener 'scroll', (event) =>
-				@_recalculateOffsets()
 
 		render: ->
 			{
@@ -570,8 +566,6 @@ load = (win) ->
 							getSectionIndex
 							onRemoveNewSection: removeNewSection.bind null, section
 
-							sectionOffsets: @state.sectionOffsets
-							sectionsScrollTop: @state.sectionsScrollTop
 						})
 					)
 				)
@@ -619,8 +613,6 @@ load = (win) ->
 									deleteMetricFromTarget
 									getSectionIndex
 
-									sectionOffsets: @state.sectionOffsets
-									sectionsScrollTop: @state.sectionsScrollTop
 								})
 							)
 						)
@@ -670,36 +662,12 @@ load = (win) ->
 									deleteMetricFromTarget
 									getSectionIndex
 
-									sectionOffsets: @state.sectionOffsets
-									sectionsScrollTop: @state.sectionsScrollTop
 								})
 							)
 						)
 					)
 				)
 			)
-
-		_recalculateOffsets: ->
-			sectionsDom = @refs.sections
-			sectionsScrollTop = sectionsDom.scrollTop
-
-			sectionOffsets = @props.plan.get('sections').flatMap (section) =>
-				ref = @refs['section-' + section.get('id')]
-
-				# Some [inactive] sections may be hidden from DOM, so no refs
-				return [] unless ref?
-
-				sectionDom = ReactDOM.findDOMNode(ref)
-
-				offset = Imm.Map({
-					top: sectionDom.offsetTop
-					height: sectionDom.offsetHeight
-				})
-
-				return [[section.get('id'), offset]]
-			.fromEntrySeq().toMap()
-
-			@setState (s) -> {sectionsScrollTop, sectionOffsets}
 
 		_toggleDisplayDeactivatedSections: ->
 			displayDeactivatedSections = not @state.displayDeactivatedSections
@@ -753,26 +721,12 @@ load = (win) ->
 
 			sectionIsInactive = section.get('status') isnt 'default'
 
-			# Recalculate sticky header
-			if @props.sectionOffsets and @props.sectionOffsets.get(section.get('id'))
-				scrollTop = @props.sectionsScrollTop
-				sectionOffset = @props.sectionOffsets.get(section.get('id'))
-
-				headerHeight = 60
-				minSticky = sectionOffset.get('top')
-				maxSticky = sectionOffset.get('top') + sectionOffset.get('height') - headerHeight
-
-				if scrollTop >= minSticky and scrollTop < maxSticky
-					headerState = 'sticky'
-
 			return R.div({
 				className: "section status-#{section.get('status')}"
 				key: section.get('id')
 			},
 				SectionHeader({
 					clientFile
-					type: 'inline'
-					visible: headerState is 'inline'
 					section
 					isReadOnly
 					renameSection
@@ -780,19 +734,6 @@ load = (win) ->
 					addTargetToSection
 					onRemoveNewSection
 					targetIdsByStatus
-				})
-				SectionHeader({
-					clientFile
-					type: 'sticky'
-					visible: headerState is 'sticky'
-					scrollTop: @props.sectionsScrollTop
-					section
-					isReadOnly
-					renameSection
-					getSectionIndex
-					addTargetToSection
-					onRemoveNewSection
-					targetIdsByStatus # TODO is this faster as a prop or to recalculate from section?
 				})
 				(if section.get('targetIds').size is 0
 					R.div({className: 'noTargets'},
@@ -924,9 +865,6 @@ load = (win) ->
 			sectionStatus = @props.section.get('status')
 			{
 				clientFile
-				type
-				visible
-				scrollTop
 				section
 				isReadOnly
 				renameSection
@@ -942,16 +880,7 @@ load = (win) ->
 
 			sectionIsInactive = section.get('status') isnt 'default'
 
-			return R.div({
-				className: [
-					'sectionHeader'
-					type
-					'invisible' unless visible
-				].join(' ')
-				style: {
-					top: "#{scrollTop}px" if type is 'sticky'
-				}
-			},
+			return R.div({className: 'sectionHeader'},
 				R.div({className: 'sectionName'},
 					section.get('name')
 				)
