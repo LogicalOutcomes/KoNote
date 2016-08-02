@@ -214,7 +214,7 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Client File Status"),
+						R.label({}, "Metric Status"),
 						R.div({className: 'btn-toolbar'},
 							R.button({
 								className:
