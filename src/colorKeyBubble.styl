@@ -1,6 +1,7 @@
 .colorKeyBubble
 	display inline-block
 
+
 	.bubbleContents
 		display flex
 		justify-content center
@@ -9,15 +10,19 @@
 		transition all .25s ease
 		opacity 1
 
-		&:hover
-			opacity 1 !important
-
 		background transparent
 
 		width 1em
 		height 1em
 		border-radius 50%
 		border 2px solid white
+
+		&.empty
+			border-color #cadbe5
+			opacity 1 !important
+
+		&:hover
+			opacity 1 !important
 
 		.fa
 			color white
