@@ -318,7 +318,7 @@ load = (win) ->
 
 				queryText: ''
 				queryResults: Imm.List()
-				showingDormant: false
+				displayInactive: null
 
 				orderedQueryResults: Imm.List()
 				hoverClientId: null
@@ -351,7 +351,6 @@ load = (win) ->
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
-			inactiveClientFiles = @_getInactiveClientFiles()
 
 			# Add in all program objects this clientFile's a member of
 
@@ -366,6 +365,15 @@ load = (win) ->
 					@props.programs.find (program) -> program.get('id') is link.get('programId')
 
 				clientFile.set('programs', programMemberships)
+
+			# Get inactive clientFiles for filter display
+			inactiveClientFiles = queryResults.filter (clientFile) ->
+				clientFile.get('status') isnt 'active'
+
+			# Filter out inactive clientFiles by default
+			if not @state.displayInactive
+				queryResults = queryResults.filter (clientFile) ->
+					clientFile.get('status') is 'active'
 
 
 			return R.div({
@@ -498,9 +506,9 @@ load = (win) ->
 										R.div({className: "checkbox"},
 											R.label({}
 												R.input({
-													onChange: @_toggleDormant
+													onChange: @_toggleInactive
 													type: 'checkbox'
-													checked: @state.showingDormant
+													checked: @state.displayInactive
 												})
 												"Show deactivated (#{inactiveClientFiles.size})",
 											)
@@ -546,7 +554,7 @@ load = (win) ->
 									{
 										name: "Status"
 										dataPath: ['status']
-										isDisabled: not @state.showingDormant
+										isDisabled: not @state.displayInactive
 									}
 									{
 										name: Config.clientFileRecordId.label
@@ -637,18 +645,9 @@ load = (win) ->
 				@setState {menuIsOpen: true}
 
 		_refreshResults: ->
-			# Return all results if search query is empty
+			# Return all clientFileHeaders if search query is empty
 			if @state.queryText.trim().length is 0
-				if @state.showingDormant is false
-					# TODO: Move this logic to render
-					queryResults = @props.clientFileHeaders
-					.filter (clientFile) ->
-						clientFile.get('status') is 'active'
-
-					@setState {queryResults}
-				else
-					queryResults = @props.clientFileHeaders
-				@setState {queryResults}
+				@setState {queryResults: @props.clientFileHeaders}
 				return
 
 			# Split into query parts
@@ -677,24 +676,16 @@ load = (win) ->
 
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
-		_toggleDormant: ->
-			if @state.showingDormant is true
-				queryResults = @props.clientFileHeaders
-				.filter (clientFile) ->
-					clientFile.get('status') is 'active'
-				showingDormant = false
-				@setState {queryResults, showingDormant}
-			else
-				queryResults = @props.clientFileHeaders
-				showingDormant = true
-				@setState {queryResults, showingDormant}
-		_getInactiveClientFiles: ->
-			return @props.clientFileHeaders.filter (clientFile) ->
-				clientFile.get('status') isnt 'active'
+
+		_toggleInactive: ->
+			@setState {displayInactive: not @state.displayInactive}
+
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
+
 		_home: ->
 			@setState {isSmallHeaderSet: false, queryText: ''}
+
 		_onResultSelection: (clientFileId, event) ->
 			@setState {hoverClientId: clientFileId}
 			@props.openClientFile(clientFileId)
