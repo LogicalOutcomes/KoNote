@@ -178,7 +178,7 @@ load = (win) ->
 						R.div({},
 							R.img({
 								id: 'logoImage'
-								src: './assets/brand/logo.png'
+								src: 'customer-logo-lg.png'
 							})
 							R.div({id: 'version'}, "v#{Config.version}")
 						)
