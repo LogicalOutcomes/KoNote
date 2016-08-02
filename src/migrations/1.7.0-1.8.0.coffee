@@ -730,7 +730,7 @@ addMetricStatusField = (dataDir, globalEncryptionKey, cb) ->
 		metricDirPath = Path.join(dataDir, 'metrics', metric)
 
 		forEachFileIn metricDirPath, (metricRev, cb) ->
-			metricRevPath = Path.join(metricDirPath, metricFileRev)
+			metricRevPath = Path.join(metricDirPath, metricRev)
 			metricRevObject = null
 
 			Async.series [
