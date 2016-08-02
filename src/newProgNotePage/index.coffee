@@ -208,7 +208,7 @@ load = (win, {clientFileId}) ->
 					message: "Are you sure you want to cancel this #{Term('progress note')}?"
 					buttons: {
 						cancel: {
-							label: "Cancel"
+							label: "No"
 							className: 'btn-default'
 						}
 						discard: {
