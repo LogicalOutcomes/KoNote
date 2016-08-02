@@ -322,8 +322,6 @@ load = (win) ->
 				# 	)
 				# )
 
-				FaIcon(entry.get('icon'))
-
 				R.span({className: 'action'},
 					# Different display cases for indication of change
 					(if entry.get('action') is 'created'
