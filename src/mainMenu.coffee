@@ -29,9 +29,9 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			isAdmin: PropTypes.bool
+			isAdmin: PropTypes.bool.isRequired
 			programs: ImmPropTypes.list.isRequired
-			userProgram: ImmPropTypes.map
+			userProgram: ImmPropTypes.map.isRequired
 			managerLayer: PropTypes.string
 
 			updateManagerLayer: PropTypes.func.isRequired

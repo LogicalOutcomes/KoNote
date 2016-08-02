@@ -563,6 +563,7 @@ load = (win) ->
 					MainMenu({
 						ref: 'userMenu'
 						className: 'menuIsOpen animated fadeInRight'
+						isAdmin
 						programs: @props.programs
 						userProgram: @props.userProgram
 						managerLayer: @state.managerLayer
