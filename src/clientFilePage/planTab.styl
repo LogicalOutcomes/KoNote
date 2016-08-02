@@ -113,9 +113,11 @@
 						transform rotate(90deg)
 
 			.section
+				padding-bottom 25px
 
-				&:last-child
-					padding-bottom 15px
+				&.status-completed, &.status-deactivated
+					padding 0
+					padding-left 20px
 
 				> .sectionHeader
 					display flex
@@ -186,6 +188,7 @@
 					// TODO: Make this multi-use
 					&.status-completed, &.status-deactivated
 						padding 0
+						padding-left 20px
 
 					> .inactiveTargetHeader
 						cursor pointer
@@ -222,7 +225,7 @@
 							background #EEFFF5
 							border-color #C9FFB2
 
-						&.active
+						&.isSelected
 							background hsl(202, 35%, 94%)
 
 							&.hasChanges
@@ -233,13 +236,18 @@
 								input, textarea
 									border 1px solid #ccc
 									box-shadow inset 0 1px 1px rgba(0, 0, 0, .075)
+
 							> .nameContainer
 								> .statusButtonGroup
 									display flex
 
 							> .metrics
-								> .addMetricButton
+
+								.addMetricButton
+									outline none
 									display block
+
+									text-decoration none
 
 						&.readOnly
 							input[disabled], textarea[disabled]
@@ -289,21 +297,20 @@
 										opacity 1
 
 						> .metrics
-							display flex
-							flex-wrap wrap
-
-							margin -5px
-
 							padding-top 15px
 
-							> .metricWidget
-								margin 5px
+							> .metricsList
+								display flex
+								flex-wrap wrap
 
-						> .metricLookupContainer
-							display none
+								margin -5px
 
-						> .metricLookupContainer
-							display none
+								> .metricWidget
+									margin 5px
+
+							> .metricLookupContainer
+								clear both
+								display none
 
 	> .targetDetail
 		overflow-y auto
@@ -317,38 +324,3 @@
 
 			color #888
 			text-align center
-
-		> .targetDetailContainer
-
-			> .metricsSection
-				padding 25px
-
-				.addMetricButton
-					color #939393
-					transition color .15s ease
-
-					&:hover
-						color #87FF18
-
-					&:focus
-						background none
-						outline none
-
-				> .header
-					> .text
-						font-size 24px
-						font-weight 300
-
-				> .noMetrics
-					padding 40px
-
-					color #888
-					text-align center
-
-				> .metrics
-					display flex
-					flex-wrap wrap
-					padding 25px 0
-
-					> .metricWidget
-						margin 5px 10px 5px 0px

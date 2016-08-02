@@ -811,7 +811,7 @@ load = (win) ->
 								metricsById
 								hasTargetChanged: hasTargetChanged targetId
 								key: targetId
-								isActive: targetId is selectedTargetId
+								isSelected: targetId is selectedTargetId
 								sectionIsInactive
 								isExistingTarget: planTargetsById.has(targetId)
 								isReadOnly
@@ -849,7 +849,7 @@ load = (win) ->
 									metricsById
 									hasTargetChanged: hasTargetChanged targetId
 									key: targetId
-									isActive: targetId is selectedTargetId
+									isSelected: targetId is selectedTargetId
 									sectionIsInactive
 									isExistingTarget: planTargetsById.has(targetId)
 									isReadOnly
@@ -889,7 +889,7 @@ load = (win) ->
 									metricsById
 									hasTargetChanged: hasTargetChanged targetId
 									key: targetId
-									isActive: targetId is selectedTargetId
+									isSelected: targetId is selectedTargetId
 									sectionIsInactive
 									isExistingTarget: planTargetsById.has(targetId)
 									isReadOnly
@@ -1060,12 +1060,14 @@ load = (win) ->
 			currentRevision = @props.currentRevision
 			revisionStatus = @props.currentRevision.get('status')
 
+			targetIsInactive = @props.isReadOnly or @props.isInactive or @props.sectionIsInactive
+
 			return R.div({
 				className: [
-					'target'
-					"target-#{currentRevision.get('id')}"
+					"target target-#{currentRevision.get('id')}"
 					"status-#{revisionStatus}"
-					'active' if @props.isActive
+					'isSelected' if @props.isSelected
+					'isInactive' if targetIsInactive
 					'hasChanges' if @props.hasTargetChanged or not @props.isExistingTarget
 					'readOnly' if @props.isReadOnly
 				].join ' '
@@ -1079,10 +1081,10 @@ load = (win) ->
 						ref: 'nameField'
 						placeholder: "Name of #{Term 'target'}"
 						value: currentRevision.get('name')
-						disabled: @props.isReadOnly or @props.isInactive
 						onChange: @_updateField.bind null, 'name'
-						onFocus: @props.onTargetSelection unless @props.isReadOnly or @props.isInactive
-						onClick: @props.onTargetSelection if @props.isReadOnly or @props.isInactive
+						onFocus: @props.onTargetSelection
+						onClick: @props.onTargetSelection
+						disabled: targetIsInactive
 
 					})
 					(if not @props.hasTargetChanged and @props.isExistingTarget and not @props.sectionIsInactive
@@ -1103,7 +1105,7 @@ load = (win) ->
 												It may be re-activated again later.
 											"""
 											reasonLabel: "Reason for deactivation:"
-											disabled: @props.isReadOnly or @props.hasTargetChanged
+											disabled: targetIsInactive
 										},
 											FaIcon 'times'
 										)
@@ -1120,7 +1122,7 @@ load = (win) ->
 												means that the desired outcome has been reached.
 											"""
 											reasonLabel: "Reason for completion:"
-											disabled: @props.isReadOnly or @props.hasTargetChanged
+											disabled: targetIsInactive
 										},
 											FaIcon 'check'
 										)
@@ -1168,55 +1170,57 @@ load = (win) ->
 						ref: 'descriptionField'
 						placeholder: "Describe the current #{Term 'treatment plan'} . . ."
 						value: currentRevision.get('description')
-						disabled: @props.isReadOnly or @props.isInactive
+						disabled: targetIsInactive
 						onChange: @_updateField.bind null, 'description'
-						onFocus: @props.onTargetSelection unless @props.isReadOnly or @props.isInactive
-						onClick: @props.onTargetSelection if @props.isReadOnly or @props.isInactive
+						onFocus: @props.onTargetSelection
+						onClick: @props.onTargetSelection
 					})
 				)
-				R.div({className: 'metrics'},
-					(currentRevision.get('metricIds').map (metricId) =>
-						metric = @props.metricsById.get(metricId)
+				(if not currentRevision.get('metricIds').isEmpty() or @props.isSelected
+					R.div({className: 'metrics'},
+						R.div({className: 'metricsList'},
+							(currentRevision.get('metricIds').map (metricId) =>
+								metric = @props.metricsById.get(metricId)
 
-						MetricWidget({
-							name: metric.get('name')
-							definition: metric.get('definition')
-							value: metric.get('value')
-							key: metricId
-							tooltipViewport: '.section'
-							isEditable: false
-							allowDeleting: not @props.isReadOnly and @props.isActive and not @props.isInactive
-							onDelete: @props.deleteMetricFromTarget.bind(
-								null, @props.targetId, metricId
+								MetricWidget({
+									name: metric.get('name')
+									definition: metric.get('definition')
+									value: metric.get('value')
+									key: metricId
+									tooltipViewport: '.section'
+									isEditable: false
+									allowDeleting: not targetIsInactive
+									onDelete: @props.deleteMetricFromTarget.bind(
+										null, @props.targetId, metricId
+									)
+								})
 							)
-						})
-					).toJS()...
-					(if not @props.isReadOnly and not @props.isInactive
-						R.button({
-							className: "btn btn-link addMetricButton #{showWhen @props.isActive}"
-							onClick: @_focusMetricLookupField.bind(null, @props.targetId)
-						},
-							FaIcon('plus')
-							" Add #{Term 'metric'}"
+							(if @props.isSelected and not targetIsInactive
+								R.button({
+									className: "btn btn-link addMetricButton animated fadeIn"
+									onClick: @_focusMetricLookupField.bind(null, @props.targetId)
+								},
+									FaIcon('plus')
+									" Add #{Term 'metric'}"
+								)
+							)
 						)
-					)
-				)
-				(if not @props.isReadOnly and not @props.isInactive
-					R.div({
-						className: [
-							'metricLookupContainer'
-						].join ' '
-						ref: 'metricLookup'
-					},
-						MetricLookupField({
-							metrics: @props.metricsById.valueSeq().filter (metric) => metric.get('status') is 'default'
-							onSelection: @props.addMetricToTarget.bind(
-								null, @props.targetId
+						(unless targetIsInactive
+							R.div({
+								className: 'metricLookupContainer'
+								ref: 'metricLookup'
+							},
+								MetricLookupField({
+									metrics: @props.metricsById.valueSeq().filter (metric) => metric.get('status') is 'default'
+									onSelection: @props.addMetricToTarget.bind(
+										null, @props.targetId
+									)
+									placeholder: "Find / Define a #{Term 'Metric'}"
+									isReadOnly: @props.isReadOnly
+									onBlur: @_hideMetricInput
+								})
 							)
-							placeholder: "Find / Define a #{Term 'Metric'}"
-							isReadOnly: @props.isReadOnly
-							onBlur: @_hideMetricInput
-						})
+						)
 					)
 				)
 			)
@@ -1227,9 +1231,10 @@ load = (win) ->
 
 
 		_onTargetClick: (event) ->
+			@props.onTargetSelection()
+
 			unless (event.target.classList.contains 'field') or (event.target.classList.contains 'lookupField') or (event.target.classList.contains 'btn')
 				@refs.nameField.focus() unless @props.isReadOnly
-				@props.onTargetSelection()
 
 		_focusMetricLookupField: ->
 			$(@refs.metricLookup).show()
