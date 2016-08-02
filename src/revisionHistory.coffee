@@ -368,12 +368,17 @@ load = (win) ->
 						styleClass: 'clear' unless entry.get('value')
 					})
 
+
 				else if entry.get('property') is 'value'
 					metric = entry.get('item')
 
+				else if @props.isPlanTarget and entry.get('reason')
+					": \"#{entry.get('reason')}\""
+
 				else if not @props.isPlanTarget
-					entry.get('reason') or entry.get('value')
+					if entry.get('reason') then "\"#{entry.get('reason')}\"" else entry.get('value')
 				)
+
 			)
 
 	RevisionSnapshot = ({revision, metricsById}) ->
