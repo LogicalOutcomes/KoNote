@@ -31,16 +31,26 @@ load = (win) ->
 		propTypes: {
 			isAdmin: PropTypes.bool.isRequired
 			programs: ImmPropTypes.list.isRequired
-			userProgram: ImmPropTypes.map.isRequired
+			userProgram: ImmPropTypes.map
 			managerLayer: PropTypes.string
 
 			updateManagerLayer: PropTypes.func.isRequired
 		}
 
 		_overrideProgram: (program) ->
+			currentProgramName = if @props.userProgram
+				@props.userProgram.get('name')
+			else
+				"none"
+
+			newProgramName = if program
+				program.get('name')
+			else
+				"none"
+
 			Bootbox.confirm """
-				Override your current #{Term 'program'} (#{@props.userProgram.get('name')})
-				to #{program.get('name')} for this session?
+				Override your current #{Term 'program'} (#{currentProgramName})
+				to #{newProgramName} for this session?
 			"""
 			, (ok) =>
 				if ok
@@ -59,7 +69,7 @@ load = (win) ->
 						R.div({},
 							R.div({id: 'avatar'}, FaIcon('user'))
 							R.h3({}, global.ActiveSession.userName)
-							(if @props.userProgram?
+							(unless @props.programs.isEmpty()
 								UserProgramDropdown({
 									userProgram: @props.userProgram
 									programs: @props.programs
