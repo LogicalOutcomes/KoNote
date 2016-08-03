@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
+ImmPropTypes = require 'react-immutable-proptypes'
 Term = require './term'
 {diffWordsWithSpace} = require 'diff'
 
@@ -13,6 +14,7 @@ load = (win) ->
 	R = React.DOM
 
 	MetricWidget = require('./metricWidget').load(win)
+	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
 	{FaIcon, renderLineBreaks, showWhen,
 	stripMetadata, formatTimestamp, capitalize} = require('./utils').load(win)
@@ -28,8 +30,9 @@ load = (win) ->
 		}
 
 		propTypes: -> {
-			dataModelName: React.PropTypes.string()
-			revisions: React.PropTypes.instanceOf Imm.List
+			dataModelName: React.PropTypes.string().isRequired()
+			revisions: ImmPropTypes.list.isRequired()
+			programsById: ImmPropTypes.map.isRequired()
 		}
 
 		_diffStrings: (oldString, newString) ->
@@ -215,7 +218,9 @@ load = (win) ->
 							key: revision.get('revisionId')
 							isFirstRevision: index is (revisions.size - 1)
 							revision
+							type: @props.type
 							metricsById: @props.metricsById
+							programsById: @props.programsById
 							dataModelName: @props.dataModelName
 							disableSnapshot: @props.disableSnapshot
 						})
@@ -237,6 +242,13 @@ load = (win) ->
 			revision = @props.revision
 			changeLog = revision.get('changeLog')
 
+			userProgramId = revision.get('authorProgramId')
+			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
+
+			# Special cases made for planTarget types
+			isPlanTarget = @props.type is 'planTarget'
+			isTargetStatusChange = isPlanTarget and not (changeLog.first().get('action') in ['revised'])
+
 			return R.section({className: 'revision'},
 				R.div({className: 'header'},
 					R.div({className: 'author'},
@@ -248,8 +260,18 @@ load = (win) ->
 							"#{formatTimestamp revision.get('backdate')} (late entry)"
 						else
 							formatTimestamp revision.get('timestamp')
+
+						ColorKeyBubble({
+							colorKeyHex: userProgram.get('colorKeyHex')
+							popup: {
+								title: userProgram.get('name')
+								content: userProgram.get('description')
+								placement: 'left'
+							}
+						})
 					)
 				)
+
 				R.div({className: 'changeLog'},
 					(changeLog.map (entry, index) =>
 						ChangeLogEntry({
@@ -257,6 +279,8 @@ load = (win) ->
 							index
 							entry
 							revision
+							isPlanTarget
+							type: @props.type
 							dataModelName: @props.dataModelName
 							metricsById: @props.metricsById
 							onToggleSnapshot: @_toggleSnapshot
@@ -264,11 +288,10 @@ load = (win) ->
 							disableSnapshot: @props.disableSnapshot
 						})
 					)
-					(if @state.isSnapshotVisible and not @props.disableSnapshot
+					(if isPlanTarget and not isTargetStatusChange
 						RevisionSnapshot({
 							revision
 							metricsById: @props.metricsById
-							isAnimated: true
 						})
 					)
 				)
@@ -281,21 +304,23 @@ load = (win) ->
 		render: ->
 			entry = @props.entry
 
+			isCreationEntry = entry.get('action') is 'created'
+
 			# Account for terminology metricIds -> metrics
 			if entry.get('property') is 'metricIds'
 				entry = entry.set('property', 'metric')
 
 			R.article({className: 'entry', key: @props.index},
-				# Only show snapshotButton on first changeLogEntry
-				(if not @props.disableSnapshot and @props.index is 0 and entry.get('action') isnt 'created'
-					R.button({
-						className: 'btn btn-default btn-xs snapshotButton'
-						onClick: @props.onToggleSnapshot
-					},
-						if not @props.isSnapshotVisible then "view" else "hide"
-						" full revision"
-					)
-				)
+				# # TODO: Restore as Diffing selector
+				# (if not @props.disableSnapshot and @props.index is 0 and entry.get('action') isnt 'created'
+				# 	R.button({
+				# 		className: 'btn btn-default btn-xs snapshotButton'
+				# 		onClick: @props.onToggleSnapshot
+				# 	},
+				# 		if not @props.isSnapshotVisible then "view" else "hide"
+				# 		" full revision"
+				# 	)
+				# )
 
 				FaIcon(entry.get('icon'))
 
@@ -303,17 +328,19 @@ load = (win) ->
 					# Different display cases for indication of change
 					(if entry.get('action') is 'created'
 						"#{capitalize entry.get('action')} #{entry.get('property')}
-						#{if not @props.disableSnapshot then ' as: ' else ''}"
+						#{if @props.isPlanTarget then ' as:' else ''}"
 					else if entry.has('reason') # Status change
-						"#{capitalize entry.get('value')} #{@props.dataModelName}: "
+						"#{capitalize entry.get('value')} #{@props.dataModelName}"
 					else if entry.has('parent') and not entry.get('parent').has? # Parent isn't an Imm Map obj
-						"#{capitalize entry.get('action')} #{entry.get('property')} for #{entry.get('parent')}: "
+						"#{capitalize entry.get('action')} #{entry.get('property')} for #{entry.get('parent')}"
 					else
-						"#{capitalize entry.get('action')} #{entry.get('property')}: "
+						"#{capitalize entry.get('action')} #{entry.get('property')}"
 					)
+
+					": " if not @props.isPlanTarget and not isCreationEntry
 				)
 
-				(if entry.get('action') is 'created' and not @props.disableSnapshot
+				(if isCreationEntry and not @props.disableSnapshot
 					# We can show full snapshot for dataModel creation
 					RevisionSnapshot({
 						revision: @props.revision
@@ -337,27 +364,22 @@ load = (win) ->
 						isEditable: false
 						name: metric.get('name')
 						definition: metric.get('definition')
-						tooltipViewport: '.entry'
+						tooltipViewport: 'article'
 						styleClass: 'clear' unless entry.get('value')
 					})
 
 				else if entry.get('property') is 'value'
 					metric = entry.get('item')
 
-				else
+				else if not @props.isPlanTarget
 					entry.get('reason') or entry.get('value')
 				)
 			)
 
-	RevisionSnapshot = ({revision, metricsById, isAnimated}) ->
+	RevisionSnapshot = ({revision, metricsById}) ->
 		hasMetrics = revision.get('metricIds')?
 
-		R.div({
-			className: [
-				'snapshot'
-				'animated fadeInDown' if isAnimated
-			].join ' '
-		},
+		R.div({className: 'snapshot'},
 			R.div({className: 'name'},
 				revision.get('name')
 			)

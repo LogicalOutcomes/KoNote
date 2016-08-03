@@ -1,4 +1,4 @@
-# Copyright (c) Konode. All rights reserved.
+	# Copyright (c) Konode. All rights reserved.
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
@@ -80,7 +80,7 @@ load = (win) ->
 
 			hasChanges = @hasChanges()
 
-			return R.div({className: "view planView #{if @props.isVisible then '' else 'hide'}"},
+			return R.div({className: "planView"},
 				R.div({className: 'targetList'},
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
 						R.div({className: 'message'},
@@ -113,27 +113,29 @@ load = (win) ->
 								className: "btn btn-link #{showWhen hasChanges}"
 								onClick: @_resetChanges
 							},
-								"Reset Changes"
+								"Discard Changes"
 							)
 						)
 						R.div({className: 'rightMenu'},
-							R.div({className: 'btn-group btn-group'},	
+							R.div({className: 'btn-group btn-group'},
 								R.button({
 									className: 'addSection btn btn-default'
 									onClick: @_addSection
-									disabled: @props.isReadOnly
+									disabled: hasChanges or @props.isReadOnly
 								},
 									FaIcon('plus')
 									"Add #{Term 'section'}"
 								)
-								# style this button
+							)
+							WithTooltip({
+								placement: 'bottom'
+								title: "Create plan template"
+							},
 								R.button({
-									className: 'createTemplate btn btn-default'
+									className: 'btn createTemplateButton'
 									onClick: @_createTemplate
-									disabled: @props.isReadOnly
 								},
 									FaIcon('wpforms')
-									"New #{Term 'plan'} template"
 								)
 							)
 							PrintButton({
@@ -149,13 +151,18 @@ load = (win) ->
 									}
 								]
 								iconOnly: true
-								disabled: hasChanges
+								disabled: hasChanges or @props.isReadOnly
 								tooltip: {
-									show: hasChanges
+									show: true
 									placement: 'bottom'
-									title: "Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
+									title: (
+										if hasChanges or @props.isReadOnly
+											"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
+										else
+											"Print plan"
+									)
 								}
-							})	
+							})
 						)
 					)
 					SectionsView({
@@ -191,6 +198,7 @@ load = (win) ->
 								revisions: selectedTarget.get('revisions')
 								type: 'planTarget'
 								metricsById: @props.metricsById
+								programsById: @props.programsById
 								dataModelName: 'target'
 								terms: {
 									metric: Term 'metric'
@@ -278,6 +286,7 @@ load = (win) ->
 				if ok
 					@setState {
 						currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+						plan: @props.plan
 					}
 
 		_normalizeTargets: ->
@@ -353,7 +362,6 @@ load = (win) ->
 
 		_createTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
-				
 				unless templateName
 					return
 
@@ -377,7 +385,7 @@ load = (win) ->
 					status: 'default'
 					sections: templateSections
 				}
-				
+
 				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
 					if err instanceof Persist.IOError
 						console.error err
@@ -385,7 +393,7 @@ load = (win) ->
 							Please check your network connection and try again
 						"""
 						return
-					Bootbox.alert "New template created."
+					Bootbox.alert "New template: '#{templateName}' created."
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
@@ -712,7 +720,6 @@ load = (win) ->
 				displayCompletedTargets: null
 			}
 
-
 		render: ->
 			{
 				section
@@ -737,7 +744,7 @@ load = (win) ->
 				getSectionIndex
 			} = @props
 
-			sectionId = @props.section.get('id')
+			sectionId = section.get('id')
 			headerState = 'inline'
 
 			# Group targetIds into an object, with a property for each status
@@ -928,6 +935,8 @@ load = (win) ->
 			isExistingSection = clientFile.getIn(['plan','sections'])
 			.some (obj) => obj.get('id') is section.get('id')
 
+			sectionIsInactive = section.get('status') isnt 'default'
+
 			return R.div({
 				className: [
 					'sectionHeader'
@@ -945,20 +954,19 @@ load = (win) ->
 					R.button({
 						className: 'renameSection btn btn-default'
 						onClick: renameSection.bind null, section.get('id')
-						disabled: isReadOnly
+						disabled: isReadOnly or sectionIsInactive
 					},
 						"Rename"
 					)
 					R.button({
 						className: 'addTarget btn btn-primary'
 						onClick: addTargetToSection.bind null, section.get('id')
-						disabled: isReadOnly
+						disabled: isReadOnly or sectionIsInactive
 					},
 						FaIcon('plus')
 						"Add #{Term 'target'}"
 					)
 				)
-
 				(if isExistingSection
 					unless @props.targetIdsByStatus.has('default')
 						if sectionStatus is 'default'
@@ -1171,24 +1179,23 @@ load = (win) ->
 							key: metricId
 							tooltipViewport: '.section'
 							isEditable: false
-							allowDeleting: not @props.isReadOnly and @props.isActive
+							allowDeleting: not @props.isReadOnly and @props.isActive and not @props.isInactive
 							onDelete: @props.deleteMetricFromTarget.bind(
 								null, @props.targetId, metricId
 							)
 						})
 					).toJS()...
-					(unless @props.isReadOnly
+					(if not @props.isReadOnly and not @props.isInactive
 						R.button({
 							className: "btn btn-link addMetricButton #{showWhen @props.isActive}"
 							onClick: @_focusMetricLookupField.bind(null, @props.targetId)
 						},
 							FaIcon('plus')
-							#if currentRevision.get('metricIds').size is 0
 							" Add #{Term 'metric'}"
 						)
 					)
 				)
-				(unless @props.isReadOnly
+				(if not @props.isReadOnly and not @props.isInactive
 					R.div({
 						className: [
 							'metricLookupContainer'

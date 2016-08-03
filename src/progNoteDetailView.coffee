@@ -16,8 +16,9 @@ load = (win) ->
 	ProgEventsWidget = require('./progEventsWidget').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	RevisionHistory = require('./revisionHistory').load(win)
+	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
-	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
+	{FaIcon, renderLineBreaks, showWhen, formatTimestamp} = require('./utils').load(win)
 
 	ProgNoteDetailView = React.createFactory React.createClass
 		displayName: 'ProgNoteDetailView'
@@ -46,13 +47,14 @@ load = (win) ->
 						RevisionHistory({
 							revisions: progNoteHistory.reverse()
 							type: 'progNote'
+							disableSnapshot: true
 							metricsById: @props.metricsById
+							programsById: @props.programsById
 							dataModelName: Term 'progress note'
 							terms: {
 								metric: Term 'metric'
 								metrics: Term 'metric'
 							}
-							disableSnapshot: true
 						})
 					)
 
@@ -120,11 +122,14 @@ load = (win) ->
 											# Metric entry must have a value to display
 											metrics = target.get('metrics').filter (metric) -> metric.get('value')
 
+											authorProgram = @props.programsById.get progNote.get('authorProgramId')
+
 											return Imm.fromJS {
 												progNoteId
 												status: progNote.get('status')
 												targetId: target.get('id')
 												author: initialAuthor
+												authorProgram
 												timestamp: createdTimestamp
 												backdate: progNote.get('backdate')
 												notes: target.get('notes')
@@ -140,7 +145,7 @@ load = (win) ->
 					# Extract all quickNote entries
 					entries = @props.progNoteHistories
 					.filter (progNoteHistory) -> progNoteHistory.last().get('type') is 'basic'
-					.map (progNoteHistory) ->
+					.map (progNoteHistory) =>
 						initialAuthor = progNoteHistory.first().get('author')
 						createdTimestamp = progNoteHistory.first().get('timestamp')
 						progNote = progNoteHistory.last()
@@ -149,14 +154,16 @@ load = (win) ->
 						# TODO: progEvents = @props.progEvents.filter (progEvent) =>
 						# 	return progEvent.get('relatedProgNoteId') is progNoteId
 
+						authorProgram = @props.programsById.get progNote.get('authorProgramId')
+
 						return Imm.fromJS {
 							progNoteId
 							status: progNote.get('status')
 							author: initialAuthor
+							authorProgram
 							timestamp: createdTimestamp
 							backdate: progNote.get('backdate')
 							notes: progNote.get('notes')
-							# TODO: progEvents
 						}
 						return progNote
 						.set('author', initialAuthor)
@@ -214,6 +221,10 @@ load = (win) ->
 						# else if @props.highlightedTargetId?
 						# 	isHovered = (entry.get('targetId') is @props.highlightedTargetId) and isHighlighted
 
+						timestamp = entry.get('backdate') or entry.get('timestamp')
+
+						authorProgram = entry.get('authorProgram') or Imm.Map()
+
 						R.div({
 							key: entryId
 							className: [
@@ -225,12 +236,16 @@ load = (win) ->
 						},
 							R.div({className: 'header'},
 								R.div({className: 'timestamp'},
-									if entry.get('backdate') != ''
-										Moment(entry.get('backdate'), Persist.TimestampFormat)
-										.format('MMMM D, YYYY [at] HH:mm') + ' (late entry)'
-									else
-										Moment(entry.get('timestamp'), Persist.TimestampFormat)
-										.format('MMMM D, YYYY [at] HH:mm')
+									formatTimestamp(timestamp)
+
+									ColorKeyBubble({
+										colorKeyHex: authorProgram.get('colorKeyHex')
+										popover: {
+											title: authorProgram.get('name')
+											content: authorProgram.get('description')
+											placement: 'top'
+										}
+									})
 								)
 								R.div({className: 'author'},
 									FaIcon('user')

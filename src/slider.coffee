@@ -33,7 +33,11 @@ load = (win) ->
 		componentDidMount: ->
 			@_initSlider()
 
-		_calculateIndexValues: ({start, end}) ->
+		_calculateIndexValues: (timeSpan) ->
+
+			start = timeSpan.get('start')
+			end = timeSpan.get('end')
+
 			matchingStartValue = @props.xTicks.find (date) -> date.isSame(start)
 			startIndex = @props.xTicks.indexOf matchingStartValue
 

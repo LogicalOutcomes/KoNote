@@ -1,11 +1,12 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 load = (win) ->
 	# Libraries from browser context
 	$ = win.jQuery
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
 
 	{FaIcon} = require('./utils').load(win)
@@ -14,56 +15,59 @@ load = (win) ->
 		displayName: 'ColorKeyBubble'
 		mixins: [React.addons.PureRenderMixin]
 
+		propTypes: {
+			colorKeyHex: PropTypes.string
+			popover: PropTypes.shape {
+				placement: PropTypes.oneOf ['left', 'right', 'top', 'bottom']
+				container: PropTypes.string
+				title: PropTypes.string
+				content: PropTypes.string
+			}
+			icon: PropTypes.oneOf ['ban', 'check']
+			onClick: PropTypes.func
+		}
+
+		getDefaultProps: ->
+			return {
+				onClick: ->
+			}
+
 		componentDidMount: ->
-			settings = {}
+			popoverOptions = @props.popover
+			return unless popoverOptions?
 
-			if @props.data?
-				settings = {
-					trigger: 'hover'
-					placement: 'right'
-					container: 'body'
-					title: @props.data.get('name') 
-					content: @props.data.get('description')
-				}
-			else if @props.alreadyInUse
-				settings = {
-					trigger: 'hover'
-					placement: 'top'
-					container: 'body'
-					title: @props.alreadyInUse.get('name') 
-					content: @props.alreadyInUse.get('description')
-				}
+			defaultOptions = {
+				placement: 'right'
+				container: 'body'
+			}
 
-			if @props.hideContent
-				settings.content = settings.title
-				delete settings.title
-
-			$(@refs.bubble).popover(settings)
+			$(@refs.bubble).popover {
+				trigger: 'hover'
+				placement: popoverOptions.placement or defaultOptions.placement
+				container: popoverOptions.container or defaultOptions.container
+				title: popoverOptions.title
+				content: popoverOptions.content
+			}
 
 		render: ->
-			colorKeyHex = @props.colorKeyHex or @props.data.get('colorKeyHex')	
+			{onClick, colorKeyHex, icon} = @props
 
 			R.div({
 				className: 'colorKeyBubble'
-				ref: 'bubble'
-				key: colorKeyHex
 			},
-				R.div({					
+				R.div({
+					ref: 'bubble'
 					className: 'bubbleContents'
-					onClick: @props.onClick.bind(null, colorKeyHex) if @props.onClick?
+					onClick
 					style: {
 						background: colorKeyHex
 					}
 				},
-					if @props.isSelected
-						FaIcon('check')
-					else if @props.alreadyInUse
-						FaIcon('ban')
-					else
-						FaIcon('check', {
-							style:
-								visibility: 'hidden'
-						})
+					# Invisible 'check' icon for sake of display consistency
+					FaIcon(icon or 'check', {
+						style:
+							visibility: 'hidden' unless icon
+					})
 				)
 			)
 

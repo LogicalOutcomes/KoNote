@@ -1,4 +1,4 @@
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Link that manages layering for opening up a custom dialog.
@@ -62,7 +62,7 @@ load = (win) ->
 					@setState {isOpen: false}
 			}
 
-			props = _.extend({}, @props, defaultProps,)
+			props = _.extend({}, @props, defaultProps)
 
 			return @props.dialog(props)
 

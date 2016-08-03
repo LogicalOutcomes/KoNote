@@ -1,6 +1,7 @@
 .progNoteDetailView
 	display flex
 	flex-direction column
+	max-width 50%
 
 	.revisionHistory
 		flex 1
@@ -57,6 +58,9 @@
 				background #FFFFC2
 				border-bottom-color #BDA045
 
+			.notes
+				overflow-wrap break-word
+
 			> .metrics
 				display flex
 				flex-wrap wrap
@@ -84,3 +88,7 @@
 
 					color #888
 					font-weight 700
+
+					.colorKeyBubble > .bubbleContents
+						opacity 0.5
+						margin-left 0.5em

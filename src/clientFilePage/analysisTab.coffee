@@ -29,11 +29,11 @@ load = (win) ->
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 	dateDisplayFormat = 'MMM Do - YYYY'
-	defaultTimeSpan = {start: Moment(), end: Moment()}
 
 	AnalysisView = React.createFactory React.createClass
 		displayName: 'AnalysisView'
 		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				hasEnoughData: null
@@ -47,37 +47,21 @@ load = (win) ->
 				excludedTargetIds: Imm.Set()
 				xTicks: Imm.List()
 				xDays: Imm.List()
-				timeSpan: defaultTimeSpan
+				timeSpan: null
 			}
 
-		componentWillMount: ->
-			@_generateAnalysis()
+		# componentDidUpdate: (oldProps, oldState) ->
+		# 	# Figure out what changed
+		# 	for property of @props
+		# 		# console.log "property", property
+		# 		if @props[property] isnt oldProps[property]
+		# 			console.log "#{property} changed"
 
-		componentDidUpdate: (oldProps, oldState) ->
-			# TODO: Simpler indicator of important props change
-			unless Imm.is oldProps.metricsById, @props.metricsById
-				@_generateAnalysis()
+		# 	for property of @state
+		# 		if @state[property] isnt oldState[property]
+		# 			console.log "#{property} changed"
 
-			unless Imm.is oldProps.planTargetsById, @props.planTargetsById
-				console.log "planTargetsById changed, regenerating..."
-				@_generateAnalysis()
-
-			unless Imm.is oldProps.progEvents, @props.progEvents
-				console.log "progEvents changed, regenerating..."
-				@_generateAnalysis()
-
-			unless Imm.is oldProps.progNoteHistories, @props.progNoteHistories
-				console.log "progNoteHistories changed, regenerating..."
-				@_generateAnalysis()
-
-			unless Imm.is oldState.selectedEventTypeIds, @state.selectedEventTypeIds
-				console.log "selectedEventTypeIds changed, regenerating..."
-				@_generateAnalysis()
-
-		_generateAnalysis: ->
-			console.log "Generating Analysis...."
-
-			#################### Metrics ####################
+		render: ->
 
 			# Build targets list as targetId:[metricIds]
 			targetMetricsById = @props.plan.get('sections').flatMap (section) =>
@@ -127,6 +111,7 @@ load = (win) ->
 
 			# Filter out progEvents that aren't cancelled or excluded
 			filteredProgEvents = @props.progEvents
+			.concat @props.globalEvents
 			.filter (progEvent) =>
 				switch progEvent.get('status')
 					when 'default'
@@ -142,7 +127,7 @@ load = (win) ->
 					@state.selectedEventTypeIds.contains null
 
 			# Build list of timestamps from progEvents (start & end) & metrics
-			timestampDays = Imm.List()
+			daysOfData = Imm.List()
 			.concat filteredProgEvents.map (progEvent) ->
 				Moment(progEvent.get('startTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat filteredProgEvents.map (progEvent) ->
@@ -151,49 +136,32 @@ load = (win) ->
 				# Account for backdate, else normal timestamp
 				metricTimestamp = metric.get('backdate') or metric.get('timestamp')
 				return Moment(metricTimestamp, Persist.TimestampFormat).startOf('day').valueOf()
-			.toOrderedSet().sort() # Filter to unique days, and sort
+			.toOrderedSet()
+			.sort()
 
 
 
 			#################### Date Range ####################
 
 			# Determine earliest & latest days
-			firstDay = Moment timestampDays.first()
-			lastDay = Moment timestampDays.last()
+			firstDay = Moment daysOfData.first()
+			lastDay = Moment daysOfData.last()
 			dayRange = lastDay.diff(firstDay, 'days') + 1
 
 			# Create list of all days as moments
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
-			# Assign default timeSpan settings on initial render
-			if @state.timeSpan isnt defaultTimeSpan
-				timeSpan = @state.timeSpan
-			else
-				timeSpan = {
-					start: xTicks.first()
-					end: xTicks.last()
-				}
-
-			# Synchronous to ensure this happens before render
-			@setState => {
-				xDays: xTicks
-				daysOfData: timestampDays.size
-				xTicks
-				timeSpan
-				metricIdsWithData
-				metricValues
-				progEventIdsWithData
-				filteredProgEvents
-				inactiveMetricIds
-				targetMetricsById
+			# Default timespan to full xTicks
+			timeSpan = if @state.timeSpan then @state.timeSpan else Imm.Map {
+				start: xTicks.first()
+				end: xTicks.last()
 			}
 
-		render: ->
-			hasEnoughData = @state.daysOfData > 0
+			hasEnoughData = daysOfData.size > 0
 			untypedEvents = @props.progEvents.filterNot (progEvent) => progEvent.get('typeId')
 
-			return R.div({className: "view analysisView #{showWhen @props.isVisible}"},
+			return R.div({className: "analysisView"},
 				R.div({className: "noData #{showWhen not hasEnoughData}"},
 					R.div({},
 						R.h1({}, "More Data Needed")
@@ -204,63 +172,63 @@ load = (win) ->
 					)
 				)
 				R.div({className: "timeScaleToolbar #{showWhen hasEnoughData}"},
-					if @props.isVisible
-						R.div({className: 'timeSpanContainer'},
-							Slider({
-								ref: 'timeSpanSlider'
-								isRange: true
-								timeSpan: @state.timeSpan
-								xTicks: @state.xTicks
-								onChange: (event) =>
-									# Convert event value (string) to JS numerical array
-									timeSpanArray = event.target.value.split(",")
-									console.log "Moved to", timeSpanArray
-									# Use index values to fetch moment objects from xTicks
-									start = @state.xTicks.get Number(timeSpanArray[0])
-									end = @state.xTicks.get Number(timeSpanArray[1])
+					R.div({className: 'timeSpanContainer'},
+						Slider({
+							ref: 'timeSpanSlider'
+							isRange: true
+							timeSpan
+							xTicks
+							onChange: (event) =>
+								# Convert event value (string) to JS numerical array
+								timeSpanArray = event.target.value.split(",")
+								# Use index values to fetch moment objects from xTicks
+								start = xTicks.get Number(timeSpanArray[0])
+								end = xTicks.get Number(timeSpanArray[1])
 
-									timeSpan = {start, end}
-									console.log "timespan changing to:", timeSpan
-									@setState {timeSpan}
-								formatter: ([start, end]) =>
-									return unless start? and end?
-									startTime = Moment(@state.xTicks.get(start)).format('MMM Do')
-									endTime = Moment(@state.xTicks.get(end)).format('MMM Do')
-									return "#{startTime} - #{endTime}"
+								newTimeSpan = Imm.Map {start, end}
+								@setState {timeSpan: newTimeSpan}
+							formatter: ([start, end]) =>
+								return unless start? and end?
+								startTime = Moment(xTicks.get(start)).format('MMM Do')
+								endTime = Moment(xTicks.get(end)).format('MMM Do')
+								return "#{startTime} - #{endTime}"
+						})
+						R.div({className: 'dateDisplay'},
+							TimeSpanDate({
+								date: timeSpan.get('start')
+								type: 'start'
+								timeSpan
+								xTicks
+								updateTimeSpanDate: @_updateTimeSpanDate
 							})
-							R.div({className: 'dateDisplay'},
-								(for type, date of @state.timeSpan
-									TimeSpanDate({
-										key: type
-										date
-										type
-										timeSpan: @state.timeSpan
-										xTicks: @state.xTicks
-										updateTimeSpanDate: @_updateTimeSpanDate
-									})
-								)
-							)
+							TimeSpanDate({
+								date: timeSpan.get('end')
+								type: 'end'
+								timeSpan
+								xTicks
+								updateTimeSpanDate: @_updateTimeSpanDate
+							})
+						)
 					)
-					# TODO: Make use of this space
-					R.div({className: 'granularContainer'})
+					R.div({className: 'granularContainer'}) # TODO: Make use of this space
 				)
 				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
 					R.div({className: 'chartContainer'},
 						# Force chart to be re-rendered when tab is opened
-						if @props.isVisible and not @state.xTicks.isEmpty() and (
-							not @state.filteredProgEvents.isEmpty() or
+						if not xTicks.isEmpty() and (
+							not filteredProgEvents.isEmpty() or
 							not @state.selectedMetricIds.isEmpty()
 						)
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
-								progEvents: @state.filteredProgEvents
+								progEvents: filteredProgEvents
 								eventTypes: @props.eventTypes
 								metricsById: @props.metricsById
-								metricValues: @state.metricValues
-								xTicks: @state.xTicks
+								metricValues
+								xTicks
 								selectedMetricIds: @state.selectedMetricIds
-								timeSpan: @state.timeSpan
+								timeSpan
 								updateMetricColors: @_updateMetricColors
 							})
 						else
@@ -338,7 +306,8 @@ load = (win) ->
 													checked: @state.selectedEventTypeIds.contains null
 													onChange: @_updateSelectedEventTypes.bind null, null
 												})
-												"(#{untypedEvents.size}) "
+												untypedEvents.size
+												' '
 												Term (if untypedEvents.size is 1 then 'Event' else 'Events')
 											)
 										)
@@ -349,10 +318,10 @@ load = (win) ->
 
 						R.div({className: 'dataType metrics'},
 							metricsAreSelected = not @state.selectedMetricIds.isEmpty()
-							allMetricsSelected = Imm.is @state.selectedMetricIds, @state.metricIdsWithData
+							allMetricsSelected = Imm.is @state.selectedMetricIds, metricIdsWithData
 
 							R.h2({
-								onClick: @_toggleAllMetrics.bind null, allMetricsSelected
+								onClick: @_toggleAllMetrics.bind null, allMetricsSelected, metricIdsWithData
 							},
 								R.span({className: 'helper'}
 									"Select "
@@ -380,33 +349,30 @@ load = (win) ->
 												},
 													R.h5({}, target.get('name'))
 
-													# TODO Figure out why targetId is occasionally late to the party
-													if @state.targetMetricsById.get(targetId)
-														(@state.targetMetricsById.get(targetId).map (metricId) =>
+													(targetMetricsById.get(targetId).map (metricId) =>
 
-															metric = @props.metricsById.get(metricId)
+														metric = @props.metricsById.get(metricId)
 
-															R.div({
-																key: metricId
-																className: 'checkbox metric'
-																style:
-																	borderRight: (
-																		if @state.metricColors?
-																			metricColor = @state.metricColors["y-#{metric.get('id')}"]
-																			"5px solid #{metricColor}"
-																	)
-															},
-																R.label({},
-																	R.input({
-																		type: 'checkbox'
-																		onChange: @_updateSelectedMetrics.bind null, metricId
-																		checked: @state.selectedMetricIds.contains metricId
-																	})
-																	metric.get('name')
+														R.div({
+															key: metricId
+															className: 'checkbox metric'
+															style:
+																borderRight: (
+																	if @state.metricColors?
+																		metricColor = @state.metricColors["y-#{metric.get('id')}"]
+																		"5px solid #{metricColor}"
 																)
+														},
+															R.label({},
+																R.input({
+																	type: 'checkbox'
+																	onChange: @_updateSelectedMetrics.bind null, metricId
+																	checked: @state.selectedMetricIds.contains metricId
+																})
+																metric.get('name')
 															)
 														)
-
+													)
 												)
 											)
 										)
@@ -489,12 +455,12 @@ load = (win) ->
 
 				return {selectedEventTypeIds}
 
-		_toggleAllMetrics: (allMetricsSelected) ->
+		_toggleAllMetrics: (allMetricsSelected, metricIdsWithData) ->
 			@setState ({selectedMetricIds}) =>
 				if allMetricsSelected
 					selectedMetricIds = selectedMetricIds.clear()
 				else
-					selectedMetricIds = @state.metricIdsWithData
+					selectedMetricIds = metricIdsWithData
 
 				return {selectedMetricIds}
 
@@ -507,19 +473,12 @@ load = (win) ->
 
 				return {selectedMetricIds}
 
-		_metricIsExcluded: (metricId) ->
-			targetId = @state.targetMetricsById.findKey (target) =>
-				target.contains metricId
-
-			return targetId? and @state.excludedTargetIds.contains(targetId)
-
 		_updateMetricColors: (metricColors) ->
 			@setState {metricColors}
 
 		_updateTimeSpanDate: (newDate, type) ->
-			timeSpan = _.clone(@state.timeSpan)
-			timeSpan[type] = newDate
-
+			return unless @state.timeSpan
+			timeSpan = @state.timeSpan.set(type, newDate)
 			@setState {timeSpan}
 
 	extractMetricsFromProgNoteHistory = (progNoteHist) ->

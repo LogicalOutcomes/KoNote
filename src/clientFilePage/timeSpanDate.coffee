@@ -25,9 +25,9 @@ load = (win) ->
 			# Assess min/maxDate based on which TimeSpanDate type
 			if @props.type is 'start'
 				minDate = @props.xTicks.first()
-				maxDate = @props.timeSpan.end
+				maxDate = @props.timeSpan.get('end')
 			else
-				minDate = @props.timeSpan.start
+				minDate = @props.timeSpan.get('start')
 				maxDate = @props.xTicks.last()
 
 			# Init datetimepicker
@@ -49,8 +49,8 @@ load = (win) ->
 		componentDidUpdate: (oldProps) ->
 			# TODO: Refactor, test Perf
 			# Compare timespans in {start, end} to oldProps
-			if not oldProps.timeSpan.start.isSame(@props.timeSpan.start) and not @dateTimePicker.date().isSame(@props.timeSpan.start)
-				startDate = @props.timeSpan.start
+			if not oldProps.date.get('start').isSame(@props.timeSpan.get('start')) and not @dateTimePicker.date().isSame(@props.timeSpan.get('start'))
+				startDate = @props.timeSpan.get('start')
 
 				if @props.type is 'start'
 					# Update datetimepicker
@@ -59,8 +59,8 @@ load = (win) ->
 					# 'end' TimeSpanDate changed
 					@dateTimePicker.minDate(startDate)
 
-			if not oldProps.timeSpan.end.isSame(@props.timeSpan.end) and not @dateTimePicker.date().isSame(@props.timeSpan.end)
-				endDate = @props.timeSpan.end
+			if not oldProps.timeSpan.get('end').isSame(@props.timeSpan.get('end')) and not @dateTimePicker.date().isSame(@props.timeSpan.get('end'))
+				endDate = @props.timeSpan.get('end')
 
 				if @props.type is 'end'
 					# Update datetimepicker
@@ -77,6 +77,8 @@ load = (win) ->
 		_toggleDateTimePicker: -> @dateTimePicker.toggle()
 
 		render: ->
+			return null unless @props.date
+
 			formattedDate = @props.date.format(dateDisplayFormat)
 
 			return R.div({className: 'timeSpanDate'},

@@ -77,6 +77,7 @@ load = (win, {clientFileId}) ->
 				progNoteHistories: @state.progNoteHistories
 				progEvents: @state.progEvents
 				eventTypes: @state.eventTypes
+				programsById: @state.programsById
 
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
@@ -93,6 +94,7 @@ load = (win, {clientFileId}) ->
 				progNoteHistories
 				progEvents
 				eventTypes
+				programsById
 			} = global.dataStore[clientFileId]
 
 			# Convert data structure of clientFile's planTargetsById
@@ -115,6 +117,7 @@ load = (win, {clientFileId}) ->
 
 				planTargetsById
 				metricsById
+				programsById
 				progNoteHistories
 				progEvents
 				eventTypes
@@ -241,6 +244,9 @@ load = (win, {clientFileId}) ->
 
 				Window.show()
 				Window.focus()
+
+				# Store beginTimestamp as class var, since it wont change
+				@beginTimestamp = Moment().format(Persist.TimestampFormat)
 			, 500)
 
 		componentDidUpdate: ->
@@ -447,6 +453,7 @@ load = (win, {clientFileId}) ->
 					progNoteHistories: @props.progNoteHistories
 					progEvents: @props.progEvents
 					eventTypes: @props.eventTypes
+					programsById: @props.programsById
 				})
 
 				R.div({className: 'eventsPanel'},
@@ -475,14 +482,16 @@ load = (win, {clientFileId}) ->
 								)
 								EventTabView({
 									data: thisEvent
+									clientFileId: @props.clientFile.get('id')
 									backdate: @state.progNote.get('backdate')
 									eventTypes: @props.eventTypes
 									atIndex: index
 									progNote: @state.progNote
-									save: @_saveEventData
+									saveProgEvent: @_saveProgEvent
 									cancel: @_cancelEditing
 									editMode: @state.editingWhichEvent?
 									isBeingEdited
+
 									updateEventPlanRelationMode: @_updateEventPlanRelationMode
 									selectedEventPlanRelation: @state.selectedEventPlanRelation
 									selectEventPlanRelation: @_selectEventPlanRelation
@@ -508,7 +517,7 @@ load = (win, {clientFileId}) ->
 		_editEventTab: (index) ->
 			@setState {editingWhichEvent: index}
 
-		_saveEventData: (data, index) ->
+		_saveProgEvent: (data, index) ->
 			newProgEvents = @state.progEvents.set index, data
 			@setState {progEvents: newProgEvents}, @_cancelEditing
 
@@ -569,9 +578,9 @@ load = (win, {clientFileId}) ->
 		_updateBackdate: (event) ->
 			if event
 				newBackdate = Moment(event.date).format(Persist.TimestampFormat)
-				@setState {progNote: @state.progNote.setIn ['backdate'], newBackdate}
+				@setState {progNote: @state.progNote.set 'backdate', newBackdate}
 			else
-				@setState {progNote: @state.progNote.setIn ['backdate'], ''}
+				@setState {progNote: @state.progNote.set 'backdate', ''}
 
 		_updateBasicNotes: (unitId, event) ->
 			newNotes = event.target.value
@@ -663,33 +672,72 @@ load = (win, {clientFileId}) ->
 		_save: ->
 			@setState {isLoading: true}
 
+			authorProgramId = global.ActiveSession.programId or ''
+			progNote = @state.progNote
+			.set('authorProgramId', authorProgramId)
+			.set('beginTimestamp', @beginTimestamp)
+
 			progNoteId = null
+			createdProgNote = null
 
 			Async.series [
 				(cb) =>
-					ActiveSession.persist.progNotes.create @state.progNote, (err, obj) =>
+					ActiveSession.persist.progNotes.create progNote, (err, result) =>
 						if err
 							cb err
 							return
 
-						progNoteId = obj.get('id')
+						createdProgNote = result
+						progNoteId = createdProgNote.get('id')
 						cb()
+
 				(cb) =>
 					Async.each @state.progEvents.toArray(), (progEvent, cb) =>
-						# Tack on the new progress note ID to all created events
+						# Tack on contextual information about progNote & client
 						progEvent = Imm.fromJS(progEvent)
 						.set('relatedProgNoteId', progNoteId)
 						.set('clientFileId', clientFileId)
+						.set('authorProgramId', authorProgramId)
+						.set('backdate', createdProgNote.get('backdate'))
 						.set('status', 'default')
 
-						ActiveSession.persist.progEvents.create progEvent, cb
+						globalEvent = progEvent.get('globalEvent')
 
-					, (err) =>
-						if err
-							cb err
-							return
+						if globalEvent
+							progEvent = progEvent.remove('globalEvent')
 
-						cb()
+						progEventId = null
+
+						Async.series [
+							(cb) =>
+								ActiveSession.persist.progEvents.create progEvent, (err, result) ->
+									if err
+										cb err
+										return
+
+									progEventId = result.get('id')
+									cb()
+
+							(cb) =>
+								if not globalEvent
+									cb()
+									return
+
+								# Tack on contextual information about the original progEvent
+								globalEvent = globalEvent
+								.set('relatedProgEventId', progEventId)
+								.set('relatedProgNoteId', createdProgNote.get('id'))
+								.set('authorProgramId', authorProgramId)
+								.set('backdate', createdProgNote.get('backdate'))
+								.set('status', 'default')
+								.remove('relatedElement')
+
+								ActiveSession.persist.globalEvents.create globalEvent, cb
+
+						], cb
+
+					, cb
+
 			], (err) =>
 				@setState {isLoading: false}
 
@@ -709,6 +757,7 @@ load = (win, {clientFileId}) ->
 	BackdateWidget = React.createFactory React.createClass
 		displayName: 'BackdateWidget'
 		mixins: [React.addons.PureRenderMixin]
+
 		componentDidMount: ->
 			$(@refs.backdate).datetimepicker({
 				format: 'MMM-DD-YYYY h:mm A'
@@ -721,6 +770,7 @@ load = (win, {clientFileId}) ->
 					vertical: 'bottom'
 				}
 			}).on 'dp.change', @props.onChange
+
 		render: ->
 			return R.div({className: 'input-group'},
 				R.input({

@@ -3,17 +3,21 @@ Faker = require 'faker'
 Async = require 'async'
 Moment = require 'moment'
 
-{Users, TimestampFormat, generateId } = require '../persist'
-{ProgramColors, EventTypeColors} = require '../colors'
-Config = require '../config'
+Config = require '../src/config'
+{Users, TimestampFormat, generateId} = require '../src/persist'
+{ProgramColors, EventTypeColors} = require '../src/colors'
+{stripMetadata} = require '../src/persist/utils'
 
 
 Create = {}
 
-# util
+# Utilities
 
 createData = (dataCollection, obj, cb) ->
 	global.ActiveSession.persist[dataCollection].create obj, cb
+
+
+# Singular create functions
 
 Create.clientFile = (cb) ->
 	first = Faker.name.firstName()
@@ -24,6 +28,7 @@ Create.clientFile = (cb) ->
 	clientFile = Imm.fromJS {
 		clientName: {first, middle, last}
 		recordId: recordId
+		status: 'active'
 		plan: {
 			sections: []
 		}
@@ -31,16 +36,24 @@ Create.clientFile = (cb) ->
 
 	createData 'clientFiles', clientFile, cb
 
-#children functions
+Create.globalEvent = ({progEvent}, cb) ->
+	globalEvent = stripMetadata(progEvent)
+	.set('clientFileId', progEvent.get('clientFileId'))
+	.set('relatedProgNoteId', progEvent.get('relatedProgNoteId'))
+	.set('relatedProgEventId', progEvent.get('id'))
+	.remove('id')
+	.remove('relatedElement')
+
+	createData 'globalEvents', globalEvent, cb
 
 Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 	earliestDate = Moment().subtract(2, 'months')
 	daySpan = Moment().diff(earliestDate, 'days')
 	randomDay = Math.floor(Math.random() * daySpan) + 1
 	randomBackdate = Moment().subtract(randomDay, 'days')
-	randomEnddate = Moment().subtract(randomDay, 'days').add(3, 'days')
+	randomDaySpan = Math.floor(Math.random() * 10) + 1
+	randomEnddate = Moment().subtract(randomDay, 'days').add(randomDaySpan, 'days')
 
-	console.log "EVENTTYPES >>>>> ", eventTypes.toJS()
 	eventTypeIds = eventTypes
 	.map (eventType) -> eventType.get('id')
 	.toJS()
@@ -57,8 +70,10 @@ Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 		endTimestamp: randomEnddate.format(TimestampFormat)
 		status: 'default'
 		# statusReason: optional
+		backdate: progNote.get('backdate')
 		typeId: randomTypeId
 		relatedProgNoteId
+		authorProgramId: ''
 		clientFileId
 		relatedElement: ''
 	}
@@ -71,16 +86,18 @@ Create.quickNote = (clientFile, cb) ->
 	randomDay = Math.floor(Math.random() * daySpan) + 1
 	randomBackdate = Moment().subtract(randomDay, 'days')
 
-	note = Imm.fromJS {
+	quickNote = Imm.fromJS {
 		type: 'basic'
 		status: 'default'
 		clientFileId: clientFile.get('id')
 		notes: Faker.lorem.paragraph()
 		timestamp: randomBackdate.format(TimestampFormat)
 		backdate: ''
+		authorProgramId: ''
+		beginTimestamp: ''
 	}
 
-	createData 'progNotes', note, cb
+	createData 'progNotes', quickNote, cb
 
 Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	earliestDate = Moment().subtract(2, 'months')
@@ -139,6 +156,8 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 		templateId: progNoteTemplate.get('id')
 		backdate: ''
 		timestamp: randomBackdate.format(TimestampFormat)
+		authorProgramId: ''
+		beginTimestamp: ''
 		units: [
 			{
 				id: progNoteUnit.get('id')
@@ -159,6 +178,7 @@ Create.planTarget = (clientFile, metrics, cb) ->
 
 	# randomly chooses a status, with a higher probability of 'default'
 	randomNumber = Math.floor(Math.random() * 10) + 1
+
 	if randomNumber > 7
 		status = 'deactivated'
 	else if randomNumber < 3
@@ -212,6 +232,7 @@ Create.eventType = (index, cb) ->
 		description: Faker.lorem.paragraph()
 		status: 'default'
 	})
+
 	createData 'eventTypes', eventType, cb
 
 Create.account = (index, cb) ->
@@ -219,12 +240,7 @@ Create.account = (index, cb) ->
 	password = 'password'
 	accountType = 'normal'
 
-	Users.Account.create global.ActiveSession.account, userName, password, accountType, (err, newAccount) ->
-		if err
-			cb err
-			return
-
-		cb null, newAccount
+	Users.Account.create global.ActiveSession.account, userName, password, accountType, cb
 
 Create.planTemplate = (index, cb) ->
 	planTemplate = Imm.fromJS {
@@ -254,12 +270,12 @@ Create.planTemplate = (index, cb) ->
 	}
 
 
-# wrappers
+
+# Multi create functions
 
 Create.clientFiles = (quantity, cb=(->)) ->
 	Async.times quantity, Create.clientFile, (err, clientFiles) ->
 		if err
-			console.error err
 			cb err
 			return
 
@@ -274,7 +290,7 @@ Create.progEvents = (quantity, props, cb) ->
 			cb err
 			return
 
-		console.log "Created #{quantity} progEvents"
+		# console.log "Created #{quantity} progEvents"
 		cb null, Imm.List(results)
 
 Create.quickNotes = (clientFile, numberOfNotes, cb) ->
@@ -296,22 +312,22 @@ Create.progNotes = (quantity, props, cb) ->
 			cb err
 			return
 
-		console.log "Created #{quantity} progNotes"
 		cb null, Imm.List(results)
 
-Create.planTargets = (targetQuantity, clientFile, metrics, cb) ->
-	sliceSize = Math.floor(metrics.size / targetQuantity)
+Create.planTargets = (quantity, clientFile, metrics, cb) ->
+	sliceSize = Math.floor(metrics.size / quantity)
 	x = 0
-	Async.times targetQuantity, (index, cb) =>
+
+	Async.times quantity, (index, cb) =>
 		targetMetrics = metrics.slice(x, x + sliceSize)
 		Create.planTarget(clientFile, targetMetrics, cb)
-		x = x + sliceSize
+		x += sliceSize
 	, (err, results) ->
 		if err
 			cb err
 			return
 
-		console.log "Created #{targetQuantity} planTargets"
+		console.log "Created #{quantity} planTargets"
 		cb null, Imm.List(results)
 
 Create.programs = (quantity, cb) ->
@@ -330,7 +346,6 @@ Create.clientFileProgramLinks = (clientFiles, program, cb) ->
 				cb err
 				return
 
-			console.log "Linked clientFile \"#{clientFile.getIn(['clientName', 'last'])}\" to program \"#{program.get('name')}\""
 			cb null, Imm.List(result)
 	, cb
 

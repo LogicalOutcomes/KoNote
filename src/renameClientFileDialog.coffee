@@ -32,12 +32,13 @@ load = (win) ->
 				middleName: @props.clientFile.getIn(['clientName', 'middle'])
 				lastName: @props.clientFile.getIn(['clientName', 'last'])
 				recordId: @props.clientFile.get('recordId')
+				status: @props.clientFile.get('status')
 			}
 
 		render: ->
 			Dialog({
 				ref: 'dialog'
-				title: "Rename #{Term 'Client File'}"
+				title: "Edit #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
 				R.div({className: 'renameClientFileDialog'},
@@ -68,6 +69,44 @@ load = (win) ->
 							value: @state.lastName
 							onKeyDown: @_onEnterKeyDown
 						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Client File Status"),
+						R.div({className: 'btn-toolbar'},
+							R.button({
+								className: 
+									if @state.status is 'active' 
+										'btn btn-success'
+									else 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'active'
+								
+								},
+							"Active"
+							)
+							R.button({
+								className: 
+									if @state.status is 'inactive' 
+										'btn btn-warning'
+									else 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'inactive'
+								
+								},
+							"Inactive"
+							)
+							R.button({
+								className:
+									if @state.status is 'discharged' 
+										'btn btn-danger'
+									else 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'discharged'
+								
+								},
+							"Discharged"
+							)
+						)
 					)
 					if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
@@ -109,6 +148,9 @@ load = (win) ->
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
 
+		_updateStatus: (event) ->
+			@setState {status: event.target.value}
+
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
@@ -121,6 +163,7 @@ load = (win) ->
 			.setIn(['clientName', 'middle'], @state.middleName)
 			.setIn(['clientName', 'last'], @state.lastName)
 			.set('recordId', @state.recordId)
+			.set('status', @state.status)
 
 			global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?

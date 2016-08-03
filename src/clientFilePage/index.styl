@@ -87,6 +87,29 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 				> .clientNameField
 					cursor pointer
+					
+					&:hover
+						opacity 0.6
+					
+
+				> a
+					cursor pointer
+			> .inactiveStatus
+				width 100%
+				color: orange
+				font-size 18px
+				text-align center
+				
+
+			> .dischargedStatus
+				width 100%
+
+				font-size 18px
+				text-align center
+				color: red
+
+				> .clientNameField
+					cursor pointer
 
 				> a
 					cursor pointer
@@ -131,8 +154,9 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 		> .view
 			flex 1
+			display flex
 			overflow auto
 
-		@require 'planTab'
-		@require 'progNotesTab'
-		@require 'analysisTab'
+			@require 'planTab'
+			@require 'progNotesTab'
+			@require 'analysisTab'

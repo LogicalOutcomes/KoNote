@@ -22,8 +22,9 @@ load = (win) ->
 
 	Moment = require('moment')
 
-	TimeoutWarning = React.createFactory React.createClass
-		displayName: 'TimeoutWarning'
+	TimeoutDialog = React.createFactory React.createClass
+		displayName: 'TimeoutDialog'
+
 		getInitialState: ->
 			return {
 				countSeconds: null
@@ -53,12 +54,15 @@ load = (win) ->
 			@setState {isFinalWarning: true}
 
 		reset: ->
-			@setState =>
+			clearInterval @counter
+
+			return unless @state.isOpen or @state.isFinalWarning or @state.isTimedOut
+
+			@setState {
 				isOpen: false
 				isFinalWarning: false
 				isTimedOut: false
-
-			clearInterval @counter
+			}
 
 		_focusPasswordField: ->
 			setTimeout(=>
@@ -168,7 +172,7 @@ load = (win) ->
 		timeoutContainer.id = 'timeoutContainer'
 		win.document.body.appendChild timeoutContainer
 
-		timeoutComponent = ReactDOM.render TimeoutWarning({}), timeoutContainer
+		timeoutComponent = ReactDOM.render TimeoutDialog({}), timeoutContainer
 
 		$('body').bind "mousemove mousedown keypress scroll", ->
 			global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
@@ -181,10 +185,12 @@ load = (win) ->
 					console.log "TIMEOUT: Initial Warning issued"
 
 					global.ActiveSession.initialWarningDelivered = new win.Notification "Inactivity Warning", {
-						body: "Your #{Config.productName} session will end in #{Config.timeout.warnings.initial}
-						minute#{if Config.timeout.warnings.initial > 1 then 's' else ''}"
+						body: """
+							Your session will expire in #{Config.timeout.warnings.initial}
+							minute#{if Config.timeout.warnings.initial > 1 then 's' else ''}
+						"""
+						icon: Config.iconNotification
 					}
-					nwWin.requestAttention(1)
 
 			'timeout:finalWarning': =>
 				timeoutComponent.showFinalWarning()
@@ -193,8 +199,11 @@ load = (win) ->
 					console.log "TIMEOUT: Final Warning issued"
 
 					global.ActiveSession.finalWarningDelivered = new win.Notification "Final Warning", {
-						body: "#{Config.productName} will disable all windows in #{Config.timeout.warnings.final}
-						minute#{if Config.timeout.warnings.final > 1 then 's' else ''} due to inactivity."
+						body: """
+							Your session will expire in #{Config.timeout.warnings.final}
+							minute#{if Config.timeout.warnings.final > 1 then 's' else ''}.
+						"""
+						icon: Config.iconNotification
 					}
 					nwWin.requestAttention(1)
 

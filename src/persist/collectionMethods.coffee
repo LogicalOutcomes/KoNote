@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # This module implements the core operations of the persistent object store.
@@ -798,7 +798,7 @@ encodeObjectHeader = (obj, indexes) ->
 	return encodeHeader components
 
 decodeObjectHeader = (header, indexes, dirPath) ->
-	[indexValues..., id] = decodeHeader(header, indexes.length + 1)
+	[indexValues..., id] = decodeHeader(header, indexes.length + 1, dirPath)
 
 	result = Imm.Map({
 		id: Base64url.encode id
@@ -823,7 +823,7 @@ decodeObjectRevisionHeader = (header) ->
 	# timestamp+revisionId, instead of having a variable number of index
 	# fields.  More precisely, revision headers always have exactly two
 	# components: a timestamp and a revision ID.
-	[timestamp, revisionId] = decodeHeader(header, 2)
+	[timestamp, revisionId] = decodeHeader(header, 2, 'revisionHeader')
 
 	return Imm.Map({
 		timestamp: timestamp.toString()
@@ -859,7 +859,7 @@ encodeHeader = (components) ->
 
 	return Buffer.concat result
 
-decodeHeader = (header, componentCount) ->
+decodeHeader = (header, componentCount, parentName) ->
 	comps = []
 
 	nextComp = createZeroedBuffer(header.length)
@@ -904,7 +904,7 @@ decodeHeader = (header, componentCount) ->
 
 	if comps.length isnt componentCount
 		console.log header
-		throw new Error "expected #{componentCount} parts in header #{JSON.stringify comps}"
+		throw new Error "expected #{componentCount} parts in #{parentName} header indexes #{JSON.stringify comps}"
 
 	return comps
 

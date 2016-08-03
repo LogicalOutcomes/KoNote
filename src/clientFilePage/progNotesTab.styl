@@ -1,4 +1,5 @@
 .progNotesView
+	flex 1
 	display flex
 	flex-direction column
 
@@ -22,6 +23,7 @@
 				padding 6px 30px
 
 		.popover
+			z-index 1001
 			max-width none
 
 			.popover-content
@@ -41,11 +43,44 @@
 		display flex
 		flex 1
 
-		> .progNotes
+		> .historyEntries
 			flex 1
 			overflow auto
 
 			padding 10px 20px
+
+			.entryHeader
+				display flex
+
+				border-bottom 2px solid sidebar-borders
+
+				padding 5px 0
+
+				font-size 24px
+				font-weight 300
+
+				h1
+					padding 20px 0 10px 0
+					margin 0
+
+				> .timestamp
+					flex 1
+
+					.colorKeyBubble > .bubbleContents
+						opacity 0.5
+						width 0.5em
+						height 0.5em
+						margin-right 0.5em
+
+				.selectProgNoteButton
+					color sidebar-borders
+					margin-left 10px
+					cursor pointer
+
+					&:hover
+						color inherit
+						text-decoration underline
+
 
 			> .empty
 				text-align center
@@ -116,6 +151,18 @@
 					> .progNote
 						padding 20px 0 0 !important
 
+
+			> .globalEventView
+				padding-bottom 30px
+
+				h3
+					.fa
+						color #07488b
+						margin-right 6px
+
+				p
+					padding-left 28px
+
 			> .progNote, > .cancelStub > .details > .progNote
 				flex 1
 
@@ -131,36 +178,11 @@
 					.revisions
 						margin-right 0
 
-				> .header
-					display flex
-
-					border-bottom 2px solid sidebar-borders
-
-					padding 5px 0
-
-					font-size 24px
-					font-weight 300
-
-					h1
-						padding 20px 0 10px 0
-						margin 0
-
-					> .timestamp
-						flex 1
-
-					.selectProgNoteButton
-						color sidebar-borders
-						margin-left 10px
-						cursor pointer
-
-						&:hover
-							color inherit
-							text-decoration underline
-
 				.progNoteToolbar
 					display flex
 					opacity 0
 					transition all .15s ease
+					z-index 1000
 
 					background none
 					position absolute
@@ -190,7 +212,7 @@
 						border-left 2px solid sidebar-borders
 						border-bottom-left-radius 10px
 
-					a
+					a, button
 						cursor pointer
 						color #274B6B
 						opacity 0.75
@@ -207,14 +229,19 @@
 				.progNoteList
 					position relative
 
+					h1, h2, h3
+						margin 0
+
+					.progEvents
+
+						h3
+							padding-top 20px
+
 					> .unit
 						padding-bottom 20px
 
 						&:last-child
 							padding-bottom 0px
-
-						h1, h2, h3
-							margin 0
 
 						h1
 							padding 15px 0
@@ -230,6 +257,9 @@
 							font-weight 600
 							font-size 18px
 							opacity 0.75
+
+						.notes
+							overflow-wrap break-word
 
 						&.basic
 							cursor default

@@ -2,12 +2,12 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+_ = require 'underscore'
 Moment = require 'moment'
 
 {TimestampFormat} = require './persist'
-Config = require './config'
-_ = require 'underscore'
 {CustomError} = require './persist/utils'
+Config = require './config'
 
 load = (win) ->
 	$ = win.jQuery
@@ -26,15 +26,16 @@ load = (win) ->
 			return variable
 
 	# Shortcut for using Font Awesome icons in React
-	FaIcon = (name, customProps) ->
-		properties = customProps or {}
+	FaIcon = (name, props = {}) ->
+		className = "fa fa-#{name}"
 
-		if customProps?
-			properties.className = "fa fa-#{name} #{properties.className}"
-		else
-			properties.className = "fa fa-#{name}"
+		# Extend with className from props if any
+		if props.className?
+			className += " #{props.className}"
 
-		return R.i(properties)
+		props.className = className
+
+		return R.i(props)
 
 	# A convenience method for opening a new window
 	# Callback function (optional) provides window context as argument
@@ -48,10 +49,9 @@ load = (win) ->
 		}, cb
 
 	renderName = (name) ->
-		result = []
-		result.push name.get('first')
+		result = [name.get('first')]
 
-		if name.has('middle') and name.get('middle').size
+		if name.get('middle')
 			result.push name.get('middle')
 
 		result.push name.get('last')
@@ -75,7 +75,7 @@ load = (win) ->
 	# Converts line breaks to React <br> tags and trims leading or trailing whitespace
 	renderLineBreaks = (text) ->
 		unless text?
-			console.warn "renderLineBreaks received: ", text
+			console.warn "renderLineBreaks received no input: ", text
 			return ""
 
 		lines = text.trim()
@@ -108,9 +108,10 @@ load = (win) ->
 		.delete('revisionId')
 		.delete('author')
 		.delete('timestamp')
+		.delete('_dirPath')
 
-	formatTimestamp = (timestamp) ->
-		return Moment(timestamp, TimestampFormat).format('MMMM Do, YYYY [at] h:mma')
+	formatTimestamp = (timestamp, customFormat = '') ->
+		return Moment(timestamp, TimestampFormat).format(customFormat or Config.timestampFormat)
 
 	capitalize = (word) ->
     return word.charAt(0).toUpperCase() + word.slice(1)
@@ -123,6 +124,7 @@ load = (win) ->
 
 		return text[...(maxLength - 1)] + '…'
 
+	makeMoment = (timestamp) -> Moment timestamp, TimestampFormat
 
 	##### Convenience methods for fetching data from a progNote
 
@@ -169,6 +171,7 @@ load = (win) ->
 		formatTimestamp
 		capitalize
 		truncateText
+		makeMoment
 		getUnitIndex
 		getPlanSectionIndex
 		getPlanTargetIndex

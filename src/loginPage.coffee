@@ -1,9 +1,10 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Async = require 'async'
 Imm = require 'immutable'
+Assert = require 'assert'
 
 Config = require './config'
 Term = require './term'
@@ -47,7 +48,7 @@ load = (win) ->
 			@props.closeWindow()
 
 		_activateWindow: ->
-			@setState {isSetUp: true}			
+			@setState {isSetUp: true}
 			Window.show()
 			Window.focus()
 
@@ -78,14 +79,14 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				if isSetUp					
+				if isSetUp
 					# Already set up, no need to continue here
 					console.log "Set up confirmed..."
 					@setState {isSetUp: true}
 					return
 
 				# Falsy isSetUp triggers NewInstallationPage
-				console.log "Not set up, redirecting to installation page..."				
+				console.log "Not set up, redirecting to installation page..."
 				@setState {isSetUp: false}
 
 				openWindow {page: 'newInstallation'}, (newInstallationWindow) =>
@@ -103,22 +104,44 @@ load = (win) ->
 						else
 							# Didn't complete installation, so close window and quit the app
 							@props.closeWindow()
-							console.log "About to quit..."
 							Window.quit()
 
 		_login: (userName, password) ->
-			# Start authentication process
-			@setState ->
-				isLoading: true
-				loadingMessage: "Authenticating..."
+			console.log "Beginning login sequence..."
+			console.time 'loginSequence'
 
-			Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>				
+			Async.series [
+				(cb) =>
+					@setState {isLoading: true, loadingMessage: "Authenticating..."}
+
+					# Create session
+					Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>
+						if err
+							cb err
+							return
+
+						# Store the session globally
+						global.ActiveSession = session
+						cb()
+
+				(cb) =>
+					@setState {loadingMessage: "Decrypting Data..."}
+
+					openWindow {page: 'clientSelection'}, (newWindow) =>
+						clientSelectionPageWindow = newWindow
+
+						# Add listener to close loginPage when clientSelectionPage is closed
+						clientSelectionPageWindow.on 'closed', =>
+							@props.closeWindow()
+							Window.quit()
+
+						# Finish series and hide loginPage once loaded event fires
+						global.ActiveSession.persist.eventBus.once 'clientSelectionPage:loaded', cb
+
+			], (err) =>
+				@setState {isLoading: false, loadingMessage: ""}
+
 				if err
-					@setState {
-						isLoading: false
-						loadingMessage: ""
-					}
-
 					if err instanceof Persist.Session.UnknownUserNameError
 						@refs.ui.onLoginError('UnknownUserNameError')
 						return
@@ -138,25 +161,9 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@setState -> loadingMessage: "Decrypting Data..."
-
-				# Store the new session
-				global.ActiveSession = session
-
-				# Proceed to clientSelectionPage
-				openWindow {page: 'clientSelection'}, (clientSelectionPageWindow) =>
-					# Hide loginPage once loaded
-					global.ActiveSession.persist.eventBus.once 'clientSelectionPage:loaded', =>
-						@setState => {
-							isLoading: false
-							loadingMessage: ""
-						}
-						Window.hide()
-
-					# Make sure to close loginPage when clientSelectionPage is closed
-					clientSelectionPageWindow.on 'closed', =>
-						@props.closeWindow()
-						Window.quit()
+				console.timeEnd 'loginSequence'
+				console.log "Successfully logged in!"
+				Window.hide()
 
 
 	LoginPageUi = React.createFactory React.createClass
@@ -169,11 +176,13 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
-			@props.activateWindow()
+			setTimeout(=>
+				@props.activateWindow()
 
-			if @props.isNewSetUp
-				@setState {userName: 'admin'}
-				@refs.passwordField.focus()
+				if @props.isNewSetUp
+					@setState {userName: 'admin'}
+					@refs.passwordField.focus()
+			, 350)
 
 		onLoginError: (type) ->
 			switch type
@@ -199,7 +208,9 @@ load = (win) ->
 						@refs.userNameField.focus()
 						setTimeout(=>
 							@refs.userNameField.focus()
-						, 100)				
+						, 100)
+				when 'IOError'
+					Bootbox.alert "Please check your network connection and try again."
 				else
 					throw new Error "Invalid Login Error"
 
@@ -213,7 +224,7 @@ load = (win) ->
 				R.div({className: 'header'},
 					FaIcon('times', {
 						id: 'quitIcon'
-						onClick: @_quit					
+						onClick: @_quit
 					})
 				)
 				R.div({id: "loginForm"},
@@ -275,7 +286,7 @@ load = (win) ->
 
 		_quit: ->
 			win.close(true)
-		
+
 		_updateUserName: (event) ->
 			@setState {userName: event.target.value}
 
@@ -283,13 +294,13 @@ load = (win) ->
 			@setState {password: event.target.value}
 
 		_onEnterKeyDown: (event) ->
-			@_login() if event.which is 13 and not @_formIsInvalid()				
-		
+			@_login() if event.which is 13 and not @_formIsInvalid()
+
 		_formIsInvalid: ->
 			not @state.userName or not @state.password
 
 		_login: (event) ->
-			@props.login(@state.userName, @state.password)		
+			@props.login(@state.userName, @state.password)
 
 
 	return LoginPage

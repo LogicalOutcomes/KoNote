@@ -55,7 +55,6 @@ load = (win) ->
 			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 			unless sameSelectedMetrics
 				@_refreshSelectedMetrics()
-				@_refreshProgEvents()
 
 			# Update selected progEvents?
 			sameProgEvents = Imm.is @props.progEvents, oldProps.progEvents
@@ -63,10 +62,10 @@ load = (win) ->
 				@_refreshProgEvents()
 
 			# Update timeSpan?
-			sameTimeSpan = @props.timeSpan is oldProps.timeSpan
+			sameTimeSpan = Imm.is @props.timeSpan, oldProps.timeSpan
 			unless sameTimeSpan
-				newMin = @props.timeSpan.start
-				newMax = @props.timeSpan.end
+				newMin = @props.timeSpan.get('start')
+				newMax = @props.timeSpan.get('end')
 
 				# C3 requires there's some kind of span (even if it's 1ms)
 				if newMin is newMax
@@ -183,8 +182,8 @@ load = (win) ->
 							fit: false
 							format: '%b %d'
 						}
-						min: @props.timeSpan.start
-						max: @props.timeSpan.end
+						min: @props.timeSpan.get('start')
+						max: @props.timeSpan.get('end')
 					}
 					y: {
 						show: false
@@ -233,23 +232,29 @@ load = (win) ->
 					@props.updateMetricColors @state.metricColors
 
 		_refreshSelectedMetrics: ->
+			console.log "Refreshing selected metrics..."
 			@_chart.hide()
 
 			@props.selectedMetricIds.forEach (metricId) =>
 				@_chart.show("y-" + metricId)
 
 		_refreshProgEvents: ->
+			console.log "Refreshing progEvents..."
 			# Generate c3 regions array
 			progEventRegions = @_generateProgEventRegions()
 
 			# Flush and re-apply regions to c3 chart
 			@_chart.regions.remove()
-			@_chart.regions.add progEventRegions.toJS()
+
+			# C3 Regions have some kind of animation attached, which
+			# messes up remove/add
+			setTimeout(=>
+				@_chart.regions progEventRegions.toJS()
+				@_attachKeyBindings()
+			, 500)
 
 			# Bind user interaction events
-			@_attachKeyBindings()
-
-			@setState => {progEventRegions}
+			# @_attachKeyBindings()
 
 		_generateProgEventRegions: ->
 			# Build Imm.List of region objects
@@ -311,7 +316,7 @@ load = (win) ->
 						remainingEvents = remainingEvents.delete(liveIndex)
 
 
-				# Cancat to final (flat) output for c3
+				# Concat to final (flat) output for c3
 				progEvents = progEvents.concat eventRows.get(rowIndex)
 
 				rowIndex++

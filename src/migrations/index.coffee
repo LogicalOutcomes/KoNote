@@ -73,7 +73,7 @@ writeDataVersion = (dataDir, toVersion, cb) ->
 
 
 # Use this at the command line
-runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
+runMigration = (dataDir, fromVersion, toVersion, userName, password, cb=(->)) ->
 	stagedDataDir = "./data_migration_#{fromVersion}-#{toVersion}"
 	backupDataDir = "./data_migration_#{fromVersion}--backup-#{Moment().format('YYYY-MM-DD-(h-ssa)')}"
 
@@ -196,9 +196,11 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password) ->
 			console.error "Migration failed:"
 			console.error err
 			console.error err.stack
+			cb err
 			return
 
 		console.info "------ Migration Complete! ------"
+		cb()
 
 
 

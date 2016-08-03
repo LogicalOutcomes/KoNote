@@ -4,23 +4,24 @@ Async = require 'async'
 Moment = require 'moment'
 Fs = require 'fs'
 
-{Users, Persist, generateId} = require '../persist'
+{Users, Persist, generateId} = require '../src/persist'
 Create = require './create'
 
+randomNumberUpTo = (max) -> Math.floor(Math.random() * max) + 1
+
 generateClientFile = (metrics, template, eventTypes, cb) ->
-	console.group('Generated Client File')
+	console.group('Generate Client File')
 
 	clientFile = null
 	planTargets = null
 	sections = null
 	targetIds = null
 	planTargets = null
-	progEvents = null
 	progNotes = null
+	progEventsSet = null
 
 	Async.series [
 		# Create the empty clientFile
-
 		(cb) ->
 			Create.clientFile (err, result) ->
 				if err
@@ -44,17 +45,16 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 
 		# Apply the target to a section, apply to clientFile, save
 		(cb) ->
-
 			sliceSize = Math.floor(planTargets.size / template.clientFileSections)
-
-			targetIds = planTargets
-			.map (target) -> target.get('id')
+			targetIds = planTargets.map (target) -> target.get('id')
 
 			x = 0
+
 			Async.times template.clientFileSections, (index, cb) =>
 				sectionTargetIds = targetIds.slice(x, x + sliceSize)
 				# randomly chooses a status, with a higher probability of 'default'
-				randomNumber = Math.floor(Math.random() * 10) + 1
+				randomNumber = randomNumberUpTo 10
+
 				if randomNumber > 7
 					status = 'deactivated'
 				else if randomNumber < 3
@@ -62,7 +62,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 				else
 					status = 'default'
 
-				x = x + sliceSize
+				x += sliceSize
 
 				section = Imm.fromJS {
 					id: generateId()
@@ -99,7 +99,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 					return
 
 				progNotes = results
-				console.log "Created progNotes", progNotes.toJS()
+				console.log "Created #{progNotes.size} progNotes"
 				cb()
 
 		# Create a # of progEvents for each progNote in the clientFile
@@ -117,8 +117,41 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 					cb err
 					return
 
-				progEvents = Imm.List(results)
-				console.log "Created #{progEvents.size} sets of progEvents in total", progEvents.toJS()
+				progEventsSet = Imm.List(results)
+				console.log "Created #{template.progEvents} progEvents for each progNote"
+				cb()
+
+		# 1/10 chance that a globalEvent is created from a progEvent
+		(cb) ->
+			chanceOfGlobalEvent = 1/10
+
+			Async.map progEventsSet.toArray(), (progEvents, cb) ->
+				Async.map progEvents.toArray(), (progEvent, cb) ->
+
+					if randomNumberUpTo(1/chanceOfGlobalEvent) is 1
+						Create.globalEvent {progEvent}, cb
+					else
+						cb null
+
+				, (err, results) ->
+					if err
+						cb err
+						return
+
+					cb null, Imm.List(results)
+
+			, (err, results) ->
+				if err
+					cb err
+					return
+
+				globalEvents = Imm.List(results)
+				.flatten(true)
+				.filter (globalEvent) -> globalEvent?
+
+				console.log "Generated #{globalEvents.size} globalEvents from progEvents
+				(#{chanceOfGlobalEvent*100}% chance)"
+
 				cb()
 
 	], (err) ->
@@ -126,7 +159,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 			cb err
 			return
 
-		console.groupEnd('Generated Client File')
+		console.groupEnd('Generate Client File')
 		cb(null, clientFile)
 
 
@@ -160,16 +193,16 @@ runSeries = (templateFileName = 'seedSmall') ->
 
 	Async.series [
 		(cb) ->
-			Fs.readFile "./src/seeds/templates/#{templateFileName}.json", (err, result) ->
+			Fs.readFile "./seeds/templates/#{templateFileName}.json", (err, result) ->
 				if err
 					if err.code is "ENOENT"
-						console.error "#{templateFileName}: Template does not exist."
+						cb new Error "Template \"#{templateFileName}.json\" does not exist in /templates"
 
 					cb err
 					return
 
-				console.log JSON.parse(result)
 				template = JSON.parse(result)
+				console.table template
 
 				cb()
 
@@ -226,7 +259,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 					return
 
 				clientFiles = results
-				console.log "#{clientFiles.size} clientFiles generated:", clientFiles.toJS()
+				console.log "#{clientFiles.size} clientFiles generated"
 				console.groupEnd('Client Files')
 				cb()
 
@@ -245,7 +278,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 					return
 
 				links = Imm.List(result)
-				console.log "Created #{clientFiles.size} link(s) for each of the #{programs.size} program(s)"
+				console.log "Created #{programs.size} program link(s) for each clientFile"
 				console.groupEnd('Program Links')
 				cb()
 
@@ -254,10 +287,17 @@ runSeries = (templateFileName = 'seedSmall') ->
 		delete global.isSeeding
 
 		if err
-			console.error "Problem running seeding series:", err
+			# Close any currently open logging groups to make sure the error is seen
+			# Yeah, this sucks.
+			for i in [0...1000]
+				console.groupEnd()
+
+			console.error "Seeding failed:"
+			console.error err
+			console.error err.stack
 			return
 
-		console.log "Finished Seeding Series!"
+		console.info "------ Seeding Complete! ------"
 
 
 module.exports = {runSeries}
