@@ -591,7 +591,7 @@ load = (win, {clientFileId}) ->
 						else
 							planTargetsById = state.planTargetsById.set targetId, Imm.fromJS {
 								id: targetId
-								revisions: [newRev]
+								revisions: Imm.List [newRev]
 							}
 						return {planTargetsById}
 
