@@ -144,7 +144,7 @@ load = (win) ->
 								className: "btn btn-link #{showWhen hasChanges}"
 								onClick: @_resetRevisingProgNote
 							},
-								"Discard Changes"
+								"Discard"
 							)
 						)
 					else

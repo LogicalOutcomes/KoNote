@@ -113,7 +113,7 @@ load = (win) ->
 								className: "btn btn-link #{showWhen hasChanges}"
 								onClick: @_resetChanges
 							},
-								"Discard Changes"
+								"Discard"
 							)
 						)
 						R.div({className: 'rightMenu'},
