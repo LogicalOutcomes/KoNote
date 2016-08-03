@@ -507,9 +507,6 @@ load = (win) ->
 				displayCompletedSections: null
 			}
 
-		componentDidMount: ->
-			sectionsDom = @refs.sections
-
 		render: ->
 			{
 				clientFile
