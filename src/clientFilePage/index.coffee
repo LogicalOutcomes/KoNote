@@ -762,6 +762,7 @@ load = (win, {clientFileId}) ->
 			global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
 
 			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
+			#Window.maximize()
 			Window.focus()
 
 		render: ->
