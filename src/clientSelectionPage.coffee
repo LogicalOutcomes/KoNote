@@ -44,7 +44,7 @@ load = (win) ->
 				status: 'init'
 
 				isLoading: false
-				loadingMessage: ""
+				loadingMessage: "Decrypting Data..."
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
 				userProgramOverride: null
@@ -103,7 +103,6 @@ load = (win) ->
 		_openClientFile: (clientFileId) ->
 			@setState {
 				isLoading: true
-				loadingMessage: "Loading Client File..."
 			}
 
 			openWindow {
@@ -327,16 +326,14 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
+			# Fire 'loaded' event for loginPage to hide itself
+			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
 			setTimeout(=>
 				@_refreshResults()
 
 				# Show and focus this window
-				Window.show()
+				#Window.show()
 				Window.focus()
-
-				# Fire 'loaded' event for loginPage to hide itself
-				global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
-
 				@_attachKeyBindings()
 
 			, 250)
@@ -370,7 +367,7 @@ load = (win) ->
 
 			return R.div({
 					id: 'clientSelectionPage'
-					className: if @state.menuIsOpen then 'openMenu' else ''
+					className: if @state.menuIsOpen then 'openMenu' else 'animated fadeIn'
 			},
 				Spinner {
 					isOverlay: true
