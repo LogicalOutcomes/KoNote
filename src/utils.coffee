@@ -40,11 +40,19 @@ load = (win) ->
 	# A convenience method for opening a new window
 	# Callback function (optional) provides window context as argument
 	openWindow = (params, cb=(->)) ->
+		width = 1200
+		height = 700
+
+		if nw.Screen.screens[0].work_area.width < 1200
+			width = nw.Screen.screens[0].work_area.width
+		if nw.Screen.screens[0].work_area.height < 700
+			height = nw.Screen.screens[0].work_area.height
+
 		Gui.Window.open 'src/main.html?' + $.param(params), {
 			focus: false
 			show: false
-			width: 1200
-			height: 700
+			width
+			height
 			icon: "src/icon.png"
 		}, cb
 
