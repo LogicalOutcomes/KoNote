@@ -496,6 +496,7 @@ load = (win, {clientFileId}) ->
 									clientName = renderName @state.clientFile.get('clientName')
 									new win.Notification "#{clientName} file unlocked", {
 										body: "You now have the read/write permissions for this #{Term 'client file'}"
+										icon: Config.iconNotification
 									}
 									@setState {
 										clientFileLock: newLock
