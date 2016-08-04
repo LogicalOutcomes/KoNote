@@ -24,7 +24,6 @@ load = (win) ->
 	Gui = win.require 'nw.gui'
 	Window = Gui.Window.get()
 
-	Spinner = require('./spinner').load(win)
 	MainMenu = require('./mainMenu').load(win)
 	BrandWidget = require('./brandWidget').load(win)
 	OrderableTable = require('./orderableTable').load(win)
@@ -42,9 +41,6 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				status: 'init'
-
-				isLoading: false
-				loadingMessage: "Decrypting Data..."
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
 				userProgramOverride: null
@@ -72,11 +68,7 @@ load = (win) ->
 
 			return ClientSelectionPageUi {
 				openClientFile: @_openClientFile
-
 				status: @state.status
-				isLoading: @state.isLoading
-				loadingMessage: @state.loadingMessage
-
 				clientFileHeaders: @state.clientFileHeaders
 				clientFileProgramLinks: @state.clientFileProgramLinks
 				programs: @state.programs
@@ -101,9 +93,6 @@ load = (win) ->
 					return null
 
 		_openClientFile: (clientFileId) ->
-			@setState {
-				isLoading: true
-			}
 
 			openWindow {
 				page: 'clientFile'
@@ -111,10 +100,8 @@ load = (win) ->
 			}
 
 			global.ActiveSession.persist.eventBus.once 'clientFilePage:loaded', =>
-				@setState {
-					isLoading: false
-					loadingMessage: ''
-				}
+				# was used to close the loading spinner, no long required
+				# todo: cleanup listeners
 
 		_setStatus: (status) ->
 			@setState {status}
@@ -369,11 +356,6 @@ load = (win) ->
 					id: 'clientSelectionPage'
 					className: if @state.menuIsOpen then 'openMenu' else 'animated fadeIn'
 			},
-				Spinner {
-					isOverlay: true
-					isVisible: @props.isLoading
-					message: @props.loadingMessage
-				}
 				R.a({
 					id: 'expandMenuButton'
 					className: 'menuIsOpen' if @state.menuIsOpen
