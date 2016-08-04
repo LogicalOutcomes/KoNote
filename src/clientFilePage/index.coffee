@@ -763,11 +763,9 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		componentDidMount: ->
-			global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
-
 			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
-			#Window.maximize()
 			Window.focus()
+			Window.maximize()
 
 		render: ->
 			if @props.loadErrorType
