@@ -67,7 +67,6 @@ load = (win) ->
 			lookupField.on 'typeahead:selected', (event, metric) =>
 				lookupField.typeahead 'val', ''
 				@props.onSelection metric.id
-				@props.onBlur()
 
 			# We need to reattach an event listener to the create button, but
 			# it would get wiped out every time typeahead.js rerenders.  So,
