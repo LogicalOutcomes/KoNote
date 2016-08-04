@@ -4,6 +4,54 @@ logo-light-blue = #83c4ea
 sidebar-bg = hsl(hue(logo-light-blue), 35%, 94%)
 sidebar-borders = darken(sidebar-bg, 10%)
 
+.loadingSpinnerContainer
+	height 100%
+
+	.preloaderSpinner
+		height 100%
+		display flex
+		justify-content center
+		align-items center
+
+	.spinnerContainer
+		display flex
+		justify-content space-around
+		margin 100px auto
+		width 50px
+		height 40px
+		text-align center
+
+		> div
+			background-color #337ab7
+			height 100%
+			width 6px
+			display inline-block
+			-webkit-animation sk-stretchdelay 1.2s infinite ease-in-out
+			animation sk-stretchdelay 1.2s infinite ease-in-out
+
+	.spinnerContainer .rect20
+		-webkit-animation-delay -1.1s
+		animation-delay -1.1s
+
+	.spinnerContainer .rect30
+		-webkit-animation-delay -1.0s
+		animation-delay -1.0s
+
+	.spinnerContainer .rect40
+		-webkit-animation-delay -0.9s
+		animation-delay -0.9s
+
+	.spinnerContainer .rect50
+		-webkit-animation-delay -0.8s
+		animation-delay -0.8s
+
+	@-webkit-keyframes sk-stretchdelay 
+		0%, 40%, 100%
+			-webkit-transform scaleY(0.4)   
+		20%
+			-webkit-transform scaleY(1.0)
+
+
 #container > .clientFilePage
 	background white
 	position relative
@@ -23,7 +71,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 			padding 5px 10px
 			flex 4
 
-			&.clickable:hover
+			&.clickablehover
 				background #94F27F
 				cursor pointer
 
@@ -55,16 +103,16 @@ sidebar-borders = darken(sidebar-bg, 10%)
 			> div
 				text-align left
 
-			.brandContainer {
+			.brandContainer 
 				position absolute
 				left 0px
 				bottom 0px
 				width 100%
 
-				.logoKonode {
+				.logoKonode 
 					margin-left 45px
-				}
-			}
+				
+			
 
 			> img
 				margin 0 auto
@@ -87,7 +135,6 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 				> .clientNameField
 					cursor pointer
-
 					&:hover
 						opacity 0.6
 
@@ -96,7 +143,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 					cursor pointer
 			> .inactiveStatus
 				width 100%
-				color: orange
+				color orange
 				font-size 18px
 				text-align center
 				padding-bottom 15px
@@ -144,7 +191,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 					cursor pointer
 					font-weight 600
 
-					&:hover
+					&hover
 						background darken(sidebar-bg, 5%)
 
 					&.active

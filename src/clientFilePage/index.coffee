@@ -43,6 +43,22 @@ load = (win, {clientFileId}) ->
 
 	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
 
+	loadingSpinner = React.createFactory React.createClass
+		displayName: 'loadingSpinner'
+		mixins: [React.addons.PureRenderMixin]
+		render: ->
+			return R.div({className: "loadingSpinnerContainer"},
+				R.div({className: "preloaderSpinner"},
+					R.div({className: "spinnerContainer"},
+						R.div({className: "rect10"})
+						R.div({className: "rect20"})
+						R.div({className: "rect30"})
+						R.div({className: "rect40"})
+						R.div({className: "rect50"})
+					)
+				)
+			)
+		
 	ClientFilePage = React.createFactory React.createClass
 		displayName: 'ClientFilePage'
 		getInitialState: ->
@@ -80,8 +96,7 @@ load = (win, {clientFileId}) ->
 			@refs.ui.suggestClose()
 
 		render: ->
-			if @state.status isnt 'ready' then return R.div({})
-
+			if @state.status isnt 'ready' then return loadingSpinner({})
 
 			clientName = renderName(@state.clientFile.get('clientName'))
 
@@ -744,16 +759,11 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		componentDidMount: ->
-			setTimeout(=>
-				global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
+			global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
 
-				@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
-
-				Window.maximize()
-				Window.show()
-				Window.focus()
-
-			, 250)
+			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
+			#Window.maximize()
+			Window.focus()
 
 		render: ->
 			if @props.loadErrorType
@@ -768,11 +778,7 @@ load = (win, {clientFileId}) ->
 			recordId = @props.clientFile.get('recordId')
 
 
-			return R.div({className: 'clientFilePage'},
-				Spinner {
-					isOverlay: true
-					isVisible: @props.isLoading
-				}
+			return R.div({className: 'clientFilePage animated fadeIn'},
 
 				(if isReadOnly
 					ReadOnlyNotice {data: @props.readOnlyData}
