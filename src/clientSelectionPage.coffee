@@ -24,7 +24,6 @@ load = (win) ->
 	Gui = win.require 'nw.gui'
 	Window = Gui.Window.get()
 
-	Spinner = require('./spinner').load(win)
 	MainMenu = require('./mainMenu').load(win)
 	BrandWidget = require('./brandWidget').load(win)
 	OrderableTable = require('./orderableTable').load(win)
@@ -42,9 +41,6 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				status: 'init'
-
-				isLoading: false
-				loadingMessage: ""
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
 				userProgramOverride: null
@@ -72,11 +68,7 @@ load = (win) ->
 
 			return ClientSelectionPageUi {
 				openClientFile: @_openClientFile
-
 				status: @state.status
-				isLoading: @state.isLoading
-				loadingMessage: @state.loadingMessage
-
 				clientFileHeaders: @state.clientFileHeaders
 				clientFileProgramLinks: @state.clientFileProgramLinks
 				programs: @state.programs
@@ -101,10 +93,6 @@ load = (win) ->
 					return null
 
 		_openClientFile: (clientFileId) ->
-			@setState {
-				isLoading: true
-				loadingMessage: "Loading Client File..."
-			}
 
 			openWindow {
 				page: 'clientFile'
@@ -112,10 +100,8 @@ load = (win) ->
 			}
 
 			global.ActiveSession.persist.eventBus.once 'clientFilePage:loaded', =>
-				@setState {
-					isLoading: false
-					loadingMessage: ''
-				}
+				# was used to close the loading spinner, no long required
+				# todo: cleanup listeners
 
 		_setStatus: (status) ->
 			@setState {status}
@@ -327,7 +313,7 @@ load = (win) ->
 
 				queryText: ''
 				queryResults: Imm.List()
-				showingDormant: false
+				displayInactive: null
 
 				orderedQueryResults: Imm.List()
 				hoverClientId: null
@@ -336,16 +322,14 @@ load = (win) ->
 			}
 
 		componentDidMount: ->
+			# Fire 'loaded' event for loginPage to hide itself
+			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
 			setTimeout(=>
 				@_refreshResults()
 
 				# Show and focus this window
-				Window.show()
+				#Window.show()
 				Window.focus()
-
-				# Fire 'loaded' event for loginPage to hide itself
-				global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
-
 				@_attachKeyBindings()
 
 			, 250)
@@ -360,7 +344,6 @@ load = (win) ->
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
-			inactiveClientFiles = @_getInactiveClientFiles()
 
 			# Add in all program objects this clientFile's a member of
 
@@ -376,16 +359,20 @@ load = (win) ->
 
 				clientFile.set('programs', programMemberships)
 
+			# Get inactive clientFiles for filter display
+			inactiveClientFiles = queryResults.filter (clientFile) ->
+				clientFile.get('status') isnt 'active'
+
+			# Filter out inactive clientFiles by default
+			if not @state.displayInactive
+				queryResults = queryResults.filter (clientFile) ->
+					clientFile.get('status') is 'active'
+
 
 			return R.div({
 					id: 'clientSelectionPage'
-					className: if @state.menuIsOpen then 'openMenu' else ''
+					className: if @state.menuIsOpen then 'openMenu' else 'animated fadeIn'
 			},
-				Spinner {
-					isOverlay: true
-					isVisible: @props.isLoading
-					message: @props.loadingMessage
-				}
 				R.a({
 					id: 'expandMenuButton'
 					className: 'menuIsOpen' if @state.menuIsOpen
@@ -507,9 +494,9 @@ load = (win) ->
 										R.div({className: "checkbox"},
 											R.label({}
 												R.input({
-													onChange: @_toggleDormant
+													onChange: @_toggleInactive
 													type: 'checkbox'
-													checked: @state.showingDormant
+													checked: @state.displayInactive
 												})
 												"Show deactivated (#{inactiveClientFiles.size})",
 											)
@@ -555,7 +542,7 @@ load = (win) ->
 									{
 										name: "Status"
 										dataPath: ['status']
-										isDisabled: not @state.showingDormant
+										isDisabled: not @state.displayInactive
 									}
 									{
 										name: Config.clientFileRecordId.label
@@ -572,6 +559,7 @@ load = (win) ->
 					MainMenu({
 						ref: 'userMenu'
 						className: 'menuIsOpen animated fadeInRight'
+						isAdmin
 						programs: @props.programs
 						userProgram: @props.userProgram
 						managerLayer: @state.managerLayer
@@ -645,18 +633,9 @@ load = (win) ->
 				@setState {menuIsOpen: true}
 
 		_refreshResults: ->
-			# Return all results if search query is empty
+			# Return all clientFileHeaders if search query is empty
 			if @state.queryText.trim().length is 0
-				if @state.showingDormant is false
-					# TODO: Move this logic to render
-					queryResults = @props.clientFileHeaders
-					.filter (clientFile) ->
-						clientFile.get('status') is 'active'
-
-					@setState {queryResults}
-				else
-					queryResults = @props.clientFileHeaders
-				@setState {queryResults}
+				@setState {queryResults: @props.clientFileHeaders}
 				return
 
 			# Split into query parts
@@ -685,24 +664,16 @@ load = (win) ->
 
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
-		_toggleDormant: ->
-			if @state.showingDormant is true
-				queryResults = @props.clientFileHeaders
-				.filter (clientFile) ->
-					clientFile.get('status') is 'active'
-				showingDormant = false
-				@setState {queryResults, showingDormant}
-			else
-				queryResults = @props.clientFileHeaders
-				showingDormant = true
-				@setState {queryResults, showingDormant}
-		_getInactiveClientFiles: ->
-			return @props.clientFileHeaders.filter (clientFile) ->
-				clientFile.get('status') isnt 'active'
+
+		_toggleInactive: ->
+			@setState {displayInactive: not @state.displayInactive}
+
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
+
 		_home: ->
 			@setState {isSmallHeaderSet: false, queryText: ''}
+
 		_onResultSelection: (clientFileId, event) ->
 			@setState {hoverClientId: clientFileId}
 			@props.openClientFile(clientFileId)

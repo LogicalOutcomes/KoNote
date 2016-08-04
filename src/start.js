@@ -3,7 +3,6 @@
 // that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 (function () {
-	console.time('initLoad');
 
 	var Config = require('./config');
 

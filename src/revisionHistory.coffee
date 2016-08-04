@@ -5,7 +5,7 @@
 Imm = require 'immutable'
 ImmPropTypes = require 'react-immutable-proptypes'
 Term = require './term'
-{diffWordsWithSpace} = require 'diff'
+{diffChars} = require 'diff'
 
 load = (win) ->
 	$ = win.jQuery
@@ -36,7 +36,7 @@ load = (win) ->
 		}
 
 		_diffStrings: (oldString, newString) ->
-			diffs = diffWordsWithSpace(oldString, newString)
+			diffs = diffChars(oldString, newString)
 
 			return R.span({className: 'value'},
 				# Iterate over diffs and assign a diff-span or plain string
@@ -322,8 +322,6 @@ load = (win) ->
 				# 	)
 				# )
 
-				FaIcon(entry.get('icon'))
-
 				R.span({className: 'action'},
 					# Different display cases for indication of change
 					(if entry.get('action') is 'created'
@@ -368,12 +366,17 @@ load = (win) ->
 						styleClass: 'clear' unless entry.get('value')
 					})
 
+
 				else if entry.get('property') is 'value'
 					metric = entry.get('item')
 
+				else if @props.isPlanTarget and entry.get('reason')
+					": \"#{entry.get('reason')}\""
+
 				else if not @props.isPlanTarget
-					entry.get('reason') or entry.get('value')
+					if entry.get('reason') then "\"#{entry.get('reason')}\"" else entry.get('value')
 				)
+
 			)
 
 	RevisionSnapshot = ({revision, metricsById}) ->

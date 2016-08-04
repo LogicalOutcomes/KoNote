@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # A dialog for allowing the user to define (i.e. create) a new metric
@@ -35,7 +35,7 @@ load = (win) ->
 				@refs.definitionField.refs.textarea.focus()
 			else
 				@refs.nameField.focus()
-			
+
 		render: ->
 			Dialog({
 				ref: 'dialog'
@@ -57,7 +57,7 @@ load = (win) ->
 						ExpandingTextArea({
 							ref: 'definitionField'
 							onChange: @_updateDefinition
-							value: @state.definition							
+							value: @state.definition
 						})
 					)
 					R.div({className: 'btn-toolbar pull-right'},
@@ -96,6 +96,7 @@ load = (win) ->
 			newMetric = Imm.fromJS {
 				name: @state.name.trim()
 				definition: @state.definition.trim()
+				status: 'default'
 			}
 
 			ActiveSession.persist.metrics.create newMetric, (err, result) =>

@@ -206,10 +206,11 @@ dataModelDefinitions = [
 		name: 'metric'
 		collectionName: 'metrics'
 		isMutable: true
-		indexes: [['name']]
+		indexes: [['status'], ['name']]
 		schema: Joi.object().keys({
 			name: Joi.string()
 			definition: Joi.string()
+			status: ['default', 'deactivated']
 		})
 	}
 

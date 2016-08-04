@@ -16,6 +16,7 @@ load = (win) ->
 	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
+	{FaIcon} = require('./utils').load(win)
 
 	UserProgramDropdown = React.createFactory React.createClass
 		displayName: 'UserProgramSelection'
@@ -41,8 +42,11 @@ load = (win) ->
 			@setState {isOpen: not @state.isOpen}
 
 		render: ->
+			# userProgram can be null, so bypasses getDefaultProps
+			userProgram = @props.userProgram or Imm.Map()
+
 			remainingPrograms = @props.programs.filterNot (program) =>
-				@props.userProgram.get('id') is program.get('id')
+				userProgram.get('id') is program.get('id')
 
 			R.span({
 				className: 'userProgramDropdown'
@@ -59,16 +63,11 @@ load = (win) ->
 
 					title: R.span({
 						className: 'currentProgram'
-						style: { borderBottomColor: @props.userProgram.get('colorKeyHex')}
+						style: { borderBottomColor: userProgram.get('colorKeyHex')}
 					},
-						@props.userProgram.get('name') or "No #{Term 'Program'}"
+						userProgram.get('name') or "No #{Term 'Program'}"
 					)
 				},
-					(if remainingPrograms.isEmpty()
-						B.MenuItem({header: true},
-							"No other #{Term 'programs'}"
-						)
-					)
 					(remainingPrograms.map (program) =>
 						B.MenuItem({
 							key: program.get('id')
@@ -77,6 +76,17 @@ load = (win) ->
 							program.get('name')
 							' '
 							ColorKeyBubble({colorKeyHex: program.get('colorKeyHex')})
+						)
+					)
+					(if not remainingPrograms.isEmpty() and @props.userProgram
+						B.MenuItem({divider: true})
+					)
+					(if @props.userProgram
+						B.MenuItem({
+							onClick: @props.onSelect.bind null, null
+						},
+							"None "
+							FaIcon('ban')
 						)
 					)
 				)
