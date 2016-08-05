@@ -470,7 +470,7 @@ load = (win) ->
 		_setSelectedTarget: (targetId) ->
 			@setState {selectedTargetId: targetId}
 
-		_addMetricToTarget: (targetId, metricId) ->
+		_addMetricToTarget: (targetId, cb, metricId) ->
 			# Current target already has this metric
 			if @state.currentTargetRevisionsById.getIn([targetId, 'metricIds']).contains metricId
 				Bootbox.alert "This #{Term 'metric'} has already been added to the selected #{Term 'target'}."
@@ -487,7 +487,7 @@ load = (win) ->
 				currentTargetRevisionsById: @state.currentTargetRevisionsById.update targetId, (currentRev) ->
 					return currentRev.update 'metricIds', (metricIds) ->
 						return metricIds.push metricId
-			}
+			}, cb
 
 		_deleteMetricFromTarget: (targetId, metricId) ->
 			@setState {
@@ -1139,7 +1139,7 @@ load = (win) ->
 								MetricLookupField({
 									metrics: @props.metricsById.valueSeq().filter (metric) => metric.get('status') is 'default'
 									onSelection: @props.addMetricToTarget.bind(
-										null, @props.targetId
+										null, @props.targetId, @_hideMetricInput
 									)
 									placeholder: "Find / Define a #{Term 'Metric'}"
 									isReadOnly: @props.isReadOnly
@@ -1154,7 +1154,6 @@ load = (win) ->
 		_updateField: (fieldName, event) ->
 			newValue = @props.currentRevision.set fieldName, event.target.value
 			@props.onTargetUpdate newValue
-
 
 		_onTargetClick: (event) ->
 			@props.onTargetSelection()

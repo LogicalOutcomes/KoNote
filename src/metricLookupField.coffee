@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # An auto-completing text field for selecting a metric.
@@ -74,7 +74,7 @@ load = (win) ->
 			# check the target.
 			lookupField.parent().on 'click', (event) =>
 				lookupField.focus()
-				
+
 				currentLookupValue = lookupField.val()
 
 				# Force typeahead to re-show suggestions if has value when focused

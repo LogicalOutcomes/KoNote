@@ -58,7 +58,7 @@ load = (win, {clientFileId}) ->
 					)
 				)
 			)
-		
+
 	ClientFilePage = React.createFactory React.createClass
 		displayName: 'ClientFilePage'
 		getInitialState: ->
@@ -535,11 +535,14 @@ load = (win, {clientFileId}) ->
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
 			@setState (state) => {isLoading: true}
 
+			newPlanTargetsArray = newPlanTargets.toArray()
+			updatedPlanTargetsArray = updatedPlanTargets.toArray()
+
 			idMap = Imm.Map()
 
 			Async.series [
 				(cb) =>
-					Async.each newPlanTargets.toArray(), (newPlanTarget, cb) =>
+					Async.each newPlanTargetsArray, (newPlanTarget, cb) =>
 						transientId = newPlanTarget.get('id')
 						newPlanTarget = newPlanTarget.delete('id')
 
@@ -553,7 +556,7 @@ load = (win, {clientFileId}) ->
 							cb()
 					, cb
 				(cb) =>
-					Async.each updatedPlanTargets.toArray(), (updatedPlanTarget, cb) =>
+					Async.each updatedPlanTargetsArray, (updatedPlanTarget, cb) =>
 						ActiveSession.persist.planTargets.createRevision updatedPlanTarget, cb
 					, cb
 				(cb) =>
@@ -760,11 +763,9 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		componentDidMount: ->
-			global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
-
 			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
-			#Window.maximize()
 			Window.focus()
+			Window.maximize()
 
 		render: ->
 			if @props.loadErrorType

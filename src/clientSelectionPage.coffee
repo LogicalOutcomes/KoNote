@@ -99,10 +99,6 @@ load = (win) ->
 				clientFileId
 			}
 
-			global.ActiveSession.persist.eventBus.once 'clientFilePage:loaded', =>
-				# was used to close the loading spinner, no long required
-				# todo: cleanup listeners
-
 		_setStatus: (status) ->
 			@setState {status}
 
