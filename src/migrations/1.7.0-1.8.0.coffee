@@ -725,6 +725,66 @@ addProgNoteBeginTimestampField = (dataDir, globalEncryptionKey, cb) ->
 
 		finalizeMigrationStep(dataDir, cb)
 
+addMetricStatusField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'metrics'), (metric, cb) ->
+		metricDirPath = Path.join(dataDir, 'metrics', metric)
+
+		forEachFileIn metricDirPath, (metricRev, cb) ->
+			metricRevPath = Path.join(metricDirPath, metricRev)
+			metricRevObject = null
+
+			Async.series [
+				(cb) =>
+					# Read metric object
+					Fs.readFile metricRevPath, (err, result) ->
+						if err
+							cb err
+							return
+
+						metricRevObject = JSON.parse globalEncryptionKey.decrypt result
+
+						cb()
+				(cb) =>
+					# Add 'status' property
+					metricRevObject.status = 'default'
+					encryptedObj = globalEncryptionKey.encrypt(JSON.stringify metricRevObject)
+					Fs.writeFile metricRevPath, encryptedObj, cb
+			], cb
+		, cb
+	, (err) ->
+		if err
+			console.info "Problem with metric status"
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+addMetricStatusIndex = (dataDir, globalEncryptionKey, cb) ->
+	metricsDir = Path.join(dataDir, 'metrics')
+
+	forEachFileIn metricsDir, (metric, cb) ->
+		metricDirPath = Path.join(metricsDir, metric)
+
+		# Decrypt, add index, re-encrypt
+		indexes = decryptFileName metric, 2, globalEncryptionKey
+		indexes.unshift 'default'
+		encryptedIndexes = encryptFileName indexes, globalEncryptionKey
+
+		# Build new path
+		newMetricDirPath = Path.join(metricsDir, encryptedIndexes)
+
+		# Rename to new path
+		Fs.rename metricDirPath, newMetricDirPath, cb
+
+	, (err) ->
+		if err
+			console.info "problem with metric status index"
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+
 # ////////////////////// Migration Series //////////////////////
 
 
@@ -783,6 +843,16 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "10. Add 'beginTimestamp' field to progNote objects"
 				addProgNoteBeginTimestampField dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "11. Add 'status': 'default' field to metric objects"
+				addMetricStatusField dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "12. Append 'default' status index to metric headers"
+				addMetricStatusIndex dataDir, globalEncryptionKey, cb
 
 		]
 

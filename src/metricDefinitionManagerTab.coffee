@@ -1,8 +1,8 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-Async = require 'async'	
+Async = require 'async'
 Imm = require 'immutable'
 
 Persist = require './persist'
@@ -13,7 +13,7 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	R = React.DOM	
+	R = React.DOM
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -30,15 +30,16 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: -> {
-			metricDefinitions: null
+			metricDefinitions: Imm.List()
+			displayDeactivated: false
 		}
 
 		componentWillMount: ->
 			metricDefinitionHeaders = null
-			metricDefinitions = null
+			metricDefinitions = Imm.List()
 
 			Async.series [
-				(cb) =>							
+				(cb) =>
 					ActiveSession.persist.metrics.list (err, result) =>
 						if err
 							cb err
@@ -73,16 +74,36 @@ load = (win) ->
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
+			metrics = @state.metricDefinitions
+			unless @state.displayDeactivated
+				metrics = metrics.filter (metric) =>
+					metric.get('status') is 'default'
 
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
-					R.h1({}, "#{Term 'Metric'} Definitions")
+					R.h1({},
+						R.span({id: 'toggleDisplayDeactivated'},
+							R.div({className: 'checkbox'},
+								R.label({},
+									R.input({
+										type: 'checkbox'
+										checked: @state.displayDeactivated
+										onClick: @_toggleDisplayDeactivated
+									})
+									"Show deactivated"
+								)
+							)
+						)
+						"#{Term 'Metric'} Definitions"
+					)
 				)
 				R.div({className: 'main'},
 					OrderableTable({
-						tableData: @state.metricDefinitions
+						tableData: metrics
 						noMatchesMessage: "No #{Term 'metrics'} defined yet"
 						sortByData: ['name']
+						rowClass: (dataPoint) ->
+							'deactivatedMetric' unless dataPoint.get('status') is 'default'
 						columns: [
 							{
 								name: "Name"
@@ -99,6 +120,11 @@ load = (win) ->
 										return definition.substr(0, 59) + ' . . .'
 									else
 										return definition
+							}
+							{
+								name: "Status"
+								dataPath: ['status']
+								cellClass: 'statusCell'
 							}
 							{
 								name: "Options"
@@ -147,17 +173,22 @@ load = (win) ->
 			metricDefinitions = @state.metricDefinitions.push createdMetric
 			@setState {metricDefinitions}
 
+		_toggleDisplayDeactivated: ->
+			displayDeactivated = not @state.displayDeactivated
+			@setState {displayDeactivated}
+
 	ModifyMetricDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 		getInitialState: ->
 			return {
 				name: @props.rowData.get('name')
 				definition: @props.rowData.get('definition')
+				status: @props.rowData.get('status')
 			}
 
 		componentDidMount: ->
 			@refs.nameField.focus()
-			
+
 		render: ->
 			Dialog({
 				ref: 'dialog'
@@ -179,8 +210,35 @@ load = (win) ->
 						ExpandingTextArea({
 							ref: 'definitionField'
 							onChange: @_updateDefinition
-							value: @state.definition							
+							value: @state.definition
 						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "#{Term 'Metric'} Status"),
+						R.div({className: 'btn-toolbar'},
+							R.button({
+								className:
+									if @state.status is 'default'
+										'btn btn-success'
+									else 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'default'
+
+								},
+							"Default"
+							)
+							R.button({
+								className:
+									if @state.status is 'deactivated'
+										'btn btn-warning'
+									else 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'deactivated'
+
+								},
+							"Deactivated"
+							)
+						)
 					)
 					R.div({className: 'btn-toolbar pull-right'},
 						R.button({
@@ -204,6 +262,9 @@ load = (win) ->
 		_updateDefinition: (event) ->
 			@setState {definition: event.target.value}
 
+		_updateStatus: (event) ->
+			@setState {status: event.target.value}
+
 		_submit: ->
 			unless @state.name.trim()
 				Bootbox.alert "#{Term 'Metric'} name is required"
@@ -219,6 +280,7 @@ load = (win) ->
 				id: @props.rowData.get('id')
 				name: @state.name.trim()
 				definition: @state.definition.trim()
+				status: @state.status
 			}
 
 			ActiveSession.persist.metrics.createRevision newMetricRevision, (err, result) =>

@@ -69,8 +69,6 @@ load = (win) ->
 			})
 
 		_checkSetUp: ->
-			console.log "Probing setup..."
-
 			# Check to make sure the dataDir exists and has an account system
 			Persist.Users.isAccountSystemSetUp Config.dataDirectory, (err, isSetUp) =>
 				@setState {isLoading: false}
@@ -107,8 +105,6 @@ load = (win) ->
 							Window.quit()
 
 		_login: (userName, password) ->
-			console.log "Beginning login sequence..."
-			console.time 'loginSequence'
 
 			Async.series [
 				(cb) =>
@@ -125,12 +121,11 @@ load = (win) ->
 						cb()
 
 				(cb) =>
-					@setState {loadingMessage: "Decrypting Data..."}
-
 					openWindow {page: 'clientSelection'}, (newWindow) =>
 						clientSelectionPageWindow = newWindow
 
-						# Add listener to close loginPage when clientSelectionPage is closed
+						Window.hide()
+						
 						clientSelectionPageWindow.on 'closed', =>
 							@props.closeWindow()
 							Window.quit()
@@ -161,9 +156,7 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				console.timeEnd 'loginSequence'
-				console.log "Successfully logged in!"
-				Window.hide()
+				#Window.hide()
 
 
 	LoginPageUi = React.createFactory React.createClass
@@ -215,18 +208,12 @@ load = (win) ->
 					throw new Error "Invalid Login Error"
 
 		render: ->
-			return R.div({className: 'loginPage animated fadeIn'},
+			return R.div({className: 'loginPage'},
 				Spinner({
 					isVisible: @props.isLoading
 					isOverlay: true
 					message: @props.loadingMessage
 				})
-				R.div({className: 'header'},
-					FaIcon('times', {
-						id: 'quitIcon'
-						onClick: @_quit
-					})
-				)
 				R.div({id: "loginForm"},
 					R.div({
 						id: 'logoContainer'
@@ -234,7 +221,7 @@ load = (win) ->
 					},
 						R.img({
 							className: 'animated rotateIn'
-							src: './assets/brand/kn.png'
+							src: 'img/konode-kn.svg'
 						})
 					)
 					R.div({
