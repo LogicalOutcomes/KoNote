@@ -1,5 +1,9 @@
 {
 	"devMode": true,
+
+	"cloudUser": "konode",
+	"clientName": "Konode",
+
 	"productName": "KoNote",
 	"supportEmailAddress": "help@konote.ca",
 

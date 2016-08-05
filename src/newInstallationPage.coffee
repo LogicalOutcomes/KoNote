@@ -198,36 +198,17 @@ load = (win) ->
 										className: 'hidden'
 										type: 'file'
 									})
-									R.h2({}, "Thank you for trying the #{Config.productName} beta!")
-									R.p({}, "To get started, let's set up your user account...")
+									R.h2({}, "Cloud Beta for #{Config.clientName}")
+									R.p({}, "To get started, we need to sync your cloud database. This may take some time.")
 									R.br({})
-									R.div({className: 'btn-toolbar'},
-										R.button({
-											className: 'btn btn-lg btn-default'
-											onClick: @_import.bind null, {
-												extension: 'zip'
-												onImport: @_confirmRestore
-											}
-										},
-											"Restore Backup"
-											FaIcon('upload right-side')
-										)
-										R.button({
-											className: 'btn btn-lg btn-default'
-											onClick: @_switchTab.bind null, 'createAdmin'
-										},
-											"Create Admin Account"
-											FaIcon('arrow-right right-side')
-										)
-									)
 									R.div({className: 'btn-toolbar'},
 										R.br({})
 										R.button({
 											className: 'btn btn-lg btn-success'
-											onClick: @_switchTab.bind null, 'joinCloud'
+											onClick: @_syncCloud
 										}, 
-											"Use a KoNote Cloud account"
-											FaIcon('cloud right-side')
+											"Continue"
+											FaIcon('arrow-right right-side')
 										)
 									)
 								)
@@ -250,7 +231,7 @@ load = (win) ->
 										R.br({})
 										R.button({
 											className: 'btn btn-lg btn-default'
-											onClick: @_switchTab.bind null, 'index'
+											onClick: @_syncCloud
 										}, 
 											"Cancel"
 										)
@@ -591,49 +572,45 @@ load = (win) ->
 
 		_syncCloud: ->
 			exec = require('child_process').exec;
-			key = @state.authkey
-
-			# write key to user's temp directory
-			Fs.writeFile 'authkey', key, (err) =>
+			# key requires strict permissions or ssh ignores it
+			# unfortunately no cross-platform way to set this
+			if process.platform is 'win32'
+				user = process.env.username
+				console.log user
+				changeperm = "icacls id_rsa /inheritance:r /grant:r #{process.env.username}:(F)"
+			else
+				changeperm = 'chmod 600 id_rsa'
+			exec changeperm, (err) =>
 				if err
-					throw err
-				# key requires strict permissions or ssh ignores it
-				# unfortunately no cross-platform way to set this
-				if process.platform is 'win32'
-					user = process.env.username
-					console.log user
-					changeperm = "icacls authkey /inheritance:r /grant:r #{process.env.username}:(F)"
-				else
-					changeperm = 'chmod 600 authkey'
-				exec changeperm, (err) =>
+					Bootbox.alert "Authentication key permissions error. Please try again."
+					return
+				Persist.buildDataDirectory Config.dataDirectory, (err) =>
 					if err
-						throw err
-					Persist.buildDataDirectory Config.dataDirectory, (err) =>
+						Bootbox.alert "Error preparing local database. Please check that you have enough free space and try again."
+						return
+					# pull remote data
+					@setState {
+						isLoading: true
+						installProgress: {message: "Syncing with Cloud (this may take some time)..."}
+					}
+					Persist.Sync.pull 0, (err) =>
+						@setState {isLoading: false}
 						if err
-							throw err
-						# pull remote data
-						@setState {
-							isLoading: true
-							installProgress: {message: "Syncing with Cloud (this may take some time)..."}
-						}
-						Persist.Sync.pull 0, (err) =>
-							@setState {isLoading: false}
-							if err
-								Bootbox.alert {
-									title: "Cloud sync failed!"
-									message: "Please check your network connection and try again."
-								}
-								return
-							else
-								console.log 'sync done'
-								Bootbox.alert {
-									title: "Cloud sync complete!"
-									message: "KoNote will now restart..."
-									callback: =>
-										global.isSetUp = true
-										win.close(true)
-									}
+							Bootbox.alert {
+								title: "Cloud sync failed!"
+								message: "Please check your network connection and try again."
+							}
 							return
+						else
+							console.log 'sync done'
+							Bootbox.alert {
+								title: "Cloud sync complete!"
+								message: "KoNote will now restart..."
+								callback: =>
+									global.isSetUp = true
+									win.close(true)
+								}
+						return
 
 		_install: ->
 			if @state.password isnt @state.passwordConfirmation
