@@ -38,6 +38,7 @@ pull = (count, cb) ->
         if count < 2
             exec pullCmd, (err, stdout, stderr) =>
                 if err
+                    console.error err
                     count++
                     global.syncing = false
                     pull count, cb
