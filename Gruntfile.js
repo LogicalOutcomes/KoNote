@@ -212,7 +212,6 @@ module.exports = function(grunt) {
 			nwjsosx: {
 				cwd: 'build/releases/temp/',
 				cmd: 'nwb nwbuild -v 0.14.7 -p osx64 --mac-icns ./<%= grunt.task.current.args[0] %>/src/icon.icns -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
->>>>>>> develop
 			}
 		},
 		appdmg: {
