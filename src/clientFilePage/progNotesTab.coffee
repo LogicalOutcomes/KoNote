@@ -139,12 +139,6 @@ load = (win) ->
 							},
 								"Cancel"
 							)
-							R.button({
-								className: "btn btn-link #{showWhen hasChanges}"
-								onClick: @_resetRevisingProgNote
-							},
-								"Discard"
-							)
 						)
 					else
 						R.div({},
@@ -253,13 +247,9 @@ load = (win) ->
 			revisingProgNote = originalProgNote.set('originalRevision', originalProgNote)
 			@setState {revisingProgNote}
 
-		_resetRevisingProgNote: ->
-			Bootbox.confirm "Discard all changes made to the #{Term 'progress note'}?", (ok) =>
-				if ok then @_startRevisingProgNote @state.revisingProgNote.get('originalRevision')
-
 		_cancelRevisingProgNote: ->
 			if @_revisingProgNoteHasChanges()
-				return Bootbox.confirm "Discard all changes made to the #{Term 'progress note'} and cancel editing?", (ok) =>
+				return Bootbox.confirm "Discard all changes made to the #{Term 'progress note'}?", (ok) =>
 					if ok then @_discardRevisingProgNote()
 
 			@_discardRevisingProgNote()
