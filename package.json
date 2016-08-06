@@ -51,6 +51,7 @@
     "base64url": "^1.0.4",
     "buffer-equal-constant-time": "^1.0.1",
     "diff": "^2.2.2",
+    "diff-match-patch": "^1.0.0",
     "immutable": "3.7.2",
     "joi": "^6.4.3",
     "json-2-csv": "^2.0.10",
