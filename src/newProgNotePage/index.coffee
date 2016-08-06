@@ -97,10 +97,6 @@ load = (win, {clientFileId}) ->
 				programsById
 			} = global.dataStore[clientFileId]
 
-			# Convert data structure of clientFile's planTargetsById
-			planTargetsById = planTargetsById.map (planTarget) ->
-				return planTarget.get('revisions')
-
 			# Build progNote with template
 			progNote = @_createProgNoteFromTemplate(
 				template
@@ -165,18 +161,16 @@ load = (win, {clientFileId}) ->
 										targets: section.get 'targetIds'
 										.filter (targetId) =>
 											target = planTargetsById.get targetId
-											lastRev = target.last()
-											return lastRev.get('status') is 'default'
+											return target.get('status') is 'default'
 										.map (targetId) =>
 											target = planTargetsById.get targetId
-											lastRev = target.last()
 
 											return Imm.fromJS {
-												id: lastRev.get 'id'
-												name: lastRev.get 'name'
-												description: lastRev.get 'description'
+												id: target.get 'id'
+												name: target.get 'name'
+												description: target.get 'description'
 												notes: ''
-												metrics: lastRev.get('metricIds').map (metricId) =>
+												metrics: target.get('metricIds').map (metricId) =>
 													metric = metricsById.get metricId
 
 													return Imm.fromJS {
@@ -214,7 +208,7 @@ load = (win, {clientFileId}) ->
 					message: "Are you sure you want to cancel this #{Term('progress note')}?"
 					buttons: {
 						cancel: {
-							label: "Cancel"
+							label: "No"
 							className: 'btn-default'
 						}
 						discard: {
@@ -239,15 +233,11 @@ load = (win, {clientFileId}) ->
 				@setState {progNote: newProps.progNote}
 
 		componentDidMount: ->
-			setTimeout(=>
-				global.ActiveSession.persist.eventBus.trigger 'newProgNotePage:loaded'
+			global.ActiveSession.persist.eventBus.trigger 'newProgNotePage:loaded'
+			Window.focus()
 
-				Window.show()
-				Window.focus()
-
-				# Store beginTimestamp as class var, since it wont change
-				@beginTimestamp = Moment().format(Persist.TimestampFormat)
-			, 500)
+			# Store beginTimestamp as class var, since it wont change
+			@beginTimestamp = Moment().format(Persist.TimestampFormat)
 
 		componentDidUpdate: ->
 			if @state.editingWhichEvent?
@@ -260,12 +250,6 @@ load = (win, {clientFileId}) ->
 				$('#saveNoteButton').tooltip 'destroy'
 
 		render: ->
-			if @props.status is 'init'
-				return R.div({className: 'newProgNotePage'},
-					Spinner({
-						isOverlay: true
-					})
-				)
 
 			if @props.loadErrorType?
 				return R.div({className: 'newProgNotePage'},

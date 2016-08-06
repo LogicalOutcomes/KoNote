@@ -57,7 +57,10 @@ load = (win) ->
 			},
 				R.div({
 					ref: 'bubble'
-					className: 'bubbleContents'
+					className: [
+						'bubbleContents'
+						'empty' unless colorKeyHex
+					].join ' '
 					onClick
 					style: {
 						background: colorKeyHex

@@ -43,6 +43,22 @@ load = (win, {clientFileId}) ->
 
 	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
 
+	loadingSpinner = React.createFactory React.createClass
+		displayName: 'loadingSpinner'
+		mixins: [React.addons.PureRenderMixin]
+		render: ->
+			return R.div({className: "loadingSpinnerContainer"},
+				R.div({className: "preloaderSpinner"},
+					R.div({className: "spinnerContainer"},
+						R.div({className: "rect10"})
+						R.div({className: "rect20"})
+						R.div({className: "rect30"})
+						R.div({className: "rect40"})
+						R.div({className: "rect50"})
+					)
+				)
+			)
+
 	ClientFilePage = React.createFactory React.createClass
 		displayName: 'ClientFilePage'
 		getInitialState: ->
@@ -80,8 +96,7 @@ load = (win, {clientFileId}) ->
 			@refs.ui.suggestClose()
 
 		render: ->
-			if @state.status isnt 'ready' then return R.div({})
-
+			if @state.status isnt 'ready' then return loadingSpinner({})
 
 			clientName = renderName(@state.clientFile.get('clientName'))
 
@@ -481,6 +496,7 @@ load = (win, {clientFileId}) ->
 									clientName = renderName @state.clientFile.get('clientName')
 									new win.Notification "#{clientName} file unlocked", {
 										body: "You now have the read/write permissions for this #{Term 'client file'}"
+										icon: Config.iconNotification
 									}
 									@setState {
 										clientFileLock: newLock
@@ -519,11 +535,14 @@ load = (win, {clientFileId}) ->
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
 			@setState (state) => {isLoading: true}
 
+			newPlanTargetsArray = newPlanTargets.toArray()
+			updatedPlanTargetsArray = updatedPlanTargets.toArray()
+
 			idMap = Imm.Map()
 
 			Async.series [
 				(cb) =>
-					Async.each newPlanTargets.toArray(), (newPlanTarget, cb) =>
+					Async.each newPlanTargetsArray, (newPlanTarget, cb) =>
 						transientId = newPlanTarget.get('id')
 						newPlanTarget = newPlanTarget.delete('id')
 
@@ -537,7 +556,7 @@ load = (win, {clientFileId}) ->
 							cb()
 					, cb
 				(cb) =>
-					Async.each updatedPlanTargets.toArray(), (updatedPlanTarget, cb) =>
+					Async.each updatedPlanTargetsArray, (updatedPlanTarget, cb) =>
 						ActiveSession.persist.planTargets.createRevision updatedPlanTarget, cb
 					, cb
 				(cb) =>
@@ -591,7 +610,7 @@ load = (win, {clientFileId}) ->
 						else
 							planTargetsById = state.planTargetsById.set targetId, Imm.fromJS {
 								id: targetId
-								revisions: [newRev]
+								revisions: Imm.List [newRev]
 							}
 						return {planTargetsById}
 
@@ -744,16 +763,9 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		componentDidMount: ->
-			setTimeout(=>
-				global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
-
-				@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
-
-				Window.maximize()
-				Window.show()
-				Window.focus()
-
-			, 250)
+			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
+			Window.focus()
+			Window.maximize()
 
 		render: ->
 			if @props.loadErrorType
@@ -768,11 +780,7 @@ load = (win, {clientFileId}) ->
 			recordId = @props.clientFile.get('recordId')
 
 
-			return R.div({className: 'clientFilePage'},
-				Spinner {
-					isOverlay: true
-					isVisible: @props.isLoading
-				}
+			return R.div({className: 'clientFilePage animated fadeIn'},
 
 				(if isReadOnly
 					ReadOnlyNotice {data: @props.readOnlyData}

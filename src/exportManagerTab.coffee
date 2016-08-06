@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Async = require 'async'
@@ -8,6 +8,7 @@ Imm = require 'immutable'
 Persist = require './persist'
 Fs = require 'fs'
 Path = require 'path'
+Term = require './term'
 Archiver = require 'archiver'
 CSVConverter = require 'json-2-csv'
 
@@ -20,14 +21,14 @@ load = (win) ->
 
 	Config = require('./config')
 	CrashHandler = require('./crashHandler').load(win)
-	Spinner = require('./spinner').load(win)	
+	Spinner = require('./spinner').load(win)
 	{FaIcon, renderName, showWhen} = require('./utils').load(win)
 	{TimestampFormat} = require('./persist/utils')
 
 	ExportManagerTab = React.createFactory React.createClass
 		displayName: 'ExportManagerTab'
 		mixins: [React.addons.PureRenderMixin]
-		
+
 		getInitialState: ->
 			return {
 				progress: 0
@@ -38,7 +39,7 @@ load = (win) ->
 					message: null
 				}
 			}
-		
+
 		render: ->
 			return R.div({className: 'exportManagerTab'},
 				R.div({className: 'header'},
@@ -47,7 +48,7 @@ load = (win) ->
 				R.div({className: 'main'},
 					Spinner {
 						isVisible: @state.isLoading
-						isOverlay: true						
+						isOverlay: true
 						message: @state.exportProgress.message
 						percent: @state.exportProgress.percent
 					}
@@ -65,7 +66,7 @@ load = (win) ->
 							extension: 'csv'
 							runExport: @_saveMetrics
 						}
-					}, "Export Metrics to CSV")
+					}, "Export #{Term 'Metrics'} to CSV")
 					R.button({
 						className: 'btn btn-default btn-lg'
 						onClick: @_export.bind null, {
@@ -73,7 +74,7 @@ load = (win) ->
 							extension: 'csv'
 							runExport: @_saveEvents
 						}
-					}, "Export Events to CSV")
+					}, "Export #{Term 'Events'} to CSV")
 					R.button({
 						className: 'btn btn-default btn-lg'
 						onClick: @_export.bind null, {
@@ -102,7 +103,7 @@ load = (win) ->
 				}
 			}
 
-		
+
 		_export: ({defaultName, extension, runExport}) ->
 			timestamp = Moment().format('YYYY-MM-DD')
 			# Configures hidden file inputs with custom attributes, and clicks it
@@ -112,25 +113,25 @@ load = (win) ->
 			.off()
 			.val('')
 			.attr('nwsaveas', "#{defaultName}-#{timestamp}")
-			.attr('accept', ".#{extension}")			
+			.attr('accept', ".#{extension}")
 			.on('change', (event) => runExport event.target.value)
 			.click()
-		
+
 		_saveEvents: (path) ->
 			isConfirmClosed = false
 			# Map over client files
-			
+
 			console.log "clientfileheaders: ", @props.clientFileHeaders.toArray()
 
 			if @props.clientFileHeaders.size is 0
 				Bootbox.alert {
-					title: "No Events to Export"
+					title: "No #{Term 'Events'} to Export"
 					message: "You must create at least one client file with events before they can be exported!"
 				}
 			else
-				@_updateProgress 0, "Saving Events to CSV..."
+				@_updateProgress 0, "Saving #{Term 'Events'} to CSV..."
 				console.log "progress should be 0"
-				console.log "size of clients array: ", @props.clientFileHeaders.size 
+				console.log "size of clients array: ", @props.clientFileHeaders.size
 				progressIterator = 0
 
 				Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
@@ -150,9 +151,9 @@ load = (win) ->
 					console.log "checking clientFile with name: ",  clientName, progressIterator
 					currentProgress = (progressIterator/@props.clientFileHeaders.size) * 90
 					@_updateProgress currentProgress
-				
+
 					Async.series [
-						# get clientfile program links	
+						# get clientfile program links
 						(cb) =>
 							clientFileProgramLinkIds = @props.clientFileProgramLinks
 							.filter (link) ->
@@ -160,18 +161,18 @@ load = (win) ->
 								link.get('status') is "enrolled"
 							.map (link) ->
 								link.get('programId')
-							
+
 							console.log "link IDs: ", clientFileProgramLinkIds.toJS()
-							
+
 							cb()
 
 						(cb) =>
 							programNames = programs
 							.filter (program) -> clientFileProgramLinkIds.contains program.get('id')
 					        .map (program) -> program.get('name')
-							
+
 							console.log "program names: ", programNames.toJS()
-							
+
 							cb()
 
 						# get event headers
@@ -237,8 +238,8 @@ load = (win) ->
 							cb err
 							return
 						csv = result
-						@_updateProg100ress 
-			
+						@_updateProg100ress
+
 
 						# destination path must exist in order to save
 						if path.length > 1
@@ -256,11 +257,11 @@ load = (win) ->
 									}
 									# isConfirmClosed = true
 
-	
+
 		_saveMetrics: (path) ->
 			isConfirmClosed = false
 			metrics = null
-			@_updateProgress 0, "Saving metrics to CSV..."
+			@_updateProgress 0, "Saving #{Term 'Metrics'} to CSV..."
 
 			# Map over client files
 			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
@@ -270,7 +271,7 @@ load = (win) ->
 				metricDefinitionHeaders = null
 				metricDefinitions = null
 				progNoteHeaders = null
-				progNotes = null	
+				progNotes = null
 				clientFileId = clientFile.get('id')
 				clientName = renderName clientFile.get('clientName')
 				metricsList = null
@@ -281,7 +282,7 @@ load = (win) ->
 				csv = null
 
 				Async.series [
-					# get clientfile program links	
+					# get clientfile program links
 					(cb) =>
 						@_updateProgress 5
 						clientFileProgramLinkIds = @props.clientFileProgramLinks
@@ -290,18 +291,18 @@ load = (win) ->
 							link.get('status') is "enrolled"
 						.map (link) ->
 							link.get('programId')
-						
+
 						console.log "link IDs: ", clientFileProgramLinkIds.toJS()
-						
+
 						cb()
 
 					(cb) =>
 						programNames = programs
 						.filter (program) -> clientFileProgramLinkIds.contains program.get('id')
 				        .map (program) -> program.get('name')
-						
+
 						console.log "program names: ", programNames.toJS()
-						
+
 						cb()
 
 					# List metric definition headers
@@ -360,7 +361,7 @@ load = (win) ->
 							progNote.get('status') isnt "cancelled"
 
 						Async.map fullProgNotes.toArray(), (progNote, cb) =>
-							
+
 							progNoteMetrics = progNote.get('units').flatMap (unit) =>
 								unitType = unit.get('type')
 
@@ -388,10 +389,10 @@ load = (win) ->
 									timestamp
 									authorUsername: progNote.get('author')
 									clientFileId
-									clientName									
+									clientName
 									metricId: metric.get('id')
 									programs: "\"#{programNames.toJS().join(", ")}\""
-									metricName: metric.get('name')									
+									metricName: metric.get('name')
 									metricDefinition: metric.get('definition')
 									metricValue: metric.get('value')
 								}
@@ -406,8 +407,8 @@ load = (win) ->
 
 							metricsList = Imm.fromJS(results).flatten(true)
 							cb()
-					
-						
+
+
 				], (err) =>
 					if err
 						cb err
@@ -421,7 +422,7 @@ load = (win) ->
 					console.error err
 					return
 
-				
+
 				metricsList = Imm.List(results).flatten()
 
 				console.log "Final Metrics result: ", metricsList.toJS()
@@ -452,10 +453,10 @@ load = (win) ->
 									message: "Metrics exported to: #{path}"
 								}
 								isConfirmClosed = true
-				
-		
+
+
 		_saveBackup: (savepath) ->
-			
+
 			totalFiles = 0
 
 			@setState {
@@ -480,17 +481,17 @@ load = (win) ->
 						err = new Error('nopath')
 						cb err
 						return
-					
+
 					walkSync(Config.dataDirectory)
 					cb()
-					
+
 				(cb) =>
 					unless totalFiles > 0
 						err = new Error('nofiles')
 						cb err
 						return
 					cb()
-				
+
 				(cb) =>
 					output = Fs.createWriteStream(savepath)
 					archive = Archiver('zip', {store:true})
@@ -505,7 +506,7 @@ load = (win) ->
 							message: "Saved to: #{savepath}"
 						}
 						cb()
-					
+
 					archive.directory(Config.dataDirectory, '')
 					archive.finalize()
 					archive.pipe(output)
@@ -515,7 +516,7 @@ load = (win) ->
 							exportProgress: {message: "Writing #{@_prettySize(archive.pointer())} to #{Path.basename(savepath)}..." }
 						}
 					, 200
-			
+
 			], (err) =>
 				if err
 					@setState {isLoading: false}
@@ -530,7 +531,7 @@ load = (win) ->
 					}
 					console.error err
 					return
-			
+
 	return ExportManagerTab
 
 module.exports = {load}

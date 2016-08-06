@@ -8,55 +8,81 @@ that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 <html>
 	<head>
 		<meta charset="utf-8">
-		
 		<style id="main-css">/* see start.js */</style>
 		<style>
 			html, body, #container, #preloader {
 				height: 100%;
-			}
-
-			body {
-				background: radial-gradient(circle, #1EA1F5, #3175AA);
 				overflow: hidden;
 			}
-
+			body {
+				font-family: "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+				font-weight: 200;
+			}
 			#preloader {
 				display: flex;
 				justify-content: center;
 				align-items: center;
-				padding: 15px;
-				text-shadow: 0px 2px 2px rgba(0,0,0,0.1);
-
-				color: white;
-				font-size: 18px;
-				font-family: sans-serif;
-				font-weight: 100;
-				-webkit-font-smoothing: antialiased;
-				letter-spacing: 1px;
+			}
+			.spinner {
+				margin: 100px auto;
+				width: 50px;
+				height: 40px;
+				text-align: center;
+				font-size: 10px;
+			}
+			.spinner > div {
+				background-color: #337ab7;
+				height: 100%;
+				width: 6px;
+				display: inline-block;
+				animation: sk-stretchdelay 1.2s infinite ease-in-out;
+			}
+			.spinner .rect2 {
+				animation-delay: -1.1s;
+			}
+			.spinner .rect3 {
+				animation-delay: -1.0s;
+			}
+			.spinner .rect4 {
+				animation-delay: -0.9s;
+			}
+			.spinner .rect5 {
+				animation-delay: -0.8s;
+			}
+			@keyframes sk-stretchdelay {
+				0%, 40%, 100% { transform: scaleY(0.4); }
+				20% { transform: scaleY(1.0); }
 			}
 		</style>
 	</head>
+	
 	<body>
 		<div id="container">
 			<div id="preloader">
-				Launching KoNote...
+				<div class="spinner">
+					<div class="rect1"></div>
+					<div class="rect2"></div>
+					<div class="rect3"></div>
+					<div class="rect4"></div>
+					<div class="rect5"></div>
+				</div>
 			</div>
 			<!-- JavaScript will inject content here. -->
 		</div>
-
-		<script src="../node_modules/jquery/dist/jquery.min.js"></script>
-		<script src="../node_modules/moment/min/moment.min.js"></script>
-		<script src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
-		<script src="../node_modules/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
-		<script src="../node_modules/bootstrap-slider/dist/bootstrap-slider.min.js"></script>
-		<script src="../node_modules/bootbox/bootbox.min.js"></script>
-		<script src="../node_modules/typeahead.js/dist/typeahead.jquery.min.js"></script>
-		<script src="../node_modules/react/dist/react-with-addons.js"></script>
-		<script src="../node_modules/react-dom/dist/react-dom.min.js"></script>
-		<script src="../node_modules/react-dom/dist/react-dom-server.min.js"></script>
-		<script src="../node_modules/react-bootstrap/dist/react-bootstrap.min.js"></script>
-		<script src="../node_modules/d3/d3.min.js"></script>
-		<script src="../node_modules/c3/c3.min.js"></script>
+		<script>nw.Window.get().show()</script>
+		<script src="../lib/jquery/dist/jquery.min.js"></script>
+		<script src="../lib/moment/min/moment.min.js"></script>
+		<script src="../lib/bootstrap/dist/js/bootstrap.min.js"></script>
+		<script src="../lib/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
+		<script src="../lib/bootstrap-slider/dist/bootstrap-slider.min.js"></script>
+		<script src="../lib/bootbox/bootbox.min.js"></script>
+		<script src="../lib/typeahead.js/dist/typeahead.jquery.min.js"></script>
+		<script src="../lib/react/dist/react-with-addons.min.js"></script>
+		<script src="../lib/react-dom/dist/react-dom.min.js"></script>
+		<script src="../lib/react-dom/dist/react-dom-server.min.js"></script>
+		<script src="../lib/react-bootstrap/dist/react-bootstrap.min.js"></script>
+		<script src="../lib/d3/d3.min.js"></script>
+		<script src="../lib/c3/c3.min.js"></script>
 		<script src="start.js"></script>
 	</body>
 </html>

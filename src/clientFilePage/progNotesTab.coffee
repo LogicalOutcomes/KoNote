@@ -144,7 +144,7 @@ load = (win) ->
 								className: "btn btn-link #{showWhen hasChanges}"
 								onClick: @_resetRevisingProgNote
 							},
-								"Discard Changes"
+								"Discard"
 							)
 						)
 					else
@@ -534,9 +534,13 @@ load = (win) ->
 					# Store property as clientFile ID to prevent confusion
 					global.dataStore ?= {}
 
+					# Only needs to pass latest revisions of each planTarget
+					# In this case, index [0] is the latest revision
+					planTargetsById = @props.planTargetsById.map (target) -> target.get('revisions').first()
+
 					global.dataStore[@props.clientFileId] = {
 						clientFile: @props.clientFile
-						planTargetsById: @props.planTargetsById
+						planTargetsById
 						metricsById: @props.metricsById
 						progNoteHistories: @props.progNoteHistories
 						progEvents: @props.progEvents
@@ -1188,6 +1192,7 @@ load = (win) ->
 		} = props
 
 		selectedItemIsProgNote = selectedItem? and selectedItem.get('progNoteId') is progNote.get('id')
+		userIsAuthor = progNote.get('author') is global.ActiveSession.userName
 
 		isViewingRevisions = selectedItemIsProgNote and selectedItem.get('type') is 'progNote'
 		hasRevisions = progNoteHistory.size > 1
@@ -1219,11 +1224,13 @@ load = (win) ->
 					iconOnly: true
 					tooltip: {show: true}
 				})
-				R.a({
-					className: "editNote #{showWhen not isReadOnly}"
-					onClick: startRevisingProgNote.bind null, progNote
-				},
-					"Edit"
+				(if userIsAuthor
+					R.a({
+						className: "editNote #{showWhen not isReadOnly}"
+						onClick: startRevisingProgNote.bind null, progNote
+					},
+						"Edit"
+					)
 				)
 				OpenDialogLink({
 					className: "cancelNote #{showWhen not isReadOnly}"
