@@ -5,7 +5,7 @@
 Imm = require 'immutable'
 ImmPropTypes = require 'react-immutable-proptypes'
 Term = require './term'
-{diffChars} = require 'diff'
+{diffWordsWithSpace} = require 'diff'
 
 load = (win) ->
 	$ = win.jQuery
@@ -36,7 +36,7 @@ load = (win) ->
 		}
 
 		_diffStrings: (oldString, newString) ->
-			diffs = diffChars(oldString, newString)
+			diffs = diffWordsWithSpace(oldString, newString)
 
 			return R.span({className: 'value'},
 				# Iterate over diffs and assign a diff-span or plain string
