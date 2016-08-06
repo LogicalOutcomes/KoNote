@@ -44,7 +44,6 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				status: 'init'
-				isLoading: null
 
 				loadErrorType: null
 				progNote: null
@@ -190,8 +189,6 @@ load = (win, {clientFileId}) ->
 
 		getInitialState: ->
 			return {
-				isLoading: null
-
 				progNote: @props.progNote
 
 				progEvents: Imm.List()
@@ -282,10 +279,6 @@ load = (win, {clientFileId}) ->
 			"""
 
 			return R.div({className: 'newProgNotePage animated fadeIn'},
-				Spinner({
-					isVisible: @state.isLoading
-					isOverlay: true
-				})
 
 				R.div({className: 'progNote'},
 					R.div({className: 'backdateContainer'},
@@ -486,7 +479,7 @@ load = (win, {clientFileId}) ->
 						R.button({
 							className: 'btn btn-default addEventButton'
 							onClick: @_newEventTab
-							disabled: @state.isLoading or @state.editingWhichEvent?
+							disabled: @state.editingWhichEvent?
 						}, FaIcon('plus'))
 					)
 				)
@@ -654,7 +647,6 @@ load = (win, {clientFileId}) ->
 		_isValidMetric: (value) -> value.match /^-?\d*\.?\d*$/
 
 		_save: ->
-			@setState {isLoading: true}
 
 			authorProgramId = global.ActiveSession.programId or ''
 			progNote = @state.progNote
@@ -723,7 +715,6 @@ load = (win, {clientFileId}) ->
 					, cb
 
 			], (err) =>
-				@setState {isLoading: false}
 
 				if err
 					if err instanceof Persist.IOError

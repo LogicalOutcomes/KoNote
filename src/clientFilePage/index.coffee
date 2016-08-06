@@ -64,7 +64,6 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				status: 'init' # Either init or ready
-				isLoading: false
 
 				headerIndex: 0
 
@@ -85,9 +84,6 @@ load = (win, {clientFileId}) ->
 
 		init: ->
 			@_renewAllData()
-
-		_setIsLoading: (isLoading) ->
-			@setState {isLoading}
 
 		deinit: (cb=(->)) ->
 			@_killLocks cb
@@ -130,7 +126,6 @@ load = (win, {clientFileId}) ->
 				ref: 'ui'
 
 				status: @state.status
-				isLoading: @state.isLoading
 				readOnlyData: @state.readOnlyData
 				loadErrorType: @state.loadErrorType
 
@@ -151,7 +146,6 @@ load = (win, {clientFileId}) ->
 				headerIndex: @state.headerIndex
 				progNoteTotal: @state.progNoteTotal
 
-				setIsLoading: @_setIsLoading
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
@@ -187,8 +181,6 @@ load = (win, {clientFileId}) ->
 			checkFileSync = (newData, oldData) =>
 				unless fileIsUnsync
 					fileIsUnsync = not Imm.is oldData, newData
-
-			@setState -> {isLoading: true}
 
 			# Begin the clientFile data load process
 			Async.series [
@@ -449,7 +441,6 @@ load = (win, {clientFileId}) ->
 				else
 					@setState {
 						status: 'ready'
-						isLoading: false
 
 						headerIndex: @state.headerIndex+10
 						progNoteTotal
@@ -533,7 +524,6 @@ load = (win, {clientFileId}) ->
 				cb()
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
-			@setState (state) => {isLoading: true}
 
 			newPlanTargetsArray = newPlanTargets.toArray()
 			updatedPlanTargetsArray = updatedPlanTargets.toArray()
@@ -574,11 +564,7 @@ load = (win, {clientFileId}) ->
 						return
 
 					ActiveSession.persist.clientFiles.createRevision newClientFile, cb
-				(cb) =>
-					# Add a noticeable delay so that the user knows the save happened.
-					setTimeout cb, 400
 			], (err) =>
-				@setState (state) => {isLoading: false}
 
 				if err
 					if err instanceof Persist.IOError
@@ -840,8 +826,6 @@ load = (win, {clientFileId}) ->
 
 							renewAllData: @props.renewAllData
 
-							isLoading: @props.isLoading
-							setIsLoading: @props.setIsLoading
 							isReadOnly
 						})
 					)
