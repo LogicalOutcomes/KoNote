@@ -51,11 +51,13 @@ sidebar-borders = darken(sidebar-bg, 10%)
 		position relative
 		display flex
 		height 100%
+		max-width 100%
 
 		> #main
 			flex 1
 			margin auto 0
 			height 100%
+			max-width 100%
 
 			display flex
 			flex-direction column
@@ -154,42 +156,40 @@ sidebar-borders = darken(sidebar-bg, 10%)
 							margin-right 25px
 
 
-				.orderableTable
-					height 550px
+				// TODO: Extract to component
+				$tablePadding = 2em
 
-					.tableCell
-						&:first-child, &:last-child
-							flex 0.5
-							text-align right !important
+				.responsiveTable
+					flex 1
+					display flex
+					max-width 100%
 
-						.dataValue
+					.react-bs-table-container
+						display flex
+						max-width 100%
+
+						.react-bs-table
 							flex 1
+							height auto !important
+							display flex
+							flex-direction column
+							max-width 100%
 
+							margin 0
+							border 0
 
-					.tableBody
+							// Add slight padding on either side
+							tr
+								td:first-child, th:first-child
+									padding-left $tablePadding
 
-						.tableRow
-							transition background .15s ease-in-out
-							background white
-							cursor default
+								td:last-child, th:last-child
+									padding-right $tablePadding
 
-							&.active
-								.tableCell
-									color hsl(200, 80%, 20%) !important
-									background hsl(200, 80%, 80%) !important
-							
-							&.deactivatedClientFile
-								background #FFD3D3
-
-							&:hover
-								background hsl(200, 80%, 90%)
-
-
-							.tableCell
-								transition all .1s ease
-
-								.popover
-									color black
+							// TODO: Avoid setting this manually
+							// (hides completely without it for some reason...)
+							.react-bs-container-header
+								min-height 2.7em
 
 
 	> #menuContainer

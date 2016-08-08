@@ -21,6 +21,11 @@ load = (win) ->
 	ReactDOM = win.ReactDOM
 	R = React.DOM
 
+	# TODO: Refactor to single require
+	{BootstrapTable, TableHeaderColumn} = win.ReactBootstrapTable
+	BootstrapTable = React.createFactory BootstrapTable
+	TableHeaderColumn = React.createFactory TableHeaderColumn
+
 	Gui = win.require 'nw.gui'
 	Window = Gui.Window.get()
 
@@ -311,31 +316,37 @@ load = (win) ->
 		componentDidMount: ->
 			# Fire 'loaded' event for loginPage to hide itself
 			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
-			setTimeout(=>
-				@_refreshResults()
-
-				# Show and focus this window
-				#Window.show()
-				Window.focus()
-				@_attachKeyBindings()
-
-			, 250)
+			@_attachKeyBindings()
 
 		componentDidUpdate: (oldProps, oldState) ->
-			if @props.clientFileHeaders isnt oldProps.clientFileHeaders
-				@_refreshResults()
+			# Figure out what changed
+			for property of @props
+				# console.log "property", property
+				if @props[property] isnt oldProps[property]
+					console.log "#{property} changed"
 
-			if @state.queryText isnt oldState.queryText
-				@_refreshResults()
+			for property of @state
+				if @state[property] isnt oldState[property]
+					console.log "#{property} changed"
+
+		# componentDidUpdate: (oldProps, oldState) ->
+		# 	if @props.clientFileHeaders isnt oldProps.clientFileHeaders
+		# 		console.log "Changed clientFileHeaders"
+		# 		@_refreshResults()
+
+		# 	if @state.queryText isnt oldState.queryText
+		# 		console.log "Changed queryText"
+		# 		@_refreshResults()
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
 
+			console.info "Render clientSelectionPage"
+
 			# Add in all program objects this clientFile's a member of
 
-			queryResults = @state.queryResults
-			.map (clientFile) =>
+			queryResults = @state.queryResults.map (clientFile) =>
 				clientFileId = clientFile.get('id')
 
 				programMemberships = @props.clientFileProgramLinks
@@ -470,10 +481,7 @@ load = (win) ->
 							})
 						)
 						R.div({
-							className: [
-								'results'
-								if smallHeader then 'show' else 'hidden'
-							].join ' '
+							className: 'results'
 						},
 							(if not inactiveClientFiles.isEmpty()
 								R.div({id: 'filterSelectionContainer'}
@@ -491,53 +499,59 @@ load = (win) ->
 									)
 								)
 							)
-							OrderableTable({
-								tableData: queryResults
-								noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
-								onSortChange: (orderedQueryResults) => @setState {orderedQueryResults}
-								sortByData: ['clientName', 'last']
-								key: ['id']
-								rowClass: (dataPoint) =>
-									[
-										'active' if @state.hoverClientId is dataPoint.get('id')
-										'deactivatedClientFile' unless dataPoint.get('status') is 'active'
-									].join ' '
-								onClickRow: (dataPoint) =>
-									@_onResultSelection.bind null, dataPoint.get('id')
 
-								columns: [
-									{
-										name: Term 'Programs'
-										dataPath: ['programs']
-										cellClass: 'programsCell'
-										isNotOrderable: true
-										nameIsVisible: false
-										value: (dataPoint) ->
-											programs = dataPoint.get('programs')
-											ProgramBubbles({programs})
-									}
-									{
-										name: "Last Name"
-										dataPath: ['clientName', 'last']
-									}
-									{
-										name: "Given Name(s)"
-										dataPath: ['clientName', 'first']
-										extraPath: ['clientName', 'middle']
-									}
-
-									{
-										name: "Status"
-										dataPath: ['status']
-										isDisabled: not @state.displayInactive
-									}
-									{
-										name: Config.clientFileRecordId.label
-										dataPath: ['recordId']
-										isDisabled: not Config.clientFileRecordId.isEnabled
-									}
-								]
+							ClientTable({
+								queryText: @state.queryText
+								clientFileHeaders: @props.clientFileHeaders
 							})
+
+							# OrderableTable({
+							# 	tableData: queryResults
+							# 	noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
+							# 	onSortChange: (orderedQueryResults) => @setState {orderedQueryResults}
+							# 	sortByData: ['clientName', 'last']
+							# 	key: ['id']
+							# 	rowClass: (dataPoint) =>
+							# 		[
+							# 			'active' if @state.hoverClientId is dataPoint.get('id')
+							# 			'deactivatedClientFile' unless dataPoint.get('status') is 'active'
+							# 		].join ' '
+							# 	onClickRow: (dataPoint) =>
+							# 		@_onResultSelection.bind null, dataPoint.get('id')
+
+							# 	columns: [
+							# 		{
+							# 			name: Term 'Programs'
+							# 			dataPath: ['programs']
+							# 			cellClass: 'programsCell'
+							# 			isNotOrderable: true
+							# 			nameIsVisible: false
+							# 			value: (dataPoint) ->
+							# 				programs = dataPoint.get('programs')
+							# 				ProgramBubbles({programs})
+							# 		}
+							# 		{
+							# 			name: "Last Name"
+							# 			dataPath: ['clientName', 'last']
+							# 		}
+							# 		{
+							# 			name: "Given Name(s)"
+							# 			dataPath: ['clientName', 'first']
+							# 			extraPath: ['clientName', 'middle']
+							# 		}
+
+							# 		{
+							# 			name: "Status"
+							# 			dataPath: ['status']
+							# 			isDisabled: not @state.displayInactive
+							# 		}
+							# 		{
+							# 			name: Config.clientFileRecordId.label
+							# 			dataPath: ['recordId']
+							# 			isDisabled: not Config.clientFileRecordId.isEnabled
+							# 		}
+							# 	]
+							# })
 						)
 					)
 				)
@@ -619,33 +633,6 @@ load = (win) ->
 			else
 				@setState {menuIsOpen: true}
 
-		_refreshResults: ->
-			# Return all clientFileHeaders if search query is empty
-			if @state.queryText.trim().length is 0
-				@setState {queryResults: @props.clientFileHeaders}
-				return
-
-			# Split into query parts
-			queryParts = Imm.fromJS(@state.queryText.split(' '))
-			.map (p) -> p.toLowerCase()
-
-			# Calculate query results
-			queryResults = @props.clientFileHeaders
-			.filter (clientFile) ->
-				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
-				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
-				lastName = clientFile.getIn(['clientName', 'last']).toLowerCase()
-				recordId = clientFile.getIn(['recordId']).toLowerCase()
-
-				return queryParts
-				.every (part) ->
-					return firstName.includes(part) or
-						middleName.includes(part) or
-						lastName.includes(part) or
-						recordId.includes(part)
-
-			@setState {queryResults}
-
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}
 
@@ -665,6 +652,61 @@ load = (win) ->
 			@setState {hoverClientId: clientFileId}
 			@props.openClientFile(clientFileId)
 
+
+	ClientTable = React.createFactory React.createClass
+		displayName: 'ClientTable'
+
+		render: ->
+			queryResults = @_filterResults()
+
+			return R.div({className: 'responsiveTable'},
+				BootstrapTable({
+					data: queryResults.toJS()
+					keyField: 'id'
+					bordered: false
+					options: {
+						onRowClick: (row) ->
+							return console.log "Selected row:", row
+					}
+				},
+					TableHeaderColumn({
+						dataField: 'clientName'
+						dataFormat: (clientName) -> clientName.last
+					}, "Last Name")
+					TableHeaderColumn({
+						dataField: 'clientName'
+						dataFormat: (clientName) ->
+							nameString = clientName.first
+							if clientName.middle then nameString += ", #{clientName.middle}"
+							return nameString
+					}, "Given Names")
+				)
+			)
+
+		_filterResults: ->
+			if @props.queryText.trim().length is 0
+				return @props.clientFileHeaders
+
+			# Split into query parts
+			queryParts = Imm.fromJS(@props.queryText.split(' '))
+			.map (p) -> p.toLowerCase()
+
+			# Calculate query results
+			queryResults = @props.clientFileHeaders
+			.filter (clientFile) ->
+				firstName = clientFile.getIn(['clientName', 'first']).toLowerCase()
+				middleName = clientFile.getIn(['clientName', 'middle']).toLowerCase()
+				lastName = clientFile.getIn(['clientName', 'last']).toLowerCase()
+				recordId = clientFile.getIn(['recordId']).toLowerCase()
+
+				return queryParts
+				.every (part) ->
+					return firstName.includes(part) or
+						middleName.includes(part) or
+						lastName.includes(part) or
+						recordId.includes(part)
+
+			return queryResults
 
 
 	return ClientSelectionPage
