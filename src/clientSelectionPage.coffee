@@ -302,15 +302,9 @@ load = (win) ->
 			return {
 				isSmallHeaderSet: false
 				menuIsOpen: false
+				managerLayer: null
 
 				queryText: ''
-				queryResults: Imm.List()
-				displayInactive: null
-
-				orderedQueryResults: Imm.List()
-				hoverClientId: null
-
-				managerLayer: null
 			}
 
 		componentDidMount: ->
@@ -318,58 +312,24 @@ load = (win) ->
 			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
 			@_attachKeyBindings()
 
-		componentDidUpdate: (oldProps, oldState) ->
-			# Figure out what changed
-			for property of @props
-				# console.log "property", property
-				if @props[property] isnt oldProps[property]
-					console.log "#{property} changed"
-
-			for property of @state
-				if @state[property] isnt oldState[property]
-					console.log "#{property} changed"
-
 		# componentDidUpdate: (oldProps, oldState) ->
-		# 	if @props.clientFileHeaders isnt oldProps.clientFileHeaders
-		# 		console.log "Changed clientFileHeaders"
-		# 		@_refreshResults()
+		# 	# Figure out what changed
+		# 	for property of @props
+		# 		# console.log "property", property
+		# 		if @props[property] isnt oldProps[property]
+		# 			console.log "#{property} changed"
 
-		# 	if @state.queryText isnt oldState.queryText
-		# 		console.log "Changed queryText"
-		# 		@_refreshResults()
+		# 	for property of @state
+		# 		if @state[property] isnt oldState[property]
+		# 			console.log "#{property} changed"
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
 
-			console.info "Render clientSelectionPage"
-
-			# Add in all program objects this clientFile's a member of
-
-			queryResults = @state.queryResults.map (clientFile) =>
-				clientFileId = clientFile.get('id')
-
-				programMemberships = @props.clientFileProgramLinks
-				.filter (link) =>
-					link.get('clientFileId') is clientFileId and link.get('status') is "enrolled"
-				.map (link) =>
-					@props.programs.find (program) -> program.get('id') is link.get('programId')
-
-				clientFile.set('programs', programMemberships)
-
-			# Get inactive clientFiles for filter display
-			inactiveClientFiles = queryResults.filter (clientFile) ->
-				clientFile.get('status') isnt 'active'
-
-			# Filter out inactive clientFiles by default
-			if not @state.displayInactive
-				queryResults = queryResults.filter (clientFile) ->
-					clientFile.get('status') is 'active'
-
-
 			return R.div({
 					id: 'clientSelectionPage'
-					className: if @state.menuIsOpen then 'openMenu' else 'animated fadeIn'
+					className: 'animated fadeIn'
 			},
 				R.a({
 					id: 'expandMenuButton'
@@ -385,6 +345,8 @@ load = (win) ->
 				)
 				R.div({
 					id: 'mainContainer'
+					style:
+						width: if @state.menuIsOpen then '80%' else '100%'
 				},
 					(if @state.managerLayer?
 						ManagerLayer({
@@ -480,78 +442,15 @@ load = (win) ->
 								onClick: @_home
 							})
 						)
-						R.div({
-							className: 'results'
-						},
-							(if not inactiveClientFiles.isEmpty()
-								R.div({id: 'filterSelectionContainer'}
-									R.span({id: 'toggleDeactivated'},
-										R.div({className: "checkbox"},
-											R.label({}
-												R.input({
-													onChange: @_toggleInactive
-													type: 'checkbox'
-													checked: @state.displayInactive
-												})
-												"Show deactivated (#{inactiveClientFiles.size})",
-											)
-										)
-									)
-								)
-							)
-
-							ClientTable({
+						R.div({className: 'results'},
+							ClientTableWrapper({
+								ref: 'clientTable'
 								queryText: @state.queryText
 								clientFileHeaders: @props.clientFileHeaders
+								clientFileProgramLinks: @props.clientFileProgramLinks
+								programs: @props.programs
+								onRowClick: @_onResultSelection
 							})
-
-							# OrderableTable({
-							# 	tableData: queryResults
-							# 	noMatchesMessage: "No #{Term 'client file'} matches for \"#{@state.queryText}\""
-							# 	onSortChange: (orderedQueryResults) => @setState {orderedQueryResults}
-							# 	sortByData: ['clientName', 'last']
-							# 	key: ['id']
-							# 	rowClass: (dataPoint) =>
-							# 		[
-							# 			'active' if @state.hoverClientId is dataPoint.get('id')
-							# 			'deactivatedClientFile' unless dataPoint.get('status') is 'active'
-							# 		].join ' '
-							# 	onClickRow: (dataPoint) =>
-							# 		@_onResultSelection.bind null, dataPoint.get('id')
-
-							# 	columns: [
-							# 		{
-							# 			name: Term 'Programs'
-							# 			dataPath: ['programs']
-							# 			cellClass: 'programsCell'
-							# 			isNotOrderable: true
-							# 			nameIsVisible: false
-							# 			value: (dataPoint) ->
-							# 				programs = dataPoint.get('programs')
-							# 				ProgramBubbles({programs})
-							# 		}
-							# 		{
-							# 			name: "Last Name"
-							# 			dataPath: ['clientName', 'last']
-							# 		}
-							# 		{
-							# 			name: "Given Name(s)"
-							# 			dataPath: ['clientName', 'first']
-							# 			extraPath: ['clientName', 'middle']
-							# 		}
-
-							# 		{
-							# 			name: "Status"
-							# 			dataPath: ['status']
-							# 			isDisabled: not @state.displayInactive
-							# 		}
-							# 		{
-							# 			name: Config.clientFileRecordId.label
-							# 			dataPath: ['recordId']
-							# 			isDisabled: not Config.clientFileRecordId.isEnabled
-							# 		}
-							# 	]
-							# })
 						)
 					)
 				)
@@ -579,43 +478,17 @@ load = (win) ->
 				switch event.which
 					when 40 # Down arrow
 						event.preventDefault()
-						@_shiftHoverClientId(1)
+						@refs.clientTable.shiftActiveIndex(1)
 					when 38 # Up arrow
 						event.preventDefault()
-						@_shiftHoverClientId(-1)
+						@refs.clientTable.shiftActiveIndex(-1)
 					when 27 # Esc
-						@setState hoverClientId: null
+						@refs.clientTable.clearActiveIndex()
 					when 13 # Enter
-						$active = $('.active')
+						$active = $('.activeIndex')
 						return unless $active.length
 						$active[0].click()
 						return false
-
-		_shiftHoverClientId: (modifier) ->
-			hoverClientId = null
-			queryResults = @state.orderedQueryResults
-
-			return if queryResults.isEmpty()
-
-			# Get our current index position
-			currentResultIndex = queryResults.findIndex (result) =>
-				return result.get('id') is @state.hoverClientId
-
-			nextIndex = currentResultIndex + modifier
-
-			# Skip to first/last if first-run or next is non-existent
-			if not queryResults.get(nextIndex)? or not @state.hoverClientId?
-				if modifier > 0
-					hoverClientId = queryResults.first().get('id')
-				else
-					hoverClientId = queryResults.last().get('id')
-
-				@setState {hoverClientId}
-				return
-
-			# No wacky skip behaviour needed, move to next/previous result
-			hoverClientId = queryResults.get(nextIndex).get('id')
-			@setState {hoverClientId}
 
 		_updateManagerLayer: (managerLayer) ->
 			@setState {managerLayer}
@@ -639,57 +512,108 @@ load = (win) ->
 			if event.target.value.length > 0
 				@setState {isSmallHeaderSet: true}
 
-		_toggleInactive: ->
-			@setState {displayInactive: not @state.displayInactive}
-
 		_showAll: ->
 			@setState {isSmallHeaderSet: true, queryText: ''}
 
 		_home: ->
 			@setState {isSmallHeaderSet: false, queryText: ''}
 
-		_onResultSelection: (clientFileId, event) ->
-			@setState {hoverClientId: clientFileId}
+		_onResultSelection: (clientFileId) ->
 			@props.openClientFile(clientFileId)
 
 
-	ClientTable = React.createFactory React.createClass
+	ClientTableWrapper = React.createFactory React.createClass
 		displayName: 'ClientTable'
+
+		propTypes: {
+			queryText: PropTypes.string.isRequired
+
+			clientFileHeaders: ImmPropTypes.list.isRequired
+			clientFileProgramLinks: ImmPropTypes.list.isRequired
+			programs: ImmPropTypes.list.isRequired
+
+			onRowClick: PropTypes.func.isRequired
+		}
+
+		getInitialState: -> {
+			displayInactive: null
+		}
 
 		render: ->
 			queryResults = @_filterResults()
 
+			# Add in all program objects this clientFile's a member of
+			tableData = queryResults.map (clientFile) =>
+				clientFileId = clientFile.get('id')
+
+				programMemberships = @props.clientFileProgramLinks
+				.filter (link) =>
+					link.get('clientFileId') is clientFileId and link.get('status') is "enrolled"
+				.map (link) =>
+					@props.programs.find (program) -> program.get('id') is link.get('programId')
+
+				givenNames = clientFile.getIn(['clientName', 'first'])
+				middleName = clientFile.getIn(['clientName', 'middle'])
+				if middleName then givenNames += ", #{middleName}"
+
+				return clientFile
+				.set('programs', programMemberships)
+				.set('givenNames', givenNames)
+				.set('lastName', clientFile.getIn(['clientName', 'last']))
+
+			# Get inactive clientFile results for filter display
+			inactiveClientFiles = tableData.filter (clientFile) ->
+				clientFile.get('status') isnt 'active'
+
+			# Filter out inactive clientFile results by default
+			if not @state.displayInactive
+				tableData = tableData.filter (clientFile) ->
+					clientFile.get('status') is 'active'
+
+			# Are ANY clientFiles inactive?
+			hasInactiveFiles = @props.clientFileHeaders.some (clientFile) ->
+				clientFile.get('status') isnt 'active'
+
 			return R.div({className: 'responsiveTable'},
-				BootstrapTable({
-					data: queryResults.toJS()
-					keyField: 'id'
-					bordered: false
-					options: {
-						onRowClick: (row) ->
-							return console.log "Selected row:", row
-					}
-				},
-					TableHeaderColumn({
-						dataField: 'clientName'
-						dataFormat: (clientName) -> clientName.last
-					}, "Last Name")
-					TableHeaderColumn({
-						dataField: 'clientName'
-						dataFormat: (clientName) ->
-							nameString = clientName.first
-							if clientName.middle then nameString += ", #{clientName.middle}"
-							return nameString
-					}, "Given Names")
+				(if hasInactiveFiles
+					R.div({id: 'filterSelectionContainer'}
+						R.span({id: 'toggleDeactivated'},
+							R.div({className: "checkbox"},
+								R.label({}
+									R.input({
+										onChange: @_toggleInactive
+										type: 'checkbox'
+										checked: @state.displayInactive
+									})
+									"Show deactivated (#{inactiveClientFiles.size})",
+								)
+							)
+						)
+					)
 				)
+				ClientTable({
+					ref: 'clientTable'
+					data: tableData
+					queryText: @props.queryText
+					hasProgramLinks: not @props.clientFileProgramLinks.isEmpty()
+					hasInactiveFiles
+
+					onRowClick: @props.onRowClick
+				})
 			)
+
+		shiftActiveIndex: (modifier) -> @refs.clientTable.shiftActiveIndex(modifier)
+		clearActiveIndex: -> @refs.clientTable.clearActiveIndex()
+
+		_toggleInactive: ->
+			@setState {displayInactive: not @state.displayInactive}
 
 		_filterResults: ->
 			if @props.queryText.trim().length is 0
 				return @props.clientFileHeaders
 
 			# Split into query parts
-			queryParts = Imm.fromJS(@props.queryText.split(' '))
-			.map (p) -> p.toLowerCase()
+			queryParts = Imm.fromJS(@props.queryText.split(' ')).map (p) -> p.toLowerCase()
 
 			# Calculate query results
 			queryResults = @props.clientFileHeaders
@@ -707,6 +631,85 @@ load = (win) ->
 						recordId.includes(part)
 
 			return queryResults
+
+
+	ClientTable = React.createFactory React.createClass
+		displayName: 'ClientTable'
+
+		propTypes: {
+			queryText: PropTypes.string.isRequired
+			data: PropTypes.string.isRequired
+			hasProgramLinks: PropTypes.bool.isRequired
+			hasInactiveFiles: PropTypes.bool.isRequired
+
+			onRowClick: PropTypes.func.isRequired
+		}
+
+		getInitialState: -> {
+			activeIndex: null
+		}
+
+		render: ->
+			BootstrapTable({
+				data: @props.data.toJS()
+				keyField: 'id'
+				bordered: false
+				options: {
+					onRowClick: (row) => @props.onRowClick(row.id)
+					noDataText: "No #{Term 'client files'} matching \"#{@props.queryText}\""
+					defaultSortName: 'lastName'
+					defaultSortOrder: 'asc'
+				}
+				trClassName: (row, index) => [
+					'clientRow'
+					'activeIndex' if index is @state.activeIndex
+					'deactivated' unless row.status is 'active'
+				].join ' '
+			},
+				TableHeaderColumn({
+					dataField: 'programs'
+					dataFormat: (programs) -> ProgramBubbles({programs: Imm.fromJS(programs)})
+					hidden: not @props.hasProgramLinks
+					width: '150px'
+				})
+				TableHeaderColumn({
+					dataField: 'lastName'
+					dataSort: true
+				}, "Last Name")
+				TableHeaderColumn({
+					dataField: 'givenNames'
+					dataSort: true
+				}, "Given Names")
+				TableHeaderColumn({
+					dataField: 'recordId'
+					dataSort: true
+					hidden: not Config.clientFileRecordId.isEnabled
+				}, Config.clientFileRecordId.label)
+				TableHeaderColumn({
+					dataField: 'status'
+					dataSort: true
+					hidden: not @props.hasInactiveFiles
+				}, "Status")
+			)
+
+		shiftActiveIndex: (modifier) ->
+			if @state.activeIndex is null
+				activeIndex = 0
+				@setState {activeIndex}
+				return
+
+			activeIndex = @state.activeIndex + modifier
+
+			numberClientRows = @props.data.size
+
+			if activeIndex < 0
+				activeIndex = numberClientRows - 1
+			else if activeIndex > (numberClientRows - 1)
+				activeIndex = 0
+
+			@setState {activeIndex}
+
+		clearActiveIndex: -> @setState {activeIndex: null}
 
 
 	return ClientSelectionPage
