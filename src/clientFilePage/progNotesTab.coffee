@@ -38,17 +38,16 @@ load = (win) ->
 		displayName: 'ProgNotesView'
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: -> {
-			editingProgNoteId: null
-		}
-
 		getInitialState: ->
 			return {
+				editingProgNoteId: null
+				
 				selectedItem: null
 				highlightedProgNoteId: null
 				highlightedTargetId: null
 				backdate: ''
 				revisingProgNote: null
+				isLoading: null
 			}
 
 		componentDidMount: ->
@@ -140,19 +139,13 @@ load = (win) ->
 							},
 								"Cancel"
 							)
-							R.button({
-								className: "btn btn-link #{showWhen hasChanges}"
-								onClick: @_resetRevisingProgNote
-							},
-								"Discard"
-							)
 						)
 					else
 						R.div({},
 							R.button({
 								className: 'newProgNote btn btn-primary'
 								onClick: @_openNewProgNote
-								disabled: @props.isReadOnly
+								disabled: @state.isLoading or @props.isReadOnly
 							},
 								FaIcon 'file'
 								"New #{Term 'progress note'}"
@@ -177,7 +170,7 @@ load = (win) ->
 							R.button({
 								className: 'btn btn-primary btn-lg newProgNote'
 								onClick: @_openNewProgNote
-								disabled: @props.isReadOnly
+								disabled: @state.isLoading or @props.isReadOnly
 							},
 								FaIcon 'file'
 								"New #{Term 'progress note'}"
@@ -254,13 +247,9 @@ load = (win) ->
 			revisingProgNote = originalProgNote.set('originalRevision', originalProgNote)
 			@setState {revisingProgNote}
 
-		_resetRevisingProgNote: ->
-			Bootbox.confirm "Discard all changes made to the #{Term 'progress note'}?", (ok) =>
-				if ok then @_startRevisingProgNote @state.revisingProgNote.get('originalRevision')
-
 		_cancelRevisingProgNote: ->
 			if @_revisingProgNoteHasChanges()
-				return Bootbox.confirm "Discard all changes made to the #{Term 'progress note'} and cancel editing?", (ok) =>
+				return Bootbox.confirm "Discard all changes made to the #{Term 'progress note'}?", (ok) =>
 					if ok then @_discardRevisingProgNote()
 
 			@_discardRevisingProgNote()
@@ -372,11 +361,9 @@ load = (win) ->
 			}
 
 		_saveProgNoteRevision: ->
-			@props.setIsLoading true
 			progNoteRevision = @_stripRevisingProgNote()
 
 			ActiveSession.persist.progNotes.createRevision progNoteRevision, (err, result) =>
-				@props.setIsLoading false
 
 				if err
 					if err instanceof Persist.IOError
@@ -523,11 +510,11 @@ load = (win) ->
 
 
 		_openNewProgNote: ->
+			@setState {isLoading: true}
 			Async.series [
 				@_checkPlanChanges
 				@_checkUserProgram
 				(cb) =>
-					@props.setIsLoading true
 
 					# Cache data to global, so can access again from newProgNote window
 					# Set up the dataStore if doesn't exist
@@ -556,11 +543,10 @@ load = (win) ->
 					global.ActiveSession.persist.eventBus.once 'newProgNotePage:loaded', cb
 
 			], (err) =>
+				@setState {isLoading: false}
 				if err
 					CrashHandler.handle err
 					return
-
-				@props.setIsLoading false
 
 		_openNewQuickNote: ->
 			Async.series [
@@ -631,8 +617,6 @@ load = (win) ->
 				Bootbox.alert "Cannot create an empty #{Term 'quick note'}."
 				return
 
-			@props.setIsLoading true
-
 			quickNote = Imm.fromJS {
 				type: 'basic'
 				status: 'default'
@@ -644,7 +628,6 @@ load = (win) ->
 			}
 
 			global.ActiveSession.persist.progNotes.create quickNote, (err) =>
-				@props.setIsLoading false
 				if err
 					cb err
 					return
