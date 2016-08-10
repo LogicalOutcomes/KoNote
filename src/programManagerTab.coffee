@@ -86,7 +86,7 @@ load = (win) ->
 								})
 								TableHeaderColumn({
 									dataField: 'name'
-								}, "Name")
+								}, "#{Term 'Program'} Name")
 								TableHeaderColumn({
 									dataField: 'description'
 								}, "Description")
@@ -230,7 +230,7 @@ load = (win) ->
 		}
 
 		getInitialState: ->
-			return @_getProgramById(@props.programId).toJS()
+			return @_getProgram().toJS()
 
 		componentDidMount: ->
 			@refs.programName.focus()
@@ -300,9 +300,9 @@ load = (win) ->
 		_updateColorKeyHex: (colorKeyHex) ->
 			@setState {colorKeyHex}
 
-		_getProgramById: (programId) ->
+		_getProgram: ->
 			@props.programs.find (program) =>
-				program.get('id') is programId
+				program.get('id') is @props.programId
 
 		_buildModifiedProgramObject: ->
 			return Imm.fromJS({
@@ -313,7 +313,7 @@ load = (win) ->
 			})
 
 		_hasChanges: ->
-			originalProgramObject = @_getProgramById(@props.programId)
+			originalProgramObject = @_getProgram()
 			modifiedProgramObject = @_buildModifiedProgramObject()
 			return not Imm.is originalProgramObject, modifiedProgramObject
 
