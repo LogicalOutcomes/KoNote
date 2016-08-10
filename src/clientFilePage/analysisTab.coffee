@@ -334,11 +334,10 @@ load = (win) ->
 								Term 'Metrics'
 							)
 
-							R.h3({}, "Plan")
 							R.div({className: 'dataOptions'},
 								(@props.plan.get('sections').map (section) =>
 									R.div({key: section.get('id')},
-										R.h4({}, section.get('name'))
+										R.h3({}, section.get('name'))
 										R.section({key: section.get('id')},
 											(section.get('targetIds').map (targetId) =>
 												target = @props.planTargetsById.getIn([targetId, 'revisions']).first()
