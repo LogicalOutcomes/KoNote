@@ -5,6 +5,7 @@
 (function () {
 
 	var Config = require('./config');
+	global.syncing = false
 
 	if (!Config.devMode) {
 		/////////// PRODUCTION MODE ///////////

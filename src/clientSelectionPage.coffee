@@ -329,6 +329,12 @@ load = (win) ->
 				@_attachKeyBindings()
 
 			, 250)
+			
+			setInterval =>
+				Persist.Sync.pull 0, (err) =>
+					if err
+						console.error err
+			, 120000
 
 		componentDidUpdate: (oldProps, oldState) ->
 			if @props.clientFileHeaders isnt oldProps.clientFileHeaders

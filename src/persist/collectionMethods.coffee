@@ -85,128 +85,123 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 	# See the wiki for instructions on their use.
 
 	create = (obj, cb) ->
-		# The object hasn't been created yet, so it shouldn't have any of these
-		# metadata fields.  If it does, it probably indicates a bug.
+	# The object hasn't been created yet, so it shouldn't have any of these
+	# metadata fields.  If it does, it probably indicates a bug.
 
-		Sync.pull 0, (err) =>
+		if obj.has('id')
+			cb new Error "new objects cannot already have an ID"
+			return
+
+		if obj.has('revisionId')
+			cb new Error "new objects cannot already have a revision ID"
+			return
+
+		# We allow explicit metadata for development purposes, such as seeding.
+		if process.env.NODE_ENV isnt 'development'
+			if obj.has('author')
+				cb new Error "new objects cannot already have an author"
+				return
+
+			if obj.has('timestamp')
+				cb new Error "new objects cannot already have a timestamp"
+				return
+
+		# Pull out the IDs of this object's ancestors
+		# E.g. if we're creating a prognote, extract clientFileId
+		contextualIds = extractContextualIds obj
+
+		# Add metadata fields
+		obj = obj
+		.set 'id', generateId()
+		.set 'revisionId', generateId()
+		.set 'author', obj.get('author') or session.userName
+		.set 'timestamp', obj.get('timestamp') or Moment().format(TimestampFormat)
+
+		destObjDir = null
+		objDir = null
+		objDirOp = null
+		header = null
+
+		Async.series [
+			(cb) ->
+				# Figure out what directory contains this collection.
+				# This depends on whether this collection has a parent,
+				# so pass in the contextualIds.
+				getParentDir contextualIds, (err, parentDir) ->
+					if err
+						cb err
+						return
+
+					# Generate this object's future directory name
+					header = encodeObjectHeader(obj, modelDef.indexes)
+					fileName = Base64url.encode fileNameEncryptionKey.encrypt header
+
+					# Generate this object's future directory path
+					destObjDir = Path.join(
+						parentDir
+						modelDef.collectionName
+						fileName
+					)
+
+					cb()
+			(cb) ->
+				# In order to make the operation atomic, we write to a
+				# temporary object directory first, then commit it later.
+				Atomic.writeDirectory destObjDir, tmpDirPath, (err, tmpObjDir, op) ->
+					if err
+						cb err
+						return
+
+					objDir = tmpObjDir
+					objDirOp = op
+					cb()
+			(cb) ->
+				# Create subdirs for subcollection
+				Async.each modelDef.children, (child, cb) ->
+					childDir = Path.join(objDir, child.collectionName)
+
+					Fs.mkdir childDir, (err) ->
+						if err
+							cb new IOError err
+							return
+
+						cb()
+				, cb
+			(cb) ->
+				# Create the first revision of this new object
+
+				# Generate the revision file name and path
+				revHeader = encodeObjectRevisionHeader(obj)
+				revFileName = Base64url.encode fileNameEncryptionKey.encrypt revHeader
+
+				# The revision file will go in the object directory
+				revFilePath = Path.join(objDir, revFileName)
+
+				writeObjectRevisionFile obj, revFilePath, contextualIds, cb
+			(cb) ->
+				# Done preparing the object directory, finish the operation atomically
+				objDirOp.commit cb
+			(cb) ->
+				Sync.push 0, (err) =>
+					if err
+						cb err
+						return
+					cb()
+		], (err) ->
 			if err
 				cb err
 				return
 
-			if obj.has('id')
-				cb new Error "new objects cannot already have an ID"
-				return
+			# Update list cache to include new object
+			listCache.update getListCacheKey(contextualIds), (oldHeaders) ->
+				# Add header of this new object to cached list
+				return oldHeaders.push decodeObjectHeader(header, modelDef.indexes, destObjDir)
 
-			if obj.has('revisionId')
-				cb new Error "new objects cannot already have a revision ID"
-				return
+			# Dispatch event via event bus, notifying the app of the change
+			eventBus.trigger "create:#{modelDef.name}", obj
 
-			# We allow explicit metadata for development purposes, such as seeding.
-			if process.env.NODE_ENV isnt 'development'
-				if obj.has('author')
-					cb new Error "new objects cannot already have an author"
-					return
-
-				if obj.has('timestamp')
-					cb new Error "new objects cannot already have a timestamp"
-					return
-
-			# Pull out the IDs of this object's ancestors
-			# E.g. if we're creating a prognote, extract clientFileId
-			contextualIds = extractContextualIds obj
-
-			# Add metadata fields
-			obj = obj
-			.set 'id', generateId()
-			.set 'revisionId', generateId()
-			.set 'author', obj.get('author') or session.userName
-			.set 'timestamp', obj.get('timestamp') or Moment().format(TimestampFormat)
-
-			destObjDir = null
-			objDir = null
-			objDirOp = null
-			header = null
-
-			Async.series [
-				(cb) ->
-					# Figure out what directory contains this collection.
-					# This depends on whether this collection has a parent,
-					# so pass in the contextualIds.
-					getParentDir contextualIds, (err, parentDir) ->
-						if err
-							cb err
-							return
-
-						# Generate this object's future directory name
-						header = encodeObjectHeader(obj, modelDef.indexes)
-						fileName = Base64url.encode fileNameEncryptionKey.encrypt header
-
-						# Generate this object's future directory path
-						destObjDir = Path.join(
-							parentDir
-							modelDef.collectionName
-							fileName
-						)
-
-						cb()
-				(cb) ->
-					# In order to make the operation atomic, we write to a
-					# temporary object directory first, then commit it later.
-					Atomic.writeDirectory destObjDir, tmpDirPath, (err, tmpObjDir, op) ->
-						if err
-							cb err
-							return
-
-						objDir = tmpObjDir
-						objDirOp = op
-						cb()
-				(cb) ->
-					# Create subdirs for subcollection
-					Async.each modelDef.children, (child, cb) ->
-						childDir = Path.join(objDir, child.collectionName)
-
-						Fs.mkdir childDir, (err) ->
-							if err
-								cb new IOError err
-								return
-
-							cb()
-					, cb
-				(cb) ->
-					# Create the first revision of this new object
-
-					# Generate the revision file name and path
-					revHeader = encodeObjectRevisionHeader(obj)
-					revFileName = Base64url.encode fileNameEncryptionKey.encrypt revHeader
-
-					# The revision file will go in the object directory
-					revFilePath = Path.join(objDir, revFileName)
-
-					writeObjectRevisionFile obj, revFilePath, contextualIds, cb
-				(cb) ->
-					# Done preparing the object directory, finish the operation atomically
-					objDirOp.commit cb
-				(cb) ->
-					Sync.push 0, (err) =>
-						if err
-							cb err
-							return
-						cb()
-			], (err) ->
-				if err
-					cb err
-					return
-
-				# Update list cache to include new object
-				listCache.update getListCacheKey(contextualIds), (oldHeaders) ->
-					# Add header of this new object to cached list
-					return oldHeaders.push decodeObjectHeader(header, modelDef.indexes, destObjDir)
-
-				# Dispatch event via event bus, notifying the app of the change
-				eventBus.trigger "create:#{modelDef.name}", obj
-
-				# Return a copy of the newly created object, complete with metadata
-				cb null, obj
+			# Return a copy of the newly created object, complete with metadata
+			cb null, obj
 
 	list = (contextualIds..., cb) ->
 		# API user must provide IDs for each of the ancestor objects,

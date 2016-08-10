@@ -33,8 +33,8 @@ else
 
 pull = (count, cb) ->
     if global.syncing is false
-        console.log "pulling data..."
         global.syncing = true
+        console.log "pulling data..."
         if count < 2
             exec pullCmd, (err, stdout, stderr) =>
                 if err
@@ -47,13 +47,12 @@ pull = (count, cb) ->
                         global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:pulled'
                     setTimeout (->
                         global.syncing = false
-                    ), 1000
+                    ), 5000
                     cb()
         else
             setTimeout (->
                 global.syncing = false
-            ), 1000
-            console.log "pull failure"
+            ), 5000
             cb new IOError "Pull failed"
     else
         cb()

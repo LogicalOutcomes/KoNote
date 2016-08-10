@@ -44,8 +44,6 @@ init = (win) ->
 	Gui = win.require 'nw.gui'
 	nwWin = Gui.Window.get(win)
 
-	global.syncing = false
-
 	# Handle any uncaught errors.
 	# Generally, errors should be passed directly to CrashHandler instead of
 	# being thrown so that the error brings down only one window.  Errors that

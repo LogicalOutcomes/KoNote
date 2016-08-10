@@ -80,29 +80,33 @@ load = (win) ->
 				if isSetUp
 					# Already set up, no need to continue here
 					console.log "Set up confirmed..."
-					@setState {isSetUp: true}
-					return
+					Persist.Sync.pull 0, (err) =>
+						if err
+							console.error err
+						@setState {isSetUp: true}
+						return
 
-				# Falsy isSetUp triggers NewInstallationPage
-				console.log "Not set up, redirecting to installation page..."
-				@setState {isSetUp: false}
+				else
+					# Falsy isSetUp triggers NewInstallationPage
+					console.log "Not set up, redirecting to installation page..."
+					@setState {isSetUp: false}
 
-				openWindow {page: 'newInstallation'}, (newInstallationWindow) =>
-					# Hide loginPage while installing
-					Window.hide()
+					openWindow {page: 'newInstallation'}, (newInstallationWindow) =>
+						# Hide loginPage while installing
+						Window.hide()
 
-					newInstallationWindow.on 'closed', (event) =>
-						if global.isSetUp
-							# Successfully installed, show login with isNewSetUp
-							@setState {
-								isSetUp: true
-								isNewSetUp: true
-							}
-							Window.show()
-						else
-							# Didn't complete installation, so close window and quit the app
-							@props.closeWindow()
-							Window.quit()
+						newInstallationWindow.on 'closed', (event) =>
+							if global.isSetUp
+								# Successfully installed, show login with isNewSetUp
+								@setState {
+									isSetUp: true
+									isNewSetUp: true
+								}
+								Window.show()
+							else
+								# Didn't complete installation, so close window and quit the app
+								@props.closeWindow()
+								Window.quit()
 
 		_login: (userName, password) ->
 
