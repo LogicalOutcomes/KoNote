@@ -73,10 +73,10 @@ load = (win) ->
 
 		isLoading: -> @state.isLoading
 
-		_onBackgroundClick: (event) ->
-			# If click was on background, not the dialog itself
-			if event.target.classList.contains 'dialogContainer'
-				@props.onClose()
+		# _onBackgroundClick: (event) ->
+		# 	# If click was on background, not the dialog itself
+		# 	if event.target.classList.contains 'dialogContainer'
+		# 		@props.onClose()
 
 
 	return Dialog
