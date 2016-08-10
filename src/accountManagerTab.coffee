@@ -11,6 +11,7 @@ Persist = require './persist'
 Config = require './config'
 Term = require './term'
 
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -33,6 +34,7 @@ load = (win) ->
 	DialogLayer = require('./dialogLayer').load(win)
 
 	{FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
+
 
 	AccountManagerTab = React.createFactory React.createClass
 		displayName: 'AccountManagerTab'

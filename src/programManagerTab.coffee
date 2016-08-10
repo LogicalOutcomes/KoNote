@@ -11,11 +11,18 @@ Config = require './config'
 Term = require './term'
 {ProgramColors} = require './colors'
 
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
+
+	# TODO: Refactor to single require
+	{BootstrapTable, TableHeaderColumn} = win.ReactBootstrapTable
+	BootstrapTable = React.createFactory BootstrapTable
+	TableHeaderColumn = React.createFactory TableHeaderColumn
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -25,8 +32,10 @@ load = (win) ->
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 	ColorKeySelection = require('./colorKeySelection').load(win)
+	DialogLayer = require('./dialogLayer').load(win)
 
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
+
 
 	ProgramManagerTab = React.createFactory React.createClass
 		displayName: 'ProgramManagerTab'
@@ -45,82 +54,52 @@ load = (win) ->
 
 			isAdmin = global.ActiveSession.isAdmin()
 
+			hasInactivePrograms = @props.clientFileProgramLinks.filter (link) ->
+				link.get('status') is "enrolled"
+
 			return R.div({className: 'programManagerTab'},
 				R.div({className: 'header'},
 					R.h1({}, Term 'Programs')
 				)
 				R.div({className: 'main'},
-					OrderableTable({
-						tableData: programs
-						noMatchesMessage: "No #{Term 'programs'} exist yet"
-						sortByData: ['name']
-						columns: [
-							{
-								name: "Colour Key"
-								nameIsVisible: false
-								dataPath: ['colorKeyHex']
-								cellClass: 'colorKeyCell'
-								value: (dataPoint) ->
-									ColorKeyBubble({
-										colorKeyHex: dataPoint.get('colorKeyHex')
-										popover: {
-											title: dataPoint.get('name')
-											content: dataPoint.get('description')
-										}
-									})
-							}
-							{
-								name: "Program Name"
-								dataPath: ['name']
-								cellClass: 'nameCell'
-							}
-							{
-								name: "Description"
-								dataPath: ['description']
-								value: (dataPoint) ->
-									description = dataPoint.get('description')
-
-									if description.length > 60
-										return description.substr(0, 59) + ' . . .'
-									else
-										return description
-							}
-							{
-								name: Term 'Clients'
-								cellClass: 'numberClientsCell'
-								dataPath: ['numberClients']
-								hideValue: true
-								buttons: [{
-									className: 'btn btn-default'
-									dataPath: ['numberClients']
-									icon: 'users'
-									dialog: ManageProgramClientsDialog
-									data:
-										clientFileHeaders: @props.clientFileHeaders
-										clientFileProgramLinks: @props.clientFileProgramLinks
-								}]
-							}
-							{
-								name: "Options"
-								nameIsVisible: false
-								cellClass: 'optionsCell'
-								isDisabled: not isAdmin
-								buttons: [
-									{
-										className: 'btn btn-warning'
-										text: null
-										icon: 'wrench'
-										dialog: ModifyProgramDialog
-										data:
-											clientFileProgramLinks: @props.clientFileProgramLinks
-											programs: @props.programs
-									}
-								]
-							}
-						]
-					})
+					R.div({className: 'responsiveTable'},
+						DialogLayer({
+							ref: 'dialogLayer'
+							programs
+							clientFileProgramLinks: @props.clientFileProgramLinks
+						}
+							BootstrapTable({
+								data: programs.toJS()
+								keyField: 'id'
+								bordered: false
+								options: {
+									defaultSortName: 'name'
+									defaultSortOrder: 'asc'
+									onRowClick: ({id}) =>
+										@refs.dialogLayer.open ModifyProgramDialog, {programId: id}
+								}
+							},
+								TableHeaderColumn({
+									dataField: 'colorKeyHex'
+									dataFormat: (colorKeyHex) -> ColorKeyBubble({colorKeyHex})
+									width: '100px'
+								})
+								TableHeaderColumn({
+									dataField: 'name'
+								}, "Name")
+								TableHeaderColumn({
+									dataField: 'description'
+								}, "Description")
+								TableHeaderColumn({
+									dataField: 'numberClients'
+									headerAlign: 'center'
+									dataAlign: 'center'
+								}, "# #{Term 'Clients'}")
+							)
+						)
+					)
 				)
-				if isAdmin
+				(if isAdmin
 					R.div({className: 'optionsMenu'},
 						OpenDialogLink({
 							className: 'btn btn-lg btn-primary'
@@ -135,6 +114,7 @@ load = (win) ->
 							"New #{Term 'Program'} "
 						)
 					)
+				)
 			)
 
 	CreateProgramDialog = React.createFactory React.createClass
@@ -241,17 +221,16 @@ load = (win) ->
 				@props.onSuccess()
 
 
-	# TODO: Combine with createProgramDialog
 	ModifyProgramDialog = React.createFactory React.createClass
 		displayName: 'ModifyProgramDialog'
 		mixins: [React.addons.PureRenderMixin]
 
+		propTypes: {
+			programId: PropTypes.string.isRequired
+		}
+
 		getInitialState: ->
-			return {
-				name: @props.rowData.get('name')
-				colorKeyHex: @props.rowData.get('colorKeyHex')
-				description: @props.rowData.get('description')
-			}
+			return @_getProgramById(@props.programId).toJS()
 
 		componentDidMount: ->
 			@refs.programName.focus()
@@ -321,21 +300,20 @@ load = (win) ->
 		_updateColorKeyHex: (colorKeyHex) ->
 			@setState {colorKeyHex}
 
+		_getProgramById: (programId) ->
+			@props.programs.find (program) =>
+				program.get('id') is programId
+
 		_buildModifiedProgramObject: ->
 			return Imm.fromJS({
-				id: @props.rowData.get('id')
+				id: @props.programId
 				name: @state.name
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex
 			})
 
-		_buildOriginalProgramObject: ->
-			# Explicitly remove numberClients for diff-ing,
-			# since it's not a part of the original DB object
-			return @props.rowData.remove('numberClients')
-
 		_hasChanges: ->
-			originalProgramObject = @_buildOriginalProgramObject()
+			originalProgramObject = @_getProgramById(@props.programId)
 			modifiedProgramObject = @_buildModifiedProgramObject()
 			return not Imm.is originalProgramObject, modifiedProgramObject
 
@@ -343,9 +321,7 @@ load = (win) ->
 			event.preventDefault()
 
 			modifiedProgram = @_buildModifiedProgramObject()
-			@_modifyProgram(modifiedProgram)
 
-		_modifyProgram: (modifiedProgram) ->
 			@refs.dialog.setIsLoading(true)
 
 			# Update program revision, and close
