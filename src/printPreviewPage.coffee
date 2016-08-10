@@ -212,10 +212,6 @@ load = (win, {dataSet}) ->
 								)
 							when 'plan'
 								R.div({className: 'plan unit', key: unit.get('id')},
-									R.h1({}, unit.get 'name')
-									R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
-										"This is empty because this #{Term 'plan'} has no #{Term 'sections'}."
-									)
 									(unit.get('sections').map (section) =>
 										R.section({},
 											R.h2({}, section.get 'name')

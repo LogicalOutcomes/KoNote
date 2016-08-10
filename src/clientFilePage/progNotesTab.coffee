@@ -916,10 +916,6 @@ load = (win) ->
 									className: 'plan unit'
 									key: unitId
 								},
-									R.h1({},
-										unit.get('name')
-									)
-
 									(unit.get('sections').map (section) =>
 										sectionId = section.get('id')
 

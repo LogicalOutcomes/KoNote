@@ -340,11 +340,6 @@ load = (win, {clientFileId}) ->
 										className: 'unit plan'
 										key: unitId
 									},
-										R.h1({className: 'unitName'}, unit.get 'name')
-										R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
-											"This is empty because the client has no active
-											#{Term 'plan'} #{Term 'sections'} or #{Term 'targets'}."
-										)
 										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
 
