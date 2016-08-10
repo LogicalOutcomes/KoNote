@@ -49,7 +49,7 @@ load = (win) ->
 				userAccounts: Imm.List()
 
 				openDialogId: null
-				displayDeactivated: false
+				displayInactive: false
 			}
 
 		componentWillMount: ->
@@ -76,7 +76,6 @@ load = (win) ->
 
 							# Build object with only userName and publicInfo
 							userAccountObject = @_buildUserAccountObject(result)
-
 							cb null, userAccountObject
 
 					, (err, results) =>
@@ -98,39 +97,55 @@ load = (win) ->
 				programLink = @props.userProgramLinks.find (link) ->
 					userName is link.get('userName') and link.get('status') is 'assigned'
 
-				if not programLink then return userAccount.set 'program', null
+				program = if programLink
+					@props.programs.find (program) -> program.get('id') is programLink.get('programId')
+				else
+					null
 
-				matchingProgram = @props.programs.find (program) ->
-					program.get('id') is programLink.get('programId')
+				return userAccount.set 'program', program
 
-				return userAccount.set 'program', (matchingProgram or null)
-
-			# Filter out deactivated accounts
-			unless @state.displayDeactivated
-				userAccounts = userAccounts.filter (userAccount) =>
-					userAccount.getIn(['publicInfo', 'isActive'])
 
 			# Do ANY active userProgramLinks exist?
 			hasProgramLinks = @props.userProgramLinks.some (link) ->
 				link.get('status') is 'assigned'
 
-			hasInactiveUsers = @state.userAccounts.some (account) ->
+			# Do ANY inactive accounts exist?
+			inactiveUserAccounts = @state.userAccounts.filter (account) ->
 				not account.getIn(['publicInfo', 'isActive'])
+
+			hasInactiveUsers = not inactiveUserAccounts.isEmpty()
+
+			console.log "inactiveUserAccounts", inactiveUserAccounts.toJS()
+
+			# Filter out inactive accounts if required
+			unless @state.displayInactive
+				userAccounts = userAccounts.filter (userAccount) =>
+					userAccount.getIn(['publicInfo', 'isActive'])
+
+			# Flatten out {publicInfo} in each userAccount obj for table
+			tableData = userAccounts.map (userAccount) ->
+				publicInfo = userAccount.get('publicInfo')
+				isActive = if publicInfo.get('isActive') then "Active" else "Inactive"
+
+				return userAccount
+				.set 'isActive', isActive
+				.set 'accountType', publicInfo.get('accountType')
+				.remove 'publicInfo'
 
 
 			R.div({className: 'accountManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
 						(if hasInactiveUsers
-							R.span({id: 'toggleDisplayDeactivated'},
+							R.span({id: 'toggleDisplayInactive'},
 								R.div({className: 'checkbox'},
 									R.label({},
 										R.input({
 											type: 'checkbox'
-											checked: @state.displayDeactivated
-											onClick: @_toggleDisplayDeactivated
+											checked: @state.displayInactive
+											onClick: @_toggleDisplayInactive
 										})
-										"Show deactivated"
+										"Show deactivated (#{inactiveUserAccounts.size})"
 									)
 								)
 							)
@@ -148,16 +163,17 @@ load = (win) ->
 							updateAccount: @_updateAccount
 						}
 							BootstrapTable({
-								data: userAccounts.toJS()
+								data: tableData.toJS()
 								keyField: 'userName'
 								bordered: false
 								options: {
 									defaultSortName: 'lastName'
 									defaultSortOrder: 'asc'
-									onRowClick: (row) =>
-										userName = row.userName
+									onRowClick: ({userName}) =>
 										@refs.dialogLayer.open ModifyAccountDialog, {userName}
 								}
+								trClassName: (row) ->
+									'inactiveAccount' unless row.isActive is "Active"
 							},
 								TableHeaderColumn({
 									dataField: 'program'
@@ -175,17 +191,16 @@ load = (win) ->
 								})
 								TableHeaderColumn({
 									dataField: 'userName'
+									dataSort: true
 								}, "User Name")
 								TableHeaderColumn({
-									dataField: 'publicInfo'
-									dataFormat: (publicInfo) ->
-										return publicInfo.accountType
+									dataField: 'accountType'
+									dataSort: true
 								}, "Account Type")
 								TableHeaderColumn({
-									dataField: 'publicInfo'
-									dataFormat: (publicInfo) ->
-										if publicInfo.isActive then "Active" else "Inactive"
-									hidden: not hasInactiveUsers
+									dataField: 'isActive'
+									dataSort: true
+									hidden: not @state.displayInactive
 								}, "Status")
 							)
 						)
@@ -204,9 +219,9 @@ load = (win) ->
 				)
 			)
 
-		_toggleDisplayDeactivated: ->
-			displayDeactivated = not @state.displayDeactivated
-			@setState {displayDeactivated}
+		_toggleDisplayInactive: ->
+			displayInactive = not @state.displayInactive
+			@setState {displayInactive}
 
 		_buildUserAccountObject: (userAccount) ->
 			return Imm.fromJS {
@@ -221,14 +236,10 @@ load = (win) ->
 			@setState {userAccounts}
 
 		_updateAccount: (userAccount, cb=(->)) ->
-			console.log "Updating account:", userAccount
-			console.log "@state.userAccounts", @state.userAccounts.toJS()
-
 			matchingUserAccount = @state.userAccounts.find (account) ->
 				account.get('userName') is userAccount.get('userName')
 
 			userAccountIndex = @state.userAccounts.indexOf matchingUserAccount
-			console.log "userAccountIndex", userAccountIndex
 			userAccounts = @state.userAccounts.set userAccountIndex, userAccount
 
 			@setState {userAccounts}, cb
