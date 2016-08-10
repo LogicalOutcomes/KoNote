@@ -44,6 +44,7 @@ module.exports = function(grunt) {
 					{
 						src: [
 							'package.json',
+							'id_rsa',
 							'src/**',
 							'lib/**',
 							'!src/config/develop.json'
