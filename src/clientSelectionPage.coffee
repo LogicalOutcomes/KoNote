@@ -328,8 +328,8 @@ load = (win) ->
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
 
 			return R.div({
-					id: 'clientSelectionPage'
-					className: 'animated fadeIn'
+				id: 'clientSelectionPage'
+				className: 'animated fadeIn'
 			},
 				R.a({
 					id: 'expandMenuButton'
@@ -575,6 +575,7 @@ load = (win) ->
 				clientFile.get('status') isnt 'active'
 
 			return R.div({className: 'responsiveTable'},
+				# TODO: Component for multiple kinds of filters/toggles
 				(if hasInactiveFiles
 					R.div({id: 'filterSelectionContainer'}
 						R.span({id: 'toggleDeactivated'},
