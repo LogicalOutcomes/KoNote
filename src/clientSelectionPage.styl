@@ -156,61 +156,6 @@ sidebar-borders = darken(sidebar-bg, 10%)
 							margin-right 25px
 
 
-
-
-				.responsiveTable
-					flex 1
-					display flex
-					flex-direction column
-					max-width 100%
-
-					.react-bs-table-container
-						display flex
-						max-width 100%
-
-						.react-bs-table
-							flex 1
-							height auto !important
-							display flex
-							flex-direction column
-							max-width 100%
-
-							margin 0
-							border 0
-
-							tr
-								cursor default !important
-
-								th
-									cursor default !important
-
-							// TODO: Avoid setting this manually
-							// (hides completely without it for some reason...)
-							.react-bs-container-header
-								min-height 2.7em
-
-							.react-bs-container-body
-								font-size 1.1em
-
-								.programBubbles
-									font-size 1.5em
-									flex-direction row-reverse
-
-								tr
-									background transparent
-									transition background .15s ease
-
-									&.deactivated
-										background #FFD3D3
-
-									&:hover, &.activeIndex
-										background hsl(200, 80%, 90%) !important
-
-									td
-										vertical-align middle
-										height 50px
-
-
 	> #menuContainer
 		flex 0
 		display flex
