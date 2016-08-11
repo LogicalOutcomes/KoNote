@@ -32,7 +32,6 @@ load = (win, {clientFileId}) ->
 	Window = Gui.Window.get(win)
 
 	CrashHandler = require('../crashHandler').load(win)
-	Spinner = require('../spinner').load(win)
 	BrandWidget = require('../brandWidget').load(win)
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
