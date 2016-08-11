@@ -312,17 +312,6 @@ load = (win) ->
 			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
 			@_attachKeyBindings()
 
-		# componentDidUpdate: (oldProps, oldState) ->
-		# 	# Figure out what changed
-		# 	for property of @props
-		# 		# console.log "property", property
-		# 		if @props[property] isnt oldProps[property]
-		# 			console.log "#{property} changed"
-
-		# 	for property of @state
-		# 		if @state[property] isnt oldState[property]
-		# 			console.log "#{property} changed"
-
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
 			smallHeader = @state.queryText.length > 0 or @state.isSmallHeaderSet
@@ -442,16 +431,14 @@ load = (win) ->
 								onClick: @_home
 							})
 						)
-						R.div({className: 'results'},
-							ClientTableWrapper({
-								ref: 'clientTable'
-								queryText: @state.queryText
-								clientFileHeaders: @props.clientFileHeaders
-								clientFileProgramLinks: @props.clientFileProgramLinks
-								programs: @props.programs
-								onRowClick: @_onResultSelection
-							})
-						)
+						ClientTableWrapper({
+							ref: 'clientTable'
+							queryText: @state.queryText
+							clientFileHeaders: @props.clientFileHeaders
+							clientFileProgramLinks: @props.clientFileProgramLinks
+							programs: @props.programs
+							onRowClick: @_onResultSelection
+						})
 					)
 				)
 
@@ -558,7 +545,7 @@ load = (win) ->
 
 				return clientFile
 				.set('programs', programMemberships)
-				.set('givenNames', givenNames)
+				.set('givenNames', givenNames) # Flatten names for columns
 				.set('lastName', clientFile.getIn(['clientName', 'last']))
 
 			# Get inactive clientFile results for filter display
@@ -574,7 +561,8 @@ load = (win) ->
 			hasInactiveFiles = @props.clientFileHeaders.some (clientFile) ->
 				clientFile.get('status') isnt 'active'
 
-			return R.div({className: 'responsiveTable'},
+
+			return R.div({className: 'clientTableWrapper'},
 				# TODO: Component for multiple kinds of filters/toggles
 				(if hasInactiveFiles
 					R.div({id: 'filterSelectionContainer'}
@@ -586,7 +574,7 @@ load = (win) ->
 										type: 'checkbox'
 										checked: @state.displayInactive
 									})
-									"Show deactivated (#{inactiveClientFiles.size})",
+									"Show inactive (#{inactiveClientFiles.size})",
 								)
 							)
 						)
@@ -651,46 +639,48 @@ load = (win) ->
 		}
 
 		render: ->
-			BootstrapTable({
-				data: @props.data.toJS()
-				keyField: 'id'
-				bordered: false
-				options: {
-					onRowClick: (row) => @props.onRowClick(row.id)
-					noDataText: "No #{Term 'client files'} matching \"#{@props.queryText}\""
-					defaultSortName: 'lastName'
-					defaultSortOrder: 'asc'
-				}
-				trClassName: (row, index) => [
-					'clientRow'
-					'activeIndex' if index is @state.activeIndex
-					'deactivated' unless row.status is 'active'
-				].join ' '
-			},
-				TableHeaderColumn({
-					dataField: 'programs'
-					dataFormat: (programs) -> ProgramBubbles({programs: Imm.fromJS(programs)})
-					hidden: not @props.hasProgramLinks
-					width: '150px'
-				})
-				TableHeaderColumn({
-					dataField: 'lastName'
-					dataSort: true
-				}, "Last Name")
-				TableHeaderColumn({
-					dataField: 'givenNames'
-					dataSort: true
-				}, "Given Names")
-				TableHeaderColumn({
-					dataField: 'recordId'
-					dataSort: true
-					hidden: not Config.clientFileRecordId.isEnabled
-				}, Config.clientFileRecordId.label)
-				TableHeaderColumn({
-					dataField: 'status'
-					dataSort: true
-					hidden: not @props.hasInactiveFiles
-				}, "Status")
+			return R.div({className: 'responsiveTable'},
+				BootstrapTable({
+					data: @props.data.toJS()
+					keyField: 'id'
+					bordered: false
+					options: {
+						onRowClick: ({id}) => @props.onRowClick(id)
+						noDataText: "No #{Term 'client files'} matching \"#{@props.queryText}\""
+						defaultSortName: 'lastName'
+						defaultSortOrder: 'asc'
+					}
+					trClassName: (row, index) => [
+						'clientRow'
+						'activeIndex' if index is @state.activeIndex
+						'deactivated' unless row.status is 'active'
+					].join ' '
+				},
+					TableHeaderColumn({
+						dataField: 'programs'
+						dataFormat: (programs) -> ProgramBubbles({programs: Imm.fromJS(programs)})
+						hidden: not @props.hasProgramLinks
+						width: '150px'
+					})
+					TableHeaderColumn({
+						dataField: 'lastName'
+						dataSort: true
+					}, "Last Name")
+					TableHeaderColumn({
+						dataField: 'givenNames'
+						dataSort: true
+					}, "Given Names")
+					TableHeaderColumn({
+						dataField: 'recordId'
+						dataSort: true
+						hidden: not Config.clientFileRecordId.isEnabled
+					}, Config.clientFileRecordId.label)
+					TableHeaderColumn({
+						dataField: 'status'
+						dataSort: true
+						hidden: not @props.hasInactiveFiles
+					}, "Status")
+				)
 			)
 
 		shiftActiveIndex: (modifier) ->
