@@ -274,22 +274,24 @@ load = (win) ->
 									R.div({className: 'dataOptions'},
 										(@props.eventTypes.map (eventType) =>
 											eventTypeId = eventType.get('id')
+											typeEvents = @props.progEvents.filter (progEvent) => progEvent.get('typeId') is eventTypeId
 
-											R.div({
-												className: 'checkbox'
-												key: eventTypeId
-												style:
-													borderRight: "5px solid #{eventType.get('colorKeyHex')}"
-											},
-												R.label({},
-													R.input({
-														type: 'checkbox'
-														checked: @state.selectedEventTypeIds.contains eventTypeId
-														onChange: @_updateSelectedEventTypes.bind null, eventTypeId
-													})
-													eventType.get('name')
+											if not typeEvents.isEmpty()
+												R.div({
+													className: 'checkbox'
+													key: eventTypeId
+													style:
+														borderRight: "5px solid #{eventType.get('colorKeyHex')}"
+												},
+													R.label({},
+														R.input({
+															type: 'checkbox'
+															checked: @state.selectedEventTypeIds.contains eventTypeId
+															onChange: @_updateSelectedEventTypes.bind null, eventTypeId
+														})
+														eventType.get('name')
+													)
 												)
-											)
 										)
 									)
 								)
