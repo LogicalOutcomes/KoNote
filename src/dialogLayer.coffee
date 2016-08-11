@@ -4,6 +4,9 @@
 # Wrapper for opening a layered dialog component
 # Use @ref to call 'open' method, takes (dialogComponent, props)
 
+# IMPORTANT: Only pass in raw (unfiltered) collection data,
+# for example: favour @state.data over table data
+
 _ = require 'underscore'
 
 
@@ -38,6 +41,8 @@ load = (win) ->
 				onCancel: ->
 				onSuccess: ->
 			}
+
+			# TODO: Validate props.onClose (etc) is a valid function
 
 			# Override defaults with specified props
 			dialogProps = _.extend(defaultProps, props)
