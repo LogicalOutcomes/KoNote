@@ -46,7 +46,6 @@ load = (win) ->
 					'dialogContainer'
 					@props.containerClasses.join(' ')
 				].join(' ')
-				onClick: if not @props.disableCancel or not @props.disableBackgroundClick then @_onBackgroundClick
 			},
 				Spinner({
 					isVisible: @state.isLoading
