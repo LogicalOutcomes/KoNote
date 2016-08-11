@@ -576,7 +576,7 @@ load = (win) ->
 			# unfortunately no cross-platform way to set this
 			if process.platform is 'win32'
 				user = process.env.username
-				changeperm1 = "icaclsname id_rsa /reset"
+				changeperm1 = "icacls id_rsa /reset"
 				changeperm2 = "icacls id_rsa /inheritance:r /grant:r #{process.env.username}:(F)"
 				exec changeperm1, (err) =>
 					if err

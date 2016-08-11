@@ -8,19 +8,19 @@ Fs = require 'fs'
 Config = require '../config'
 
 if process.platform is 'win32'
-    pullCmd = "set PATH=#{process.cwd()}\\cwrsync;%PATH%\\nrsync -azP --partial --delete --exclude 'data/_tmp' -e 'ssh -o StrictHostKeyChecking=no -i id_rsa' #{Config.cloudUser}@cloud.konote.ca:data ."
+    pullCmd = "set PATH=#{process.cwd()}\\cwrsync;%PATH% & rsync -azP --partial --delete --exclude 'data/_tmp' -e 'ssh -o StrictHostKeyChecking=no -i id_rsa' #{Config.cloudUser}@cloud.konote.ca:data ."
     Fs.writeFileSync 'pull.cmd', pullCmd
     pullCmd = 'pull.cmd'
 
-    pushCmd = "set PATH=#{process.cwd()}\\cwrsync;%PATH%\\nrsync -azP --partial --delete --exclude 'data/_tmp' -e 'ssh -o StrictHostKeyChecking=no -i id_rsa' data/ #{Config.cloudUser}@cloud.konote.ca:data"
+    pushCmd = "set PATH=#{process.cwd()}\\cwrsync;%PATH% & rsync -azP --partial --delete --exclude 'data/_tmp' -e 'ssh -o StrictHostKeyChecking=no -i id_rsa' data/ #{Config.cloudUser}@cloud.konote.ca:data"
     Fs.writeFileSync 'push.cmd', pushCmd
     pushCmd = 'push.cmd'
 
-    pullLocksCmd = "set PATH=#{process.cwd()}\\cwrsync;%PATH%\\nrsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i id_rsa' #{Config.cloudUser}@cloud.konote.ca:data/_locks data/"
+    pullLocksCmd = "set PATH=#{process.cwd()}\\cwrsync;%PATH% & rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i id_rsa' #{Config.cloudUser}@cloud.konote.ca:data/_locks data/"
     Fs.writeFileSync 'pullLocks.cmd', pullLocksCmd
     pullLocksCmd = 'pullLocks.cmd'
 
-    pushLocksCmd = "set PATH=#{process.cwd()}\\cwrsync;%PATH%\\nrsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i id_rsa' data/_locks/ #{Config.cloudUser}@cloud.konote.ca:data/_locks"
+    pushLocksCmd = "set PATH=#{process.cwd()}\\cwrsync;%PATH% & rsync -azP --partial --delete -e 'ssh -o StrictHostKeyChecking=no -i id_rsa' data/_locks/ #{Config.cloudUser}@cloud.konote.ca:data/_locks"
     Fs.writeFileSync 'pushLocks.cmd', pushLocksCmd
     pushLocksCmd = 'pushLocks.cmd'
 
