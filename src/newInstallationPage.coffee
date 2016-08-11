@@ -584,8 +584,8 @@ load = (win) ->
 						return
 					exec changeperm2, (err) =>
 						if err
-						Bootbox.alert "Authentication key permissions error. Please try again."
-						return
+							Bootbox.alert "Authentication key permissions error. Please try again."
+							return
 			else
 				changeperm = 'chmod 600 id_rsa'
 			exec changeperm, (err) =>
