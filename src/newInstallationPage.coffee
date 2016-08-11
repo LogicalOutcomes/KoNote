@@ -576,8 +576,16 @@ load = (win) ->
 			# unfortunately no cross-platform way to set this
 			if process.platform is 'win32'
 				user = process.env.username
-				console.log user
-				changeperm = "icacls id_rsa /inheritance:r /grant:r #{process.env.username}:(F)"
+				changeperm1 = "icaclsname id_rsa /reset"
+				changeperm2 = "icacls id_rsa /inheritance:r /grant:r #{process.env.username}:(F)"
+				exec changeperm1, (err) =>
+				if err
+					Bootbox.alert "Authentication key permissions error. Please try again."
+					return
+				exec changeperm2, (err) =>
+					if err
+					Bootbox.alert "Authentication key permissions error. Please try again."
+					return
 			else
 				changeperm = 'chmod 600 id_rsa'
 			exec changeperm, (err) =>
