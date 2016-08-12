@@ -81,20 +81,28 @@ load = (win) ->
 							},
 								TableHeaderColumn({
 									dataField: 'colorKeyHex'
+									columnClassName: 'colorKeyColumn'
 									dataFormat: (colorKeyHex) -> ColorKeyBubble({colorKeyHex})
-									width: '100px'
 								})
 								TableHeaderColumn({
 									dataField: 'name'
+									columnClassName: 'nameColumn'
+									dataSort: true
 								}, "#{Term 'Program'} Name")
 								TableHeaderColumn({
 									dataField: 'description'
+									columnClassName: 'descriptionColumn'
 								}, "Description")
 								TableHeaderColumn({
 									dataField: 'numberClients'
+									dataSort: true
 									headerAlign: 'center'
 									dataAlign: 'center'
 								}, "# #{Term 'Clients'}")
+								TableHeaderColumn({
+									dataField: 'id'
+									hidden: true
+								}, "ID")
 							)
 						)
 					)

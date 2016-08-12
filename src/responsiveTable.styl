@@ -24,14 +24,15 @@
 				th
 					cursor default !important
 
-				th:last-child, td:last-child
+				// Add padding to first & last VISIBLE column
+				th:not([style*="display: none"]):last-child, td:not([style*="display: none"]):last-child
 					padding-right 5%
 
-				th:first-child, td:first-child
+				th:not([style*="display: none"]):first-child, td:not([style*="display: none"]):first-child
 					padding-left 5%
 
 			// TODO: Avoid setting this manually
-			// (hides completely without it for some reason...)
+			// (column headers hide completely without it for some reason...)
 			.react-bs-container-header
 				min-height 2.7em
 
@@ -50,12 +51,32 @@
 					background transparent
 					transition background .15s ease
 
-					&.deactivated
+					&.inactive td
 						background #FFD3D3
 
-					&:hover, &.activeIndex
+					&:hover td, &.activeIndex td
 						background hsl(200, 80%, 90%) !important
 
 					td
 						vertical-align middle
 						height 50px
+
+						&.react-bs-table-no-data:hover
+							background none !important
+
+
+				// Consistent style classes for different types of column data
+				// (rather than explicitly defining in TableHeaderColumn props)
+
+				.colorKeyColumn
+					width 100px
+
+				.nameColumn
+					width 300px
+
+				.descriptionColumn
+					font-size 0.9em !important
+
+				.statusColumn
+					width 200px
+					font-size 0.9em !important
