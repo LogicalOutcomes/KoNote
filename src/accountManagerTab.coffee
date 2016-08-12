@@ -261,8 +261,8 @@ load = (win) ->
 		}
 
 		getInitialState: -> {
-			actionComponent: null
-			actionTitle: null
+			view: null
+			viewTitle: null
 			userProgram: null
 		}
 
@@ -284,15 +284,15 @@ load = (win) ->
 			isAdmin = userAccount.getIn(['publicInfo', 'accountType']) is 'admin'
 			isDeactivated = not userAccount.getIn(['publicInfo', 'isActive'])
 
-			# Append actionTitle to the dialog title if exists
+			# Append viewTitle to the dialog title if exists
 			title = R.span({},
 				"Modify #{if isDeactivated then 'Deactivated' else ''} Account"
-				(if @state.actionComponent?
+				(if @state.view?
 					R.span({},
 						' '
 						FaIcon('long-arrow-right')
 						' '
-						@state.actionTitle
+						@state.viewTitle
 					)
 				)
 			)
@@ -329,13 +329,13 @@ load = (win) ->
 					)
 
 					R.section({id: 'accountActions'},
-						(switch @state.actionComponent
+						(switch @state.view
 							when 'resetPassword'
 								ResetPasswordView({
 									userName: userAccount.get('userName')
 									setIsLoading: @refs.dialog.setIsLoading
-									onCancel: @_closeActionComponent
-									onSuccess: @_closeActionComponent
+									onCancel: @_closeView
+									onSuccess: @_closeView
 								})
 							else
 								R.div({id: 'actionsList'},
@@ -344,7 +344,7 @@ load = (win) ->
 										R.li({},
 											R.button({
 												className: 'btn btn-link'
-												onClick: @_switchActionComponent.bind(
+												onClick: @_switchView.bind(
 													null, 'resetPassword', "Reset Password"
 												)
 											}, "Reset Password")
@@ -374,11 +374,11 @@ load = (win) ->
 				)
 			)
 
-		_switchActionComponent: (actionComponent, actionTitle) ->
-			@setState {actionComponent, actionTitle}
+		_switchView: (view, viewTitle) ->
+			@setState {view, viewTitle}
 
-		_closeActionComponent: ->
-			@_switchActionComponent null, null
+		_closeView: ->
+			@_switchView null, null
 
 		_toggleUserProgramDropdown: ->
 			@refs.userProgramDropdown.toggle()
