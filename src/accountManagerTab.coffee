@@ -125,7 +125,7 @@ load = (win) ->
 			# Flatten out {publicInfo} in each userAccount obj for table
 			tableData = userAccounts.map (userAccount) ->
 				publicInfo = userAccount.get('publicInfo')
-				isActive = if publicInfo.get('isActive') then "Active" else "Inactive"
+				isActive = if publicInfo.get('isActive') then "active" else "deactivated"
 
 				return userAccount
 				.set 'isActive', isActive
@@ -145,7 +145,7 @@ load = (win) ->
 											checked: @state.displayInactive
 											onClick: @_toggleDisplayInactive
 										})
-										"Show deactivated (#{inactiveUserAccounts.size})"
+										"Show inactive (#{inactiveUserAccounts.size})"
 									)
 								)
 							)
@@ -157,7 +157,7 @@ load = (win) ->
 					R.div({className: 'responsiveTable'},
 						DialogLayer({
 							ref: 'dialogLayer'
-							userAccounts
+							userAccounts: @state.userAccounts
 							programs: @props.programs
 							userProgramLinks: @props.userProgramLinks
 							updateAccount: @_updateAccount
@@ -172,11 +172,11 @@ load = (win) ->
 									onRowClick: ({userName}) =>
 										@refs.dialogLayer.open ModifyAccountDialog, {userName}
 								}
-								trClassName: (row) ->
-									'inactiveAccount' unless row.isActive is "Active"
+								trClassName: ({isActive}) -> 'inactive' unless isActive is 'active'
 							},
 								TableHeaderColumn({
 									dataField: 'program'
+									columnClassName: 'colorKeyColumn'
 									dataFormat: (program) ->
 										if program
 											ColorKeyBubble({
@@ -186,11 +186,11 @@ load = (win) ->
 													content: program.description
 												}
 											})
-									width: '100px'
 									hidden: not hasProgramLinks
 								})
 								TableHeaderColumn({
 									dataField: 'userName'
+									columnClassName: 'nameColumn'
 									dataSort: true
 								}, "User Name")
 								TableHeaderColumn({
@@ -199,6 +199,9 @@ load = (win) ->
 								}, "Account Type")
 								TableHeaderColumn({
 									dataField: 'isActive'
+									columnClassName: 'statusColumn'
+									headerAlign: 'right'
+									dataAlign: 'right'
 									dataSort: true
 									hidden: not @state.displayInactive
 								}, "Status")

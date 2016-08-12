@@ -109,14 +109,17 @@ load = (win) ->
 							},
 								TableHeaderColumn({
 									dataField: 'colorKeyHex'
+									columnClassName: 'colorKeyColumn'
 									dataFormat: (colorKeyHex) -> ColorKeyBubble({colorKeyHex})
-									width: '100px'
 								})
 								TableHeaderColumn({
 									dataField: 'name'
+									columnClassName: 'nameColumn'
+									dataSort: true
 								}, "Type Name")
 								TableHeaderColumn({
 									dataField: 'description'
+									columnClassName: 'descriptionColumn'
 								}, "Description")
 							)
 						)

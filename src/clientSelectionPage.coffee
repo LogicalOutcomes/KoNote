@@ -559,7 +559,7 @@ load = (win) ->
 
 			# Are ANY clientFiles inactive?
 			hasInactiveFiles = @props.clientFileHeaders.some (clientFile) ->
-				clientFile.get('status') isnt 'active'
+				clientFile.get('status') and (clientFile.get('status') isnt 'active')
 
 
 			return R.div({className: 'clientTableWrapper'},
@@ -586,6 +586,7 @@ load = (win) ->
 					queryText: @props.queryText
 					hasProgramLinks: not @props.clientFileProgramLinks.isEmpty()
 					hasInactiveFiles
+					displayInactive: @state.displayInactive
 
 					onRowClick: @props.onRowClick
 				})
@@ -653,7 +654,7 @@ load = (win) ->
 					trClassName: (row, index) => [
 						'clientRow'
 						'activeIndex' if index is @state.activeIndex
-						'deactivated' unless row.status is 'active'
+						'inactive' unless row.status is 'active'
 					].join ' '
 				},
 					TableHeaderColumn({
@@ -678,7 +679,7 @@ load = (win) ->
 					TableHeaderColumn({
 						dataField: 'status'
 						dataSort: true
-						hidden: not @props.hasInactiveFiles
+						hidden: not @props.displayInactive
 					}, "Status")
 				)
 			)
