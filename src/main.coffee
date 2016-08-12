@@ -236,28 +236,6 @@ init = (win) ->
 		# Reload HTML page
 		win.location.reload(true)
 
-	refreshCSS = =>
-		Fs = require 'fs'
-		Stylus = require 'stylus'
-
-		mainStylusCode = Fs.readFileSync './src/main.styl', {encoding: 'utf-8'}
-
-		stylusOpts = {
-			filename: './src/main.styl'
-			sourcemap: {inline: true}
-		}
-
-		Stylus.render mainStylusCode, stylusOpts, (err, compiledCss) ->
-			if err
-				console.error "Problem compiling CSS:", err
-				if err.stack
-					console.error err.stack
-				return
-
-			# Inject the compiled CSS into the page
-			win.document.getElementById('main-css').innerHTML = compiledCss;
-			console.info "Injected CSS"
-
 	registerPageListeners = =>
 		pageListeners = Imm.fromJS(pageComponent.getPageListeners()).entrySeq()
 		timeoutListeners = Imm.fromJS(getTimeoutListeners()).entrySeq()
@@ -271,27 +249,6 @@ init = (win) ->
 
 		# Make sure everything is reset
 		global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
-
-		# Try registering chokidar for live-refresh capabilities
-		if Config.devMode
-			try
-				Chokidar = require 'chokidar'
-
-				chokidarListener = Chokidar
-				.watch './src'
-				.on 'change', (filePath) =>
-					fileExtension = filePath.split('.').splice(-1)[0]
-					switch fileExtension
-						when 'styl'
-							refreshCSS()
-						when 'coffee' or 'js'
-							doHotCodeReplace()
-
-				console.info "Live-refresh enabled"
-
-			catch err
-				console.warn "Live-refresh unavailable", err
-
 
 	unregisterPageListeners = =>
 		# Unregister Chokidar

@@ -23,7 +23,6 @@
   "license": "MPL-2.0",
   "devDependencies": {
     "chai": "^2.3.0",
-    "chokidar": "^1.4.0",
     "coffee-script": "^1.9.3",
     "faker": "^3.1.0",
     "grunt": "^1.0.1",
