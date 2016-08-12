@@ -7,6 +7,7 @@
 Imm = require 'immutable'
 Moment = require 'moment'
 _ = require 'underscore'
+nlp = require 'nlp_compromise'
 Term = require '../term'
 {TimestampFormat} = require '../persist/utils'
 
@@ -487,13 +488,25 @@ load = (win) ->
 					return
 
 			if @state.isGlobalEvent
+
+				people = nlp.text(newData.description).people()
+				names = []
+				properNames = ''
+				for i of people
+					unless people[i].pos.Pronoun
+						names.push people[i].normal
+				properNames = names.join ', '
+				unless properNames is ''
+					properNames = '<span class="flagged">Flagged: ' + properNames + '</span><br><br>'
+
 				Bootbox.dialog {
 					title: "Amend for #{Term 'Global Event'}"
 					message: """
 						Please remove any sensitive and/or #{Term 'client'}-specific information
-						to be saved in the #{Term 'global event'} copy, which will be visible
+						to be saved in the #{Term 'global event'}, which will be visible
 						in all #{Term 'client files'}.
 						<br><br>
+						#{properNames}
 						<label>Title</label>
 						<input class="form-control" id="amendedTitle" value="#{newData.title}">
 						<br><br>
