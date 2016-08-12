@@ -53,6 +53,8 @@ load = (win) ->
 			show: false
 			width
 			height
+			min_width: 640
+			min_height: 640
 			icon: "src/icon.png"
 		}, cb
 
