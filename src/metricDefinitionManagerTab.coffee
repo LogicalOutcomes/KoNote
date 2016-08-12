@@ -15,15 +15,22 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	# TODO: Refactor to single require
+	{BootstrapTable, TableHeaderColumn} = win.ReactBootstrapTable
+	BootstrapTable = React.createFactory BootstrapTable
+	TableHeaderColumn = React.createFactory TableHeaderColumn
+
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
 	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
+	DefineMetricDialog = require('./defineMetricDialog').load(win)
+	DialogLayer = require('./dialogLayer').load(win)
+
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
-	DefineMetricDialog = require('./defineMetricDialog').load(win)
 
 	MetricDefinitionManagerTab = React.createFactory React.createClass
 		displayName: 'MetricDefinitionManagerTab'
@@ -31,7 +38,7 @@ load = (win) ->
 
 		getInitialState: -> {
 			metricDefinitions: Imm.List()
-			displayDeactivated: false
+			displayInactive: false
 		}
 
 		componentWillMount: ->
@@ -47,6 +54,7 @@ load = (win) ->
 
 						metricDefinitionHeaders = result
 						cb()
+
 				(cb) =>
 					Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
 						metricDefinitionId = metricDefinitionHeader.get('id')
@@ -56,10 +64,11 @@ load = (win) ->
 							cb err
 							return
 
-						metricDefinitions = Imm.List(results)
-						.map (metricDefinition) -> stripMetadata metricDefinition.first()
+						metricDefinitions = Imm.List(results).map (metricDefinition) ->
+							stripMetadata metricDefinition.first()
 
 						cb()
+
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
@@ -74,23 +83,42 @@ load = (win) ->
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
-			metrics = @state.metricDefinitions
-			unless @state.displayDeactivated
-				metrics = metrics.filter (metric) =>
+			metricDefinitions = @state.metricDefinitions
+
+			# Determine inactive metrics
+			inactiveMetricDefinitions = metricDefinitions.filter (metric) ->
+				metric.get('status') isnt 'default'
+
+			hasInactiveMetrics = not inactiveMetricDefinitions.isEmpty()
+
+			# UI Filters
+			unless @state.displayInactive
+				metricDefinitions = metricDefinitions.filter (metric) ->
 					metric.get('status') is 'default'
+
+			# Table display formats (TODO: extract to a tableWrapper component)
+			# Convert 'default' -> 'active' for table display (TODO: Term)
+			metricDefinitions = metricDefinitions.map (metric) ->
+				if metric.get('status') is 'default'
+					return metric.set('status', 'active')
+
+				return metric
+
 
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
-						R.span({id: 'toggleDisplayDeactivated'},
-							R.div({className: 'checkbox'},
-								R.label({},
-									R.input({
-										type: 'checkbox'
-										checked: @state.displayDeactivated
-										onClick: @_toggleDisplayDeactivated
-									})
-									"Show deactivated"
+						(if hasInactiveMetrics
+							R.span({id: 'toggleDisplayInactive'},
+								R.div({className: 'checkbox'},
+									R.label({},
+										R.input({
+											type: 'checkbox'
+											checked: @state.displayInactive
+											onClick: @_toggleDisplayInactive
+										})
+										"Show inactive (#{inactiveMetricDefinitions.size})"
+									)
 								)
 							)
 						)
@@ -98,59 +126,52 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'main'},
-					OrderableTable({
-						tableData: metrics
-						noMatchesMessage: "No #{Term 'metrics'} defined yet"
-						sortByData: ['name']
-						rowClass: (dataPoint) ->
-							'deactivatedMetric' unless dataPoint.get('status') is 'default'
-						columns: [
-							{
-								name: "Name"
-								dataPath: ['name']
-								cellClass: 'nameCell'
-							}
-							{
-								name: "Definition"
-								dataPath: ['definition']
-								value: (dataPoint) ->
-									definition = dataPoint.get('definition')
-
-									if definition.length > 60
-										return definition.substr(0, 59) + ' . . .'
-									else
-										return definition
-							}
-							{
-								name: "Status"
-								dataPath: ['status']
-								cellClass: 'statusCell'
-							}
-							{
-								name: "Options"
-								nameIsVisible: false
-								isDisabled: not isAdmin
-								cellClass: 'optionsCell'
-								buttons: [
-									{
-										className: 'btn btn-warning'
-										text: null
-										icon: 'wrench'
-										dialog: ModifyMetricDialog
-										data: {
-											onSuccess: @_onModifyMetric
+					R.div({className: 'responsiveTable'},
+						DialogLayer({
+							ref: 'dialogLayer'
+							metricDefinitions
+						}
+							BootstrapTable({
+								data: metricDefinitions.toJS()
+								keyField: 'id'
+								bordered: false
+								options: {
+									defaultSortName: 'name'
+									defaultSortOrder: 'asc'
+									onRowClick: ({id}) =>
+										@refs.dialogLayer.open ModifyMetricDialog, {
+											metricId: id
+											onSuccess: @_modifyMetric
 										}
-									}
-								]
-							}
-						]
-					})
+								}
+								trClassName: (row) -> 'inactive' if row.status isnt 'active'
+							},
+								TableHeaderColumn({
+									dataField: 'name'
+									columnClassName: 'nameColumn'
+									dataSort: true
+								}, "#{Term 'Metric'} Name")
+								TableHeaderColumn({
+									dataField: 'definition'
+									columnClassName: 'descriptionColumn'
+								}, "Definition")
+								TableHeaderColumn({
+									dataField: 'status'
+									columnClassName: 'statusColumn'
+									dataSort: true
+									hidden: not @state.displayInactive
+									headerAlign: 'right'
+									dataAlign: 'right'
+								}, "Status")
+							)
+						)
+					)
 				)
 				R.div({className: 'optionsMenu'},
 					OpenDialogLink({
 						className: 'btn btn-lg btn-primary'
 						dialog: DefineMetricDialog
-						onSuccess: @_onCreateMetric
+						onSuccess: @_createMetric
 					},
 						FaIcon('plus')
 						" New #{Term 'Metric'} Definition"
@@ -158,33 +179,29 @@ load = (win) ->
 				)
 			)
 
-		_onModifyMetric: (revisedMetric) ->
+		_modifyMetric: (revisedMetric) ->
 			originalMetric = @state.metricDefinitions.find (metric) ->
 				metric.get('id') is revisedMetric.get('id')
 
 			index = @state.metricDefinitions.indexOf originalMetric
 
-			console.log "index", index
-
 			metricDefinitions = @state.metricDefinitions.set index, revisedMetric
 			@setState {metricDefinitions}
 
-		_onCreateMetric: (createdMetric) ->
+		_createMetric: (createdMetric) ->
 			metricDefinitions = @state.metricDefinitions.push createdMetric
 			@setState {metricDefinitions}
 
-		_toggleDisplayDeactivated: ->
-			displayDeactivated = not @state.displayDeactivated
-			@setState {displayDeactivated}
+		_toggleDisplayInactive: ->
+			displayInactive = not @state.displayInactive
+			@setState {displayInactive}
+
 
 	ModifyMetricDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
-			return {
-				name: @props.rowData.get('name')
-				definition: @props.rowData.get('definition')
-				status: @props.rowData.get('status')
-			}
+			return @_getMetricDefinition().toJS()
 
 		componentDidMount: ->
 			@refs.nameField.focus()
@@ -229,9 +246,10 @@ load = (win) ->
 							)
 							R.button({
 								className:
-									if @state.status is 'deactivated'
-										'btn btn-warning'
-									else 'btn btn-default'
+									'btn btn-' + if @state.status is 'deactivated'
+										'warning'
+									else
+										'default'
 								onClick: @_updateStatus
 								value: 'deactivated'
 
@@ -265,6 +283,10 @@ load = (win) ->
 		_updateStatus: (event) ->
 			@setState {status: event.target.value}
 
+		_getMetricDefinition: ->
+			@props.metricDefinitions.find (metric) =>
+				metric.get('id') is @props.metricId
+
 		_submit: ->
 			unless @state.name.trim()
 				Bootbox.alert "#{Term 'Metric'} name is required"
@@ -277,7 +299,7 @@ load = (win) ->
 			@refs.dialog.setIsLoading true
 
 			newMetricRevision = Imm.fromJS {
-				id: @props.rowData.get('id')
+				id: @_getMetricDefinition().get('id')
 				name: @state.name.trim()
 				definition: @state.definition.trim()
 				status: @state.status
