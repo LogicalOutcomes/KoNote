@@ -115,8 +115,6 @@ load = (win) ->
 
 			hasInactiveUsers = not inactiveUserAccounts.isEmpty()
 
-			console.log "inactiveUserAccounts", inactiveUserAccounts.toJS()
-
 			# Filter out inactive accounts if required
 			unless @state.displayInactive
 				userAccounts = userAccounts.filter (userAccount) =>
@@ -170,7 +168,7 @@ load = (win) ->
 									defaultSortName: 'lastName'
 									defaultSortOrder: 'asc'
 									onRowClick: ({userName}) =>
-										@refs.dialogLayer.open ModifyAccountDialog, {userName}
+										@refs.dialogLayer.open ManageAccountDialog, {userName}
 								}
 								trClassName: ({isActive}) -> 'inactive' unless isActive is 'active'
 							},
@@ -248,7 +246,7 @@ load = (win) ->
 			@setState {userAccounts}, cb
 
 
-	ModifyAccountDialog = React.createFactory React.createClass
+	ManageAccountDialog = React.createFactory React.createClass
 		displayName: 'ModifyAccountDialog'
 		mixins: [React.addons.PureRenderMixin]
 
@@ -286,7 +284,7 @@ load = (win) ->
 
 			# Append viewTitle to the dialog title if exists
 			title = R.span({},
-				"Modify #{if isDeactivated then 'Deactivated' else ''} Account"
+				"Manage #{if isDeactivated then 'Deactivated' else ''} Account"
 				(if @state.view?
 					R.span({},
 						' '

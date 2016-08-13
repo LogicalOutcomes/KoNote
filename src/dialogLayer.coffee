@@ -74,8 +74,6 @@ load = (win) ->
 
 			props = _.extend({}, @state.dialogProps, defaultProps, @props)
 
-			console.log "Final Props:", props
-
 			return @state.dialogComponent(props)
 
 	return DialogLayer

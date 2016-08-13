@@ -130,7 +130,7 @@ load = (win) ->
 						DialogLayer({
 							ref: 'dialogLayer'
 							metricDefinitions
-						}
+						},
 							BootstrapTable({
 								data: metricDefinitions.toJS()
 								keyField: 'id'

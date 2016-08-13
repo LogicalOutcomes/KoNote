@@ -84,8 +84,6 @@ load = (win) ->
 				planTemplateHeaders = planTemplateHeaders.filter (template) ->
 					template.get('status') is 'default'
 
-				console.log "planTemplateHeaders", planTemplateHeaders.toJS()
-
 			# Table display formats (TODO: extract to a tableWrapper component)
 			# Convert 'default' -> 'active' for table display (TODO: Term)
 			planTemplateHeaders = planTemplateHeaders.map (template) ->
