@@ -5,6 +5,7 @@
 Async = require 'async'
 Imm = require 'immutable'
 _ = require 'underscore'
+ImmPropTypes = require 'react-immutable-proptypes'
 
 Persist = require './persist'
 Config = require './config'
@@ -23,6 +24,8 @@ load = (win) ->
 	{BootstrapTable, TableHeaderColumn} = win.ReactBootstrapTable
 	BootstrapTable = React.createFactory BootstrapTable
 	TableHeaderColumn = React.createFactory TableHeaderColumn
+
+	{Tabs, Tab} = require('./utils/reactBootstrap').load(win, 'Tabs', 'Tab')
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -57,6 +60,7 @@ load = (win) ->
 			hasInactivePrograms = @props.clientFileProgramLinks.filter (link) ->
 				link.get('status') is "enrolled"
 
+
 			return R.div({className: 'programManagerTab'},
 				R.div({className: 'header'},
 					R.h1({}, Term 'Programs')
@@ -67,6 +71,7 @@ load = (win) ->
 							ref: 'dialogLayer'
 							programs
 							clientFileProgramLinks: @props.clientFileProgramLinks
+							clientFileHeaders: @props.clientFileHeaders
 						}
 							BootstrapTable({
 								data: programs.toJS()
@@ -75,8 +80,7 @@ load = (win) ->
 								options: {
 									defaultSortName: 'name'
 									defaultSortOrder: 'asc'
-									onRowClick: ({id}) =>
-										@refs.dialogLayer.open ModifyProgramDialog, {programId: id}
+									onRowClick: @_openProgramManagerDialog
 								}
 							},
 								TableHeaderColumn({
@@ -124,6 +128,9 @@ load = (win) ->
 					)
 				)
 			)
+
+		_openProgramManagerDialog: ({id}) ->
+			@refs.dialogLayer.open ManageProgramDialog, {programId: id}
 
 	CreateProgramDialog = React.createFactory React.createClass
 		displayName: 'CreateProgramDialog'
@@ -216,11 +223,8 @@ load = (win) ->
 			@_createProgram(newProgram)
 
 		_createProgram: (newProgram) ->
-			@refs.dialog.setIsLoading(true)
-
 			# Create the new program, and close
 			ActiveSession.persist.programs.create newProgram, (err, newProgram) =>
-				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
 					CrashHandler.handle err
@@ -229,27 +233,92 @@ load = (win) ->
 				@props.onSuccess()
 
 
-	ModifyProgramDialog = React.createFactory React.createClass
-		displayName: 'ModifyProgramDialog'
+	ManageProgramDialog = React.createFactory React.createClass
+		displayName: 'ManageProgramDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
 			programId: PropTypes.string.isRequired
+			clientFileProgramLinks: ImmPropTypes.list
+			clientFileHeaders: ImmPropTypes.list
+		}
+
+		getInitialState: -> {
+			# Admin will most frequently want to manage clients,
+			# so this is the default view
+			view: 'manageClients'
+		}
+
+		render: ->
+			program = @props.programs.find (program) =>
+				program.get('id') is @props.programId
+
+			return Dialog({
+				ref: 'dialog'
+				title: "Manage #{Term 'Program'}"
+				onClose: @props.onClose
+			},
+				R.div({className: 'manageProgramDialog'},
+					Tabs({
+						activeKey: @state.view
+						onSelect: @_changeView
+					}
+						Tab({
+							title: R.span({},
+								ColorKeyBubble({colorKeyHex: program.get('colorKeyHex')})
+								' '
+								program.get('name')
+							)
+							eventKey: 'name'
+							disabled: true
+						})
+						Tab({
+							title: "#{Term 'Clients'}"
+							eventKey: 'manageClients'
+						},
+							ManageProgramClientsView({
+								program
+								clientFileHeaders: @props.clientFileHeaders
+								clientFileProgramLinks: @props.clientFileProgramLinks
+								onSuccess: @props.onSuccess
+							})
+						)
+						Tab({
+							title: "Modify Details"
+							eventKey: 'modifyProgram'
+						},
+							ModifyProgramView({
+								program
+								programs: @props.programs
+								onSuccess: @props.onSuccess
+							})
+						)
+					)
+				)
+			)
+
+		_changeView: (view) ->
+			@setState {view}
+
+
+	ModifyProgramView = React.createFactory React.createClass
+		displayName: 'ModifyProgramView'
+		mixins: [React.addons.PureRenderMixin]
+
+		propTypes: {
+			program: ImmPropTypes.map
+			programs: ImmPropTypes.list
 		}
 
 		getInitialState: ->
-			return @_getProgram().toJS()
+			return @props.program.toJS()
 
 		componentDidMount: ->
 			@refs.programName.focus()
 
 		render: ->
-			return Dialog({
-				ref: 'dialog'
-				title: "Modifying #{Term 'Program'}"
-				onClose: @props.onCancel
-			},
-				R.div({className: 'createProgramDialog'},
+			R.div({className: 'createProgramDialog'},
+				R.div({className: 'innerContainer'},
 					R.div({className: 'form-group'},
 						R.label({}, "Name")
 						R.input({
@@ -308,20 +377,16 @@ load = (win) ->
 		_updateColorKeyHex: (colorKeyHex) ->
 			@setState {colorKeyHex}
 
-		_getProgram: ->
-			@props.programs.find (program) =>
-				program.get('id') is @props.programId
-
 		_buildModifiedProgramObject: ->
 			return Imm.fromJS({
-				id: @props.programId
+				id: @props.program.get('id')
 				name: @state.name
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex
 			})
 
 		_hasChanges: ->
-			originalProgramObject = @_getProgram()
+			originalProgramObject = @props.program
 			modifiedProgramObject = @_buildModifiedProgramObject()
 			return not Imm.is originalProgramObject, modifiedProgramObject
 
@@ -330,12 +395,8 @@ load = (win) ->
 
 			modifiedProgram = @_buildModifiedProgramObject()
 
-			@refs.dialog.setIsLoading(true)
-
 			# Update program revision, and close
 			ActiveSession.persist.programs.createRevision modifiedProgram, (err, modifiedProgram) =>
-				@refs.dialog.setIsLoading(false) if @refs.dialog?
-
 				if err
 					CrashHandler.handle err
 					return
@@ -343,9 +404,15 @@ load = (win) ->
 				@props.onSuccess()
 
 
-	ManageProgramClientsDialog = React.createFactory React.createClass
-		displayName: 'ManageProgramClientsDialog'
+	ManageProgramClientsView = React.createFactory React.createClass
+		displayName: 'ManageProgramClientsView'
 		mixins: [React.addons.PureRenderMixin]
+
+		propTypes: {
+			program: ImmPropTypes.map
+			clientFileHeaders: ImmPropTypes.list
+			clientFileProgramLinks: ImmPropTypes.list
+		}
 
 		getInitialState: ->
 			return {
@@ -354,70 +421,71 @@ load = (win) ->
 			}
 
 		_originalLinks: ->
-			return @props.clientFileProgramLinks
-			.filter (link) => link.get('programId') is @props.rowData.get('id')
-			.map (link) => return Imm.fromJS {
-				clientFileId: link.get('clientFileId')
-				status: link.get('status')
-			}
+			return @props.clientFileProgramLinks.filter (link) =>
+				link.get('programId') is @props.program.get('id')
 
 		componentDidMount: ->
 			@refs.clientSearchBox.focus()
 
 		render: ->
-			searchResults = @_getResultsList()
-
 			enrolledLinks = @state.clientFileProgramLinks.filter (link) ->
 				link.get('status') is "enrolled"
 
-			return Dialog({
-				ref: 'dialog'
-				title: "Managing #{Term 'Clients'} in \"#{@props.rowData.get('name')}\""
-				onClose: @props.onClose
-			},
-				R.div({className: 'manageProgramClientsDialog'},
-					R.div({className: 'programClients'},
-						R.div({className: 'panel-heading'},
-							R.h3({className: 'panel-title'},
-								if not enrolledLinks.isEmpty()
-									R.span({className: 'badge'}, enrolledLinks.size)
-								"Current Members"
-							)
-						)
-						(if enrolledLinks.isEmpty()
-							R.div({className: 'panel-body noData'},
-								"This #{Term 'program'} has no members yet."
-							)
-						else
-							R.table({className: 'panel-body table table-striped'}
-								R.thead({},
-									R.tr({},
-										R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
-										R.td({colSpan: 2}, "#{Term 'Client'} Name")
-									)
-								)
-								R.tbody({},
-									(enrolledLinks.map (link) =>
-										clientFileId = link.get('clientFileId')
-										client = @_findClientById clientFileId
-										recordId = client.get('recordId')
+			# Filter out enrolled links from search results
+			searchResults = @_getResultsList().filter (clientFile) =>
+				clientFileId = clientFile.get('id')
+				return not enrolledLinks.some (link) ->
+					link.get('clientFileId') is clientFileId
 
-										R.tr({key: clientFileId},
-											if Config.clientFileRecordId?
-												R.td({},
-													(if recordId.length > 0
-														recordId
-													else
-														R.div({className: 'noId'}, "n/a")
+
+			return R.div({className: 'manageProgramClientsView'},
+				R.div({className: 'innerContainer'},
+					R.div({className: 'programClientsContainer'},
+						R.div({className: 'programClients'},
+							R.div({className: 'panel-heading'},
+								R.h3({className: 'panel-title'},
+									if not enrolledLinks.isEmpty()
+										R.span({className: 'badge'},
+											enrolledLinks.size
+										)
+									"Enrolled #{Term 'Clients'}"
+								)
+							)
+							(if enrolledLinks.isEmpty()
+								R.div({className: 'panel-body noData'},
+									"This #{Term 'program'} has no members yet."
+								)
+							else
+								R.table({className: 'panel-body table table-striped'}
+									R.thead({},
+										R.tr({},
+											R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
+											R.td({colSpan: 2}, "#{Term 'Client'} Name")
+										)
+									)
+									R.tbody({},
+										(enrolledLinks.map (link) =>
+											clientFileId = link.get('clientFileId')
+											client = @_findClientById clientFileId
+											recordId = client.get('recordId')
+
+											R.tr({key: clientFileId},
+												if Config.clientFileRecordId?
+													R.td({},
+														(if recordId.length > 0
+															recordId
+														else
+															R.div({className: 'noId'}, "n/a")
+														)
 													)
-												)
-											R.td({}, renderName client.get('clientName'))
-											R.td({},
-												R.button({
-													className: 'btn btn-danger btn-sm'
-													onClick: @_unenrollClient.bind null, clientFileId
-												},
-													FaIcon('minus')
+												R.td({}, renderName client.get('clientName'))
+												R.td({},
+													R.button({
+														className: 'btn btn-danger btn-sm'
+														onClick: @_unenrollClient.bind null, clientFileId
+													},
+														FaIcon('minus')
+													)
 												)
 											)
 										)
@@ -426,56 +494,53 @@ load = (win) ->
 							)
 						)
 					)
-					R.div({className: 'clientPicker panel panel-default'},
-						R.div({className: 'panel-heading'}
-							R.label({}, "Search")
-							R.input({
-								className: 'form-control'
-								placeholder: "by #{Term 'client'} name" +
-								(" or #{Config.clientFileRecordId.label}" if Config.clientFileRecordId?)
-								onChange: @_updateSearchQuery
-								ref: 'clientSearchBox'
-							})
-						)
-						(if searchResults.isEmpty()
-							R.div({className: 'panel-body noData'},
-								"No #{Term 'client'} matches for \"#{@state.searchQuery}\""
-							)
-						else
-							R.table({className: 'panel-body table'},
-								R.thead({},
-									R.tr({},
-										R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
-										R.td({colSpan: 2}, "#{Term 'Client'} Name")
-									)
+					R.div({className: 'clientPickerContainer'},
+						R.div({className: 'clientPicker'},
+							R.div({className: 'panel panel-default'},
+								R.div({className: 'panel-heading'}
+									R.input({
+										className: 'form-control'
+										placeholder: "Search by #{Term 'client'} name" +
+										(" or #{Config.clientFileRecordId.label}" if Config.clientFileRecordId?)
+										onChange: @_updateSearchQuery
+										ref: 'clientSearchBox'
+									})
 								)
-								R.tbody({},
-									(searchResults.map (result) =>
-										clientFileId = result.get('id')
-										recordId = result.get('recordId')
-
-										clientIsEnrolled = enrolledLinks.find (link) ->
-											link.get('clientFileId') is clientFileId
-
-										R.tr({key: clientFileId},
-											if Config.clientFileRecordId?
-												R.td({},
-													(if recordId.length > 0
-														recordId
-													else
-														R.div({className: 'noId'}, "n/a")
-													)
+								(if searchResults.isEmpty()
+									R.div({className: 'panel-body noData'},
+										"No #{Term 'client'} matches for \"#{@state.searchQuery}\""
+									)
+								else
+									R.div({className: 'panel-body searchResults'},
+										R.table({className: 'table'},
+											R.thead({},
+												R.tr({},
+													R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
+													R.td({}, "#{Term 'Client'} Name")
 												)
-											R.td({}, renderName result.get('clientName'))
-											R.td({},
-												R.button({
-													className: 'btn btn-success btn-sm'
-													style: {
-														visibility: 'hidden' if clientIsEnrolled?
-													}
-													onClick: @_enrollClient.bind null, clientFileId
-												},
-													FaIcon('plus')
+											)
+											R.tbody({},
+												(searchResults.map (result) =>
+													clientFileId = result.get('id')
+													recordId = result.get('recordId')
+
+													clientIsEnrolled = enrolledLinks.find (link) ->
+														link.get('clientFileId') is clientFileId
+
+													R.tr({
+														key: clientFileId
+														onClick: @_enrollClient.bind null, clientFileId
+													},
+														if Config.clientFileRecordId?
+															R.td({},
+																(if recordId.length > 0
+																	recordId
+																else
+																	R.div({className: 'noId'}, "n/a")
+																)
+															)
+														R.td({}, renderName result.get('clientName'))
+													)
 												)
 											)
 										)
@@ -485,7 +550,7 @@ load = (win) ->
 						)
 					)
 				)
-				R.div({className: 'btn-toolbar pull-right'},
+				R.div({className: 'btn-toolbar pull-right saveBar'},
 					R.button({
 						className: 'btn btn-default'
 						onClick: @props.onCancel
@@ -496,7 +561,7 @@ load = (win) ->
 						className: 'btn btn-success btn-large'
 						onClick: @_submit
 					},
-						"Finished "
+						"Save "
 						FaIcon('check')
 					)
 				)
@@ -579,9 +644,7 @@ load = (win) ->
 		_submit: (event) ->
 			event.preventDefault()
 
-			@refs.dialog.setIsLoading(true)
-
-			programId = @props.rowData.get('id')
+			programId = @props.program.get('id')
 
 			programLinks = @props.clientFileProgramLinks.filter (link) ->
 				link.get('programId') is programId
@@ -608,20 +671,12 @@ load = (win) ->
 
 				else
 					# Build our brand new link object
-					newLink = Imm.fromJS(newLink)
-					.set 'programId', programId
+					newLink = Imm.fromJS(newLink).set 'programId', programId
 
 					# Create new link object on DB
-					ActiveSession.persist.clientFileProgramLinks.create newLink, (err, createdLink) ->
-						if err
-							cb err
-							return
-
-						cb()
+					ActiveSession.persist.clientFileProgramLinks.create newLink, cb
 
 			, (err) =>
-				@refs.dialog.setIsLoading(false) if @refs.dialog?
-
 				if err
 					CrashHandler.handle err
 					return

@@ -1,0 +1,74 @@
+.manageProgramClientsView
+	padding-top 15px
+	display flex
+	flex-direction column
+	overflow auto
+
+	.innerContainer
+		flex 1
+		display flex
+		height 300px
+
+		> div
+			flex 1
+
+	.programClientsContainer
+		overflow auto
+
+		.programClients
+			h3
+				border-bottom 2px solid #eee
+				padding-bottom 10px
+
+			.panel-heading
+				padding-left 0
+				padding-right 0
+
+				.panel-title
+					padding-left 8px
+					padding-right 8px
+
+				.badge
+					float right
+
+			.panel-body
+
+				&.noData
+					text-align center
+					padding 15px
+					font-style italic
+
+	.clientPickerContainer
+		display flex
+		overflow auto
+		padding-left 10px
+
+		.clientPicker
+			flex 1
+			overflow auto
+			display flex
+
+			.panel-body
+				padding 0
+
+			> .panel
+				display flex
+				flex-direction column
+				margin 0 !important
+
+				> .panel-body
+					flex 1
+
+					table tbody tr:hover
+						background #94da94
+
+
+
+	table > thead
+		font-weight bold
+
+	table td > .noId
+		text-align center
+
+	table td
+		cursor default !important
