@@ -26,7 +26,6 @@ load = (win) ->
 	Config = require './config'
 	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
-	OrderableTable = require('./orderableTable').load(win)
 	DialogLayer = require('./dialogLayer').load(win)
 	Dialog = require('./dialog').load(win)
 

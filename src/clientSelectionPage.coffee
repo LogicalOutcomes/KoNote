@@ -31,7 +31,6 @@ load = (win) ->
 
 	MainMenu = require('./mainMenu').load(win)
 	BrandWidget = require('./brandWidget').load(win)
-	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ProgramBubbles = require('./programBubbles').load(win)
 
