@@ -444,10 +444,11 @@ load = (win) ->
 						R.div({className: 'programClients'},
 							R.div({className: 'panel-heading'},
 								R.h3({className: 'panel-title'},
-									if not enrolledLinks.isEmpty()
+									(if not enrolledLinks.isEmpty()
 										R.span({className: 'badge'},
 											enrolledLinks.size
 										)
+									)
 									"Enrolled #{Term 'Clients'}"
 								)
 							)
