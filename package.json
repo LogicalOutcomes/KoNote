@@ -1,7 +1,7 @@
 {
   "name": "KoNote",
   "displayName": "KoNote",
-  "version": "1.8.0-RC4",
+  "version": "1.8.0",
   "author": "KoNote",
   "description": "KoNote",
   "main": "src/main.html",
