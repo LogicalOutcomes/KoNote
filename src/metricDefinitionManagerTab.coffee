@@ -158,20 +158,24 @@ load = (win) ->
 								},
 									TableHeaderColumn({
 										dataField: 'id'
+										className: 'colorKeyColumn'
 										columnClassName: 'colorKeyColumn'
 										dataFormat: -> null
 									})
 									TableHeaderColumn({
 										dataField: 'name'
+										className: 'nameColumn'
 										columnClassName: 'nameColumn'
 										dataSort: true
 									}, "#{Term 'Metric'} Name")
 									TableHeaderColumn({
 										dataField: 'definition'
+										className: 'descriptionColumn'
 										columnClassName: 'descriptionColumn'
 									}, "Definition")
 									TableHeaderColumn({
 										dataField: 'status'
+										className: 'statusColumn'
 										columnClassName: 'statusColumn'
 										dataSort: true
 										hidden: not @state.displayInactive

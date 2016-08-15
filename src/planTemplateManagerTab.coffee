@@ -144,15 +144,18 @@ load = (win) ->
 									# Filler column for display consistency
 									TableHeaderColumn({
 										dataField: 'id'
+										className: 'colorKeyHex'
 										columnClassName: 'colorKeyHex'
 									})
 									TableHeaderColumn({
 										dataField: 'name'
+										className: 'nameColumn'
 										columnClassName: 'nameColumn'
 										dataSort: true
 									}, "Template Name")
 									TableHeaderColumn({
 										dataField: 'status'
+										className: 'statusColumn'
 										columnClassName: 'statusColumn'
 										dataAlign: 'right'
 										headerAlign: 'right'

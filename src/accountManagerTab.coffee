@@ -198,6 +198,7 @@ load = (win) ->
 									})
 									TableHeaderColumn({
 										dataField: 'userName'
+										className: 'nameColumn'
 										columnClassName: 'nameColumn'
 										dataSort: true
 									}, "User Name")
@@ -207,6 +208,7 @@ load = (win) ->
 									}, "Account Type")
 									TableHeaderColumn({
 										dataField: 'isActive'
+										className: 'statusColumn'
 										columnClassName: 'statusColumn'
 										headerAlign: 'right'
 										dataAlign: 'right'
