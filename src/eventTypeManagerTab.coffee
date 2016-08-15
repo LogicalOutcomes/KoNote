@@ -40,6 +40,7 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
+				dataIsReady: false
 				eventTypes: Imm.List()
 			}
 
@@ -79,7 +80,10 @@ load = (win) ->
 						CrashHandler.handle err
 						return
 
-					@setState {eventTypes}
+					@setState {
+						dataIsReady: true
+						eventTypes
+					}
 
 		render: ->
 			return R.div({className: 'eventTypeManagerTab'},
@@ -87,39 +91,41 @@ load = (win) ->
 					R.h1({}, Term 'Event Types')
 				)
 				R.div({className: 'main'},
-					R.div({className: 'responsiveTable'},
-						DialogLayer({
-							ref: 'dialogLayer'
-							eventTypes: @state.eventTypes
-						}
-							BootstrapTable({
-								data: @state.eventTypes.toJS()
-								keyField: 'id'
-								bordered: false
-								options: {
-									defaultSortName: 'name'
-									defaultSortOrder: 'asc'
-									onRowClick: ({id}) =>
-										@refs.dialogLayer.open ModifyEventTypeDialog, {
-											eventTypeId: id
-											onSuccess: @_modifyEventType
-										}
-								}
-							},
-								TableHeaderColumn({
-									dataField: 'colorKeyHex'
-									columnClassName: 'colorKeyColumn'
-									dataFormat: (colorKeyHex) -> ColorKeyBubble({colorKeyHex})
-								})
-								TableHeaderColumn({
-									dataField: 'name'
-									columnClassName: 'nameColumn'
-									dataSort: true
-								}, "Type Name")
-								TableHeaderColumn({
-									dataField: 'description'
-									columnClassName: 'descriptionColumn'
-								}, "Description")
+					(if @state.dataIsReady
+						R.div({className: 'responsiveTable animated fadeIn'},
+							DialogLayer({
+								ref: 'dialogLayer'
+								eventTypes: @state.eventTypes
+							}
+								BootstrapTable({
+									data: @state.eventTypes.toJS()
+									keyField: 'id'
+									bordered: false
+									options: {
+										defaultSortName: 'name'
+										defaultSortOrder: 'asc'
+										onRowClick: ({id}) =>
+											@refs.dialogLayer.open ModifyEventTypeDialog, {
+												eventTypeId: id
+												onSuccess: @_modifyEventType
+											}
+									}
+								},
+									TableHeaderColumn({
+										dataField: 'colorKeyHex'
+										columnClassName: 'colorKeyColumn'
+										dataFormat: (colorKeyHex) -> ColorKeyBubble({colorKeyHex})
+									})
+									TableHeaderColumn({
+										dataField: 'name'
+										columnClassName: 'nameColumn'
+										dataSort: true
+									}, "Type Name")
+									TableHeaderColumn({
+										dataField: 'description'
+										columnClassName: 'descriptionColumn'
+									}, "Description")
+								)
 							)
 						)
 					)

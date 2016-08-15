@@ -38,6 +38,7 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
+				dataIsReady: false
 				planTemplateHeaders: Imm.List()
 				displayInactive: null
 			}
@@ -67,7 +68,10 @@ load = (win) ->
 						CrashHandler.handle err
 						return
 
-					@setState {planTemplateHeaders}
+					@setState {
+						dataIsReady: true
+						planTemplateHeaders
+					}
 
 		render: ->
 			planTemplateHeaders = @state.planTemplateHeaders
@@ -113,42 +117,44 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'main'},
-					R.div({className: 'responsiveTable'},
-						DialogLayer({
-							ref: 'dialogLayer'
-							planTemplateHeaders: @state.planTemplateHeaders
-						},
-							BootstrapTable({
-								data: planTemplateHeaders.toJS()
-								keyField: 'id'
-								bordered: false
-								options: {
-									defaultSortName: 'name'
-									defaultSortOrder: 'asc'
-									onRowClick: (row) =>
-										# TODO: Re-activation
-										return unless row.status is 'active'
-
-										@refs.dialogLayer.open ModifyPlanTemplateDialog, {
-											planTemplateId: id
-											onSuccess: @_updatePlanTemplateHeaders
-										}
-								}
-								trClassName: (row) -> 'inactive' if row.status isnt 'active'
+					(if @state.dataIsReady
+						R.div({className: 'responsiveTable animated fadeIn'},
+							DialogLayer({
+								ref: 'dialogLayer'
+								planTemplateHeaders: @state.planTemplateHeaders
 							},
-								TableHeaderColumn({
-									dataField: 'name'
-									columnClassName: 'nameColumn'
-									dataSort: true
-								}, "Template Name")
-								TableHeaderColumn({
-									dataField: 'status'
-									columnClassName: 'statusColumn'
-									dataAlign: 'right'
-									headerAlign: 'right'
-									dataSort: true
-									hidden: not @state.displayInactive
-								}, "Status")
+								BootstrapTable({
+									data: planTemplateHeaders.toJS()
+									keyField: 'id'
+									bordered: false
+									options: {
+										defaultSortName: 'name'
+										defaultSortOrder: 'asc'
+										onRowClick: (row) =>
+											# TODO: Re-activation
+											return unless row.status is 'active'
+
+											@refs.dialogLayer.open ModifyPlanTemplateDialog, {
+												planTemplateId: id
+												onSuccess: @_updatePlanTemplateHeaders
+											}
+									}
+									trClassName: (row) -> 'inactive' if row.status isnt 'active'
+								},
+									TableHeaderColumn({
+										dataField: 'name'
+										columnClassName: 'nameColumn'
+										dataSort: true
+									}, "Template Name")
+									TableHeaderColumn({
+										dataField: 'status'
+										columnClassName: 'statusColumn'
+										dataAlign: 'right'
+										headerAlign: 'right'
+										dataSort: true
+										hidden: not @state.displayInactive
+									}, "Status")
+								)
 							)
 						)
 					)

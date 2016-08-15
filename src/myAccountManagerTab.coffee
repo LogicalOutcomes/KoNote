@@ -92,7 +92,7 @@ load = (win) ->
 								)
 							)
 						)
-						if @state.passwordIsVerified
+						(if @state.passwordIsVerified
 							R.div({
 								id: 'newPasswordForm'
 								className: 'animated fadeIn'
@@ -142,6 +142,7 @@ load = (win) ->
 									}, "Reset My Password")
 								)
 							)
+						)
 					)
 					R.div({id: 'generalSettings'},
 						# TODO: General Settings

@@ -36,6 +36,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: -> {
+			dataIsReady: false
 			metricDefinitions: Imm.List()
 			displayInactive: false
 		}
@@ -78,7 +79,10 @@ load = (win) ->
 					return
 
 				# Successfully loaded metric definitions
-				@setState {metricDefinitions}
+				@setState {
+					dataIsReady: true
+					metricDefinitions
+				}
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
@@ -125,53 +129,56 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'main'},
-					R.div({
-						className: [
-							'responsiveTable'
-							'hiddenColumnFix' if not @state.displayInactive # Temporary
-						].join ' '
-					},
-						DialogLayer({
-							ref: 'dialogLayer'
-							metricDefinitions
+					(if @state.dataIsReady
+						R.div({
+							className: [
+								'responsiveTable'
+								'hiddenColumnFix' if not @state.displayInactive # Temporary
+								'animated fadeIn'
+							].join ' '
 						},
-							BootstrapTable({
-								data: metricDefinitions.toJS()
-								keyField: 'id'
-								bordered: false
-								options: {
-									defaultSortName: 'name'
-									defaultSortOrder: 'asc'
-									onRowClick: ({id}) =>
-										@refs.dialogLayer.open ModifyMetricDialog, {
-											metricId: id
-											onSuccess: @_modifyMetric
-										}
-								}
-								trClassName: (row) -> 'inactive' if row.status isnt 'active'
+							DialogLayer({
+								ref: 'dialogLayer'
+								metricDefinitions
 							},
-								TableHeaderColumn({
-									dataField: 'id'
-									columnClassName: 'colorKeyColumn'
-									dataFormat: -> null
-								})
-								TableHeaderColumn({
-									dataField: 'name'
-									columnClassName: 'nameColumn'
-									dataSort: true
-								}, "#{Term 'Metric'} Name")
-								TableHeaderColumn({
-									dataField: 'definition'
-									columnClassName: 'descriptionColumn'
-								}, "Definition")
-								TableHeaderColumn({
-									dataField: 'status'
-									columnClassName: 'statusColumn'
-									dataSort: true
-									hidden: not @state.displayInactive
-									headerAlign: 'right'
-									dataAlign: 'right'
-								}, "Status")
+								BootstrapTable({
+									data: metricDefinitions.toJS()
+									keyField: 'id'
+									bordered: false
+									options: {
+										defaultSortName: 'name'
+										defaultSortOrder: 'asc'
+										onRowClick: ({id}) =>
+											@refs.dialogLayer.open ModifyMetricDialog, {
+												metricId: id
+												onSuccess: @_modifyMetric
+											}
+									}
+									trClassName: (row) -> 'inactive' if row.status isnt 'active'
+								},
+									TableHeaderColumn({
+										dataField: 'id'
+										columnClassName: 'colorKeyColumn'
+										dataFormat: -> null
+									})
+									TableHeaderColumn({
+										dataField: 'name'
+										columnClassName: 'nameColumn'
+										dataSort: true
+									}, "#{Term 'Metric'} Name")
+									TableHeaderColumn({
+										dataField: 'definition'
+										columnClassName: 'descriptionColumn'
+									}, "Definition")
+									TableHeaderColumn({
+										dataField: 'status'
+										columnClassName: 'statusColumn'
+										dataSort: true
+										hidden: not @state.displayInactive
+										headerAlign: 'right'
+										dataAlign: 'right'
+									}, "Status")
+								)
 							)
 						)
 					)

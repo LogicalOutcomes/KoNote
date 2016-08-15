@@ -45,6 +45,7 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
+				dataIsReady: false
 				userAccounts: Imm.List()
 
 				openDialogId: null
@@ -86,7 +87,10 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@setState {userAccounts}
+				@setState {
+					dataIsReady: true
+					userAccounts
+				}
 
 		render: ->
 			# Tack on program assignment to userAccounts
@@ -151,62 +155,65 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'main'},
-					R.div({
-						className: [
-							'responsiveTable'
-							'hiddenColumnFix' if not @state.displayInactive # Temporary
-						].join ' '
-					},
-						DialogLayer({
-							ref: 'dialogLayer'
-							userAccounts: @state.userAccounts
-							programs: @props.programs
-							userProgramLinks: @props.userProgramLinks
-							updateAccount: @_updateAccount
-						}
-							BootstrapTable({
-								data: tableData.toJS()
-								keyField: 'userName'
-								bordered: false
-								options: {
-									defaultSortName: 'lastName'
-									defaultSortOrder: 'asc'
-									onRowClick: ({userName}) =>
-										@refs.dialogLayer.open ManageAccountDialog, {userName}
-								}
-								trClassName: ({isActive}) -> 'inactive' unless isActive is 'active'
-							},
-								TableHeaderColumn({
-									dataField: 'program'
-									columnClassName: 'colorKeyColumn'
-									dataFormat: (program) ->
-										if program
-											ColorKeyBubble({
-												colorKeyHex: program.colorKeyHex
-												popover: {
-													title: program.name
-													content: program.description
-												}
-											})
-									hidden: not hasProgramLinks
-								})
-								TableHeaderColumn({
-									dataField: 'userName'
-									columnClassName: 'nameColumn'
-									dataSort: true
-								}, "User Name")
-								TableHeaderColumn({
-									dataField: 'accountType'
-									dataSort: true
-								}, "Account Type")
-								TableHeaderColumn({
-									dataField: 'isActive'
-									columnClassName: 'statusColumn'
-									headerAlign: 'right'
-									dataAlign: 'right'
-									dataSort: true
-									hidden: not @state.displayInactive
-								}, "Status")
+					(if @state.dataIsReady
+						R.div({
+							className: [
+								'responsiveTable'
+								'hiddenColumnFix' if not @state.displayInactive # Temporary
+								'animated fadeIn'
+							].join ' '
+						},
+							DialogLayer({
+								ref: 'dialogLayer'
+								userAccounts: @state.userAccounts
+								programs: @props.programs
+								userProgramLinks: @props.userProgramLinks
+								updateAccount: @_updateAccount
+							}
+								BootstrapTable({
+									data: tableData.toJS()
+									keyField: 'userName'
+									bordered: false
+									options: {
+										defaultSortName: 'lastName'
+										defaultSortOrder: 'asc'
+										onRowClick: ({userName}) =>
+											@refs.dialogLayer.open ManageAccountDialog, {userName}
+									}
+									trClassName: ({isActive}) -> 'inactive' unless isActive is 'active'
+								},
+									TableHeaderColumn({
+										dataField: 'program'
+										columnClassName: 'colorKeyColumn'
+										dataFormat: (program) ->
+											if program
+												ColorKeyBubble({
+													colorKeyHex: program.colorKeyHex
+													popover: {
+														title: program.name
+														content: program.description
+													}
+												})
+										hidden: not hasProgramLinks
+									})
+									TableHeaderColumn({
+										dataField: 'userName'
+										columnClassName: 'nameColumn'
+										dataSort: true
+									}, "User Name")
+									TableHeaderColumn({
+										dataField: 'accountType'
+										dataSort: true
+									}, "Account Type")
+									TableHeaderColumn({
+										dataField: 'isActive'
+										columnClassName: 'statusColumn'
+										headerAlign: 'right'
+										dataAlign: 'right'
+										dataSort: true
+										hidden: not @state.displayInactive
+									}, "Status")
+								)
 							)
 						)
 					)
