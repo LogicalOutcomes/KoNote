@@ -60,7 +60,6 @@ load = (win) ->
 
 		render: ->
 			{isAdmin} = @props
-			console.log "isSmallHeaderSet", @props.isSmallHeaderSet
 			R.aside({
 				id: 'mainMenu'
 				className: 'isOpen animated fadeInRight'
