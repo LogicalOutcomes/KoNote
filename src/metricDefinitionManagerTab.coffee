@@ -146,6 +146,11 @@ load = (win) ->
 								trClassName: (row) -> 'inactive' if row.status isnt 'active'
 							},
 								TableHeaderColumn({
+									dataField: 'id'
+									columnClassName: 'colorKeyColumn'
+									dataFormat: -> null
+								})
+								TableHeaderColumn({
 									dataField: 'name'
 									columnClassName: 'nameColumn'
 									dataSort: true
