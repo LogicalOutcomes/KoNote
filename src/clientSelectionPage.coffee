@@ -701,11 +701,17 @@ load = (win) ->
 					TableHeaderColumn({
 						dataField: 'recordId'
 						dataSort: true
+						className: 'recordIdColumn'
+						columnClassName: 'recordIdColumn'
+						headerAlign: 'right'
+						dataAlign: 'right'
 						hidden: not Config.clientFileRecordId.isEnabled
 					}, Config.clientFileRecordId.label)
 					TableHeaderColumn({
 						dataField: 'status'
 						dataSort: true
+						headerAlign: 'right'
+						dataAlign: 'right'
 						hidden: not @props.displayInactive
 					}, "Status")
 				)
