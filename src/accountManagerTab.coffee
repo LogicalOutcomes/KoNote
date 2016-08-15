@@ -151,7 +151,12 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'main'},
-					R.div({className: 'responsiveTable'},
+					R.div({
+						className: [
+							'responsiveTable'
+							'hiddenColumnFix' if not @state.displayInactive # Temporary
+						].join ' '
+					},
 						DialogLayer({
 							ref: 'dialogLayer'
 							userAccounts: @state.userAccounts
