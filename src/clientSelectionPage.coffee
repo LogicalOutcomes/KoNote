@@ -503,7 +503,8 @@ load = (win) ->
 
 		_updateManagerLayer: (managerLayer) ->
 			if managerLayer is null
-				@setState {isSmallHeaderSet: true, queryText: ''}
+				@setState {isSmallHeaderSet: true, queryText: '', managerLayer}
+				return
 			@setState {managerLayer}
 
 		_toggleUserMenu: ->
