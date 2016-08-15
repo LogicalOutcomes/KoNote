@@ -94,17 +94,34 @@ load = (win) ->
 					return null
 
 		_openClientFile: (clientFileId) ->
-			unless @state.loadingFile
-				@setState {loadingFile: true}
+			appWindows = chrome.app.window.getAll()
+			# skip if no client files open
+			if appWindows.length > 2
+				clientName = ''
+				ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
+					if err
+						# fail silently, let user retry
+						return
+					clientFile = stripMetadata revisions.get(0)
+					clientName = renderName clientFile.get('clientName')
+					clientFileOpen = false
+					appWindows.forEach (appWindow) ->
+						winTitle = nw.Window.get(appWindow.contentWindow).title
+						if winTitle.includes(clientName)
+							# already open, focus
+							clientFileOpen = true
+							nw.Window.get(appWindow.contentWindow).focus()
+							return
+					if clientFileOpen is false
+						openWindow {
+							page: 'clientFile'
+							clientFileId
+						}
+			else
 				openWindow {
 					page: 'clientFile'
 					clientFileId
 				}
-				# prevent double click
-				# todo: tidy this up
-				setTimeout(=>
-					@setState {loadingFile: false}
-				, 2000)
 
 		_setStatus: (status) ->
 			@setState {status}
