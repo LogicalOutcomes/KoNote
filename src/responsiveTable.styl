@@ -1,0 +1,88 @@
+.responsiveTable
+	flex 1
+	display flex
+	flex-direction column
+	max-width 100%
+
+	// Override the incorrect <th> padding when column is hidden
+	// Fix pending in: https://github.com/AllenFang/react-bootstrap-table/issues/628
+	&.hiddenColumnFix
+		th:not(:nth-child(2))
+			padding-left 3px
+
+	.react-bs-table-container
+		display flex
+		max-width 100%
+
+		.react-bs-table
+			flex 1
+			height auto !important
+			display flex
+			flex-direction column
+			max-width 100%
+
+			margin 0
+			border 0
+
+			tr
+				cursor default !important
+
+				th
+					cursor default !important
+
+				// Add padding to first & last VISIBLE column
+				th:not([style*="display: none"]):last-child, td:not([style*="display: none"]):last-child
+					padding-right 5%
+
+				th:not([style*="display: none"]):first-child, td:not([style*="display: none"]):first-child
+					padding-left 5%
+
+			// TODO: Avoid setting this manually
+			// (column headers hide completely without it for some reason...)
+			.react-bs-container-header
+				min-height 2.7em
+
+			.react-bs-container-body
+				font-size 1.1em
+
+				.programBubbles
+					flex-direction row-reverse
+
+				.colorKeyBubble
+					display flex
+					flex-direction row-reverse
+					font-size 1.5em !important
+
+				tr
+					background transparent
+					transition background .15s ease
+
+					&.inactive td
+						background #FFD3D3
+
+					&:hover td, &.activeIndex td
+						background hsl(200, 80%, 90%) !important
+
+					td
+						vertical-align middle
+						height 50px
+
+						&.react-bs-table-no-data:hover
+							background none !important
+
+
+				// Consistent style classes for different types of column data
+				// (rather than explicitly defining in TableHeaderColumn props)
+
+				.colorKeyColumn
+					width 100px
+
+				.nameColumn
+					width 300px
+
+				.descriptionColumn
+					font-size 0.9em !important
+
+				.statusColumn
+					width 200px
+					font-size 0.9em !important

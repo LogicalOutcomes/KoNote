@@ -51,11 +51,13 @@ sidebar-borders = darken(sidebar-bg, 10%)
 		position relative
 		display flex
 		height 100%
+		max-width 100%
 
 		> #main
 			flex 1
 			margin auto 0
 			height 100%
+			max-width 100%
 
 			display flex
 			flex-direction column
@@ -140,9 +142,10 @@ sidebar-borders = darken(sidebar-bg, 10%)
 					max-height 40px
 					cursor default
 
-			.results
+			.clientTableWrapper
 				flex 1
 				display flex
+				flex-direction column
 
 				#filterSelectionContainer
 					text-align right
@@ -152,44 +155,6 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 						.checkbox
 							margin-right 25px
-
-
-				.orderableTable
-					height 550px
-
-					.tableCell
-						&:first-child, &:last-child
-							flex 0.5
-							text-align right !important
-
-						.dataValue
-							flex 1
-
-
-					.tableBody
-
-						.tableRow
-							transition background .15s ease-in-out
-							background white
-							cursor default
-
-							&.active
-								.tableCell
-									color hsl(200, 80%, 20%) !important
-									background hsl(200, 80%, 80%) !important
-							
-							&.deactivatedClientFile
-								background #FFD3D3
-
-							&:hover
-								background hsl(200, 80%, 90%)
-
-
-							.tableCell
-								transition all .1s ease
-
-								.popover
-									color black
 
 
 	> #menuContainer

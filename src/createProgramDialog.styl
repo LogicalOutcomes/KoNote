@@ -1,19 +1,25 @@
 .createProgramDialog
-	width 250px
-		
+	flex 1
+	display flex
+	justify-content center
+	padding 15px
+
+	.innerContainer
+		width 250px
+
 	#colorPicker
-		
+
 		&:hover
 			cursor default
-		
+
 		span
 			display block
 			border-radius 50%
-			
+
 			&.hasColor .fa
 				color white
 				opacity .5
-				
+
 	.clientPicker
 		max-height 400px
 		overflow auto

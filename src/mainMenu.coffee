@@ -62,7 +62,7 @@ load = (win) ->
 			{isAdmin} = @props
 			R.aside({
 				id: 'mainMenu'
-				className: 'isOpen animated fadeInRight'
+				className: 'animated fadeInRight'
 			},
 				R.div({id: 'menuContainer'},
 					R.div({id: 'user'},

@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Page overlay for managing client files
@@ -17,7 +17,6 @@ load = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
-	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	Spinner = require('./spinner').load(win)
@@ -55,7 +54,7 @@ load = (win) ->
 						R.h3({}, "My Password")
 						R.div({className: 'form-group animated'},
 							R.label({}, "Verify your current password"),
-							R.div({className: 'input-group'},								
+							R.div({className: 'input-group'},
 								R.input({
 									ref: 'currentPasswordField'
 									className: 'form-control'
@@ -66,7 +65,7 @@ load = (win) ->
 									placeholder: "Enter password"
 									disabled: @state.passwordIsVerified
 								})
-								R.span({className: 'input-group-btn'}, 
+								R.span({className: 'input-group-btn'},
 									R.button({
 										className: [
 											'btn'
@@ -92,8 +91,8 @@ load = (win) ->
 									)
 								)
 							)
-						)						
-						if @state.passwordIsVerified
+						)
+						(if @state.passwordIsVerified
 							R.div({
 								id: 'newPasswordForm'
 								className: 'animated fadeIn'
@@ -122,7 +121,7 @@ load = (win) ->
 									].join ' '
 								},
 									R.label({}, "Confirm new password")
-									R.input({										
+									R.input({
 										className: 'form-control'
 										type: 'password'
 										value: @state.newPasswordConfirm
@@ -143,21 +142,22 @@ load = (win) ->
 									}, "Reset My Password")
 								)
 							)
+						)
 					)
 					R.div({id: 'generalSettings'},
 						# TODO: General Settings
 						# R.h3({}, "General Settings")
 					)
-				)				
+				)
 			)
 
-		_updateCurrentPassword: (event) ->			
+		_updateCurrentPassword: (event) ->
 			@setState {currentPassword: event.target.value}
 
-		_updateNewPassword: (event) ->			
+		_updateNewPassword: (event) ->
 			@setState {newPassword: event.target.value}
 
-		_updateNewPasswordConfirm: (event) ->			
+		_updateNewPasswordConfirm: (event) ->
 			@setState {newPasswordConfirm: event.target.value}
 
 		_newPasswordIsInvalid: ->

@@ -10,20 +10,26 @@ Config = require './config'
 Term = require './term'
 {EventTypeColors} = require './colors'
 
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
 
+	# TODO: Refactor to single require
+	{BootstrapTable, TableHeaderColumn} = win.ReactBootstrapTable
+	BootstrapTable = React.createFactory BootstrapTable
+	TableHeaderColumn = React.createFactory TableHeaderColumn
+
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
-	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 	ColorKeySelection = require('./colorKeySelection').load(win)
+	DialogLayer = require('./dialogLayer').load(win)
 
 	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
@@ -34,7 +40,8 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				eventTypes: null
+				dataIsReady: false
+				eventTypes: Imm.List()
 			}
 
 		componentWillMount: ->
@@ -73,7 +80,10 @@ load = (win) ->
 						CrashHandler.handle err
 						return
 
-					@setState {eventTypes}
+					@setState {
+						dataIsReady: true
+						eventTypes
+					}
 
 		render: ->
 			return R.div({className: 'eventTypeManagerTab'},
@@ -81,54 +91,44 @@ load = (win) ->
 					R.h1({}, Term 'Event Types')
 				)
 				R.div({className: 'main'},
-					OrderableTable({
-						tableData: @state.eventTypes
-						noMatchesMessage: "No #{Term 'event'} types defined yet"
-						sortByData: ['name']
-						columns: [
-							{
-								name: "Colour Key"
-								nameIsVisible: false
-								dataPath: ['colorKeyHex']
-								cellClass: 'colorKeyCell'
-								value: (dataPoint) ->
-									ColorKeyBubble({colorKeyHex: dataPoint.get('colorKeyHex')})
+					(if @state.dataIsReady
+						R.div({className: 'responsiveTable animated fadeIn'},
+							DialogLayer({
+								ref: 'dialogLayer'
+								eventTypes: @state.eventTypes
 							}
-							{
-								name: "Type Name"
-								dataPath: ['name']
-								cellClass: 'nameCell'
-							}
-							{
-								name: "Description"
-								dataPath: ['description']
-								value: (dataPoint) ->
-									description = dataPoint.get('description')
-
-									if description.length > 60
-										return description.substr(0, 59) + ' . . .'
-									else
-										return description
-							}
-							{
-								name: "Options"
-								nameIsVisible: false
-								cellClass: 'optionsCell'
-								buttons: [
-									{
-										className: 'btn btn-warning'
-										text: null
-										icon: 'wrench'
-										dialog: ModifyEventTypeDialog
-										data: {
-											onSuccess: @_modifyEventType
-											eventTypes: @state.eventTypes
-										}
+								BootstrapTable({
+									data: @state.eventTypes.toJS()
+									keyField: 'id'
+									bordered: false
+									options: {
+										defaultSortName: 'name'
+										defaultSortOrder: 'asc'
+										onRowClick: ({id}) =>
+											@refs.dialogLayer.open ModifyEventTypeDialog, {
+												eventTypeId: id
+												onSuccess: @_modifyEventType
+											}
 									}
-								]
-							}
-						]
-					})
+								},
+									TableHeaderColumn({
+										dataField: 'colorKeyHex'
+										columnClassName: 'colorKeyColumn'
+										dataFormat: (colorKeyHex) -> ColorKeyBubble({colorKeyHex})
+									})
+									TableHeaderColumn({
+										dataField: 'name'
+										columnClassName: 'nameColumn'
+										dataSort: true
+									}, "Type Name")
+									TableHeaderColumn({
+										dataField: 'description'
+										columnClassName: 'descriptionColumn'
+									}, "Description")
+								)
+							)
+						)
+					)
 				)
 				R.div({className: 'optionsMenu'},
 					OpenDialogLink({
@@ -145,15 +145,17 @@ load = (win) ->
 			)
 
 		_addNewEventType: (newEventType) ->
-			@setState {eventTypes: @state.eventTypes.push newEventType}
+			eventTypes = @state.eventTypes.push newEventType
+			@setState {eventTypes}
 
 		_modifyEventType: (modifiedEventType) ->
-			originalEventType = @state.eventTypes
-			.find (eventType) -> eventType.get('id') is modifiedEventType.get('id')
+			originalEventType = @state.eventTypes.find (eventType) ->
+				eventType.get('id') is modifiedEventType.get('id')
 
 			eventTypeIndex = @state.eventTypes.indexOf originalEventType
+			eventTypes = @state.eventTypes.set(eventTypeIndex, modifiedEventType)
 
-			@setState {eventTypes: @state.eventTypes.set(eventTypeIndex, modifiedEventType)}
+			@setState {eventTypes}
 
 
 	CreateEventTypeDialog = React.createFactory React.createClass
@@ -268,11 +270,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
-			return {
-				name: @props.rowData.get('name')
-				colorKeyHex: @props.rowData.get('colorKeyHex')
-				description: @props.rowData.get('description')
-			}
+			return @_getEventType().toJS()
 
 		componentDidMount: ->
 			@refs.eventTypeName.focus()
@@ -342,25 +340,31 @@ load = (win) ->
 		_updateColorKeyHex: (colorKeyHex) ->
 			@setState {colorKeyHex}
 
+		_getEventType: ->
+			@props.eventTypes.find (eventType) =>
+				eventType.get('id') is @props.eventTypeId
+
 		_buildModifiedEventTypeObject: ->
+			originalEventType = @_getEventType()
+
 			return Imm.fromJS({
-				id: @props.rowData.get('id')
+				id: originalEventType.get('id')
 				name: @state.name
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex
-				status: @props.rowData.get('status')
+				status: originalEventType.get('status')
 			})
 
 		_hasChanges: ->
-			return not Imm.is @props.rowData, @_buildModifiedEventTypeObject()
+			originalEventType = @_getEventType()
+			modifiedEventType = @_buildModifiedEventTypeObject()
+			return not Imm.is originalEventType, modifiedEventType
 
 		_submit: (event) ->
 			event.preventDefault()
 
 			modifiedEventType = @_buildModifiedEventTypeObject()
-			@_modifyEventType(modifiedEventType)
 
-		_modifyEventType: (modifiedEventType) ->
 			@refs.dialog.setIsLoading(true)
 
 			# Update the eventType revision, and close
