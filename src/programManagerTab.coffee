@@ -415,10 +415,6 @@ load = (win) ->
 				clientFileProgramLinks: @_originalLinks()
 			}
 
-		_originalLinks: ->
-			return @props.clientFileProgramLinks.filter (link) =>
-				link.get('programId') is @props.program.get('id')
-
 		componentDidMount: ->
 			@refs.clientSearchBox.focus()
 
@@ -431,6 +427,8 @@ load = (win) ->
 				clientFileId = clientFile.get('id')
 				return not enrolledLinks.some (link) ->
 					link.get('clientFileId') is clientFileId
+
+			hasChanges = @_hasChanges()
 
 
 			return R.div({className: 'manageProgramClientsView'},
@@ -477,8 +475,8 @@ load = (win) ->
 												R.td({}, renderName client.get('clientName'))
 												R.td({},
 													R.button({
-														className: 'btn btn-danger btn-sm'
-														onClick: @_unenrollClient.bind null, clientFileId
+														className: 'btn btn-danger btn-xs'
+														onClick: @_unenrollClient.bind null, link
 													},
 														FaIcon('minus')
 													)
@@ -520,9 +518,6 @@ load = (win) ->
 													clientFileId = result.get('id')
 													recordId = result.get('recordId')
 
-													clientIsEnrolled = enrolledLinks.find (link) ->
-														link.get('clientFileId') is clientFileId
-
 													R.tr({
 														key: clientFileId
 														onClick: @_enrollClient.bind null, clientFileId
@@ -556,6 +551,7 @@ load = (win) ->
 					R.button({
 						className: 'btn btn-success btn-large'
 						onClick: @_submit
+						disabled: hasChanges
 					},
 						"Save "
 						FaIcon('check')
@@ -563,14 +559,30 @@ load = (win) ->
 				)
 			)
 
+		_originalLinks: ->
+			return @props.clientFileProgramLinks.filter (link) =>
+				link.get('programId') is @props.program.get('id')
+
+		_hasChanges: ->
+			Imm.is @state.clientFileProgramLinks, @_originalLinks()
+
 		_enrollClient: (clientFileId) ->
 			newLink = Imm.fromJS {
 				clientFileId
 				status: "enrolled"
 			}
 
+			# Link already exists in state
 			existingLink = @state.clientFileProgramLinks.find (link) ->
 				link.get('clientFileId') is clientFileId
+
+			# Link already exists in DB
+			savedLink = @_originalLinks().find (link) ->
+				link.get('clientFileId') is clientFileId
+
+			# Use pre-existing DB link as template if exists
+			if savedLink?
+				newLink = savedLink.set 'status', "enrolled"
 
 			if existingLink?
 				if existingLink.get('status') isnt "enrolled"
@@ -581,35 +593,32 @@ load = (win) ->
 				else
 					# Client is already enrolled. This shouldn't happen.
 					console.warn "Tried to enroll already-enrolled clientFileId:", clientFileId
+
 			else
 				# Link doesn't exist, so just push in the new one
 				clientFileProgramLinks = @state.clientFileProgramLinks.push newLink
 				@setState {clientFileProgramLinks}
 
+		_unenrollClient: (clientFileProgramLink) ->
+			if clientFileProgramLink.get('status') isnt "enrolled"
+				# Client is already unenrolled. This shouldn't happen.
+				console.warn "Tried to UNenroll already-UNenrolled clientFileId:", clientFileId
+				return
 
+			linkIndex = @state.clientFileProgramLinks.indexOf clientFileProgramLink
 
-		_unenrollClient: (clientFileId) ->
-			newLink = Imm.fromJS {
-				clientFileId
-				status: "unenrolled"
-			}
+			# Does link already have an ID / exist in the DB?
+			linkId = clientFileProgramLink.get('id')
+			isSavedLink = linkId?
 
-			existingLink = @state.clientFileProgramLinks.find (link) ->
-				link.get('clientFileId') is clientFileId
-
-			if existingLink?
-				if existingLink.get('status') is "enrolled"
-					# Link exists, but is enrolled. Let's unenroll him/her/...it
-					linkIndex = @state.clientFileProgramLinks.indexOf existingLink
-					clientFileProgramLinks = @state.clientFileProgramLinks.set(linkIndex, newLink)
-					@setState {clientFileProgramLinks}
-				else
-					# Client is already unenrolled. This shouldn't happen.
-					console.warn "Tried to UNenroll already-UNenrolled clientFileId:", clientFileId
+			clientFileProgramLinks = if isSavedLink or existingLink?
+				# Link exists, but is enrolled. Let's unenroll him/her
+				@state.clientFileProgramLinks.set(linkIndex, clientFileProgramLink.set('status', "unenrolled"))
 			else
-				# Link doesn't exist, so just push in the new one
-				clientFileProgramLinks = @state.clientFileProgramLinks.push newLink
-				@setState {clientFileProgramLinks}
+				# Link has never been saved, so axe it completely
+				@state.clientFileProgramLinks.remove linkIndex
+
+			@setState {clientFileProgramLinks}
 
 
 		_findClientById: (clientFileId) ->
@@ -636,7 +645,6 @@ load = (win) ->
 						lastName.includes(part) or
 						recordId.includes(part)
 
-
 		_submit: (event) ->
 			event.preventDefault()
 
@@ -646,30 +654,11 @@ load = (win) ->
 				link.get('programId') is programId
 
 			Async.map @state.clientFileProgramLinks.toArray(), (newLink, cb) =>
-
-				existingLink = programLinks.find (originalLink) =>
-					originalLink.get('clientFileId') is newLink.get('clientFileId')
-
-				if existingLink?
-					# Pull out the full link object from props
-					linkIndex = programLinks.indexOf existingLink
-					clientFileProgramLink = programLinks.get linkIndex
-					# Update its status
-					revisedLink = clientFileProgramLink.set 'status', newLink.get('status')
-
-					# Create the revision on DB
-					ActiveSession.persist.clientFileProgramLinks.createRevision revisedLink, (err, updatedLink) ->
-						if err
-							cb err
-							return
-
-						cb()
-
+				if newLink.has('id')
+					# Revise existing link, which will have an ID already
+					ActiveSession.persist.clientFileProgramLinks.createRevision newLink, cb
 				else
-					# Build our brand new link object
-					newLink = Imm.fromJS(newLink).set 'programId', programId
-
-					# Create new link object on DB
+					newLink = newLink.set 'programId', programId
 					ActiveSession.persist.clientFileProgramLinks.create newLink, cb
 
 			, (err) =>
