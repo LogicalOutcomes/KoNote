@@ -5,7 +5,8 @@
 Imm = require 'immutable'
 ImmPropTypes = require 'react-immutable-proptypes'
 Term = require './term'
-{diffChars} = require 'diff'
+{diffSentences, diffWordsWithSpace} = require 'diff'
+DiffMatchPatch = require 'diff-match-patch'
 
 load = (win) ->
 	$ = win.jQuery
@@ -36,7 +37,17 @@ load = (win) ->
 		}
 
 		_diffStrings: (oldString, newString) ->
-			diffs = diffChars(oldString, newString)
+			dmp = new DiffMatchPatch()
+			# first pass; can lower timeout if too slow
+			# dmp.Diff_Timeout = 0.5
+			diffs = dmp.diff_main(oldString, newString)
+			# measure of similarity
+			lev = dmp.diff_levenshtein(diffs)
+			# second pass
+			if lev > 20
+				diffs = diffSentences(oldString, newString)
+			else
+				diffs = diffWordsWithSpace(oldString, newString)
 
 			return R.span({className: 'value'},
 				# Iterate over diffs and assign a diff-span or plain string
