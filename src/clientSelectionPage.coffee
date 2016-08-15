@@ -367,6 +367,7 @@ load = (win) ->
 							programs: @props.programs
 							userProgramLinks: @props.userProgramLinks
 							clientFileProgramLinks: @props.clientFileProgramLinks
+							menuIsOpen: @state.menuIsOpen
 						})
 					)
 					R.div({
