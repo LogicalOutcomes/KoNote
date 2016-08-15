@@ -276,6 +276,7 @@ load = (win) ->
 								clientFileHeaders: @props.clientFileHeaders
 								clientFileProgramLinks: @props.clientFileProgramLinks
 								onSuccess: @props.onSuccess
+								onCancel: @props.onCancel
 							})
 						)
 						Tab({
@@ -286,6 +287,7 @@ load = (win) ->
 								program
 								programs: @props.programs
 								onSuccess: @props.onSuccess
+								onCancel: @props.onCancel
 							})
 						)
 					)
