@@ -102,10 +102,6 @@ load = (win) ->
 									headerAlign: 'center'
 									dataAlign: 'center'
 								}, "# #{Term 'Clients'}")
-								TableHeaderColumn({
-									dataField: 'id'
-									hidden: true
-								}, "ID")
 							)
 						)
 					)
