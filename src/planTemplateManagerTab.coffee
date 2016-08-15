@@ -141,6 +141,11 @@ load = (win) ->
 									}
 									trClassName: (row) -> 'inactive' if row.status isnt 'active'
 								},
+									# Filler column for display consistency
+									TableHeaderColumn({
+										dataField: 'id'
+										columnClassName: 'colorKeyHex'
+									})
 									TableHeaderColumn({
 										dataField: 'name'
 										columnClassName: 'nameColumn'

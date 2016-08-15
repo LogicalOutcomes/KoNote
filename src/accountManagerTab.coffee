@@ -186,15 +186,15 @@ load = (win) ->
 										dataField: 'program'
 										columnClassName: 'colorKeyColumn'
 										dataFormat: (program) ->
-											if program
-												ColorKeyBubble({
-													colorKeyHex: program.colorKeyHex
-													popover: {
-														title: program.name
-														content: program.description
-													}
-												})
-										hidden: not hasProgramLinks
+											return null if not program
+
+											ColorKeyBubble({
+												colorKeyHex: program.colorKeyHex
+												popover: {
+													title: program.name
+													content: program.description
+												}
+											})
 									})
 									TableHeaderColumn({
 										dataField: 'userName'
