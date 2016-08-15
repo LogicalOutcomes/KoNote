@@ -41,6 +41,7 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				status: 'init'
+				loadingFile: false
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
 				userProgramOverride: null
@@ -93,11 +94,17 @@ load = (win) ->
 					return null
 
 		_openClientFile: (clientFileId) ->
-
-			openWindow {
-				page: 'clientFile'
-				clientFileId
-			}
+			unless @state.loadingFile
+				@setState {loadingFile: true}
+				openWindow {
+					page: 'clientFile'
+					clientFileId
+				}
+				# prevent double click
+				# todo: tidy this up
+				setTimeout(=>
+					@setState {loadingFile: false}
+				, 2000)
 
 		_setStatus: (status) ->
 			@setState {status}
