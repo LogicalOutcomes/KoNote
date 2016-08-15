@@ -618,7 +618,7 @@ load = (win) ->
 				mainMenuNode = ReactDOM.findDOMNode(@refs.userMenu)
 				$(mainMenuNode).addClass('slideOutRight')
 
-				@setState {managerLayer: null}
+				# @setState {managerLayer: null}
 
 				setTimeout(=>
 					@setState {menuIsOpen: false}

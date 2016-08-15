@@ -81,11 +81,10 @@ load = (win) ->
 					R.div({id: 'items'},
 						R.ul({},
 							MenuItem({
-								title: "New #{Term 'Client File'}"
+								title: "#{Term 'Client Files'}"
 								icon: 'folder-open'
-								dialog: CreateClientFileDialog
-								programs: @props.programs
 								onClick: @props.updateManagerLayer.bind null, null
+								isActive: @props.managerLayer is null
 							})
 							MenuItem({
 								isVisible: isAdmin

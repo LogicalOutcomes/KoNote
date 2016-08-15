@@ -82,18 +82,6 @@ load = (win) ->
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
-						R.span({id: 'toggleDisplayDeactivated'},
-							R.div({className: 'checkbox'},
-								R.label({},
-									R.input({
-										type: 'checkbox'
-										checked: @state.displayDeactivated
-										onClick: @_toggleDisplayDeactivated
-									})
-									"Show deactivated"
-								)
-							)
-						)
 						"#{Term 'Metric'} Definitions"
 					)
 				)
@@ -154,6 +142,18 @@ load = (win) ->
 					},
 						FaIcon('plus')
 						" New #{Term 'Metric'} Definition"
+					)
+					R.span({id: 'toggleDisplayDeactivated'},
+						R.div({className: 'checkbox'},
+							R.label({},
+								R.input({
+									type: 'checkbox'
+									checked: @state.displayDeactivated
+									onClick: @_toggleDisplayDeactivated
+								})
+								"Show deactivated"
+							)
+						)
 					)
 				)
 			)

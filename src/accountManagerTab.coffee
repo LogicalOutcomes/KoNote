@@ -108,18 +108,6 @@ load = (win) ->
 			R.div({className: 'accountManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
-						R.span({id: 'toggleDisplayDeactivated'},
-							R.div({className: 'checkbox'},
-								R.label({},
-									R.input({
-										type: 'checkbox'
-										checked: @state.displayDeactivated
-										onClick: @_toggleDisplayDeactivated
-									})
-									"Show deactivated"
-								)
-							)
-						)
 						Term 'User Accounts'
 					)
 				)
@@ -178,6 +166,18 @@ load = (win) ->
 					},
 						FaIcon('plus')
 						" New #{Term 'Account'}"
+					)
+					R.span({id: 'toggleDisplayDeactivated'},
+						R.div({className: 'checkbox'},
+							R.label({},
+								R.input({
+									type: 'checkbox'
+									checked: @state.displayDeactivated
+									onClick: @_toggleDisplayDeactivated
+								})
+								"Show deactivated"
+							)
+						)
 					)
 				)
 			)
