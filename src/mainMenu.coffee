@@ -33,6 +33,7 @@ load = (win) ->
 			programs: ImmPropTypes.list.isRequired
 			userProgram: ImmPropTypes.map
 			managerLayer: PropTypes.string
+			isSmallHeaderSet: PropTypes.bool
 
 			updateManagerLayer: PropTypes.func.isRequired
 		}
@@ -59,7 +60,7 @@ load = (win) ->
 
 		render: ->
 			{isAdmin} = @props
-
+			console.log "isSmallHeaderSet", @props.isSmallHeaderSet
 			R.aside({
 				id: 'mainMenu'
 				className: 'isOpen animated fadeInRight'
@@ -84,7 +85,7 @@ load = (win) ->
 								title: "#{Term 'Client Files'}"
 								icon: 'folder-open'
 								onClick: @props.updateManagerLayer.bind null, null
-								isActive: @props.managerLayer is null
+								isActive: @props.managerLayer is null and @props.isSmallHeaderSet
 							})
 							MenuItem({
 								isVisible: isAdmin

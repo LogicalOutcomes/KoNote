@@ -574,6 +574,7 @@ load = (win) ->
 						programs: @props.programs
 						userProgram: @props.userProgram
 						managerLayer: @state.managerLayer
+						isSmallHeaderSet: @state.isSmallHeaderSet
 
 						updateManagerLayer: @_updateManagerLayer
 					})
@@ -628,6 +629,8 @@ load = (win) ->
 			@setState {hoverClientId}
 
 		_updateManagerLayer: (managerLayer) ->
+			if managerLayer is null
+				@setState {isSmallHeaderSet: true, queryText: ''}
 			@setState {managerLayer}
 
 		_toggleUserMenu: ->
