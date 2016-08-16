@@ -538,7 +538,7 @@ load = (win) ->
 
 
 	ClientTableWrapper = React.createFactory React.createClass
-		displayName: 'ClientTable'
+		displayName: 'ClientTableWrapper'
 
 		propTypes: {
 			queryText: PropTypes.string.isRequired
@@ -656,7 +656,7 @@ load = (win) ->
 
 		propTypes: {
 			queryText: PropTypes.string.isRequired
-			data: PropTypes.string.isRequired
+			data: ImmPropTypes.list.isRequired
 			hasProgramLinks: PropTypes.bool.isRequired
 			hasInactiveFiles: PropTypes.bool.isRequired
 
