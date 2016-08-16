@@ -122,10 +122,10 @@ load = (win) ->
 							clientFileId
 						}
 			else
-				openWindow {
-					page: 'clientFile'
-					clientFileId
-				}
+				openWindow {page: 'clientFile', clientFileId}, (clientFileWindow) =>
+						# prevent window from closing before its ready
+						clientFileWindow.on 'close', =>
+							clientFileWindow = null
 
 		_setStatus: (status) ->
 			@setState {status}
