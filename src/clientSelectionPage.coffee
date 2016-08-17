@@ -686,8 +686,9 @@ load = (win) ->
 				},
 					TableHeaderColumn({
 						dataField: 'programs'
-						dataFormat: (programs) -> ProgramBubbles({programs: Imm.fromJS(programs)})
-						hidden: not @props.hasProgramLinks
+						dataFormat: (programs) ->
+							return null unless programs
+							ProgramBubbles({programs: Imm.fromJS(programs)})
 						width: '150px'
 					})
 					TableHeaderColumn({
