@@ -267,8 +267,6 @@ load = (win) ->
 				'create:clientFile': (newFile) =>
 					clientFileHeaders = @state.clientFileHeaders.push newFile
 					@setState {clientFileHeaders}
-					# this opens client files upon creation
-					# @_openClientFile(newFile.get('id')) unless global.isSeeding
 
 				'createRevision:clientFile': (newRev) =>
 					clientFileId = newRev.get('id')
