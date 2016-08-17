@@ -41,7 +41,7 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				editingProgNoteId: null
-				
+
 				selectedItem: null
 				highlightedProgNoteId: null
 				highlightedTargetId: null
@@ -388,15 +388,14 @@ load = (win) ->
 			@setState {highlightedTargetId}
 
 		_checkUserProgram: (cb) ->
-			# Continue if no userProgram or clientProgram(s)
-			userProgramId = global.ActiveSession.programId
-			noProgramsPresent = not userProgramId? or @props.clientPrograms.isEmpty()
-
-			if noProgramsPresent
+			# Skip if no clientProgram(s)
+			if @props.clientPrograms.isEmpty()
 				cb()
 				return
 
-			# Continue if userProgram matches one of the clientPrograms
+			userProgramId = global.ActiveSession.programId
+
+			# Skip if userProgram matches one of the clientPrograms
 			matchingUserProgram = @props.clientPrograms.find (program) ->
 				userProgramId is program.get('id')
 
@@ -405,7 +404,11 @@ load = (win) ->
 				return
 
 			clientName = renderName @props.clientFile.get('clientName')
-			userProgramName = @props.programsById.getIn [userProgramId, 'name']
+
+			userProgramName = if userProgramId
+				@props.programsById.getIn [userProgramId, 'name']
+			else
+				"(none)"
 
 			# Build programDropdown markup
 			programDropdown = ReactDOMServer.renderToString(
@@ -420,7 +423,11 @@ load = (win) ->
 				)
 			)
 
-			focusPopover = -> setTimeout (=> $('.popover textarea')[0].focus()), 500
+			focusPopover = ->
+				setTimeout (=>
+					$popover = $('.popover textarea')[0]
+					if $popover? then $popover.focus()
+				), 500
 
 			# Prompt user about temporarily overriding their program
 			Bootbox.dialog {
@@ -455,7 +462,6 @@ load = (win) ->
 
 							if not userProgramId? or userProgramId.length is 0
 								Bootbox.alert "No #{Term 'program'} was selected, please try again."
-								cb null
 								return
 
 							userProgram = @props.programsById.get userProgramId
