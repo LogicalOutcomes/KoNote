@@ -136,6 +136,7 @@ load = (win) ->
 							placeholder: "Describe details (optional)"
 						})
 					)
+					## TODO: Completely remove planRelation stuff?
 					# R.div({className: 'form-group planRelationContainer'},
 					# 	R.label({}, "Relationship to Plan")
 					# 	DropdownButton({
@@ -483,12 +484,13 @@ load = (win) ->
 
 				# Ensure startTime is earlier than endTime
 				if startTimestamp.isAfter endTimestamp
-					startDateTime = startTimestamp.format('Do MMMM [at] h:mm A')
+					startDateTime = formatTimestamp(startTimestamp)
 					Bootbox.alert "Please select an end date/time later than #{startDateTime}"
 					return
 
-			if @state.isGlobalEvent
-
+			if not @state.isGlobalEvent
+				@props.saveProgEvent newData, @props.atIndex
+			else
 				people = nlp.text(newData.description).people()
 				names = []
 				properNames = ''
@@ -537,8 +539,6 @@ load = (win) ->
 						}
 					}
 				}
-			else
-				@props.saveProgEvent newData, @props.atIndex
 
 	return EventTabView
 
