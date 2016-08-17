@@ -286,12 +286,14 @@ load = (win) ->
 							title: "Modify Details"
 							eventKey: 'modifyProgram'
 						},
-							ModifyProgramView({
-								program
-								programs: @props.programs
-								onSuccess: @props.onSuccess
-								onCancel: @props.onCancel
-							})
+							R.div({className: 'modifyProgramViewContainer'},
+								ModifyProgramView({
+									program
+									programs: @props.programs
+									onSuccess: @props.onSuccess
+									onCancel: @props.onCancel
+								})
+							)
 						)
 					)
 				)
