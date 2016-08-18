@@ -22,6 +22,7 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+
 load = (win, {clientFileId}) ->
 	# Libraries from browser context
 	$ = win.jQuery
@@ -57,6 +58,7 @@ load = (win, {clientFileId}) ->
 					)
 				)
 			)
+
 
 	ClientFilePage = React.createFactory React.createClass
 		displayName: 'ClientFilePage'
@@ -98,27 +100,37 @@ load = (win, {clientFileId}) ->
 			# Order each individual progNoteHistory, then the overall histories
 			progNoteHistories = @state.progNoteHistories
 			.map (history) ->
-				return history.sortBy (revision) -> +Moment(revision.get('timestamp'), Persist.TimestampFormat)
+				return history.sortBy (revision) -> revision.get('timestamp')
 			.sortBy (history) ->
 				createdAt = history.last().get('backdate') or history.first().get('timestamp')
 				return Moment createdAt, Persist.TimestampFormat
 			.reverse()
 
 			# Use programLinks to determine program membership(s)
+			# TODO: Refactor to clientProgramsById for faster searching by ID
 			clientPrograms = @state.clientFileProgramLinkHeaders.map (link) =>
 				programId = link.get('programId')
-				@state.programsById.get programId
+				return @state.programsById.get programId
 
-			clientFileCreated = Moment @state.clientFile.get('timestamp'), Persist.TimestampFormat
+			clientHasPrograms = not clientPrograms.isEmpty()
 
-			# Filter out global events that either belong to this clientFile,
-			# or span (entirely) outside its history
-			globalEvents = @state.globalEvents.filterNot (globalEvent) =>
+			# Filter to only global events that fit our criteria:
+			# TODO: Move this up to data-load (issue #735)
+			globalEvents = @state.globalEvents.filter (globalEvent) =>
+				# Originally created from this clientFile
 				return true if globalEvent.get('clientFileId') is clientFileId
 
-				eventStarted = Moment globalEvent.get('startTimestamp'), Persist.TimestampFormat
-				eventEnded = Moment globalEvent.get('endTimestamp'), Persist.TimestampFormat
-				return eventStarted.isAfter(clientFileCreated) or eventEnded.isAfter(clientFileCreated)
+				# Client is global, or globalEvent is fully global (no program)
+				authorProgramId = globalEvent.get('authorProgramId')
+				return true if not clientHasPrograms or not authorProgramId
+
+				# globalEvent program matches up with one of clientFile's programs
+				# TODO: This is one example of where we need to search clientPrograms by ID
+				matchingProgram = clientPrograms.contains @state.programsById.get(authorProgramId)
+				return true if matchingProgram
+
+				# Failed criteria tests, so discard this globalEvent
+				return false
 
 
 			return ClientFilePageUi({
