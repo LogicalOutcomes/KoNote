@@ -324,6 +324,7 @@ load = (win) ->
 			return {
 				isSmallHeaderSet: false
 				menuIsOpen: false
+				menuIconIsOpen: true
 				managerLayer: null
 
 				queryText: ''
@@ -344,13 +345,16 @@ load = (win) ->
 			},
 				R.a({
 					id: 'expandMenuButton'
-					className: 'menuIsOpen' if @state.menuIsOpen
+					className: [
+						'animated fadeIn'
+						'menuIsOpen animated fadeInRight' if @state.menuIsOpen
+					].join ' '
 					onClick: =>
 						@_toggleUserMenu()
 						@refs.searchBox.focus() if @refs.searchBox? and @state.menuIsOpen
 				},
 					if @state.menuIsOpen
-						FaIcon('times')
+							FaIcon('times', {className:'animated fadeOutRight' unless @state.menuIconIsOpen})
 					else
 						"Menu"
 				)
@@ -513,12 +517,14 @@ load = (win) ->
 				$(mainMenuNode).addClass('slideOutRight')
 
 				# @setState {managerLayer: null}
+				@setState {menuIconIsOpen: false}
 
 				setTimeout(=>
 					@setState {menuIsOpen: false}
 				, 400)
 			else
 				@setState {menuIsOpen: true}
+				@setState {menuIconIsOpen: true}
 
 		_updateQueryText: (event) ->
 			@setState {queryText: event.target.value}

@@ -67,7 +67,6 @@ load = (win) ->
 				R.div({id: 'menuContainer'},
 					R.div({id: 'user'},
 						R.div({},
-							R.div({id: 'avatar'}, FaIcon('user'))
 							R.h3({}, global.ActiveSession.userName)
 							(unless @props.programs.isEmpty()
 								UserProgramDropdown({
@@ -87,26 +86,6 @@ load = (win) ->
 								isActive: @props.managerLayer is null and @props.isSmallHeaderSet
 							})
 							MenuItem({
-								isVisible: isAdmin
-								title: "User #{Term 'Accounts'}"
-								icon: 'key'
-								onClick: @props.updateManagerLayer.bind null, 'accountManagerTab'
-								isActive: @props.managerLayer is 'accountManagerTab'
-							})
-							MenuItem({
-								title: Term 'Programs'
-								icon: 'users'
-								onClick: @props.updateManagerLayer.bind null, 'programManagerTab'
-								isActive: @props.managerLayer is 'programManagerTab'
-							})
-							MenuItem({
-								isVisible: isAdmin
-								title: "#{Term 'Event'} Types"
-								icon: 'calendar-o'
-								onClick: @props.updateManagerLayer.bind null, 'eventTypeManagerTab'
-								isActive: @props.managerLayer is 'eventTypeManagerTab'
-							})
-							MenuItem({
 								title: Term 'Metrics'
 								icon: 'line-chart'
 								onClick: @props.updateManagerLayer.bind null, 'metricDefinitionManagerTab'
@@ -120,10 +99,30 @@ load = (win) ->
 							})
 							MenuItem({
 								isVisible: isAdmin
+								title: "#{Term 'Event'} Types"
+								icon: 'calendar-o'
+								onClick: @props.updateManagerLayer.bind null, 'eventTypeManagerTab'
+								isActive: @props.managerLayer is 'eventTypeManagerTab'
+							})
+							MenuItem({
+								title: Term 'Programs'
+								icon: 'users'
+								onClick: @props.updateManagerLayer.bind null, 'programManagerTab'
+								isActive: @props.managerLayer is 'programManagerTab'
+							})
+							MenuItem({
+								isVisible: isAdmin
 								title: "Export Data"
 								icon: 'upload'
 								onClick: @props.updateManagerLayer.bind null, 'exportManagerTab'
 								isActive: @props.managerLayer is 'exportManagerTab'
+							})
+							MenuItem({
+								isVisible: isAdmin
+								title: "User #{Term 'Accounts'}"
+								icon: 'key'
+								onClick: @props.updateManagerLayer.bind null, 'accountManagerTab'
+								isActive: @props.managerLayer is 'accountManagerTab'
 							})
 							MenuItem({
 								title: "My #{Term 'Account'}"
