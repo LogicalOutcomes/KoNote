@@ -217,7 +217,7 @@ load = (win) ->
 				R.div({className: 'heading'},
 					R.h3({}, "Revision History")
 					unless revisions.isEmpty()
-						R.h5({}, revisions.first().get('name'))
+						R.h4({}, revisions.first().get('name'))
 				)
 
 				(if revisions.isEmpty()
