@@ -13,6 +13,7 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+
 load = (win, {clientFileId}) ->
 	# Libraries from browser context
 	$ = win.jQuery
@@ -36,6 +37,7 @@ load = (win, {clientFileId}) ->
 	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
 
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
+
 
 	NewProgNotePage = React.createFactory React.createClass
 		displayName: 'NewProgNotePage'
@@ -274,8 +276,8 @@ load = (win, {clientFileId}) ->
 
 			clientName = renderName @props.clientFile.get('clientName')
 			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) -
-				#{clientName}: New #{Term 'Progress Note'}
+				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}:
+				New #{Term 'Progress Note'}
 			"""
 
 			return R.div({className: 'newProgNotePage animated fadeIn'},
