@@ -276,8 +276,7 @@ load = (win, {clientFileId}) ->
 
 			clientName = renderName @props.clientFile.get('clientName')
 			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}:
-				New #{Term 'Progress Note'}
+				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}: New #{Term 'Progress Note'}
 			"""
 
 			return R.div({className: 'newProgNotePage animated fadeIn'},
