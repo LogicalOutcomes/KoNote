@@ -7,6 +7,7 @@
 Moment = require 'moment'
 _ = require 'underscore'
 
+
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
@@ -16,6 +17,7 @@ load = (win) ->
 
 	dateDisplayFormat = 'MMM Do - YYYY'
 	defaultTimeSpan = {start: Moment(), end: Moment()}
+
 
 	TimeSpanDate = React.createFactory React.createClass
 		displayName: 'TimeSpanDate'
@@ -57,7 +59,9 @@ load = (win) ->
 					@dateTimePicker.date(startDate)
 				else
 					# 'end' TimeSpanDate changed
+					maxDate = @props.xTicks.last()
 					@dateTimePicker.minDate(startDate)
+					@dateTimePicker.maxDate(maxDate)
 
 			if not oldProps.timeSpan.get('end').isSame(@props.timeSpan.get('end')) and not @dateTimePicker.date().isSame(@props.timeSpan.get('end'))
 				endDate = @props.timeSpan.get('end')
@@ -67,6 +71,8 @@ load = (win) ->
 					@dateTimePicker.date(endDate)
 				else
 					# 'start' TimeSpanDate changed
+					minDate = @props.xTicks.first()
+					@dateTimePicker.minDate(minDate)
 					@dateTimePicker.maxDate(endDate)
 
 		_onChange: (event) ->
