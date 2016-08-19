@@ -149,14 +149,26 @@ load = (win) ->
 									})
 									TableHeaderColumn({
 										dataField: 'name'
-										className: 'nameColumn'
-										columnClassName: 'nameColumn'
+										className: [
+											'nameColumn'
+											'rightPadding' unless @state.displayInactive
+										].join ' '
+										columnClassName: [
+											'nameColumn'
+											'rightPadding' unless @state.displayInactive
+										].join ' '
 										dataSort: true
 									}, "Template Name")
 									TableHeaderColumn({
 										dataField: 'status'
-										className: 'statusColumn'
-										columnClassName: 'statusColumn'
+										className: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
+										columnClassName: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
 										dataAlign: 'right'
 										headerAlign: 'right'
 										dataSort: true

@@ -130,13 +130,7 @@ load = (win) ->
 				)
 				R.div({className: 'main'},
 					(if @state.dataIsReady
-						R.div({
-							className: [
-								'responsiveTable'
-								'hiddenColumnFix' if not @state.displayInactive # Temporary
-								'animated fadeIn'
-							].join ' '
-						},
+						R.div({className: 'responsiveTable animated fadeIn'},
 							DialogLayer({
 								ref: 'dialogLayer'
 								metricDefinitions
@@ -170,13 +164,25 @@ load = (win) ->
 									}, "#{Term 'Metric'} Name")
 									TableHeaderColumn({
 										dataField: 'definition'
-										className: 'descriptionColumn'
-										columnClassName: 'descriptionColumn'
+										className: [
+											'descriptionColumn'
+											'rightPadding' unless @state.displayInactive
+										].join ' '
+										columnClassName: [
+											'descriptionColumn'
+											'rightPadding' unless @state.displayInactive
+										].join ' '
 									}, "Definition")
 									TableHeaderColumn({
 										dataField: 'status'
-										className: 'statusColumn'
-										columnClassName: 'statusColumn'
+										className: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
+										columnClassName: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
 										dataSort: true
 										hidden: not @state.displayInactive
 										headerAlign: 'right'

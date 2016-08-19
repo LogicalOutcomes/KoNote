@@ -695,21 +695,27 @@ load = (win) ->
 						dataFormat: (programs) ->
 							return null unless programs
 							ProgramBubbles({programs: Imm.fromJS(programs)})
+						className: 'visibleColumn'
+						columnClassName: 'visibleColumn'
 						width: '150px'
 					})
 					TableHeaderColumn({
 						dataField: 'lastName'
 						dataSort: true
+						className: 'visibleColumn'
+						columnClassName: 'visibleColumn'
 					}, "Last Name")
 					TableHeaderColumn({
 						dataField: 'givenNames'
 						dataSort: true
+						className: 'visibleColumn'
+						columnClassName: 'visibleColumn'
 					}, "Given Names")
 					TableHeaderColumn({
 						dataField: 'recordId'
 						dataSort: true
-						className: 'recordIdColumn'
-						columnClassName: 'recordIdColumn'
+						className: 'rightPadding' if Config.clientFileRecordId.isEnabled and not @props.displayInactive
+						columnClassName: 'rightPadding' if Config.clientFileRecordId.isEnabled and not @props.displayInactive
 						headerAlign: 'right'
 						dataAlign: 'right'
 						hidden: not Config.clientFileRecordId.isEnabled
@@ -719,6 +725,8 @@ load = (win) ->
 						dataSort: true
 						headerAlign: 'right'
 						dataAlign: 'right'
+						className: 'rightPadding' if @props.displayInactive
+						columnClassName: 'rightPadding' if @props.displayInactive
 						hidden: not @props.displayInactive
 					}, "Status")
 				)

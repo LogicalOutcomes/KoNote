@@ -4,12 +4,6 @@
 	flex-direction column
 	max-width 100%
 
-	// Override the incorrect <th> padding when column is hidden
-	// Fix pending in: https://github.com/AllenFang/react-bootstrap-table/issues/628
-	&.hiddenColumnFix
-		th:not(:nth-child(2))
-			padding-left 3px
-
 	.react-bs-table-container
 		display flex
 		max-width 100%
@@ -31,11 +25,15 @@
 					cursor default !important
 
 				// Add padding to first & last VISIBLE column
-				th:not([style*="display: none"]):last-child, td:not([style*="display: none"]):last-child
-					padding-right 5%
+				td, th
+					&:first-child
+						padding-left 5%
 
-				th:not([style*="display: none"]):first-child, td:not([style*="display: none"]):first-child
-					padding-left 5%
+					// Since last-child won't work in this case,
+					// we assign .rightPadding to the furthest-right column
+					// Issue: https://github.com/AllenFang/react-bootstrap-table/issues/628
+					&.rightPadding
+						padding-right 5% !important
 
 			// TODO: Avoid setting this manually
 			// (column headers hide completely without it for some reason...)
@@ -87,6 +85,3 @@
 				.statusColumn
 					width 200px
 					font-size 0.9em !important
-
-				.recordIdColumn
-					padding-right 20px !important
