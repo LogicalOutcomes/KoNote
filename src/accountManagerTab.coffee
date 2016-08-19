@@ -650,7 +650,7 @@ load = (win) ->
 									key: program.get('id')
 								},
 									ColorKeyBubble({
-										isSelected
+										icon: 'check' if isSelected
 										colorKeyHex: program.get('colorKeyHex')
 									})
 									program.get('name')
