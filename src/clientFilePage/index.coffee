@@ -661,6 +661,18 @@ load = (win, {clientFileId}) ->
 					eventTypes = @state.eventTypes.set eventTypeIndex, newEventTypeRev
 					@setState {eventTypes}
 
+				'create:program': (newProgram) =>
+					programs = @state.programs.push newProgram
+					@setState {programs}
+
+				'createRevision:program': (newProgramRev) =>
+					originalProgram = @state.programs
+					.find (program) -> program.get('id') is program.get('id')
+
+					programIndex = @state.programs.indexOf originalProgram
+					programs = @state.programs.set programIndex, newProgramRev
+					@setState {programs}
+
 				'create:globalEvent': (globalEvent) =>
 					globalEvents = @state.globalEvents.push globalEvent
 					@setState {globalEvents}
