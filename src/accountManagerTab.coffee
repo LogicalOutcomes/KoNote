@@ -29,7 +29,7 @@ load = (win) ->
 	OpenDialogLink = require('./openDialogLink').load(win)
 	Spinner = require('./spinner').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
-	UserProgramDropdown = require('./userProgramDropdown').load(win)
+	ProgramsDropdown = require('./programsDropdown').load(win)
 	DialogLayer = require('./dialogLayer').load(win)
 
 	{FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
@@ -330,10 +330,10 @@ load = (win) ->
 								" (admin)" if isAdmin
 							)
 							R.div({id: 'userProgram'},
-								UserProgramDropdown({
+								ProgramsDropdown({
 									ref: 'userProgramDropdown'
 									id: 'modifyUserProgramDropdown'
-									userProgram: userProgram
+									selectedProgram: userProgram
 									programs: @props.programs
 									onSelect: @_reassignProgram.bind null, userAccount
 								})

@@ -19,7 +19,7 @@ load = (win) ->
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
-	UserProgramDropdown = require('./userProgramDropdown').load(win)
+	ProgramsDropdown = require('./programsDropdown').load(win)
 
 	{FaIcon, showWhen} = require('./utils').load(win)
 
@@ -69,8 +69,8 @@ load = (win) ->
 						R.div({},
 							R.h3({}, global.ActiveSession.userName)
 							(unless @props.programs.isEmpty()
-								UserProgramDropdown({
-									userProgram: @props.userProgram
+								ProgramsDropdown({
+									selectedProgram: @props.userProgram
 									programs: @props.programs
 									onSelect: @_overrideProgram
 								})
