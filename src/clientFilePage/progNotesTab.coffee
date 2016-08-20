@@ -445,7 +445,6 @@ load = (win) ->
 						className: "btn-default"
 						callback: =>
 							Bootbox.hideAll()
-							cb null
 					}
 					ignore: {
 						label: "Ignore"
@@ -494,8 +493,6 @@ load = (win) ->
 						className: "btn-default"
 						callback: =>
 							Bootbox.hideAll()
-							cb null
-							return
 					}
 					danger: {
 						label: "Ignore"
@@ -508,7 +505,6 @@ load = (win) ->
 						callback: =>
 							Bootbox.hideAll()
 							@props.onTabChange 'plan'
-							cb null
 							return
 					}
 				}
@@ -516,11 +512,11 @@ load = (win) ->
 
 
 		_openNewProgNote: ->
-			@setState {isLoading: true}
 			Async.series [
 				@_checkPlanChanges
 				@_checkUserProgram
 				(cb) =>
+					@setState {isLoading: true}
 
 					# Cache data to global, so can access again from newProgNote window
 					# Set up the dataStore if doesn't exist
@@ -550,6 +546,7 @@ load = (win) ->
 
 			], (err) =>
 				@setState {isLoading: false}
+
 				if err
 					CrashHandler.handle err
 					return
