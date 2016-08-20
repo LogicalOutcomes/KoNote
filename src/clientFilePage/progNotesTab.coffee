@@ -535,6 +535,7 @@ load = (win) ->
 						progEvents: @props.progEvents
 						eventTypes: @props.eventTypes
 						programsById: @props.programsById
+						clientPrograms: @props.clientPrograms
 					}
 
 					openWindow {
