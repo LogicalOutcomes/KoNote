@@ -250,19 +250,34 @@ load = (win) ->
 						)
 					)
 
-					R.div({className: 'form-group globalEventContainer'},
-						R.div({className: 'checkbox'},
-							R.label({},
-								R.input({
-									type: 'checkbox'
-									onClick: @_toggleIsGlobalEvent
-									checked: @state.isGlobalEvent
-								})
-								"Make this a #{Term 'global event'}"
-								WithTooltip({
-									title: "A copy of this #{Term 'event'} will visible to all #{Term 'client files'}"
-								},
-									FaIcon('question-circle')
+					R.div({className: 'globalEventContainer'},
+						WithTooltip({
+							title: "#{Term 'Client'} must be assigned to 1 or more #{Term 'programs'}"
+							showTooltip: @props.clientPrograms.isEmpty()
+							placement: 'left'
+						},
+							R.div({
+								className: [
+									'checkbox'
+									'disabled' if @props.clientPrograms.isEmpty()
+								].join ' '
+							},
+								R.label({},
+									R.input({
+										disabled: @props.clientPrograms.isEmpty()
+										type: 'checkbox'
+										onClick: @_toggleIsGlobalEvent
+										checked: @state.isGlobalEvent
+									})
+									"Make this a #{Term 'global event'}"
+
+									(unless @props.clientPrograms.isEmpty()
+										WithTooltip({
+											title: "A copy of this #{Term 'event'} will visible to all #{Term 'client files'}"
+										},
+											FaIcon('question-circle')
+										)
+									)
 								)
 							)
 						)
