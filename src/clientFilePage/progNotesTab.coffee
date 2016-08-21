@@ -106,6 +106,7 @@ load = (win) ->
 							type: 'globalEvent'
 							id: globalEvent.get('id')
 							timestamp: globalEvent.get('startTimestamp')
+							programId: globalEvent.get('authorProgramId')
 							data: globalEvent
 						}
 				)
@@ -1233,9 +1234,9 @@ load = (win) ->
 
 		render: ->
 			{globalEvent} = @props
-			userProgramId = globalEvent.get('userProgramId')
+			programId = globalEvent.get('authorProgramId')
 
-			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
+			program = @props.programsById.get(programId) or Imm.Map()
 			timestamp = globalEvent.get('backdate') or globalEvent.get('timestamp')
 
 			startTimestamp = makeMoment globalEvent.get('startTimestamp')
@@ -1250,7 +1251,7 @@ load = (win) ->
 			return R.div({className: 'globalEventView'},
 				EntryHeader({
 					revisionHistory: Imm.List [globalEvent]
-					userProgram
+					userProgram: program
 					dateFormat: 'MMMM Do, YYYY' if isFullDay
 				})
 				R.h3({},
