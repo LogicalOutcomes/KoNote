@@ -570,8 +570,6 @@ load = (win) ->
 		render: ->
 			flaggedNames = @_generateFlaggedNames()
 
-			programOptions = @props.clientPrograms.push Imm.Map({name: "All Programs", id: ''})
-
 			return Dialog({
 				ref: 'dialog'
 				title: "Amend #{Term 'Global Event'}"
@@ -593,11 +591,16 @@ load = (win) ->
 					)
 
 					R.div({className: 'form-group'},
+						R.label({}, "Name")
 						R.input({
 							className: 'form-control'
 							value: @state.title
 							onChange: @_updateTitle
 						})
+					)
+
+					R.div({className: 'form-group'},
+						R.label({}, "Description")
 						ExpandingTextArea({
 							value: @state.description
 							onChange: @_updateDescription
@@ -611,7 +614,7 @@ load = (win) ->
 							R.label({}, "Select a program for this #{Term 'global event'}")
 							ProgramsDropdown({
 								selectedProgram: @state.program
-								programs: programOptions
+								programs: @props.clientPrograms
 								onSelect: @_updateProgram
 								excludeNone: true
 							})
