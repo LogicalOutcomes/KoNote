@@ -93,6 +93,7 @@ load = (win) ->
 				metric.get('status') isnt 'default'
 
 			hasInactiveMetrics = not inactiveMetricDefinitions.isEmpty()
+			hasData = not @state.metricDefinitions.isEmpty()
 
 			# UI Filters
 			unless @state.displayInactive
@@ -138,65 +139,73 @@ load = (win) ->
 				)
 				R.div({className: 'main'},
 					(if @state.dataIsReady
-						R.div({className: 'responsiveTable animated fadeIn'},
-							DialogLayer({
-								ref: 'dialogLayer'
-								metricDefinitions
-							},
-								BootstrapTable({
-									data: metricDefinitions.toJS()
-									keyField: 'id'
-									bordered: false
-									options: {
-										defaultSortName: 'name'
-										defaultSortOrder: 'asc'
-										onRowClick: ({id}) =>
-											@refs.dialogLayer.open ModifyMetricDialog, {
-												metricId: id
-												onSuccess: @_modifyMetric
-											}
-										noDataText: "No #{Term 'metric definitions'} to display"
-									}
-									trClassName: (row) -> 'inactive' if row.status isnt 'active'
+						(if hasData
+							R.div({className: 'responsiveTable animated fadeIn'},
+								DialogLayer({
+									ref: 'dialogLayer'
+									metricDefinitions
 								},
-									TableHeaderColumn({
-										dataField: 'id'
-										className: 'colorKeyColumn'
-										columnClassName: 'colorKeyColumn'
-										dataFormat: -> null
-									})
-									TableHeaderColumn({
-										dataField: 'name'
-										className: 'nameColumn'
-										columnClassName: 'nameColumn'
-										dataSort: true
-									}, "#{Term 'Metric'} Name")
-									TableHeaderColumn({
-										dataField: 'definition'
-										className: [
-											'descriptionColumn'
-											'rightPadding' unless @state.displayInactive
-										].join ' '
-										columnClassName: [
-											'descriptionColumn'
-											'rightPadding' unless @state.displayInactive
-										].join ' '
-									}, "Definition")
-									TableHeaderColumn({
-										dataField: 'status'
-										className: [
-											'statusColumn'
-											'rightPadding' if @state.displayInactive
-										].join ' '
-										columnClassName: [
-											'statusColumn'
-											'rightPadding' if @state.displayInactive
-										].join ' '
-										dataSort: true
-										hidden: not @state.displayInactive
-										headerAlign: 'right'
-										dataAlign: 'right'
-									}, "Status")
+									BootstrapTable({
+										data: metricDefinitions.toJS()
+										keyField: 'id'
+										bordered: false
+										options: {
+											defaultSortName: 'name'
+											defaultSortOrder: 'asc'
+											onRowClick: ({id}) =>
+												@refs.dialogLayer.open ModifyMetricDialog, {
+													metricId: id
+													onSuccess: @_modifyMetric
+												}
+											noDataText: "No #{Term 'metric definitions'} to display"
+										}
+										trClassName: (row) -> 'inactive' if row.status isnt 'active'
+									},
+										TableHeaderColumn({
+											dataField: 'id'
+											className: 'colorKeyColumn'
+											columnClassName: 'colorKeyColumn'
+											dataFormat: -> null
+										})
+										TableHeaderColumn({
+											dataField: 'name'
+											className: 'nameColumn'
+											columnClassName: 'nameColumn'
+											dataSort: true
+										}, "#{Term 'Metric'} Name")
+										TableHeaderColumn({
+											dataField: 'definition'
+											className: [
+												'descriptionColumn'
+												'rightPadding' unless @state.displayInactive
+											].join ' '
+											columnClassName: [
+												'descriptionColumn'
+												'rightPadding' unless @state.displayInactive
+											].join ' '
+										}, "Definition")
+										TableHeaderColumn({
+											dataField: 'status'
+											className: [
+												'statusColumn'
+												'rightPadding' if @state.displayInactive
+											].join ' '
+											columnClassName: [
+												'statusColumn'
+												'rightPadding' if @state.displayInactive
+											].join ' '
+											dataSort: true
+											hidden: not @state.displayInactive
+											headerAlign: 'right'
+											dataAlign: 'right'
+										}, "Status")
+									)
+								)
+							)
+						else
+							R.div({className: 'noData'},
+								R.span({className: 'animated fadeInUp'},
+									"No #{Term 'metric definitions'} exist yet"
 								)
 							)
 						)

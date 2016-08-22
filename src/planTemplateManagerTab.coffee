@@ -81,6 +81,7 @@ load = (win) ->
 				template.get('status') isnt 'default'
 
 			hasInactivePlanTemplates = not inactivePlanTemplates.isEmpty()
+			hasData = not @state.planTemplateHeaders.isEmpty()
 
 			# UI Filters
 			unless @state.displayInactive
@@ -99,81 +100,98 @@ load = (win) ->
 			return R.div({className: 'planTemplateManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
-						(if hasInactivePlanTemplates
-							R.span({id: 'toggleDisplayInactive'},
-								R.div({className: 'checkbox'},
+						R.div({className: 'optionsMenu'},
+							# TODO: 'New Plan Template' button
+							# OpenDialogLink({
+							# 	className: 'btn btn-primary'
+							# 	dialog: DefineMetricDialog
+							# 	onSuccess: @_createMetric
+							# },
+							# 	FaIcon('plus')
+							# 	" New #{Term 'Metric'} Definition"
+							# )
+							(if hasInactivePlanTemplates
+								R.div({className: 'toggleInactive'},
 									R.label({},
+										"Show inactive (#{inactivePlanTemplates.size})"
 										R.input({
 											type: 'checkbox'
 											checked: @state.displayInactive
 											onClick: @_toggleDisplayInactive
 										})
-										"Show inactive (#{inactivePlanTemplates.size})"
 									)
 								)
 							)
 						)
-						'Plan Templates'
+						Term 'Plan Templates'
 					)
 				)
 				R.div({className: 'main'},
 					(if @state.dataIsReady
-						R.div({className: 'responsiveTable animated fadeIn'},
-							DialogLayer({
-								ref: 'dialogLayer'
-								planTemplateHeaders: @state.planTemplateHeaders
-							},
-								BootstrapTable({
-									data: planTemplateHeaders.toJS()
-									keyField: 'id'
-									bordered: false
-									options: {
-										defaultSortName: 'name'
-										defaultSortOrder: 'asc'
-										onRowClick: (row) =>
-											# TODO: Re-activation
-											return unless row.status is 'active'
-
-											@refs.dialogLayer.open ModifyPlanTemplateDialog, {
-												planTemplateId: id
-												onSuccess: @_updatePlanTemplateHeaders
-											}
-									}
-									trClassName: (row) -> 'inactive' if row.status isnt 'active'
+						(if hasData
+							R.div({className: 'responsiveTable animated fadeIn'},
+								DialogLayer({
+									ref: 'dialogLayer'
+									planTemplateHeaders: @state.planTemplateHeaders
 								},
-									# Filler column for display consistency
-									TableHeaderColumn({
-										dataField: 'id'
-										className: 'colorKeyHex'
-										columnClassName: 'colorKeyHex'
-									})
-									TableHeaderColumn({
-										dataField: 'name'
-										className: [
-											'nameColumn'
-											'rightPadding' unless @state.displayInactive
-										].join ' '
-										columnClassName: [
-											'nameColumn'
-											'rightPadding' unless @state.displayInactive
-										].join ' '
-										dataSort: true
-									}, "Template Name")
-									TableHeaderColumn({
-										dataField: 'status'
-										className: [
-											'statusColumn'
-											'rightPadding' if @state.displayInactive
-										].join ' '
-										columnClassName: [
-											'statusColumn'
-											'rightPadding' if @state.displayInactive
-										].join ' '
-										dataAlign: 'right'
-										headerAlign: 'right'
-										dataSort: true
-										hidden: not @state.displayInactive
-									}, "Status")
+									BootstrapTable({
+										data: planTemplateHeaders.toJS()
+										keyField: 'id'
+										bordered: false
+										options: {
+											defaultSortName: 'name'
+											defaultSortOrder: 'asc'
+											onRowClick: (row) =>
+												# TODO: Re-activation
+												return unless row.status is 'active'
+
+												@refs.dialogLayer.open ModifyPlanTemplateDialog, {
+													planTemplateId: row.id
+													onSuccess: @_updatePlanTemplateHeaders
+												}
+											noDataText: "No #{Term 'plan templates'} to display"
+										}
+										trClassName: (row) -> 'inactive' if row.status isnt 'active'
+									},
+										# Filler column for display consistency
+										TableHeaderColumn({
+											dataField: 'id'
+											className: 'colorKeyColumn'
+											columnClassName: 'colorKeyColumn'
+											dataFormat: -> null
+										})
+										TableHeaderColumn({
+											dataField: 'name'
+											className: [
+												'rightPadding' unless @state.displayInactive
+											].join ' '
+											columnClassName: [
+												'rightPadding' unless @state.displayInactive
+											].join ' '
+											dataSort: true
+										}, "Template Name")
+										TableHeaderColumn({
+											dataField: 'status'
+											className: [
+												'statusColumn'
+												'rightPadding' if @state.displayInactive
+											].join ' '
+											columnClassName: [
+												'statusColumn'
+												'rightPadding' if @state.displayInactive
+											].join ' '
+											dataAlign: 'right'
+											headerAlign: 'right'
+											dataSort: true
+											hidden: not @state.displayInactive
+										}, "Status")
+									)
+								)
+							)
+						else
+							R.div({className: 'noData'},
+								R.span({className: 'animated fadeInUp'},
+									"No #{Term 'plan templates'} exist yet"
 								)
 							)
 						)
@@ -237,7 +255,7 @@ load = (win) ->
 				R.div({id: 'modifyPlanTemplateDialog'},
 					R.h4({}, planTemplateName)
 					R.hr({})
-					R.div({}
+					R.div({},
 						R.button({
 							className: 'btn btn-danger btn-block'
 							onClick: @_handleDeactivate.bind null, planTemplateName
@@ -258,6 +276,8 @@ load = (win) ->
 
 		_updatePlanTemplateStatus: (newStatus) ->
 			planTemplateId = @state.planTemplate.get('id')
+
+			planTemplate = null
 			updatedPlanTemplate = null
 
 			Async.series [
