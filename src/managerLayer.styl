@@ -7,7 +7,22 @@
 
 	.header
 		padding 12px
-		width 90%
+
+		h1
+			.optionsMenu
+				float right
+				text-align right
+
+				.toggleInactive
+					padding 15px 0
+					font-size 14px
+
+					label
+						font-weight normal !important
+
+					input[type='checkbox']
+						margin-left 10px
+						margin-right 10px
 
 	.closeManagerButton
 		background none
@@ -47,11 +62,3 @@
 			.main
 				flex 1
 				display flex
-				padding-top 15px
-
-			.optionsMenu
-				padding 25px
-				display flex
-				align-items center
-				justify-content center
-				background sidebar-bg

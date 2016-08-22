@@ -111,16 +111,24 @@ load = (win) ->
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
-						(if hasInactiveMetrics
-							R.span({id: 'toggleDisplayInactive'},
-								R.div({className: 'checkbox'},
+						R.div({className: 'optionsMenu'},
+							OpenDialogLink({
+								className: 'btn btn-primary'
+								dialog: DefineMetricDialog
+								onSuccess: @_createMetric
+							},
+								FaIcon('plus')
+								" New #{Term 'Metric'} Definition"
+							)
+							(if hasInactiveMetrics
+								R.div({className: 'toggleInactive'},
 									R.label({},
+										"Show inactive (#{inactiveMetricDefinitions.size})"
 										R.input({
 											type: 'checkbox'
 											checked: @state.displayInactive
 											onClick: @_toggleDisplayInactive
 										})
-										"Show inactive (#{inactiveMetricDefinitions.size})"
 									)
 								)
 							)
@@ -193,16 +201,6 @@ load = (win) ->
 						)
 					)
 				)
-				R.div({className: 'optionsMenu'},
-					OpenDialogLink({
-						className: 'btn btn-lg btn-primary'
-						dialog: DefineMetricDialog
-						onSuccess: @_createMetric
-					},
-						FaIcon('plus')
-						" New #{Term 'Metric'} Definition"
-					)
-				)
 			)
 
 		_modifyMetric: (revisedMetric) ->
@@ -273,7 +271,7 @@ load = (win) ->
 							R.button({
 								className:
 									'btn btn-' + if @state.status is 'deactivated'
-										'warning'
+										'danger'
 									else
 										'default'
 								onClick: @_updateStatus
