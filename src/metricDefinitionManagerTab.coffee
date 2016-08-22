@@ -133,7 +133,7 @@ load = (win) ->
 								)
 							)
 						)
-						"#{Term 'Metric'} Definitions"
+						"#{Term 'Metric Definitions'}"
 					)
 				)
 				R.div({className: 'main'},
@@ -155,6 +155,7 @@ load = (win) ->
 												metricId: id
 												onSuccess: @_modifyMetric
 											}
+										noDataText: "No #{Term 'metric definitions'} to display"
 									}
 									trClassName: (row) -> 'inactive' if row.status isnt 'active'
 								},

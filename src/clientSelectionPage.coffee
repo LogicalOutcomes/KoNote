@@ -341,7 +341,10 @@ load = (win) ->
 
 			return R.div({
 				id: 'clientSelectionPage'
-				className: 'animated fadeIn'
+				className: [
+					'animated fadeIn'
+					'menuIsOpen' if @state.menuIsOpen
+				].join ' '
 			},
 				R.a({
 					id: 'expandMenuButton'

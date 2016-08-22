@@ -1,4 +1,9 @@
- .managerLayer
+// Override optionsMenu when MainMenu is open
+.menuIsOpen
+	.optionsMenu
+		padding-right 0 !important
+
+.managerLayer
 	position absolute
 	width 100%
 	height 100%
@@ -10,6 +15,8 @@
 
 		h1
 			.optionsMenu
+				margin-top -5px
+				padding-right 100px
 				float right
 				text-align right
 
