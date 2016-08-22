@@ -213,6 +213,13 @@ init = (win) ->
 					doHotCodeReplace()
 			, false
 
+			# Ctrl-F runs a quick CSS refresh
+			win.document.addEventListener 'keyup', (event) ->
+				if event.ctrlKey and event.which is 70
+					console.log "Refreshing CSS..."
+					refreshCSS()
+			, false
+
 
 	doHotCodeReplace = =>
 		console.log "Running HCR Reload..."
@@ -235,6 +242,28 @@ init = (win) ->
 
 		# Reload HTML page
 		win.location.reload(true)
+
+	refreshCSS = =>
+		Fs = require 'fs'
+		Stylus = require 'stylus'
+
+		mainStylusCode = Fs.readFileSync './src/main.styl', {encoding: 'utf-8'}
+
+		stylusOpts = {
+			filename: './src/main.styl'
+			sourcemap: {inline: true}
+		}
+
+		Stylus.render mainStylusCode, stylusOpts, (err, compiledCss) ->
+			if err
+				console.error "Problem compiling CSS:", err
+				if err.stack
+					console.error err.stack
+				return
+
+			# Inject the compiled CSS into the page
+			win.document.getElementById('main-css').innerHTML = compiledCss;
+			console.info "Injected CSS"
 
 	registerPageListeners = =>
 		pageListeners = Imm.fromJS(pageComponent.getPageListeners()).entrySeq()
