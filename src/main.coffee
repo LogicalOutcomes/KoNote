@@ -179,15 +179,12 @@ init = (win) ->
 		if Config.devMode
 
 			# Convenience method for checking React perf
-			# Simply call start(), [do action], stop() on the window console
-			# TODO
-			# Perf is only available with dev build of React (which is no longer loaded via main.html) --
-			# will add back in 1.9
-			#Perf = React.addons.Perf
-			#win.start = Perf.start
-			#win.stop = ->
-			#	Perf.stop()
-			#	Perf.printWasted()
+			# Simply call start(), [do action], stop() from the window console
+			Perf = React.addons.Perf
+			win.start = Perf.start
+			win.stop = ->
+				Perf.stop()
+				Perf.printWasted()
 
 			# Ctrl-Shift-J opens devTools for current window context
 			win.document.addEventListener 'keyup', (event) ->
