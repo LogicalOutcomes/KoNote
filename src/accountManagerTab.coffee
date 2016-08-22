@@ -134,19 +134,30 @@ load = (win) ->
 				.remove 'publicInfo'
 
 
-			R.div({className: 'accountManagerTab'},
+			return R.div({className: 'accountManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
-						(if hasInactiveUsers
-							R.span({id: 'toggleDisplayInactive'},
-								R.div({className: 'checkbox'},
-									R.label({},
-										R.input({
-											type: 'checkbox'
-											checked: @state.displayInactive
-											onClick: @_toggleDisplayInactive
-										})
-										"Show inactive (#{inactiveUserAccounts.size})"
+						R.div({className: 'optionsMenu'},
+							OpenDialogLink({
+								className: 'btn btn-primary'
+								dialog: CreateAccountDialog
+								programs: @props.programs
+								onSuccess: @_addAccount
+							},
+								FaIcon('plus')
+								" New #{Term 'Account'}"
+							)
+							(if hasInactiveUsers
+								R.div({className: 'toggleInactive'},
+									R.div({className: 'checkbox'},
+										R.label({},
+											R.input({
+												type: 'checkbox'
+												checked: @state.displayInactive
+												onClick: @_toggleDisplayInactive
+											})
+											"Show inactive (#{inactiveUserAccounts.size})"
+										)
 									)
 								)
 							)
@@ -156,6 +167,8 @@ load = (win) ->
 				)
 				R.div({className: 'main'},
 					(if @state.dataIsReady
+						# Does not have display for !hasData,
+						# since there must always be at least active user account
 						R.div({className: 'responsiveTable animated fadeIn'},
 							DialogLayer({
 								ref: 'dialogLayer'
@@ -220,17 +233,6 @@ load = (win) ->
 								)
 							)
 						)
-					)
-				)
-				R.div({className: 'optionsMenu'},
-					OpenDialogLink({
-						className: 'btn btn-lg btn-primary'
-						dialog: CreateAccountDialog
-						programs: @props.programs
-						onSuccess: @_addAccount
-					},
-						FaIcon('plus')
-						" New #{Term 'Account'}"
 					)
 				)
 			)
