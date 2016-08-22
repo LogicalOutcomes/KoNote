@@ -101,7 +101,7 @@ load = (win) ->
 				R.div({className: 'header'},
 					R.h1({},
 						R.div({className: 'optionsMenu'},
-							# TODO: 'New Plan Template' button
+							## TODO: 'New Plan Template' button
 							# OpenDialogLink({
 							# 	className: 'btn btn-primary'
 							# 	dialog: DefineMetricDialog
