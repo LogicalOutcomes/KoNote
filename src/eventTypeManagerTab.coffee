@@ -86,63 +86,79 @@ load = (win) ->
 					}
 
 		render: ->
+			hasData = not @state.eventTypes.isEmpty()
+
+
 			return R.div({className: 'eventTypeManagerTab'},
 				R.div({className: 'header'},
-					R.h1({}, Term 'Event Types')
+					R.h1({},
+						R.div({className: 'optionsMenu'},
+							OpenDialogLink({
+								className: 'btn btn-primary'
+								dialog: CreateEventTypeDialog
+								onSuccess: @_addNewEventType
+								data:
+									eventTypes: @state.eventTypes
+							},
+								FaIcon('plus')
+								" New #{Term 'Event Type'}"
+							)
+							# TODO: Inactive eventTypes toggle
+						)
+						Term 'Event Types'
+					)
+
 				)
 				R.div({className: 'main'},
 					(if @state.dataIsReady
-						R.div({className: 'responsiveTable animated fadeIn'},
-							DialogLayer({
-								ref: 'dialogLayer'
-								eventTypes: @state.eventTypes
-							}
-								BootstrapTable({
-									data: @state.eventTypes.toJS()
-									keyField: 'id'
-									bordered: false
-									options: {
-										defaultSortName: 'name'
-										defaultSortOrder: 'asc'
-										onRowClick: ({id}) =>
-											@refs.dialogLayer.open ModifyEventTypeDialog, {
-												eventTypeId: id
-												onSuccess: @_modifyEventType
-											}
-									}
+						(if hasData
+							R.div({className: 'responsiveTable animated fadeIn'},
+								DialogLayer({
+									ref: 'dialogLayer'
+									eventTypes: @state.eventTypes
 								},
-									TableHeaderColumn({
-										dataField: 'colorKeyHex'
-										className: 'colorKeyColumn'
-										columnClassName: 'colorKeyColumn'
-										dataFormat: (colorKeyHex) -> ColorKeyBubble({colorKeyHex})
-									})
-									TableHeaderColumn({
-										dataField: 'name'
-										className: 'nameColumn'
-										columnClassName: 'nameColumn'
-										dataSort: true
-									}, "Type Name")
-									TableHeaderColumn({
-										dataField: 'description'
-										className: 'descriptionColumn'
-										columnClassName: 'descriptionColumn'
-									}, "Description")
+									BootstrapTable({
+										data: @state.eventTypes.toJS()
+										keyField: 'id'
+										bordered: false
+										options: {
+											defaultSortName: 'name'
+											defaultSortOrder: 'asc'
+											onRowClick: ({id}) =>
+												@refs.dialogLayer.open ModifyEventTypeDialog, {
+													eventTypeId: id
+													onSuccess: @_modifyEventType
+												}
+											noDataText: "No #{Term 'event types'} to display"
+										}
+									},
+										TableHeaderColumn({
+											dataField: 'colorKeyHex'
+											className: 'colorKeyColumn'
+											columnClassName: 'colorKeyColumn'
+											dataFormat: (colorKeyHex) -> ColorKeyBubble({colorKeyHex})
+										})
+										TableHeaderColumn({
+											dataField: 'name'
+											className: 'nameColumn'
+											columnClassName: 'nameColumn'
+											dataSort: true
+										}, "Type Name")
+										TableHeaderColumn({
+											dataField: 'description'
+											className: 'descriptionColumn'
+											columnClassName: 'descriptionColumn'
+										}, "Description")
+									)
+								)
+							)
+						else
+							R.div({className: 'noData'},
+								R.span({className: 'animated fadeInUp'},
+									"No #{Term 'event types'} exist yet"
 								)
 							)
 						)
-					)
-				)
-				R.div({className: 'optionsMenu'},
-					OpenDialogLink({
-						className: 'btn btn-lg btn-primary'
-						dialog: CreateEventTypeDialog
-						onSuccess: @_addNewEventType
-						data:
-							eventTypes: @state.eventTypes
-					},
-						FaIcon('plus')
-						" New #{Term 'Event Type'}"
 					)
 				)
 			)
