@@ -260,8 +260,7 @@ load = (win) ->
 
 			# Special cases made for planTarget types
 			isPlanTarget = @props.type is 'planTarget'
-			isTargetStatusChange = isPlanTarget and not (changeLog.first().get('action') in ['revised'])
-			console.log "changelog.first.get prop > > >>>", changeLog.first().get('property')
+			isTargetStatusChange = isPlanTarget and not (changeLog.first().get('action') is 'revised')
 			isRenameEntry = changeLog.first().get('property') is 'name'
 
 			return R.section({className: 'revision'},
