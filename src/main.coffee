@@ -209,14 +209,13 @@ init = (win) ->
 			win.document.addEventListener 'keyup', (event) ->
 				# If Ctrl-R
 				if event.ctrlKey and (not event.shiftKey) and event.which is 82
-					console.log "Replace!"
+					console.log "- - - Hot Code Replace - - -"
 					doHotCodeReplace()
 			, false
 
 			# Ctrl-F runs a quick CSS refresh
 			win.document.addEventListener 'keyup', (event) ->
-				if event.ctrlKey and event.which is 70
-					console.log "Refreshing CSS..."
+				if event.ctrlKey and (not event.shiftKey) and event.which is 70
 					refreshCSS()
 			, false
 
@@ -263,7 +262,7 @@ init = (win) ->
 
 			# Inject the compiled CSS into the page
 			win.document.getElementById('main-css').innerHTML = compiledCss;
-			console.info "Injected CSS"
+			console.info "- - - Refreshed CSS - - -"
 
 	registerPageListeners = =>
 		pageListeners = Imm.fromJS(pageComponent.getPageListeners()).entrySeq()
