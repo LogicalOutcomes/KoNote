@@ -131,7 +131,6 @@ load = (win) ->
 				return userAccount
 				.set 'isActive', isActive
 				.set 'accountType', publicInfo.get('accountType')
-				.remove 'publicInfo'
 
 
 			return R.div({className: 'accountManagerTab'},
@@ -149,15 +148,13 @@ load = (win) ->
 							)
 							(if hasInactiveUsers
 								R.div({className: 'toggleInactive'},
-									R.div({className: 'checkbox'},
-										R.label({},
-											R.input({
-												type: 'checkbox'
-												checked: @state.displayInactive
-												onClick: @_toggleDisplayInactive
-											})
-											"Show inactive (#{inactiveUserAccounts.size})"
-										)
+									R.label({},
+										"Show inactive (#{inactiveUserAccounts.size})"
+										R.input({
+											type: 'checkbox'
+											checked: @state.displayInactive
+											onClick: @_toggleDisplayInactive
+										})
 									)
 								)
 							)
@@ -172,7 +169,7 @@ load = (win) ->
 						R.div({className: 'responsiveTable animated fadeIn'},
 							DialogLayer({
 								ref: 'dialogLayer'
-								userAccounts: @state.userAccounts
+								userAccounts: tableData
 								programs: @props.programs
 								userProgramLinks: @props.userProgramLinks
 								updateAccount: @_updateAccount
@@ -292,8 +289,6 @@ load = (win) ->
 
 		render: ->
 			userAccount = @_getUserAccount()
-			# Dialogs are a new React instance, so don't change with new props
-			# userProgram = @state.userProgram or userAccount.get('program')
 			userProgram = userAccount.get('program')
 
 			isAdmin = userAccount.getIn(['publicInfo', 'accountType']) is 'admin'
