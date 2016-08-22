@@ -119,7 +119,7 @@ load = (win) ->
 								onSuccess: @_createMetric
 							},
 								FaIcon('plus')
-								" New #{Term 'Metric'} Definition"
+								" New #{Term 'Metric Definition'}"
 							)
 							(if hasInactiveMetrics
 								R.div({className: 'toggleInactive'},
