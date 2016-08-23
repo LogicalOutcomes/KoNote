@@ -19,7 +19,7 @@ load = (win) ->
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
-	UserProgramDropdown = require('./userProgramDropdown').load(win)
+	ProgramsDropdown = require('./programsDropdown').load(win)
 
 	{FaIcon, showWhen} = require('./utils').load(win)
 
@@ -69,8 +69,8 @@ load = (win) ->
 						R.div({},
 							R.h3({}, global.ActiveSession.userName)
 							(unless @props.programs.isEmpty()
-								UserProgramDropdown({
-									userProgram: @props.userProgram
+								ProgramsDropdown({
+									selectedProgram: @props.userProgram
 									programs: @props.programs
 									onSelect: @_overrideProgram
 								})
@@ -92,14 +92,14 @@ load = (win) ->
 								isActive: @props.managerLayer is 'metricDefinitionManagerTab'
 							})
 							MenuItem({
-								title: "Plan Templates"
+								title: Term 'Plan Templates'
 								icon: 'wpforms'
 								onClick: @props.updateManagerLayer.bind null, 'planTemplateManagerTab'
 								isActive: @props.managerLayer is 'planTemplateManagerTab'
 							})
 							MenuItem({
 								isVisible: isAdmin
-								title: "#{Term 'Event'} Types"
+								title: Term 'Event Types'
 								icon: 'calendar-o'
 								onClick: @props.updateManagerLayer.bind null, 'eventTypeManagerTab'
 								isActive: @props.managerLayer is 'eventTypeManagerTab'

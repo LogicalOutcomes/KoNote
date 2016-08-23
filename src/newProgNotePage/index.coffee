@@ -13,6 +13,7 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+
 load = (win, {clientFileId}) ->
 	# Libraries from browser context
 	$ = win.jQuery
@@ -36,6 +37,7 @@ load = (win, {clientFileId}) ->
 	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
 
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
+
 
 	NewProgNotePage = React.createFactory React.createClass
 		displayName: 'NewProgNotePage'
@@ -77,6 +79,7 @@ load = (win, {clientFileId}) ->
 				progEvents: @state.progEvents
 				eventTypes: @state.eventTypes
 				programsById: @state.programsById
+				clientPrograms: @state.clientPrograms
 
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
@@ -94,6 +97,7 @@ load = (win, {clientFileId}) ->
 				progEvents
 				eventTypes
 				programsById
+				clientPrograms
 			} = global.dataStore[clientFileId]
 
 			# Build progNote with template
@@ -116,6 +120,7 @@ load = (win, {clientFileId}) ->
 				progNoteHistories
 				progEvents
 				eventTypes
+				clientPrograms
 			}, ->
 				# We're done with this dataStore, so delete it to preserve memory
 				delete global.dataStore[clientFileId]
@@ -185,6 +190,7 @@ load = (win, {clientFileId}) ->
 			}
 
 	NewProgNotePageUi = React.createFactory React.createClass
+		displayName: 'NewProgNotePageUi'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
@@ -274,8 +280,7 @@ load = (win, {clientFileId}) ->
 
 			clientName = renderName @props.clientFile.get('clientName')
 			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) -
-				#{clientName}: New #{Term 'Progress Note'}
+				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}: New #{Term 'Progress Note'}
 			"""
 
 			return R.div({className: 'newProgNotePage animated fadeIn'},
@@ -438,11 +443,12 @@ load = (win, {clientFileId}) ->
 					},
 						(@state.progEvents.map (thisEvent, index) =>
 							isBeingEdited = @state.editingWhichEvent is index
+							isGlobalEvent = !!thisEvent.get('globalEvent')
 
 							R.div({
 								className: [
-										'eventTab'
-										'isEditing' if isBeingEdited
+									'eventTab'
+									'isEditing' if isBeingEdited
 								].join ' '
 								key: index
 							},
@@ -450,7 +456,7 @@ load = (win, {clientFileId}) ->
 									className: 'icon'
 									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
 								},
-									FaIcon 'calendar'
+									FaIcon (if isGlobalEvent then 'globe' else 'calendar')
 								)
 								EventTabView({
 									data: thisEvent
@@ -462,6 +468,7 @@ load = (win, {clientFileId}) ->
 									saveProgEvent: @_saveProgEvent
 									cancel: @_cancelEditing
 									editMode: @state.editingWhichEvent?
+									clientPrograms: @props.clientPrograms
 									isBeingEdited
 
 									updateEventPlanRelationMode: @_updateEventPlanRelationMode
@@ -481,7 +488,7 @@ load = (win, {clientFileId}) ->
 			)
 
 		_newEventTab: ->
-			newProgEvent = {}
+			newProgEvent = Imm.Map()
 			# Add in the new event, select last one
 			@setState {progEvents: @state.progEvents.push newProgEvent}, =>
 				@setState {editingWhichEvent: @state.progEvents.size - 1}
@@ -495,7 +502,7 @@ load = (win, {clientFileId}) ->
 
 		_cancelEditing: (index) ->
 			# Delete if new event
-			if _.isEmpty @state.progEvents.get(index)
+			if @state.progEvents.get(index) and @state.progEvents.get(index).isEmpty()
 				@setState {progEvents: @state.progEvents.delete(index)}
 
 			@setState {

@@ -44,6 +44,9 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
+			isAdmin = global.ActiveSession.isAdmin()
+			hasData = not @props.programs.isEmpty()
+
 			# Inject numberClients into each program
 			programs = @props.programs.map (program) =>
 				programId = program.get('id')
@@ -54,74 +57,96 @@ load = (win) ->
 				newProgram = program.set 'numberClients', numberClients
 				return newProgram
 
-			isAdmin = global.ActiveSession.isAdmin()
-
-			hasInactivePrograms = @props.clientFileProgramLinks.filter (link) ->
+			inactivePrograms = @props.clientFileProgramLinks.filter (link) ->
 				link.get('status') is "enrolled"
+
+			hasInactivePrograms = not inactivePrograms.isEmpty()
 
 
 			return R.div({className: 'programManagerTab'},
 				R.div({className: 'header'},
-					R.h1({}, Term 'Programs')
-				)
-				R.div({className: 'main'},
-					R.div({className: 'responsiveTable'},
-						DialogLayer({
-							ref: 'dialogLayer'
-							programs
-							clientFileProgramLinks: @props.clientFileProgramLinks
-							clientFileHeaders: @props.clientFileHeaders
-						}
-							BootstrapTable({
-								data: programs.toJS()
-								keyField: 'id'
-								bordered: false
-								options: {
-									defaultSortName: 'name'
-									defaultSortOrder: 'asc'
-									onRowClick: @_openProgramManagerDialog
-								}
-							},
-								TableHeaderColumn({
-									dataField: 'colorKeyHex'
-									className: 'colorKeyColumn'
-									columnClassName: 'colorKeyColumn'
-									dataFormat: (colorKeyHex) -> ColorKeyBubble({colorKeyHex})
-								})
-								TableHeaderColumn({
-									dataField: 'name'
-									className: 'nameColumn'
-									columnClassName: 'nameColumn'
-									dataSort: true
-								}, "#{Term 'Program'} Name")
-								TableHeaderColumn({
-									dataField: 'description'
-									className: 'descriptionColumn'
-									columnClassName: 'descriptionColumn'
-								}, "Description")
-								TableHeaderColumn({
-									dataField: 'numberClients'
-									dataSort: true
-									headerAlign: 'center'
-									dataAlign: 'center'
-								}, "# #{Term 'Clients'}")
+					R.h1({},
+						R.div({className: 'optionsMenu'},
+							(if isAdmin
+								OpenDialogLink({
+									className: 'btn btn-primary'
+									dialog: CreateProgramDialog
+									data: {
+										clientFileHeaders: @props.clientFileHeaders
+										programs
+									}
+								},
+									FaIcon('plus')
+									" New #{Term 'Program'}"
+								)
 							)
+							## TODO: Toggle for inactive programs display
+							# (if hasInactivePrograms
+							# 	R.div({className: 'toggleInactive'},
+							# 		R.label({},
+							# 			"Show inactive (#{inactivePrograms.size})"
+							# 			R.input({
+							# 				type: 'checkbox'
+							# 				checked: @state.displayInactive
+							# 				onClick: @_toggleDisplayInactive
+							# 			})
+							# 		)
+							# 	)
+							# )
 						)
+						Term 'Programs'
 					)
 				)
-				(if isAdmin
-					R.div({className: 'optionsMenu'},
-						OpenDialogLink({
-							className: 'btn btn-lg btn-primary'
-							dialog: CreateProgramDialog
-							data: {
-								clientFileHeaders: @props.clientFileHeaders
+				R.div({className: 'main'},
+					(if hasData
+						R.div({className: 'responsiveTable animated fadeIn'},
+							DialogLayer({
+								ref: 'dialogLayer'
 								programs
+								clientFileProgramLinks: @props.clientFileProgramLinks
+								clientFileHeaders: @props.clientFileHeaders
 							}
-						},
-							FaIcon('plus')
-							' '
-							"New #{Term 'Program'} "
+								BootstrapTable({
+									data: programs.toJS()
+									keyField: 'id'
+									bordered: false
+									options: {
+										defaultSortName: 'name'
+										defaultSortOrder: 'asc'
+										onRowClick: @_openProgramManagerDialog
+									}
+								},
+									TableHeaderColumn({
+										dataField: 'colorKeyHex'
+										className: 'colorKeyColumn'
+										columnClassName: 'colorKeyColumn'
+										dataFormat: (colorKeyHex) -> ColorKeyBubble({colorKeyHex})
+									})
+									TableHeaderColumn({
+										dataField: 'name'
+										className: 'nameColumn'
+										columnClassName: 'nameColumn'
+										dataSort: true
+									}, "#{Term 'Program'} Name")
+									TableHeaderColumn({
+										dataField: 'description'
+										className: 'descriptionColumn'
+										columnClassName: 'descriptionColumn'
+									}, "Description")
+									TableHeaderColumn({
+										dataField: 'numberClients'
+										dataSort: true
+										headerAlign: 'center'
+										dataAlign: 'center'
+									}, "# #{Term 'Clients'}")
+								)
+							)
+						)
+					else
+						R.div({className: 'noData'},
+							R.span({className: 'animated fadeInUp'},
+								"No #{Term 'programs'} exist yet"
+							)
 						)
 					)
 				)
@@ -635,6 +660,8 @@ load = (win) ->
 			@setState {searchQuery: event.target.value}
 
 		_getResultsList: ->
+			if not @state.searchQuery then return @props.clientFileHeaders
+
 			queryParts = Imm.fromJS(@state.searchQuery.split(' '))
 			.map (p) -> p.toLowerCase()
 

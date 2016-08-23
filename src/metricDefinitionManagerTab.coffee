@@ -93,6 +93,7 @@ load = (win) ->
 				metric.get('status') isnt 'default'
 
 			hasInactiveMetrics = not inactiveMetricDefinitions.isEmpty()
+			hasData = not @state.metricDefinitions.isEmpty()
 
 			# UI Filters
 			unless @state.displayInactive
@@ -111,90 +112,103 @@ load = (win) ->
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
-						(if hasInactiveMetrics
-							R.span({id: 'toggleDisplayInactive'},
-								R.div({className: 'checkbox'},
+						R.div({className: 'optionsMenu'},
+							OpenDialogLink({
+								className: 'btn btn-primary'
+								dialog: DefineMetricDialog
+								onSuccess: @_createMetric
+							},
+								FaIcon('plus')
+								" New #{Term 'Metric Definition'}"
+							)
+							(if hasInactiveMetrics
+								R.div({className: 'toggleInactive'},
 									R.label({},
+										"Show inactive (#{inactiveMetricDefinitions.size})"
 										R.input({
 											type: 'checkbox'
 											checked: @state.displayInactive
 											onClick: @_toggleDisplayInactive
 										})
-										"Show inactive (#{inactiveMetricDefinitions.size})"
 									)
 								)
 							)
 						)
-						"#{Term 'Metric'} Definitions"
+						"#{Term 'Metric Definitions'}"
 					)
 				)
 				R.div({className: 'main'},
 					(if @state.dataIsReady
-						R.div({
-							className: [
-								'responsiveTable'
-								'hiddenColumnFix' if not @state.displayInactive # Temporary
-								'animated fadeIn'
-							].join ' '
-						},
-							DialogLayer({
-								ref: 'dialogLayer'
-								metricDefinitions
-							},
-								BootstrapTable({
-									data: metricDefinitions.toJS()
-									keyField: 'id'
-									bordered: false
-									options: {
-										defaultSortName: 'name'
-										defaultSortOrder: 'asc'
-										onRowClick: ({id}) =>
-											@refs.dialogLayer.open ModifyMetricDialog, {
-												metricId: id
-												onSuccess: @_modifyMetric
-											}
-									}
-									trClassName: (row) -> 'inactive' if row.status isnt 'active'
+						(if hasData
+							R.div({className: 'responsiveTable animated fadeIn'},
+								DialogLayer({
+									ref: 'dialogLayer'
+									metricDefinitions
 								},
-									TableHeaderColumn({
-										dataField: 'id'
-										className: 'colorKeyColumn'
-										columnClassName: 'colorKeyColumn'
-										dataFormat: -> null
-									})
-									TableHeaderColumn({
-										dataField: 'name'
-										className: 'nameColumn'
-										columnClassName: 'nameColumn'
-										dataSort: true
-									}, "#{Term 'Metric'} Name")
-									TableHeaderColumn({
-										dataField: 'definition'
-										className: 'descriptionColumn'
-										columnClassName: 'descriptionColumn'
-									}, "Definition")
-									TableHeaderColumn({
-										dataField: 'status'
-										className: 'statusColumn'
-										columnClassName: 'statusColumn'
-										dataSort: true
-										hidden: not @state.displayInactive
-										headerAlign: 'right'
-										dataAlign: 'right'
-									}, "Status")
+									BootstrapTable({
+										data: metricDefinitions.toJS()
+										keyField: 'id'
+										bordered: false
+										options: {
+											defaultSortName: 'name'
+											defaultSortOrder: 'asc'
+											onRowClick: ({id}) =>
+												@refs.dialogLayer.open ModifyMetricDialog, {
+													metricId: id
+													onSuccess: @_modifyMetric
+												}
+											noDataText: "No #{Term 'metric definitions'} to display"
+										}
+										trClassName: (row) -> 'inactive' if row.status isnt 'active'
+									},
+										TableHeaderColumn({
+											dataField: 'id'
+											className: 'colorKeyColumn'
+											columnClassName: 'colorKeyColumn'
+											dataFormat: -> null
+										})
+										TableHeaderColumn({
+											dataField: 'name'
+											className: 'nameColumn'
+											columnClassName: 'nameColumn'
+											dataSort: true
+										}, "#{Term 'Metric'} Name")
+										TableHeaderColumn({
+											dataField: 'definition'
+											className: [
+												'descriptionColumn'
+												'rightPadding' unless @state.displayInactive
+											].join ' '
+											columnClassName: [
+												'descriptionColumn'
+												'rightPadding' unless @state.displayInactive
+											].join ' '
+										}, "Definition")
+										TableHeaderColumn({
+											dataField: 'status'
+											className: [
+												'statusColumn'
+												'rightPadding' if @state.displayInactive
+											].join ' '
+											columnClassName: [
+												'statusColumn'
+												'rightPadding' if @state.displayInactive
+											].join ' '
+											dataSort: true
+											hidden: not @state.displayInactive
+											headerAlign: 'right'
+											dataAlign: 'right'
+										}, "Status")
+									)
+								)
+							)
+						else
+							R.div({className: 'noData'},
+								R.span({className: 'animated fadeInUp'},
+									"No #{Term 'metric definitions'} exist yet"
 								)
 							)
 						)
-					)
-				)
-				R.div({className: 'optionsMenu'},
-					OpenDialogLink({
-						className: 'btn btn-lg btn-primary'
-						dialog: DefineMetricDialog
-						onSuccess: @_createMetric
-					},
-						FaIcon('plus')
-						" New #{Term 'Metric'} Definition"
 					)
 				)
 			)
@@ -267,7 +281,7 @@ load = (win) ->
 							R.button({
 								className:
 									'btn btn-' + if @state.status is 'deactivated'
-										'warning'
+										'danger'
 									else
 										'default'
 								onClick: @_updateStatus

@@ -9,24 +9,32 @@ Moment = require 'moment'
 _ = require 'underscore'
 nlp = require 'nlp_compromise'
 Term = require '../term'
+ImmPropTypes = require 'react-immutable-proptypes'
 {TimestampFormat} = require '../persist/utils'
+
 
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
 	Bootbox = win.bootbox
 
 	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
+	Dialog = require('../dialog').load(win)
 	WithTooltip = require('../withTooltip').load(win)
+	OpenDialogLink = require('../openDialogLink').load(win)
+	ProgramsDropdown = require('../programsDropdown').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+
 	{FaIcon, renderName, showWhen, formatTimestamp} = require('../utils').load(win)
 
 
 	EventTabView = React.createFactory React.createClass
 		displayName: 'EventTabView'
 		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			# Use backdate instead of current date (if exists)
 			if @props.backdate
@@ -109,7 +117,10 @@ load = (win) ->
 			selectedEventType = @props.eventTypes.find (type) => type.get('id') is @state.typeId
 
 			return R.div({
-				className: "eventView #{showWhen @props.isBeingEdited or not @props.editMode}"
+				className: [
+					'eventView'
+					showWhen @props.isBeingEdited or not @props.editMode
+				].join ' '
 			},
 				R.form({className: showWhen @props.isBeingEdited},
 					R.button({
@@ -203,7 +214,7 @@ load = (win) ->
 					# 	)
 					# )
 
-					unless @props.eventTypes.isEmpty()
+					(unless @props.eventTypes.isEmpty()
 						R.div({className: 'form-group eventTypeContainer'},
 							R.label({}, "Select #{Term 'Event Type'}")
 
@@ -237,22 +248,36 @@ load = (win) ->
 								)
 							)
 						)
+					)
 
-					R.div({className: 'form-group globalEventContainer'},
-						R.div({className: 'checkbox'},
-							R.label({},
-								R.input({
-									type: 'checkbox'
-									onClick: @_toggleIsGlobalEvent
-									checked: @state.isGlobalEvent
-								})
-								"Make this a #{Term 'global event'}"
-								WithTooltip({
-									title: """
-										A copy of this #{Term 'event'} will visible to all #{Term 'client files'}
-									"""
-								},
-									FaIcon('question-circle')
+					R.div({className: 'globalEventContainer'},
+						WithTooltip({
+							title: "#{Term 'Client'} must be assigned to 1 or more #{Term 'programs'}"
+							showTooltip: @props.clientPrograms.isEmpty()
+							placement: 'left'
+						},
+							R.div({
+								className: [
+									'checkbox'
+									'disabled' if @props.clientPrograms.isEmpty()
+								].join ' '
+							},
+								R.label({},
+									R.input({
+										disabled: @props.clientPrograms.isEmpty()
+										type: 'checkbox'
+										onClick: @_toggleIsGlobalEvent
+										checked: @state.isGlobalEvent
+									})
+									"Make this a #{Term 'global event'}"
+
+									(unless @props.clientPrograms.isEmpty()
+										WithTooltip({
+											title: "A copy of this #{Term 'event'} will visible to all #{Term 'client files'}"
+										},
+											FaIcon('question-circle')
+										)
+									)
 								)
 							)
 						)
@@ -336,31 +361,51 @@ load = (win) ->
 						},
 							"Add End Date"
 						)
-						R.button({
-							className: "btn btn-success #{'fullWidth' if @state.isDateSpan}"
-							type: 'submit'
-							onClick: @_saveEventData
-							# TODO: Refactor this to function called at top of render
-							disabled: not @state.title or not @state.startDate or (@state.isDateSpan and not @state.endDate) or (@state.usesTimeOfDay and not @state.startTime) or (@state.usesTimeOfDay and @state.isDateSpan and not @state.endTime)
-						},
-							"Save "
-							FaIcon('check')
+
+						# TODO: Refactor to something more generic
+						(if @state.isGlobalEvent
+							OpenDialogLink({
+								dialog: AmendGlobalEventDialog
+								eventData: @_compiledFormData()
+								clientFileId: @props.clientFileId
+								clientPrograms: @props.clientPrograms
+								onSuccess: @_saveProgEvent
+							},
+								R.button({
+									className: "btn btn-success #{'fullWidth' if @state.isDateSpan}"
+									type: 'submit'
+									disabled: @_formIsInvalid()
+								},
+									"Save "
+									FaIcon('check')
+								)
+							)
+						else
+							R.button({
+								className: "btn btn-success #{'fullWidth' if @state.isDateSpan}"
+								type: 'submit'
+								onClick: @_submit
+								disabled: @_formIsInvalid()
+							},
+								"Save "
+								FaIcon('check')
+							)
 						)
 					)
 				)
 
 				R.div({className: "details #{showWhen not @props.isBeingEdited}"},
-					R.div({className: 'title'}, @props.data.title)
-					R.div({className: 'description'}, @props.data.description)
+					R.div({className: 'title'}, @props.data.get('title'))
+					R.div({className: 'description'}, @props.data.get('description'))
 					R.div({className: 'timeSpan'},
 						R.div({className: 'start'},
-							"From: " if @props.data.endTimestamp
-							@_showTimestamp @props.data.startTimestamp
+							"From: " if @props.data.get('endTimestamp')
+							@_showTimestamp @props.data.get('startTimestamp')
 						)
-						(if @props.data.endTimestamp
+						(if @props.data.get('endTimestamp')
 							R.div({className: 'end'},
 								"Until: "
-								@_showTimestamp @props.data.endTimestamp
+								@_showTimestamp @props.data.get('endTimestamp')
 							)
 						)
 					)
@@ -395,6 +440,12 @@ load = (win) ->
 		_updateTypeId: (typeId) ->
 			@setState {typeId}
 
+		_formIsInvalid: ->
+			return not @state.title or not @state.startDate or
+			(@state.isDateSpan and not @state.endDate) or
+			(@state.usesTimeOfDay and not @state.startTime) or
+			(@state.usesTimeOfDay and @state.isDateSpan and not @state.endTime)
+
 		_toggleIsGlobalEvent: ->
 			@setState {isGlobalEvent: not @state.isGlobalEvent}
 
@@ -405,14 +456,22 @@ load = (win) ->
 				@state.title or @state.endDate or @state.description or
 				@props.selectedEventPlanRelation or @state.typeId
 			)
-				Bootbox.confirm "Cancel #{Term 'event'} editing?", (result) =>
-					if result
+				Bootbox.confirm "Cancel #{Term 'event'} editing?", (ok) =>
+					if ok
 						# Make sure all states are reset, then cancel
 						@setState @props.data, =>
 							@props.cancel @props.atIndex
 			else
 				@setState @props.data, =>
 					@props.cancel @props.atIndex
+
+		_submit: (event) ->
+			event.preventDefault()
+			progEvent = @_compiledFormData()
+			@_saveProgEvent progEvent
+
+		_saveProgEvent: (progEvent) ->
+			@props.saveProgEvent progEvent, @props.atIndex
 
 		_compiledFormData: ->
 			isOneFullDay = null
@@ -426,43 +485,48 @@ load = (win) ->
 				startTimestamp = startTimestamp.set('hour', @state.startTime.hour()).set('minute', @state.startTime.minute())
 
 				if @state.isDateSpan
-					endTimestamp = endTimestamp.set('hour', @state.endTime.hour()).set('minute', @state.endTime.minute())
+					endTimestamp = if endTimestamp
+						endTimestamp.set('hour', @state.endTime.hour()).set('minute', @state.endTime.minute())
+					else
+						''
 			# Default to start/end of day for dates
 			else
 				startTimestamp = startTimestamp.startOf('day')
 
 				if @state.isDateSpan
-					endTimestamp = endTimestamp.endOf('day')
+					endTimestamp = if endTimestamp then endTimestamp.endOf('day') else ''
 				else
 					# If only a single date was provided, assume it's an all-day event
 					isOneFullDay = true
 					endTimestamp = Moment(startTimestamp).endOf('day')
 
 
-			if @props.selectedEventPlanRelation?
-				# Figure out which element type it is
-				relatedElementType = if @props.selectedEventPlanRelation.has('type')
-						'progNoteUnit'
-					else if @props.selectedEventPlanRelation.has('targets')
-						'planSection'
-					else if @props.selectedEventPlanRelation.has('metrics')
-						'planTarget'
-					else
-						null
-						console.error "Unknown relatedElementType:", @props.selectedEventPlanRelation.toJS()
+			# # TODO: Axe this feature completely if we don't need it anymore
+			# if @props.selectedEventPlanRelation?
+			# 	# Figure out which element type it is
+			# 	relatedElementType = if @props.selectedEventPlanRelation.has('type')
+			# 			'progNoteUnit'
+			# 		else if @props.selectedEventPlanRelation.has('targets')
+			# 			'planSection'
+			# 		else if @props.selectedEventPlanRelation.has('metrics')
+			# 			'planTarget'
+			# 		else
+			# 			null
+			# 			console.error "Unknown relatedElementType:", @props.selectedEventPlanRelation.toJS()
 
-				relatedElement = {
-					id: @props.selectedEventPlanRelation.get('id')
-					type: relatedElementType
-				}
+			# 	relatedElement = {
+			# 		id: @props.selectedEventPlanRelation.get('id')
+			# 		type: relatedElementType
+			# 	}
 
-			else
-				relatedElement = ''
+			# else
+			relatedElement = ''
 
+			# # TODO: Axe this feature completely if we don't need it anymore
 			# Provide relatedElement to local state for later
-			@setState => {relatedElement: @props.selectedEventPlanRelation}
+			# @setState => {relatedElement: @props.selectedEventPlanRelation}
 
-			progEventObject = {
+			progEventObject = Imm.fromJS {
 				title: @state.title
 				description: @state.description
 				typeId: @state.typeId
@@ -473,72 +537,167 @@ load = (win) ->
 
 			return progEventObject
 
-		_saveEventData: (event) ->
+
+	AmendGlobalEventDialog = React.createFactory React.createClass
+		displayName: 'AmendGlobalEventDialog'
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			# Use client's program if has only 1
+			# Otherwise use the program that matched userProgramId
+			# Else, user must select program from list
+			clientHasPrograms = not @props.clientPrograms.isEmpty()
+			userProgramId = global.ActiveSession.programId
+
+			program = Imm.Map()
+			@programSelectionRequired = false
+
+			if clientHasPrograms
+
+				if @props.clientPrograms.size is 1
+					console.log "Only has one, chose that!"
+					programId = @props.clientPrograms.first()
+
+				else
+					console.log "Testing programs"
+					matchingProgram = @props.clientPrograms.find (program) -> program.get('id') is userProgramId
+
+					if matchingProgram?
+						console.log "Matching!", matchingProgram.toJS()
+						programId = matchingProgram
+					else
+						console.log "Selection required"
+						@programSelectionRequired = true
+
+
+			return {
+				title: @props.eventData.get('title')
+				description: @props.eventData.get('description')
+				program
+			}
+
+		propTypes: {
+			eventData: ImmPropTypes.map.isRequired
+			clientFileId: PropTypes.string.isRequired
+			clientPrograms: ImmPropTypes.list.isRequired
+		}
+
+		render: ->
+			flaggedNames = @_generateFlaggedNames()
+
+			return Dialog({
+				ref: 'dialog'
+				title: "Amend #{Term 'Global Event'}"
+				onClose: @props.onClose
+			},
+				R.div({className: 'amendGlobalEventDialog'},
+					R.p({},
+						"Please remove any sensitive and/or #{Term 'client'}-specific information
+						to be saved in the #{Term 'global event'}, which will be visible
+						in all #{Term 'client files'}."
+					)
+
+					(if flaggedNames.length > 0
+						R.div({className: 'flaggedNames'},
+							FaIcon('flag')
+							"Flagged: "
+							flaggedNames.join ', '
+						)
+					)
+
+					R.div({className: 'form-group'},
+						R.label({}, "Name")
+						R.input({
+							className: 'form-control'
+							value: @state.title
+							onChange: @_updateTitle
+						})
+					)
+
+					R.div({className: 'form-group'},
+						R.label({}, "Description")
+						ExpandingTextArea({
+							value: @state.description
+							onChange: @_updateDescription
+						})
+					)
+
+					(if @programSelectionRequired
+						R.div({className: 'form-group'},
+							R.hr({})
+
+							R.label({}, "Select a program for this #{Term 'global event'}")
+							ProgramsDropdown({
+								selectedProgram: @state.program
+								programs: @props.clientPrograms
+								onSelect: @_updateProgram
+								excludeNone: true
+							})
+
+							R.hr({})
+						)
+					)
+
+					R.div({className: 'btn-toolbar pull-right'},
+						R.button({
+							className: 'btn btn-default'
+							onClick: @props.onCancel
+						},
+							"Cancel"
+						)
+						R.button({
+							className: 'btn btn-success'
+							onClick: @_submit
+							disabled: @_formIsInvalid()
+						},
+							"Save #{Term 'Global Event'} "
+							FaIcon('check')
+						)
+					)
+				)
+			)
+
+		_updateTitle: (event) ->
+			title = event.target.value
+			@setState {title}
+
+		_updateDescription: (event) ->
+			description = event.target.value
+			@setState {description}
+
+		_updateProgram: (program) ->
+			@setState {program}
+
+		_formIsInvalid: ->
+			return not @state.title or
+			not @state.description or
+			(@programSelectionRequired and not @state.program.has('name'))
+
+		_generateFlaggedNames: ->
+			# TODO: Process the title as well?
+			people = nlp.text(@props.eventData.get('description')).people()
+			names = []
+
+			for i of people
+				names.push(people[i].normal) unless people[i].pos.Pronoun
+
+			return names
+
+		_submit: (event) ->
 			event.preventDefault()
 
-			newData = @_compiledFormData()
+			# Attach globalEvent as a property of the progEvent
+			# which will get extracted during final save process
+			globalEvent = Imm.fromJS(@props.eventData)
+			.set('title', @state.title)
+			.set('description', @state.description)
+			.set('clientFileId', @props.clientFileId)
+			.set('authorProgramId', @state.program.get('id') or '')
 
-			unless newData.endTimestamp.length is 0
-				startTimestamp = Moment(newData.startTimestamp, TimestampFormat)
-				endTimestamp = Moment(newData.endTimestamp, TimestampFormat)
+			progEvent = @props.eventData.set('globalEvent', globalEvent)
 
-				# Ensure startTime is earlier than endTime
-				if startTimestamp.isAfter endTimestamp
-					startDateTime = formatTimestamp(startTimestamp)
-					Bootbox.alert "Please select an end date/time later than #{startDateTime}"
-					return
+			@props.onSuccess(progEvent)
 
-			if not @state.isGlobalEvent
-				@props.saveProgEvent newData, @props.atIndex
-			else
-				people = nlp.text(newData.description).people()
-				names = []
-				properNames = ''
-				for i of people
-					unless people[i].pos.Pronoun
-						names.push people[i].normal
-				properNames = names.join ', '
-				unless properNames is ''
-					properNames = '<span class="flagged">Flagged: ' + properNames + '</span><br><br>'
-
-				Bootbox.dialog {
-					title: "Amend for #{Term 'Global Event'}"
-					message: """
-						Please remove any sensitive and/or #{Term 'client'}-specific information
-						to be saved in the #{Term 'global event'}, which will be visible
-						in all #{Term 'client files'}.
-						<br><br>
-						#{properNames}
-						<label>Title</label>
-						<input class="form-control" id="amendedTitle" value="#{newData.title}">
-						<br><br>
-						<label>Description</label>
-						<textarea class="form-control" id="amendedDescription">#{newData.description}</textarea>
-					"""
-					buttons: {
-						cancel: {
-							label: "Cancel"
-							callback: ->
-								Bootbox.hideAll()
-								return
-						}
-						success: {
-							label: "Done"
-							callback: =>
-								amendedTitle = $('#amendedTitle').val()
-								amendedDescription = $('#amendedDescription').val()
-
-								globalEvent = Imm.fromJS(newData)
-								.set('title', amendedTitle)
-								.set('description', amendedDescription)
-								.set('clientFileId', @props.clientFileId)
-
-								newData.globalEvent = globalEvent
-
-								@props.saveProgEvent newData, @props.atIndex
-						}
-					}
-				}
 
 	return EventTabView
 

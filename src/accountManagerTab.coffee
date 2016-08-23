@@ -29,7 +29,7 @@ load = (win) ->
 	OpenDialogLink = require('./openDialogLink').load(win)
 	Spinner = require('./spinner').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
-	UserProgramDropdown = require('./userProgramDropdown').load(win)
+	ProgramsDropdown = require('./programsDropdown').load(win)
 	DialogLayer = require('./dialogLayer').load(win)
 
 	{FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
@@ -131,22 +131,30 @@ load = (win) ->
 				return userAccount
 				.set 'isActive', isActive
 				.set 'accountType', publicInfo.get('accountType')
-				.remove 'publicInfo'
 
 
-			R.div({className: 'accountManagerTab'},
+			return R.div({className: 'accountManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
-						(if hasInactiveUsers
-							R.span({id: 'toggleDisplayInactive'},
-								R.div({className: 'checkbox'},
+						R.div({className: 'optionsMenu'},
+							OpenDialogLink({
+								className: 'btn btn-primary'
+								dialog: CreateAccountDialog
+								programs: @props.programs
+								onSuccess: @_addAccount
+							},
+								FaIcon('plus')
+								" New #{Term 'Account'}"
+							)
+							(if hasInactiveUsers
+								R.div({className: 'toggleInactive'},
 									R.label({},
+										"Show inactive (#{inactiveUserAccounts.size})"
 										R.input({
 											type: 'checkbox'
 											checked: @state.displayInactive
 											onClick: @_toggleDisplayInactive
 										})
-										"Show inactive (#{inactiveUserAccounts.size})"
 									)
 								)
 							)
@@ -156,16 +164,12 @@ load = (win) ->
 				)
 				R.div({className: 'main'},
 					(if @state.dataIsReady
-						R.div({
-							className: [
-								'responsiveTable'
-								'hiddenColumnFix' if not @state.displayInactive # Temporary
-								'animated fadeIn'
-							].join ' '
-						},
+						# Does not have display for !hasData,
+						# since there must always be at least active user account
+						R.div({className: 'responsiveTable animated fadeIn'},
 							DialogLayer({
 								ref: 'dialogLayer'
-								userAccounts: @state.userAccounts
+								userAccounts: tableData
 								programs: @props.programs
 								userProgramLinks: @props.userProgramLinks
 								updateAccount: @_updateAccount
@@ -205,11 +209,19 @@ load = (win) ->
 									TableHeaderColumn({
 										dataField: 'accountType'
 										dataSort: true
+										className: 'rightPadding' unless @state.displayInactive
+										columnClassName: 'rightPadding' unless @state.displayInactive
 									}, "Account Type")
 									TableHeaderColumn({
 										dataField: 'isActive'
-										className: 'statusColumn'
-										columnClassName: 'statusColumn'
+										className: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
+										columnClassName: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
 										headerAlign: 'right'
 										dataAlign: 'right'
 										dataSort: true
@@ -218,17 +230,6 @@ load = (win) ->
 								)
 							)
 						)
-					)
-				)
-				R.div({className: 'optionsMenu'},
-					OpenDialogLink({
-						className: 'btn btn-lg btn-primary'
-						dialog: CreateAccountDialog
-						programs: @props.programs
-						onSuccess: @_addAccount
-					},
-						FaIcon('plus')
-						" New #{Term 'Account'}"
 					)
 				)
 			)
@@ -288,8 +289,6 @@ load = (win) ->
 
 		render: ->
 			userAccount = @_getUserAccount()
-			# Dialogs are a new React instance, so don't change with new props
-			# userProgram = @state.userProgram or userAccount.get('program')
 			userProgram = userAccount.get('program')
 
 			isAdmin = userAccount.getIn(['publicInfo', 'accountType']) is 'admin'
@@ -328,10 +327,10 @@ load = (win) ->
 								" (admin)" if isAdmin
 							)
 							R.div({id: 'userProgram'},
-								UserProgramDropdown({
+								ProgramsDropdown({
 									ref: 'userProgramDropdown'
 									id: 'modifyUserProgramDropdown'
-									userProgram: userProgram
+									selectedProgram: userProgram
 									programs: @props.programs
 									onSelect: @_reassignProgram.bind null, userAccount
 								})
@@ -648,7 +647,7 @@ load = (win) ->
 									key: program.get('id')
 								},
 									ColorKeyBubble({
-										isSelected
+										icon: 'check' if isSelected
 										colorKeyHex: program.get('colorKeyHex')
 									})
 									program.get('name')

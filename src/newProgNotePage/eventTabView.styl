@@ -28,6 +28,9 @@
 
 	> form
 
+		.btn-toolbar .btn-success
+			margin-left 5px
+
 		.expandingTextAreaComponent
 			max-height 140px
 
@@ -67,9 +70,11 @@
 
 		.globalEventContainer
 			label
-
 				.fa
 					margin-left 1em
+
+			.disabled label
+				opacity 0.5 !important
 
 		.dateGroup
 			display flex
@@ -140,3 +145,23 @@
 				// Shifts datetimepicker to left
 				.bootstrap-datetimepicker-widget.dropdown-menu
 					right 50% !important
+
+
+// TODO: Extract to component
+
+.amendGlobalEventDialog
+	padding 10px
+	max-width 500px
+
+	p
+		padding-bottom 15px
+
+	.flaggedNames
+		.fa
+			margin-right 15px
+
+	input, textarea
+		margin 8px 0
+
+	textarea
+		max-height 450px

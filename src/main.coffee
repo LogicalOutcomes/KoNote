@@ -179,15 +179,12 @@ init = (win) ->
 		if Config.devMode
 
 			# Convenience method for checking React perf
-			# Simply call start(), [do action], stop() on the window console
-			# TODO
-			# Perf is only available with dev build of React (which is no longer loaded via main.html) --
-			# will add back in 1.9
-			#Perf = React.addons.Perf
-			#win.start = Perf.start
-			#win.stop = ->
-			#	Perf.stop()
-			#	Perf.printWasted()
+			# Simply call start(), [do action], stop() from the window console
+			Perf = React.addons.Perf
+			win.start = Perf.start
+			win.stop = ->
+				Perf.stop()
+				Perf.printWasted()
 
 			# Ctrl-Shift-J opens devTools for current window context
 			win.document.addEventListener 'keyup', (event) ->
@@ -209,8 +206,14 @@ init = (win) ->
 			win.document.addEventListener 'keyup', (event) ->
 				# If Ctrl-R
 				if event.ctrlKey and (not event.shiftKey) and event.which is 82
-					console.log "Replace!"
+					console.log "- - - Hot Code Replace - - -"
 					doHotCodeReplace()
+			, false
+
+			# Ctrl-F runs a quick CSS refresh
+			win.document.addEventListener 'keyup', (event) ->
+				if event.ctrlKey and (not event.shiftKey) and event.which is 70
+					refreshCSS()
 			, false
 
 
@@ -235,6 +238,28 @@ init = (win) ->
 
 		# Reload HTML page
 		win.location.reload(true)
+
+	refreshCSS = =>
+		Fs = require 'fs'
+		Stylus = require 'stylus'
+
+		mainStylusCode = Fs.readFileSync './src/main.styl', {encoding: 'utf-8'}
+
+		stylusOpts = {
+			filename: './src/main.styl'
+			sourcemap: {inline: true}
+		}
+
+		Stylus.render mainStylusCode, stylusOpts, (err, compiledCss) ->
+			if err
+				console.error "Problem compiling CSS:", err
+				if err.stack
+					console.error err.stack
+				return
+
+			# Inject the compiled CSS into the page
+			win.document.getElementById('main-css').innerHTML = compiledCss;
+			console.info "- - - Refreshed CSS - - -"
 
 	registerPageListeners = =>
 		pageListeners = Imm.fromJS(pageComponent.getPageListeners()).entrySeq()

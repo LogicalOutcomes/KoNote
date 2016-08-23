@@ -106,6 +106,7 @@ load = (win) ->
 							type: 'globalEvent'
 							id: globalEvent.get('id')
 							timestamp: globalEvent.get('startTimestamp')
+							programId: globalEvent.get('authorProgramId')
 							data: globalEvent
 						}
 				)
@@ -445,7 +446,6 @@ load = (win) ->
 						className: "btn-default"
 						callback: =>
 							Bootbox.hideAll()
-							cb null
 					}
 					ignore: {
 						label: "Ignore"
@@ -494,8 +494,6 @@ load = (win) ->
 						className: "btn-default"
 						callback: =>
 							Bootbox.hideAll()
-							cb null
-							return
 					}
 					danger: {
 						label: "Ignore"
@@ -508,7 +506,6 @@ load = (win) ->
 						callback: =>
 							Bootbox.hideAll()
 							@props.onTabChange 'plan'
-							cb null
 							return
 					}
 				}
@@ -516,11 +513,11 @@ load = (win) ->
 
 
 		_openNewProgNote: ->
-			@setState {isLoading: true}
 			Async.series [
 				@_checkPlanChanges
 				@_checkUserProgram
 				(cb) =>
+					@setState {isLoading: true}
 
 					# Cache data to global, so can access again from newProgNote window
 					# Set up the dataStore if doesn't exist
@@ -539,6 +536,7 @@ load = (win) ->
 						progEvents: @props.progEvents
 						eventTypes: @props.eventTypes
 						programsById: @props.programsById
+						clientPrograms: @props.clientPrograms
 					}
 
 					openWindow {
@@ -550,6 +548,7 @@ load = (win) ->
 
 			], (err) =>
 				@setState {isLoading: false}
+
 				if err
 					CrashHandler.handle err
 					return
@@ -1235,9 +1234,9 @@ load = (win) ->
 
 		render: ->
 			{globalEvent} = @props
-			userProgramId = globalEvent.get('userProgramId')
+			programId = globalEvent.get('authorProgramId')
 
-			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
+			program = @props.programsById.get(programId) or Imm.Map()
 			timestamp = globalEvent.get('backdate') or globalEvent.get('timestamp')
 
 			startTimestamp = makeMoment globalEvent.get('startTimestamp')
@@ -1252,7 +1251,7 @@ load = (win) ->
 			return R.div({className: 'globalEventView'},
 				EntryHeader({
 					revisionHistory: Imm.List [globalEvent]
-					userProgram
+					userProgram: program
 					dateFormat: 'MMMM Do, YYYY' if isFullDay
 				})
 				R.h3({},

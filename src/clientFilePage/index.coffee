@@ -120,13 +120,13 @@ load = (win, {clientFileId}) ->
 				# Originally created from this clientFile
 				return true if globalEvent.get('clientFileId') is clientFileId
 
-				# Client is global, or globalEvent is fully global (no program)
-				authorProgramId = globalEvent.get('authorProgramId')
-				return true if not clientHasPrograms or not authorProgramId
+				# GlobalEvent is fully global (no program)
+				programId = globalEvent.get('authorProgramId')
+				return true if not programId
 
 				# globalEvent program matches up with one of clientFile's programs
 				# TODO: This is one example of where we need to search clientPrograms by ID
-				matchingProgram = clientPrograms.contains @state.programsById.get(authorProgramId)
+				matchingProgram = clientPrograms.contains @state.programsById.get(programId)
 				return true if matchingProgram
 
 				# Failed criteria tests, so discard this globalEvent
@@ -660,6 +660,18 @@ load = (win, {clientFileId}) ->
 					eventTypeIndex = @state.eventTypes.indexOf originalEventType
 					eventTypes = @state.eventTypes.set eventTypeIndex, newEventTypeRev
 					@setState {eventTypes}
+
+				'create:program': (newProgram) =>
+					programs = @state.programs.push newProgram
+					@setState {programs}
+
+				'createRevision:program': (newProgramRev) =>
+					originalProgram = @state.programs
+					.find (program) -> program.get('id') is program.get('id')
+
+					programIndex = @state.programs.indexOf originalProgram
+					programs = @state.programs.set programIndex, newProgramRev
+					@setState {programs}
 
 				'create:globalEvent': (globalEvent) =>
 					globalEvents = @state.globalEvents.push globalEvent
