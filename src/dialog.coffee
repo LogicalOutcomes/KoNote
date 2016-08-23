@@ -46,7 +46,6 @@ load = (win) ->
 					'dialogContainer'
 					@props.containerClasses.join(' ')
 				].join(' ')
-				onClick: if not @props.disableCancel or not @props.disableBackgroundClick then @_onBackgroundClick
 			},
 				Spinner({
 					isVisible: @state.isLoading
@@ -72,12 +71,6 @@ load = (win) ->
 			@setState -> {isLoading}
 
 		isLoading: -> @state.isLoading
-
-		_onBackgroundClick: (event) ->
-			# If click was on background, not the dialog itself
-			if event.target.classList.contains 'dialogContainer'
-				@props.onClose()
-
 
 	return Dialog
 

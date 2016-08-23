@@ -216,6 +216,8 @@ load = (win) ->
 			return R.div({className: 'revisionHistory'},
 				R.div({className: 'heading'},
 					R.h3({}, "Revision History")
+					unless revisions.isEmpty()
+						R.h4({}, revisions.first().get('name'))
 				)
 
 				(if revisions.isEmpty()
@@ -258,7 +260,8 @@ load = (win) ->
 
 			# Special cases made for planTarget types
 			isPlanTarget = @props.type is 'planTarget'
-			isTargetStatusChange = isPlanTarget and not (changeLog.first().get('action') in ['revised'])
+			isTargetStatusChange = isPlanTarget and not (changeLog.first().get('action') is 'revised')
+			isRenameEntry = changeLog.first().get('property') is 'name'
 
 			return R.section({className: 'revision'},
 				R.div({className: 'header'},
@@ -303,6 +306,7 @@ load = (win) ->
 						RevisionSnapshot({
 							revision
 							metricsById: @props.metricsById
+							isRenameEntry
 						})
 					)
 				)
@@ -316,6 +320,7 @@ load = (win) ->
 			entry = @props.entry
 
 			isCreationEntry = entry.get('action') is 'created'
+			isRenameEntry = entry.get('property') is 'name'
 
 			# Account for terminology metricIds -> metrics
 			if entry.get('property') is 'metricIds'
@@ -355,6 +360,8 @@ load = (win) ->
 						revision: @props.revision
 						dataModelName: @props.dataModelName
 						metricsById: @props.metricsById
+						#this is here to show the target name in the first history entry
+						isRenameEntry: true
 					})
 
 				# Unique handling for metrics
@@ -390,13 +397,15 @@ load = (win) ->
 
 			)
 
-	RevisionSnapshot = ({revision, metricsById}) ->
+	RevisionSnapshot = ({revision, metricsById, isRenameEntry}) ->
 		hasMetrics = revision.get('metricIds')?
 
 		R.div({className: 'snapshot'},
-			R.div({className: 'name'},
-				revision.get('name')
-			)
+
+			if isRenameEntry
+				R.div({className: 'name'},
+					revision.get('name')
+				)
 
 			R.div({className: 'description'},
 				renderLineBreaks revision.get('description')

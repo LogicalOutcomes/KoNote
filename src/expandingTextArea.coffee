@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # A <textarea> whose height is determined by the height of its content.
@@ -10,11 +10,23 @@ _ = require 'underscore'
 
 load = (win) ->
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
 
 	ExpandingTextArea = React.createFactory React.createClass
 		displayName: 'ExpandingTextArea'
-		mixins: [React.addons.PureRenderMixin]		
+		mixins: [React.addons.PureRenderMixin]
+
+		propTypes: {
+			value: PropTypes.string.isRequired
+			placeholder: PropTypes.string
+			disabled: PropTypes.bool
+			className: PropTypes.string
+
+			onChange: PropTypes.func.isRequired
+			onFocus: PropTypes.func
+			onClick: PropTypes.func
+		}
 
 		render: ->
 			return R.div({ref: 'outer'},

@@ -238,6 +238,7 @@ load = (win) ->
 								value: @state.userName
 								type: 'text'
 								placeholder: 'Username'
+								autoComplete: 'off'
 							})
 						)
 						R.div({className: 'form-group'},
@@ -249,6 +250,7 @@ load = (win) ->
 								onKeyDown: @_onEnterKeyDown
 								value: @state.password
 								placeholder: 'Password'
+								autoComplete: 'off'
 							})
 						)
 						R.div({className: 'btn-toolbar'},

@@ -1,7 +1,7 @@
 {
 	"logoCustomerLg": "gc-logo.svg",
 	"logoCustomerSm": "gc-logo.svg",
-	"logoSubtitle": "DSSS",
+	"logoSubtitle": "",
 
 	"clientFileRecordId": {
 		"isEnabled": true,

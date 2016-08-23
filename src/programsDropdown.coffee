@@ -2,35 +2,39 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Node libs
 Imm = require 'immutable'
 ImmPropTypes = require 'react-immutable-proptypes'
 Term = require './term'
 
+
 load = (win) ->
-	# Window libs
 	Bootbox = win.bootbox
 	React = win.React
 	{PropTypes} = React
 	R = React.DOM
+
 	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 	{FaIcon} = require('./utils').load(win)
 
-	UserProgramDropdown = React.createFactory React.createClass
-		displayName: 'UserProgramSelection'
+
+	ProgramsDropdown = React.createFactory React.createClass
+		displayName: 'ProgramsDropdown'
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			userProgram: ImmPropTypes.map
+			selectedProgram: ImmPropTypes.map
 			programs: ImmPropTypes.list.isRequired
+			placeholder: PropTypes.string
 			onSelect: PropTypes.func.isRequired
 		}
 
 		getDefaultProps: ->
 			return {
-				userProgram: Imm.Map()
+				selectedProgram: Imm.Map()
+				placeholder: "No #{Term 'Program'}"
+				excludeNone: false
 			}
 
 		getInitialState: ->
@@ -42,19 +46,19 @@ load = (win) ->
 			@setState {isOpen: not @state.isOpen}
 
 		render: ->
-			# userProgram can be null, so bypasses getDefaultProps
-			userProgram = @props.userProgram or Imm.Map()
+			# selectedProgram can be null, so bypasses getDefaultProps
+			selectedProgram = @props.selectedProgram or Imm.Map()
 
 			remainingPrograms = @props.programs.filterNot (program) =>
-				userProgram.get('id') is program.get('id')
+				selectedProgram.get('id') is program.get('id')
 
 			R.span({
-				className: 'userProgramDropdown'
+				className: 'programsDropdown'
 				onClick: @toggle
 			},
 				B.DropdownButton({
-					ref: 'userProgramDropdown'
-					id: 'userProgramDropdown'
+					ref: 'dropdown'
+					id: 'programsDropdown'
 					open: @state.isOpen
 					onClose: @toggle
 					bsStyle: 'link'
@@ -63,9 +67,9 @@ load = (win) ->
 
 					title: R.span({
 						className: 'currentProgram'
-						style: { borderBottomColor: userProgram.get('colorKeyHex')}
+						style: { borderBottomColor: selectedProgram.get('colorKeyHex')}
 					},
-						userProgram.get('name') or "No #{Term 'Program'}"
+						selectedProgram.get('name') or @props.placeholder
 					)
 				},
 					(remainingPrograms.map (program) =>
@@ -78,10 +82,10 @@ load = (win) ->
 							ColorKeyBubble({colorKeyHex: program.get('colorKeyHex')})
 						)
 					)
-					(if not remainingPrograms.isEmpty() and @props.userProgram
+					(if not remainingPrograms.isEmpty() and @props.selectedProgram and not @props.excludeNone
 						B.MenuItem({divider: true})
 					)
-					(if @props.userProgram
+					(if @props.selectedProgram and not @props.excludeNone
 						B.MenuItem({
 							onClick: @props.onSelect.bind null, null
 						},
@@ -93,6 +97,6 @@ load = (win) ->
 			)
 
 
-	return UserProgramDropdown
+	return ProgramsDropdown
 
 module.exports = {load}

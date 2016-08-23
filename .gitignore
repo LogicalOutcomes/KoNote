@@ -4,6 +4,7 @@
 *.zip
 
 .brackets.json
+.vscode*
 .DS_Store
 
 /data*

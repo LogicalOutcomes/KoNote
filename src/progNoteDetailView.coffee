@@ -9,6 +9,7 @@ Config = require './config'
 Term = require './term'
 Persist = require './persist'
 
+
 load = (win) ->
 	React = win.React
 	R = React.DOM
@@ -19,6 +20,7 @@ load = (win) ->
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
 	{FaIcon, renderLineBreaks, showWhen, formatTimestamp} = require('./utils').load(win)
+
 
 	ProgNoteDetailView = React.createFactory React.createClass
 		displayName: 'ProgNoteDetailView'
@@ -78,11 +80,14 @@ load = (win) ->
 									progEvents = @props.progEvents.filter (progEvent) =>
 										return progEvent.get('relatedProgNoteId') is progNote.get('id')
 
+									authorProgram = @props.programsById.get progNote.get('authorProgramId')
+
 									return Imm.fromJS {
 										status: progNote.get('status')
 										progNoteId: progNote.get('id')
 										author: initialAuthor
 										timestamp: createdTimestamp
+										authorProgram
 										backdate: progNote.get('backdate')
 										notes: unit.get('notes')
 										progEvents
@@ -165,9 +170,6 @@ load = (win) ->
 							backdate: progNote.get('backdate')
 							notes: progNote.get('notes')
 						}
-						return progNote
-						.set('author', initialAuthor)
-						.set('timestamp', createdTimestamp)
 
 				else
 					throw new Error "unknown item type: #{JSON.stringify @props.item?.get('type')}"
@@ -180,6 +182,7 @@ load = (win) ->
 			.sortBy (entry) ->
 				entry.get('backdate') or entry.get('timestamp')
 			.reverse()
+
 
 			return R.div({className: 'progNoteDetailView'},
 				R.div({className: 'itemDetails'},
@@ -225,7 +228,7 @@ load = (win) ->
 
 						authorProgram = entry.get('authorProgram') or Imm.Map()
 
-						R.div({
+						return R.div({
 							key: entryId
 							className: [
 								'entry'
@@ -237,7 +240,6 @@ load = (win) ->
 							R.div({className: 'header'},
 								R.div({className: 'timestamp'},
 									formatTimestamp(timestamp)
-
 									ColorKeyBubble({
 										colorKeyHex: authorProgram.get('colorKeyHex')
 										popover: {

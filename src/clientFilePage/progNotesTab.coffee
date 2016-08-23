@@ -38,17 +38,16 @@ load = (win) ->
 		displayName: 'ProgNotesView'
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: -> {
-			editingProgNoteId: null
-		}
-
 		getInitialState: ->
 			return {
+				editingProgNoteId: null
+
 				selectedItem: null
 				highlightedProgNoteId: null
 				highlightedTargetId: null
 				backdate: ''
 				revisingProgNote: null
+				isLoading: null
 			}
 
 		componentDidMount: ->
@@ -107,6 +106,7 @@ load = (win) ->
 							type: 'globalEvent'
 							id: globalEvent.get('id')
 							timestamp: globalEvent.get('startTimestamp')
+							programId: globalEvent.get('authorProgramId')
 							data: globalEvent
 						}
 				)
@@ -140,19 +140,13 @@ load = (win) ->
 							},
 								"Cancel"
 							)
-							R.button({
-								className: "btn btn-link #{showWhen hasChanges}"
-								onClick: @_resetRevisingProgNote
-							},
-								"Discard"
-							)
 						)
 					else
 						R.div({},
 							R.button({
 								className: 'newProgNote btn btn-primary'
 								onClick: @_openNewProgNote
-								disabled: @props.isReadOnly
+								disabled: @state.isLoading or @props.isReadOnly
 							},
 								FaIcon 'file'
 								"New #{Term 'progress note'}"
@@ -177,7 +171,7 @@ load = (win) ->
 							R.button({
 								className: 'btn btn-primary btn-lg newProgNote'
 								onClick: @_openNewProgNote
-								disabled: @props.isReadOnly
+								disabled: @state.isLoading or @props.isReadOnly
 							},
 								FaIcon 'file'
 								"New #{Term 'progress note'}"
@@ -254,13 +248,9 @@ load = (win) ->
 			revisingProgNote = originalProgNote.set('originalRevision', originalProgNote)
 			@setState {revisingProgNote}
 
-		_resetRevisingProgNote: ->
-			Bootbox.confirm "Discard all changes made to the #{Term 'progress note'}?", (ok) =>
-				if ok then @_startRevisingProgNote @state.revisingProgNote.get('originalRevision')
-
 		_cancelRevisingProgNote: ->
 			if @_revisingProgNoteHasChanges()
-				return Bootbox.confirm "Discard all changes made to the #{Term 'progress note'} and cancel editing?", (ok) =>
+				return Bootbox.confirm "Discard all changes made to the #{Term 'progress note'}?", (ok) =>
 					if ok then @_discardRevisingProgNote()
 
 			@_discardRevisingProgNote()
@@ -372,11 +362,9 @@ load = (win) ->
 			}
 
 		_saveProgNoteRevision: ->
-			@props.setIsLoading true
 			progNoteRevision = @_stripRevisingProgNote()
 
 			ActiveSession.persist.progNotes.createRevision progNoteRevision, (err, result) =>
-				@props.setIsLoading false
 
 				if err
 					if err instanceof Persist.IOError
@@ -401,15 +389,14 @@ load = (win) ->
 			@setState {highlightedTargetId}
 
 		_checkUserProgram: (cb) ->
-			# Continue if no userProgram or clientProgram(s)
-			userProgramId = global.ActiveSession.programId
-			noProgramsPresent = not userProgramId? or @props.clientPrograms.isEmpty()
-
-			if noProgramsPresent
+			# Skip if no clientProgram(s)
+			if @props.clientPrograms.isEmpty()
 				cb()
 				return
 
-			# Continue if userProgram matches one of the clientPrograms
+			userProgramId = global.ActiveSession.programId
+
+			# Skip if userProgram matches one of the clientPrograms
 			matchingUserProgram = @props.clientPrograms.find (program) ->
 				userProgramId is program.get('id')
 
@@ -418,7 +405,11 @@ load = (win) ->
 				return
 
 			clientName = renderName @props.clientFile.get('clientName')
-			userProgramName = @props.programsById.getIn [userProgramId, 'name']
+
+			userProgramName = if userProgramId
+				@props.programsById.getIn [userProgramId, 'name']
+			else
+				"(none)"
 
 			# Build programDropdown markup
 			programDropdown = ReactDOMServer.renderToString(
@@ -433,7 +424,11 @@ load = (win) ->
 				)
 			)
 
-			focusPopover = -> setTimeout (=> $('.popover textarea')[0].focus()), 500
+			focusPopover = ->
+				setTimeout (=>
+					$popover = $('.popover textarea')[0]
+					if $popover? then $popover.focus()
+				), 500
 
 			# Prompt user about temporarily overriding their program
 			Bootbox.dialog {
@@ -451,7 +446,6 @@ load = (win) ->
 						className: "btn-default"
 						callback: =>
 							Bootbox.hideAll()
-							cb null
 					}
 					ignore: {
 						label: "Ignore"
@@ -468,7 +462,6 @@ load = (win) ->
 
 							if not userProgramId? or userProgramId.length is 0
 								Bootbox.alert "No #{Term 'program'} was selected, please try again."
-								cb null
 								return
 
 							userProgram = @props.programsById.get userProgramId
@@ -501,8 +494,6 @@ load = (win) ->
 						className: "btn-default"
 						callback: =>
 							Bootbox.hideAll()
-							cb null
-							return
 					}
 					danger: {
 						label: "Ignore"
@@ -515,7 +506,6 @@ load = (win) ->
 						callback: =>
 							Bootbox.hideAll()
 							@props.onTabChange 'plan'
-							cb null
 							return
 					}
 				}
@@ -527,7 +517,7 @@ load = (win) ->
 				@_checkPlanChanges
 				@_checkUserProgram
 				(cb) =>
-					@props.setIsLoading true
+					@setState {isLoading: true}
 
 					# Cache data to global, so can access again from newProgNote window
 					# Set up the dataStore if doesn't exist
@@ -546,6 +536,7 @@ load = (win) ->
 						progEvents: @props.progEvents
 						eventTypes: @props.eventTypes
 						programsById: @props.programsById
+						clientPrograms: @props.clientPrograms
 					}
 
 					openWindow {
@@ -556,11 +547,11 @@ load = (win) ->
 					global.ActiveSession.persist.eventBus.once 'newProgNotePage:loaded', cb
 
 			], (err) =>
+				@setState {isLoading: false}
+
 				if err
 					CrashHandler.handle err
 					return
-
-				@props.setIsLoading false
 
 		_openNewQuickNote: ->
 			Async.series [
@@ -631,8 +622,6 @@ load = (win) ->
 				Bootbox.alert "Cannot create an empty #{Term 'quick note'}."
 				return
 
-			@props.setIsLoading true
-
 			quickNote = Imm.fromJS {
 				type: 'basic'
 				status: 'default'
@@ -644,7 +633,6 @@ load = (win) ->
 			}
 
 			global.ActiveSession.persist.progNotes.create quickNote, (err) =>
-				@props.setIsLoading false
 				if err
 					cb err
 					return
@@ -933,10 +921,6 @@ load = (win) ->
 									className: 'plan unit'
 									key: unitId
 								},
-									R.h1({},
-										unit.get('name')
-									)
-
 									(unit.get('sections').map (section) =>
 										sectionId = section.get('id')
 
@@ -1250,9 +1234,9 @@ load = (win) ->
 
 		render: ->
 			{globalEvent} = @props
-			userProgramId = globalEvent.get('userProgramId')
+			programId = globalEvent.get('authorProgramId')
 
-			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
+			program = @props.programsById.get(programId) or Imm.Map()
 			timestamp = globalEvent.get('backdate') or globalEvent.get('timestamp')
 
 			startTimestamp = makeMoment globalEvent.get('startTimestamp')
@@ -1267,7 +1251,7 @@ load = (win) ->
 			return R.div({className: 'globalEventView'},
 				EntryHeader({
 					revisionHistory: Imm.List [globalEvent]
-					userProgram
+					userProgram: program
 					dateFormat: 'MMMM Do, YYYY' if isFullDay
 				})
 				R.h3({},

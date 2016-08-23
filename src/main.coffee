@@ -179,15 +179,12 @@ init = (win) ->
 		if Config.devMode
 
 			# Convenience method for checking React perf
-			# Simply call start(), [do action], stop() on the window console
-			# TODO
-			# Perf is only available with dev build of React (which is no longer loaded via main.html) --
-			# will add back in 1.9
-			#Perf = React.addons.Perf
-			#win.start = Perf.start
-			#win.stop = ->
-			#	Perf.stop()
-			#	Perf.printWasted()
+			# Simply call start(), [do action], stop() from the window console
+			Perf = React.addons.Perf
+			win.start = Perf.start
+			win.stop = ->
+				Perf.stop()
+				Perf.printWasted()
 
 			# Ctrl-Shift-J opens devTools for current window context
 			win.document.addEventListener 'keyup', (event) ->
@@ -209,8 +206,14 @@ init = (win) ->
 			win.document.addEventListener 'keyup', (event) ->
 				# If Ctrl-R
 				if event.ctrlKey and (not event.shiftKey) and event.which is 82
-					console.log "Replace!"
+					console.log "- - - Hot Code Replace - - -"
 					doHotCodeReplace()
+			, false
+
+			# Ctrl-F runs a quick CSS refresh
+			win.document.addEventListener 'keyup', (event) ->
+				if event.ctrlKey and (not event.shiftKey) and event.which is 70
+					refreshCSS()
 			, false
 
 
@@ -256,7 +259,7 @@ init = (win) ->
 
 			# Inject the compiled CSS into the page
 			win.document.getElementById('main-css').innerHTML = compiledCss;
-			console.info "Injected CSS"
+			console.info "- - - Refreshed CSS - - -"
 
 	registerPageListeners = =>
 		pageListeners = Imm.fromJS(pageComponent.getPageListeners()).entrySeq()
@@ -271,27 +274,6 @@ init = (win) ->
 
 		# Make sure everything is reset
 		global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
-
-		# Try registering chokidar for live-refresh capabilities
-		if Config.devMode
-			try
-				Chokidar = require 'chokidar'
-
-				chokidarListener = Chokidar
-				.watch './src'
-				.on 'change', (filePath) =>
-					fileExtension = filePath.split('.').splice(-1)[0]
-					switch fileExtension
-						when 'styl'
-							refreshCSS()
-						when 'coffee' or 'js'
-							doHotCodeReplace()
-
-				console.info "Live-refresh enabled"
-
-			catch err
-				console.warn "Live-refresh unavailable", err
-
 
 	unregisterPageListeners = =>
 		# Unregister Chokidar

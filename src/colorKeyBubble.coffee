@@ -64,6 +64,7 @@ load = (win) ->
 					onClick
 					style: {
 						background: colorKeyHex
+						borderColor: colorKeyHex
 					}
 				},
 					# Invisible 'check' icon for sake of display consistency

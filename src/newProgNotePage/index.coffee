@@ -13,6 +13,7 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+
 load = (win, {clientFileId}) ->
 	# Libraries from browser context
 	$ = win.jQuery
@@ -37,6 +38,7 @@ load = (win, {clientFileId}) ->
 
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
+
 	NewProgNotePage = React.createFactory React.createClass
 		displayName: 'NewProgNotePage'
 		mixins: [React.addons.PureRenderMixin]
@@ -44,7 +46,6 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				status: 'init'
-				isLoading: null
 
 				loadErrorType: null
 				progNote: null
@@ -78,6 +79,7 @@ load = (win, {clientFileId}) ->
 				progEvents: @state.progEvents
 				eventTypes: @state.eventTypes
 				programsById: @state.programsById
+				clientPrograms: @state.clientPrograms
 
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
@@ -95,6 +97,7 @@ load = (win, {clientFileId}) ->
 				progEvents
 				eventTypes
 				programsById
+				clientPrograms
 			} = global.dataStore[clientFileId]
 
 			# Build progNote with template
@@ -117,6 +120,7 @@ load = (win, {clientFileId}) ->
 				progNoteHistories
 				progEvents
 				eventTypes
+				clientPrograms
 			}, ->
 				# We're done with this dataStore, so delete it to preserve memory
 				delete global.dataStore[clientFileId]
@@ -186,12 +190,11 @@ load = (win, {clientFileId}) ->
 			}
 
 	NewProgNotePageUi = React.createFactory React.createClass
+		displayName: 'NewProgNotePageUi'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
 			return {
-				isLoading: null
-
 				progNote: @props.progNote
 
 				progEvents: Imm.List()
@@ -277,15 +280,10 @@ load = (win, {clientFileId}) ->
 
 			clientName = renderName @props.clientFile.get('clientName')
 			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) -
-				#{clientName}: New #{Term 'Progress Note'}
+				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}: New #{Term 'Progress Note'}
 			"""
 
 			return R.div({className: 'newProgNotePage animated fadeIn'},
-				Spinner({
-					isVisible: @state.isLoading
-					isOverlay: true
-				})
 
 				R.div({className: 'progNote'},
 					R.div({className: 'backdateContainer'},
@@ -347,11 +345,6 @@ load = (win, {clientFileId}) ->
 										className: 'unit plan'
 										key: unitId
 									},
-										R.h1({className: 'unitName'}, unit.get 'name')
-										R.div({className: "empty #{showWhen unit.get('sections').size is 0}"},
-											"This is empty because the client has no active
-											#{Term 'plan'} #{Term 'sections'} or #{Term 'targets'}."
-										)
 										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
 
@@ -450,11 +443,12 @@ load = (win, {clientFileId}) ->
 					},
 						(@state.progEvents.map (thisEvent, index) =>
 							isBeingEdited = @state.editingWhichEvent is index
+							isGlobalEvent = !!thisEvent.get('globalEvent')
 
 							R.div({
 								className: [
-										'eventTab'
-										'isEditing' if isBeingEdited
+									'eventTab'
+									'isEditing' if isBeingEdited
 								].join ' '
 								key: index
 							},
@@ -462,7 +456,7 @@ load = (win, {clientFileId}) ->
 									className: 'icon'
 									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
 								},
-									FaIcon 'calendar'
+									FaIcon (if isGlobalEvent then 'globe' else 'calendar')
 								)
 								EventTabView({
 									data: thisEvent
@@ -474,6 +468,7 @@ load = (win, {clientFileId}) ->
 									saveProgEvent: @_saveProgEvent
 									cancel: @_cancelEditing
 									editMode: @state.editingWhichEvent?
+									clientPrograms: @props.clientPrograms
 									isBeingEdited
 
 									updateEventPlanRelationMode: @_updateEventPlanRelationMode
@@ -486,14 +481,14 @@ load = (win, {clientFileId}) ->
 						R.button({
 							className: 'btn btn-default addEventButton'
 							onClick: @_newEventTab
-							disabled: @state.isLoading or @state.editingWhichEvent?
+							disabled: @state.editingWhichEvent?
 						}, FaIcon('plus'))
 					)
 				)
 			)
 
 		_newEventTab: ->
-			newProgEvent = {}
+			newProgEvent = Imm.Map()
 			# Add in the new event, select last one
 			@setState {progEvents: @state.progEvents.push newProgEvent}, =>
 				@setState {editingWhichEvent: @state.progEvents.size - 1}
@@ -507,7 +502,7 @@ load = (win, {clientFileId}) ->
 
 		_cancelEditing: (index) ->
 			# Delete if new event
-			if _.isEmpty @state.progEvents.get(index)
+			if @state.progEvents.get(index) and @state.progEvents.get(index).isEmpty()
 				@setState {progEvents: @state.progEvents.delete(index)}
 
 			@setState {
@@ -654,7 +649,6 @@ load = (win, {clientFileId}) ->
 		_isValidMetric: (value) -> value.match /^-?\d*\.?\d*$/
 
 		_save: ->
-			@setState {isLoading: true}
 
 			authorProgramId = global.ActiveSession.programId or ''
 			progNote = @state.progNote
@@ -723,7 +717,6 @@ load = (win, {clientFileId}) ->
 					, cb
 
 			], (err) =>
-				@setState {isLoading: false}
 
 				if err
 					if err instanceof Persist.IOError

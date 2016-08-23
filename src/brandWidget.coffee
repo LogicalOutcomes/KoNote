@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Displays the branding logo etc in a specified corner of the
@@ -25,7 +25,7 @@ load = (win) ->
 					className: 'logoKN'
 				})
 				R.img({
-					src: './img/konode-konode.svg',
+					src: './img/konote-text.png',
 					className: 'logoKonode'
 				})
 			)

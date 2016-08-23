@@ -6,7 +6,7 @@ Async = require 'async'
 _ = require 'underscore'
 Imm = require 'immutable'
 Persist = require './persist'
-Fs = require 'fs'
+Fs = require 'graceful-fs'
 Path = require 'path'
 Term = require './term'
 Archiver = require 'archiver'
@@ -235,7 +235,7 @@ load = (win) ->
 
 					CSVConverter.json2csv progEvents.toJS(), (err, result) =>
 						if err
-							cb err
+							CrashHandler.handle err
 							return
 						csv = result
 						@_updateProg100ress

@@ -11,6 +11,7 @@ Persist = require './persist'
 Config = require './config'
 Term = require './term'
 
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -18,15 +19,21 @@ load = (win) ->
 	{PropTypes} = React
 	R = React.DOM
 
+	# TODO: Refactor to single require
+	{BootstrapTable, TableHeaderColumn} = win.ReactBootstrapTable
+	BootstrapTable = React.createFactory BootstrapTable
+	TableHeaderColumn = React.createFactory TableHeaderColumn
+
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
-	OrderableTable = require('./orderableTable').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	Spinner = require('./spinner').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
-	UserProgramDropdown = require('./userProgramDropdown').load(win)
+	ProgramsDropdown = require('./programsDropdown').load(win)
+	DialogLayer = require('./dialogLayer').load(win)
 
 	{FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
+
 
 	AccountManagerTab = React.createFactory React.createClass
 		displayName: 'AccountManagerTab'
@@ -38,10 +45,11 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
+				dataIsReady: false
 				userAccounts: Imm.List()
 
 				openDialogId: null
-				displayDeactivated: false
+				displayInactive: false
 			}
 
 		componentWillMount: ->
@@ -68,7 +76,6 @@ load = (win) ->
 
 							# Build object with only userName and publicInfo
 							userAccountObject = @_buildUserAccountObject(result)
-
 							cb null, userAccountObject
 
 					, (err, results) =>
@@ -80,43 +87,75 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@setState {userAccounts}
+				@setState {
+					dataIsReady: true
+					userAccounts
+				}
 
 		render: ->
 			# Tack on program assignment to userAccounts
-			userAccounts = @state.userAccounts
-			.map (userAccount) =>
+			userAccounts = @state.userAccounts.map (userAccount) =>
 				userName = userAccount.get('userName')
 
 				programLink = @props.userProgramLinks.find (link) ->
 					userName is link.get('userName') and link.get('status') is 'assigned'
 
-				unless programLink
-					return userAccount
+				program = if programLink
+					@props.programs.find (program) -> program.get('id') is programLink.get('programId')
+				else
+					null
 
-				matchingProgram = @props.programs.find (program) ->
-					program.get('id') is programLink.get('programId')
+				return userAccount.set 'program', program
 
-				return userAccount.set 'program', matchingProgram
 
-			# Filter out deactivated accounts
-			unless @state.displayDeactivated
+			# Do ANY active userProgramLinks exist?
+			hasProgramLinks = @props.userProgramLinks.some (link) ->
+				link.get('status') is 'assigned'
+
+			# Do ANY inactive accounts exist?
+			inactiveUserAccounts = @state.userAccounts.filter (account) ->
+				not account.getIn(['publicInfo', 'isActive'])
+
+			hasInactiveUsers = not inactiveUserAccounts.isEmpty()
+
+			# Filter out inactive accounts if required
+			unless @state.displayInactive
 				userAccounts = userAccounts.filter (userAccount) =>
 					userAccount.getIn(['publicInfo', 'isActive'])
 
+			# Flatten out {publicInfo} in each userAccount obj for table
+			tableData = userAccounts.map (userAccount) ->
+				publicInfo = userAccount.get('publicInfo')
+				isActive = if publicInfo.get('isActive') then "active" else "deactivated"
 
-			R.div({className: 'accountManagerTab'},
+				return userAccount
+				.set 'isActive', isActive
+				.set 'accountType', publicInfo.get('accountType')
+
+
+			return R.div({className: 'accountManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
-						R.span({id: 'toggleDisplayDeactivated'},
-							R.div({className: 'checkbox'},
-								R.label({},
-									R.input({
-										type: 'checkbox'
-										checked: @state.displayDeactivated
-										onClick: @_toggleDisplayDeactivated
-									})
-									"Show deactivated"
+						R.div({className: 'optionsMenu'},
+							OpenDialogLink({
+								className: 'btn btn-primary'
+								dialog: CreateAccountDialog
+								programs: @props.programs
+								onSuccess: @_addAccount
+							},
+								FaIcon('plus')
+								" New #{Term 'Account'}"
+							)
+							(if hasInactiveUsers
+								R.div({className: 'toggleInactive'},
+									R.label({},
+										"Show inactive (#{inactiveUserAccounts.size})"
+										R.input({
+											type: 'checkbox'
+											checked: @state.displayInactive
+											onClick: @_toggleDisplayInactive
+										})
+									)
 								)
 							)
 						)
@@ -124,67 +163,80 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'main'},
-					R.div({id: 'userAccountsContainer'},
-						OrderableTable({
-							tableData: userAccounts
-							openDialog: {
-								dialog: ModifyAccountDialog
-								props: {
-									programs: @props.programs
-									userProgramLinks: @props.userProgramLinks
-									updateUserProgramLinks: @_updateUserProgramLinks
-									updateAccount: @_updateAccount
-								}
+					(if @state.dataIsReady
+						# Does not have display for !hasData,
+						# since there must always be at least active user account
+						R.div({className: 'responsiveTable animated fadeIn'},
+							DialogLayer({
+								ref: 'dialogLayer'
+								userAccounts: tableData
+								programs: @props.programs
+								userProgramLinks: @props.userProgramLinks
+								updateAccount: @_updateAccount
 							}
-							sortByData: ['userName']
-							rowKey: ['userName']
-							rowClass: (dataPoint) ->
-								'deactivatedAccount' unless dataPoint.getIn(['publicInfo', 'isActive'])
-							columns: [
-								{
-									name: "Colour Key"
-									nameIsVisible: false
-									dataPath: ['program']
-									cellClass: 'colorKeyCell'
-									value: (dataPoint) ->
-										program = dataPoint.get('program')
+								BootstrapTable({
+									data: tableData.toJS()
+									keyField: 'userName'
+									bordered: false
+									options: {
+										defaultSortName: 'lastName'
+										defaultSortOrder: 'asc'
+										onRowClick: ({userName}) =>
+											@refs.dialogLayer.open ManageAccountDialog, {userName}
+									}
+									trClassName: ({isActive}) -> 'inactive' unless isActive is 'active'
+								},
+									TableHeaderColumn({
+										dataField: 'program'
+										columnClassName: 'colorKeyColumn'
+										dataFormat: (program) ->
+											return null if not program
 
-										ColorKeyBubble({
-											colorKeyHex: program.get('colorKeyHex')
-											popover: {
-												title: program.get('name')
-												content: program.get('description')
-											}
-										})
-								}
-								{
-									name: "User Name"
-									dataPath: ['userName']
-								}
-								{
-									name: "Account Type"
-									dataPath: ['publicInfo', 'accountType']
-								}
-							]
-						})
-					)
-				)
-				R.div({className: 'optionsMenu'},
-					OpenDialogLink({
-						className: 'btn btn-lg btn-primary'
-						dialog: CreateAccountDialog
-						programs: @props.programs
-						onSuccess: @_addAccount
-					},
-						FaIcon('plus')
-						" New #{Term 'Account'}"
+											ColorKeyBubble({
+												colorKeyHex: program.colorKeyHex
+												popover: {
+													title: program.name
+													content: program.description
+												}
+											})
+									})
+									TableHeaderColumn({
+										dataField: 'userName'
+										className: 'nameColumn'
+										columnClassName: 'nameColumn'
+										dataSort: true
+									}, "User Name")
+									TableHeaderColumn({
+										dataField: 'accountType'
+										dataSort: true
+										className: 'rightPadding' unless @state.displayInactive
+										columnClassName: 'rightPadding' unless @state.displayInactive
+									}, "Account Type")
+									TableHeaderColumn({
+										dataField: 'isActive'
+										className: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
+										columnClassName: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
+										headerAlign: 'right'
+										dataAlign: 'right'
+										dataSort: true
+										hidden: not @state.displayInactive
+									}, "Status")
+								)
+							)
+						)
 					)
 				)
 			)
 
-		_toggleDisplayDeactivated: ->
-			displayDeactivated = not @state.displayDeactivated
-			@setState {displayDeactivated}
+		_toggleDisplayInactive: ->
+			displayInactive = not @state.displayInactive
+			@setState {displayInactive}
 
 		_buildUserAccountObject: (userAccount) ->
 			return Imm.fromJS {
@@ -199,54 +251,58 @@ load = (win) ->
 			@setState {userAccounts}
 
 		_updateAccount: (userAccount, cb=(->)) ->
-			console.log "Updating account:", userAccount
-			console.log "@state.userAccounts", @state.userAccounts.toJS()
-
 			matchingUserAccount = @state.userAccounts.find (account) ->
 				account.get('userName') is userAccount.get('userName')
 
 			userAccountIndex = @state.userAccounts.indexOf matchingUserAccount
-			console.log "userAccountIndex", userAccountIndex
 			userAccounts = @state.userAccounts.set userAccountIndex, userAccount
 
 			@setState {userAccounts}, cb
 
 
-	ModifyAccountDialog = React.createFactory React.createClass
+	ManageAccountDialog = React.createFactory React.createClass
 		displayName: 'ModifyAccountDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			dataPoint: ImmPropTypes.map
-			programs: ImmPropTypes.list
-			userProgramLinks: ImmPropTypes.list
-			updateAccount: PropTypes.func
+			userName: PropTypes.string.isRequired
+			userAccounts: ImmPropTypes.list.isRequired
+			programs: ImmPropTypes.list.isRequired
+			userProgramLinks: ImmPropTypes.list.isRequired
+			updateAccount: PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {
-			actionComponent: null
-			actionTitle: null
+			view: null
+			viewTitle: null
 			userProgram: null
 		}
 
+		_getUserAccount: ->
+			userAccount = @props.userAccounts.find (account) =>
+				account.get('userName') is @props.userName
+
+			if not userAccount
+				console.warn "No userAccount found for \"#{@props.userName}\" in:", @props.userAccounts.toJS()
+			else
+				return userAccount
+
 		render: ->
-			userAccount = @props.dataPoint
-			# Dialogs are a new React instance, so don't change with new props
-			# userProgram = @state.userProgram or userAccount.get('program')
+			userAccount = @_getUserAccount()
 			userProgram = userAccount.get('program')
 
 			isAdmin = userAccount.getIn(['publicInfo', 'accountType']) is 'admin'
 			isDeactivated = not userAccount.getIn(['publicInfo', 'isActive'])
 
-			# Append actionTitle to the dialog title if exists
+			# Append viewTitle to the dialog title if exists
 			title = R.span({},
-				"Modify #{if isDeactivated then 'Deactivated' else ''} Account"
-				(if @state.actionComponent?
+				"Manage #{if isDeactivated then 'Deactivated' else ''} Account"
+				(if @state.view?
 					R.span({},
 						' '
 						FaIcon('long-arrow-right')
 						' '
-						@state.actionTitle
+						@state.viewTitle
 					)
 				)
 			)
@@ -271,25 +327,25 @@ load = (win) ->
 								" (admin)" if isAdmin
 							)
 							R.div({id: 'userProgram'},
-								UserProgramDropdown({
+								ProgramsDropdown({
 									ref: 'userProgramDropdown'
 									id: 'modifyUserProgramDropdown'
-									userProgram: userProgram
+									selectedProgram: userProgram
 									programs: @props.programs
-									onSelect: @_reassignProgram
+									onSelect: @_reassignProgram.bind null, userAccount
 								})
 							)
 						)
 					)
 
 					R.section({id: 'accountActions'},
-						(switch @state.actionComponent
+						(switch @state.view
 							when 'resetPassword'
 								ResetPasswordView({
 									userName: userAccount.get('userName')
 									setIsLoading: @refs.dialog.setIsLoading
-									onCancel: @_closeActionComponent
-									onSuccess: @_closeActionComponent
+									onCancel: @_closeView
+									onSuccess: @_closeView
 								})
 							else
 								R.div({id: 'actionsList'},
@@ -298,7 +354,7 @@ load = (win) ->
 										R.li({},
 											R.button({
 												className: 'btn btn-link'
-												onClick: @_switchActionComponent.bind(
+												onClick: @_switchView.bind(
 													null, 'resetPassword', "Reset Password"
 												)
 											}, "Reset Password")
@@ -306,13 +362,13 @@ load = (win) ->
 										R.li({},
 											R.button({
 												className: 'btn btn-link'
-												onClick: @_toggleUserProgramDropdown
+												onClick: @_toggleUserProgramDropdown.bind null, userAccount
 											}, "Re-Assign #{Term 'Program'}")
 										)
 										R.li({},
 											R.button({
 												className: 'btn btn-link'
-												onClick: @_changeAccountType.bind null, userAccount
+												onClick: @_changeAccountType.bind null, userAccount, isAdmin
 											}, "Change Account Type")
 										)
 										R.li({},
@@ -328,11 +384,11 @@ load = (win) ->
 				)
 			)
 
-		_switchActionComponent: (actionComponent, actionTitle) ->
-			@setState {actionComponent, actionTitle}
+		_switchView: (view, viewTitle) ->
+			@setState {view, viewTitle}
 
-		_closeActionComponent: ->
-			@_switchActionComponent null, null
+		_closeView: ->
+			@_switchView null, null
 
 		_toggleUserProgramDropdown: ->
 			@refs.userProgramDropdown.toggle()
@@ -344,6 +400,7 @@ load = (win) ->
 			newAccountType = if isAdmin then 'normal' else 'admin'
 
 			dataDirectory = global.ActiveSession.account.dataDirectory
+			sessionAccount = global.ActiveSession.account
 			userAccountOp = null
 			decryptedUserAccount = null
 
@@ -374,7 +431,7 @@ load = (win) ->
 						cb()
 
 				(cb) =>
-					decryptedUserAccount.changeAccountType decryptedUserAccount, global.ActiveSession.account, newAccountType, (err) =>
+					decryptedUserAccount.changeAccountType decryptedUserAccount, sessionAccount, newAccountType, (err) =>
 						if err
 							cb err
 							return
@@ -403,14 +460,13 @@ load = (win) ->
 					action = if newAccountType is 'admin' then "granted to" else "revoked from"
 					Bootbox.alert "Administrator privileges #{action} #{userName}."
 
-		_reassignProgram: (newProgram) ->
-			userAccount = @props.dataPoint
+		_reassignProgram: (userAccount, newProgram) ->
 			userAccountProgramId = userAccount.getIn(['program', 'id'])
 
 			# Ignore when same program is selected
 			return if newProgram.get('id') is userAccountProgramId
 
-			userName = @props.dataPoint.get('userName')
+			userName = userAccount.get('userName')
 
 			# Unassign any existing 'assigned' userProgramLinks
 			# Note that these are actually userProgramLinkHeaders (indexes), so may be incomplete in future
@@ -591,7 +647,7 @@ load = (win) ->
 									key: program.get('id')
 								},
 									ColorKeyBubble({
-										isSelected
+										icon: 'check' if isSelected
 										colorKeyHex: program.get('colorKeyHex')
 									})
 									program.get('name')

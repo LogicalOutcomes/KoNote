@@ -19,7 +19,7 @@ load = (win) ->
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
-	UserProgramDropdown = require('./userProgramDropdown').load(win)
+	ProgramsDropdown = require('./programsDropdown').load(win)
 
 	{FaIcon, showWhen} = require('./utils').load(win)
 
@@ -33,6 +33,7 @@ load = (win) ->
 			programs: ImmPropTypes.list.isRequired
 			userProgram: ImmPropTypes.map
 			managerLayer: PropTypes.string
+			isSmallHeaderSet: PropTypes.bool
 
 			updateManagerLayer: PropTypes.func.isRequired
 		}
@@ -59,19 +60,17 @@ load = (win) ->
 
 		render: ->
 			{isAdmin} = @props
-
 			R.aside({
 				id: 'mainMenu'
-				className: 'isOpen animated fadeInRight'
+				className: 'animated fadeInRight'
 			},
 				R.div({id: 'menuContainer'},
 					R.div({id: 'user'},
 						R.div({},
-							R.div({id: 'avatar'}, FaIcon('user'))
 							R.h3({}, global.ActiveSession.userName)
 							(unless @props.programs.isEmpty()
-								UserProgramDropdown({
-									userProgram: @props.userProgram
+								ProgramsDropdown({
+									selectedProgram: @props.userProgram
 									programs: @props.programs
 									onSelect: @_overrideProgram
 								})
@@ -81,18 +80,29 @@ load = (win) ->
 					R.div({id: 'items'},
 						R.ul({},
 							MenuItem({
-								title: "New #{Term 'Client File'}"
+								title: "#{Term 'Client Files'}"
 								icon: 'folder-open'
-								dialog: CreateClientFileDialog
-								programs: @props.programs
 								onClick: @props.updateManagerLayer.bind null, null
+								isActive: @props.managerLayer is null and @props.isSmallHeaderSet
+							})
+							MenuItem({
+								title: Term 'Metrics'
+								icon: 'line-chart'
+								onClick: @props.updateManagerLayer.bind null, 'metricDefinitionManagerTab'
+								isActive: @props.managerLayer is 'metricDefinitionManagerTab'
+							})
+							MenuItem({
+								title: Term 'Plan Templates'
+								icon: 'wpforms'
+								onClick: @props.updateManagerLayer.bind null, 'planTemplateManagerTab'
+								isActive: @props.managerLayer is 'planTemplateManagerTab'
 							})
 							MenuItem({
 								isVisible: isAdmin
-								title: "User #{Term 'Accounts'}"
-								icon: 'key'
-								onClick: @props.updateManagerLayer.bind null, 'accountManagerTab'
-								isActive: @props.managerLayer is 'accountManagerTab'
+								title: Term 'Event Types'
+								icon: 'calendar-o'
+								onClick: @props.updateManagerLayer.bind null, 'eventTypeManagerTab'
+								isActive: @props.managerLayer is 'eventTypeManagerTab'
 							})
 							MenuItem({
 								title: Term 'Programs'
@@ -102,29 +112,17 @@ load = (win) ->
 							})
 							MenuItem({
 								isVisible: isAdmin
-								title: "#{Term 'Event'} Types"
-								icon: 'calendar-o'
-								onClick: @props.updateManagerLayer.bind null, 'eventTypeManagerTab'
-								isActive: @props.managerLayer is 'eventTypeManagerTab'
-							})
-							MenuItem({
-								title: Term 'Metrics'
-								icon: 'line-chart'
-								onClick: @props.updateManagerLayer.bind null, 'metricDefinitionManagerTab'
-								isActive: @props.managerLayer is 'metricDefinitionManagerTab'
-							})
-							MenuItem({
-								title: "Plan Templates"
-								icon: 'wpforms'
-								onClick: @props.updateManagerLayer.bind null, 'planTemplateManagerTab'
-								isActive: @props.managerLayer is 'planTemplateManagerTab'
-							})
-							MenuItem({
-								isVisible: isAdmin
 								title: "Export Data"
 								icon: 'upload'
 								onClick: @props.updateManagerLayer.bind null, 'exportManagerTab'
 								isActive: @props.managerLayer is 'exportManagerTab'
+							})
+							MenuItem({
+								isVisible: isAdmin
+								title: "User #{Term 'Accounts'}"
+								icon: 'key'
+								onClick: @props.updateManagerLayer.bind null, 'accountManagerTab'
+								isActive: @props.managerLayer is 'accountManagerTab'
 							})
 							MenuItem({
 								title: "My #{Term 'Account'}"

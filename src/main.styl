@@ -1,16 +1,16 @@
-@require "fonts.css"
 @require "../lib/bootstrap/dist/css/bootstrap.min.css"
 @require "../lib/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css"
 @require "../lib/bootstrap-slider/dist/css/bootstrap-slider.min.css"
 @require "../lib/font-awesome/css/font-awesome.min.css"
 @require "../lib/c3/c3.min.css"
 @require "../lib/animate.css/animate.min.css"
+@require "../lib/react-bootstrap-table/react-bootstrap-table.min.css"
 
-//override animate.css
+// Override animate.css
 .animated
 	animation-duration .5s !important
 
-//override bootstrap
+// Override bootstrap
 .modal
 	&.fade
 		.modal-dialog
@@ -18,19 +18,25 @@
 			transform none !important
 
 .tooltip-inner
-	max-width: 400px
+	max-width 400px
+
+// Override cursor actions for app-like feel
+
+a, button, label, th, .btn
+	cursor default !important
+	-webkit-user-select none !important
+
 
 html, body
 	min-height 500px
 	height 100%
+	font-family -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif
+	// Apple default San Francisco, Win default Segoe, then common ss fonts
 
 #container
 	position relative
 	display block !important
-
 	height 100%
-
-	font-family 'Open Sans', sans-serif
 
 textarea
 	// Allowing resizing usually messes up the layout.
@@ -48,14 +54,14 @@ textarea
 @require brandWidget
 @require timeoutDialog
 @require printButton
-@require orderableTable
 @require colorKeyBubble
 @require colorKeySelection
 @require programBubbles
 @require managerLayer
 @require progEventsWidget
 @require printPreviewPage
-@require userProgramDropdown
+@require programsDropdown
+@require responsiveTable
 
 // Pages and Child Components
 @require loginPage
@@ -79,7 +85,10 @@ textarea
 
 @require programManagerTab
 @require createProgramDialog
-@require manageProgramClientsDialog
+@require manageProgramDialog
+@require manageProgramClientsView
+
+@require planTemplateManagerTab
 
 @require metricDefinitionManagerTab
 @require defineMetricDialog
