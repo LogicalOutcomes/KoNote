@@ -235,7 +235,7 @@ load = (win) ->
 
 					CSVConverter.json2csv progEvents.toJS(), (err, result) =>
 						if err
-							cb err
+							CrashHandler.handle err
 							return
 						csv = result
 						@_updateProg100ress
