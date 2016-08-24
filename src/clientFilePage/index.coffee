@@ -402,6 +402,17 @@ load = (win, {clientFileId}) ->
 						eventTypes = Imm.List(results).map (eventType) -> stripMetadata eventType.get(0)
 						cb()
 
+				(cb) =>
+					ActiveSession.persist.planTemplates.list (err, result) =>
+						if err
+							cb err
+							return
+
+						planTemplateHeaders = result
+						.filter (template) -> template.get('status') is 'default'
+						cb()
+
+
 			], (err) =>
 				if err
 					# Cancel any lock operations, and show the page in error

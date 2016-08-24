@@ -19,6 +19,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	ReactDOM = win.ReactDOM
+	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
 	RevisionHistory = require('../revisionHistory').load(win)
@@ -138,6 +139,28 @@ load = (win) ->
 									FaIcon('wpforms')
 								)
 							)
+							# WithTooltip({
+							# 	placement: 'bottom'
+							# 	title: "Apply template"
+							# },
+							# 	# B.DropdownButton({
+							# 	# 	title: "Apply a Template"
+
+							# 	# },
+							# 	# 	(@props.planTemplateHeaders.map (planTemplateHeader) =>
+							# 	# 		B.MenuItem({
+							# 	# 			key: planTemplateHeader.get('id')
+							# 	# 			# onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+							# 	# 		},
+							# 	# 			R.div({
+							# 	# 				# onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+							# 	# 			},
+							# 	# 				planTemplateHeader.get('name')
+
+							# 	# 			)
+							# 	# 		)
+							# 	# 	)								)
+							# )
 							PrintButton({
 								dataSet: [
 									{
@@ -874,6 +897,8 @@ load = (win) ->
 				sectionIsInactive
 			} = @props
 
+			console.log "section", section.toJS()
+
 			sectionStatus = section.get('status')
 
 			# Figure out whether already exists in plan
@@ -905,6 +930,18 @@ load = (win) ->
 						FaIcon('plus')
 						"Add #{Term 'target'}"
 					)
+					WithTooltip({
+						placement: 'bottom'
+						title: "Create plan template"
+					},
+						R.button({
+							className: 'btn createTemplateButton'
+							onClick: @_createTemplate (section)
+						},
+							FaIcon('wpforms')
+						)
+					)
+
 				)
 				# TODO: Extract to component
 				(if canSetStatus
@@ -987,6 +1024,41 @@ load = (win) ->
 				)
 
 			)
+		# console.log "section", @props.section.toJS()
+
+		_createTemplate: (section) ->
+			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
+				unless templateName
+					return
+
+				sectionTargets = section.get('targetIds').map (targetId) =>
+					target = @state.currentTargetRevisionsById.get(targetId)
+					# Removing irrelevant data from object
+					return target
+					.remove('status')
+					.remove('statusReason')
+					.remove('clientFileId')
+					.remove('id')
+
+				templateSection = Imm.fromJS {
+					name: section.get('name')
+					targets: sectionTargets
+				}
+
+				sectionTemplate = Imm.fromJS {
+					name: templateName
+					status: 'default'
+					sections: templateSection
+				}
+
+				global.ActiveSession.persist.planTemplates.create sectionTemplate, (err, obj) =>
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again
+						"""
+						return
+					Bootbox.alert "New template: '#{templateName}' created."
 
 
 	PlanTarget = React.createFactory React.createClass
