@@ -161,6 +161,7 @@ dataModelDefinitions = [
 					updateReason: Joi.string().optional()
 					status: ['default', 'cancelled']
 					statusReason: Joi.string().optional()
+					authorProgramId: IdSchema
 				})
 			}
 		]
