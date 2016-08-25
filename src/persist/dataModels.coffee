@@ -151,6 +151,18 @@ dataModelDefinitions = [
 					})
 				]
 			}
+			{
+				name: 'alert'
+				collectionName: 'alerts'
+				isMutable: true
+				indexes: [['status']]
+				schema: Joi.object().keys({
+					content: Joi.string()
+					updateReason: Joi.string().optional()
+					status: ['default', 'cancelled']
+					statusReason: Joi.string().optional()
+				})
+			}
 		]
 	}
 	{
