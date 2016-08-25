@@ -36,6 +36,7 @@ load = (win) ->
 		propTypes: {
 			alerts: ImmPropTypes.list.isRequired
 			clientFileId: PropTypes.string.isRequired
+			isDisabled: PropTypes.bool.isRequired
 		}
 
 		_getSingleAlert: ->
@@ -52,7 +53,7 @@ load = (win) ->
 				isEditing: null
 			}
 
-		componentWillUpdate: (newProps) ->
+		componentDidUpdate: (newProps) ->
 			# Reset component when alert data changes
 			# TODO: Account for hasChanges/isEditing
 			if not Imm.is newProps.alerts, @props.alerts
@@ -100,6 +101,8 @@ load = (win) ->
 			@setState {content}
 
 		_beginEditing: ->
+			return if @props.isDisabled
+
 			isEditing = true
 			beginTimestamp = Moment()
 
@@ -179,6 +182,13 @@ load = (win) ->
 
 			Async.series [
 				(cb) =>
+					Bootbox.prompt "Explanation for the alert change (optional)", (updateReason) ->
+						if updateReason
+							alert = alert.set('updateReason', updateReason)
+
+						cb()
+
+				(cb) =>
 					ActiveSession.persist.alerts.createRevision alert, (err, result) ->
 						if err
 							cb err
@@ -194,6 +204,11 @@ load = (win) ->
 
 		_generateQuickNote: (alert, cb) ->
 			notes = "Alert info changed to: #{alert.get('content')}"
+
+			# Append updateReason to quickNote if exists
+			if alert.has('updateReason')
+				notes += " (#{alert.get('updateReason')})"
+
 			authorProgramId = ActiveSession.programId or ''
 			beginTimestamp = @state.beginTimestamp.format(Persist.TimestampFormat)
 			clientFileId = @props.clientFileId
