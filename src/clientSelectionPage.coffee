@@ -12,6 +12,7 @@ Config = require './config'
 Term = require './term'
 Persist = require './persist'
 
+
 load = (win) ->
 	# Window libs
 	$ = win.jQuery
@@ -39,6 +40,7 @@ load = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
+
 
 	ClientSelectionPage = React.createFactory React.createClass
 		displayName: 'ClientSelectionPage'
@@ -333,7 +335,12 @@ load = (win) ->
 		componentDidMount: ->
 			# Fire 'loaded' event for loginPage to hide itself
 			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
+
+			# Key bindings for search results navigation
 			@_attachKeyBindings()
+
+			# Set the userProgramId globally so other windows can access it
+			ActiveSession.programId = if @props.userProgram then @props.userProgram.get('id') else null
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
