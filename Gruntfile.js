@@ -28,7 +28,9 @@ module.exports = function(grunt) {
 								{name: ' Generic - Mac', value: 'generic-mac'},
 								{name: ' Generic - Windows', value: 'generic-win'},
 								{name: ' Griffin - Mac', value: 'griffin-mac'},
-								{name: ' Griffin - Windows', value: 'griffin-win'}
+								{name: ' Griffin - Windows', value: 'griffin-win'},
+								{name: ' St Leonards - Mac', value: 'stleonards-mac'},
+								{name: ' St Leonards - Windows', value: 'stleonards-win'}
 							]
 						}
 					],
@@ -107,6 +109,22 @@ module.exports = function(grunt) {
 					{
 						src: 'customers/griffin/gc-logo.svg',
 						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/gc-logo.svg'
+					}
+				]
+			},
+			stleonards: {
+				files: [
+					{
+						src: 'customers/st_leonards_place/customer.json',
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/customer.json'
+					},
+					{
+						src: 'customers/st_leonards_place/customer-logo-lg.png',
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/stleonards-logo-lg.png'
+					},
+					{
+						src: 'customers/st_leonards_place/customer-logo-sm.png',
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/stleonards-logo-sm.png'
 					}
 				]
 			}
@@ -316,6 +334,9 @@ module.exports = function(grunt) {
 			if (entry == "griffin-mac" || entry == "griffin-win") {
 				grunt.task.run('copy:griffin:'+entry);
 			}
+			if (entry == "stleonards-mac" || entry == "stleonards-win") {
+				grunt.task.run('copy:stleonards:'+entry);
+			}
 			grunt.task.run('exec:npm:'+entry);
 			grunt.task.run('copy:nodemodules:'+entry);
 			grunt.task.run('clean:nodemodules:'+entry);
@@ -326,12 +347,12 @@ module.exports = function(grunt) {
 			grunt.task.run('uglify:all:'+entry);
 			grunt.task.run('clean:coffee:'+entry);
 			grunt.task.run('clean:styl:'+entry);
-			if (entry == "generic-win" || entry == "griffin-win") {
+			if (entry == "generic-win" || entry == "griffin-win" || entry == "stleonards-win") {
 				//grunt.task.run('nwjs:win:'+entry);
 				grunt.task.run('exec:nwjswin:'+entry);
 				grunt.task.run('exec:zip:'+entry);
 			}
-			if (entry == "griffin-mac" || entry == "generic-mac") {
+			if (entry == "griffin-mac" || entry == "generic-mac" || entry == "stleonards-mac") {
 				//grunt.task.run('nwjs:mac:'+entry);
 				grunt.task.run('exec:nwjsosx:'+entry);
 				if (process.platform == 'darwin') {
