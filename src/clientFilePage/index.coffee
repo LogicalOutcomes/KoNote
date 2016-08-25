@@ -727,8 +727,11 @@ load = (win, {clientFileId}) ->
 		hasChanges: ->
 			# Eventually this will cover more
 			# components where unsaved changes can occur
+			# TODO: Make this a little nicer
 			if @refs.planTab?
 				@refs.planTab.hasChanges()
+			else if @refs.sidebar
+				@refs.sidebar.hasChanges()
 			else
 				false
 
@@ -797,6 +800,9 @@ load = (win, {clientFileId}) ->
 						}
 					}
 				}
+			else if @refs.sidebar.hasChanges()
+				Bootbox.confirm "Discard unsaved changes to #{Term 'client'} alerts?", (ok) =>
+					if ok then @props.closeWindow()
 			else
 				@props.closeWindow()
 
@@ -825,6 +831,7 @@ load = (win, {clientFileId}) ->
 				)
 				R.div({className: 'wrapper'},
 					Sidebar({
+						ref: 'sidebar'
 						clientFile: @props.clientFile
 						clientName: @props.clientName
 						clientPrograms: @props.clientPrograms
@@ -834,6 +841,7 @@ load = (win, {clientFileId}) ->
 						status: @props.clientFile.get('status')
 						alerts: @props.alerts
 						onTabChange: @_changeTab
+						isReadOnly
 					})
 					R.div({
 						className: [
@@ -913,6 +921,10 @@ load = (win, {clientFileId}) ->
 		displayName: 'Sidebar'
 		mixins: [React.addons.PureRenderMixin]
 
+		hasChanges: ->
+			# Pass up clientAlerts.hasChanges() to UI parent
+			@refs.clientAlerts.hasChanges()
+
 		render: ->
 			activeTabId = @props.activeTabId
 
@@ -988,8 +1000,10 @@ load = (win, {clientFileId}) ->
 				)
 
 				ClientAlerts({
+					ref: 'clientAlerts'
 					alerts: @props.alerts
 					clientFileId
+					isDisabled: @props.isReadOnly
 				})
 
 				BrandWidget()
