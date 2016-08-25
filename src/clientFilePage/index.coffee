@@ -11,9 +11,8 @@
 # transient fields before saving, while `fromSavedFormat` initialize them with
 # some default values.
 
-# Libraries from Node.js context
+
 _ = require 'underscore'
-Assert = require 'assert'
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -24,7 +23,6 @@ Persist = require '../persist'
 
 
 load = (win, {clientFileId}) ->
-	# Libraries from browser context
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
@@ -40,6 +38,7 @@ load = (win, {clientFileId}) ->
 	OpenDialogLink = require('../openDialogLink').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
+	ClientAlerts = require('./clientAlerts').load(win)
 
 	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
 
@@ -153,6 +152,7 @@ load = (win, {clientFileId}) ->
 				clientFileProgramLinkHeaders: @state.clientFileProgramLinkHeaders
 				eventTypes: @state.eventTypes
 				globalEvents
+				alerts: @state.alerts
 
 				headerIndex: @state.headerIndex
 				progNoteTotal: @state.progNoteTotal
@@ -188,6 +188,8 @@ load = (win, {clientFileId}) ->
 			eventTypes = null
 			globalEventHeaders = null
 			globalEvents = null
+			alertHeaders = null
+			alerts = null
 
 			checkFileSync = (newData, oldData) =>
 				unless fileIsUnsync
@@ -402,6 +404,28 @@ load = (win, {clientFileId}) ->
 						eventTypes = Imm.List(results).map (eventType) -> stripMetadata eventType.get(0)
 						cb()
 
+				(cb) =>
+					ActiveSession.persist.alerts.list clientFileId, (err, result) =>
+						if err
+							cb err
+							return
+
+						alertHeaders = result
+						cb()
+
+				(cb) =>
+					Async.map alertHeaders.toArray(), (alertHeader, cb) =>
+						alertId = alertHeader.get('id')
+
+						ActiveSession.persist.alerts.readLatestRevisions clientFileId, alertId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						alerts = Imm.List(results).map (alert) -> stripMetadata alert.get(0)
+						cb()
+
 			], (err) =>
 				if err
 					# Cancel any lock operations, and show the page in error
@@ -466,6 +490,7 @@ load = (win, {clientFileId}) ->
 						programsById
 						clientFileProgramLinkHeaders
 						eventTypes
+						alerts
 					}
 
 		_acquireLock: (cb=(->)) ->
@@ -535,7 +560,6 @@ load = (win, {clientFileId}) ->
 				cb()
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
-
 			newPlanTargetsArray = newPlanTargets.toArray()
 			updatedPlanTargetsArray = updatedPlanTargets.toArray()
 
@@ -677,6 +701,11 @@ load = (win, {clientFileId}) ->
 					globalEvents = @state.globalEvents.push globalEvent
 					@setState {globalEvents}
 
+				# TODO: Update to allow for multiple alerts
+				'create:alert createRevision:alert': (alert) =>
+					alerts = Imm.List [alert]
+					@setState {alerts}
+
 				'timeout:timedOut': =>
 					@_killLocks Bootbox.hideAll
 
@@ -803,6 +832,7 @@ load = (win, {clientFileId}) ->
 						activeTabId
 						programs: @props.programs
 						status: @props.clientFile.get('status')
+						alerts: @props.alerts
 						onTabChange: @_changeTab
 					})
 					R.div({
@@ -878,6 +908,7 @@ load = (win, {clientFileId}) ->
 		_changeTab: (activeTabId) ->
 			@setState {activeTabId}
 
+
 	Sidebar = React.createFactory React.createClass
 		displayName: 'Sidebar'
 		mixins: [React.addons.PureRenderMixin]
@@ -918,12 +949,14 @@ load = (win, {clientFileId}) ->
 						)
 					)
 				)
+
 				(if @props.recordId
 					R.div({className: 'recordId'},
 						R.span({}, renderRecordId @props.recordId, true)
 					)
 				)
-				if @props.status is 'inactive'
+
+				(if @props.status is 'inactive'
 					R.div({className: 'inactiveStatus'},
 						@props.status.toUpperCase()
 					)
@@ -931,6 +964,8 @@ load = (win, {clientFileId}) ->
 					R.div({className: 'dischargedStatus'},
 						@props.status.toUpperCase()
 					)
+				)
+
 				R.div({className: 'tabStrip'},
 					SidebarTab({
 						name: Term('Plan')
@@ -951,12 +986,19 @@ load = (win, {clientFileId}) ->
 						onClick: @props.onTabChange.bind null, 'analysis'
 					})
 				)
+
+				ClientAlerts({
+					alerts: @props.alerts
+					clientFileId
+				})
+
 				BrandWidget()
 			)
 
+
 	SidebarTab = React.createFactory React.createClass
 		displayName: 'SidebarTab'
-		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			return R.div({
 				className: "tab #{if @props.isActive then 'active' else ''}"
@@ -967,9 +1009,10 @@ load = (win, {clientFileId}) ->
 				@props.name
 			)
 
+
 	LoadError = React.createFactory React.createClass
 		displayName: 'LoadError'
-		mixins: [React.addons.PureRenderMixin]
+
 		componentDidMount: ->
 			console.log "loadErrorType:", @props.loadErrorType
 			msg = switch @props.loadErrorType
@@ -980,14 +1023,17 @@ load = (win, {clientFileId}) ->
 					"""
 				else
 					"An unknown error occured (loadErrorType: #{@props.loadErrorType}"
+
 			Bootbox.alert msg, =>
 				@props.closeWindow()
+
 		render: ->
 			return R.div({className: 'clientFilePage'})
 
+
 	ReadOnlyNotice = React.createFactory React.createClass
 		displayName: 'ReadOnlyNotice'
-		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			return R.div({className: 'readOnlyNotice'},
 				R.div({
