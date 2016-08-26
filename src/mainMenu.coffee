@@ -2,12 +2,12 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Node libs
+
 ImmPropTypes = require 'react-immutable-proptypes'
 Term = require './term'
 
+
 load = (win) ->
-	# Window libs
 	Bootbox = win.bootbox
 	React = win.React
 	{PropTypes} = React
@@ -60,7 +60,8 @@ load = (win) ->
 
 		render: ->
 			{isAdmin} = @props
-			R.aside({
+
+			return R.aside({
 				id: 'mainMenu'
 				className: 'animated fadeInRight'
 			},
@@ -116,6 +117,12 @@ load = (win) ->
 								icon: 'upload'
 								onClick: @props.updateManagerLayer.bind null, 'exportManagerTab'
 								isActive: @props.managerLayer is 'exportManagerTab'
+							})
+							MenuItem({
+								title: "Shift Summaries"
+								icon: 'sticky-note'
+								onClick: @props.updateManagerLayer.bind null, 'summaryManagerTab'
+								isActive: @props.managerLayer is 'summaryManagerTab'
 							})
 							MenuItem({
 								isVisible: isAdmin
