@@ -73,6 +73,7 @@ load = (win) ->
 				R.h3({className: 'animated fadeInUp'},
 					FaIcon('exclamation-triangle')
 					' '
+					"No " unless @state.content
 					"Alerts"
 				)
 				R.div({id: 'alertsContainer'},
