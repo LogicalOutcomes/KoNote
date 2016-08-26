@@ -994,6 +994,15 @@ load = (win) ->
 								)
 					).toJS()...
 
+					(if progNote.get('summary')
+						R.div({className: 'basic unit'},
+							R.h3({}, "Shift Summary")
+							R.div({className: 'notes'},
+								renderLineBreaks progNote.get('summary')
+							)
+						)
+					)
+
 					unless @props.progEvents.isEmpty()
 						R.div({className: 'progEvents'}
 							R.h3({}, Term 'Events')

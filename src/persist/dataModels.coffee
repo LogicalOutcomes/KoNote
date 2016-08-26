@@ -103,6 +103,7 @@ dataModelDefinitions = [
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						authorProgramId: IdSchema.allow('')
 						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+						summary: Joi.string().allow('')
 						units: Joi.array().items(
 							[
 								Joi.object().keys({
