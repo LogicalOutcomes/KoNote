@@ -535,15 +535,11 @@ load = (win, {clientFileId}) ->
 				cb()
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
-
-			newPlanTargetsArray = newPlanTargets.toArray()
-			updatedPlanTargetsArray = updatedPlanTargets.toArray()
-
 			idMap = Imm.Map()
 
 			Async.series [
 				(cb) =>
-					Async.each newPlanTargetsArray, (newPlanTarget, cb) =>
+					Async.each newPlanTargets.toArray(), (newPlanTarget, cb) =>
 						transientId = newPlanTarget.get('id')
 						newPlanTarget = newPlanTarget.delete('id')
 
@@ -557,7 +553,7 @@ load = (win, {clientFileId}) ->
 							cb()
 					, cb
 				(cb) =>
-					Async.each updatedPlanTargetsArray, (updatedPlanTarget, cb) =>
+					Async.each updatedPlanTargets.toArray(), (updatedPlanTarget, cb) =>
 						ActiveSession.persist.planTargets.createRevision updatedPlanTarget, cb
 					, cb
 				(cb) =>
@@ -804,7 +800,7 @@ load = (win, {clientFileId}) ->
 						programs: @props.programs
 						status: @props.clientFile.get('status')
 						onTabChange: @_changeTab
-					})
+					}),
 					R.div({
 						className: [
 							'view'

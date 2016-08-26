@@ -228,11 +228,16 @@ load = (win) ->
 
 			return false
 
-		_hasTargetChanged: (targetId) ->
-			currentRev = @_normalizeTarget @state.currentTargetRevisionsById.get(targetId)
+		_hasTargetChanged: (targetId, currentTargetRevisionsById, planTargetsById) ->
+			# Default to retrieving these values from the component
+			currentTargetRevisionsById or= @state.currentTargetRevisionsById
+			planTargetsById or= @props.planTargetsById
+
+			# Get current revision (normalized) of the specified target
+			currentRev = @_normalizeTarget currentTargetRevisionsById.get(targetId)
 
 			# If this is a new target
-			target = @props.planTargetsById.get(targetId, null)
+			target = planTargetsById.get(targetId, null)
 			unless target
 				# If target is empty
 				emptyName = currentRev.get('name') is ''
@@ -263,20 +268,30 @@ load = (win) ->
 					Bootbox.alert "Cannot save #{Term 'plan'}: there are empty #{Term 'target'} fields."
 					return
 
-				newPlanTargets = @state.currentTargetRevisionsById.valueSeq()
+				# Capture these values for use in filtering functions below.
+				# This is necessary to ensure that they won't change between
+				# now and when the filtering functions are actually called.
+				currentTargetRevisionsById = @state.currentTargetRevisionsById
+				planTargetsById = @props.planTargetsById
+
+				newPlanTargets = currentTargetRevisionsById.valueSeq()
 				.filter (target) =>
 					# Only include targets that have not been saved yet
-					return not @props.planTargetsById.has(target.get('id'))
+					return not planTargetsById.has(target.get('id'))
 				.map(@_normalizeTarget)
 
-				updatedPlanTargets = @state.currentTargetRevisionsById.valueSeq()
+				updatedPlanTargets = currentTargetRevisionsById.valueSeq()
 				.filter (target) =>
 					# Ignore new targets
-					unless @props.planTargetsById.has(target.get('id'))
+					unless planTargetsById.has(target.get('id'))
 						return false
 
 					# Only include targets that have actually changed
-					return @_hasTargetChanged target.get('id')
+					return @_hasTargetChanged(
+						target.get('id'),
+						currentTargetRevisionsById,
+						planTargetsById
+					)
 				.map(@_normalizeTarget)
 
 				@props.updatePlan @state.plan, newPlanTargets, updatedPlanTargets
