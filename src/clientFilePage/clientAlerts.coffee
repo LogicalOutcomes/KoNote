@@ -27,6 +27,9 @@ load = (win) ->
 
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	WithTooltip = require('../withTooltip').load(win)
+
+	{FaIcon, renderLineBreaks} = require('../utils').load(win)
 
 
 	ClientAlerts = React.createFactory React.createClass
@@ -63,8 +66,15 @@ load = (win) ->
 			return @state.content isnt @_getSingleAlert().get('content')
 
 		render: ->
-			R.div({className: 'clientAlerts'},
-				R.h3({}, "Alerts")
+			R.div({
+				className: 'clientAlerts animated fadeInUp'
+				onClick: @_beginEditing unless @state.isEditing
+			},
+				R.h3({className: 'animated fadeInUp'},
+					FaIcon('exclamation-triangle')
+					' '
+					"Alerts"
+				)
 				R.div({id: 'alertsContainer'},
 					(if @state.isEditing
 						R.div({id: 'isEditingContent'},
@@ -75,22 +85,29 @@ load = (win) ->
 							})
 							R.div({className: 'btn-toolbar pull-right'},
 								R.button({
-									className: 'btn btn-default'
+									className: 'btn btn-sm btn-default'
 									onClick: @_cancelEditing
 								}, "Cancel")
 								R.button({
-									className: 'btn btn-success'
+									className: 'btn btn-sm btn-success'
 									disabled: not @hasChanges()
 									onClick: @_save
-								}, "Save")
+								},
+									"Save"
+									' '
+									FaIcon('check')
+								)
 							)
 						)
 					else
-						R.div({
-							id: 'staticContent'
-							onClick: @_beginEditing
+						WithTooltip({
+							title: "Click here to add an alert" if @state.content
+							placement: 'right'
+							container: 'body'
 						},
-							@state.content or "Click here to add an alert"
+							R.div({id: 'staticContent'},
+								renderLineBreaks(@state.content or "Click here to add an alert")
+							)
 						)
 					)
 				)
