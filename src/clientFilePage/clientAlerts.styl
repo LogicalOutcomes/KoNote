@@ -1,2 +1,37 @@
 .clientAlerts
-	// Nothing here yet...
+	position absolute
+	bottom 65px // Based off of BrandWidget
+	border-top 2px solid #cadbe5
+	width 100%
+	cursor default
+
+	transition background .5s ease
+
+	h3, #alertsContainer
+		padding 15px 20px
+
+	h3
+		font-size 18px
+		margin 0
+
+		.fa
+			margin-right 5px
+
+	#alertsContainer
+		padding-top 0
+
+		#staticContent
+			word-wrap break-word
+			max-height 150px
+			overflow auto
+			transition opacity .25s ease
+
+			&:hover
+				opacity .75
+
+		.btn-toolbar
+			padding 15px 0
+
+		.expandingTextAreaComponent
+			max-height 150px !important
+			overflow auto
