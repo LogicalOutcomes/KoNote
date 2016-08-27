@@ -700,11 +700,7 @@ load = (win, {clientFileId}) ->
 				false
 
 		suggestClose: ->
-			# If page still loading
-			# TODO handle this more elegantly
-			unless @props.clientFile?
-				@props.closeWindow()
-				return
+			return unless @hasMounted
 
 			clientName = renderName @props.clientFile.get('clientName')
 
@@ -771,6 +767,9 @@ load = (win, {clientFileId}) ->
 			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
 			Window.focus()
 			Window.maximize()
+
+			# It's now OK to close the window
+			@hasMounted = true
 
 		render: ->
 			if @props.loadErrorType
