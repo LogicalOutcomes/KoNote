@@ -111,12 +111,14 @@ load = (win) ->
 					)
 				)
 			)
+
 		_copyCrashTrace: ->
-			clipboard = Gui.Clipboard.get();
+			clipboard = Gui.Clipboard.get()
 			clipboard.set JSON.stringify @props.crash
 
 		_selectDebugInfo: ->
 			@refs.debugInfo.select()
+
 		_close: ->
 			nwWin.close true
 
