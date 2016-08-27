@@ -18,7 +18,6 @@ load = (win) ->
 	EventTypeManagerTab = require('./eventTypeManagerTab').load(win)
 	MetricDefinitionManagerTab = require('./metricDefinitionManagerTab').load(win)
 	PlanTemplateManagerTab = require('./planTemplateManagerTab').load(win)
-	SummaryManagerTab = require('./summaryManagerTab').load(win)
 
 	ManagerLayer = React.createFactory React.createClass
 		displayName: 'ManagerLayer'
@@ -40,8 +39,6 @@ load = (win) ->
 					MetricDefinitionManagerTab
 				when 'planTemplateManagerTab'
 					PlanTemplateManagerTab
-				when 'summaryManagerTab'
-					SummaryManagerTab
 
 			return R.div({className: 'managerLayer'},
 				R.div({className: 'managerLayerContainer'},

@@ -119,12 +119,6 @@ load = (win) ->
 								isActive: @props.managerLayer is 'exportManagerTab'
 							})
 							MenuItem({
-								title: "Shift Summaries"
-								icon: 'sticky-note'
-								onClick: @props.updateManagerLayer.bind null, 'summaryManagerTab'
-								isActive: @props.managerLayer is 'summaryManagerTab'
-							})
-							MenuItem({
 								isVisible: isAdmin
 								title: "User #{Term 'Accounts'}"
 								icon: 'key'
