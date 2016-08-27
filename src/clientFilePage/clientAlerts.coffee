@@ -154,6 +154,7 @@ load = (win) ->
 						return
 
 					CrashHandler.handle err
+					return
 
 				# Component state will automatically reset when @props.alerts changes
 
@@ -172,6 +173,13 @@ load = (win) ->
 			createdAlert = null
 
 			Async.series [
+				(cb) =>
+					Bootbox.prompt "Reason for the new alert (optional)", (updateReason) ->
+						if updateReason
+							alert = alert.set('updateReason', updateReason)
+
+						cb()
+
 				(cb) =>
 					ActiveSession.persist.alerts.create alert, (err, result) ->
 						if err
@@ -200,7 +208,7 @@ load = (win) ->
 
 			Async.series [
 				(cb) =>
-					Bootbox.prompt "Explanation for the alert change (optional)", (updateReason) ->
+					Bootbox.prompt "Explanation for the alert update (optional)", (updateReason) ->
 						if updateReason
 							alert = alert.set('updateReason', updateReason)
 
