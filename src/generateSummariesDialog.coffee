@@ -9,6 +9,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require './config'
+Term = require './term'
 
 
 load = (win) ->
@@ -16,6 +17,8 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+
+	Gui = win.require 'nw.gui'
 
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
@@ -25,8 +28,8 @@ load = (win) ->
 	{FaIcon, renderName} = require('./utils').load(win)
 
 
-	SummaryManagerTab = React.createFactory React.createClass
-		displayName: 'SummaryManagerTab'
+	GenerateSummariesDialog = React.createFactory React.createClass
+		displayName: 'GenerateSummariesDialog'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: -> {
@@ -45,23 +48,50 @@ load = (win) ->
 				title: "Shift Summary Log"
 				onClose: @props.onClose
 			},
-				R.div({className: 'summaryManagerTab'},
-					R.div({className: 'main'},
-						(if @state.isBuilding
-							Spinner {
-								isVisible: true
-								isOverlay: false
-								message: @state.progressMessage
-								percent: @state.progressPercent
-							}
-						else
+				R.div({className: 'generateSummariesDialog'},
+					(if @state.isBuilding
+						Spinner {
+							isVisible: true
+							isOverlay: false
+							message: @state.progressMessage
+							percent: @state.progressPercent
+						}
+					else
+						R.div({
+							id: 'summariesContainer'
+							className: 'animated fadeIn'
+						},
 							R.textarea({
+								className: 'form-control'
 								value: @state.summariesString
+								onChange: (event) -> event.preventDefault()
 							})
+							R.br({})
+							R.button({
+								className: 'btn btn-lg btn-primary'
+								onClick: @_copyToClipboard
+							},
+								"Copy"
+								' '
+								FaIcon('copy')
+							)
 						)
 					)
 				)
 			)
+
+		_copyToClipboard: ->
+			clipboard = Gui.Clipboard.get()
+			clipboard.set JSON.stringify @state.summariesString
+
+			notification = new win.Notification "Shift Summaries", {
+				body: "Copied to clipboard"
+				icon: Config.iconNotification
+			}
+
+			setTimeout(->
+				notification.close()
+			, 3000)
 
 		_buildSummariesData: ->
 			userProgramId = ActiveSession.programId
@@ -209,28 +239,64 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				console.log "Done generating data..."
-
 				# Finally,
 				# 1. Filter out clientFiles without summaries
 				# 2. Format each one to a string template
 				# 3. Concatenate everything into 1 giant string
+				# TODO: Refactor all this
+
+				todaysDate = Moment().format('MMMM Do, YYYY')
+				titleString = """
+					Shift Summaries - #{todaysDate}
+					------------------------------------------------\n\n
+				"""
+
 				summariesString = summaryObjects
 				.filter (obj) -> obj.get('progNote')
 				.map (obj) ->
 					date = obj.getIn(['progNote', 'backdate']) or obj.getIn(['progNote', 'timestamp'])
+					time = Moment(date, TimestampFormat).format('h:mma')
 					clientName = renderName(obj.getIn ['clientFile', 'clientName'])
 					recordId = obj.getIn ['clientFile', 'recordId']
+					author = obj.getIn ['progNote', 'author']
 					summary = obj.getIn ['progNote', 'summary']
 
+					recordIdString = if recordId then " (#{Config.clientFileRecordId.label} #{recordId})" else ''
+
 					return """
-						#{clientName} - #{Config.clientFileRecordId.label} #{recordId}\n
-						SUMMARY: #{summary}
+						- #{clientName}#{recordIdString} - by #{author} @ #{time}
+						#{summary}
 					"""
 				.toJS()
-				.join "\n\n"
+				.join "\n"
 
-				console.log "summariesString", summariesString
+				if not summariesString
+					summariesString = "(no summaries recorded today)"
+
+				summariesString = titleString + summariesString
+
+				# TODO: Refactor this
+				missingSummariesString = summaryObjects
+				.filter (obj) -> not obj.get('progNote')
+				.map (obj) ->
+					clientName = renderName(obj.getIn ['clientFile', 'clientName'])
+					recordId = obj.getIn ['clientFile', 'recordId']
+
+					recordIdString = if recordId then " (#{Config.clientFileRecordId.label} #{recordId})" else ''
+
+					return """
+						- #{clientName}#{recordIdString}
+					"""
+				.toJS()
+				.join "\n"
+
+
+				if missingSummariesString.length > 0
+					summariesString = [summariesString, missingSummariesString].join """
+						\n\n
+						No summaries recorded today for:
+						------------------------------------------------\n
+					"""
 
 				# All done!
 				@setState {
@@ -239,7 +305,7 @@ load = (win) ->
 				}
 
 
-	return SummaryManagerTab
+	return GenerateSummariesDialog
 
 
 module.exports = {load}
