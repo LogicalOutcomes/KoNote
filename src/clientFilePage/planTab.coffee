@@ -139,28 +139,30 @@ load = (win) ->
 									FaIcon('wpforms')
 								)
 							)
-							# WithTooltip({
-							# 	placement: 'bottom'
-							# 	title: "Apply template"
-							# },
-							# 	# B.DropdownButton({
-							# 	# 	title: "Apply a Template"
+							WithTooltip({
+								placement: 'bottom'
+								title: "Apply template"
+							},
+								B.DropdownButton({
+									title: "Apply a Template"
 
-							# 	# },
-							# 	# 	(@props.planTemplateHeaders.map (planTemplateHeader) =>
-							# 	# 		B.MenuItem({
-							# 	# 			key: planTemplateHeader.get('id')
-							# 	# 			# onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
-							# 	# 		},
-							# 	# 			R.div({
-							# 	# 				# onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
-							# 	# 			},
-							# 	# 				planTemplateHeader.get('name')
+								},
+									# unless @props.planTemplateHeaders.isEmpty()
+									# 	(@props.planTemplateHeaders.map (planTemplateHeader) =>
+									# 		B.MenuItem({
+									# 			key: planTemplateHeader.get('id')
+									# 			# onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+									# 		},
+									# 			R.div({
+									# 				# onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+									# 			},
+									# 				planTemplateHeader.get('name')
 
-							# 	# 			)
-							# 	# 		)
-							# 	# 	)								)
-							# )
+									# 			)
+									# 		)
+									# 	)
+								)
+							)
 							PrintButton({
 								dataSet: [
 									{

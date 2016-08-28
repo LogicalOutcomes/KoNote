@@ -79,9 +79,11 @@ load = (win, {clientFileId}) ->
 				planTargetsById: Imm.Map()
 				programsById: Imm.Map()
 				metricsById: Imm.Map()
+				planTemplateHeaders: Imm.Map()
 				loadErrorType: null
 				loadErrorData: null
 			}
+
 
 		init: ->
 			@_renewAllData()
@@ -143,11 +145,13 @@ load = (win, {clientFileId}) ->
 				clientFile: @state.clientFile
 				clientName
 				clientPrograms
+				planTemplateHeaders: @state.planTemplateHeaders
 
 				progNoteHistories
 				progressEvents: @state.progressEvents
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
+				planTemplateHeaders: @state.planTemplateHeaders
 				programs: @state.programs
 				programsById: @state.programsById
 				clientFileProgramLinkHeaders: @state.clientFileProgramLinkHeaders
@@ -410,7 +414,9 @@ load = (win, {clientFileId}) ->
 
 						planTemplateHeaders = result
 						.filter (template) -> template.get('status') is 'default'
+						console.log "planTemplateHeaders", planTemplateHeaders.toJS()
 						cb()
+
 
 
 			], (err) =>
@@ -473,6 +479,7 @@ load = (win, {clientFileId}) ->
 						globalEvents
 						metricsById
 						planTargetsById
+						# planTemplateHeaders
 						programs
 						programsById
 						clientFileProgramLinkHeaders
@@ -831,6 +838,7 @@ load = (win, {clientFileId}) ->
 							programsById: @props.programsById
 							metricsById: @props.metricsById
 							updatePlan: @props.updatePlan
+							planTemplateHeaders: @props.planTemplateHeaders
 							isReadOnly
 						})
 					)
