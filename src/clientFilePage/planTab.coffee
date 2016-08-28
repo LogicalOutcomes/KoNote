@@ -405,11 +405,15 @@ load = (win) ->
 						targets: sectionTargets
 					}
 
+				console.log "templateSections", templateSections
+
 				planTemplate = Imm.fromJS {
 					name: templateName
 					status: 'default'
 					sections: templateSections
 				}
+
+				console.log "planTemplate", planTemplate.toJS()
 
 				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
 					if err instanceof Persist.IOError
@@ -1043,16 +1047,20 @@ load = (win) ->
 					.remove('clientFileId')
 					.remove('id')
 
-				templateSection = Imm.fromJS {
+				templateSection = Imm.fromJS [{
 					name: @props.section.get('name')
 					targets: sectionTargets
-				}
+				}]
+
+				console.log "templateSection",
 
 				sectionTemplate = Imm.fromJS {
 					name: templateName
 					status: 'default'
 					sections: templateSection
 				}
+
+				console.log "sectionTemplate", sectionTemplate.toJS()
 
 				global.ActiveSession.persist.planTemplates.create sectionTemplate, (err, obj) =>
 					if err instanceof Persist.IOError
