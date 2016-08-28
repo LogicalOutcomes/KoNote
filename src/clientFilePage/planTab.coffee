@@ -936,7 +936,7 @@ load = (win) ->
 					},
 						R.button({
 							className: 'btn createTemplateButton'
-							onClick: @_createTemplate (section)
+							onClick: @_createTemplate
 						},
 							FaIcon('wpforms')
 						)
@@ -1026,12 +1026,12 @@ load = (win) ->
 			)
 		# console.log "section", @props.section.toJS()
 
-		_createTemplate: (section) ->
+		_createTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
 				unless templateName
 					return
 
-				sectionTargets = section.get('targetIds').map (targetId) =>
+				sectionTargets = @props.section.get('targetIds').map (targetId) =>
 					target = @state.currentTargetRevisionsById.get(targetId)
 					# Removing irrelevant data from object
 					return target
@@ -1041,7 +1041,7 @@ load = (win) ->
 					.remove('id')
 
 				templateSection = Imm.fromJS {
-					name: section.get('name')
+					name: @props.section.get('name')
 					targets: sectionTargets
 				}
 
