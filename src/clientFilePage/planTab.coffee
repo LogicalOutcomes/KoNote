@@ -758,6 +758,7 @@ load = (win) ->
 					onRemoveNewSection
 					targetIdsByStatus
 					sectionIsInactive
+					currentTargetRevisionsById
 				})
 				(if section.get('targetIds').size is 0
 					R.div({className: 'noTargets'},
@@ -896,6 +897,7 @@ load = (win) ->
 				removeNewSection
 				targetIdsByStatus
 				onRemoveNewSection
+				currentTargetRevisionsById
 				sectionIsInactive
 			} = @props
 
@@ -938,7 +940,7 @@ load = (win) ->
 					},
 						R.button({
 							className: 'btn createTemplateButton'
-							onClick: @_createTemplate
+							onClick: @_createSectionTemplate
 						},
 							FaIcon('wpforms')
 						)
@@ -1024,17 +1026,16 @@ load = (win) ->
 						)
 					)
 				)
-
 			)
-		# console.log "section", @props.section.toJS()
 
-		_createTemplate: ->
+
+		_createSectionTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
 				unless templateName
 					return
 
 				sectionTargets = @props.section.get('targetIds').map (targetId) =>
-					target = @state.currentTargetRevisionsById.get(targetId)
+					target = @props.currentTargetRevisionsById.get(targetId)
 					# Removing irrelevant data from object
 					return target
 					.remove('status')
