@@ -64,6 +64,19 @@ load = (win) ->
 				return [targetId, latestRev]
 
 		render: ->
+
+			# loading template headers here temporarily, should be done in index.coffee
+			tempPlanTemplateHeaders = null
+			ActiveSession.persist.planTemplates.list (err, result) =>
+				if err
+					console.log err
+					return
+
+				tempPlanTemplateHeaders = result
+				.filter (template) -> template.get('status') is 'default'
+
+			console.log "tempPlanTemplateHeaders", tempPlanTemplateHeaders.toJS()
+
 			plan = @state.plan
 			# If something selected and that target has not been deleted
 			if @state.selectedTargetId? and @state.currentTargetRevisionsById.has(@state.selectedTargetId)
@@ -147,20 +160,20 @@ load = (win) ->
 									title: "Apply a Template"
 
 								},
-									# unless @props.planTemplateHeaders.isEmpty()
-									# 	(@props.planTemplateHeaders.map (planTemplateHeader) =>
-									# 		B.MenuItem({
-									# 			key: planTemplateHeader.get('id')
-									# 			# onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
-									# 		},
-									# 			R.div({
-									# 				# onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
-									# 			},
-									# 				planTemplateHeader.get('name')
+									unless tempPlanTemplateHeaders.isEmpty()
+										(tempPlanTemplateHeaders.map (planTemplateHeader) =>
+											B.MenuItem({
+												key: planTemplateHeader.get('id')
+												onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+											},
+												R.div({
+													onclick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+												},
+													planTemplateHeader.get('name')
 
-									# 			)
-									# 		)
-									# 	)
+												)
+											)
+										)
 								)
 							)
 							PrintButton({
@@ -384,6 +397,10 @@ load = (win) ->
 
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
+
+		_applyPlanTemplate: ->
+			Bootbox.confirm "Are you sure you want to apply this template?" =>
+				return
 
 		_createTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
@@ -904,8 +921,6 @@ load = (win) ->
 				currentTargetRevisionsById
 				sectionIsInactive
 			} = @props
-
-			console.log "section", section.toJS()
 
 			sectionStatus = section.get('status')
 
