@@ -45,9 +45,9 @@ sidebar-borders = darken(sidebar-bg, 10%)
 		-webkit-animation-delay -0.8s
 		animation-delay -0.8s
 
-	@-webkit-keyframes sk-stretchdelay 
+	@-webkit-keyframes sk-stretchdelay
 		0%, 40%, 100%
-			-webkit-transform scaleY(0.4)   
+			-webkit-transform scaleY(0.4)
 		20%
 			-webkit-transform scaleY(1.0)
 
@@ -103,16 +103,18 @@ sidebar-borders = darken(sidebar-bg, 10%)
 			> div
 				text-align left
 
-			.brandContainer 
+			@require 'clientAlerts' // TODO: combine with other requires
+
+			.brandContainer
 				position absolute
 				left 0px
 				bottom 0px
 				width 100%
 
-				.logoKonode 
+				.logoKonode
 					margin-left 45px
-				
-			
+
+
 
 			> img
 				margin 0 auto

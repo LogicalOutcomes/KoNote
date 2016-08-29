@@ -368,7 +368,31 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 # //////////////// Version-Specific Utilities /////////////////
 
 
+createClientFileAlertsDirectory = (cb) ->
+	clientFiles = Path.join 'data', 'clientFiles'
 
+	forEachFileIn clientFiles, (clientFile, cb) ->
+		newAlertsPath = Path.join clientFiles, clientFile, 'alerts'
+
+		Fs.mkdir newAlertsPath, (err) ->
+			if err
+				if err.code is 'EEXIST'
+					console.error "Directory #{newDirPath} already exists", err
+					cb()
+					return
+
+				cb err
+				return
+
+			console.log "Created new directory 'alerts' at: #{newAlertsPath}"
+			cb()
+
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
 
 
 # ////////////////////// Migration Series //////////////////////
@@ -380,6 +404,11 @@ module.exports = {
 
 		# This is where we add the migration series steps
 		migrationSeries = [
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "2. Create empty 'alerts' dataModel collection directory"
+				createClientFileAlertsDirectory, cb
 		]
 
 

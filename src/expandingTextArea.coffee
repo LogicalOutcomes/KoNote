@@ -80,6 +80,9 @@ load = (win) ->
 			@_resize()
 			@props.onChange event
 
+		focus: ->
+			@refs.textarea.focus()
+
 	return ExpandingTextArea
 
 module.exports = {load}
