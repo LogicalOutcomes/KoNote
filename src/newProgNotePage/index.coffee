@@ -132,6 +132,7 @@ load = (win, {clientFileId}) ->
 				clientFileId: clientFile.get('id')
 				templateId: template.get('id')
 				backdate: ''
+				summary: ''
 				units: template.get('units').map (unit) =>
 					switch unit.get('type')
 						when 'basic'
@@ -411,6 +412,15 @@ load = (win, {clientFileId}) ->
 										).toJS()...
 									)
 						).toJS()...
+
+						# PROTOTYPE Shift Summary Feature
+						R.div({className: 'unit basic shiftSummary'},
+							R.h2({}, "Shift Summary")
+							ExpandingTextArea({
+								value: @state.progNote.get('summary')
+								onChange: @_updateSummary
+							})
+						)
 					)
 
 					if @hasChanges()
@@ -646,10 +656,15 @@ load = (win, {clientFileId}) ->
 				)
 			}
 
+		_updateSummary: (event) ->
+			summary = event.target.value
+			progNote = @state.progNote.set 'summary', summary
+
+			@setState {progNote}
+
 		_isValidMetric: (value) -> value.match /^-?\d*\.?\d*$/
 
 		_save: ->
-
 			authorProgramId = global.ActiveSession.programId or ''
 			progNote = @state.progNote
 			.set('authorProgramId', authorProgramId)

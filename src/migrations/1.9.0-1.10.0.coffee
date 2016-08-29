@@ -368,6 +368,7 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 # //////////////// Version-Specific Utilities /////////////////
 
 
+
 createClientFileAlertsDirectory = (cb) ->
 	clientFiles = Path.join 'data', 'clientFiles'
 
@@ -395,6 +396,52 @@ createClientFileAlertsDirectory = (cb) ->
 		finalizeMigrationStep(dataDir, cb)
 
 
+addProgNoteSummaryField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+			progNotePath = Path.join(clientFilePath, 'progNotes', progNote)
+
+			progNoteObjectFilePath = null
+			progNoteObject = null
+
+			Async.series [
+				(cb) =>
+					Fs.readdir progNotePath, (err, revisions) ->
+						if err
+							cb err
+							return
+
+						progNoteObjectFilePath = Path.join(progNotePath, revisions[0])
+						cb()
+
+				(cb) =>
+					Fs.readFile progNoteObjectFilePath, (err, result) ->
+						if err
+							cb err
+							return
+
+						progNoteObject = JSON.parse globalEncryptionKey.decrypt result
+						cb()
+
+				(cb) =>
+					progNoteObject.summary = ''
+					encryptedObj = globalEncryptionKey.encrypt JSON.stringify progNoteObject
+
+					Fs.writeFile progNoteObjectFilePath, encryptedObj, cb
+
+			], cb
+
+		, cb
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+
 # ////////////////////// Migration Series //////////////////////
 
 
@@ -404,7 +451,10 @@ module.exports = {
 
 		# This is where we add the migration series steps
 		migrationSeries = [
-
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "1. Add 'summary' field to progNotes"
+				addProgNoteSummaryField dataDir, globalEncryptionKey, cb
 			(cb) ->
 				console.groupEnd()
 				console.groupCollapsed "2. Create empty 'alerts' dataModel collection directory"

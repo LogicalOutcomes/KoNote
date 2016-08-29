@@ -149,6 +149,10 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 		}
 
 
+	# 1/3 chance of having a summary
+	hasSummary = (Math.floor(Math.random() * 3) + 1) is 3
+
+
 	progNote = Imm.fromJS {
 		clientFileId: clientFile.get('id')
 		type: 'full'
@@ -158,6 +162,7 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 		timestamp: randomBackdate.format(TimestampFormat)
 		authorProgramId: ''
 		beginTimestamp: ''
+		summary: if hasSummary then Faker.lorem.paragraph() else ''
 		units: [
 			{
 				id: progNoteUnit.get('id')

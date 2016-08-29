@@ -37,6 +37,7 @@ load = (win) ->
 
 	ManagerLayer = require('./managerLayer').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
+	GenerateSummariesDialog = require('./generateSummariesDialog').load(win)
 
 	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
@@ -454,6 +455,12 @@ load = (win) ->
 											)
 										)
 									)
+								)
+								R.div({},
+									OpenDialogLink({
+										className: 'btn btn-warning'
+										dialog: GenerateSummariesDialog
+									}, "Shift Summaries")
 								)
 							)
 						)
