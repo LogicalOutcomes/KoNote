@@ -74,8 +74,10 @@ load = (win) ->
 
 				tempPlanTemplateHeaders = result
 				.filter (template) -> template.get('status') is 'default'
+			if planTemplateHeaders?
+				console.log "tempPlanTemplateHeaders", tempPlanTemplateHeaders.toJS()
 
-			console.log "tempPlanTemplateHeaders", tempPlanTemplateHeaders.toJS()
+
 
 			plan = @state.plan
 			# If something selected and that target has not been deleted
@@ -160,7 +162,7 @@ load = (win) ->
 									title: "Apply a Template"
 
 								},
-									unless tempPlanTemplateHeaders.isEmpty()
+									if tempPlanTemplateHeaders?
 										(tempPlanTemplateHeaders.map (planTemplateHeader) =>
 											B.MenuItem({
 												key: planTemplateHeader.get('id')
@@ -398,9 +400,97 @@ load = (win) ->
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
 
-		_applyPlanTemplate: ->
-			Bootbox.confirm "Are you sure you want to apply this template?" =>
-				return
+		_applyPlanTemplate: (templateId) ->
+			Bootbox.confirm "Are you sure you want to apply this template?", (ok) =>
+				if ok
+					Async.series [
+						clientFileHeaders = null
+						newClientFileObj = null
+						newClientFile = null
+						selectedPlanTemplate = null
+						templateSections = null
+
+						(cb) =>
+							ActiveSession.persist.planTemplates.readLatestRevisions templateId, 1, (err, result) ->
+								if err
+									cb err
+									return
+
+								selectedPlanTemplate = stripMetadata result.get(0)
+								console.log "selectedPlanTemplate", selectedPlanTemplate.toJS()
+								cb()
+						(cb) =>
+							templateSections = selectedPlanTemplate.get('sections').map (section) ->
+								templateTargets = section.get('targets').map (target) ->
+									Imm.fromJS {
+										clientFileId: newClientFile.get('id')
+										name: target.get('name')
+										description: target.get('description')
+										status: 'default'
+										metricIds: target.get('metricIds')
+									}
+
+								return section.set 'targets', templateTargets
+
+							Async.map templateSections.toArray(), (section, cb) ->
+								Async.map section.get('targets').toArray(), (target, cb) ->
+									global.ActiveSession.persist.planTargets.create target, (err, result) ->
+										if err
+											cb err
+											return
+
+										cb null, result.get('id')
+
+								, (err, results) ->
+									if err
+										cb err
+										return
+
+									targetIds = Imm.List(results)
+
+									newSection = Imm.fromJS {
+										id: Persist.generateId()
+										name: section.get('name')
+										targetIds: results
+										status: 'default'
+									}
+
+									cb null, newSection
+
+							, (err, results) ->
+								if err
+									cb err
+									return
+
+								templateSections = Imm.List(results)
+								cb()
+
+						(cb) =>
+							console.log "clientFile", @state.clientFile
+							clientFile = @state.clientFile.setIn(['plan', 'sections'], templateSections)
+
+							global.ActiveSession.persist.clientFiles.createRevision clientFile, cb
+
+
+					], (err) =>
+						@refs.dialog.setIsLoading(false) if @refs.dialog?
+
+						if err
+							if err is 'CANCEL' then return
+
+							if err instanceof Persist.IOError
+								console.error err
+								Bootbox.alert """
+									Please check your network connection and try again.
+								"""
+								return
+
+							CrashHandler.handle err
+							return
+
+
+
+					return
 
 		_createTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
