@@ -63,7 +63,9 @@ load = (win) ->
 				@_reset()
 
 		hasChanges: ->
-			return @state.content isnt @_getSingleAlert().get('content')
+			originalContent = @_getSingleAlert().get('content')
+
+			return originalContent and @state.content isnt originalContent
 
 		render: ->
 			R.div({
