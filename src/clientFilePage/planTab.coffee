@@ -140,26 +140,16 @@ load = (win) ->
 									disabled: hasChanges or @props.isReadOnly
 								},
 									FaIcon('plus')
-									"Add #{Term 'section'}"
+									"Add #{Term 'Section'}"
 								)
 							)
+
 							WithTooltip({
-								placement: 'bottom'
-								title: "Create plan template"
-							},
-								R.button({
-									className: 'btn createTemplateButton'
-									onClick: @_createTemplate
-								},
-									FaIcon('wpforms')
-								)
-							)
-							WithTooltip({
-								placement: 'bottom'
+								placement: 'right'
 								title: "Apply template"
 							},
 								B.DropdownButton({
-									title: "Apply a Template"
+									title: "Apply Template"
 
 								},
 									if tempPlanTemplateHeaders?
@@ -176,6 +166,17 @@ load = (win) ->
 												)
 											)
 										)
+								)
+							)
+							WithTooltip({
+								placement: 'bottom'
+								title: "Create Plan Template"
+							},
+								R.button({
+									className: 'btn createTemplateButton'
+									onClick: @_createTemplate
+								},
+									FaIcon('wpforms')
 								)
 							)
 							PrintButton({
@@ -1056,7 +1057,7 @@ load = (win) ->
 						title: "Create plan template"
 					},
 						R.button({
-							className: 'btn createTemplateButton'
+							className: 'btn btn-default'
 							onClick: @_createSectionTemplate
 						},
 							FaIcon('wpforms')
