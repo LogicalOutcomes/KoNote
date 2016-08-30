@@ -414,7 +414,10 @@ load = (win, {clientFileId}) ->
 						).toJS()...
 
 						# PROTOTYPE Shift Summary Feature
-						R.div({className: 'unit basic shiftSummary'},
+						R.div({
+							id: 'shiftSummaryField'
+							className: 'unit basic'
+						},
 							R.h2({}, "Shift Summary")
 							ExpandingTextArea({
 								value: @state.progNote.get('summary')
