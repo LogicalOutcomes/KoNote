@@ -110,7 +110,6 @@ load = (win) ->
 				(cb) =>
 					# Use all clientFileIds if user isn't in a program
 					if not userHasProgramId
-						console.log "No userProgram, so using all clientFiles..."
 						ActiveSession.persist.clientFiles.list (err, result) =>
 							if err
 								cb err
@@ -122,7 +121,6 @@ load = (win) ->
 						return
 
 					# User's in a program, so let's figure out which clientFileIds to fetch summaries from
-					console.log "Has userProgram, so let's look at the clientFileProgramLinks..."
 					ActiveSession.persist.clientFileProgramLinks.list (err, result) =>
 						if err
 							cb err
@@ -178,7 +176,6 @@ load = (win) ->
 											.sortBy (progNote) ->
 												progNote.get('backdate') or progNote.get('timestamp')
 
-											console.log "progNoteHeadersFromToday", progNoteHeadersFromToday.toJS()
 											cb()
 
 									(cb) =>
@@ -192,7 +189,6 @@ load = (win) ->
 
 											# Flatten from [[obj], [obj]] -> [obj, obj]
 											progNotesWithSummary = Imm.List(results).flatten(true)
-											console.log "progNotesWithSummary", progNotesWithSummary.toJS()
 											cb()
 
 								], cb
@@ -214,7 +210,6 @@ load = (win) ->
 							progressPercent = @state.progressPercent + clientFilePercentValue
 							@setState {progressPercent}
 
-							console.log "Processed clientFile"
 							# Ok, next clientFile please!
 							cb null, result
 
@@ -223,10 +218,7 @@ load = (win) ->
 							cb err
 							return
 
-						console.log "Building summaryObjects..."
-
 						summaryObjects = Imm.List(results)
-						console.info "summaryObjects:", summaryObjects.toJS()
 						cb()
 
 			], (err) =>
