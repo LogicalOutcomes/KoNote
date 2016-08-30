@@ -403,14 +403,21 @@ load = (win) ->
 		_applyPlanTemplate: (templateId) ->
 			Bootbox.confirm "Are you sure you want to apply this template?", (ok) =>
 				if ok
+
+					console.log "templateId", templateId
+					console.log "props.clientfielid", @props.clientFileId
+
+					clientFileHeaders = null
+					newClientFileObj = null
+					newClientFile = null
+					selectedPlanTemplate = null
+					templateSections = null
+					clientFileId = @props.clientFileId
+
 					Async.series [
-						clientFileHeaders = null
-						newClientFileObj = null
-						newClientFile = null
-						selectedPlanTemplate = null
-						templateSections = null
 
 						(cb) =>
+							console.log "step 1"
 							ActiveSession.persist.planTemplates.readLatestRevisions templateId, 1, (err, result) ->
 								if err
 									cb err
@@ -419,19 +426,22 @@ load = (win) ->
 								selectedPlanTemplate = stripMetadata result.get(0)
 								console.log "selectedPlanTemplate", selectedPlanTemplate.toJS()
 								cb()
+
 						(cb) =>
 							templateSections = selectedPlanTemplate.get('sections').map (section) ->
 								templateTargets = section.get('targets').map (target) ->
 									Imm.fromJS {
-										clientFileId: newClientFile.get('id')
+										clientFileId
 										name: target.get('name')
 										description: target.get('description')
 										status: 'default'
 										metricIds: target.get('metricIds')
 									}
-
 								return section.set 'targets', templateTargets
+							console.log "templateSections before", templateSections
+							cb()
 
+						(cb) =>
 							Async.map templateSections.toArray(), (section, cb) ->
 								Async.map section.get('targets').toArray(), (target, cb) ->
 									global.ActiveSession.persist.planTargets.create target, (err, result) ->
@@ -463,13 +473,26 @@ load = (win) ->
 									return
 
 								templateSections = Imm.List(results)
+								console.log "templateSections after", templateSections
 								cb()
 
 						(cb) =>
-							console.log "clientFile", @state.clientFile
-							clientFile = @state.clientFile.setIn(['plan', 'sections'], templateSections)
+							existingSections = @state.plan.get('sections')
+							console.log "existingSections", existingSections
 
-							global.ActiveSession.persist.clientFiles.createRevision clientFile, cb
+							allSections = existingSections.concat(templateSections)
+							console.log "all sections", allSections
+
+							console.log "state.plan before set", @state.plan.toJS()
+							newPlan = @state.plan.update 'sections', (sections) =>
+								return sections.concat(templateSections)
+
+							@setState {plan: newPlan}
+							console.log "state.plan after set", @state.plan.toJS()
+
+							cb()
+
+							# global.ActiveSession.persist.clientFiles.createRevision clientFile, cb
 
 
 					], (err) =>

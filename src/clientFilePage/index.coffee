@@ -414,7 +414,7 @@ load = (win, {clientFileId}) ->
 
 						planTemplateHeaders = result
 						.filter (template) -> template.get('status') is 'default'
-						console.log "planTemplateHeaders", planTemplateHeaders.toJS()
+						# console.log "planTemplateHeaders", planTemplateHeaders.toJS()
 						cb()
 
 
