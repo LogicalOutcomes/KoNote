@@ -445,9 +445,9 @@ load = (win) ->
 							if existsElsewhere
 								console.log "CANCELLING"
 								cb('CANCEL')
+								return
 
-							else
-								cb()
+							cb()
 
 						(cb) =>
 							Async.map templateSections.toArray(), (section, cb) ->
