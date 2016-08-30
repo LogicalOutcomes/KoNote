@@ -145,7 +145,6 @@ load = (win, {clientFileId}) ->
 				clientFile: @state.clientFile
 				clientName
 				clientPrograms
-				planTemplateHeaders: @state.planTemplateHeaders
 
 				progNoteHistories
 				progressEvents: @state.progressEvents
@@ -479,7 +478,7 @@ load = (win, {clientFileId}) ->
 						globalEvents
 						metricsById
 						planTargetsById
-						# planTemplateHeaders
+						planTemplateHeaders
 						programs
 						programsById
 						clientFileProgramLinkHeaders

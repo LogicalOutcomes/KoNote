@@ -144,30 +144,25 @@ load = (win) ->
 								)
 							)
 
-							WithTooltip({
-								placement: 'right'
-								title: "Apply template"
+							B.DropdownButton({
+								title: "Apply Template"
 							},
-								B.DropdownButton({
-									title: "Apply Template"
-
-								},
-									if tempPlanTemplateHeaders?
-										(tempPlanTemplateHeaders.map (planTemplateHeader) =>
-											B.MenuItem({
-												key: planTemplateHeader.get('id')
-												onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+								if tempPlanTemplateHeaders?
+									(tempPlanTemplateHeaders.map (planTemplateHeader) =>
+										B.MenuItem({
+											key: planTemplateHeader.get('id')
+											onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+										},
+											R.div({
+												onclick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
 											},
-												R.div({
-													onclick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
-												},
-													planTemplateHeader.get('name')
+												planTemplateHeader.get('name')
 
-												)
 											)
 										)
-								)
+									)
 							)
+
 							WithTooltip({
 								placement: 'bottom'
 								title: "Create Plan Template"
