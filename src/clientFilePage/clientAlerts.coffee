@@ -63,9 +63,8 @@ load = (win) ->
 				@_reset()
 
 		hasChanges: ->
-			originalContent = @_getSingleAlert().get('content')
-
-			return originalContent and @state.content isnt originalContent
+			originalContent = @_getSingleAlert().get('content') or ''
+			return @state.content isnt originalContent
 
 		render: ->
 			R.div({
@@ -205,6 +204,7 @@ load = (win) ->
 			.set 'clientFileId', clientFileId
 			.set 'content', content
 			.set 'authorProgramId', authorProgramId
+			.remove 'updateReason'
 
 			updatedAlert = null
 
@@ -235,7 +235,7 @@ load = (win) ->
 
 			# Append updateReason to quickNote if exists
 			if alert.has('updateReason')
-				notes += " (#{alert.get('updateReason')})"
+				notes += "\n\n(Reason: #{alert.get('updateReason')})"
 
 			authorProgramId = ActiveSession.programId or ''
 			beginTimestamp = @state.beginTimestamp.format(Persist.TimestampFormat)
