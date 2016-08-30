@@ -103,7 +103,7 @@ load = (win) ->
 						)
 					else
 						WithTooltip({
-							title: "Click here to add an alert" if @state.content
+							title: "Click here to add/update alerts" if @state.content
 							placement: 'right'
 							container: 'body'
 						},
