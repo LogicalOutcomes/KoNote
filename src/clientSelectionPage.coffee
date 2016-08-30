@@ -356,7 +356,6 @@ load = (win) ->
 			},
 				R.div({
 					id: 'shiftSummariesContainer'
-					className: showWhen not smallHeader
 				},
 					OpenDialogLink({
 						className: 'btn btn-default btn-sm animated fadeInUp'
