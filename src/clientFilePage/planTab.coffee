@@ -408,6 +408,7 @@ load = (win) ->
 					newClientFile = null
 					selectedPlanTemplate = null
 					templateSections = null
+					existsElsewhere = null
 					clientFileId = @props.clientFileId
 
 					Async.series [
@@ -429,10 +430,7 @@ load = (win) ->
 										existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
 											return target.get('metricIds').contains(metricId)
 										if existsElsewhere
-											Bootbox.alert "A #{Term 'metric'} in this template already exists for another #{Term 'plan target'}"
 											return
-											# I want to abort the a sync series if an existing metric is encountered
-
 
 									Imm.fromJS {
 										clientFileId
@@ -443,7 +441,13 @@ load = (win) ->
 									}
 
 								return section.set 'targets', templateTargets
-							cb()
+
+							if existsElsewhere
+								console.log "CANCELLING"
+								cb('CANCEL')
+
+							else
+								cb()
 
 						(cb) =>
 							Async.map templateSections.toArray(), (section, cb) ->
@@ -488,10 +492,10 @@ load = (win) ->
 							cb()
 
 					], (err) =>
-						@refs.dialog.setIsLoading(false) if @refs.dialog?
-
 						if err
-							if err is 'CANCEL' then return
+							if err is 'CANCEL'
+								Bootbox.alert "A #{Term 'metric'} in this template already exists for another #{Term 'plan target'}"
+								return
 
 							if err instanceof Persist.IOError
 								console.error err
