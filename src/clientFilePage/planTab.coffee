@@ -64,21 +64,6 @@ load = (win) ->
 				return [targetId, latestRev]
 
 		render: ->
-
-			# loading template headers here temporarily, should be done in index.coffee
-			tempPlanTemplateHeaders = null
-			ActiveSession.persist.planTemplates.list (err, result) =>
-				if err
-					console.log err
-					return
-
-				tempPlanTemplateHeaders = result
-				.filter (template) -> template.get('status') is 'default'
-			if planTemplateHeaders?
-				console.log "tempPlanTemplateHeaders", tempPlanTemplateHeaders.toJS()
-
-
-
 			plan = @state.plan
 			# If something selected and that target has not been deleted
 			if @state.selectedTargetId? and @state.currentTargetRevisionsById.has(@state.selectedTargetId)
@@ -147,8 +132,8 @@ load = (win) ->
 							B.DropdownButton({
 								title: "Apply Template"
 							},
-								if tempPlanTemplateHeaders?
-									(tempPlanTemplateHeaders.map (planTemplateHeader) =>
+								if @props.planTemplateHeaders?
+									(@props.planTemplateHeaders.map (planTemplateHeader) =>
 										B.MenuItem({
 											key: planTemplateHeader.get('id')
 											onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')

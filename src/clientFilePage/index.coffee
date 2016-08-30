@@ -174,6 +174,7 @@ load = (win, {clientFileId}) ->
 			fileIsUnsync = null
 			# File data
 			clientFile = null
+			planTemplateHeaders = null
 			planTargetsById = null
 			planTargetHeaders = null
 			progNoteHeaders = null
