@@ -45,7 +45,7 @@ load = (win) ->
 
 		render: ->
 			return Dialog({
-				title: "Shift Summary Log"
+				title: "Today's Shift Summary Log"
 				onClose: @props.onClose
 			},
 				R.div({className: 'generateSummariesDialog'},
@@ -62,6 +62,7 @@ load = (win) ->
 							className: 'animated fadeIn'
 						},
 							R.textarea({
+								ref: 'textarea'
 								className: 'form-control'
 								value: @state.summariesString
 								onChange: (event) -> event.preventDefault()
@@ -81,8 +82,10 @@ load = (win) ->
 			)
 
 		_copyToClipboard: ->
+			@refs.textarea.select()
+
 			clipboard = Gui.Clipboard.get()
-			clipboard.set JSON.stringify @state.summariesString
+			clipboard.set @state.summariesString
 
 			notification = new win.Notification "Shift Summaries", {
 				body: "Copied to clipboard"
