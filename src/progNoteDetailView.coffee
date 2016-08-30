@@ -27,7 +27,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: -> {
-			descriptionIsVisible: null
+			descriptionIsVisible: true
 		}
 
 		render: ->
@@ -195,16 +195,16 @@ load = (win) ->
 								R.span({
 									className: 'toggleDescriptionButton'
 								},
-									if @state.descriptionIsVisible then "Hide" else "Click to view"
+									if @state.descriptionIsVisible then "Hide" else "View"
 									" description"
 								)
 							)
 							R.h3({}, itemName)
 						)
 						(if itemDescription? and @state.descriptionIsVisible
-							R.div({
-								className: 'itemDescription animated fadeInDown'
-							}, itemDescription)
+							R.div({className: 'itemDescription'},
+								renderLineBreaks itemDescription
+							)
 						)
 					)
 				)
