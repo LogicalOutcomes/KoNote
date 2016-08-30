@@ -146,7 +146,7 @@ load = (win) ->
 
 						clientFile = null
 						progNoteHeadersFromToday = null
-						progNotesWithSummary = null
+						progNotesFromToday = null
 
 						Async.parallel [
 							(cb) =>
@@ -188,7 +188,7 @@ load = (win) ->
 												return
 
 											# Flatten from [[obj], [obj]] -> [obj, obj]
-											progNotesWithSummary = Imm.List(results).flatten(true)
+											progNotesFromToday = Imm.List(results).flatten(true)
 											cb()
 
 								], cb
@@ -199,7 +199,7 @@ load = (win) ->
 								return
 
 							# We're only interested in the most recent progNoteWithSummary
-							progNote = progNotesWithSummary.last()
+							progNote = progNotesFromToday.last()
 
 							result = Imm.fromJS {
 								clientFile
@@ -247,7 +247,7 @@ load = (win) ->
 				"""
 
 				summariesString = summaryObjects
-				.filter (obj) -> obj.get('progNote')
+				.filter (obj) -> obj.get('progNote') and obj.getIn(['progNote', 'summary'])
 				.map (obj) ->
 					date = obj.getIn(['progNote', 'backdate']) or obj.getIn(['progNote', 'timestamp'])
 					time = Moment(date, TimestampFormat).format('h:mma')
@@ -263,7 +263,7 @@ load = (win) ->
 						#{summary}
 					"""
 				.toJS()
-				.join "\n"
+				.join "\n\n"
 
 				if not summariesString
 					summariesString = "(no summaries recorded today)"
@@ -272,7 +272,7 @@ load = (win) ->
 
 				# TODO: Refactor this
 				missingSummariesString = summaryObjects
-				.filter (obj) -> not obj.get('progNote')
+				.filter (obj) -> not obj.get('progNote') or not obj.getIn(['progNote', 'summary'])
 				.map (obj) ->
 					clientName = renderName(obj.getIn ['clientFile', 'clientName'])
 					recordId = obj.getIn ['clientFile', 'recordId']
