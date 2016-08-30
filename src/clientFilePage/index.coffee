@@ -78,9 +78,11 @@ load = (win, {clientFileId}) ->
 				planTargetsById: Imm.Map()
 				programsById: Imm.Map()
 				metricsById: Imm.Map()
+				planTemplateHeaders: Imm.Map()
 				loadErrorType: null
 				loadErrorData: null
 			}
+
 
 		init: ->
 			@_renewAllData()
@@ -147,6 +149,7 @@ load = (win, {clientFileId}) ->
 				progressEvents: @state.progressEvents
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
+				planTemplateHeaders: @state.planTemplateHeaders
 				programs: @state.programs
 				programsById: @state.programsById
 				clientFileProgramLinkHeaders: @state.clientFileProgramLinkHeaders
@@ -171,6 +174,7 @@ load = (win, {clientFileId}) ->
 			fileIsUnsync = null
 			# File data
 			clientFile = null
+			planTemplateHeaders = null
 			planTargetsById = null
 			planTargetHeaders = null
 			progNoteHeaders = null
@@ -409,7 +413,6 @@ load = (win, {clientFileId}) ->
 						if err
 							cb err
 							return
-
 						alertHeaders = result
 						cb()
 
@@ -424,6 +427,15 @@ load = (win, {clientFileId}) ->
 							return
 
 						alerts = Imm.List(results).map (alert) -> stripMetadata alert.get(0)
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.planTemplates.list (err, result) =>
+						if err
+							cb err
+							return
+						planTemplateHeaders = result
+						.filter (template) -> template.get('status') is 'default'
 						cb()
 
 			], (err) =>
@@ -486,6 +498,7 @@ load = (win, {clientFileId}) ->
 						globalEvents
 						metricsById
 						planTargetsById
+						planTemplateHeaders
 						programs
 						programsById
 						clientFileProgramLinkHeaders
@@ -854,6 +867,7 @@ load = (win, {clientFileId}) ->
 							programsById: @props.programsById
 							metricsById: @props.metricsById
 							updatePlan: @props.updatePlan
+							planTemplateHeaders: @props.planTemplateHeaders
 							isReadOnly
 						})
 					)

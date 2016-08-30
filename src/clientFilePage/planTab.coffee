@@ -19,6 +19,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	ReactDOM = win.ReactDOM
+	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
 	RevisionHistory = require('../revisionHistory').load(win)
@@ -124,12 +125,32 @@ load = (win) ->
 									disabled: hasChanges or @props.isReadOnly
 								},
 									FaIcon('plus')
-									"Add #{Term 'section'}"
+									"Add #{Term 'Section'}"
 								)
 							)
+
+							B.DropdownButton({
+								title: "Apply Template"
+							},
+								if @props.planTemplateHeaders?
+									(@props.planTemplateHeaders.map (planTemplateHeader) =>
+										B.MenuItem({
+											key: planTemplateHeader.get('id')
+											onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+										},
+											R.div({
+												onclick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+											},
+												planTemplateHeader.get('name')
+
+											)
+										)
+									)
+							)
+
 							WithTooltip({
 								placement: 'bottom'
-								title: "Create plan template"
+								title: "Create Plan Template"
 							},
 								R.button({
 									className: 'btn createTemplateButton'
@@ -375,6 +396,106 @@ load = (win) ->
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
 
+		_applyPlanTemplate: (templateId) ->
+			Bootbox.confirm "Are you sure you want to apply this template?", (ok) =>
+				if ok
+
+					console.log "templateId", templateId
+					console.log "props.clientfielid", @props.clientFileId
+
+					clientFileHeaders = null
+					newClientFileObj = null
+					newClientFile = null
+					selectedPlanTemplate = null
+					templateSections = null
+					clientFileId = @props.clientFileId
+
+					Async.series [
+
+						(cb) =>
+							ActiveSession.persist.planTemplates.readLatestRevisions templateId, 1, (err, result) ->
+								if err
+									cb err
+									return
+
+								selectedPlanTemplate = stripMetadata result.get(0)
+								cb()
+
+						(cb) =>
+							templateSections = selectedPlanTemplate.get('sections').map (section) ->
+								templateTargets = section.get('targets').map (target) ->
+									Imm.fromJS {
+										clientFileId
+										name: target.get('name')
+										description: target.get('description')
+										status: 'default'
+										metricIds: target.get('metricIds')
+									}
+								return section.set 'targets', templateTargets
+							cb()
+
+						(cb) =>
+							Async.map templateSections.toArray(), (section, cb) ->
+								Async.map section.get('targets').toArray(), (target, cb) ->
+									global.ActiveSession.persist.planTargets.create target, (err, result) ->
+										if err
+											cb err
+											return
+
+										cb null, result.get('id')
+
+								, (err, results) ->
+									if err
+										cb err
+										return
+
+									targetIds = Imm.List(results)
+
+									newSection = Imm.fromJS {
+										id: Persist.generateId()
+										name: section.get('name')
+										targetIds: results
+										status: 'default'
+									}
+
+									cb null, newSection
+
+							, (err, results) ->
+								if err
+									cb err
+									return
+
+								templateSections = Imm.List(results)
+								cb()
+
+						(cb) =>
+							newPlan = @state.plan.update 'sections', (sections) =>
+								return sections.concat(templateSections)
+
+							@setState {plan: newPlan}
+
+							cb()
+
+					], (err) =>
+						@refs.dialog.setIsLoading(false) if @refs.dialog?
+
+						if err
+							if err is 'CANCEL' then return
+
+							if err instanceof Persist.IOError
+								console.error err
+								Bootbox.alert """
+									Please check your network connection and try again.
+								"""
+								return
+
+							CrashHandler.handle err
+							return
+
+
+
+					return
+
 		_createTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
 				unless templateName
@@ -395,11 +516,15 @@ load = (win) ->
 						targets: sectionTargets
 					}
 
+				console.log "templateSections", templateSections
+
 				planTemplate = Imm.fromJS {
 					name: templateName
 					status: 'default'
 					sections: templateSections
 				}
+
+				console.log "planTemplate", planTemplate.toJS()
 
 				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
 					if err instanceof Persist.IOError
@@ -748,6 +873,7 @@ load = (win) ->
 					onRemoveNewSection
 					targetIdsByStatus
 					sectionIsInactive
+					currentTargetRevisionsById
 				})
 				(if section.get('targetIds').size is 0
 					R.div({className: 'noTargets'},
@@ -886,6 +1012,7 @@ load = (win) ->
 				removeNewSection
 				targetIdsByStatus
 				onRemoveNewSection
+				currentTargetRevisionsById
 				sectionIsInactive
 			} = @props
 
@@ -920,6 +1047,18 @@ load = (win) ->
 						FaIcon('plus')
 						"Add #{Term 'target'}"
 					)
+					WithTooltip({
+						placement: 'bottom'
+						title: "Create plan template"
+					},
+						R.button({
+							className: 'btn btn-default'
+							onClick: @_createSectionTemplate
+						},
+							FaIcon('wpforms')
+						)
+					)
+
 				)
 				# TODO: Extract to component
 				(if canSetStatus
@@ -1000,8 +1139,46 @@ load = (win) ->
 						)
 					)
 				)
-
 			)
+
+
+		_createSectionTemplate: ->
+			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
+				unless templateName
+					return
+
+				sectionTargets = @props.section.get('targetIds').map (targetId) =>
+					target = @props.currentTargetRevisionsById.get(targetId)
+					# Removing irrelevant data from object
+					return target
+					.remove('status')
+					.remove('statusReason')
+					.remove('clientFileId')
+					.remove('id')
+
+				templateSection = Imm.fromJS [{
+					name: @props.section.get('name')
+					targets: sectionTargets
+				}]
+
+				console.log "templateSection",
+
+				sectionTemplate = Imm.fromJS {
+					name: templateName
+					status: 'default'
+					sections: templateSection
+				}
+
+				console.log "sectionTemplate", sectionTemplate.toJS()
+
+				global.ActiveSession.persist.planTemplates.create sectionTemplate, (err, obj) =>
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again
+						"""
+						return
+					Bootbox.alert "New template: '#{templateName}' created."
 
 
 	PlanTarget = React.createFactory React.createClass
