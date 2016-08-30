@@ -422,8 +422,18 @@ load = (win) ->
 								cb()
 
 						(cb) =>
-							templateSections = selectedPlanTemplate.get('sections').map (section) ->
-								templateTargets = section.get('targets').map (target) ->
+							templateSections = selectedPlanTemplate.get('sections').map (section) =>
+								templateTargets = section.get('targets').map (target) =>
+									target.get('metricIds').forEach (metricId) =>
+										# Metric exists in another target
+										existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
+											return target.get('metricIds').contains(metricId)
+										if existsElsewhere
+											Bootbox.alert "A #{Term 'metric'} in this template already exists for another #{Term 'plan target'}"
+											return
+											# I want to abort the a sync series if an existing metric is encountered
+
+
 									Imm.fromJS {
 										clientFileId
 										name: target.get('name')
@@ -431,6 +441,7 @@ load = (win) ->
 										status: 'default'
 										metricIds: target.get('metricIds')
 									}
+
 								return section.set 'targets', templateTargets
 							cb()
 
