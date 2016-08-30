@@ -417,14 +417,12 @@ load = (win) ->
 					Async.series [
 
 						(cb) =>
-							console.log "step 1"
 							ActiveSession.persist.planTemplates.readLatestRevisions templateId, 1, (err, result) ->
 								if err
 									cb err
 									return
 
 								selectedPlanTemplate = stripMetadata result.get(0)
-								console.log "selectedPlanTemplate", selectedPlanTemplate.toJS()
 								cb()
 
 						(cb) =>
@@ -438,7 +436,6 @@ load = (win) ->
 										metricIds: target.get('metricIds')
 									}
 								return section.set 'targets', templateTargets
-							console.log "templateSections before", templateSections
 							cb()
 
 						(cb) =>
@@ -473,27 +470,15 @@ load = (win) ->
 									return
 
 								templateSections = Imm.List(results)
-								console.log "templateSections after", templateSections
 								cb()
 
 						(cb) =>
-							existingSections = @state.plan.get('sections')
-							console.log "existingSections", existingSections
-
-							allSections = existingSections.concat(templateSections)
-							console.log "all sections", allSections
-
-							console.log "state.plan before set", @state.plan.toJS()
 							newPlan = @state.plan.update 'sections', (sections) =>
 								return sections.concat(templateSections)
 
 							@setState {plan: newPlan}
-							console.log "state.plan after set", @state.plan.toJS()
 
 							cb()
-
-							# global.ActiveSession.persist.clientFiles.createRevision clientFile, cb
-
 
 					], (err) =>
 						@refs.dialog.setIsLoading(false) if @refs.dialog?
