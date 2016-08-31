@@ -215,6 +215,7 @@ load = (win) ->
 										updateBasicUnitNotes: @_updateBasicUnitNotes
 										updateBasicMetric: @_updateBasicMetric
 										updatePlanTargetMetric: @_updatePlanTargetMetric
+										updateQuickNotes: @_updateQuickNotes
 										saveProgNoteRevision: @_saveProgNoteRevision
 										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
 									})
