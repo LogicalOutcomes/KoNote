@@ -375,7 +375,19 @@ load = (win, {clientFileId}) ->
 														onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
 														onClick: @_selectEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
 													},
-														R.h3({}, target.get 'name')
+														R.h3({},
+															target.get 'name'
+															R.span({
+																className: 'star'
+																title: "Mark as Important"
+																onClick: @_starTarget.bind(null, unitId, sectionId, targetId, target.get 'notes')
+															},
+																if target.get('notes').includes "***"
+																	FaIcon('star', {className:'checked'})
+																else
+																	FaIcon('star-o')
+															)
+														)
 														ExpandingTextArea {
 															value: target.get 'notes'
 															onFocus: @_selectPlanTarget.bind(
@@ -565,6 +577,27 @@ load = (win, {clientFileId}) ->
 					targetName: target.get 'name'
 					targetDescription: target.get 'description'
 				}
+			}
+
+		_starTarget: (unitId, sectionId, targetId, note) ->
+			if note.includes "***"
+				newNotes = note.replace(/\*\*\*/g, '')
+			else
+				newNotes = "***" + note
+			unitIndex = getUnitIndex @state.progNote, unitId
+			sectionIndex = getPlanSectionIndex @state.progNote, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex @state.progNote, unitIndex, sectionIndex, targetId
+
+			@setState {
+				progNote: @state.progNote.setIn(
+					[
+						'units', unitIndex
+						'sections', sectionIndex
+						'targets', targetIndex
+						'notes'
+					]
+					newNotes
+				)
 			}
 
 		_updateBackdate: (event) ->
