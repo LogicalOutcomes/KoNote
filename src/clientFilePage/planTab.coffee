@@ -127,38 +127,50 @@ load = (win) ->
 									FaIcon('plus')
 									"Add #{Term 'Section'}"
 								)
-							)
 
-							B.DropdownButton({
-								title: "Apply Template"
-							},
-								if @props.planTemplateHeaders?
-									(@props.planTemplateHeaders.map (planTemplateHeader) =>
-										B.MenuItem({
-											key: planTemplateHeader.get('id')
-											onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+
+								B.DropdownButton({
+									title: R.span({},
+										FaIcon('wpforms')
+										" "
+										"Templates"
+									)
+								},
+
+									B.MenuItem({
+										onClick: @_createTemplate
+									},
+										R.h5({
+											onclick: @_createTemplate
 										},
-											R.div({
-												onclick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
-											},
-												planTemplateHeader.get('name')
-
-											)
+											FaIcon('plus')
+											" "
+											"New Plan Template"
 										)
 									)
-							)
+									unless @props.planTemplateHeaders.isEmpty()
+										[
+											B.MenuItem({divider: true})
 
-							WithTooltip({
-								placement: 'bottom'
-								title: "Create Plan Template"
-							},
-								R.button({
-									className: 'btn createTemplateButton'
-									onClick: @_createTemplate
-								},
-									FaIcon('wpforms')
+											B.MenuItem({header: true}, R.h5({}, "Apply Template"))
+
+											(@props.planTemplateHeaders.map (planTemplateHeader) =>
+												B.MenuItem({
+													key: planTemplateHeader.get('id')
+													onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+												},
+													R.div({
+														onclick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+													},
+														planTemplateHeader.get('name')
+
+													)
+												)
+											)
+										]
 								)
 							)
+
 							PrintButton({
 								dataSet: [
 									{
@@ -399,10 +411,6 @@ load = (win) ->
 		_applyPlanTemplate: (templateId) ->
 			Bootbox.confirm "Are you sure you want to apply this template?", (ok) =>
 				if ok
-
-					console.log "templateId", templateId
-					console.log "props.clientfielid", @props.clientFileId
-
 					clientFileHeaders = null
 					newClientFileObj = null
 					newClientFile = null
@@ -443,7 +451,6 @@ load = (win) ->
 								return section.set 'targets', templateTargets
 
 							if existsElsewhere
-								console.log "CANCELLING"
 								cb('CANCEL')
 								return
 
@@ -531,15 +538,11 @@ load = (win) ->
 						targets: sectionTargets
 					}
 
-				console.log "templateSections", templateSections
-
 				planTemplate = Imm.fromJS {
 					name: templateName
 					status: 'default'
 					sections: templateSections
 				}
-
-				console.log "planTemplate", planTemplate.toJS()
 
 				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
 					if err instanceof Persist.IOError
@@ -1064,7 +1067,7 @@ load = (win) ->
 					)
 					WithTooltip({
 						placement: 'bottom'
-						title: "Create plan template"
+						title: "Create Section Template"
 					},
 						R.button({
 							className: 'btn btn-default'
@@ -1176,15 +1179,11 @@ load = (win) ->
 					targets: sectionTargets
 				}]
 
-				console.log "templateSection",
-
 				sectionTemplate = Imm.fromJS {
 					name: templateName
 					status: 'default'
 					sections: templateSection
 				}
-
-				console.log "sectionTemplate", sectionTemplate.toJS()
 
 				global.ActiveSession.persist.planTemplates.create sectionTemplate, (err, obj) =>
 					if err instanceof Persist.IOError
