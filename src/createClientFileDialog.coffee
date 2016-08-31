@@ -77,6 +77,7 @@ load = (win) ->
 							onChange: @_updateFirstName
 							value: @state.firstName
 							onKeyDown: @_onEnterKeyDown
+							maxLength: 32
 						})
 					)
 					R.div({className: 'form-group'},
@@ -86,6 +87,7 @@ load = (win) ->
 							onChange: @_updateMiddleName
 							value: @state.middleName
 							placeholder: "(optional)"
+							maxLength: 32
 						})
 					)
 					R.div({className: 'form-group'},
@@ -95,6 +97,7 @@ load = (win) ->
 							onChange: @_updateLastName
 							value: @state.lastName
 							onKeyDown: @_onEnterKeyDown
+							maxLength: 32
 						})
 					)
 
@@ -171,6 +174,7 @@ load = (win) ->
 								value: @state.recordId
 								placeholder: "(optional)" unless recordIdIsRequired
 								onKeyDown: @_onEnterKeyDown
+								maxLength: 32
 							})
 						)
 					)
