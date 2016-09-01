@@ -540,7 +540,7 @@ load = (win) ->
 
 				planTemplate = Imm.fromJS {
 					name: templateName
-					description: ' '
+					description: ''
 					status: 'default'
 					sections: templateSections
 				}
@@ -1182,7 +1182,7 @@ load = (win) ->
 
 				sectionTemplate = Imm.fromJS {
 					name: templateName
-					description: ' '
+					description: ''
 					status: 'default'
 					sections: templateSection
 				}
