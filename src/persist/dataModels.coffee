@@ -198,7 +198,6 @@ dataModelDefinitions = [
 		indexes: [['status'], ['name']]
 		schema: Joi.object().keys({
 			name: Joi.string()
-			description: Joi.string().allow('')
 			status: ['default', 'cancelled']
 			sections: Joi.array().items(
 				[
