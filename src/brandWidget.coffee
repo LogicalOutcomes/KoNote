@@ -25,7 +25,7 @@ load = (win) ->
 					className: 'logoKN'
 				})
 				R.img({
-					src: './img/konode-konode.svg',
+					src: './img/konote-logo-text.svg',
 					className: 'logoKonode'
 				})
 			)
