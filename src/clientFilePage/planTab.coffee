@@ -1332,7 +1332,7 @@ load = (win) ->
 									definition: metric.get('definition')
 									value: metric.get('value')
 									key: metricId
-									tooltipViewport: '.section'
+									#tooltipViewport: '.section'
 									isEditable: false
 									allowDeleting: not targetIsInactive
 									onDelete: @props.deleteMetricFromTarget.bind(
