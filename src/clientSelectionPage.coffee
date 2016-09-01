@@ -358,7 +358,7 @@ load = (win) ->
 					id: 'shiftSummariesContainer'
 				},
 					OpenDialogLink({
-						className: 'btn btn-default btn-sm animated fadeInUp'
+						className: 'btn btn-default btn-sm animated fadeIn'
 						dialog: GenerateSummariesDialog
 					}, "Today's Shift Summaries")
 				)
