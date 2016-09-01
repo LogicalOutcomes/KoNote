@@ -354,6 +354,14 @@ load = (win) ->
 					'menuIsOpen' if @state.menuIsOpen
 				].join ' '
 			},
+				R.div({
+					id: 'shiftSummariesContainer'
+				},
+					OpenDialogLink({
+						className: 'btn btn-default btn-sm animated fadeIn'
+						dialog: GenerateSummariesDialog
+					}, "Today's Shift Summaries")
+				)
 				R.a({
 					id: 'expandMenuButton'
 					className: [
@@ -408,7 +416,7 @@ load = (win) ->
 								noData = @props.clientFileHeaders.isEmpty()
 
 								R.div({className: 'input-group'}
-									unless noData
+									(unless noData
 										OpenDialogLink({
 											className: 'input-group-btn'
 											ref: 'openCreateClientSmall'
@@ -422,6 +430,7 @@ load = (win) ->
 												R.span({className: 'text-success'}, FaIcon('plus'))
 											)
 										)
+									)
 
 									R.input({
 										className: 'searchBox form-control'
@@ -455,12 +464,6 @@ load = (win) ->
 											)
 										)
 									)
-								)
-								R.div({},
-									OpenDialogLink({
-										className: 'btn btn-warning'
-										dialog: GenerateSummariesDialog
-									}, "Shift Summaries")
 								)
 							)
 						)

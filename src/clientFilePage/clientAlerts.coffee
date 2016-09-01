@@ -63,7 +63,8 @@ load = (win) ->
 				@_reset()
 
 		hasChanges: ->
-			return @state.content isnt @_getSingleAlert().get('content')
+			originalContent = @_getSingleAlert().get('content') or ''
+			return @state.content isnt originalContent
 
 		render: ->
 			R.div({
@@ -71,8 +72,8 @@ load = (win) ->
 				onClick: @_beginEditing unless @state.isEditing
 			},
 				R.h3({className: 'animated fadeInUp'},
-					FaIcon('exclamation-triangle')
-					' '
+					# FaIcon('exclamation-triangle')
+					# ' '
 					"No " unless @state.content
 					"Alerts"
 				)
@@ -102,7 +103,7 @@ load = (win) ->
 						)
 					else
 						WithTooltip({
-							title: "Click here to add an alert" if @state.content
+							title: "Click here to add/update alerts" if @state.content
 							placement: 'right'
 							container: 'body'
 						},
@@ -203,6 +204,7 @@ load = (win) ->
 			.set 'clientFileId', clientFileId
 			.set 'content', content
 			.set 'authorProgramId', authorProgramId
+			.remove 'updateReason'
 
 			updatedAlert = null
 
@@ -233,7 +235,7 @@ load = (win) ->
 
 			# Append updateReason to quickNote if exists
 			if alert.has('updateReason')
-				notes += " (#{alert.get('updateReason')})"
+				notes += "\n\n(Reason: #{alert.get('updateReason')})"
 
 			authorProgramId = ActiveSession.programId or ''
 			beginTimestamp = @state.beginTimestamp.format(Persist.TimestampFormat)

@@ -45,7 +45,7 @@ load = (win) ->
 
 		render: ->
 			return Dialog({
-				title: "Shift Summary Log"
+				title: "Today's Shift Summary Log"
 				onClose: @props.onClose
 			},
 				R.div({className: 'generateSummariesDialog'},
@@ -62,6 +62,7 @@ load = (win) ->
 							className: 'animated fadeIn'
 						},
 							R.textarea({
+								ref: 'textarea'
 								className: 'form-control'
 								value: @state.summariesString
 								onChange: (event) -> event.preventDefault()
@@ -81,8 +82,10 @@ load = (win) ->
 			)
 
 		_copyToClipboard: ->
+			@refs.textarea.select()
+
 			clipboard = Gui.Clipboard.get()
-			clipboard.set JSON.stringify @state.summariesString
+			clipboard.set @state.summariesString
 
 			notification = new win.Notification "Shift Summaries", {
 				body: "Copied to clipboard"
@@ -107,7 +110,6 @@ load = (win) ->
 				(cb) =>
 					# Use all clientFileIds if user isn't in a program
 					if not userHasProgramId
-						console.log "No userProgram, so using all clientFiles..."
 						ActiveSession.persist.clientFiles.list (err, result) =>
 							if err
 								cb err
@@ -119,7 +121,6 @@ load = (win) ->
 						return
 
 					# User's in a program, so let's figure out which clientFileIds to fetch summaries from
-					console.log "Has userProgram, so let's look at the clientFileProgramLinks..."
 					ActiveSession.persist.clientFileProgramLinks.list (err, result) =>
 						if err
 							cb err
@@ -145,7 +146,7 @@ load = (win) ->
 
 						clientFile = null
 						progNoteHeadersFromToday = null
-						progNotesWithSummary = null
+						progNotesFromToday = null
 
 						Async.parallel [
 							(cb) =>
@@ -175,7 +176,6 @@ load = (win) ->
 											.sortBy (progNote) ->
 												progNote.get('backdate') or progNote.get('timestamp')
 
-											console.log "progNoteHeadersFromToday", progNoteHeadersFromToday.toJS()
 											cb()
 
 									(cb) =>
@@ -188,8 +188,7 @@ load = (win) ->
 												return
 
 											# Flatten from [[obj], [obj]] -> [obj, obj]
-											progNotesWithSummary = Imm.List(results).flatten(true)
-											console.log "progNotesWithSummary", progNotesWithSummary.toJS()
+											progNotesFromToday = Imm.List(results).flatten(true)
 											cb()
 
 								], cb
@@ -200,7 +199,7 @@ load = (win) ->
 								return
 
 							# We're only interested in the most recent progNoteWithSummary
-							progNote = progNotesWithSummary.last()
+							progNote = progNotesFromToday.last()
 
 							result = Imm.fromJS {
 								clientFile
@@ -211,7 +210,6 @@ load = (win) ->
 							progressPercent = @state.progressPercent + clientFilePercentValue
 							@setState {progressPercent}
 
-							console.log "Processed clientFile"
 							# Ok, next clientFile please!
 							cb null, result
 
@@ -220,10 +218,7 @@ load = (win) ->
 							cb err
 							return
 
-						console.log "Building summaryObjects..."
-
 						summaryObjects = Imm.List(results)
-						console.info "summaryObjects:", summaryObjects.toJS()
 						cb()
 
 			], (err) =>
@@ -252,7 +247,7 @@ load = (win) ->
 				"""
 
 				summariesString = summaryObjects
-				.filter (obj) -> obj.get('progNote')
+				.filter (obj) -> obj.get('progNote') and obj.getIn(['progNote', 'summary'])
 				.map (obj) ->
 					date = obj.getIn(['progNote', 'backdate']) or obj.getIn(['progNote', 'timestamp'])
 					time = Moment(date, TimestampFormat).format('h:mma')
@@ -268,7 +263,7 @@ load = (win) ->
 						#{summary}
 					"""
 				.toJS()
-				.join "\n"
+				.join "\n\n"
 
 				if not summariesString
 					summariesString = "(no summaries recorded today)"
@@ -277,7 +272,7 @@ load = (win) ->
 
 				# TODO: Refactor this
 				missingSummariesString = summaryObjects
-				.filter (obj) -> not obj.get('progNote')
+				.filter (obj) -> not obj.get('progNote') or not obj.getIn(['progNote', 'summary'])
 				.map (obj) ->
 					clientName = renderName(obj.getIn ['clientFile', 'clientName'])
 					recordId = obj.getIn ['clientFile', 'recordId']

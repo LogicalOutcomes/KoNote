@@ -11,6 +11,15 @@ sidebar-borders = darken(sidebar-bg, 10%)
 	overflow hidden
 	height 100%
 
+	> #shiftSummariesContainer
+		position absolute
+		bottom 20px
+		width 200px
+		left 50%
+		margin-left -100px
+		text-align center
+		z-index 1000
+
 	> #expandMenuButton
 		background none
 		position fixed
@@ -128,10 +137,10 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 				.searchBoxContainer
 					margin 0px auto
-					width 500px
-					max-width 100%
-
 					padding 30px
+					min-width 400px
+					width 50%
+					max-width 550px
 
 			> .smallHeaderLogo
 				position absolute

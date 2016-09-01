@@ -163,7 +163,7 @@ module.exports = function(grunt) {
 				]
 			},
 			bootstrap: {
-				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/node_modules/bootstrap/dist/js/bootstrap.min.js'],
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/lib/bootstrap/dist/js/bootstrap.min.js'],
 				overwrite: true,
 				replacements: [
 					{
