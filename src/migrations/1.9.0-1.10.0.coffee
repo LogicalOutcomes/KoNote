@@ -458,7 +458,7 @@ module.exports = {
 			(cb) ->
 				console.groupEnd()
 				console.groupCollapsed "2. Create empty 'alerts' dataModel collection directory"
-				createClientFileAlertsDirectory, cb
+				createClientFileAlertsDirectory cb
 		]
 
 
