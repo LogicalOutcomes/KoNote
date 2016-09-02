@@ -1,5 +1,6 @@
 {
 	"devMode": true,
+	"backend": "file-system",
 	"productName": "KoNote",
 	"supportEmailAddress": "help@konote.ca",
 
