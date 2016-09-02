@@ -12,81 +12,81 @@
 
 	.timepicker-hour, .timepicker-minute, .timepicker-second
 		width 24px
-		
+
 	.backdateMessage
 		text-align center
 		color red
 		padding 15px
-		padding-bottom 0px	
+		padding-bottom 0px
 
 	> .loadError
 		width 100%
 		padding 200px
-		
+
 		text-align center
 
 		> div
 			> .btn
 				margin 50px
-				
+
 	.backdateContainer
 		padding 20px
-		
 
-	// Main ProgNote Area	
+
+	// Main ProgNote Area
 
 	> .progNote
 		flex 1
 		position relative
 		overflow auto
-		
+
 
 		// Event Relation Selection Mode
-			
+
 		.eventPlanRelationMode
 			// TODO
-			
+
 			.hoveredEventPlanRelation
 				background #eee !important
 				border-color #D0D0D0 !important
-		
+
 		.selectedEventPlanRelation
 			background #C1F2C1 !important
 			border-color #A5D3A5 !important
-			
+
 
 		// Regular ProgNote Styles
-			
+
 		h1
 			text-align center
 			font-size 26px
 			font-weight 300
-			
+
 		h2
 			margin-top 0
 			font-size 22px
 			padding-bottom 5px
 			font-weight 600
 			border-bottom 1px solid #eee
-			
+
 		h3
 			margin-top 5px
 			font-size 18px
-			
-		.units			
+
+		.units
 			border-top 1px solid #eee
 			padding-bottom 80px
-			
+
 			.unit, section, .target
 				border 1px solid transparent // Colored by eventPlanRelation
-			
+
 			.unit
 				padding-bottom 15px
 
 				&.basic
 					padding-right 15px
 					padding-left 15px
-					
+
 					> .metrics
 						display flex
 						flex-wrap wrap
@@ -98,20 +98,32 @@
 						> .metricWidget
 							margin 3px
 
-				&.plan					
-					
+				&.plan
+
 					> .empty
 						text-align center
 						padding 15px
 						color #888
-						
+
 					> section
 						padding 20px
-						
+
 						> .target
 							padding 10px
 							border-radius 5px
-							
+
+							.star
+								color #888
+								float right
+								border none
+
+								&:hover
+									color #337ab7
+
+								> .checked
+									color yellow
+									-webkit-text-stroke 1px #888
+
 							> .name
 								margin 10px 0 5px
 
@@ -128,28 +140,32 @@
 								padding-top 5px
 
 								> .metricWidget
-									margin 3px	
-			
+									margin 3px
+
+
+		#shiftSummaryField
+			margin-top 25px
+
 		#saveNoteButton
 			position fixed
 			bottom 10px
 			left 15%
 			width 150px
 			border 2px solid white
-			
+
 			.fa
 				font-size 20px
 				margin-left 10px
 
 	> .progNoteDetailView
 		flex 1
-		
+
 	> .eventsPanel
 		flex-basis 70px
 		text-align center
 		padding-top 12px
 		border-left 2px solid #eee
-		
+
 		> .title
 			font-weight bold
 			text-transform uppercase
@@ -158,48 +174,48 @@
 			color #7C7C7C
 			border-bottom 1px solid #eee
 			margin-bottom 10px
-		
+
 		> .eventsList
 			clear both
 			display block
 			max-height 100%
-			
+
 			&.editMode .icon
 				opacity 0.35
-				
+
 			> .addEventButton
 				border none
 				margin-top 15px
 				color green
-			
+
 			> .eventTab
 				position relative
 				background white
-				
+
 				display flex
 				align-items center
 				justify-content center
-				
+
 				> .icon
 					width 50px
 					height 50px
-					
+
 					display flex
 					align-items center
 					justify-content center
-					
+
 					> img
 						width 60%
 						height auto
-					
-				&.isEditing .icon					
+
+				&.isEditing .icon
 					background white
 					color black
-					
+
 				&:hover, &.isEditing
-					
+
 					> .eventView
-						display block						
-						
+						display block
+
 				&:hover > .eventView
 					z-index 1000

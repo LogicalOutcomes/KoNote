@@ -11,9 +11,8 @@
 # transient fields before saving, while `fromSavedFormat` initialize them with
 # some default values.
 
-# Libraries from Node.js context
+
 _ = require 'underscore'
-Assert = require 'assert'
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -24,7 +23,6 @@ Persist = require '../persist'
 
 
 load = (win, {clientFileId}) ->
-	# Libraries from browser context
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
@@ -40,6 +38,7 @@ load = (win, {clientFileId}) ->
 	OpenDialogLink = require('../openDialogLink').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
+	ClientAlerts = require('./clientAlerts').load(win)
 
 	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
 
@@ -79,9 +78,11 @@ load = (win, {clientFileId}) ->
 				planTargetsById: Imm.Map()
 				programsById: Imm.Map()
 				metricsById: Imm.Map()
+				planTemplateHeaders: Imm.Map()
 				loadErrorType: null
 				loadErrorData: null
 			}
+
 
 		init: ->
 			@_renewAllData()
@@ -148,11 +149,13 @@ load = (win, {clientFileId}) ->
 				progressEvents: @state.progressEvents
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
+				planTemplateHeaders: @state.planTemplateHeaders
 				programs: @state.programs
 				programsById: @state.programsById
 				clientFileProgramLinkHeaders: @state.clientFileProgramLinkHeaders
 				eventTypes: @state.eventTypes
 				globalEvents
+				alerts: @state.alerts
 
 				headerIndex: @state.headerIndex
 				progNoteTotal: @state.progNoteTotal
@@ -171,6 +174,7 @@ load = (win, {clientFileId}) ->
 			fileIsUnsync = null
 			# File data
 			clientFile = null
+			planTemplateHeaders = null
 			planTargetsById = null
 			planTargetHeaders = null
 			progNoteHeaders = null
@@ -188,6 +192,8 @@ load = (win, {clientFileId}) ->
 			eventTypes = null
 			globalEventHeaders = null
 			globalEvents = null
+			alertHeaders = null
+			alerts = null
 
 			checkFileSync = (newData, oldData) =>
 				unless fileIsUnsync
@@ -402,6 +408,36 @@ load = (win, {clientFileId}) ->
 						eventTypes = Imm.List(results).map (eventType) -> stripMetadata eventType.get(0)
 						cb()
 
+				(cb) =>
+					ActiveSession.persist.alerts.list clientFileId, (err, result) =>
+						if err
+							cb err
+							return
+						alertHeaders = result
+						cb()
+
+				(cb) =>
+					Async.map alertHeaders.toArray(), (alertHeader, cb) =>
+						alertId = alertHeader.get('id')
+
+						ActiveSession.persist.alerts.readLatestRevisions clientFileId, alertId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						alerts = Imm.List(results).map (alert) -> stripMetadata alert.get(0)
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.planTemplates.list (err, result) =>
+						if err
+							cb err
+							return
+						planTemplateHeaders = result
+						.filter (template) -> template.get('status') is 'default'
+						cb()
+
 			], (err) =>
 				if err
 					# Cancel any lock operations, and show the page in error
@@ -462,10 +498,12 @@ load = (win, {clientFileId}) ->
 						globalEvents
 						metricsById
 						planTargetsById
+						planTemplateHeaders
 						programs
 						programsById
 						clientFileProgramLinkHeaders
 						eventTypes
+						alerts
 					}
 
 		_acquireLock: (cb=(->)) ->
@@ -535,15 +573,11 @@ load = (win, {clientFileId}) ->
 				cb()
 
 		_updatePlan: (plan, newPlanTargets, updatedPlanTargets) ->
-
-			newPlanTargetsArray = newPlanTargets.toArray()
-			updatedPlanTargetsArray = updatedPlanTargets.toArray()
-
 			idMap = Imm.Map()
 
 			Async.series [
 				(cb) =>
-					Async.each newPlanTargetsArray, (newPlanTarget, cb) =>
+					Async.each newPlanTargets.toArray(), (newPlanTarget, cb) =>
 						transientId = newPlanTarget.get('id')
 						newPlanTarget = newPlanTarget.delete('id')
 
@@ -557,7 +591,7 @@ load = (win, {clientFileId}) ->
 							cb()
 					, cb
 				(cb) =>
-					Async.each updatedPlanTargetsArray, (updatedPlanTarget, cb) =>
+					Async.each updatedPlanTargets.toArray(), (updatedPlanTarget, cb) =>
 						ActiveSession.persist.planTargets.createRevision updatedPlanTarget, cb
 					, cb
 				(cb) =>
@@ -677,6 +711,11 @@ load = (win, {clientFileId}) ->
 					globalEvents = @state.globalEvents.push globalEvent
 					@setState {globalEvents}
 
+				# TODO: Update to allow for multiple alerts
+				'create:alert createRevision:alert': (alert) =>
+					alerts = Imm.List [alert]
+					@setState {alerts}
+
 				'timeout:timedOut': =>
 					@_killLocks Bootbox.hideAll
 
@@ -698,17 +737,16 @@ load = (win, {clientFileId}) ->
 		hasChanges: ->
 			# Eventually this will cover more
 			# components where unsaved changes can occur
+			# TODO: Make this a little nicer
 			if @refs.planTab?
 				@refs.planTab.hasChanges()
+			else if @refs.sidebar
+				@refs.sidebar.hasChanges()
 			else
 				false
 
 		suggestClose: ->
-			# If page still loading
-			# TODO handle this more elegantly
-			unless @props.clientFile?
-				@props.closeWindow()
-				return
+			return unless @hasMounted
 
 			clientName = renderName @props.clientFile.get('clientName')
 
@@ -768,6 +806,9 @@ load = (win, {clientFileId}) ->
 						}
 					}
 				}
+			else if @refs.sidebar.hasChanges()
+				Bootbox.confirm "Discard unsaved changes to #{Term 'client'} alerts?", (ok) =>
+					if ok then @props.closeWindow()
 			else
 				@props.closeWindow()
 
@@ -775,6 +816,9 @@ load = (win, {clientFileId}) ->
 			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
 			Window.focus()
 			Window.maximize()
+
+			# It's now OK to close the window
+			@hasMounted = true
 
 		render: ->
 			if @props.loadErrorType
@@ -796,6 +840,7 @@ load = (win, {clientFileId}) ->
 				)
 				R.div({className: 'wrapper'},
 					Sidebar({
+						ref: 'sidebar'
 						clientFile: @props.clientFile
 						clientName: @props.clientName
 						clientPrograms: @props.clientPrograms
@@ -803,7 +848,9 @@ load = (win, {clientFileId}) ->
 						activeTabId
 						programs: @props.programs
 						status: @props.clientFile.get('status')
+						alerts: @props.alerts
 						onTabChange: @_changeTab
+						isReadOnly
 					})
 					R.div({
 						className: [
@@ -820,6 +867,7 @@ load = (win, {clientFileId}) ->
 							programsById: @props.programsById
 							metricsById: @props.metricsById
 							updatePlan: @props.updatePlan
+							planTemplateHeaders: @props.planTemplateHeaders
 							isReadOnly
 						})
 					)
@@ -878,9 +926,14 @@ load = (win, {clientFileId}) ->
 		_changeTab: (activeTabId) ->
 			@setState {activeTabId}
 
+
 	Sidebar = React.createFactory React.createClass
 		displayName: 'Sidebar'
 		mixins: [React.addons.PureRenderMixin]
+
+		hasChanges: ->
+			# Pass up clientAlerts.hasChanges() to UI parent
+			@refs.clientAlerts.hasChanges()
 
 		render: ->
 			activeTabId = @props.activeTabId
@@ -918,12 +971,14 @@ load = (win, {clientFileId}) ->
 						)
 					)
 				)
+
 				(if @props.recordId
 					R.div({className: 'recordId'},
 						R.span({}, renderRecordId @props.recordId, true)
 					)
 				)
-				if @props.status is 'inactive'
+
+				(if @props.status is 'inactive'
 					R.div({className: 'inactiveStatus'},
 						@props.status.toUpperCase()
 					)
@@ -931,6 +986,8 @@ load = (win, {clientFileId}) ->
 					R.div({className: 'dischargedStatus'},
 						@props.status.toUpperCase()
 					)
+				)
+
 				R.div({className: 'tabStrip'},
 					SidebarTab({
 						name: Term('Plan')
@@ -951,12 +1008,21 @@ load = (win, {clientFileId}) ->
 						onClick: @props.onTabChange.bind null, 'analysis'
 					})
 				)
+
+				ClientAlerts({
+					ref: 'clientAlerts'
+					alerts: @props.alerts
+					clientFileId
+					isDisabled: @props.isReadOnly
+				})
+
 				BrandWidget()
 			)
 
+
 	SidebarTab = React.createFactory React.createClass
 		displayName: 'SidebarTab'
-		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			return R.div({
 				className: "tab #{if @props.isActive then 'active' else ''}"
@@ -967,9 +1033,10 @@ load = (win, {clientFileId}) ->
 				@props.name
 			)
 
+
 	LoadError = React.createFactory React.createClass
 		displayName: 'LoadError'
-		mixins: [React.addons.PureRenderMixin]
+
 		componentDidMount: ->
 			console.log "loadErrorType:", @props.loadErrorType
 			msg = switch @props.loadErrorType
@@ -980,14 +1047,17 @@ load = (win, {clientFileId}) ->
 					"""
 				else
 					"An unknown error occured (loadErrorType: #{@props.loadErrorType}"
+
 			Bootbox.alert msg, =>
 				@props.closeWindow()
+
 		render: ->
 			return R.div({className: 'clientFilePage'})
 
+
 	ReadOnlyNotice = React.createFactory React.createClass
 		displayName: 'ReadOnlyNotice'
-		mixins: [React.addons.PureRenderMixin]
+
 		render: ->
 			return R.div({className: 'readOnlyNotice'},
 				R.div({

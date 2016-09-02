@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # A dialog for allowing the user to rename a client file
@@ -8,6 +8,7 @@ Persist = require './persist'
 Imm = require 'immutable'
 Config = require './config'
 Term = require './term'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -18,6 +19,7 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
+
 
 	RenameClientFileDialog = React.createFactory React.createClass
 		displayName: 'RenameClientFileDialog'
@@ -50,6 +52,7 @@ load = (win) ->
 							onChange: @_updateFirstName
 							value: @state.firstName
 							onKeyDown: @_onEnterKeyDown
+							maxLength: 35
 						})
 					)
 					R.div({className: 'form-group'},
@@ -59,6 +62,7 @@ load = (win) ->
 							onChange: @_updateMiddleName
 							value: @state.middleName
 							placeholder: "(optional)"
+							maxLength: 35
 						})
 					)
 					R.div({className: 'form-group'},
@@ -68,41 +72,42 @@ load = (win) ->
 							onChange: @_updateLastName
 							value: @state.lastName
 							onKeyDown: @_onEnterKeyDown
+							maxLength: 35
 						})
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Client File Status"),
 						R.div({className: 'btn-toolbar'},
 							R.button({
-								className: 
-									if @state.status is 'active' 
+								className:
+									if @state.status is 'active'
 										'btn btn-success'
 									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'active'
-								
+
 								},
 							"Active"
 							)
 							R.button({
-								className: 
-									if @state.status is 'inactive' 
+								className:
+									if @state.status is 'inactive'
 										'btn btn-warning'
 									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'inactive'
-								
+
 								},
 							"Inactive"
 							)
 							R.button({
 								className:
-									if @state.status is 'discharged' 
+									if @state.status is 'discharged'
 										'btn btn-danger'
 									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'discharged'
-								
+
 								},
 							"Discharged"
 							)
@@ -117,12 +122,13 @@ load = (win) ->
 								value: @state.recordId
 								placeholder: "(optional)"
 								onKeyDown: @_onEnterKeyDown
+								maxLength: 23
 							})
 						)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
-							onClick: @_cancel							
+							onClick: @_cancel
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-primary'

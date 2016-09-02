@@ -19,6 +19,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	ReactDOM = win.ReactDOM
+	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
 	RevisionHistory = require('../revisionHistory').load(win)
@@ -124,20 +125,52 @@ load = (win) ->
 									disabled: hasChanges or @props.isReadOnly
 								},
 									FaIcon('plus')
-									"Add #{Term 'section'}"
+									"Add #{Term 'Section'}"
 								)
-							)
-							WithTooltip({
-								placement: 'bottom'
-								title: "Create plan template"
-							},
-								R.button({
-									className: 'btn createTemplateButton'
-									onClick: @_createTemplate
+
+
+								B.DropdownButton({
+									title: R.span({},
+										FaIcon('wpforms')
+										" "
+										"Templates"
+									)
 								},
-									FaIcon('wpforms')
+
+									B.MenuItem({
+										onClick: @_createTemplate
+									},
+										R.h5({
+											onclick: @_createTemplate
+										},
+											FaIcon('plus')
+											" "
+											"New Plan Template"
+										)
+									)
+									unless @props.planTemplateHeaders.isEmpty()
+										[
+											B.MenuItem({divider: true})
+
+											B.MenuItem({header: true}, R.h5({}, "Apply Template"))
+
+											(@props.planTemplateHeaders.map (planTemplateHeader) =>
+												B.MenuItem({
+													key: planTemplateHeader.get('id')
+													onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+												},
+													R.div({
+														onclick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+													},
+														planTemplateHeader.get('name')
+
+													)
+												)
+											)
+										]
 								)
 							)
+
 							PrintButton({
 								dataSet: [
 									{
@@ -228,11 +261,16 @@ load = (win) ->
 
 			return false
 
-		_hasTargetChanged: (targetId) ->
-			currentRev = @_normalizeTarget @state.currentTargetRevisionsById.get(targetId)
+		_hasTargetChanged: (targetId, currentTargetRevisionsById, planTargetsById) ->
+			# Default to retrieving these values from the component
+			currentTargetRevisionsById or= @state.currentTargetRevisionsById
+			planTargetsById or= @props.planTargetsById
+
+			# Get current revision (normalized) of the specified target
+			currentRev = @_normalizeTarget currentTargetRevisionsById.get(targetId)
 
 			# If this is a new target
-			target = @props.planTargetsById.get(targetId, null)
+			target = planTargetsById.get(targetId, null)
 			unless target
 				# If target is empty
 				emptyName = currentRev.get('name') is ''
@@ -263,20 +301,30 @@ load = (win) ->
 					Bootbox.alert "Cannot save #{Term 'plan'}: there are empty #{Term 'target'} fields."
 					return
 
-				newPlanTargets = @state.currentTargetRevisionsById.valueSeq()
+				# Capture these values for use in filtering functions below.
+				# This is necessary to ensure that they won't change between
+				# now and when the filtering functions are actually called.
+				currentTargetRevisionsById = @state.currentTargetRevisionsById
+				planTargetsById = @props.planTargetsById
+
+				newPlanTargets = currentTargetRevisionsById.valueSeq()
 				.filter (target) =>
 					# Only include targets that have not been saved yet
-					return not @props.planTargetsById.has(target.get('id'))
+					return not planTargetsById.has(target.get('id'))
 				.map(@_normalizeTarget)
 
-				updatedPlanTargets = @state.currentTargetRevisionsById.valueSeq()
+				updatedPlanTargets = currentTargetRevisionsById.valueSeq()
 				.filter (target) =>
 					# Ignore new targets
-					unless @props.planTargetsById.has(target.get('id'))
+					unless planTargetsById.has(target.get('id'))
 						return false
 
 					# Only include targets that have actually changed
-					return @_hasTargetChanged target.get('id')
+					return @_hasTargetChanged(
+						target.get('id'),
+						currentTargetRevisionsById,
+						planTargetsById
+					)
 				.map(@_normalizeTarget)
 
 				@props.updatePlan @state.plan, newPlanTargets, updatedPlanTargets
@@ -359,6 +407,116 @@ load = (win) ->
 
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
+
+		_applyPlanTemplate: (templateId) ->
+			Bootbox.confirm "Are you sure you want to apply this template?", (ok) =>
+				if ok
+					clientFileHeaders = null
+					newClientFileObj = null
+					newClientFile = null
+					selectedPlanTemplate = null
+					templateSections = null
+					existsElsewhere = null
+					clientFileId = @props.clientFileId
+
+					Async.series [
+
+						(cb) =>
+							ActiveSession.persist.planTemplates.readLatestRevisions templateId, 1, (err, result) ->
+								if err
+									cb err
+									return
+
+								selectedPlanTemplate = stripMetadata result.get(0)
+								cb()
+
+						(cb) =>
+							templateSections = selectedPlanTemplate.get('sections').map (section) =>
+								templateTargets = section.get('targets').map (target) =>
+									target.get('metricIds').forEach (metricId) =>
+										# Metric exists in another target
+										existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
+											return target.get('metricIds').contains(metricId)
+										if existsElsewhere
+											return
+
+									Imm.fromJS {
+										clientFileId
+										name: target.get('name')
+										description: target.get('description')
+										status: 'default'
+										metricIds: target.get('metricIds')
+									}
+
+								return section.set 'targets', templateTargets
+
+							if existsElsewhere
+								cb('CANCEL')
+								return
+
+							cb()
+
+						(cb) =>
+							Async.map templateSections.toArray(), (section, cb) ->
+								Async.map section.get('targets').toArray(), (target, cb) ->
+									global.ActiveSession.persist.planTargets.create target, (err, result) ->
+										if err
+											cb err
+											return
+
+										cb null, result.get('id')
+
+								, (err, results) ->
+									if err
+										cb err
+										return
+
+									targetIds = Imm.List(results)
+
+									newSection = Imm.fromJS {
+										id: Persist.generateId()
+										name: section.get('name')
+										targetIds: results
+										status: 'default'
+									}
+
+									cb null, newSection
+
+							, (err, results) ->
+								if err
+									cb err
+									return
+
+								templateSections = Imm.List(results)
+								cb()
+
+						(cb) =>
+							newPlan = @state.plan.update 'sections', (sections) =>
+								return sections.concat(templateSections)
+
+							@setState {plan: newPlan}
+
+							cb()
+
+					], (err) =>
+						if err
+							if err is 'CANCEL'
+								Bootbox.alert "A #{Term 'metric'} in this template already exists for another #{Term 'plan target'}"
+								return
+
+							if err instanceof Persist.IOError
+								console.error err
+								Bootbox.alert """
+									Please check your network connection and try again.
+								"""
+								return
+
+							CrashHandler.handle err
+							return
+
+
+
+					return
 
 		_createTemplate: ->
 			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
@@ -733,6 +891,7 @@ load = (win) ->
 					onRemoveNewSection
 					targetIdsByStatus
 					sectionIsInactive
+					currentTargetRevisionsById
 				})
 				(if section.get('targetIds').size is 0
 					R.div({className: 'noTargets'},
@@ -871,6 +1030,7 @@ load = (win) ->
 				removeNewSection
 				targetIdsByStatus
 				onRemoveNewSection
+				currentTargetRevisionsById
 				sectionIsInactive
 			} = @props
 
@@ -905,6 +1065,18 @@ load = (win) ->
 						FaIcon('plus')
 						"Add #{Term 'target'}"
 					)
+					WithTooltip({
+						placement: 'bottom'
+						title: "Create Section Template"
+					},
+						R.button({
+							className: 'btn btn-default'
+							onClick: @_createSectionTemplate
+						},
+							FaIcon('wpforms')
+						)
+					)
+
 				)
 				# TODO: Extract to component
 				(if canSetStatus
@@ -985,8 +1157,42 @@ load = (win) ->
 						)
 					)
 				)
-
 			)
+
+
+		_createSectionTemplate: ->
+			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
+				unless templateName
+					return
+
+				sectionTargets = @props.section.get('targetIds').map (targetId) =>
+					target = @props.currentTargetRevisionsById.get(targetId)
+					# Removing irrelevant data from object
+					return target
+					.remove('status')
+					.remove('statusReason')
+					.remove('clientFileId')
+					.remove('id')
+
+				templateSection = Imm.fromJS [{
+					name: @props.section.get('name')
+					targets: sectionTargets
+				}]
+
+				sectionTemplate = Imm.fromJS {
+					name: templateName
+					status: 'default'
+					sections: templateSection
+				}
+
+				global.ActiveSession.persist.planTemplates.create sectionTemplate, (err, obj) =>
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again
+						"""
+						return
+					Bootbox.alert "New template: '#{templateName}' created."
 
 
 	PlanTarget = React.createFactory React.createClass
@@ -1124,7 +1330,7 @@ load = (win) ->
 									definition: metric.get('definition')
 									value: metric.get('value')
 									key: metricId
-									tooltipViewport: '.section'
+									tooltipViewport: '.view'
 									isEditable: false
 									allowDeleting: not targetIsInactive
 									onDelete: @props.deleteMetricFromTarget.bind(

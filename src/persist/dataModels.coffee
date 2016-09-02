@@ -103,6 +103,7 @@ dataModelDefinitions = [
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						authorProgramId: IdSchema.allow('')
 						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+						summary: Joi.string().allow('')
 						units: Joi.array().items(
 							[
 								Joi.object().keys({
@@ -150,6 +151,19 @@ dataModelDefinitions = [
 						)
 					})
 				]
+			}
+			{
+				name: 'alert'
+				collectionName: 'alerts'
+				isMutable: true
+				indexes: [['status']]
+				schema: Joi.object().keys({
+					content: Joi.string().allow('')
+					updateReason: Joi.string().optional()
+					status: ['default', 'cancelled']
+					statusReason: Joi.string().optional()
+					authorProgramId: IdSchema.allow('')
+				})
 			}
 		]
 	}

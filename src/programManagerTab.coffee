@@ -184,6 +184,7 @@ load = (win) ->
 							placeholder: "Specify #{Term 'program'} name"
 							value: @state.name
 							onChange: @_updateName
+							maxLength: 64
 							style:
 								borderColor: @state.colorKeyHex
 						})
@@ -354,6 +355,7 @@ load = (win) ->
 							placeholder: "Specify #{Term 'program'} name"
 							value: @state.name
 							onChange: @_updateName
+							maxLength: 64
 							style:
 								borderColor: @state.colorKeyHex
 						})

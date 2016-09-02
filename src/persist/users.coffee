@@ -641,7 +641,7 @@ class DecryptedAccount extends Account
 					cb()
 			(cb) =>
 				if newType is 'admin'
-					privateInfo.systemPrivateKey = PrivateKey.import(loggedInAccount.privateInfo.systemPrivateKey)
+					privateInfo.systemPrivateKey = loggedInAccount.privateInfo.systemPrivateKey
 				else
 					privateInfo.systemPrivateKey = null
 

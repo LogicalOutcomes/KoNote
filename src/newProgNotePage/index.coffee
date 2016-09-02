@@ -132,6 +132,7 @@ load = (win, {clientFileId}) ->
 				clientFileId: clientFile.get('id')
 				templateId: template.get('id')
 				backdate: ''
+				summary: ''
 				units: template.get('units').map (unit) =>
 					switch unit.get('type')
 						when 'basic'
@@ -374,7 +375,19 @@ load = (win, {clientFileId}) ->
 														onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
 														onClick: @_selectEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
 													},
-														R.h3({}, target.get 'name')
+														R.h3({},
+															target.get 'name'
+															R.span({
+																className: 'star'
+																title: "Mark as Important"
+																onClick: @_starTarget.bind(null, unitId, sectionId, targetId, target.get 'notes')
+															},
+																if target.get('notes').includes "***"
+																	FaIcon('star', {className:'checked'})
+																else
+																	FaIcon('star-o')
+															)
+														)
 														ExpandingTextArea {
 															value: target.get 'notes'
 															onFocus: @_selectPlanTarget.bind(
@@ -411,6 +424,18 @@ load = (win, {clientFileId}) ->
 										).toJS()...
 									)
 						).toJS()...
+
+						# PROTOTYPE Shift Summary Feature
+						R.div({
+							id: 'shiftSummaryField'
+							className: 'unit basic'
+						},
+							R.h2({}, "Shift Summary")
+							ExpandingTextArea({
+								value: @state.progNote.get('summary')
+								onChange: @_updateSummary
+							})
+						)
 					)
 
 					if @hasChanges()
@@ -554,6 +579,27 @@ load = (win, {clientFileId}) ->
 				}
 			}
 
+		_starTarget: (unitId, sectionId, targetId, note) ->
+			if note.includes "***"
+				newNotes = note.replace(/\*\*\*/g, '')
+			else
+				newNotes = "***" + note
+			unitIndex = getUnitIndex @state.progNote, unitId
+			sectionIndex = getPlanSectionIndex @state.progNote, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex @state.progNote, unitIndex, sectionIndex, targetId
+
+			@setState {
+				progNote: @state.progNote.setIn(
+					[
+						'units', unitIndex
+						'sections', sectionIndex
+						'targets', targetIndex
+						'notes'
+					]
+					newNotes
+				)
+			}
+
 		_updateBackdate: (event) ->
 			if event
 				newBackdate = Moment(event.date).format(Persist.TimestampFormat)
@@ -646,10 +692,15 @@ load = (win, {clientFileId}) ->
 				)
 			}
 
+		_updateSummary: (event) ->
+			summary = event.target.value
+			progNote = @state.progNote.set 'summary', summary
+
+			@setState {progNote}
+
 		_isValidMetric: (value) -> value.match /^-?\d*\.?\d*$/
 
 		_save: ->
-
 			authorProgramId = global.ActiveSession.programId or ''
 			progNote = @state.progNote
 			.set('authorProgramId', authorProgramId)

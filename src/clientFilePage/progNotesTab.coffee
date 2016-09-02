@@ -215,6 +215,7 @@ load = (win) ->
 										updateBasicUnitNotes: @_updateBasicUnitNotes
 										updateBasicMetric: @_updateBasicMetric
 										updatePlanTargetMetric: @_updatePlanTargetMetric
+										updateQuickNotes: @_updateQuickNotes
 										saveProgNoteRevision: @_saveProgNoteRevision
 										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
 									})
@@ -895,7 +896,12 @@ load = (win) ->
 													onChange: @props.updateBasicUnitNotes.bind null, unitId
 												})
 											else
-												renderLineBreaks unit.get('notes')
+												if unit.get('notes').includes "***"
+													R.span({className: 'starred'},
+														renderLineBreaks unit.get('notes')
+													)
+												else
+													renderLineBreaks unit.get('notes')
 											)
 										)
 										unless unit.get('metrics').isEmpty()
@@ -965,7 +971,12 @@ load = (win) ->
 																)
 															})
 														else
-															renderLineBreaks target.get('notes')
+															if target.get('notes').includes "***"
+																R.span({className: 'starred'},
+																	renderLineBreaks target.get('notes').replace(/\*\*\*/g, '')
+																)
+															else
+																renderLineBreaks target.get('notes')
 														)
 													)
 													R.div({className: 'metrics'},
@@ -993,6 +1004,15 @@ load = (win) ->
 									)
 								)
 					).toJS()...
+
+					(if progNote.get('summary')
+						R.div({className: 'basic unit'},
+							R.h3({}, "Shift Summary")
+							R.div({className: 'notes'},
+								renderLineBreaks progNote.get('summary')
+							)
+						)
+					)
 
 					unless @props.progEvents.isEmpty()
 						R.div({className: 'progEvents'}

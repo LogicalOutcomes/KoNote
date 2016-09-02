@@ -12,6 +12,7 @@ Config = require './config'
 Term = require './term'
 Persist = require './persist'
 
+
 load = (win) ->
 	# Window libs
 	$ = win.jQuery
@@ -36,9 +37,11 @@ load = (win) ->
 
 	ManagerLayer = require('./managerLayer').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
+	GenerateSummariesDialog = require('./generateSummariesDialog').load(win)
 
 	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
+
 
 	ClientSelectionPage = React.createFactory React.createClass
 		displayName: 'ClientSelectionPage'
@@ -333,7 +336,12 @@ load = (win) ->
 		componentDidMount: ->
 			# Fire 'loaded' event for loginPage to hide itself
 			global.ActiveSession.persist.eventBus.trigger 'clientSelectionPage:loaded'
+
+			# Key bindings for search results navigation
 			@_attachKeyBindings()
+
+			# Set the userProgramId globally so other windows can access it
+			ActiveSession.programId = if @props.userProgram then @props.userProgram.get('id') else null
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
@@ -346,6 +354,14 @@ load = (win) ->
 					'menuIsOpen' if @state.menuIsOpen
 				].join ' '
 			},
+				R.div({
+					id: 'shiftSummariesContainer'
+				},
+					OpenDialogLink({
+						className: 'btn btn-default btn-sm animated fadeIn'
+						dialog: GenerateSummariesDialog
+					}, "Today's Shift Summaries")
+				)
 				R.a({
 					id: 'expandMenuButton'
 					className: [
@@ -400,7 +416,7 @@ load = (win) ->
 								noData = @props.clientFileHeaders.isEmpty()
 
 								R.div({className: 'input-group'}
-									unless noData
+									(unless noData
 										OpenDialogLink({
 											className: 'input-group-btn'
 											ref: 'openCreateClientSmall'
@@ -414,6 +430,7 @@ load = (win) ->
 												R.span({className: 'text-success'}, FaIcon('plus'))
 											)
 										)
+									)
 
 									R.input({
 										className: 'searchBox form-control'

@@ -7,8 +7,7 @@ grunt task for release builds of konote
 creates a 'releases' folder inside the builds directory containing compiled mac dmg and windows zip files.
 */
 
-// TODO:
-// bundle innosetup, resource_hacker and codesign utility for windows?
+// TODO: bundle innosetup and codesign utility for windows?
 
 var release = [];
 
@@ -28,7 +27,9 @@ module.exports = function(grunt) {
 								{name: ' Generic - Mac', value: 'generic-mac'},
 								{name: ' Generic - Windows', value: 'generic-win'},
 								{name: ' Griffin - Mac', value: 'griffin-mac'},
-								{name: ' Griffin - Windows', value: 'griffin-win'}
+								{name: ' Griffin - Windows', value: 'griffin-win'},
+								{name: ' St Leonards - Mac', value: 'stleonards-mac'},
+								{name: ' St Leonards - Windows', value: 'stleonards-win'}
 							]
 						}
 					],
@@ -109,6 +110,22 @@ module.exports = function(grunt) {
 						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/gc-logo.svg'
 					}
 				]
+			},
+			stleonards: {
+				files: [
+					{
+						src: 'customers/st_leonards_place/customer.json',
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/customer.json'
+					},
+					{
+						src: 'customers/st_leonards_place/customer-logo-lg.png',
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/stleonards-logo-lg.png'
+					},
+					{
+						src: 'customers/st_leonards_place/customer-logo-sm.png',
+						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/stleonards-logo-sm.png'
+					}
+				]
 			}
 		},
 		replace: {
@@ -145,7 +162,7 @@ module.exports = function(grunt) {
 				]
 			},
 			bootstrap: {
-				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/node_modules/bootstrap/dist/js/bootstrap.min.js'],
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/lib/bootstrap/dist/js/bootstrap.min.js'],
 				overwrite: true,
 				replacements: [
 					{
@@ -155,38 +172,6 @@ module.exports = function(grunt) {
 				]
 			}
 		},
-		/*
-		nwjs: {
-			mac: {
-				options: {
-					appName: '<%= pkg.displayName %>',
-					//macCredits: 'path-to-file',
-					macIcns: 'build/releases/temp/<%= grunt.task.current.args[0] %>/src/icon.icns',
-					version: '<%= pkg.devDependencies.nodewebkit %>',
-					platforms: ['osx64'],
-					buildType: 'default',
-					buildDir: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>',
-					cacheDir: 'build/releases/temp/cache/<%= grunt.task.current.args[0] %>',
-					macZip: false,
-					forceDownload: true
-				},
-				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/**']
-			},
-			win: {
-				options: {
-					appName: '<%= pkg.displayName %>',
-					version: '<%= pkg.devDependencies.nodewebkit %>',
-					platforms: ['win32'],
-					buildType: 'default',
-					buildDir: 'build/releases/temp/nwjs/<%= grunt.task.current.args[0] %>',
-					cacheDir: 'build/releases/temp/cache/<%= grunt.task.current.args[0] %>',
-					winZip: false,
-					forceDownload: true
-				},
-				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/**']
-			}
-    	},
-		*/
 		exec: {
 			zip: {
 				cwd: 'build/releases/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-ia32',
@@ -316,6 +301,9 @@ module.exports = function(grunt) {
 			if (entry == "griffin-mac" || entry == "griffin-win") {
 				grunt.task.run('copy:griffin:'+entry);
 			}
+			if (entry == "stleonards-mac" || entry == "stleonards-win") {
+				grunt.task.run('copy:stleonards:'+entry);
+			}
 			grunt.task.run('exec:npm:'+entry);
 			grunt.task.run('copy:nodemodules:'+entry);
 			grunt.task.run('clean:nodemodules:'+entry);
@@ -326,13 +314,11 @@ module.exports = function(grunt) {
 			grunt.task.run('uglify:all:'+entry);
 			grunt.task.run('clean:coffee:'+entry);
 			grunt.task.run('clean:styl:'+entry);
-			if (entry == "generic-win" || entry == "griffin-win") {
-				//grunt.task.run('nwjs:win:'+entry);
+			if (entry.includes("win")) {
 				grunt.task.run('exec:nwjswin:'+entry);
 				grunt.task.run('exec:zip:'+entry);
 			}
-			if (entry == "griffin-mac" || entry == "generic-mac") {
-				//grunt.task.run('nwjs:mac:'+entry);
+			if (entry.includes("mac")) {
 				grunt.task.run('exec:nwjsosx:'+entry);
 				if (process.platform == 'darwin') {
 					grunt.task.run('exec:codesign:'+entry);
