@@ -431,7 +431,7 @@ load = (win) ->
 						cb()
 
 				(cb) =>
-					decryptedUserAccount.changeAccountType decryptedUserAccount, sessionAccount, newAccountType, (err) =>
+					decryptedUserAccount.changeAccountType sessionAccount, newAccountType, (err) =>
 						if err
 							cb err
 							return

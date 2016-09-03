@@ -603,8 +603,8 @@ class DecryptedAccount extends Account
 	# - AccountTypeError if the logged-in account tries to change its own type
 	# - IOError
 	#
-	# (DecryptedAccount, loggedInAccount, string newType, function cb(err)) -> undefined
-	changeAccountType: (DecryptedAccount, loggedInAccount, newType, cb) ->
+	# (DecryptedAccount loggedInAccount, string newType, function cb(err)) -> undefined
+	changeAccountType: (loggedInAccount, newType, cb) ->
 		publicInfo = @publicInfo
 		privateInfo = @privateInfo
 		publicInfoPath = Path.join(@_userDir, 'public-info')
