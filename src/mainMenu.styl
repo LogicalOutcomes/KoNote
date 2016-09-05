@@ -74,6 +74,16 @@
 						cursor default
 						font-weight 600
 
+						@media screen and (max-width: 745px)
+							text-align center
+							font-size x-large
+							
+							.menuItemText
+								display none
+
 						> .fa
 							padding-right 10px
 							transition padding-right .25s ease
+
+							@media screen and (max-width: 745px)
+								padding-right 0px

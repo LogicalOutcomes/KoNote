@@ -51,7 +51,7 @@ load = (win) ->
 				loadingFile: false
 				clientFileHeaders: Imm.List()
 				programs: Imm.List()
-				userProgramOverride: null
+				userProgramId: null
 				userProgramLinks: Imm.List()
 				clientFileProgramLinks: Imm.List()
 			}
@@ -86,19 +86,11 @@ load = (win) ->
 			}
 
 		_getUserProgram: ->
-			# Use the userProgramOverride if exists
-			if @state.userProgramOverride?
-				return @state.userProgramOverride
+			if @state.userProgramId?
+				userProgram = @state.programs.find (program) => program.get('id') is @state.userProgramId
+				return userProgram
 			else
-				# Find assigned userProgramLink
-				currentUserProgramLink = @state.userProgramLinks.find (link) ->
-					link.get('userName') is global.ActiveSession.userName and link.get('status') is 'assigned'
-
-				if currentUserProgramLink?
-					return @state.programs.find (program) ->
-						program.get('id') is currentUserProgramLink.get('programId')
-				else
-					return null
+				return null
 
 		_openClientFile: (clientFileId) ->
 			appWindows = chrome.app.window.getAll()
@@ -223,11 +215,27 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
+
+				# Figure out userProgramId (We currently assume there can only be one)
+				# TODO: Refactor to something a little nicer
+				matchingUserProgramLinks = userProgramLinks.filter (link) ->
+					link.get('userName') is global.ActiveSession.userName and
+					link.get('status') is 'assigned'
+
+				if matchingUserProgramLinks.size > 1
+					console.warn "More than 1 assigned programLink found", matchingUserProgramLinks.toJS()
+
+				userProgramLink = if not matchingUserProgramLinks.isEmpty() then matchingUserProgramLinks.get(0) or null
+
+				userProgramId = if userProgramLink then userProgramLink.get('programId') else null
+				global.ActiveSession.programId = userProgramId
+
 				# Load in data
 				@setState {
 					status: 'ready'
 					programs
 					programsById
+					userProgramId
 					userProgramLinks
 					clientFileHeaders
 					clientFileProgramLinks
@@ -238,11 +246,17 @@ load = (win) ->
 			return {
 				# Custom listener for overriding userProgram in ActiveSession
 				'override:userProgram': (userProgram) =>
-					if userProgram?
-						console.log "Overriding userProgram to:", userProgram.toJS()
 
-					global.ActiveSession.programId = if userProgram? then userProgram.get('id') else null
-					@setState {userProgramOverride: userProgram}
+					console.log "Override userProgram to:"
+					if userProgram?
+						console.log "Program:", userProgram.toJS()
+					else
+						console.log "None (null)"
+
+					userProgramId = if userProgram? then userProgram.get('id') else null
+
+					global.ActiveSession.programId = userProgramId
+					@setState {userProgramId}
 
 				'create:userProgramLink createRevision:userProgramLink': (userProgramLink) =>
 					isForCurrentUser = userProgramLink.get('userName') is global.ActiveSession.userName
@@ -340,8 +354,8 @@ load = (win) ->
 			# Key bindings for search results navigation
 			@_attachKeyBindings()
 
-			# Set the userProgramId globally so other windows can access it
-			ActiveSession.programId = if @props.userProgram then @props.userProgram.get('id') else null
+			# Double-ensure that global.ActiveSession.programId lines up with @props.userProgram
+			global.ActiveSession.programId = if @props.userProgram then @props.userProgram.get('id') else null
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
@@ -354,9 +368,7 @@ load = (win) ->
 					'menuIsOpen' if @state.menuIsOpen
 				].join ' '
 			},
-				R.div({
-					id: 'shiftSummariesContainer'
-				},
+				R.div({id: 'shiftSummariesContainer'},
 					OpenDialogLink({
 						className: 'btn btn-default btn-sm animated fadeIn'
 						dialog: GenerateSummariesDialog

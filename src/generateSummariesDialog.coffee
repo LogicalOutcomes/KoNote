@@ -97,7 +97,7 @@ load = (win) ->
 			, 3000)
 
 		_buildSummariesData: ->
-			userProgramId = ActiveSession.programId
+			userProgramId = global.ActiveSession.programId
 			userHasProgramId = !!userProgramId
 
 			clientFileIds = null
@@ -128,8 +128,8 @@ load = (win) ->
 
 						# Discard programLinks that don't match user's program, and inactive ones
 						clientFileProgramLinkHeaders = result.filter (link) ->
-							link.get(programId) is userProgramId and
-							link.get('status') is 'default'
+							link.get('programId') is userProgramId and
+							link.get('status') is 'enrolled'
 
 						# Generate list of clientFileIds to fetch
 						clientFileIds = clientFileProgramLinkHeaders.map (link) ->

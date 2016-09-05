@@ -163,9 +163,11 @@ load = (win) ->
 						@props.title
 					)
 				else
-					R.div({},
+					R.div({title: @props.title},
 						FaIcon(@props.icon)
-						@props.title
+						R.span({className: 'menuItemText'},
+							@props.title
+						)
 					)
 			)
 

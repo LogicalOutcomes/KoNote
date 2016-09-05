@@ -129,14 +129,6 @@ class Account
 						return
 
 					cb()
-			(cb) =>
-				console.info "Creating system public-key..."
-				Fs.writeFile Path.join(dataDir, '_users', '_system', 'public-key'), systemPublicKey, (err) =>
-					if err
-						cb new IOError err
-						return
-
-					cb()
 		], (err) =>
 			if err
 				cb err
@@ -167,13 +159,12 @@ class Account
 		kdfParams = generateKdfParams()
 		accountEncryptionKey = SymmetricEncryptionKey.generate()
 
-		systemPublicKey = null
 		pwEncryptionKey = null
 		encryptedAccountKey = null
 
 		userName = userName.toLowerCase()
 		dataDirectory = loggedInAccount.dataDirectory
-		
+
 		destUserDir = getUserDir(dataDirectory, userName, cb)
 		return unless destUserDir?
 
@@ -183,17 +174,6 @@ class Account
 		userDirOp = null
 
 		Async.series [
-			(cb) ->
-				# Get system public key
-				publicKeyPath = Path.join(dataDirectory, '_users', '_system', 'public-key')
-
-				Fs.readFile publicKeyPath, (err, buf) ->
-					if err
-						cb new IOError err
-						return
-
-					systemPublicKey = PublicKey.import(buf.toString())
-					cb()
 			(cb) ->
 				# Create temporary user directory
 				Atomic.writeDirectory destUserDir, tmpDirPath, (err, tempUserDir, op) ->
@@ -239,6 +219,9 @@ class Account
 
 					cb()
 			(cb) ->
+				systemPrivateKey = PrivateKey.import(loggedInAccount.privateInfo.systemPrivateKey)
+				systemPublicKey = systemPrivateKey.getPublicKey()
+
 				# Encrypt account key with system key to allow admins to reset
 				systemPublicKey.encrypt accountEncryptionKey.export(), (err, result) ->
 					if err
@@ -250,7 +233,6 @@ class Account
 			(cb) ->
 				accountRecoveryPath = Path.join(userDir, 'account-recovery')
 
-				
 				Fs.writeFile accountRecoveryPath, encryptedAccountKey, (err) =>
 					if err
 						cb new IOError err
@@ -268,6 +250,14 @@ class Account
 					Assert.strictEqual loggedInAccount.publicInfo.accountType, 'admin', 'only admins can create admins'
 
 					privateInfo.systemPrivateKey = loggedInAccount.privateInfo.systemPrivateKey
+					privateInfo.systemPublicKey = PrivateKey.import(
+						loggedInAccount.privateInfo.systemPrivateKey
+					).getPublicKey().export()
+				else
+					# Note: in v1.10.0 and earlier, systemPublicKey was not added
+					# to privateInfo, so accounts that were created back then might
+					# not have this field.
+					privateInfo.systemPublicKey = loggedInAccount.systemPublicKey
 
 				encryptedData = accountEncryptionKey.encrypt JSON.stringify privateInfo
 
@@ -613,8 +603,8 @@ class DecryptedAccount extends Account
 	# - AccountTypeError if the logged-in account tries to change its own type
 	# - IOError
 	#
-	# (DecryptedAccount, loggedInAccount, string newType, function cb(err)) -> undefined
-	changeAccountType: (DecryptedAccount, loggedInAccount, newType, cb) ->
+	# (DecryptedAccount loggedInAccount, string newType, function cb(err)) -> undefined
+	changeAccountType: (loggedInAccount, newType, cb) ->
 		publicInfo = @publicInfo
 		privateInfo = @privateInfo
 		publicInfoPath = Path.join(@_userDir, 'public-info')

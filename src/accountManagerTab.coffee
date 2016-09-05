@@ -431,7 +431,7 @@ load = (win) ->
 						cb()
 
 				(cb) =>
-					decryptedUserAccount.changeAccountType decryptedUserAccount, sessionAccount, newAccountType, (err) =>
+					decryptedUserAccount.changeAccountType sessionAccount, newAccountType, (err) =>
 						if err
 							cb err
 							return
@@ -464,7 +464,7 @@ load = (win) ->
 			userAccountProgramId = userAccount.getIn(['program', 'id'])
 
 			# Ignore when same program is selected
-			return if newProgram.get('id') is userAccountProgramId
+			return if newProgram? and newProgram.get('id') is userAccountProgramId
 
 			userName = userAccount.get('userName')
 
@@ -475,8 +475,12 @@ load = (win) ->
 			.map (link) -> stripMetadata link.set('status', 'unassigned')
 
 			# Check for a pre-existing link, so we only have to revise (assign) it
-			existingLink = @props.userProgramLinks.find (link) ->
-				link.get('userName') is userName and link.get('programId') is newProgram.get('id')
+			existingLink = if newProgram?
+				@props.userProgramLinks.find (link) ->
+					link.get('userName') is userName and link.get('programId') is newProgram.get('id')
+			else
+				null
+
 
 			userProgramLink = null
 
@@ -487,16 +491,24 @@ load = (win) ->
 					, cb
 
 				(cb) =>
-					if existingLink?
+					# No new program, so skip
+					if not newProgram?
+						cb()
+
+					# Link exists, so we need to revise it to 'assigned'
+					else if existingLink?
 						userProgramLink = stripMetadata existingLink.set('status', 'assigned')
 
 						global.ActiveSession.persist.userProgramLinks.createRevision userProgramLink, cb
+
+					# Link doesn't exist, create a new one
 					else
 						userProgramLink = Imm.fromJS {
 							userName
 							programId: newProgram.get('id')
 							status: 'assigned'
 						}
+
 						global.ActiveSession.persist.userProgramLinks.create userProgramLink, cb
 
 			], (err) =>
@@ -510,7 +522,10 @@ load = (win) ->
 
 				# Success
 				# userProgramLinks updated eventListeners on clientSelectionPage
-				Bootbox.alert "Assigned #{userName} to #{Term 'program'}: <b>#{newProgram.get('name')}</b>"
+				if newProgram?
+					Bootbox.alert "Assigned #{userName} to #{Term 'program'}: <b>#{newProgram.get('name')}</b>"
+				else
+					Bootbox.alert "Unassigned #{userName}"
 
 		_deactivateAccount: (userAccount) ->
 			userName = userAccount.get('userName')
