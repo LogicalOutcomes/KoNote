@@ -255,7 +255,12 @@ load = (win) ->
 								)
 							)
 							R.div({className: 'notes'},
-								renderLineBreaks entry.get('notes')
+								if entry.get('notes').includes "***"
+									R.span({className: 'starred'},
+										renderLineBreaks entry.get('notes').replace(/\*\*\*/g, '')
+									)
+								else
+									renderLineBreaks entry.get('notes')
 							)
 
 							if entry.get('metrics')
