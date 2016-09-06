@@ -370,7 +370,7 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 
 
 createClientFileAlertsDirectory = (dataDir, cb) ->
-	clientFiles = Path.join 'data', 'clientFiles'
+	clientFiles = Path.join dataDir, 'clientFiles'
 
 	forEachFileIn clientFiles, (clientFile, cb) ->
 		newAlertsPath = Path.join clientFiles, clientFile, 'alerts'
