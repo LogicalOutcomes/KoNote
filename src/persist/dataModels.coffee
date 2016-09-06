@@ -232,11 +232,12 @@ dataModelDefinitions = [
 		name: 'program'
 		collectionName: 'programs'
 		isMutable: true
-		indexes: [['name'], ['colorKeyHex']]
+		indexes: [['status'], ['name'], ['colorKeyHex']]
 		schema: Joi.object().keys({
 			name: Joi.string()
 			description: Joi.string()
 			colorKeyHex: Joi.string().regex(/^#[A-Fa-f0-9]{6}/)
+			status: ['default', 'cancelled']
 		})
 	}
 
