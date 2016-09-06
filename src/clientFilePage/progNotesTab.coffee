@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+Fs = require 'fs'
+Path = require 'path'
 Assert = require 'assert'
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -68,8 +70,10 @@ load = (win) ->
 					<textarea class="form-control"></textarea>
 					<div class="buttonBar form-inline">
 						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
+						<button class="btn btn-default" id="attachBtn"><i class="fa fa-paperclip"></i> Attach</button>
 						<button class="cancel btn btn-danger"><i class="fa fa-trash"></i> Discard</button>
 						<button class="save btn btn-primary"><i class="fa fa-check"></i> Save</button>
+						<input type="file" class="hidden" id="nwBrowse"></input>
 					</div>
 				'''
 			}
@@ -563,6 +567,30 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
+		_attach: ({extension, onImport}) ->
+			# Configures hidden file inputs with custom attributes, and clicks it
+			$nwbrowse = $('#nwBrowse')
+			$nwbrowse
+			.off()
+			#.attr('accept', ".#{extension}")
+			.on('change', (event) => @_encodeFile event.target.value)
+			.click()
+
+		_encodeFile: (file) ->
+			attachment = Fs.readFileSync(file)
+			# convert to base64 encoded string
+			encodedAttachment = new Buffer(attachment).toString 'base64'
+			console.log encodedAttachment
+			@_decodeFile encodedAttachment
+
+		_decodeFile: (base64str) ->
+			filepath = Path.join Config.dataDirectory, '_tmp', 'myfile.png'
+			attachment = new Buffer(base64str, 'base64')
+			# write it somewhere temporary
+			Fs.writeFileSync filepath, attachment
+			# open it
+			nw.Shell.openItem filepath
+			
 		_toggleQuickNotePopover: ->
 			quickNoteToggle = $('.addQuickNote:not(.hide)')
 
@@ -573,6 +601,10 @@ load = (win) ->
 				global.document = win.document
 				quickNoteToggle.popover('show')
 				quickNoteToggle.data('isVisible', true)
+
+				attachFile = $('#attachBtn')
+				attachFile.on 'click', (event) =>
+					@_attach event
 
 				popover = quickNoteToggle.siblings('.popover')
 				popover.find('.save.btn').on 'click', (event) =>
