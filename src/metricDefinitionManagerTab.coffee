@@ -100,15 +100,6 @@ load = (win) ->
 				metricDefinitions = metricDefinitions.filter (metric) ->
 					metric.get('status') is 'default'
 
-			# Table display formats (TODO: extract to a tableWrapper component)
-			# Convert 'default' -> 'active' for table display (TODO: Term)
-			metricDefinitions = metricDefinitions.map (metric) ->
-				if metric.get('status') is 'default'
-					return metric.set('status', 'active')
-
-				return metric
-
-
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
@@ -159,7 +150,7 @@ load = (win) ->
 												}
 											noDataText: "No #{Term 'metric definitions'} to display"
 										}
-										trClassName: (row) -> 'inactive' if row.status isnt 'active'
+										trClassName: (row) -> 'inactive' if row.status isnt 'default'
 									},
 										TableHeaderColumn({
 											dataField: 'id'
