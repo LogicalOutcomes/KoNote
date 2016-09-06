@@ -35,7 +35,7 @@ class Lock
 		, leaseRenewalInterval
 
 	@acquire: (session, lockId, cb) ->
-		dataDir = session.dataDirectory
+		dataDir = session.backend.dataDirectory
 
 		tmpDirPath = Path.join(dataDir, '_tmp')
 		lockDirDest = Path.join(dataDir, '_locks', lockId)
@@ -132,7 +132,7 @@ class Lock
 		}
 
 	@_cleanIfStale: (session, lockId, cb) ->
-		dataDir = session.dataDirectory
+		dataDir = session.backend.dataDirectory
 
 		tmpDirPath = Path.join(dataDir, '_tmp')
 		lockDir = Path.join(dataDir, '_locks', lockId)

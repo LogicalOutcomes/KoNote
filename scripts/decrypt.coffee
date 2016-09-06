@@ -32,7 +32,12 @@ userName = process.argv[3]
 password = process.argv[4]
 encryptedFile = process.argv[5]
 
-Users.Account.read dataDir, userName, (err, account) =>
+backend = {
+	type: 'file-system'
+	dataDirectory: dataDir
+}
+
+Users.Account.read backend, userName, (err, account) =>
 	if err
 		console.error err.stack
 		return

@@ -35,8 +35,8 @@ userNameRegex = /^[a-zA-Z0-9_-]+$/
 # - IOError
 #
 # (string dataDir, function cb(Error err, boolean isSetUp)) -> undefined
-isAccountSystemSetUp = (dataDir, cb) ->
-	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
+isAccountSystemSetUp = (backend, cb) ->
+	Fs.readdir Path.join(backend.dataDirectory, '_users'), (err, subdirs) ->
 		if err
 			if err.code is 'ENOENT'
 				cb null, false
@@ -56,9 +56,9 @@ isAccountSystemSetUp = (dataDir, cb) ->
 # Errors:
 # - IOError
 #
-# (string dataDir, function cb(Error err, Imm.List userNames)) -> undefined
-listUserNames = (dataDir, cb) ->
-	Fs.readdir Path.join(dataDir, '_users'), (err, subdirs) ->
+# (object backend, function cb(Error err, Imm.List userNames)) -> undefined
+listUserNames = (backend, cb) ->
+	Fs.readdir Path.join(backend.dataDirectory, '_users'), (err, subdirs) ->
 		if err
 			cb new IOError err
 			return
@@ -97,8 +97,10 @@ class Account
 	# Errors:
 	# - IOError
 	#
-	# (string dataDir, function cb(Error err, Account systemAccount)) -> undefined
-	@setUp: (dataDir, cb) ->
+	# (object backend, function cb(Error err, Account systemAccount)) -> undefined
+	@setUp: (backend, tempDataDirectory, cb) ->
+		dataDir = tempDataDirectory or backend.dataDirectory
+
 		# Create a mock "_system" user just for creating the first real accounts
 		publicInfo = {
 			accountType: 'admin'
@@ -292,8 +294,9 @@ class Account
 	# - UnknownUserNameError if no account exists with that user name
 	# - IOError
 	#
-	# (string dataDir, string userName, function cb(Error err, Account a)) -> undefined
-	@read: (dataDir, userName, cb) =>
+	# (object backend, string userName, function cb(Error err, Account a)) -> undefined
+	@read: (backend, userName, cb) =>
+		dataDir = backend.dataDirectory
 		userName = userName.toLowerCase()
 
 		userDir = getUserDir(dataDir, userName, cb)

@@ -59,7 +59,7 @@ load = (win) ->
 
 			Async.series [
 				(cb) =>
-					Persist.Users.listUserNames Config.dataDirectory, (err, result) =>
+					Persist.Users.listUserNames Config.backend, (err, result) =>
 						if err
 							cb err
 							return
@@ -69,7 +69,7 @@ load = (win) ->
 
 				(cb) =>
 					Async.map userNames.toArray(), (userName, cb) =>
-						Persist.Users.Account.read Config.dataDirectory, userName, (err, result) =>
+						Persist.Users.Account.read Config.backend, userName, (err, result) =>
 							if err
 								cb err
 								return
@@ -399,7 +399,6 @@ load = (win) ->
 
 			newAccountType = if isAdmin then 'normal' else 'admin'
 
-			dataDirectory = global.ActiveSession.account.dataDirectory
 			sessionAccount = global.ActiveSession.account
 			userAccountOp = null
 			decryptedUserAccount = null
@@ -413,7 +412,7 @@ load = (win) ->
 						return
 
 				(cb) =>
-					Persist.Users.Account.read dataDirectory, userName, (err, account) =>
+					Persist.Users.Account.read Config.backend, userName, (err, account) =>
 						if err
 							cb err
 							return
@@ -534,7 +533,6 @@ load = (win) ->
 				Bootbox.alert "Accounts cannot deactivate themselves.  Try logging in using a different account."
 				return
 
-			dataDirectory = global.ActiveSession.account.dataDirectory
 			userAccountOp = null
 
 			Async.series [
@@ -544,7 +542,7 @@ load = (win) ->
 						return
 
 				(cb) =>
-					Persist.Users.Account.read dataDirectory, userName, (err, account) =>
+					Persist.Users.Account.read Config.backend, userName, (err, account) =>
 						if err
 							cb err
 							return
@@ -892,7 +890,6 @@ load = (win) ->
 
 			@props.setIsLoading true
 
-			dataDirectory = global.ActiveSession.account.dataDirectory
 			password = @state.password
 
 			userAccount = null
@@ -900,7 +897,7 @@ load = (win) ->
 
 			Async.series [
 				(cb) =>
-					Persist.Users.Account.read dataDirectory, @props.userName, (err, result) =>
+					Persist.Users.Account.read Config.backend, @props.userName, (err, result) =>
 						if err
 							cb err
 							return

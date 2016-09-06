@@ -1,6 +1,9 @@
 {
 	"devMode": true,
-	"backend": "file-system",
+	"backend": {
+		"type": "file-system",
+		"dataDirectory": "data"
+	},
 	"productName": "KoNote",
 	"supportEmailAddress": "help@konote.ca",
 
@@ -16,8 +19,6 @@
 		"isRequired": false,
 		"label": "ID#"
 	},
-
-	"dataDirectory": "data",
 
 	"timestampFormat": "MMMM Do, YYYY [at] h:mma",
 

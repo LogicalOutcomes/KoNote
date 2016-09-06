@@ -49,7 +49,7 @@ load = (win) ->
 			@refs.ui.suggestClose()
 
 		_testDataDirectory: ->
-			dataDirectory = Config.dataDirectory
+			dataDirectory = Config.backend.dataDirectory
 
 			# Ensure a non-standard dataDirectory path actually exists
 			if dataDirectory isnt 'data' and not Fs.existsSync(dataDirectory)
@@ -334,7 +334,7 @@ load = (win) ->
 			}
 
 		_restoreBackup: (backupfile) ->
-			dataDir = Config.dataDirectory
+			dataDir = Config.backend.dataDirectory
 			tmpDir = dataDir + '_tmp_import' + Date.now()
 			atomicOp = null
 			dataVersion = null
@@ -342,8 +342,8 @@ load = (win) ->
 
 			Async.series [
 				(cb) =>
-					unless Fs.existsSync(Config.dataDirectory)
-						mkdirp Config.dataDirectory, (err) =>
+					unless Fs.existsSync(Config.backend.dataDirectory)
+						mkdirp Config.backend.dataDirectory, (err) =>
 							if err
 								cb err
 								return
@@ -550,7 +550,7 @@ load = (win) ->
 			systemAccount = null
 			adminPassword = @state.password
 
-			destDataDirectoryPath = Config.dataDirectory
+			destDataDirectoryPath = Config.backend.dataDirectory
 			tempDataDirectoryPath = 'data_tmp'
 
 			atomicOp = null
@@ -607,7 +607,7 @@ load = (win) ->
 					, 3000)
 
 					# Generate mock "_system" admin user
-					Persist.Users.Account.setUp tempDataDirectoryPath, (err, result) =>
+					Persist.Users.Account.setUp Config.backend, tempDataDirectoryPath, (err, result) =>
 						if err
 							cb err
 							return

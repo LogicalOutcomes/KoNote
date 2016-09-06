@@ -482,7 +482,7 @@ load = (win) ->
 						cb err
 						return
 
-					walkSync(Config.dataDirectory)
+					walkSync(Config.backend.dataDirectory)
 					cb()
 
 				(cb) =>
@@ -507,7 +507,7 @@ load = (win) ->
 						}
 						cb()
 
-					archive.directory(Config.dataDirectory, '')
+					archive.directory(Config.backend.dataDirectory, '')
 					archive.finalize()
 					archive.pipe(output)
 

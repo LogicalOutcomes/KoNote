@@ -65,7 +65,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		return childDef.collectionName
 
 	# A directory for temp files, i.e. stuff we don't care about
-	tmpDirPath = Path.join(session.dataDirectory, '_tmp')
+	tmpDirPath = Path.join(session.backend.dataDirectory, '_tmp')
 
 	# A cache for remembering the results of list operations on this collection
 	listCache = new Cache(5000) # 5-second expiry
@@ -559,7 +559,7 @@ createCollectionApi = (session, eventBus, context, modelDef) ->
 		# If this collection is not a child of some object
 		if contextualIds.size is 0
 			# The parent directory is just the data directory
-			cb null, session.dataDirectory
+			cb null, session.backend.dataDirectory
 			return
 
 		# Get the collection API of the parent collection

@@ -70,7 +70,7 @@ load = (win) ->
 
 		_checkSetUp: ->
 			# Check to make sure the dataDir exists and has an account system
-			Persist.Users.isAccountSystemSetUp Config.dataDirectory, (err, isSetUp) =>
+			Persist.Users.isAccountSystemSetUp Config.backend, (err, isSetUp) =>
 				@setState {isLoading: false}
 
 				if err
@@ -111,7 +111,7 @@ load = (win) ->
 					@setState {isLoading: true, loadingMessage: "Authenticating..."}
 
 					# Create session
-					Persist.Session.login Config.dataDirectory, userName, password, (err, session) =>
+					Persist.Session.login userName, password, Config.backend, (err, session) =>
 						if err
 							cb err
 							return
