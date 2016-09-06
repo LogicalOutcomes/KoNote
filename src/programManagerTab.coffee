@@ -238,6 +238,7 @@ load = (win) ->
 				name: @state.name
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex
+				status: 'default'
 			})
 
 		_submit: (event) ->
