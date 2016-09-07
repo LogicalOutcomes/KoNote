@@ -12,15 +12,10 @@
 # Example:
 #   scripts/decrypt.coffee data user pw data/clientFiles/some-encrypted-file
 
-# ES6 polyfills
-require 'string.prototype.endswith'
-require 'string.prototype.includes'
-require 'string.prototype.startswith'
-
 Fs = require 'fs'
 
-{SymmetricEncryptionKey} = require '../persist/crypto'
-Users = require '../persist/users'
+{SymmetricEncryptionKey} = require '../src/persist/crypto'
+Users = require '../src/persist/users'
 
 if process.argv.length not in [5, 6]
 	console.error "Usage: <command> <data_directory> <user_name> <password> [<encrypted_file>]"
