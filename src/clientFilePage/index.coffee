@@ -122,7 +122,7 @@ load = (win, {clientFileId}) ->
 				return true if globalEvent.get('clientFileId') is clientFileId
 
 				# GlobalEvent is fully global (no program)
-				programId = globalEvent.get('authorProgramId')
+				programId = globalEvent.get('programId')
 				return true if not programId
 
 				# globalEvent program matches up with one of clientFile's programs

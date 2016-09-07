@@ -692,7 +692,7 @@ load = (win) ->
 			.set('title', @state.title)
 			.set('description', @state.description)
 			.set('clientFileId', @props.clientFileId)
-			.set('authorProgramId', @state.program.get('id') or '')
+			.set('programId', @state.program.get('id') or '')
 
 			progEvent = @props.eventData.set('globalEvent', globalEvent)
 

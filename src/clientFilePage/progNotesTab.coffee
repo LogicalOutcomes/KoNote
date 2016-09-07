@@ -106,7 +106,7 @@ load = (win) ->
 							type: 'globalEvent'
 							id: globalEvent.get('id')
 							timestamp: globalEvent.get('startTimestamp')
-							programId: globalEvent.get('authorProgramId')
+							programId: globalEvent.get('programId')
 							data: globalEvent
 						}
 				)
@@ -1254,7 +1254,7 @@ load = (win) ->
 
 		render: ->
 			{globalEvent} = @props
-			programId = globalEvent.get('authorProgramId')
+			programId = globalEvent.get('programId')
 
 			program = @props.programsById.get(programId) or Imm.Map()
 			timestamp = globalEvent.get('backdate') or globalEvent.get('timestamp')

@@ -294,7 +294,7 @@ dataModelDefinitions = [
 			clientFileId: IdSchema
 			relatedProgNoteId: IdSchema.allow('')
 			relatedProgEventId: IdSchema.allow('')
-			authorProgramId: IdSchema.allow('')
+			programId: IdSchema.allow('')
 			backdate: Joi.date().format(TimestampFormat).raw().allow('')
 			status: ['default', 'cancelled']
 			statusReason: Joi.string().optional()

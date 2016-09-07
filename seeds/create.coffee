@@ -37,12 +37,20 @@ Create.clientFile = (cb) ->
 	createData 'clientFiles', clientFile, cb
 
 Create.globalEvent = ({progEvent}, cb) ->
-	globalEvent = stripMetadata(progEvent)
-	.set('clientFileId', progEvent.get('clientFileId'))
-	.set('relatedProgNoteId', progEvent.get('relatedProgNoteId'))
-	.set('relatedProgEventId', progEvent.get('id'))
-	.remove('id')
-	.remove('relatedElement')
+	globalEvent = Imm.fromJS {
+		title: progEvent.get('title')
+		description: progEvent.get('description')
+		startTimestamp: progEvent.get('startTimestamp')
+		endTimestamp: progEvent.get('endTimestamp')
+		typeId: progEvent.get('typeId')
+		clientFileId: progEvent.get('clientFileId')
+		relatedProgNoteId: progEvent.get('relatedProgNoteId')
+		relatedProgEventId: progEvent.get('id')
+		programId: progEvent.get('authorProgramId')
+		backdate: progEvent.get('backdate')
+		status: progEvent.get('status')
+		statusReason: progEvent.get('statusReason')
+	}
 
 	createData 'globalEvents', globalEvent, cb
 
