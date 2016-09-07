@@ -752,11 +752,13 @@ load = (win, {clientFileId}) ->
 									cb()
 									return
 
+								programId = globalEvent.get('programId')
+
 								# Tack on contextual information about the original progEvent
 								globalEvent = globalEvent
 								.set('relatedProgEventId', progEventId)
 								.set('relatedProgNoteId', createdProgNote.get('id'))
-								.set('authorProgramId', authorProgramId)
+								.set('programId', programId)
 								.set('backdate', createdProgNote.get('backdate'))
 								.set('status', 'default')
 								.remove('relatedElement')
