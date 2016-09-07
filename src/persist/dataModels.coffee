@@ -151,6 +151,18 @@ dataModelDefinitions = [
 						)
 					})
 				]
+				children: [
+					{
+						name: 'attachment'
+						collectionName: 'attachments'
+						isMutable: true
+						indexes: [['filename']]
+						schema: Joi.object().keys({
+							filename: Joi.string()
+							encodedData: Joi.string()
+						})
+					}
+				]
 			}
 			{
 				name: 'alert'

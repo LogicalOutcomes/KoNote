@@ -43,7 +43,7 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				editingProgNoteId: null
-
+				attachment: null
 				selectedItem: null
 				highlightedProgNoteId: null
 				highlightedTargetId: null
@@ -581,7 +581,8 @@ load = (win) ->
 			# convert to base64 encoded string
 			encodedAttachment = new Buffer(attachment).toString 'base64'
 			console.log encodedAttachment
-			@_decodeFile encodedAttachment
+			@setState {attachment: encodedAttachment}
+			#@_decodeFile encodedAttachment
 
 		_decodeFile: (base64str) ->
 			filepath = Path.join Config.dataDirectory, '_tmp', 'myfile.png'
@@ -610,7 +611,7 @@ load = (win) ->
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
-					@_createQuickNote popover.find('textarea').val(), @state.backdate, (err) =>
+					@_createQuickNote popover.find('textarea').val(), @state.backdate, @state.attachment, (err) =>
 						@setState {backdate: ''}
 						if err
 							if err instanceof Persist.IOError
@@ -650,7 +651,7 @@ load = (win) ->
 				# Store quickNoteBeginTimestamp as class var, since it wont change
 				@quickNoteBeginTimestamp = Moment().format(Persist.TimestampFormat)
 
-		_createQuickNote: (notes, backdate, cb) ->
+		_createQuickNote: (notes, backdate, attachmentData, cb) ->
 			unless notes
 				Bootbox.alert "Cannot create an empty #{Term 'quick note'}."
 				return
@@ -665,12 +666,28 @@ load = (win) ->
 				beginTimestamp: @quickNoteBeginTimestamp
 			}
 
-			global.ActiveSession.persist.progNotes.create quickNote, (err) =>
+			
+			global.ActiveSession.persist.progNotes.create quickNote, (err, result) =>
 				if err
 					cb err
 					return
 
-				cb()
+				unless attachmentData
+					cb()
+					return
+				
+				attachment = Imm.fromJS {
+					filename: 'myfile.png'
+					encodedData: attachmentData
+					clientFileId: @props.clientFileId
+					progNoteId: result.get('id')
+				}
+				
+				global.ActiveSession.persist.attachments.create attachment, (err) =>
+					if err
+						cb err
+						return
+					cb()
 
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
