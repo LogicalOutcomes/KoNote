@@ -3,6 +3,12 @@
 	"logoCustomerSm": "gc-logo.svg",
 	"logoSubtitle": "",
 
+	"features": {
+		"shiftSummaries": {
+			"isEnabled": true
+		}
+	},
+
 	"clientFileRecordId": {
 		"isEnabled": true,
 		"isRequired": true,

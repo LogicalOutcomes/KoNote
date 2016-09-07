@@ -368,11 +368,14 @@ load = (win) ->
 					'menuIsOpen' if @state.menuIsOpen
 				].join ' '
 			},
-				R.div({id: 'shiftSummariesContainer'},
-					OpenDialogLink({
-						className: 'btn btn-default btn-sm animated fadeIn'
-						dialog: GenerateSummariesDialog
-					}, "Today's Shift Summaries")
+				# TODO: Move to MainMenu
+				(if Config.features.shiftSummaries.isEnabled
+					R.div({id: 'shiftSummariesContainer'},
+						OpenDialogLink({
+							className: 'btn btn-default btn-sm animated fadeIn'
+							dialog: GenerateSummariesDialog
+						}, "Today's Shift Summaries")
+					)
 				)
 				R.a({
 					id: 'expandMenuButton'

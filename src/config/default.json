@@ -4,6 +4,7 @@
 		"type": "file-system",
 		"dataDirectory": "data"
 	},
+
 	"productName": "KoNote",
 	"supportEmailAddress": "help@konote.ca",
 
@@ -13,6 +14,12 @@
 
 	"logoSubtitle": "beta",
 	"logoSubtitleColor": "hsl(205, 78%, 47%)",
+
+	"features": {
+		"shiftSummaries": {
+			"isEnabled": false
+		}
+	},
 
 	"clientFileRecordId": {
 		"isEnabled": true,
