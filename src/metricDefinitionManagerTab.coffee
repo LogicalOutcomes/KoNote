@@ -86,19 +86,29 @@ load = (win) ->
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
-			metricDefinitions = @state.metricDefinitions
 
 			# Determine inactive metrics
-			inactiveMetricDefinitions = metricDefinitions.filter (metric) ->
+			inactiveMetricDefinitions = @state.metricDefinitions.filter (metric) ->
 				metric.get('status') isnt 'default'
 
 			hasInactiveMetrics = not inactiveMetricDefinitions.isEmpty()
 			hasData = not @state.metricDefinitions.isEmpty()
 
+			# Configure table data
+			tableData = @state.metricDefinitions
+
 			# UI Filters
 			unless @state.displayInactive
-				metricDefinitions = metricDefinitions.filter (metric) ->
-					metric.get('status') is 'default'
+				tableData = tableData.filter (metric) -> metric.get('status') is 'default'
+
+			# Table display formats (TODO: extract to a tableWrapper component)
+			# Convert 'default' -> 'active' for table display (TODO: Term)
+			tableData = tableData.map (metric) ->
+				if metric.get('status') is 'default'
+					return metric.set('status', 'active')
+
+				return metric
+
 
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
@@ -134,10 +144,10 @@ load = (win) ->
 							R.div({className: 'responsiveTable animated fadeIn'},
 								DialogLayer({
 									ref: 'dialogLayer'
-									metricDefinitions
+									metricDefinitions: @state.metricDefinitions
 								},
 									BootstrapTable({
-										data: metricDefinitions.toJS()
+										data: tableData.toJS()
 										keyField: 'id'
 										bordered: false
 										options: {
@@ -150,7 +160,7 @@ load = (win) ->
 												}
 											noDataText: "No #{Term 'metric definitions'} to display"
 										}
-										trClassName: (row) -> 'inactive' if row.status isnt 'default'
+										trClassName: (row) -> 'inactive' if row.status isnt 'active'
 									},
 										TableHeaderColumn({
 											dataField: 'id'
@@ -268,7 +278,7 @@ load = (win) ->
 								value: 'default'
 
 								},
-							"Default"
+							"Active"
 							)
 							R.button({
 								className:
