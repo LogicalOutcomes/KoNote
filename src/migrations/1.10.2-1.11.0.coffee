@@ -401,6 +401,7 @@ addProgramStatusField = (dataDir, globalEncryptionKey, cb) ->
 
 		finalizeMigrationStep(dataDir, cb)
 
+
 addProgramStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 	programsDir = Path.join(dataDir, 'programs')
 
@@ -427,6 +428,42 @@ addProgramStatusIndex = (dataDir, globalEncryptionKey, cb) ->
 		finalizeMigrationStep(dataDir, cb)
 
 
+changeGlobalEventProperty = (dataDir, globalEncryptionKey, cb) ->
+	globalEventsDir = Path.join(dataDir, 'globalEvents')
+
+	forEachFileIn globalEventsDir, (globalEvent, cb) ->
+		globalEventDirPath = Path.join(globalEventsDir, globalEvent)
+
+		forEachFileIn globalEventDirPath, (globalEventRev, cb) ->
+			globalEventRevPath = Path.join(globalEventDirPath, globalEventRev)
+			globalEventRevObject = null
+
+			Async.series [
+				(cb) =>
+					# Read globalEvent object
+					Fs.readFile globalEventRevPath, (err, result) ->
+						if err
+							cb err
+							return
+
+						globalEventRevObject = JSON.parse globalEncryptionKey.decrypt result
+
+						cb()
+				(cb) =>
+					# Change 'authorProgramId' property to 'programId'
+					programId = globalEventRevObject.authorProgramId
+					globalEventRevObject.programId = programId
+					delete globalEventRevObject.authorProgramId
+
+					encryptedObj = globalEncryptionKey.encrypt(JSON.stringify globalEventRevObject)
+					Fs.writeFile globalEventRevPath, encryptedObj, cb
+			], cb
+		, cb
+	, (err) ->
+		if err
+			console.info "Problem with globalEvent prop change"
+			cb err
+			return
 
 
 # ////////////////////// Migration Series //////////////////////
@@ -448,6 +485,11 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "2. Append 'default' status index to program headers"
 				addProgramStatusIndex dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "3. Change globalEvent 'authorProgramId' property to 'programId' (#730)"
+				changeGlobalEventProperty dataDir, globalEncryptionKey, cb
 
 		]
 
