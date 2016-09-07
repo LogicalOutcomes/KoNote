@@ -169,11 +169,11 @@ load = (win) ->
 						R.div({className: 'responsiveTable animated fadeIn'},
 							DialogLayer({
 								ref: 'dialogLayer'
-								userAccounts: tableData
+								userAccounts: @state.userAccounts
 								programs: @props.programs
 								userProgramLinks: @props.userProgramLinks
 								updateAccount: @_updateAccount
-							}
+							},
 								BootstrapTable({
 									data: tableData.toJS()
 									keyField: 'userName'
