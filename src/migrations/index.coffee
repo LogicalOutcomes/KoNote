@@ -85,7 +85,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password, cb=(->)) ->
 
 			Fs.readFile dataDirMetadataPath, (err, result) ->
 				if err
-					if err.code is 'ENOENT' and toVersion is '1.6.0'
+					if err.code is 'ENOENT' and parseFloat(toVersion) is <= parseFloat('1.6.0')
 						console.warn "No version metadata exists yet, it will soon. Skipping tests!"
 						cb()
 						return
