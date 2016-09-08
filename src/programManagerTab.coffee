@@ -43,6 +43,11 @@ load = (win) ->
 		displayName: 'ProgramManagerTab'
 		mixins: [React.addons.PureRenderMixin]
 
+
+		getInitialState: -> {
+			displayInactive: false
+		}
+
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
 			hasData = not @props.programs.isEmpty()
@@ -57,8 +62,12 @@ load = (win) ->
 				newProgram = program.set 'numberClients', numberClients
 				return newProgram
 
-			inactivePrograms = @props.clientFileProgramLinks.filter (link) ->
-				link.get('status') is "enrolled"
+			unless @state.displayInactive
+				programs = programs.filter (program) ->
+					program.get('status') is 'default'
+
+			inactivePrograms = @props.programs.filter (program) ->
+				program.get('status') isnt "default"
 
 			hasInactivePrograms = not inactivePrograms.isEmpty()
 
@@ -80,19 +89,19 @@ load = (win) ->
 									" New #{Term 'Program'}"
 								)
 							)
-							## TODO: Toggle for inactive programs display
-							# (if hasInactivePrograms
-							# 	R.div({className: 'toggleInactive'},
-							# 		R.label({},
-							# 			"Show inactive (#{inactivePrograms.size})"
-							# 			R.input({
-							# 				type: 'checkbox'
-							# 				checked: @state.displayInactive
-							# 				onClick: @_toggleDisplayInactive
-							# 			})
-							# 		)
-							# 	)
-							# )
+							# TODO: Toggle for inactive programs display
+							(if hasInactivePrograms
+								R.div({className: 'toggleInactive'},
+									R.label({},
+										"Show inactive (#{inactivePrograms.size})"
+										R.input({
+											type: 'checkbox'
+											checked: @state.displayInactive
+											onClick: @_toggleDisplayInactive
+										})
+									)
+								)
+							)
 						)
 						Term 'Programs'
 					)
@@ -115,6 +124,7 @@ load = (win) ->
 										defaultSortOrder: 'asc'
 										onRowClick: @_openProgramManagerDialog
 									}
+									trClassName: (row) -> 'inactive' if row.status isnt 'default'
 								},
 									TableHeaderColumn({
 										dataField: 'colorKeyHex'
@@ -139,6 +149,21 @@ load = (win) ->
 										headerAlign: 'center'
 										dataAlign: 'center'
 									}, "# #{Term 'Clients'}")
+									TableHeaderColumn({
+										dataField: 'status'
+										className: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
+										columnClassName: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
+										dataSort: true
+										hidden: not @state.displayInactive
+										headerAlign: 'right'
+										dataAlign: 'right'
+									}, "Status")
 								)
 							)
 						)
@@ -154,6 +179,10 @@ load = (win) ->
 
 		_openProgramManagerDialog: ({id}) ->
 			@refs.dialogLayer.open ManageProgramDialog, {programId: id}
+
+		_toggleDisplayInactive: ->
+			displayInactive = not @state.displayInactive
+			@setState {displayInactive}
 
 	CreateProgramDialog = React.createFactory React.createClass
 		displayName: 'CreateProgramDialog'
@@ -380,6 +409,34 @@ load = (win) ->
 							rows: 3
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "#{Term 'Program'} Status"),
+						R.div({className: 'btn-toolbar'},
+							R.button({
+								className:
+									if @state.status is 'default'
+										'btn btn-success'
+									else 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'default'
+
+								},
+							"Default"
+							)
+							R.button({
+								className:
+									'btn btn-' + if @state.status is 'deactivated'
+										'danger'
+									else
+										'default'
+								onClick: @_updateStatus
+								value: 'cancelled'
+
+								},
+							"Deactivated"
+							)
+						)
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -404,6 +461,9 @@ load = (win) ->
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
 
+		_updateStatus: (event) ->
+			@setState {status: event.target.value}
+
 		_updateColorKeyHex: (colorKeyHex) ->
 			@setState {colorKeyHex}
 
@@ -411,6 +471,7 @@ load = (win) ->
 			return Imm.fromJS({
 				id: @props.program.get('id')
 				name: @state.name
+				status: @state.status
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex
 			})
