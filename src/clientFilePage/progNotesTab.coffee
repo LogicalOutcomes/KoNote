@@ -68,6 +68,7 @@ load = (win) ->
 				trigger: 'manual'
 				content: '''
 					<textarea class="form-control"></textarea>
+					<div id="attachmentArea"></div>
 					<div class="buttonBar form-inline">
 						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
 						<button class="btn btn-default" id="attachBtn"><i class="fa fa-paperclip"></i> Attach</button>
@@ -567,7 +568,7 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-		_attach: ({extension, onImport}) ->
+		_attach: ->
 			# Configures hidden file inputs with custom attributes, and clicks it
 			$nwbrowse = $('#nwBrowse')
 			$nwbrowse
@@ -577,12 +578,27 @@ load = (win) ->
 			.click()
 
 		_encodeFile: (file) ->
-			attachment = Fs.readFileSync(file)
-			# convert to base64 encoded string
-			encodedAttachment = new Buffer(attachment).toString 'base64'
-			console.log encodedAttachment
-			@setState {attachment: encodedAttachment}
-			#@_decodeFile encodedAttachment
+			if file
+				filename = Path.basename file
+				attachment = Fs.readFileSync(file)
+				filesize = Buffer.byteLength(attachment, 'base64')
+				if filesize < 1048576
+					filesize = (filesize / 1024).toFixed() + " KB"
+				else
+					filesize = (filesize / 1048576).toFixed() + " MB"
+
+				# convert to base64 encoded string
+				encodedAttachment = new Buffer(attachment).toString 'base64'
+
+				@setState {
+					attachment: {
+						encodedData: encodedAttachment
+						filename: filename
+					}
+				}
+				$('#attachmentArea').append filename + " (" + filesize + ")"
+				#@_decodeFile encodedAttachment
+			return
 
 		_decodeFile: (base64str) ->
 			filepath = Path.join Config.dataDirectory, '_tmp', 'myfile.png'
@@ -606,13 +622,17 @@ load = (win) ->
 				attachFile = $('#attachBtn')
 				attachFile.on 'click', (event) =>
 					@_attach event
+					attachFile.blur()
 
 				popover = quickNoteToggle.siblings('.popover')
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
 					@_createQuickNote popover.find('textarea').val(), @state.backdate, @state.attachment, (err) =>
-						@setState {backdate: ''}
+						@setState {
+							backdate: '',
+							attachment: null
+						}
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
@@ -651,7 +671,7 @@ load = (win) ->
 				# Store quickNoteBeginTimestamp as class var, since it wont change
 				@quickNoteBeginTimestamp = Moment().format(Persist.TimestampFormat)
 
-		_createQuickNote: (notes, backdate, attachmentData, cb) ->
+		_createQuickNote: (notes, backdate, attachment, cb) ->
 			unless notes
 				Bootbox.alert "Cannot create an empty #{Term 'quick note'}."
 				return
@@ -672,18 +692,18 @@ load = (win) ->
 					cb err
 					return
 
-				unless attachmentData
+				unless attachment
 					cb()
 					return
 				
-				attachment = Imm.fromJS {
-					filename: 'myfile.png'
-					encodedData: attachmentData
+				attachmentData = Imm.fromJS {
+					filename: attachment.filename
+					encodedData: attachment.encodedData
 					clientFileId: @props.clientFileId
 					progNoteId: result.get('id')
 				}
 				
-				global.ActiveSession.persist.attachments.create attachment, (err) =>
+				global.ActiveSession.persist.attachments.create attachmentData, (err) =>
 					if err
 						cb err
 						return
