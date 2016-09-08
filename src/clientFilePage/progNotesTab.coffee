@@ -600,6 +600,7 @@ load = (win) ->
 				#@_decodeFile encodedAttachment
 			return
 
+		# TODO: nuke this (for testing only)
 		_decodeFile: (base64str) ->
 			filepath = Path.join Config.dataDirectory, '_tmp', 'myfile.png'
 			attachment = new Buffer(base64str, 'base64')
