@@ -31,10 +31,12 @@ load = (win) ->
 	MetricWidget = require('../metricWidget').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
 	PrintButton = require('../printButton').load(win)
+	ReorderPlanView = require('./reorderPlanView').load(win)
 
 	{
 		FaIcon, renderLineBreaks, showWhen, stripMetadata, formatTimestamp, capitalize
 	} = require('../utils').load(win)
+
 
 	PlanView = React.createFactory React.createClass
 		displayName: 'PlanView'
@@ -43,8 +45,10 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				plan: @props.plan
-				selectedTargetId: null
 				currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+
+				selectedTargetId: null
+				isReorderingPlan: null
 			}
 
 		componentWillReceiveProps: (newProps) ->
@@ -128,6 +132,10 @@ load = (win) ->
 									"Add #{Term 'Section'}"
 								)
 
+								R.button({
+									className: 'btn btn-default'
+									onClick: @_toggleReorderPlan
+								}, "Reorder")
 
 								B.DropdownButton({
 									title: R.span({},
@@ -198,26 +206,34 @@ load = (win) ->
 							})
 						)
 					)
-					SectionsView({
-						clientFile: @props.clientFile
-						plan: @state.plan
-						metricsById: @props.metricsById
-						currentTargetRevisionsById: @state.currentTargetRevisionsById
-						selectedTargetId: @state.selectedTargetId
-						isReadOnly: @props.isReadOnly
-						planTargetsById: @props.planTargetsById
 
-						renameSection: @_renameSection
-						addTargetToSection: @_addTargetToSection
-						removeNewTarget: @_removeNewTarget
-						removeNewSection: @_removeNewSection
-						hasTargetChanged: @_hasTargetChanged
-						updateTarget: @_updateTarget
-						setSelectedTarget: @_setSelectedTarget
-						addMetricToTarget: @_addMetricToTarget
-						deleteMetricFromTarget: @_deleteMetricFromTarget
-						getSectionIndex: @_getSectionIndex
-					})
+					(if @state.isReorderingPlan
+						ReorderPlanView({
+							plan: @state.plan
+							currentTargetRevisionsById: @state.currentTargetRevisionsById
+						})
+					else
+						SectionsView({
+							clientFile: @props.clientFile
+							plan: @state.plan
+							metricsById: @props.metricsById
+							currentTargetRevisionsById: @state.currentTargetRevisionsById
+							selectedTargetId: @state.selectedTargetId
+							isReadOnly: @props.isReadOnly
+							planTargetsById: @props.planTargetsById
+
+							renameSection: @_renameSection
+							addTargetToSection: @_addTargetToSection
+							removeNewTarget: @_removeNewTarget
+							removeNewSection: @_removeNewSection
+							hasTargetChanged: @_hasTargetChanged
+							updateTarget: @_updateTarget
+							setSelectedTarget: @_setSelectedTarget
+							addMetricToTarget: @_addMetricToTarget
+							deleteMetricFromTarget: @_deleteMetricFromTarget
+							getSectionIndex: @_getSectionIndex
+						})
+					)
 				)
 				R.div({className: 'targetDetail'},
 					(if not selectedTarget?
@@ -328,6 +344,10 @@ load = (win) ->
 				.map(@_normalizeTarget)
 
 				@props.updatePlan @state.plan, newPlanTargets, updatedPlanTargets
+
+		_toggleReorderPlan: ->
+			isReorderingPlan = not @state.isReorderingPlan
+			@setState {isReorderingPlan}
 
 		_resetChanges: ->
 			Bootbox.confirm "Discard all changes made to the #{Term 'plan'}?", (ok) =>
@@ -1375,7 +1395,11 @@ load = (win) ->
 		_onTargetClick: (event) ->
 			@props.onTargetSelection()
 
-			unless (event.target.classList.contains 'field') or (event.target.classList.contains 'lookupField') or (event.target.classList.contains 'btn')
+			unless (
+				(event.target.classList.contains 'field') or
+				(event.target.classList.contains 'lookupField') or
+				(event.target.classList.contains 'btn')
+			)
 				@refs.nameField.focus() unless @props.isReadOnly
 
 		_focusMetricLookupField: ->
@@ -1385,6 +1409,8 @@ load = (win) ->
 		_hideMetricInput: ->
 			$(@refs.metricLookup).hide()
 
+
 	return {PlanView}
+
 
 module.exports = {load}
