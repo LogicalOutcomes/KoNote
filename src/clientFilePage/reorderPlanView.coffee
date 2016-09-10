@@ -11,7 +11,6 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	{PropTypes} = React
-	{update} = React.addons
 	R = React.DOM
 	{findDOMNode} = win.ReactDOM
 
@@ -21,12 +20,12 @@ load = (win) ->
 	# Wrap top-level component with DragDropContext
 	ReorderPlanView = React.createFactory DragDropContext(HTML5Backend) React.createClass
 		displayName: 'ReorderPlanView'
-		# mixins: [React.addons.PureRenderMixin]
+		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
 			# Make sections transient (temporary until saved)
 			return {
-				sections: @props.plan.get('sections').toJS()
+				sections: @props.plan.get('sections')
 			}
 
 		render: ->
@@ -37,37 +36,22 @@ load = (win) ->
 
 			return R.div({id: 'reorderPlanView'},
 				sections.map (section, index) => PlanSection({
-					key: section.id
-					id: section.id
-					name: section.name
+					key: section.get('id')
+					id: section.get('id')
+					name: section.get('name')
 					moveSection: @_moveSection
 					index
 				})
 			)
 
 		_moveSection: (dragIndex, hoverIndex) ->
-			{sections} = @state
-			dragSection = sections[dragIndex]
+			dragSection = sections.get(dragIndex)
 
-			# console.log "About to move sections from within", sections.toJS()
+			sections = sections
+			.delete(dragIndex)
+			.splice(hoverIndex, 0, dragSection)
 
-			# reorderedSections = sections
-			# .delete(dragIndex)
-			# .insert(hoverIndex, dragSection)
-
-			@setState(update(@state, {
-				sections: {
-					$splice: [
-						[dragIndex, 1],
-						[hoverIndex, 0, dragSection]
-					]
-				}
-			}));
-
-			# console.log "reorderedSections", reorderedSections.toJS()
-
-			# @setState({sections: reorderedSections})
-
+			@setState {sections}
 
 
 	# Drag source contract
