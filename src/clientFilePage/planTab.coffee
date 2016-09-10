@@ -211,6 +211,7 @@ load = (win) ->
 						ReorderPlanView({
 							plan: @state.plan
 							currentTargetRevisionsById: @state.currentTargetRevisionsById
+							reorderSection: @_reorderSection
 						})
 					else
 						SectionsView({
@@ -348,6 +349,18 @@ load = (win) ->
 		_toggleReorderPlan: ->
 			isReorderingPlan = not @state.isReorderingPlan
 			@setState {isReorderingPlan}
+
+		_reorderSection: (dragIndex, hoverIndex) ->
+			sections = @state.plan.get('sections')
+			dragSection = sections.get(dragIndex)
+
+			sections = sections
+			.delete(dragIndex)
+			.splice(hoverIndex, 0, dragSection)
+
+			plan = @state.plan.set('sections', sections)
+
+			@setState {plan}
 
 		_resetChanges: ->
 			Bootbox.confirm "Discard all changes made to the #{Term 'plan'}?", (ok) =>

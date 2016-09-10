@@ -22,16 +22,10 @@ load = (win) ->
 		displayName: 'ReorderPlanView'
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: ->
-			# Make sections transient (temporary until saved)
-			return {
-				sections: @props.plan.get('sections')
-			}
-
 		render: ->
-			{currentTargetRevisionsById} = @props
+			{currentTargetRevisionsById, reorderSection} = @props
 
-			sections = @state.sections
+			sections = @props.plan.get('sections')
 			console.log "sections", sections
 
 			return R.div({id: 'reorderPlanView'},
@@ -39,19 +33,10 @@ load = (win) ->
 					key: section.get('id')
 					id: section.get('id')
 					name: section.get('name')
-					moveSection: @_moveSection
+					reorderSection
 					index
 				})
 			)
-
-		_moveSection: (dragIndex, hoverIndex) ->
-			dragSection = sections.get(dragIndex)
-
-			sections = sections
-			.delete(dragIndex)
-			.splice(hoverIndex, 0, dragSection)
-
-			@setState {sections}
 
 
 	# Drag source contract
@@ -95,7 +80,7 @@ load = (win) ->
 			return if dragIndex > hoverIndex and hoverClientY > hoverMiddleY
 
 			# Time to actually perform the action
-			props.moveSection(dragIndex, hoverIndex)
+			props.reorderSection(dragIndex, hoverIndex)
 
 			# (Example says to mutate here, but we're using Imm data)
 			monitor.getItem().index = hoverIndex;
@@ -112,10 +97,9 @@ load = (win) ->
 	}
 
 
-	# Wrap section class with DragSource
+	# We wrap this with a factory when decorating
 	PlanSection = React.createClass
 		displayName: 'PlanSection'
-		# mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
 			connectDragSource: PropTypes.func.isRequired
@@ -124,7 +108,7 @@ load = (win) ->
 			isDragging: PropTypes.bool.isRequired
 			id: PropTypes.any.isRequired
 			name: PropTypes.string.isRequired
-			moveSection: PropTypes.func.isRequired
+			reorderSection: PropTypes.func.isRequired
 		}
 
 		render: ->
