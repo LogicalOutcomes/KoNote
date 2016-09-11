@@ -170,7 +170,7 @@ describe 'Atomic', ->
 			], cb
 
 
-	describe 'writeJSONtoFile', ->
+	describe 'writeJSONToFile', ->
 		it 'should work and leave tmp empty', (cb) ->
 			fileName = 'a'
 			object = {foo: "fa", fum: 5}
@@ -221,8 +221,6 @@ describe 'Atomic', ->
 				(cb) ->
 					Fs.readFile path, 'utf8', (err, data) ->
 						Assert not err
-
-						console.log {data}
 
 						Assert.equal data, jsonString
 						cb()

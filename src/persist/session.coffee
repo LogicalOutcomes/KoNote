@@ -34,6 +34,8 @@ login = (userName, password, backend, cb) ->
 
 			cb null, new Session(decryptedAccount, backend)
 
+createBackend = (backendConfig) ->
+
 class Session
 	constructor: (@account, @backend) ->
 		unless @account instanceof DecryptedAccount
@@ -45,7 +47,7 @@ class Session
 
 		@_ended = false
 
-		@persist = DataModels.getApi(@)
+		@persist = DataModels.getApi(@backend, @)
 		timeoutSpec = Config.timeout
 
 		@timeoutMs = timeoutSpec.duration * 60000

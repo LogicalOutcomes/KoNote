@@ -5,6 +5,7 @@
 Joi = require 'joi'
 
 ApiBuilder = require './apiBuilder'
+FileSystemBackend = require './backends/fileSystemBackend'
 {IdSchema, TimestampFormat} = require './utils'
 
 dataModelDefinitions = [
@@ -302,7 +303,7 @@ dataModelDefinitions = [
 	}
 ]
 
-
-getApi = (session) -> ApiBuilder.buildApi session, dataModelDefinitions
+getApi = (backendConfig, session) ->
+	return ApiBuilder.buildApi backendConfig, session, dataModelDefinitions
 
 module.exports = {dataModelDefinitions, getApi}
