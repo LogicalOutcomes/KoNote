@@ -5,6 +5,7 @@
 Joi = require 'joi'
 
 ApiBuilder = require './apiBuilder'
+FileSystemBackend = require './backends/fileSystemBackend'
 {IdSchema, TimestampFormat} = require './utils'
 
 dataModelDefinitions = [
@@ -94,6 +95,7 @@ dataModelDefinitions = [
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						authorProgramId: IdSchema.allow('')
 						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+						summary: Joi.string().allow('').optional()
 					})
 					Joi.object().keys({
 						type: 'full'
@@ -103,7 +105,7 @@ dataModelDefinitions = [
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						authorProgramId: IdSchema.allow('')
 						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
-						summary: Joi.string().allow('')
+						summary: Joi.string().allow('').optional()
 						units: Joi.array().items(
 							[
 								Joi.object().keys({
@@ -232,11 +234,12 @@ dataModelDefinitions = [
 		name: 'program'
 		collectionName: 'programs'
 		isMutable: true
-		indexes: [['name'], ['colorKeyHex']]
+		indexes: [['status'], ['name'], ['colorKeyHex']]
 		schema: Joi.object().keys({
 			name: Joi.string()
 			description: Joi.string()
 			colorKeyHex: Joi.string().regex(/^#[A-Fa-f0-9]{6}/)
+			status: ['default', 'cancelled']
 		})
 	}
 
@@ -293,7 +296,7 @@ dataModelDefinitions = [
 			clientFileId: IdSchema
 			relatedProgNoteId: IdSchema.allow('')
 			relatedProgEventId: IdSchema.allow('')
-			authorProgramId: IdSchema.allow('')
+			programId: IdSchema.allow('')
 			backdate: Joi.date().format(TimestampFormat).raw().allow('')
 			status: ['default', 'cancelled']
 			statusReason: Joi.string().optional()
@@ -301,7 +304,7 @@ dataModelDefinitions = [
 	}
 ]
 
-
-getApi = (session) -> ApiBuilder.buildApi session, dataModelDefinitions
+getApi = (backendConfig, session) ->
+	return ApiBuilder.buildApi backendConfig, session, dataModelDefinitions
 
 module.exports = {dataModelDefinitions, getApi}
