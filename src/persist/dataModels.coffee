@@ -95,6 +95,7 @@ dataModelDefinitions = [
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						authorProgramId: IdSchema.allow('')
 						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
+						summary: Joi.string().allow('').optional()
 					})
 					Joi.object().keys({
 						type: 'full'
@@ -104,7 +105,7 @@ dataModelDefinitions = [
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						authorProgramId: IdSchema.allow('')
 						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
-						summary: Joi.string().allow('')
+						summary: Joi.string().allow('').optional()
 						units: Joi.array().items(
 							[
 								Joi.object().keys({
