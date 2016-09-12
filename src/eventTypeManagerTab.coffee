@@ -42,6 +42,7 @@ load = (win) ->
 			return {
 				dataIsReady: false
 				eventTypes: Imm.List()
+				displayInactive: false
 			}
 
 		componentWillMount: ->
@@ -88,6 +89,15 @@ load = (win) ->
 		render: ->
 			hasData = not @state.eventTypes.isEmpty()
 
+			unless @state.displayInactive
+				eventTypes = @state.eventTypes.filter (eventType) ->
+					eventType.get('status') is 'default'
+
+			inactiveEventTypes = @state.eventTypes.filter (eventType) ->
+				eventType.get('status') isnt "default"
+
+			hasInactiveEventTypes = not inactiveEventTypes.isEmpty()
+
 
 			return R.div({className: 'eventTypeManagerTab'},
 				R.div({className: 'header'},
@@ -118,7 +128,7 @@ load = (win) ->
 									eventTypes: @state.eventTypes
 								},
 									BootstrapTable({
-										data: @state.eventTypes.toJS()
+										data: eventTypes.toJS()
 										keyField: 'id'
 										bordered: false
 										options: {
@@ -332,6 +342,34 @@ load = (win) ->
 							rows: 3
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "#{Term 'Event Type'} Status"),
+						R.div({className: 'btn-toolbar'},
+							R.button({
+								className:
+									if @state.status is 'default'
+										'btn btn-success'
+									else 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'default'
+
+								},
+							"Default"
+							)
+							R.button({
+								className:
+									'btn btn-' + if @state.status is 'cancelled'
+										'danger'
+									else
+										'default'
+								onClick: @_updateStatus
+								value: 'cancelled'
+
+								},
+							"Deactivated"
+							)
+						)
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -359,6 +397,9 @@ load = (win) ->
 		_updateColorKeyHex: (colorKeyHex) ->
 			@setState {colorKeyHex}
 
+		_updateStatus: (event) ->
+			@setState {status: event.target.value}
+
 		_getEventType: ->
 			@props.eventTypes.find (eventType) =>
 				eventType.get('id') is @props.eventTypeId
@@ -371,7 +412,7 @@ load = (win) ->
 				name: @state.name
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex
-				status: originalEventType.get('status')
+				status: @state.status
 			})
 
 		_hasChanges: ->

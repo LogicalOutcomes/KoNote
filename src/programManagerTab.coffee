@@ -89,7 +89,7 @@ load = (win) ->
 									" New #{Term 'Program'}"
 								)
 							)
-							# TODO: Toggle for inactive programs display
+
 							(if hasInactivePrograms
 								R.div({className: 'toggleInactive'},
 									R.label({},
@@ -425,7 +425,7 @@ load = (win) ->
 							)
 							R.button({
 								className:
-									'btn btn-' + if @state.status is 'deactivated'
+									'btn btn-' + if @state.status is 'cancelled'
 										'danger'
 									else
 										'default'
