@@ -89,6 +89,9 @@ load = (win) ->
 		render: ->
 			hasData = not @state.eventTypes.isEmpty()
 
+
+			eventTypes = @state.eventTypes
+
 			unless @state.displayInactive
 				eventTypes = @state.eventTypes.filter (eventType) ->
 					eventType.get('status') is 'default'
@@ -113,8 +116,20 @@ load = (win) ->
 								FaIcon('plus')
 								" New #{Term 'Event Type'}"
 							)
-							# TODO: Inactive eventTypes toggle
+							(if hasInactiveEventTypes
+								R.div({className: 'toggleInactive'},
+									R.label({},
+										"Show inactive (#{inactiveEventTypes.size})"
+										R.input({
+											type: 'checkbox'
+											checked: @state.displayInactive
+											onClick: @_toggleDisplayInactive
+										})
+									)
+								)
+							)
 						)
+
 						Term 'Event Types'
 					)
 
@@ -125,7 +140,7 @@ load = (win) ->
 							R.div({className: 'responsiveTable animated fadeIn'},
 								DialogLayer({
 									ref: 'dialogLayer'
-									eventTypes: @state.eventTypes
+									eventTypes
 								},
 									BootstrapTable({
 										data: eventTypes.toJS()
@@ -139,8 +154,10 @@ load = (win) ->
 													eventTypeId: id
 													onSuccess: @_modifyEventType
 												}
+
 											noDataText: "No #{Term 'event types'} to display"
 										}
+										trClassName: (row) -> 'inactive' if row.status isnt 'default'
 									},
 										TableHeaderColumn({
 											dataField: 'colorKeyHex'
@@ -159,6 +176,21 @@ load = (win) ->
 											className: 'descriptionColumn'
 											columnClassName: 'descriptionColumn'
 										}, "Description")
+										TableHeaderColumn({
+											dataField: 'status'
+											className: [
+												'statusColumn'
+												'rightPadding' if @state.displayInactive
+											].join ' '
+											columnClassName: [
+												'statusColumn'
+												'rightPadding' if @state.displayInactive
+											].join ' '
+											dataSort: true
+											hidden: not @state.displayInactive
+											headerAlign: 'right'
+											dataAlign: 'right'
+										}, "Status")
 									)
 								)
 							)
@@ -172,6 +204,9 @@ load = (win) ->
 					)
 				)
 			)
+		_toggleDisplayInactive: ->
+			displayInactive = not @state.displayInactive
+			@setState {displayInactive}
 
 		_addNewEventType: (newEventType) ->
 			eventTypes = @state.eventTypes.push newEventType
