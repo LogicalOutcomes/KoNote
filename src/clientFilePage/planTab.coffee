@@ -135,7 +135,7 @@ load = (win) ->
 								R.button({
 									className: 'btn btn-default'
 									onClick: @_toggleReorderPlan
-								}, "Reorder")
+								}, "R")
 
 								B.DropdownButton({
 									title: R.span({},
@@ -212,6 +212,7 @@ load = (win) ->
 							plan: @state.plan
 							currentTargetRevisionsById: @state.currentTargetRevisionsById
 							reorderSection: @_reorderSection
+							reorderTargetId: @_reorderTargetId
 						})
 					else
 						SectionsView({
@@ -359,6 +360,18 @@ load = (win) ->
 			.splice(hoverIndex, 0, dragSection)
 
 			plan = @state.plan.set('sections', sections)
+
+			@setState {plan}
+
+		_reorderTargetId: (sectionIndex, dragIndex, hoverIndex) ->
+			targetIds = @state.plan.getIn(['sections', sectionIndex, 'targetIds'])
+			dragTarget = targetIds.get(dragIndex)
+
+			targetIds = targetIds
+			.delete(dragIndex)
+			.splice(hoverIndex, 0, dragTarget)
+
+			plan = @state.plan.setIn(['sections', sectionIndex, 'targetIds'], targetIds)
 
 			@setState {plan}
 

@@ -5,7 +5,7 @@
 # View to reorder plan sections & targets
 
 Decorate = require 'es-decorate'
-
+ImmPropTypes = require 'react-immutable-proptypes'
 
 load = (win) ->
 	Bootbox = win.bootbox
@@ -17,42 +17,19 @@ load = (win) ->
 	{DragDropContext, DragSource, DropTarget} = win.ReactDnD
 	HTML5Backend = win.ReactDnDHTML5Backend
 
-	# Wrap top-level component with DragDropContext
-	ReorderPlanView = React.createFactory DragDropContext(HTML5Backend) React.createClass
-		displayName: 'ReorderPlanView'
-		mixins: [React.addons.PureRenderMixin]
-
-		render: ->
-			{currentTargetRevisionsById, reorderSection} = @props
-
-			sections = @props.plan.get('sections')
-			console.log "sections", sections
-
-			return R.div({id: 'reorderPlanView'},
-				sections.map (section, index) => PlanSection({
-					key: section.get('id')
-					id: section.get('id')
-					name: section.get('name')
-					reorderSection
-					index
-				})
-			)
-
 
 	# Drag source contract
-	sectionSource = {
+	targetSource = {
 		beginDrag: (props) -> {
 			id: props.id
 			index: props.index
 		}
 	}
 
-	sectionTarget = {
+	targetDestination = {
 		hover: (props, monitor, component) ->
 			dragIndex = monitor.getItem().index
 			hoverIndex = props.index
-
-			# console.log "Props:", props
 
 			# Don't replace items with themselves
 			return if dragIndex is hoverIndex
@@ -79,12 +56,17 @@ load = (win) ->
 			# Dragging upwards
 			return if dragIndex > hoverIndex and hoverClientY > hoverMiddleY
 
+			## SPECIAL CONDITION: Can't drag to another section
+
+
 			# Time to actually perform the action
-			props.reorderSection(dragIndex, hoverIndex)
+			props.reorderTargetId(dragIndex, hoverIndex)
 
 			# (Example says to mutate here, but we're using Imm data)
 			monitor.getItem().index = hoverIndex;
 	}
+
+
 
 	# Specify props to inject into component
 	collectSource = (connect, monitor) -> {
@@ -92,47 +74,36 @@ load = (win) ->
 		isDragging: monitor.isDragging()
 	}
 
-	connectTarget = (connect) -> {
+	connectDestination = (connect) -> {
 		connectDropTarget: connect.dropTarget()
 	}
 
 
-	# We wrap this with a factory when decorating
-	PlanSection = React.createClass
-		displayName: 'PlanSection'
+	PlanTarget = React.createClass
+		display: 'PlanTarget'
 
 		propTypes: {
-			connectDragSource: PropTypes.func.isRequired
-			connectDropTarget: PropTypes.func.isRequired
-			index: PropTypes.number.isRequired
-			isDragging: PropTypes.bool.isRequired
-			id: PropTypes.any.isRequired
-			name: PropTypes.string.isRequired
-			reorderSection: PropTypes.func.isRequired
+			target: ImmPropTypes.map.isRequired
 		}
 
 		render: ->
-			{name, isDragging, connectDragSource, connectDropTarget} = @props
-
-			console.log "@props", @props
+			{target, connectDragSource, connectDropTarget} = @props
 
 			return connectDragSource connectDropTarget (
-				R.section({
-					style:
-						opacity: 0.5 if isDragging
-				},
-					name
+				R.div({},
+					target.get('name')
 				)
 			)
 
-	# Decorate/Wrap PlanSection with DropTarget and DragSource
-	PlanSection = React.createFactory Decorate [
-		DropTarget('section', sectionTarget, connectTarget)
-		DragSource('section', sectionSource, collectSource)
-	], PlanSection
+	# Decorate/Wrap PlanSection with DragDropContext, DropTarget, and DragSource
+	PlanTarget = React.createFactory Decorate [
+		DropTarget('target', targetDestination, connectDestination)
+		DragSource('target', targetSource, collectSource)
+	], PlanTarget
 
 
-	return ReorderPlanView
+
+	return PlanTarget
 
 
 module.exports = {load}
