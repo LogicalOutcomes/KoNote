@@ -232,7 +232,11 @@ load = (win) ->
 										B.MenuItem({divider: true})
 									]
 
-								(@props.eventTypes.map (eventType) =>
+
+								(@props.eventTypes
+								.filter (eventType) =>
+									eventType.get('status') is 'default'
+								.map (eventType) =>
 									B.MenuItem({
 										key: eventType.get('id')
 										onClick: @_updateTypeId.bind null, eventType.get('id')
