@@ -255,22 +255,26 @@ load = (win) ->
 				R.div({id: 'modifyPlanTemplateDialog'},
 					R.h4({}, planTemplateName)
 					R.hr({})
-					R.div({},
+					R.div({className: 'btn-toolbar'},
 						R.button({
-							className: 'btn btn-danger btn-block'
+							className: 'btn btn-danger'
 							onClick: @_handleDeactivate.bind null, planTemplateName
 						},
-							"Cancel"
+							"Deactivate"
 							" "
 							FaIcon('ban')
 						)
+						R.button({
+							className: 'btn btn-default'
+							onClick: @props.onCancel
+						}, "Cancel")
 					)
 				)
 			)
 
 		_handleDeactivate: (planTemplateName) ->
 			Bootbox.confirm """
-				Permanently cancel #{Term 'plan template'}: <strong>#{planTemplateName}</strong>?
+				Permanently deactivate #{Term 'plan template'}: <strong>#{planTemplateName}</strong>?
 			""", (ok) =>
 				if ok then @_updatePlanTemplateStatus('cancelled')
 
