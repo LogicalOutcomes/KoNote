@@ -26,19 +26,23 @@ load = (win) ->
 
 			sections = @props.plan.get('sections')
 
-			return R.div({id: 'reorderPlanView'},
-				sections.map (section, index) =>
-					targets = section.get('targetIds').map (id) => currentTargetRevisionsById.get(id)
+			return R.div({
+				id: 'reorderPlanView'
+				className: 'sections' # Match padding of regular plan view
+			},
+				(sections.map (section, index) =>
+					targets = section.get('targetIds').map (id) -> currentTargetRevisionsById.get(id)
 
 					PlanSection({
 						key: section.get('id')
+						index
 						id: section.get('id')
 						name: section.get('name')
 						targets
 						reorderSection
 						reorderTargetId
-						index
 					})
+				)
 			)
 
 
