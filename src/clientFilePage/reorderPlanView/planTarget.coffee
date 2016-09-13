@@ -45,16 +45,23 @@ load = (win) ->
 		beginDrag: (props) -> {
 			id: props.id
 			index: props.index
+			sectionIndex: props.sectionIndex
 		}
 	}
 
 	targetDestination = {
 		hover: (props, monitor, component) ->
-			dragIndex = monitor.getItem().index
+			draggingTargetProps = monitor.getItem()
+
+			sectionIndex = draggingTargetProps.sectionIndex
+			dragIndex = draggingTargetProps.index
 			hoverIndex = props.index
 
 			# Don't replace items with themselves
 			return if dragIndex is hoverIndex
+
+			# Can't drag target to another section
+			return if sectionIndex isnt props.sectionIndex
 
 			# Determine rectangle on screen
 			hoverBoundingRect = findDOMNode(component).getBoundingClientRect()
@@ -79,7 +86,7 @@ load = (win) ->
 			return if dragIndex > hoverIndex and hoverClientY > hoverMiddleY
 
 			# Time to actually perform the action
-			props.reorderTargetId(props.sectionIndex, dragIndex, hoverIndex)
+			props.reorderTargetId(sectionIndex, dragIndex, hoverIndex)
 
 			# (Example says to mutate here, but we're using Imm data)
 			monitor.getItem().index = hoverIndex;
