@@ -3,6 +3,8 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # View to reorder plan sections & targets
+Imm = require 'immutable'
+Term = require '../../term'
 
 load = (win) ->
 	Bootbox = win.bootbox
@@ -21,29 +23,69 @@ load = (win) ->
 		displayName: 'ReorderPlanView'
 		mixins: [React.addons.PureRenderMixin]
 
-		render: ->
-			{currentTargetRevisionsById, reorderSection, reorderTargetId} = @props
+		getInitialState: -> {
+			displayInactive: false
+			displayTargets: true
+		}
 
-			sections = @props.plan.get('sections')
+		render: ->
+			{currentTargetRevisionsById, reorderSection, reorderTargetId, plan} = @props
+			{displayInactive, displayTargets} = @state
+
+			sections = plan.get('sections')
 
 			return R.div({
 				id: 'reorderPlanView'
 				className: 'sections' # Match padding of regular plan view
 			},
+				R.div({className: 'checkbox'},
+					R.label({},
+						R.input({
+							onChange: @_toggleInactive
+							checked: displayInactive
+							type: 'checkbox'
+						})
+						"Show inactive"
+					)
+				)
+				R.div({className: 'checkbox'},
+					R.label({},
+						R.input({
+							onChange: @_toggleTargets
+							checked: displayTargets
+							type: 'checkbox'
+						})
+						"Show #{Term 'targets'}"
+					)
+				)
 				(sections.map (section, index) =>
-					targets = section.get('targetIds').map (id) -> currentTargetRevisionsById.get(id)
+					# Filter out targets here at top-level if hidden
+					targets = if @state.displayTargets
+						section.get('targetIds').map (id) -> currentTargetRevisionsById.get(id)
+					else
+						Imm.List()
 
 					PlanSection({
 						key: section.get('id')
 						index
 						id: section.get('id')
 						name: section.get('name')
+						section
 						targets
 						reorderSection
 						reorderTargetId
+						displayInactive
 					})
 				)
 			)
+
+		_toggleInactive: ->
+			displayInactive = not @state.displayInactive
+			@setState {displayInactive}
+
+		_toggleTargets: ->
+			displayTargets = not @state.displayTargets
+			@setState {displayTargets}
 
 
 	return React.createFactory DragDropContext(HTML5Backend) ReorderPlanView

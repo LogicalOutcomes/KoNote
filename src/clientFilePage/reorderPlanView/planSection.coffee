@@ -13,7 +13,6 @@ load = (win) ->
 	{PropTypes} = React
 	R = React.DOM
 	{findDOMNode} = win.ReactDOM
-
 	{DragSource, DropTarget} = win.ReactDnD
 
 	PlanTarget = require('./planTarget').load(win)
@@ -24,28 +23,39 @@ load = (win) ->
 		displayName: 'PlanSection'
 
 		propTypes: {
+			# DnD
 			connectDragSource: PropTypes.func.isRequired
 			connectDropTarget: PropTypes.func.isRequired
 			isDragging: PropTypes.bool.isRequired
-
+			# DnD props
 			index: PropTypes.number.isRequired
 			id: PropTypes.any.isRequired
-			name: PropTypes.string.isRequired
-			reorderSection: PropTypes.func.isRequired
+			# Raw data
+			section: ImmPropTypes.map.isRequired
 			targets: ImmPropTypes.list.isRequired
+			# Methods
+			reorderSection: PropTypes.func.isRequired
+			reorderTargetId: PropTypes.func.isRequired
+			# Options
+			displayInactive: PropTypes.bool.isRequired
 		}
 
 		render: ->
-			{name, isDragging, connectDragSource, connectDropTarget,
-			targets, reorderTargetId} = @props
+			{name, isDragging, connectDragSource, section, displayInactive
+			connectDropTarget, targets, reorderTargetId} = @props
 
 			sectionIndex = @props.index
+
+			sectionIsInactive = section.get('status') isnt 'default'
+			sectionIsHidden = not displayInactive and sectionIsInactive
+
 
 			return connectDragSource connectDropTarget (
 				R.section({
 					className: [
 						'planSection'
 						'isDragging' if isDragging
+						'collapsed' if sectionIsHidden
 					].join ' '
 				},
 					R.h4({}, name)
@@ -58,6 +68,7 @@ load = (win) ->
 								index
 								sectionIndex
 								reorderTargetId
+								displayInactive
 							})
 						)
 					)

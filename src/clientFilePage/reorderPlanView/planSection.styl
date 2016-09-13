@@ -1,7 +1,24 @@
 .planSection
-	padding 15px 0
-	border 1px dashed red
+	padding 15px
+	border 1px dashed #cadbe5
+	border-bottom 0
+	cursor move
+	transition all .25s ease
+
+	&:hover
+		background #eaf1f5
 
 	&.isDragging
 		opacity 0.5
-		background red
+
+	&:not(.collapsed):last-child
+		border-bottom 1px dashed #cadbe5
+
+	&.collapsed
+		height 0px
+		overflow hidden
+		padding 0
+		margin 0
+
+	h4
+		margin-top 0

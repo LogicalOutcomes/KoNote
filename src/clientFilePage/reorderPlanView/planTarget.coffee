@@ -13,7 +13,6 @@ load = (win) ->
 	{PropTypes} = React
 	R = React.DOM
 	{findDOMNode} = win.ReactDOM
-
 	{DragDropContext, DragSource, DropTarget} = win.ReactDnD
 	HTML5Backend = win.ReactDnDHTML5Backend
 
@@ -22,17 +21,33 @@ load = (win) ->
 		display: 'PlanTarget'
 
 		propTypes: {
+			# DnD
+			connectDragSource: PropTypes.func.isRequired
+			connectDropTarget: PropTypes.func.isRequired
+			isDragging: PropTypes.bool.isRequired
+			# DnD props
+			index: PropTypes.number.isRequired
+			id: PropTypes.any.isRequired
+			# Raw data
 			target: ImmPropTypes.map.isRequired
+			# Methods
+			reorderTargetId: PropTypes.func.isRequired
+			# Options
+			displayInactive: PropTypes.bool.isRequired
 		}
 
 		render: ->
-			{target, connectDragSource, connectDropTarget, isDragging} = @props
+			{target, connectDragSource, connectDropTarget, isDragging, displayInactive} = @props
+
+			targetIsInactive = target.get('status') isnt 'default'
+			targetIsHidden = not displayInactive and targetIsInactive
 
 			return connectDragSource connectDropTarget (
 				R.div({
 					className: [
 						'planTarget'
 						'isDragging' if isDragging
+						'collapsed' if targetIsHidden
 					].join ' '
 				},
 					target.get('name')
