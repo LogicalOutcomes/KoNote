@@ -67,7 +67,8 @@ load = (win) ->
 			hoverBoundingRect = findDOMNode(component).getBoundingClientRect()
 
 			# Get vertical middle
-			hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
+			hoverMiddleTopY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 4
+			hoverMiddleBottomY = hoverMiddleTopY * 3
 
 			# Determine mouse position
 			clientOffset = monitor.getClientOffset()
@@ -80,10 +81,10 @@ load = (win) ->
 			# When dragging upwards, only move when the cursor is above 50%
 
 			# Dragging downwards
-			return if dragIndex < hoverIndex and hoverClientY < hoverMiddleY
+			return if dragIndex < hoverIndex and hoverClientY < hoverMiddleTopY
 
 			# Dragging upwards
-			return if dragIndex > hoverIndex and hoverClientY > hoverMiddleY
+			return if dragIndex > hoverIndex and hoverClientY > hoverMiddleBottomY
 
 			# Time to actually perform the action
 			props.reorderTargetId(sectionIndex, dragIndex, hoverIndex)
