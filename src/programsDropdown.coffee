@@ -72,7 +72,11 @@ load = (win) ->
 						selectedProgram.get('name') or @props.placeholder
 					)
 				},
-					(remainingPrograms.map (program) =>
+					(remainingPrograms
+					.filter (program) =>
+						program.get('status') is 'default'
+
+					.map (program) =>
 						B.MenuItem({
 							key: program.get('id')
 							onClick: @props.onSelect.bind null, program
