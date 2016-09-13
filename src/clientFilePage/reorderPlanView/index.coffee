@@ -17,7 +17,7 @@ load = (win) ->
 
 
 	# Wrap top-level component with DragDropContext
-	ReorderPlanView = React.createFactory DragDropContext(HTML5Backend) React.createClass
+	ReorderPlanView = React.createClass
 		displayName: 'ReorderPlanView'
 		mixins: [React.addons.PureRenderMixin]
 
@@ -46,7 +46,7 @@ load = (win) ->
 			)
 
 
-	return ReorderPlanView
+	return React.createFactory DragDropContext(HTML5Backend) ReorderPlanView
 
 
 module.exports = {load}
