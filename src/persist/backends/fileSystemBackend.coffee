@@ -28,10 +28,10 @@ Crypto = require '../crypto'
 
 # Create a file system backend instance.
 #
-# session: a Session object
 # eventBus: the EventBus to which object mutation events should be dispatched
+# globalEncryptionKey: a SymmetricEncryptionKey for encrypting data objects
 # dataDirectory: path to the directory where all application data should be stored
-create = (session, eventBus, dataDirectory) ->
+create = (eventBus, globalEncryptionKey, dataDirectory) ->
 	# A directory for temp files, i.e. stuff we don't care about
 	tmpDirPath = Path.join(dataDirectory, '_tmp')
 
@@ -45,7 +45,7 @@ create = (session, eventBus, dataDirectory) ->
 	# The weak key is derived from globalEncryptionKey.
 	# Security level 5 is used, i.e. 5 bytes of overhead
 	# (see persist/crypto for details).
-	fileNameEncryptionKey = new Crypto.WeakSymmetricEncryptionKey(session.globalEncryptionKey, 5)
+	fileNameEncryptionKey = new Crypto.WeakSymmetricEncryptionKey(globalEncryptionKey, 5)
 
 	createObject = (contextualIds, obj, context, modelDef, cb) ->
 		destObjDir = null
@@ -394,7 +394,7 @@ create = (session, eventBus, dataDirectory) ->
 
 		# Get context and data model definition for the parent collection
 		parentContext = context.skipLast(1)
-		parentModelDef = context.last().get('definition')
+		parentModelDef = context.last()
 
 		# Look up the parent object directory in the parent collection
 		lookupObjDirById contextualIds.skipLast(1), contextualIds.last(), parentContext, parentModelDef, cb
@@ -437,7 +437,7 @@ create = (session, eventBus, dataDirectory) ->
 				return
 
 			# Decrypt and parse JSON
-			decryptedJson = session.globalEncryptionKey.decrypt encryptedObj
+			decryptedJson = globalEncryptionKey.decrypt encryptedObj
 			obj = Imm.fromJS JSON.parse decryptedJson
 
 			# Check that this object is where it should be
@@ -445,7 +445,7 @@ create = (session, eventBus, dataDirectory) ->
 			Assert Imm.is(
 				obj.get('_contextCollectionNames'),
 				context.map(
-					(c) -> c.get('definition').collectionName
+					(c) -> c.collectionName
 				)
 			), "found object of wrong type in collection #{modelDef.collectionName}"
 			Assert Imm.is(
@@ -476,7 +476,7 @@ create = (session, eventBus, dataDirectory) ->
 		# This is a security feature to prevent tampering
 		objWithContext = obj
 			.set('_contextCollectionNames', context.map(
-				(c) -> c.get('definition').collectionName
+				(c) -> c.collectionName
 			))
 			.set('_contextIds', contextualIds)
 			.set('_collectionName', modelDef.collectionName)
@@ -484,7 +484,7 @@ create = (session, eventBus, dataDirectory) ->
 
 		# Encode as JSON and encrypt
 		objJson = JSON.stringify objWithContext
-		encryptedObj = session.globalEncryptionKey.encrypt objJson
+		encryptedObj = globalEncryptionKey.encrypt objJson
 
 		# Write the encrypted object to the specified path
 		# Use an atomic operation to prevent files from being partially written

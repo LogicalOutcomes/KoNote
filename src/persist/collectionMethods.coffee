@@ -41,17 +41,13 @@ joiValidationOptions = Object.freeze {
 #
 # session: a Session object
 # eventBus: the EventBus to which object mutation events should be dispatched
-# context: a List of Maps.  Each Map represents an ancestor type, ordered from
-# outermost (i.e. top-level) to innermost.  Example: Imm.List([
-# 	Imm.Map({
-# 		definition: modelDefOuter
-# 		api: apiOuter
-# 	})
-# 	Imm.Map({
-# 		definition: modelDefInner
-# 		api: apiInner
-# 	})
-# ])
+# context: a List of model definitions.  Each model definition is an ancestor
+# of this collection, ordered from outermost (i.e. top-level) to innermost.
+#
+# Example:
+#	Imm.List([clientFileModelDef, progNoteModelDef])
+#
+# modelDef: the data model definition that defines this collection
 createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 	# Define a series of methods that this collection API will (or might) contain.
 	# These methods correspond to what is documented in the wiki.
@@ -304,8 +300,7 @@ createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 	# return `["123", "234"]`.  In this example, client file 123 and prognote
 	# 234 are "ancestors" of the comments collection.
 	extractContextualIds = (obj) ->
-		return context.map (contextEntry) ->
-			contextDef = contextEntry.get('definition')
+		return context.map (contextDef) ->
 			contextIdProp = contextDef.name + 'Id'
 
 			if obj.has(contextIdProp)
@@ -348,9 +343,9 @@ prepareSchema = (schema, context) ->
 	}
 
 	# Each context type needs its own ID field
-	context.forEach (contextEntry) ->
+	context.forEach (contextDef) ->
 		# Add another entry to newKeys
-		typeName = contextEntry.get('definition').name
+		typeName = contextDef.name
 		newKeys[typeName + 'Id'] = IdSchema
 
 	# Extend the original set of permissible keys

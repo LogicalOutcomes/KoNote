@@ -24,7 +24,7 @@ buildApi = (backendConfig, session, dataModelDefinitions) ->
 
 	switch backendConfig.type
 		when 'file-system'
-			backend = FileSystemBackend.create(session, eventBus, backendConfig.dataDirectory)
+			backend = FileSystemBackend.create eventBus, session.globalEncryptionKey, backendConfig.dataDirectory
 		else
 			throw new Error "unknown backend type: #{JSON.stringify backendConfig.type}"
 
@@ -84,11 +84,7 @@ processModel = (backend, session, eventBus, modelDef, context=Imm.List()) ->
 	# Process the children of this data model
 	# That processing will include this data model as a context entry,
 	# since the children have this data model as a parent
-	contextEntry = Imm.Map({
-		definition: modelDef
-		api: collectionApi
-	})
-	children = processModels backend, session, eventBus, modelDef.children, context.push(contextEntry)
+	children = processModels backend, session, eventBus, modelDef.children, context.push(modelDef)
 
 	if children.has modelDef.name
 		throw new Error """
