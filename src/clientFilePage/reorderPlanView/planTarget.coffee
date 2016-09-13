@@ -26,10 +26,15 @@ load = (win) ->
 		}
 
 		render: ->
-			{target, connectDragSource, connectDropTarget} = @props
+			{target, connectDragSource, connectDropTarget, isDragging} = @props
 
 			return connectDragSource connectDropTarget (
-				R.div({className: 'planTarget'},
+				R.div({
+					className: [
+						'planTarget'
+						'isDragging' if isDragging
+					].join ' '
+				},
 					target.get('name')
 				)
 			)
