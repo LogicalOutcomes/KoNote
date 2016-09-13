@@ -26,8 +26,9 @@ load = (win) ->
 		propTypes: {
 			connectDragSource: PropTypes.func.isRequired
 			connectDropTarget: PropTypes.func.isRequired
-			index: PropTypes.number.isRequired
 			isDragging: PropTypes.bool.isRequired
+
+			index: PropTypes.number.isRequired
 			id: PropTypes.any.isRequired
 			name: PropTypes.string.isRequired
 			reorderSection: PropTypes.func.isRequired
@@ -35,14 +36,17 @@ load = (win) ->
 		}
 
 		render: ->
-			{name, isDragging, connectDragSource, connectDropTarget, targets, reorderTargetId} = @props
+			{name, isDragging, connectDragSource, connectDropTarget,
+			targets, reorderTargetId} = @props
 
-			console.log "Targets:", targets.toJS()
+			sectionIndex = @props.index
 
 			return connectDragSource connectDropTarget (
 				R.section({
-					style:
-						opacity: 0.5 if isDragging
+					className: [
+						'planSection'
+						'isDragging' if isDragging
+					].join ' '
 				},
 					R.h4({}, name)
 					R.div({className: 'targets'},
@@ -52,7 +56,7 @@ load = (win) ->
 								id: target.get('id')
 								target
 								index
-								sectionIndex: @props.index
+								sectionIndex
 								reorderTargetId
 							})
 						)

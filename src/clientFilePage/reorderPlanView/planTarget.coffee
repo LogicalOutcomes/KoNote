@@ -29,7 +29,7 @@ load = (win) ->
 			{target, connectDragSource, connectDropTarget} = @props
 
 			return connectDragSource connectDropTarget (
-				R.div({className: 'target'},
+				R.div({className: 'planTarget'},
 					target.get('name')
 				)
 			)
@@ -73,11 +73,8 @@ load = (win) ->
 			# Dragging upwards
 			return if dragIndex > hoverIndex and hoverClientY > hoverMiddleY
 
-			## SPECIAL CONDITION: Can't drag to another section
-
-
 			# Time to actually perform the action
-			props.reorderTargetId(dragIndex, hoverIndex)
+			props.reorderTargetId(props.sectionIndex, dragIndex, hoverIndex)
 
 			# (Example says to mutate here, but we're using Imm data)
 			monitor.getItem().index = hoverIndex;
