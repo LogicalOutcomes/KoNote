@@ -352,6 +352,10 @@ load = (win) ->
 			@setState {isReorderingPlan}
 
 		_reorderSection: (dragIndex, hoverIndex) ->
+			if @props.isReadOnly
+				@_showReadOnlyAlert()
+				return
+
 			sections = @state.plan.get('sections')
 			dragSection = sections.get(dragIndex)
 
@@ -364,6 +368,10 @@ load = (win) ->
 			@setState {plan}
 
 		_reorderTargetId: (sectionIndex, dragIndex, hoverIndex) ->
+			if @props.isReadOnly
+				@_showReadOnlyAlert()
+				return
+
 			targetIds = @state.plan.getIn(['sections', sectionIndex, 'targetIds'])
 			dragTarget = targetIds.get(dragIndex)
 
@@ -374,6 +382,9 @@ load = (win) ->
 			plan = @state.plan.setIn(['sections', sectionIndex, 'targetIds'], targetIds)
 
 			@setState {plan}
+
+		_showReadOnlyAlert: ->
+			Bootbox.alert "Sorry, you can't modify the #{Term 'plan'} while in read-only mode."
 
 		_resetChanges: ->
 			Bootbox.confirm "Discard all changes made to the #{Term 'plan'}?", (ok) =>
