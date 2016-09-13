@@ -111,7 +111,7 @@ load = (win) ->
 						R.div({className: 'responsiveTable animated fadeIn'},
 							DialogLayer({
 								ref: 'dialogLayer'
-								programs
+								programs: @props.programs
 								clientFileProgramLinks: @props.clientFileProgramLinks
 								clientFileHeaders: @props.clientFileHeaders
 							}
@@ -298,9 +298,7 @@ load = (win) ->
 		}
 
 		getInitialState: -> {
-			# Admin will most frequently want to manage clients,
-			# so this is the default view
-			view: 'manageClients'
+			view: 'modifyProgram'
 		}
 
 		render: ->
@@ -326,18 +324,7 @@ load = (win) ->
 							eventKey: 'name'
 							disabled: true
 						})
-						Tab({
-							title: "#{Term 'Clients'}"
-							eventKey: 'manageClients'
-						},
-							ManageProgramClientsView({
-								program
-								clientFileHeaders: @props.clientFileHeaders
-								clientFileProgramLinks: @props.clientFileProgramLinks
-								onSuccess: @props.onSuccess
-								onCancel: @props.onCancel
-							})
-						)
+
 						Tab({
 							title: "Modify Details"
 							eventKey: 'modifyProgram'
@@ -351,6 +338,20 @@ load = (win) ->
 								})
 							)
 						)
+
+						if program.get('status') is 'default'
+							Tab({
+								title: "#{Term 'Clients'}"
+								eventKey: 'manageClients'
+							},
+								ManageProgramClientsView({
+									program
+									clientFileHeaders: @props.clientFileHeaders
+									clientFileProgramLinks: @props.clientFileProgramLinks
+									onSuccess: @props.onSuccess
+									onCancel: @props.onCancel
+								})
+							)
 					)
 				)
 			)

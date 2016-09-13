@@ -105,7 +105,10 @@ load = (win) ->
 						R.div({className: 'form-group'},
 							R.label({}, "Assign to #{Term 'Program'}(s)")
 							R.div({id: 'programsContainer'},
-								(@props.programs.map (program) =>
+								(@props.programs
+								.filter (program) =>
+									program.get('status') is 'default'
+								.map (program) =>
 									isSelected = @state.programIds.contains(program.get('id'))
 
 									R.button({
