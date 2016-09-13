@@ -335,6 +335,7 @@ load = (win) ->
 									programs: @props.programs
 									onSuccess: @props.onSuccess
 									onCancel: @props.onCancel
+									clientFileProgramLinks: @props.clientFileProgramLinks
 								})
 							)
 						)
@@ -376,6 +377,15 @@ load = (win) ->
 			@refs.programName.focus()
 
 		render: ->
+
+			numberClients = @props.clientFileProgramLinks
+				.filter (link) => link.get('programId') is @props.program.get('id') and link.get('status') is "enrolled"
+				.size
+			if numberClients is 0
+				emptyProgram = true
+			else
+				emptyProgram = false
+
 			R.div({className: 'createProgramDialog'},
 				R.div({className: 'innerContainer'},
 					R.div({className: 'form-group'},
@@ -410,8 +420,12 @@ load = (win) ->
 							rows: 3
 						})
 					)
+
+
 					R.div({className: 'form-group'},
 						R.label({}, "#{Term 'Program'} Status"),
+						unless emptyProgram
+							R.div({}, "Unenroll all clients to change #{Term 'program'} status")
 						R.div({className: 'btn-toolbar'},
 							R.button({
 								className:
@@ -420,6 +434,7 @@ load = (win) ->
 									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'default'
+								disabled: not emptyProgram
 
 								},
 							"Default"
@@ -432,6 +447,7 @@ load = (win) ->
 										'default'
 								onClick: @_updateStatus
 								value: 'cancelled'
+								disabled: not emptyProgram
 
 								},
 							"Deactivated"
