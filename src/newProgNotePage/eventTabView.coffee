@@ -494,7 +494,7 @@ load = (win) ->
 				startTimestamp = startTimestamp.startOf('day')
 
 				if @state.isDateSpan
-					endTimestamp = if endTimestamp then endTimestamp.endOf('day') else ''
+					endTimestamp = if endTimestamp then endTimestamp.endOf('day') else Moment()
 				else
 					# If only a single date was provided, assume it's an all-day event
 					isOneFullDay = true
