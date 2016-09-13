@@ -3,8 +3,11 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # View to reorder plan sections & targets
+
 Imm = require 'immutable'
 Term = require '../../term'
+ImmPropTypes = require 'react-immutable-proptypes'
+
 
 load = (win) ->
 	Bootbox = win.bootbox
@@ -23,6 +26,13 @@ load = (win) ->
 		displayName: 'ReorderPlanView'
 		mixins: [React.addons.PureRenderMixin]
 
+		propTypes: {
+			plan: ImmPropTypes.map.isRequired
+			currentTargetRevisionsById: ImmPropTypes.map.isRequired
+			reorderSection: PropTypes.func.isRequired
+			reorderTargetId: PropTypes.func.isRequired
+		}
+
 		getInitialState: -> {
 			displayInactive: false
 			displayTargets: true
@@ -33,6 +43,7 @@ load = (win) ->
 			{displayInactive, displayTargets} = @state
 
 			sections = plan.get('sections')
+
 
 			return R.div({
 				id: 'reorderPlanView'
