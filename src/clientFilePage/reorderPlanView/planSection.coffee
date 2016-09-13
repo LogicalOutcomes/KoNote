@@ -19,6 +19,48 @@ load = (win) ->
 	PlanTarget = require('./planTarget').load(win)
 
 
+	# We wrap this with a factory when decorating
+	PlanSection = React.createClass
+		displayName: 'PlanSection'
+
+		propTypes: {
+			connectDragSource: PropTypes.func.isRequired
+			connectDropTarget: PropTypes.func.isRequired
+			index: PropTypes.number.isRequired
+			isDragging: PropTypes.bool.isRequired
+			id: PropTypes.any.isRequired
+			name: PropTypes.string.isRequired
+			reorderSection: PropTypes.func.isRequired
+			targets: ImmPropTypes.list.isRequired
+		}
+
+		render: ->
+			{name, isDragging, connectDragSource, connectDropTarget, targets, reorderTargetId} = @props
+
+			console.log "Targets:", targets.toJS()
+
+			return connectDragSource connectDropTarget (
+				R.section({
+					style:
+						opacity: 0.5 if isDragging
+				},
+					R.h4({}, name)
+					R.div({className: 'targets'},
+						(targets.map (target, index) =>
+							PlanTarget({
+								key: target.get('id')
+								id: target.get('id')
+								target
+								index
+								sectionIndex: @props.index
+								reorderTargetId
+							})
+						)
+					)
+				)
+			)
+
+
 	# Drag source contract
 	sectionSource = {
 		beginDrag: (props) -> {
@@ -64,8 +106,6 @@ load = (win) ->
 			monitor.getItem().index = hoverIndex;
 	}
 
-
-
 	# Specify props to inject into component
 	collectSource = (connect, monitor) -> {
 		connectDragSource: connect.dragSource()
@@ -77,55 +117,11 @@ load = (win) ->
 	}
 
 
-	# We wrap this with a factory when decorating
-	PlanSection = React.createClass
-		displayName: 'PlanSection'
-
-		propTypes: {
-			connectDragSource: PropTypes.func.isRequired
-			connectDropTarget: PropTypes.func.isRequired
-			index: PropTypes.number.isRequired
-			isDragging: PropTypes.bool.isRequired
-			id: PropTypes.any.isRequired
-			name: PropTypes.string.isRequired
-			reorderSection: PropTypes.func.isRequired
-			targets: ImmPropTypes.list.isRequired
-		}
-
-		render: ->
-			{name, isDragging, connectDragSource, connectDropTarget, targets, reorderTargetId} = @props
-
-			console.log "Targets:", targets.toJS()
-
-			return connectDragSource connectDropTarget (
-				R.section({
-					style:
-						opacity: 0.5 if isDragging
-				},
-					R.h4({}, name)
-					R.div({className: 'targets'},
-						(targets.map (target, index) =>
-							PlanTarget({
-								key: target.get('id')
-								id: target.get('id')
-								target
-								index
-								sectionIndex: @props.index
-								reorderTargetId
-							})
-						)
-					)
-				)
-			)
-
 	# Decorate/Wrap PlanSection with DragDropContext, DropTarget, and DragSource
-	PlanSection = React.createFactory Decorate [
+	return React.createFactory Decorate [
 		DropTarget('section', sectionDestination, connectDestination)
 		DragSource('section', sectionSource, collectSource)
 	], PlanSection
-
-
-	return PlanSection
 
 
 module.exports = {load}

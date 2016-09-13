@@ -18,6 +18,23 @@ load = (win) ->
 	HTML5Backend = win.ReactDnDHTML5Backend
 
 
+	PlanTarget = React.createClass
+		display: 'PlanTarget'
+
+		propTypes: {
+			target: ImmPropTypes.map.isRequired
+		}
+
+		render: ->
+			{target, connectDragSource, connectDropTarget} = @props
+
+			return connectDragSource connectDropTarget (
+				R.div({className: 'target'},
+					target.get('name')
+				)
+			)
+
+
 	# Drag source contract
 	targetSource = {
 		beginDrag: (props) -> {
@@ -66,8 +83,6 @@ load = (win) ->
 			monitor.getItem().index = hoverIndex;
 	}
 
-
-
 	# Specify props to inject into component
 	collectSource = (connect, monitor) -> {
 		connectDragSource: connect.dragSource()
@@ -79,31 +94,11 @@ load = (win) ->
 	}
 
 
-	PlanTarget = React.createClass
-		display: 'PlanTarget'
-
-		propTypes: {
-			target: ImmPropTypes.map.isRequired
-		}
-
-		render: ->
-			{target, connectDragSource, connectDropTarget} = @props
-
-			return connectDragSource connectDropTarget (
-				R.div({},
-					target.get('name')
-				)
-			)
-
-	# Decorate/Wrap PlanSection with DragDropContext, DropTarget, and DragSource
-	PlanTarget = React.createFactory Decorate [
+	# Decorate/Wrap PlanTarget
+	return React.createFactory Decorate [
 		DropTarget('target', targetDestination, connectDestination)
 		DragSource('target', targetSource, collectSource)
 	], PlanTarget
-
-
-
-	return PlanTarget
 
 
 module.exports = {load}
