@@ -26,63 +26,87 @@
 			display flex
 			flex-shrink 0
 
+			background white
 			border-bottom 1px solid sidebar-borders
+			height 75px
 
-			padding 21px 25px
-
-			button
+			> button, > .dropdown
+				background none
 				outline none
+				flex 1
+				border 0
+				border-radius 0
+				border-right 1px solid sidebar-borders
+				box-shadow none
+				padding 0
+				transition all .1s ease
 
-				> .fa
-					margin-right 8px
+				&.collapsed
+					flex none !important
+					border 0
+					width 0
+					padding 0
+					margin 0
+					overflow hidden
 
-			> div
+				&:last-child
+					border-right 0
 
-				&.leftMenu
-					flex 1
-
-					.saveButton
-						padding-right 30px
-						padding-left 30px
-						transition all 0.5s ease
-
-				&.rightMenu
-					text-align right
-
-					.createTemplateButton
-						border none
-						background white
-						margin-left 15px
-
-						transition all 0.25 ease
-
-						&:hover, &:focus
-							outline none
-							color #286090
-
-						> .fa
-							margin 0
-
-			@media (max-width: 1150px)
-				display block
-
-				> div
+				.fa
 					display block
-					flex none
-					width 100%
+					font-size 1.15em
+					margin 7px
+					transition all .1s ease
 
-					> button
-						width 100%
+				&:hover, button:hover
+					background #eaf1f5
+					border-bottom 1px solid sidebar-borders
+					margin-top -2px
 
-					&.rightMenu
-						margin-top 10px
-						display flex
+					.fa
+						font-size 1.25em
 
-						> .btn
-							flex 3
+			// Overrides for B.Dropdown
+			> .dropdown
+				display flex
 
-						> .printButton
-							flex 1
+				> button
+					flex 1
+					border 0 !important
+					border-radius 0
+					background none
+					box-shadow none
+
+				.caret
+					display block
+					position absolute
+					bottom 3px
+					left calc(50% - 4px)
+					color sidebar-borders
+
+			// Button customizations
+			> button
+				&.saveButton
+					flex 1.25
+					color white
+					background #5cb85c
+
+					&:hover
+						background lighten(#5cb85c, 25%)
+
+				&.discardButton
+					flex 0.75
+					background #ffba5c
+					color white
+
+					&:hover
+						background lighten(#ffba5c, 25%)
+
+				&.addSectionButton
+					//
+
+				&.printButton
+					flex 0.5
 
 		> .sections
 			position relative
@@ -90,7 +114,8 @@
 			flex 1
 			overflow-y auto
 			overflow-x hidden
-			padding 0 25px 25px 25px
+			padding 25px
+			padding-top 10px
 
 			// TODO: Make this multi-use (it's used again in targets!)
 			&.status-completed, &.status-deactivated
