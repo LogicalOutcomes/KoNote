@@ -70,11 +70,7 @@ load = (win) ->
 					)
 				)
 				(sections.map (section, index) =>
-					# Filter out targets here at top-level if hidden
-					targets = if @state.displayTargets
-						section.get('targetIds').map (id) -> currentTargetRevisionsById.get(id)
-					else
-						Imm.List()
+					targets = section.get('targetIds').map (id) -> currentTargetRevisionsById.get(id)
 
 					PlanSection({
 						key: section.get('id')
@@ -86,6 +82,7 @@ load = (win) ->
 						reorderSection
 						reorderTargetId
 						displayInactive
+						displayTargets
 					})
 				)
 			)

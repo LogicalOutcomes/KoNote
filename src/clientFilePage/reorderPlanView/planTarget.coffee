@@ -37,10 +37,11 @@ load = (win) ->
 		}
 
 		render: ->
-			{target, connectDragSource, connectDropTarget, isDragging, displayInactive} = @props
+			{target, connectDragSource, connectDropTarget,
+			isCollapsed, isDragging, displayInactive} = @props
 
 			targetIsInactive = target.get('status') isnt 'default'
-			targetIsHidden = not displayInactive and targetIsInactive
+			targetIsHidden = isCollapsed or (not displayInactive and targetIsInactive)
 
 			return connectDragSource connectDropTarget (
 				R.div({

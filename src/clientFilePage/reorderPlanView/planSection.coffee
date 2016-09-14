@@ -38,10 +38,12 @@ load = (win) ->
 			reorderTargetId: PropTypes.func.isRequired
 			# Options
 			displayInactive: PropTypes.bool.isRequired
+			displayTargets: PropTypes.bool.isRequired
 		}
 
 		render: ->
-			{name, isDragging, connectDragSource, section, displayInactive
+			{name, isDragging, connectDragSource, section, targets,
+			displayInactive, displayTargets
 			connectDropTarget, targets, reorderTargetId} = @props
 
 			sectionIndex = @props.index
@@ -69,6 +71,7 @@ load = (win) ->
 								sectionIndex
 								reorderTargetId
 								displayInactive
+								isCollapsed: not displayTargets
 							})
 						)
 					)
