@@ -35,6 +35,7 @@ load = (win, {clientFileId}) ->
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
+	InfoTab = require('./infoTab').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
@@ -920,6 +921,20 @@ load = (win, {clientFileId}) ->
 							isReadOnly
 						})
 					)
+					R.div({
+						className: [
+							'view'
+							showWhen(activeTabId is 'info')
+						].join ' '
+					},
+						InfoTab.InfoView({
+							ref: 'infoTab'
+							clientFileId
+							clientFile: @props.clientFile
+							programsById: @props.programsById
+							isReadOnly
+						})
+					)
 				)
 			)
 
@@ -1006,6 +1021,12 @@ load = (win, {clientFileId}) ->
 						icon: 'line-chart'
 						isActive: activeTabId is 'analysis'
 						onClick: @props.onTabChange.bind null, 'analysis'
+					})
+					SidebarTab({
+						name: "Client Information"
+						icon: 'info'
+						isActive: activeTabId is 'info'
+						onClick: @props.onTabChange.bind null, 'info'
 					})
 				)
 
