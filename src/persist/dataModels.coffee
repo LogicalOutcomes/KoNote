@@ -187,6 +187,7 @@ dataModelDefinitions = [
 			fields: Joi.array.items(
 				[
 					Joi.object().keys({
+						name: Joi.string()
 						inputType: ['input', 'textarea']
 						# height, width, max length? etc
 						placeholder: Joi.string().allow('')
