@@ -85,17 +85,8 @@ load = (win) ->
 		render: ->
 			progNoteHistories = @props.progNoteHistories
 			hasChanges = @_revisingProgNoteHasChanges()
-
-			historyEntries = progNoteHistories
-			.map (progNoteHistory) ->
-				timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
-
-				return Imm.fromJS {
-					type: 'progNote'
-					id: progNoteHistory.last().get('id')
-					timestamp
-					data: progNoteHistory
-				}
+			clientFileId = @props.clientFileId
+			historyEntries = @props.historyEntries
 
 			historyEntries = if @state.revisingProgNote?
 				# Only show the single progNote while editing
@@ -121,8 +112,6 @@ load = (win) ->
 			historyEntries = historyEntries.reverse()
 
 			hasEnoughData = (@props.progNoteHistories.size + @props.globalEvents.size) > 0
-
-
 			return R.div({className: "progNotesView"},
 				R.div({className: "toolbar #{showWhen hasEnoughData}"},
 					(if @state.revisingProgNote?
@@ -198,6 +187,7 @@ load = (win) ->
 										key: entry.get('id')
 
 										progNoteHistory: entry.get('data')
+										attachments: entry.get('attachmentFilename')
 										eventTypes: @props.eventTypes
 										clientFile: @props.clientFile
 
@@ -663,7 +653,10 @@ load = (win) ->
 
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
-					@setState {backdate: ''}
+					@setState {
+						backdate: '',
+						attachment: null
+					}
 					quickNoteToggle.popover('hide')
 					quickNoteToggle.data('isVisible', false)
 
@@ -770,6 +763,7 @@ load = (win) ->
 					QuickNoteView({
 						progNote
 						progNoteHistory: @props.progNoteHistory
+						attachments: @props.attachments
 						userProgram
 						clientFile: @props.clientFile
 						selectedItem: @props.selectedItem
@@ -824,6 +818,9 @@ load = (win) ->
 
 			progNote = if isEditing then @props.revisingProgNote else @props.progNote
 
+			attachmentText = @props.attachments
+			console.log attachmentText
+
 			R.div({
 				className: 'basic progNote'
 				## TODO: Restore hover feature
@@ -856,6 +853,11 @@ load = (win) ->
 							})
 						else
 							renderLineBreaks progNote.get('notes')
+						)
+					)
+					(if attachmentText?
+						R.div({},
+							attachmentText
 						)
 					)
 				)

@@ -146,6 +146,7 @@ load = (win, {clientFileId}) ->
 				clientPrograms
 
 				progNoteHistories
+				historyEntries: @state.historyEntries
 				progressEvents: @state.progressEvents
 				planTargetsById: @state.planTargetsById
 				metricsById: @state.metricsById
@@ -179,6 +180,7 @@ load = (win, {clientFileId}) ->
 			planTargetHeaders = null
 			progNoteHeaders = null
 			progNoteHistories = null
+			historyEntries = null
 			progNoteTotal = null
 			progEventHeaders = null
 			progressEvents = null
@@ -274,6 +276,39 @@ load = (win, {clientFileId}) ->
 						progNoteHistories = Imm.List(results)
 
 						checkFileSync progNoteHistories, @state.progNoteHistories
+						cb()
+
+				(cb) =>
+					Async.map progNoteHistories.toArray(), (progNoteHistory, cb) =>
+						console.log progNoteHistory
+						
+						timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
+						progNoteId = progNoteHistory.last().get('id')
+						attachmentFilename = null
+
+						console.log clientFileId
+						console.log progNoteId
+
+						ActiveSession.persist.attachments.list clientFileId, progNoteId, (err, results) =>
+							unless err
+								if results.size > 0
+									console.log results
+									attachmentFilename = results.first().get('filename')
+								
+							entry = Imm.fromJS {
+								type: 'progNote'
+								id: progNoteId
+								timestamp
+								attachmentFilename
+								data: progNoteHistory
+							}
+
+							cb null, entry
+
+					, (err, results) ->
+						if err
+							cb err
+						historyEntries = Imm.List(results)
 						cb()
 
 				(cb) =>
@@ -494,6 +529,7 @@ load = (win, {clientFileId}) ->
 
 						clientFile
 						progNoteHistories
+						historyEntries
 						progressEvents
 						globalEvents
 						metricsById
@@ -884,6 +920,7 @@ load = (win, {clientFileId}) ->
 							clientPrograms: @props.clientPrograms
 							globalEvents: @props.globalEvents
 							progNoteHistories: @props.progNoteHistories
+							historyEntries: @props.historyEntries
 							planTargetsById: @props.planTargetsById
 							progEvents: @props.progressEvents
 							eventTypes: @props.eventTypes
