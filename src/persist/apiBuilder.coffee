@@ -31,6 +31,8 @@ buildApi = (backendConfig, session, dataModelDefinitions) ->
 	result = processModels(backend, session, eventBus, dataModelDefinitions).toJS()
 
 	result.eventBus = eventBus
+	result.goOnline = backend.goOnline
+	result.goOffline = backend.goOffline
 
 	return result
 
@@ -65,8 +67,8 @@ processModel = (backend, session, eventBus, modelDef, context=Imm.List()) ->
 			Invalid name: #{JSON.stringify modelDef.name}
 		"""
 
-	# Validate collection name (eventBus is reserved)
-	invalidCollNames = ['', 'eventBus']
+	# Validate collection name (some names are reserved)
+	invalidCollNames = ['', 'eventBus', 'goOnline', 'goOffline']
 	if modelDef.collectionName in invalidCollNames or modelDef.collectionName[0] is '_'
 		throw new Error """
 			Invalid collection name: #{JSON.stringify modelDef.collectionName}
