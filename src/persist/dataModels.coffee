@@ -183,10 +183,16 @@ dataModelDefinitions = [
 		indexes: [['status']]
 		schema: Joi.object().keys({
 			name: Joi.string()
-			inputType: ['input', 'textarea']
-			# height, width, max length? etc
-			placeholder: Joi.string().allow('')
 			status: ['default', 'cancelled']
+			fields: Joi.array.items(
+				[
+					Joi.object().keys({
+						inputType: ['input', 'textarea']
+						# height, width, max length? etc
+						placeholder: Joi.string().allow('')
+					)}
+				]
+			)
 		})
 	}
 	{
