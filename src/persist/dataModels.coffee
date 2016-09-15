@@ -42,22 +42,15 @@ dataModelDefinitions = [
 					})
 				)
 			})
+			detailUnits: Joi.array().items(
+			        Joi.object().items(
+			            id: IdSchema
+			            clientDetailDefinitionId: IdSchema
+			            value: Joi.string().allow('')
+			        )
+			)
 		})
 		children: [
-			{
-				name: 'clientDetail'
-				collectionName: 'clientDetails'
-				isMutable: true
-				indexes: []
-				schema: Joi.object().keys({
-				    detailUnits: Joi.array().items(
-				        Joi.object().items(
-				            id: IdSchema
-				            value: Joi.string().allow('')
-				        )
-				    )
-				})
-			}
 			{
 				name: 'progEvent'
 				collectionName: 'progEvents'
