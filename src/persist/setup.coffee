@@ -39,6 +39,8 @@ buildDataDirectory = (dataDir, customDataModelDefinitions, cb) ->
 		(cb) ->
 			Mkdirp Path.join(dataDir, '_locks'), cb
 		(cb) ->
+			Mkdirp Path.join(dataDir, '_offlineQueue'), cb
+		(cb) ->
 			createVersionMetadataFile dataDir, cb
 	], cb
 
