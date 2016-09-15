@@ -59,6 +59,7 @@
     "nlp_compromise": "6.5.0",
     "pluralize": "^1.1.2",
     "react-immutable-proptypes": "^1.7.1",
+    "request": "^2.74.0",
     "rimraf": "^2.3.4",
     "source-map-support": "^0.4.0",
     "underscore": "^1.8.3",
