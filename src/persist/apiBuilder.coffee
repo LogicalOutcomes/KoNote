@@ -13,6 +13,8 @@ Imm = require 'immutable'
 Path = require 'path'
 
 CollectionMethods = require './collectionMethods'
+
+CloudBackend = require './backends/cloudBackend'
 FileSystemBackend = require './backends/fileSystemBackend'
 
 # Generate the persistent object API based on the specified definitions.
@@ -24,7 +26,23 @@ buildApi = (backendConfig, session, dataModelDefinitions) ->
 
 	switch backendConfig.type
 		when 'file-system'
-			backend = FileSystemBackend.create eventBus, session.globalEncryptionKey, backendConfig.dataDirectory
+			backend = FileSystemBackend.create(
+				eventBus, session.globalEncryptionKey,
+				backendConfig.dataDirectory
+			)
+		when 'cloud'
+			backend = CloudBackend.create(
+				eventBus, session.globalEncryptionKey,
+				backendConfig.serverUrl, backendConfig.localDataDirectory,
+				dataModelDefinitions
+			)
+
+			# TODO show UI for this with progress bar for sync progress
+			backend.goOnline (err) ->
+				if err
+					console.error err
+					console.error err.stack
+					return
 		else
 			throw new Error "unknown backend type: #{JSON.stringify backendConfig.type}"
 

@@ -4,6 +4,7 @@
 
 Base64url = require 'base64url'
 Crypto = require 'crypto'
+Imm = require 'immutable'
 Joi = require 'joi'
 
 # Generate a unique ID.
@@ -59,6 +60,20 @@ extractContextualIds = (obj, context) ->
 
 		throw new Error "Object is missing field #{JSON.stringify contextIdProp}"
 
+flattenModelDefs = (modelDefs, context=Imm.List()) ->
+	result = Imm.Map()
+
+	for modelDef in modelDefs
+		# Add this model def to result
+		result = result.set(modelDef.collectionName, Imm.Map({modelDef, context}))
+
+		# Recurse over this model def's children, and merge them into result
+		if modelDef.children
+			descendantModelDefs = flattenModelDefs modelDef.children, context.push(modelDef)
+			result = result.merge descendantModelDefs
+
+	return result
+
 
 # This class allows new error types to be created easily without breaking stack
 # traces, toString, etc.
@@ -104,6 +119,7 @@ module.exports = {
 	ObjectNotFoundError
 	TimestampFormat
 	extractContextualIds
+	flattenModelDefs
 	generateId
 	isValidJSON
 	stripMetadata
