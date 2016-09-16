@@ -100,20 +100,19 @@ load = (win) ->
 							"Add #{Term 'section'}"
 						)
 					)
-					R.div({className: "toolbar #{showWhen plan.get('sections').size > 0}"},
+					R.div({className: "flexButtonToolbar #{showWhen plan.get('sections').size > 0}"},
 						R.button({
 							className: [
 								'saveButton'
-								# 'hasChanges' if hasChanges
 								'collapsed' unless hasChanges
 							].join ' '
-							# disabled: not hasChanges or @props.isReadOnly
 							onClick: @_save
 						},
 							FaIcon('save')
 							' '
 							"Save Changes"
 						)
+
 						R.button({
 							className: [
 								'discardButton'
@@ -123,46 +122,6 @@ load = (win) ->
 						},
 							FaIcon('undo')
 							"Discard"
-						)
-						B.DropdownButton({
-							title: R.span({},
-								FaIcon('wpforms')
-								" "
-								"Templates"
-							)
-						},
-							B.MenuItem({
-								onClick: @_createTemplate
-							},
-								R.h5({
-									onclick: @_createTemplate
-								},
-									FaIcon('plus')
-									" "
-									"New Plan Template"
-								)
-							)
-							(unless @props.planTemplateHeaders.isEmpty()
-								[
-									B.MenuItem({divider: true})
-
-									B.MenuItem({header: true}, R.h5({}, "Apply Template"))
-
-									(@props.planTemplateHeaders.map (planTemplateHeader) =>
-										B.MenuItem({
-											key: planTemplateHeader.get('id')
-											onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
-										},
-											R.div({
-												onclick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
-											},
-												planTemplateHeader.get('name')
-
-											)
-										)
-									)
-								]
-							)
 						)
 
 						R.button({
@@ -188,6 +147,39 @@ load = (win) ->
 						},
 							FaIcon('plus')
 							"Add #{Term 'Section'}"
+						)
+
+						WithTooltip({
+							title: Term 'Plan Templates'
+							container: '.dropdown.btn-group'
+							placement: 'bottom'
+						},
+							B.DropdownButton({
+								id: 'planTemplatesDropdown'
+								title: FaIcon('wpforms')
+							},
+								B.MenuItem({onClick: @_createTemplate},
+									R.h5({},
+										"Generate #{Term 'Plan Template'}"
+									)
+								)
+								(unless @props.planTemplateHeaders.isEmpty()
+									[
+										B.MenuItem({divider: true})
+
+										B.MenuItem({header: true}, R.h5({}, "Apply #{Term 'Template'}"))
+
+										(@props.planTemplateHeaders.map (planTemplateHeader) =>
+											B.MenuItem({
+												key: planTemplateHeader.get('id')
+												onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+											},
+												planTemplateHeader.get('name')
+											)
+										)
+									]
+								)
+							)
 						)
 
 						PrintButton({
