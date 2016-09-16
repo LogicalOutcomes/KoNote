@@ -43,11 +43,11 @@ dataModelDefinitions = [
 				)
 			})
 			detailUnits: Joi.array().items(
-			        Joi.object().items(
-			            id: IdSchema
-			            clientDetailDefinitionId: IdSchema
-			            value: Joi.string().allow('')
-			        )
+				Joi.object().keys({
+					groupId: IdSchema
+					fieldId: IdSchema
+					value: Joi.string().allow('')
+				})
 			)
 		})
 		children: [
@@ -177,22 +177,21 @@ dataModelDefinitions = [
 		]
 	}
 	{
-		name: 'clientDetailDefinition'
-		collectionName: 'clientDetailDefinitions'
+		name: 'clientDetailDefinitionGroup'
+		collectionName: 'clientDetailDefinitionGroups'
 		isMutable: true
 		indexes: [['status']]
 		schema: Joi.object().keys({
-			name: Joi.string()
+			title: Joi.string()
 			status: ['default', 'cancelled']
-			fields: Joi.array.items(
-				[
-					Joi.object().keys({
-						name: Joi.string()
-						inputType: ['input', 'textarea']
-						# height, width, max length? etc
-						placeholder: Joi.string().allow('')
-					)}
-				]
+			fields: Joi.array().items(
+				Joi.object().keys({
+					id: IdSchema
+					name: Joi.string()
+					inputType: ['input', 'textarea']
+					# height, width, max length? etc
+					placeholder: Joi.string().allow('')
+				})
 			)
 		})
 	}
