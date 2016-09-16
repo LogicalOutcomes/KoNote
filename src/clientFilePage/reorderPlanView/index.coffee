@@ -44,6 +44,15 @@ load = (win) ->
 
 			sections = plan.get('sections')
 
+			numberOfTargets = sections
+			.reduce (last, section) ->
+				console.log "last", last
+				console.log "section", section.toJS()
+				last + section.get('targetIds').size
+			, 0
+
+			numberOfItems = sections.size + numberOfTargets
+			shrinkFontSize = numberOfItems > 16
 
 			return R.div({id: 'reorderPlanView'},
 				R.div({className: 'flexFiltersToolbar'},
@@ -72,7 +81,10 @@ load = (win) ->
 
 				R.div({
 					id: 'reorderContainer'
-					className: 'sections'
+					className: [
+						'sections'
+						'shrinkFontSize' if shrinkFontSize
+					].join ' '
 				},
 					(sections.map (section, index) =>
 						targets = section.get('targetIds').map (id) -> currentTargetRevisionsById.get(id)
