@@ -50,9 +50,12 @@ load = (win) ->
 				backdate: ''
 				revisingProgNote: null
 				isLoading: null
+				historyEntries: Imm.List()
 			}
 
 		componentDidMount: ->
+			@_buildHistoryEntries()
+			
 			# TODO: Restore for lazyload feature
 			# progNotesPane = $('.historyEntries')
 			# progNotesPane.on 'scroll', =>
@@ -82,12 +85,47 @@ load = (win) ->
 		hasChanges: ->
 			@_revisingProgNoteHasChanges()
 
-		render: ->
+		_buildHistoryEntries: ->
 			progNoteHistories = @props.progNoteHistories
-			hasChanges = @_revisingProgNoteHasChanges()
 			clientFileId = @props.clientFileId
-			historyEntries = @props.historyEntries
+			historyEntries = null
+			
+			Async.series [
+				(cb) =>
+					Async.map progNoteHistories.toArray(), (progNoteHistory, cb) =>
+						timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
+						progNoteId = progNoteHistory.last().get('id')
+						attachmentFilename = null
 
+						ActiveSession.persist.attachments.list clientFileId, progNoteId, (err, results) =>
+							unless err
+								if results.size > 0
+									console.log results
+									attachmentFilename = results.first().get('filename')
+								
+							entry = Imm.fromJS {
+								type: 'progNote'
+								id: progNoteId
+								timestamp
+								attachmentFilename
+								data: progNoteHistory
+							}
+
+							cb null, entry
+
+					, (err, results) ->
+						if err
+							console.log err
+						historyEntries = Imm.List(results)
+						cb()
+			], (err) =>
+				if err
+					console.log err
+				@setState {historyEntries}
+		
+		render: ->
+			historyEntries = @state.historyEntries
+			hasChanges = @_revisingProgNoteHasChanges()
 			historyEntries = if @state.revisingProgNote?
 				# Only show the single progNote while editing
 				Imm.List [
@@ -601,6 +639,8 @@ load = (win) ->
 			
 		_toggleQuickNotePopover: ->
 			quickNoteToggle = $('.addQuickNote:not(.hide)')
+			console.log "toggle"
+			console.log quickNoteToggle
 
 			if quickNoteToggle.data('isVisible')
 				quickNoteToggle.popover('hide')
@@ -636,6 +676,7 @@ load = (win) ->
 
 						quickNoteToggle.popover('hide')
 						quickNoteToggle.data('isVisible', false)
+						@_buildHistoryEntries()
 
 
 				popover.find('.backdate.date').datetimepicker({
