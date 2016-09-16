@@ -72,9 +72,7 @@ load = (win) ->
 			], (err) =>
 					if err
 						if err instanceof Persist.IOError
-							console.error err
-							console.error err.stack
-							@setState {loadErrorType: 'io-error'}
+							Bootbox.alert "Please check your network connection and try again."
 							return
 
 						CrashHandler.handle err
