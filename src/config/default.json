@@ -93,5 +93,58 @@
 				}
 			]
 		}
-	}
+	},
+
+	"clientDetailDefinitionGroups": [
+		{
+			"title": "Parent/ Guardian 1",
+			"fields": [
+				{
+					"name": "First Name",
+					"inputType": "input",
+					"placeholder": "First Name"
+				},
+				{
+					"name": "Last Name",
+					"inputType": "input",
+					"placeholder": "Last Name"
+				},
+				{
+					"name": "Phone Number",
+					"inputType": "input",
+					"placeholder": "Phone Number"
+				},
+				{
+					"name": "First Name",
+					"inputType": "input",
+					"placeholder": "First Name"
+				}
+			]
+		},
+		{
+			"title": "Parent/ Guardian 2",
+			"fields": [
+				{
+					"name": "First Name",
+					"inputType": "input",
+					"placeholder": "First Name"
+				},
+				{
+					"name": "Last Name",
+					"inputType": "input",
+					"placeholder": "Last Name"
+				},
+				{
+					"name": "Phone Number",
+					"inputType": "input",
+					"placeholder": "Phone Number"
+				},
+				{
+					"name": "First Name",
+					"inputType": "input",
+					"placeholder": "First Name"
+				}
+			]
+		}
+	]
 }
