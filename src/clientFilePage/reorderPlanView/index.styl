@@ -1,6 +1,36 @@
 #reorderPlanView
-	// Styles go here
-	padding-top 25px
+
+	.flexFiltersToolbar
+		display flex
+		align-content flex-start
+		background rgb(234, 241, 245)
+		color rgb(76, 93, 103)
+
+		aside, section
+			padding 8px 10px
+
+		aside
+			flex 1
+			max-width 100px
+			display flex
+			align-items center
+			justify-content center
+			font-weight 500
+
+		section
+			flex 2
+			max-width 135px
+			justify-content center
+
+			label
+				font-weight 300
+				margin 0
+
+			input[type=checkbox]
+				margin 0px 5px
+
+	#reorderContainer
+		padding-top 25px
 
 	@require planSection
 	@require planTarget

@@ -45,45 +45,51 @@ load = (win) ->
 			sections = plan.get('sections')
 
 
-			return R.div({
-				id: 'reorderPlanView'
-				className: 'sections' # Match padding of regular plan view
-			},
-				R.div({className: 'checkbox'},
-					R.label({},
-						R.input({
-							onChange: @_toggleInactive
-							checked: displayInactive
-							type: 'checkbox'
-						})
-						"Show inactive"
+			return R.div({id: 'reorderPlanView'},
+				R.div({className: 'flexFiltersToolbar'},
+					R.aside({}, "Filters:")
+					R.section({},
+						R.label({},
+							R.input({
+								onChange: @_toggleTargets
+								checked: displayTargets
+								type: 'checkbox'
+							})
+							"All #{Term 'Targets'}"
+						)
+					)
+					R.section({},
+						R.label({},
+							R.input({
+								onChange: @_toggleInactive
+								checked: displayInactive
+								type: 'checkbox'
+							})
+							"Inactive Items"
+						)
 					)
 				)
-				R.div({className: 'checkbox'},
-					R.label({},
-						R.input({
-							onChange: @_toggleTargets
-							checked: displayTargets
-							type: 'checkbox'
-						})
-						"Show #{Term 'targets'}"
-					)
-				)
-				(sections.map (section, index) =>
-					targets = section.get('targetIds').map (id) -> currentTargetRevisionsById.get(id)
 
-					PlanSection({
-						key: section.get('id')
-						index
-						id: section.get('id')
-						name: section.get('name')
-						section
-						targets
-						reorderSection
-						reorderTargetId
-						displayInactive
-						displayTargets
-					})
+				R.div({
+					id: 'reorderContainer'
+					className: 'sections'
+				},
+					(sections.map (section, index) =>
+						targets = section.get('targetIds').map (id) -> currentTargetRevisionsById.get(id)
+
+						PlanSection({
+							key: section.get('id')
+							index
+							id: section.get('id')
+							name: section.get('name')
+							section
+							targets
+							reorderSection
+							reorderTargetId
+							displayInactive
+							displayTargets
+						})
+					)
 				)
 			)
 
