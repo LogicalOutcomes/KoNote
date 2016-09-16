@@ -2,6 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+Imm = require 'immutable'
 Fs = require 'fs'
 Async = require 'async'
 Rimraf = require 'rimraf'
@@ -170,6 +171,7 @@ load = (win) ->
 				id: 'newInstallationPage'
 				className: 'animated fadeIn'
 			},
+
 				R.section({},
 					R.div({
 						id: 'brandContainer'
@@ -629,6 +631,40 @@ load = (win) ->
 							return
 
 						cb()
+				(cb) =>
+					# Creating additional fields from config
+					# TESTING CONFIG IMPORT
+					Config.clientDetailDefinitionGroups.map (group) =>
+						console.log "from config ->> ", group
+
+						console.log "groupTitle", group.title
+						groupFields = []
+						group.fields.map (field) =>
+							fieldObj = {
+								id: Persist.generateId()
+								name: field.name
+								inputType: field.inputType
+								placeholder: field.placeholder
+							}
+							console.log "fieldObj that was built", fieldObj
+							groupFields.push fieldObj
+							console.log "groupFields array _>>", groupFields
+
+						clientDetailDefinitionGroupObj = Imm.fromJS {
+							title: group.title
+							status: 'default'
+							fields: groupFields
+						}
+						console.log "finished obj before persist - >>>", clientDetailDefinitionGroupObj
+						Persist.clientDetailDefinitionGroups.create clientDetailDefinitionGroupObj, (err, result) =>
+							if err
+								cb err
+								return
+							newGroup = result
+							console.log "newly created group ->>>", newGroup.toJS()
+					cb()
+
+
 				(cb) =>
 					atomicOp.commit cb
 			], (err) =>
