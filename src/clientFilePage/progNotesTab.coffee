@@ -58,7 +58,7 @@ load = (win) ->
 			# 		if progNotesPane.scrollTop() + (progNotesPane.innerHeight() * 2) >= progNotesPane[0].scrollHeight
 			# 			@props.renewAllData()
 
-			quickNoteToggle = $('.addQuickNote')
+			quickNoteToggle = $('.addQuickNoteButton')
 			quickNoteToggle.data 'isVisible', false
 			quickNoteToggle.popover {
 				placement: 'bottom'
@@ -119,46 +119,54 @@ load = (win) ->
 
 
 			return R.div({className: "progNotesView"},
-				R.div({className: "toolbar #{showWhen hasEnoughData}"},
-					(if @state.revisingProgNote?
-						R.div({},
-							R.button({
-								className: [
-									'btn'
-									'btn-success' if hasChanges
-									'saveRevisingProgNote'
-								].join ' '
-								onClick: @_saveProgNoteRevision
-								disabled: not hasChanges
-							},
-								FaIcon 'save'
-								"Save #{Term 'Progress Note'}"
-							)
-							R.button({
-								className: 'btn btn-default cancelRevisingProgNote'
-								onClick: @_cancelRevisingProgNote
-							},
-								"Cancel"
-							)
+
+				R.div({className: "toolbarContainer #{showWhen hasEnoughData}"},
+					R.div({className: "flexButtonToolbar"},
+						R.button({
+							className: [
+								'saveButton'
+								'collapsed' unless @state.revisingProgNote
+							].join ' '
+							onClick: @_saveProgNoteRevision
+							disabled: not hasChanges
+						},
+							FaIcon('save')
+							"Save #{Term 'Progress Note'}"
 						)
-					else
-						R.div({},
-							R.button({
-								className: 'newProgNote btn btn-primary'
-								onClick: @_openNewProgNote
-								disabled: @state.isLoading or @props.isReadOnly
-							},
-								FaIcon 'file'
-								"New #{Term 'progress note'}"
-							)
-							R.button({
-								className: "addQuickNote btn btn-default #{showWhen hasEnoughData}"
-								onClick: @_openNewQuickNote
-								disabled: @props.isReadOnly
-							},
-								FaIcon 'plus'
-								"Add #{Term 'quick note'}"
-							)
+
+						R.button({
+							className: [
+								'discardButton'
+								'collapsed' unless @state.revisingProgNote
+							].join ' '
+							onClick: @_cancelRevisingProgNote
+						},
+							FaIcon('undo')
+							"Discard"
+						)
+
+						R.button({
+							className: [
+								'newProgNoteButton'
+								'collapsed' if @state.revisingProgNote
+							].join ' '
+							onClick: @_openNewProgNote
+							disabled: @state.isLoading or @props.isReadOnly
+						},
+							FaIcon('file')
+							"New #{Term 'Progress Note'}"
+						)
+
+						R.button({
+							className: [
+								'addQuickNoteButton'
+								'collapsed' if @state.revisingProgNote
+							].join ' '
+							onClick: @_openNewQuickNote
+							disabled: @props.isReadOnly
+						},
+							FaIcon('plus')
+							"Add #{Term 'Quick Note'}"
 						)
 					)
 				)
@@ -564,7 +572,7 @@ load = (win) ->
 					return
 
 		_toggleQuickNotePopover: ->
-			quickNoteToggle = $('.addQuickNote:not(.hide)')
+			quickNoteToggle = $('.addQuickNoteButton:not(.hide)')
 
 			if quickNoteToggle.data('isVisible')
 				quickNoteToggle.popover('hide')

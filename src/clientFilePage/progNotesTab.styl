@@ -3,24 +3,12 @@
 	display flex
 	flex-direction column
 
-	> .toolbar
-		border-bottom 2px solid sidebar-borders
+	.toolbarContainer
+		border-bottom 1px solid sidebar-borders
 
-		.btn
-			margin 20px
-			margin-right 0
-			outline none
-
-			&.btn-link
-				padding-left 0
-				padding-right 0
-
-			> .fa
-				padding-right 8px
-
-			&.saveRevisingProgNote
-				transition all .25s ease
-				padding 6px 30px
+		.flexButtonToolbar
+			max-width 50%
+			border-bottom 0
 
 		.popover
 			z-index 1001
