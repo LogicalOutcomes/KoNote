@@ -226,7 +226,11 @@ load = (win) ->
 
 				, (err, results) =>
 					if err
-						console.error err
+						if err instanceof Persist.IOError
+							Bootbox.alert "Please check your network connection and try again."
+							return
+
+						CrashHandler.handle err
 						return
 
 					progEvents = Imm.List(results).flatten()
@@ -419,7 +423,11 @@ load = (win) ->
 
 			, (err, results) =>
 				if err
-					console.error err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+
+					CrashHandler.handle err
 					return
 
 

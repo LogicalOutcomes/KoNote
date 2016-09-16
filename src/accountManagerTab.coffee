@@ -84,6 +84,10 @@ load = (win) ->
 
 			], (err) =>
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+
 					CrashHandler.handle err
 					return
 
