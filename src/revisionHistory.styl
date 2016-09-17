@@ -1,10 +1,13 @@
 .revisionHistory
 	overflow auto
+	display flex
+	flex-direction column
 
 	> .heading
 		padding 15px
 		padding-left 19px
 		height 70px
+		min-height 70px
 
 		border-bottom 1px solid hsl(202, 34%, 85%)
 
@@ -24,6 +27,8 @@
 		text-align center
 
 	> .revisions
+		flex 1
+		overflow auto
 
 		> section.revision
 			position relative

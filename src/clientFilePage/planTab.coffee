@@ -247,7 +247,7 @@ load = (win) ->
 							"a #{Term 'target'} on the left."
 						)
 					else
-						R.div({className: 'targetDetailContainer'},
+						R.div({className: 'revisionHistoryContainer'},
 							RevisionHistory({
 								revisions: selectedTarget.get('revisions')
 								type: 'planTarget'

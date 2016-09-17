@@ -118,60 +118,57 @@ load = (win) ->
 			hasEnoughData = (@props.progNoteHistories.size + @props.globalEvents.size) > 0
 
 
-			return R.div({className: "progNotesView"},
+			return R.div({className: 'progNotesView'},
+				R.div({className: "flexButtonToolbar #{showWhen hasEnoughData}"},
+					R.button({
+						className: [
+							'saveButton'
+							'collapsed' unless @state.revisingProgNote
+						].join ' '
+						onClick: @_saveProgNoteRevision
+						disabled: not hasChanges
+					},
+						FaIcon('save')
+						"Save #{Term 'Progress Note'}"
+					)
 
-				R.div({className: "toolbarContainer #{showWhen hasEnoughData}"},
-					R.div({className: "flexButtonToolbar"},
-						R.button({
-							className: [
-								'saveButton'
-								'collapsed' unless @state.revisingProgNote
-							].join ' '
-							onClick: @_saveProgNoteRevision
-							disabled: not hasChanges
-						},
-							FaIcon('save')
-							"Save #{Term 'Progress Note'}"
-						)
+					R.button({
+						className: [
+							'discardButton'
+							'collapsed' unless @state.revisingProgNote
+						].join ' '
+						onClick: @_cancelRevisingProgNote
+					},
+						FaIcon('undo')
+						"Discard"
+					)
 
-						R.button({
-							className: [
-								'discardButton'
-								'collapsed' unless @state.revisingProgNote
-							].join ' '
-							onClick: @_cancelRevisingProgNote
-						},
-							FaIcon('undo')
-							"Discard"
-						)
+					R.button({
+						className: [
+							'newProgNoteButton'
+							'collapsed' if @state.revisingProgNote
+						].join ' '
+						onClick: @_openNewProgNote
+						disabled: @state.isLoading or @props.isReadOnly
+					},
+						FaIcon('file')
+						"New #{Term 'Progress Note'}"
+					)
 
-						R.button({
-							className: [
-								'newProgNoteButton'
-								'collapsed' if @state.revisingProgNote
-							].join ' '
-							onClick: @_openNewProgNote
-							disabled: @state.isLoading or @props.isReadOnly
-						},
-							FaIcon('file')
-							"New #{Term 'Progress Note'}"
-						)
-
-						R.button({
-							className: [
-								'addQuickNoteButton'
-								'collapsed' if @state.revisingProgNote
-							].join ' '
-							onClick: @_openNewQuickNote
-							disabled: @props.isReadOnly
-						},
-							FaIcon('plus')
-							"Add #{Term 'Quick Note'}"
-						)
+					R.button({
+						className: [
+							'addQuickNoteButton'
+							'collapsed' if @state.revisingProgNote
+						].join ' '
+						onClick: @_openNewQuickNote
+						disabled: @props.isReadOnly
+					},
+						FaIcon('plus')
+						"Add #{Term 'Quick Note'}"
 					)
 				)
 				R.div({className: 'panes'},
-					R.div({className: 'historyEntries'},
+					R.div({className: 'progNotesList'},
 						R.div({className: "empty #{showWhen not hasEnoughData}"},
 							R.div({className: 'message'},
 								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
@@ -237,7 +234,6 @@ load = (win) ->
 									throw new Error "Unknown historyEntry type #{entry.get('type')}"
 						).toJS()...
 					)
-
 					ProgNoteDetailView({
 						item: @state.selectedItem
 						highlightedProgNoteId: @state.highlightedProgNoteId
@@ -993,7 +989,7 @@ load = (win) ->
 
 															MetricWidget({
 																isEditable: isEditing
-																tooltipViewport: '.historyEntries'
+																tooltipViewport: '.progNotesList'
 																onChange: @props.updatePlanTargetMetric.bind(
 																	null,
 																	unitId, sectionId, targetId, metricId

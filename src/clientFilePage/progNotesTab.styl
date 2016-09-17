@@ -1,14 +1,16 @@
 .progNotesView
 	flex 1
+	overflow auto
 	display flex
 	flex-direction column
 
-	.toolbarContainer
-		border-bottom 1px solid sidebar-borders
+	.flexButtonToolbar
+		button
+			max-width 25%
 
-		.flexButtonToolbar
-			max-width 50%
-			border-bottom 0
+		@media screen and (max-width: 800px)
+			button
+				max-width none
 
 		.popover
 			z-index 1001
@@ -27,15 +29,15 @@
 					> .btn
 						margin-left 5px
 
-	> .panes
+	.panes
 		display flex
 		flex 1
 
-		> .historyEntries
+		> .progNotesList
 			flex 1
 			overflow auto
-
 			padding 10px 20px
+			padding-top 25px
 
 			.entryHeader
 				display flex
@@ -317,6 +319,6 @@
 											margin 5px
 
 		> .progNoteDetailView
+			overflow auto
 			flex 1
-
 			border-left 2px solid sidebar-borders
