@@ -466,6 +466,68 @@ changeGlobalEventProperty = (dataDir, globalEncryptionKey, cb) ->
 			return
 
 
+fixProgNoteRevisionFields = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progNotes'), (progNote, cb) ->
+			progNoteDirPath = Path.join(clientFilePath, 'progNotes', progNote)
+
+			forEachFileIn progNoteDirPath, (revision, cb) ->
+				progNoteRevPath = Path.join(progNoteDirPath, revision)
+				progNoteObject = null
+
+				Async.series [
+					(cb) =>
+						Fs.readFile progNoteRevPath, (err, result) ->
+							if err
+								cb err
+								return
+
+							progNoteObject = JSON.parse globalEncryptionKey.decrypt result
+							cb()
+
+					(cb) =>
+
+						##### MIGRATION FIXES
+
+						# Ensure every revision has 'summary' property
+						if progNoteObject.type is 'full' and not progNoteObject.summary
+							progNoteObject.summary = ''
+							console.info "Added missing 'summary' field to:", progNoteRevPath
+
+						# But remove 'summary' from all quickNotes
+						else if progNoteObject.type is 'basic'
+							delete progNoteObject.summary
+							console.info "Removed 'summary' field from quickNote:", progNoteRevPath
+
+						# Ensure all progNotes have a 'beginTimestamp' property
+						if not progNoteObject.beginTimestamp
+							progNoteObject.beginTimestamp = ''
+							console.info "Added missing 'beginTimestamp' field to:", progNoteRevPath
+
+						# Ensure all progNotes have an 'authorProgramId' property
+						if not progNoteObject.authorProgramId
+							progNoteObject.authorProgramId = ''
+							console.info "Added missing 'authorProgramId' field to:", progNoteRevPath
+
+
+						encryptedObj = globalEncryptionKey.encrypt JSON.stringify progNoteObject
+
+						Fs.writeFile progNoteRevPath, encryptedObj, cb
+
+				], cb
+
+			, cb
+		, cb
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+
 # ////////////////////// Migration Series //////////////////////
 
 
@@ -490,6 +552,14 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "3. Change globalEvent 'authorProgramId' property to 'programId' (#730)"
 				changeGlobalEventProperty dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed """
+					4. Fix progNote properties: 'summary', 'beginTimestamp', 'authorProgramId'
+					(See console.info's in this group see what progNote objects were fixed)
+				"""
+				fixProgNoteRevisionFields dataDir, globalEncryptionKey, cb
 
 		]
 
