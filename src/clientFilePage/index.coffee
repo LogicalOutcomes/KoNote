@@ -195,6 +195,9 @@ load = (win, {clientFileId}) ->
 			globalEvents = null
 			alertHeaders = null
 			alerts = null
+			clientDetailDefinitionGroupHeaders = null
+			groupsArray = null
+			detailGroupHeaders = null
 
 			checkFileSync = (newData, oldData) =>
 				unless fileIsUnsync
@@ -438,6 +441,62 @@ load = (win, {clientFileId}) ->
 						planTemplateHeaders = result
 						.filter (template) -> template.get('status') is 'default'
 						cb()
+				(cb) =>
+					ActiveSession.persist.clientDetailDefinitionGroups.list (err, result) =>
+						if err
+							cb err
+							return
+						detailGroupHeaders = result
+						cb()
+				(cb) =>
+					# if no groups have been created yet
+					if detailGroupHeaders.size is 0
+						# Creating array of additional field objects from config
+						groupsArray = []
+						Config.clientDetailDefinitionGroups.map (group) =>
+							groupFields = []
+							group.fields.map (field) =>
+								fieldObj = {
+									id: Persist.generateId()
+									name: field.name
+									inputType: field.inputType
+									placeholder: field.placeholder
+								}
+								groupFields.push fieldObj
+
+							clientDetailDefinitionGroupObj = Imm.fromJS {
+								title: group.title
+								status: 'default'
+								fields: groupFields
+							}
+							groupsArray.push(clientDetailDefinitionGroupObj)
+						console.log "array of groups before creation", groupsArray
+					cb()
+
+
+				(cb) =>
+					# only if no groups created yet, create groups
+					if detailGroupHeaders.size is 0
+						console.log "creating groups with persist"
+						groupsArray.map (obj) =>
+							ActiveSession.persist.clientDetailDefinitionGroups.create obj, (err, result) =>
+								if err
+									cb err
+									return
+								newGroup = result
+								console.log "newly created group ->>>", newGroup.toJS()
+					cb()
+
+				(cb) =>
+					# if no groups existed previously, they should now and can be listed
+					ActiveSession.persist.clientDetailDefinitionGroups.list (err, result) =>
+						if err
+							cb err
+							return
+						detailGroupHeaders = result
+						# why is this still empty?
+						console.log "groupHeaders - >>>> ", detailGroupHeaders
+					cb()
 
 			], (err) =>
 				if err
