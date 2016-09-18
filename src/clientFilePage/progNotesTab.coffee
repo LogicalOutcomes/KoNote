@@ -100,8 +100,12 @@ load = (win) ->
 						ActiveSession.persist.attachments.list clientFileId, progNoteId, (err, results) =>
 							unless err
 								if results.size > 0
-									console.log results
-									attachmentFilename = results.first().get('filename')
+									attachmentFilename = {
+										clientFileId
+										progNoteId
+										attachmentId: results.first().get('id')
+										filename: results.first().get('filename')
+									}
 								
 							entry = Imm.fromJS {
 								type: 'progNote'
@@ -639,8 +643,6 @@ load = (win) ->
 			
 		_toggleQuickNotePopover: ->
 			quickNoteToggle = $('.addQuickNote:not(.hide)')
-			console.log "toggle"
-			console.log quickNoteToggle
 
 			if quickNoteToggle.data('isVisible')
 				quickNoteToggle.popover('hide')
@@ -858,9 +860,10 @@ load = (win) ->
 			isEditing = @props.isEditing
 
 			progNote = if isEditing then @props.revisingProgNote else @props.progNote
-
-			attachmentText = @props.attachments
-			console.log attachmentText
+			
+			attachmentText = ''
+			if @props.attachments?
+				attachmentText = @props.attachments.get('filename')
 
 			R.div({
 				className: 'basic progNote'
@@ -897,12 +900,35 @@ load = (win) ->
 						)
 					)
 					(if attachmentText?
-						R.div({},
+						R.button({
+							onClick: @_openAttachment.bind null, @props.attachments
+						},
 							attachmentText
 						)
 					)
 				)
 			)
+		
+		_openAttachment: (attachment) ->
+			if attachment?
+				clientFileId = attachment.get('clientFileId')
+				progNoteId = attachment.get('progNoteId')
+				attachmentId = attachment.get('attachmentId')
+
+				global.ActiveSession.persist.attachments.readRevisions clientFileId, progNoteId, attachmentId, (err, object) ->
+					if err
+						console.log err
+						return
+					encodedData = object.first().get('encodedData')
+					filename = object.first().get('filename')
+					if filename?
+						filepath = Path.join Config.dataDirectory, '_tmp', filename
+						file = new Buffer(encodedData, 'base64')
+						# write it somewhere temporary
+						# TODO prompt user to save file
+						Fs.writeFileSync filepath, file
+						# open it
+						nw.Shell.openItem filepath
 
 		_selectQuickNote: ->
 			@props.setSelectedItem Imm.fromJS {
