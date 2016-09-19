@@ -41,7 +41,7 @@ load = (win) ->
 
 			}
 
-			@props.clientDetailGroupHeaders.map (clientDetailGroupHeader) =>
+			fieldsById = @props.clientDetailGroupHeaders.map (clientDetailGroupHeader) =>
 				clientDetailGroupId = clientDetailGroupHeader.get('id')
 				clientDetailGroup = @props.clientDetailGroupsById.get(clientDetailGroupId)
 				clientDetailGroupFields = clientDetailGroup.get('fields')
@@ -50,11 +50,11 @@ load = (win) ->
 					fieldId = field.get('id')
 
 					if detailUnits.size is 0
-						obj.fieldId = 'testaroni'
+						obj[fieldId] = 'testaroni'
 					else
 						detailUnits.map (unit) =>
 							if unit.get('fieldId') is fieldId
-								obj.fieldId = unit.get('value')
+								obj[fieldId] = unit.get('value')
 
 			console.log "obj", obj
 
