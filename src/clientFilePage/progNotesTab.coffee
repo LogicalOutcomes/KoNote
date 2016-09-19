@@ -631,15 +631,6 @@ load = (win) ->
 				$('#attachmentArea').append filename + " (" + filesize + ")"
 				#@_decodeFile encodedAttachment
 			return
-
-		# TODO: nuke this (for testing only)
-		_decodeFile: (base64str) ->
-			filepath = Path.join Config.dataDirectory, '_tmp', 'myfile.png'
-			attachment = new Buffer(base64str, 'base64')
-			# write it somewhere temporary
-			Fs.writeFileSync filepath, attachment
-			# open it
-			nw.Shell.openItem filepath
 			
 		_toggleQuickNotePopover: ->
 			quickNoteToggle = $('.addQuickNote:not(.hide)')
