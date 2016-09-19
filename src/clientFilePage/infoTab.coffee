@@ -29,6 +29,12 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
+
+			# newState = {}
+			# for i of arr
+			#   newState[i] = number
+			# @setState newState
+
 			return {
 				firstName: @props.clientFile.getIn(['clientName', 'first'])
 				middleName: @props.clientFile.getIn(['clientName', 'middle'])
@@ -37,48 +43,12 @@ load = (win) ->
 				status: @props.clientFile.get('status')
 			}
 
-		# componentWillReceiveProps: (newProps) ->
-				# 	cb()
-				# (cb) =>
-				# 	# Creating additional fields from config
-				# 	Config.clientDetailDefinitionGroups.map (group) =>
-				# 		console.log "from config ->> ", group
-
-				# 		console.log "groupTitle", group.title
-				# 		groupFields = []
-				# 		group.fields.map (field) =>
-				# 			fieldObj = {
-				# 				id: Persist.generateId()
-				# 				name: field.name
-				# 				inputType: field.inputType
-				# 				placeholder: field.placeholder
-				# 			}
-				# 			console.log "fieldObj that was built", fieldObj
-				# 			groupFields.push fieldObj
-				# 			console.log "groupFields array _>>", groupFields
-
-				# 		clientDetailDefinitionGroupObj = Imm.fromJS {
-				# 			title: group.title
-				# 			status: 'default'
-				# 			fields: groupFields
-				# 		}
-				# 		console.log "finished obj before persist - >>>", clientDetailDefinitionGroupObj
-				# 	cb()
-
-				# (cb) =>
-
-				# 	objs.map (obj) =>
-				# 		Persist.clientDetailDefinitionGroups.create clientDetailDefinitionGroupObj, (err, result) =>
-				# 			if err
-				# 				cb err
-				# 				return
-				# 			newGroup = result
-				# 			console.log "newly created group ->>>", newGroup.toJS()
-				# 	cb()
-
 		render: ->
 			return R.div({className: "infoView"},
+
+
 				R.div({className: 'basicInfo'},
+					R.h4({}, "BASIC INFO"),
 					R.div({className: 'form-group'},
 						R.label({}, "First name"),
 						R.input({
@@ -90,6 +60,7 @@ load = (win) ->
 							maxLength: 35
 						})
 					)
+
 					R.div({className: 'form-group'},
 						R.label({}, "Middle name"),
 						R.input({
@@ -149,8 +120,56 @@ load = (win) ->
 						)
 					)
 				)
+
+				console.log "clientDetailGroupHeaders!!!!", @props.clientDetailGroupHeaders.toJS()
+				console.log "clientDetailGroupsById", @props.clientDetailGroupsById.toJS()
+
+				# looping through additional field groups and creating a group div for each
+
+				(@props.clientDetailGroupHeaders.map (clientDetailGroupHeader) =>
+					clientDetailGroupId = clientDetailGroupHeader.get('id')
+					clientDetailGroup = @props.clientDetailGroupsById.get(clientDetailGroupId)
+					console.log "clientDetailGroup", clientDetailGroup.toJS()
+
+					clientDetailGroupFields = clientDetailGroup.get('fields')
+					console.log "fields", clientDetailGroupFields.toJS()
+
+					R.div({className: 'additionalGroup'},
+						R.h4({}, "#{clientDetailGroup.get('title')}"),
+
+						# looping through each field in the group and adding the field
+						clientDetailGroupFields.map (field) =>
+							console.log "field", field.toJS()
+							R.div({className: 'form-group'},
+								R.label({}, "#{field.get('name')}"),
+
+								if field.get('inputType') is 'input'
+									R.input({
+										className: 'form-control'
+										placeholder: field.get('placeholder')
+
+										# value: @state.???
+										maxLength: 35
+									})
+								if field.get('inputType') is 'textarea'
+									R.textarea({
+										className: 'form-control'
+										placeholder: field.get('placeholder')
+
+										# value: @state.???
+										maxLength: 35
+									})
+
+							)
+
+
+
+
+					)
+				)
 			)
 
+		# _updateAdditionalField: (event) ->
 
 
 		_updateFirstName: (event) ->
