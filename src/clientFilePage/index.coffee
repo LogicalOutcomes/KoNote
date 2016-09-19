@@ -79,6 +79,7 @@ load = (win, {clientFileId}) ->
 				planTargetsById: Imm.Map()
 				programsById: Imm.Map()
 				metricsById: Imm.Map()
+				clientDetailGroupsById: Imm.Map()
 				planTemplateHeaders: Imm.List()
 				clientDetailGroupHeaders: Imm.List()
 				loadErrorType: null
@@ -147,6 +148,9 @@ load = (win, {clientFileId}) ->
 				clientName
 				clientPrograms
 
+				clientDetailGroupHeaders: @state.clientDetailGroupHeaders
+				clientDetailGroupsById: @state.clientDetailGroupsById
+
 				progNoteHistories
 				progressEvents: @state.progressEvents
 				planTargetsById: @state.planTargetsById
@@ -158,6 +162,8 @@ load = (win, {clientFileId}) ->
 				eventTypes: @state.eventTypes
 				globalEvents
 				alerts: @state.alerts
+
+
 
 				headerIndex: @state.headerIndex
 				progNoteTotal: @state.progNoteTotal
@@ -186,6 +192,7 @@ load = (win, {clientFileId}) ->
 			progressEvents = null
 			metricHeaders = null
 			metricsById = null
+			clientDetailGroupsById = null
 			clientFileProgramLinkHeaders = null
 			programHeaders = null
 			programs = null
@@ -492,6 +499,39 @@ load = (win, {clientFileId}) ->
 						console.log "groupHeaders", clientDetailGroupHeaders
 						cb()
 
+				(cb) =>
+					# do i need this and clientDetailGroupsById? i think one or the other
+					Async.map clientDetailGroupHeaders.toArray(), (clientDetailGroupHeader, cb) =>
+						clientDetailGroupId = clientDetailGroupHeader.get('id')
+
+						ActiveSession.persist.clientDetailDefinitionGroups.readLatestRevisions clientDetailGroupId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						clientDetailGroups = Imm.List(results).map (clientDetailGroup) -> stripMetadata clientDetailGroup.get(0)
+						cb()
+
+				(cb) =>
+					Async.map clientDetailGroupHeaders.toArray(), (clientDetailGroupHeader, cb) =>
+						clientDetailGroupId = clientDetailGroupHeader.get('id')
+
+						ActiveSession.persist.clientDetailDefinitionGroups.readLatestRevisions clientDetailGroupId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						clientDetailGroupsById = Imm.List(results)
+						.map (clientDetailGroup) =>
+							clientDetailGroup = stripMetadata clientDetailGroup.first()
+							return [clientDetailGroup.get('id'), clientDetailGroup]
+						.fromEntrySeq().toMap()
+
+						checkFileSync clientDetailGroupsById, @state.clientDetailGroupsById
+						cb()
+
 
 			], (err) =>
 				if err
@@ -553,6 +593,7 @@ load = (win, {clientFileId}) ->
 						globalEvents
 						metricsById
 						planTargetsById
+						clientDetailGroupsById
 						planTemplateHeaders
 						programs
 						programsById
@@ -986,7 +1027,9 @@ load = (win, {clientFileId}) ->
 							ref: 'infoTab'
 							clientFileId
 							clientFile: @props.clientFile
+							clientDetailGroupHeaders: @props.clientDetailGroupHeaders
 							programsById: @props.programsById
+							clientDetailGroupsById: @props.clientDetailGroupsById
 							isReadOnly
 						})
 					)
