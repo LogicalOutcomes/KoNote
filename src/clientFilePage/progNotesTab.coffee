@@ -861,9 +861,8 @@ load = (win) ->
 
 			progNote = if isEditing then @props.revisingProgNote else @props.progNote
 			
-			attachmentText = ''
 			if @props.attachments?
-				attachmentText = @props.attachments.get('filename')
+				attachmentText = " " + @props.attachments.get('filename')
 
 			R.div({
 				className: 'basic progNote'
@@ -901,8 +900,10 @@ load = (win) ->
 					)
 					(if attachmentText?
 						R.button({
+							className: 'btn btn-default'
 							onClick: @_openAttachment.bind null, @props.attachments
 						},
+							FaIcon 'file-o'
 							attachmentText
 						)
 					)
@@ -922,10 +923,11 @@ load = (win) ->
 					encodedData = object.first().get('encodedData')
 					filename = object.first().get('filename')
 					if filename?
-						filepath = Path.join Config.dataDirectory, '_tmp', filename
+						# absolute path required for windows
+						filepath = Path.join process.cwd(), Config.dataDirectory, '_tmp', filename
 						file = new Buffer(encodedData, 'base64')
 						# write it somewhere temporary
-						# TODO prompt user to save file
+						# TODO prompt user to save file?
 						Fs.writeFileSync filepath, file
 						# open it
 						nw.Shell.openItem filepath
