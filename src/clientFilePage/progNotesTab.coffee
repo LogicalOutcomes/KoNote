@@ -903,18 +903,7 @@ load = (win) ->
 							className: 'attachment'
 							onClick: @_openAttachment.bind null, @props.attachments
 						},
-							(ext = Path.extname attachmentText
-							if (['.doc', '.docx'].indexOf(ext) > -1)
-								FaIcon 'file-word-o'
-							else if (['.txt', '.rtf'].indexOf(ext) > -1)
-								FaIcon 'file-text-o'
-							else if (['.pdf'].indexOf(ext) > -1)
-								FaIcon 'file-pdf-o'
-							else if (['.png', '.jpg'].indexOf(ext) > -1)
-								FaIcon 'image'
-							else
-								FaIcon 'file-o'
-							)
+							FaIcon(Path.extname attachmentText)
 							attachmentText
 						)
 					)
