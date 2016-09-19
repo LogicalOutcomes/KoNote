@@ -115,9 +115,9 @@
 					"placeholder": "Phone Number"
 				},
 				{
-					"name": "First Name",
-					"inputType": "input",
-					"placeholder": "First Name"
+					"name": "Address",
+					"inputType": "textarea",
+					"placeholder": "Address"
 				}
 			]
 		},
@@ -140,9 +140,9 @@
 					"placeholder": "Phone Number"
 				},
 				{
-					"name": "First Name",
-					"inputType": "input",
-					"placeholder": "First Name"
+					"name": "Address",
+					"inputType": "textarea",
+					"placeholder": "Address"
 				}
 			]
 		}

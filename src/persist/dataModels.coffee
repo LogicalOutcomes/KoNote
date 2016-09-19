@@ -44,7 +44,7 @@ dataModelDefinitions = [
 			})
 			detailUnits: Joi.array().items(
 				Joi.object().keys({
-					groupId: IdSchema
+					# groupId: IdSchema
 					fieldId: IdSchema
 					value: Joi.string().allow('')
 				})

@@ -29,13 +29,10 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
+			detailUnits = @props.clientFile.get('detailUnits')
+			console.log "detailUnits", detailUnits.toJS()
 
-			# newState = {}
-			# for i of arr
-			#   newState[i] = number
-			# @setState newState
-
-			return {
+			obj = {
 				firstName: @props.clientFile.getIn(['clientName', 'first'])
 				middleName: @props.clientFile.getIn(['clientName', 'middle'])
 				lastName: @props.clientFile.getIn(['clientName', 'last'])
@@ -43,8 +40,43 @@ load = (win) ->
 				status: @props.clientFile.get('status')
 			}
 
+			@props.clientDetailGroupHeaders.map (clientDetailGroupHeader) =>
+				clientDetailGroupId = clientDetailGroupHeader.get('id')
+				clientDetailGroup = @props.clientDetailGroupsById.get(clientDetailGroupId)
+				clientDetailGroupFields = clientDetailGroup.get('fields')
+
+				clientDetailGroupFields.map (field) =>
+					fieldId = field.get('id')
+
+					# if detailUnits.contains(fieldId is fieldId)
+					# 	obj.fieldId = detailUnit.get('value')
+					# else
+					obj[fieldId] = 'test'
+
+
+				console.log "obj", obj
+
+
+
+				# if detailUnits has
+
+			# newState = {}
+			# for i of arr
+			#   newState[i] = number
+			# @setState newState
+
+			return obj
+
 		render: ->
 			return R.div({className: "infoView"},
+
+				R.div({className: 'btn-toolbar'},
+					R.button({
+						className: 'btn btn-primary'
+						onClick: @_submit
+						disabled: not @state.firstName or not @state.lastName
+					}, "Save changes")
+				)
 
 
 				R.div({className: 'basicInfo'},
@@ -81,6 +113,18 @@ load = (win) ->
 							maxLength: 35
 						})
 					)
+					if Config.clientFileRecordId.isEnabled
+						R.div({className: 'form-group'},
+							R.label({}, Config.clientFileRecordId.label),
+							R.input({
+								className: 'form-control'
+								onChange: @_updateRecordId
+								value: @state.recordId
+								placeholder: "(optional)"
+								onKeyDown: @_onEnterKeyDown
+								maxLength: 23
+							})
+						)
 					R.div({className: 'form-group'},
 						R.label({}, "Client File Status"),
 						R.div({className: 'btn-toolbar'},
@@ -121,25 +165,22 @@ load = (win) ->
 					)
 				)
 
-				console.log "clientDetailGroupHeaders!!!!", @props.clientDetailGroupHeaders.toJS()
-				console.log "clientDetailGroupsById", @props.clientDetailGroupsById.toJS()
-
 				# looping through additional field groups and creating a group div for each
 
 				(@props.clientDetailGroupHeaders.map (clientDetailGroupHeader) =>
 					clientDetailGroupId = clientDetailGroupHeader.get('id')
 					clientDetailGroup = @props.clientDetailGroupsById.get(clientDetailGroupId)
-					console.log "clientDetailGroup", clientDetailGroup.toJS()
+					# console.log "clientDetailGroup", clientDetailGroup.toJS()
 
 					clientDetailGroupFields = clientDetailGroup.get('fields')
-					console.log "fields", clientDetailGroupFields.toJS()
+					# console.log "fields", clientDetailGroupFields.toJS()
 
 					R.div({className: 'additionalGroup'},
 						R.h4({}, "#{clientDetailGroup.get('title')}"),
 
 						# looping through each field in the group and adding the field
-						clientDetailGroupFields.map (field) =>
-							console.log "field", field.toJS()
+						(clientDetailGroupFields.map (field) =>
+							# console.log "field", field.toJS()
 							R.div({className: 'form-group'},
 								R.label({}, "#{field.get('name')}"),
 
@@ -147,6 +188,7 @@ load = (win) ->
 									R.input({
 										className: 'form-control'
 										placeholder: field.get('placeholder')
+										# value: @state.(field.get('id'))
 
 										# value: @state.???
 										maxLength: 35
@@ -159,12 +201,8 @@ load = (win) ->
 										# value: @state.???
 										maxLength: 35
 									})
-
 							)
-
-
-
-
+						)
 					)
 				)
 			)
@@ -186,6 +224,34 @@ load = (win) ->
 
 		_updateStatus: (event) ->
 			@setState {status: event.target.value}
+
+		_submit: ->
+
+			updatedClientFile = @props.clientFile
+			.setIn(['clientName', 'first'], @state.firstName)
+			.setIn(['clientName', 'middle'], @state.middleName)
+			.setIn(['clientName', 'last'], @state.lastName)
+			.set('recordId', @state.recordId)
+			.set('status', @state.status)
+
+			console.log "clientFile", @props.clientFile.toJS()
+
+			global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
+
+				if err
+					if err instanceof Persist.IOError
+						console.error err
+						console.error err.stack
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
+					CrashHandler.handle err
+					return
+
+
 
 
 	return {InfoView}
