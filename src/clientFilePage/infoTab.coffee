@@ -50,24 +50,13 @@ load = (win) ->
 					fieldId = field.get('id')
 
 					if detailUnits.size is 0
-						obj[fieldId] = 'testaroni'
+						obj.fieldId = 'testaroni'
 					else
 						detailUnits.map (unit) =>
 							if unit.get('fieldId') is fieldId
-								obj[fieldId] = unit.get('value')
+								obj.fieldId = unit.get('value')
 
-
-
-				console.log "obj", obj
-
-
-
-				# if detailUnits has
-
-			# newState = {}
-			# for i of arr
-			#   newState[i] = number
-			# @setState newState
+			console.log "obj", obj
 
 			return obj
 
@@ -113,7 +102,6 @@ load = (win) ->
 							className: 'form-control'
 							onChange: @_updateLastName
 							value: @state.lastName
-							# onKeyDown: @_onEnterKeyDown
 							maxLength: 35
 						})
 					)
@@ -190,23 +178,20 @@ load = (win) ->
 
 								if field.get('inputType') is 'input'
 									fieldId = field.get('id')
-									console.log "fieldId", fieldId
-									console.log "state.fieldId", @state.fieldId
-									console.log "state.fristName", @state.firstName
+									console.log "@state.fieldId", @state.fieldId
 									R.input({
 										className: 'form-control'
 										placeholder: field.get('placeholder')
 										value: @state.fieldId
-
-										# value: @state.???
+										onChange: @_updateAdditionalField.bind null, fieldId
 										maxLength: 35
 									})
 								if field.get('inputType') is 'textarea'
 									R.textarea({
 										className: 'form-control'
 										placeholder: field.get('placeholder')
-
-										# value: @state.???
+										value: @state.fieldId
+										onChange: @_updateAdditionalField
 										maxLength: 35
 									})
 							)
@@ -215,8 +200,8 @@ load = (win) ->
 				)
 			)
 
-		# _updateAdditionalField: (event) ->
-
+		_updateAdditionalField: (fieldId, event) ->
+			@setState {fieldId: event.target.value}
 
 		_updateFirstName: (event) ->
 			@setState {firstName: event.target.value}
@@ -235,12 +220,29 @@ load = (win) ->
 
 		_submit: ->
 
+			updatedDetailUnits = @props.clientFile.get('detailUnits')
+			@props.clientDetailGroupHeaders.map (clientDetailGroupHeader) =>
+				clientDetailGroupId = clientDetailGroupHeader.get('id')
+				clientDetailGroup = @props.clientDetailGroupsById.get(clientDetailGroupId)
+				clientDetailGroupFields = clientDetailGroup.get('fields')
+				clientDetailGroup = @props.clientDetailGroupsById.get(clientDetailGroupId)
+
+				clientDetailGroupFields.map (field) =>
+					fieldId = field.get('id')
+					updatedDetailUnits.push Imm.fromJS {
+						fieldId
+						value: @state.fieldId
+					}
+				console.log "updatedDetailUnits", updatedDetailUnits
+
+
 			updatedClientFile = @props.clientFile
 			.setIn(['clientName', 'first'], @state.firstName)
 			.setIn(['clientName', 'middle'], @state.middleName)
 			.setIn(['clientName', 'last'], @state.lastName)
 			.set('recordId', @state.recordId)
 			.set('status', @state.status)
+			.set('detailUnits', updatedDetailUnits)
 
 			console.log "clientFile", @props.clientFile.toJS()
 
