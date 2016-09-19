@@ -79,7 +79,8 @@ load = (win, {clientFileId}) ->
 				planTargetsById: Imm.Map()
 				programsById: Imm.Map()
 				metricsById: Imm.Map()
-				planTemplateHeaders: Imm.Map()
+				planTemplateHeaders: Imm.List()
+				clientDetailGroupHeaders: Imm.List()
 				loadErrorType: null
 				loadErrorData: null
 			}
@@ -195,9 +196,8 @@ load = (win, {clientFileId}) ->
 			globalEvents = null
 			alertHeaders = null
 			alerts = null
-			clientDetailDefinitionGroupHeaders = null
 			groupsArray = null
-			detailGroupHeaders = null
+			clientDetailGroupHeaders = null
 
 			checkFileSync = (newData, oldData) =>
 				unless fileIsUnsync
@@ -446,57 +446,52 @@ load = (win, {clientFileId}) ->
 						if err
 							cb err
 							return
-						detailGroupHeaders = result
+						clientDetailGroupHeaders = result
 						cb()
 				(cb) =>
 					# if no groups have been created yet
-					if detailGroupHeaders.size is 0
-						# Creating array of additional field objects from config
-						groupsArray = []
-						Config.clientDetailDefinitionGroups.map (group) =>
-							groupFields = []
-							group.fields.map (field) =>
-								fieldObj = {
-									id: Persist.generateId()
-									name: field.name
-									inputType: field.inputType
-									placeholder: field.placeholder
-								}
-								groupFields.push fieldObj
-
-							clientDetailDefinitionGroupObj = Imm.fromJS {
-								title: group.title
-								status: 'default'
-								fields: groupFields
+					if clientDetailGroupHeaders.size > 0 or Config.clientDetailDefinitionGroups is 0
+						cb()
+						return
+					# Creating array of additional field objects from config
+					groupsArray = Config.clientDetailDefinitionGroups.map (group) =>
+						groupFields = []
+						groupFields = group.fields.map (field) =>
+							return {
+								id: Persist.generateId()
+								name: field.name
+								inputType: field.inputType
+								placeholder: field.placeholder
 							}
-							groupsArray.push(clientDetailDefinitionGroupObj)
-						console.log "array of groups before creation", groupsArray
-					cb()
 
+						clientDetailDefinitionGroupObj = Imm.fromJS {
+							title: group.title
+							status: 'default'
+							fields: groupFields
+						}
+					console.log "array of groups before creation", groupsArray
 
-				(cb) =>
 					# only if no groups created yet, create groups
-					if detailGroupHeaders.size is 0
-						console.log "creating groups with persist"
-						groupsArray.map (obj) =>
-							ActiveSession.persist.clientDetailDefinitionGroups.create obj, (err, result) =>
-								if err
-									cb err
-									return
-								newGroup = result
-								console.log "newly created group ->>>", newGroup.toJS()
-					cb()
 
-				(cb) =>
-					# if no groups existed previously, they should now and can be listed
-					ActiveSession.persist.clientDetailDefinitionGroups.list (err, result) =>
+					console.log "creating groups with persist"
+					Async.map groupsArray, (obj, cb) =>
+						ActiveSession.persist.clientDetailDefinitionGroups.create obj, (err, result) =>
+							if err
+								cb err
+								return
+							newGroup = result
+							console.log "newly created group ->>>", newGroup.toJS()
+							cb(null, result)
+
+					, (err, results) ->
 						if err
 							cb err
 							return
-						detailGroupHeaders = result
-						# why is this still empty?
-						console.log "groupHeaders - >>>> ", detailGroupHeaders
-					cb()
+
+						clientDetailGroupHeaders = Imm.List(results)
+						console.log "groupHeaders", clientDetailGroupHeaders
+						cb()
+
 
 			], (err) =>
 				if err
@@ -561,6 +556,7 @@ load = (win, {clientFileId}) ->
 						planTemplateHeaders
 						programs
 						programsById
+						clientDetailGroupHeaders
 						clientFileProgramLinkHeaders
 						eventTypes
 						alerts
