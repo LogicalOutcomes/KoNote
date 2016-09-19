@@ -38,6 +38,7 @@ load = (win) ->
 				lastName: @props.clientFile.getIn(['clientName', 'last'])
 				recordId: @props.clientFile.get('recordId')
 				status: @props.clientFile.get('status')
+
 			}
 
 			@props.clientDetailGroupHeaders.map (clientDetailGroupHeader) =>
@@ -48,10 +49,13 @@ load = (win) ->
 				clientDetailGroupFields.map (field) =>
 					fieldId = field.get('id')
 
-					# if detailUnits.contains(fieldId is fieldId)
-					# 	obj.fieldId = detailUnit.get('value')
-					# else
-					obj[fieldId] = 'test'
+					if detailUnits.size is 0
+						obj[fieldId] = 'testaroni'
+					else
+						detailUnits.map (unit) =>
+							if unit.get('fieldId') is fieldId
+								obj[fieldId] = unit.get('value')
+
 
 
 				console.log "obj", obj
@@ -185,10 +189,14 @@ load = (win) ->
 								R.label({}, "#{field.get('name')}"),
 
 								if field.get('inputType') is 'input'
+									fieldId = field.get('id')
+									console.log "fieldId", fieldId
+									console.log "state.fieldId", @state.fieldId
+									console.log "state.fristName", @state.firstName
 									R.input({
 										className: 'form-control'
 										placeholder: field.get('placeholder')
-										# value: @state.(field.get('id'))
+										value: @state.fieldId
 
 										# value: @state.???
 										maxLength: 35
