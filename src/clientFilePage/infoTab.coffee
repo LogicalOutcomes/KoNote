@@ -24,41 +24,37 @@ load = (win) ->
 		FaIcon, renderLineBreaks, showWhen, capitalize
 	} = require('../utils').load(win)
 
+
 	InfoView = React.createFactory React.createClass
 		displayName: 'InfoView'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
-			detailUnits = @props.clientFile.get('detailUnits')
-			console.log "detailUnits", detailUnits.toJS()
+			# TODO: Do stuff with this
+			existingDetailUnits = @props.clientFile.get('detailUnits')
 
-			obj = {
+			detailUnitsById = @props.detailDefinitionGroups.flatMap (definitionGroup) =>
+				definitionGroup.get('fields').map (field) =>
+
+					# value = @props.clientFile.qkqgefkhqgef.get(qefqef) or ''
+
+					return [field.get('id'), Imm.fromJS {
+						fieldId: field.get('id')
+						groupId: definitionGroup.get('id')
+						value: '' # TODO: Add value from detailUnits data
+					}]
+				.fromEntrySeq().toMap()
+			.fromEntrySeq().toMap()
+
+			return {
 				firstName: @props.clientFile.getIn(['clientName', 'first'])
 				middleName: @props.clientFile.getIn(['clientName', 'middle'])
 				lastName: @props.clientFile.getIn(['clientName', 'last'])
 				recordId: @props.clientFile.get('recordId')
 				status: @props.clientFile.get('status')
 
+				detailUnitsById
 			}
-
-			fieldsById = @props.clientDetailGroupHeaders.map (clientDetailGroupHeader) =>
-				clientDetailGroupId = clientDetailGroupHeader.get('id')
-				clientDetailGroup = @props.clientDetailGroupsById.get(clientDetailGroupId)
-				clientDetailGroupFields = clientDetailGroup.get('fields')
-
-				clientDetailGroupFields.map (field) =>
-					fieldId = field.get('id')
-
-					if detailUnits.size is 0
-						obj[fieldId] = 'testaroni'
-					else
-						detailUnits.map (unit) =>
-							if unit.get('fieldId') is fieldId
-								obj[fieldId] = unit.get('value')
-
-			console.log "obj", obj
-
-			return obj
 
 		render: ->
 			return R.div({className: "infoView"},
@@ -105,7 +101,7 @@ load = (win) ->
 							maxLength: 35
 						})
 					)
-					if Config.clientFileRecordId.isEnabled
+					(if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
 							R.label({}, Config.clientFileRecordId.label),
 							R.input({
@@ -117,6 +113,7 @@ load = (win) ->
 								maxLength: 23
 							})
 						)
+					)
 					R.div({className: 'form-group'},
 						R.label({}, "Client File Status"),
 						R.div({className: 'btn-toolbar'},
@@ -157,51 +154,37 @@ load = (win) ->
 					)
 				)
 
-				# looping through additional field groups and creating a group div for each
+				(@props.detailDefinitionGroups.map (definitionGroup) =>
+					groupId = definitionGroup.get('id')
+					fields = definitionGroup.get('fields')
 
-				(@props.clientDetailGroupHeaders.map (clientDetailGroupHeader) =>
-					clientDetailGroupId = clientDetailGroupHeader.get('id')
-					clientDetailGroup = @props.clientDetailGroupsById.get(clientDetailGroupId)
-					# console.log "clientDetailGroup", clientDetailGroup.toJS()
+					R.div({className: 'detailUnitGroup'},
+						R.h4({}, definitionGroup.get('title'))
 
-					clientDetailGroupFields = clientDetailGroup.get('fields')
-					# console.log "fields", clientDetailGroupFields.toJS()
+						(fields.map (field) =>
+							fieldId = field.get('id')
+							value = @state.detailUnitsById.getIn([fieldId, 'value'])
+							inputType = field.get('inputType')
 
-					R.div({className: 'additionalGroup'},
-						R.h4({}, "#{clientDetailGroup.get('title')}"),
-
-						# looping through each field in the group and adding the field
-						(clientDetailGroupFields.map (field) =>
-							# console.log "field", field.toJS()
 							R.div({className: 'form-group'},
 								R.label({}, "#{field.get('name')}"),
 
-								if field.get('inputType') is 'input'
-									fieldId = field.get('id')
-									console.log "@state.fieldId", @state.fieldId
-									R.input({
-										className: 'form-control'
-										placeholder: field.get('placeholder')
-										value: @state.fieldId
-										onChange: @_updateAdditionalField.bind null, fieldId
-										maxLength: 35
-									})
-								if field.get('inputType') is 'textarea'
-									R.textarea({
-										className: 'form-control'
-										placeholder: field.get('placeholder')
-										value: @state.fieldId
-										onChange: @_updateAdditionalField
-										maxLength: 35
-									})
+								R[inputType]({
+									className: 'form-control'
+									placeholder: field.get('placeholder')
+									value
+									onChange: @_updateDetailUnit.bind null, fieldId
+									maxLength: 35
+								})
 							)
 						)
 					)
 				)
 			)
 
-		_updateAdditionalField: (fieldId, event) ->
-			@setState {fieldId: event.target.value}
+		_updateDetailUnit: (fieldId, event) ->
+			detailUnitsById = @state.detailUnitsById.setIn [fieldId, 'value'], event.target.value
+			@setState {detailUnitsById}
 
 		_updateFirstName: (event) ->
 			@setState {firstName: event.target.value}
