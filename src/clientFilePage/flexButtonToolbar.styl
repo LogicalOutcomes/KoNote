@@ -4,7 +4,7 @@
 
 	background white
 	border-bottom 1px solid sidebar-borders
-	height 70px
+	height 60px
 
 	> button, > .dropdown
 		background none
@@ -14,9 +14,9 @@
 		border-radius 0
 		border-color sidebar-borders
 		border-right 1px solid sidebar-borders
-		box-shadow none
+		box-shadow inset 0px 0px 0px 0px sidebar-borders
 		padding 0
-		transition all .15s ease
+		transition all .1s ease
 
 		color black
 
@@ -32,17 +32,15 @@
 			overflow hidden
 
 		> .fa, > div > .fa, .dropdown-toggle .fa
-			display block
-			font-size 1.15em
-			margin 7px
+			// display block
+			// font-size 1.15em
+			margin 8px
 			transition all .1s ease
 
 		&:hover, button:hover
 			background #eaf1f5
-			box-shadow inset 0px -2px 0px 0px sidebar-borders
-
-			.fa
-				font-size 1.25em
+			box-shadow inset 0px -3px 0px 0px sidebar-borders
+			font-size 1.05em
 
 	// Overrides for B.Dropdown
 	> .dropdown
@@ -73,6 +71,7 @@
 
 		&.saveButton
 			$bgColor = rgba(92, 184, 92, 1)
+			box-shadow inset 0px 0px 0px 0px darken($bgColor, 25%)
 
 			flex 1.25
 			color white
@@ -80,10 +79,11 @@
 
 			&:hover
 				background lighten($bgColor, 25%)
-				box-shadow inset 0px -2px 0px 0px darken($bgColor, 25%)
+				box-shadow inset 0px -3px 0px 0px darken($bgColor, 25%)
 
 		&.discardButton
 			$bgColor = rgba(249, 175, 53, 1)
+			box-shadow inset 0px 0px 0px 0px darken($bgColor, 25%)
 
 			flex 0.75
 			color white
@@ -91,7 +91,7 @@
 
 			&:hover
 				background lighten($bgColor, 25%)
-				box-shadow inset 0px -2px 0px 0px darken($bgColor, 25%)
+				box-shadow inset 0px -3px 0px 0px darken($bgColor, 25%)
 
 		&.addSectionButton
 			//
@@ -100,14 +100,16 @@
 			flex 0.5
 			border-right 0
 
+
 		///////////////////// ProgNotes Tab
+
 		&.newProgNoteButton
 			$bgColor = rgba(49, 118, 170, 1)
+			box-shadow inset 0px 0px 0px 0px darken($bgColor, 25%)
 
-			flex 1.25
 			color white
 			background $bgColor
 
 			&:hover
 				background lighten($bgColor, 25%)
-				box-shadow inset 0px -2px 0px 0px darken($bgColor, 25%)
+				box-shadow inset 0px -3px 0px 0px darken($bgColor, 25%)
