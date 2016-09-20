@@ -68,13 +68,15 @@
 
 	// Button customizations
 	> button
+
+		///////////////////// PlanTab
+
 		&.saveButton
 			$bgColor = rgba(92, 184, 92, 1)
 
 			flex 1.25
 			color white
 			background $bgColor
-			// border-color darken($bgColor, 25%)
 
 			&:hover
 				background lighten($bgColor, 25%)
@@ -86,7 +88,6 @@
 			flex 0.75
 			color white
 			background $bgColor
-			// border-color darken($bgColor, 25%)
 
 			&:hover
 				background lighten($bgColor, 25%)
@@ -98,3 +99,15 @@
 		&.printButton
 			flex 0.5
 			border-right 0
+
+		///////////////////// ProgNotes Tab
+		&.newProgNoteButton
+			$bgColor = rgba(49, 118, 170, 1)
+
+			flex 1.25
+			color white
+			background $bgColor
+
+			&:hover
+				background lighten($bgColor, 25%)
+				box-shadow inset 0px -2px 0px 0px darken($bgColor, 25%)
