@@ -119,56 +119,8 @@ load = (win) ->
 
 
 			return R.div({className: 'progNotesView'},
-				R.div({className: "flexButtonToolbar #{showWhen hasEnoughData}"},
-					R.button({
-						className: [
-							'saveButton'
-							'collapsed' unless @state.revisingProgNote
-						].join ' '
-						onClick: @_saveProgNoteRevision
-						disabled: not hasChanges
-					},
-						FaIcon('save')
-						"Save #{Term 'Progress Note'}"
-					)
-
-					R.button({
-						className: [
-							'discardButton'
-							'collapsed' unless @state.revisingProgNote
-						].join ' '
-						onClick: @_cancelRevisingProgNote
-					},
-						FaIcon('undo')
-						"Discard"
-					)
-
-					R.button({
-						className: [
-							'newProgNoteButton'
-							'collapsed' if @state.revisingProgNote
-						].join ' '
-						onClick: @_openNewProgNote
-						disabled: @state.isLoading or @props.isReadOnly
-					},
-						FaIcon('file')
-						"New #{Term 'Progress Note'}"
-					)
-
-					R.button({
-						className: [
-							'addQuickNoteButton'
-							'collapsed' if @state.revisingProgNote
-						].join ' '
-						onClick: @_openNewQuickNote
-						disabled: @props.isReadOnly
-					},
-						FaIcon('plus')
-						"Add #{Term 'Quick Note'}"
-					)
-				)
 				R.div({className: 'panes'},
-					R.div({className: 'progNotesList'},
+					R.section({className: 'leftPane'},
 						R.div({className: "empty #{showWhen not hasEnoughData}"},
 							R.div({className: 'message'},
 								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
@@ -190,61 +142,113 @@ load = (win) ->
 								"Add #{Term 'quick note'}"
 							)
 						)
-						(historyEntries.map (entry) =>
+						R.div({className: "flexButtonToolbar #{showWhen hasEnoughData}"},
+							R.button({
+								className: [
+									'saveButton'
+									'collapsed' unless @state.revisingProgNote
+								].join ' '
+								onClick: @_saveProgNoteRevision
+								disabled: not hasChanges
+							},
+								FaIcon('save')
+								"Save #{Term 'Progress Note'}"
+							)
 
-							switch entry.get('type')
-								when 'progNote'
-									ProgNoteContainer({
-										key: entry.get('id')
+							R.button({
+								className: [
+									'discardButton'
+									'collapsed' unless @state.revisingProgNote
+								].join ' '
+								onClick: @_cancelRevisingProgNote
+							},
+								FaIcon('undo')
+								"Discard"
+							)
 
-										progNoteHistory: entry.get('data')
-										eventTypes: @props.eventTypes
-										clientFile: @props.clientFile
+							R.button({
+								className: [
+									'newProgNoteButton'
+									'collapsed' if @state.revisingProgNote
+								].join ' '
+								onClick: @_openNewProgNote
+								disabled: @state.isLoading or @props.isReadOnly
+							},
+								FaIcon('file')
+								"New #{Term 'Progress Note'}"
+							)
 
-										progEvents: @props.progEvents
-										programsById: @props.programsById
+							R.button({
+								className: [
+									'addQuickNoteButton'
+									'collapsed' if @state.revisingProgNote
+								].join ' '
+								onClick: @_openNewQuickNote
+								disabled: @props.isReadOnly
+							},
+								FaIcon('plus')
+								"Add #{Term 'Quick Note'}"
+							)
+						)
 
-										revisingProgNote: @state.revisingProgNote
-										isReadOnly: @props.isReadOnly
+						R.div({className: 'progNotesList'},
+							(historyEntries.map (entry) =>
+								switch entry.get('type')
+									when 'progNote'
+										ProgNoteContainer({
+											key: entry.get('id')
 
-										setSelectedItem: @_setSelectedItem
-										selectProgNote: @_selectProgNote
-										setEditingProgNoteId: @_setEditingProgNoteId
-										updatePlanTargetNotes: @_updatePlanTargetNotes
-										setHighlightedProgNoteId: @_setHighlightedProgNoteId
-										setHighlightedTargetId: @_setHighlightedTargetId
-										selectedItem: @state.selectedItem
+											progNoteHistory: entry.get('data')
+											eventTypes: @props.eventTypes
+											clientFile: @props.clientFile
 
-										startRevisingProgNote: @_startRevisingProgNote
-										cancelRevisingProgNote: @_cancelRevisingProgNote
-										updateBasicUnitNotes: @_updateBasicUnitNotes
-										updateBasicMetric: @_updateBasicMetric
-										updatePlanTargetMetric: @_updatePlanTargetMetric
-										updateQuickNotes: @_updateQuickNotes
-										saveProgNoteRevision: @_saveProgNoteRevision
-										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
-									})
-								when 'globalEvent'
-									GlobalEventView({
-										key: entry.get('id')
-										globalEvent: entry.get('data')
-										programsById: @props.programsById
-									})
-								else
-									throw new Error "Unknown historyEntry type #{entry.get('type')}"
-						).toJS()...
+											progEvents: @props.progEvents
+											programsById: @props.programsById
+
+											revisingProgNote: @state.revisingProgNote
+											isReadOnly: @props.isReadOnly
+
+											setSelectedItem: @_setSelectedItem
+											selectProgNote: @_selectProgNote
+											setEditingProgNoteId: @_setEditingProgNoteId
+											updatePlanTargetNotes: @_updatePlanTargetNotes
+											setHighlightedProgNoteId: @_setHighlightedProgNoteId
+											setHighlightedTargetId: @_setHighlightedTargetId
+											selectedItem: @state.selectedItem
+
+											startRevisingProgNote: @_startRevisingProgNote
+											cancelRevisingProgNote: @_cancelRevisingProgNote
+											updateBasicUnitNotes: @_updateBasicUnitNotes
+											updateBasicMetric: @_updateBasicMetric
+											updatePlanTargetMetric: @_updatePlanTargetMetric
+											updateQuickNotes: @_updateQuickNotes
+											saveProgNoteRevision: @_saveProgNoteRevision
+											setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
+										})
+									when 'globalEvent'
+										GlobalEventView({
+											key: entry.get('id')
+											globalEvent: entry.get('data')
+											programsById: @props.programsById
+										})
+									else
+										throw new Error "Unknown historyEntry type #{entry.get('type')}"
+							)
+						)
 					)
-					ProgNoteDetailView({
-						item: @state.selectedItem
-						highlightedProgNoteId: @state.highlightedProgNoteId
-						highlightedQuickNoteId: @state.highlightedQuickNoteId
-						highlightedTargetId: @state.highlightedTargetId
-						progNoteHistories: @props.progNoteHistories
-						progEvents: @props.progEvents
-						eventTypes: @props.eventTypes
-						metricsById: @props.metricsById
-						programsById: @props.programsById
-					})
+					R.section({className: 'rightPane'},
+						ProgNoteDetailView({
+							item: @state.selectedItem
+							highlightedProgNoteId: @state.highlightedProgNoteId
+							highlightedQuickNoteId: @state.highlightedQuickNoteId
+							highlightedTargetId: @state.highlightedTargetId
+							progNoteHistories: @props.progNoteHistories
+							progEvents: @props.progEvents
+							eventTypes: @props.eventTypes
+							metricsById: @props.metricsById
+							programsById: @props.programsById
+						})
+					)
 				)
 			)
 

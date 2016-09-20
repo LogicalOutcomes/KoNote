@@ -4,14 +4,6 @@
 	display flex
 	flex-direction column
 
-	.flexButtonToolbar
-		button
-			max-width 25%
-
-		@media screen and (max-width: 800px)
-			button
-				max-width none
-
 		.popover
 			z-index 1001
 			max-width none
@@ -30,14 +22,45 @@
 						margin-left 5px
 
 	.panes
+		overflow auto
 		display flex
 		flex 1
 
-		> .progNotesList
+		> section
+			flex 1
+			display flex
+			flex-direction column
+			overflow auto
+
+			&.leftPane
+				//
+
+				.flexButtonToolbar
+					// quickNote popover styles
+					.popover
+						max-width none
+
+						.popover-content
+							> textarea
+								width 500px
+								height 300px
+
+							> .buttonBar
+								padding 10px 0 0
+
+								text-align right
+
+								> .btn
+									margin-left 5px
+
+			&.rightPane
+				border-left 2px solid sidebar-borders
+
+		.progNotesList
 			flex 1
 			overflow auto
 			padding 10px 20px
-			padding-top 25px
+			padding-top 22px
 
 			.entryHeader
 				display flex
@@ -87,21 +110,6 @@
 					> .fa
 						padding-right 10px
 
-				> .popover
-					max-width none
-
-					.popover-content
-						> textarea
-							width 500px
-							height 300px
-
-						> .buttonBar
-							padding 10px 0 0
-
-							text-align right
-
-							> .btn
-								margin-left 5px
 
 			> .cancelStub
 				margin 0 -6px 20px
@@ -282,6 +290,9 @@
 								color #888
 
 							section
+								&:first-child
+									padding-top 10px
+
 								> .target
 									cursor default
 									padding-left 15px
@@ -317,8 +328,3 @@
 
 										> .metricWidget
 											margin 5px
-
-		> .progNoteDetailView
-			overflow auto
-			flex 1
-			border-left 2px solid sidebar-borders

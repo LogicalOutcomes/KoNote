@@ -1,7 +1,6 @@
 .progNoteDetailView
 	display flex
 	flex-direction column
-	max-width 50%
 	overflow auto
 
 
@@ -17,15 +16,18 @@
 		border-bottom 1px solid hsl(202, 34%, 85%)
 
 		.itemName
-			height 70px
-			padding 15px
+			height 59px
+			padding 0 15px
+			display flex
+			align-items center
 
 			.toggleDescriptionButton
 				cursor default
 				float right
-				margin-top 15px
 				opacity 0.5
 				transition opacity .15s ease
+
+				text-align right
 				color #666
 
 				&:hover
@@ -35,9 +37,10 @@
 				opacity 1
 
 			h3
-				margin 10px 0
-				font-size 24px
-				font-weight 300
+				flex 1
+				margin 0
+				font-size 20px
+				font-weight 500
 
 		.itemDescription
 			padding 15px
