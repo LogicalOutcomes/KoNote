@@ -19,6 +19,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	ReactDOM = win.ReactDOM
+	CrashHandler = require('../crashHandler').load(win)
 
 	{
 		FaIcon, renderLineBreaks, showWhen, capitalize
@@ -32,16 +33,18 @@ load = (win) ->
 		getInitialState: ->
 			# TODO: Do stuff with this
 			existingDetailUnits = @props.clientFile.get('detailUnits')
-
 			detailUnitsById = @props.detailDefinitionGroups.flatMap (definitionGroup) =>
 				definitionGroup.get('fields').map (field) =>
 
-					# value = @props.clientFile.qkqgefkhqgef.get(qefqef) or ''
+					fieldId = field.get('id')
+					existingDetailUnit = existingDetailUnits.find((unit) ->
+						unit.get('fieldId') is fieldId)
+					value = existingDetailUnit.get('value') or ''
 
 					return [field.get('id'), Imm.fromJS {
-						fieldId: field.get('id')
+						fieldId
 						groupId: definitionGroup.get('id')
-						value: '' # TODO: Add value from detailUnits data
+						value
 					}]
 				.fromEntrySeq().toMap()
 			.fromEntrySeq().toMap()
@@ -52,7 +55,6 @@ load = (win) ->
 				lastName: @props.clientFile.getIn(['clientName', 'last'])
 				recordId: @props.clientFile.get('recordId')
 				status: @props.clientFile.get('status')
-
 				detailUnitsById
 			}
 
@@ -66,7 +68,6 @@ load = (win) ->
 						disabled: not @state.firstName or not @state.lastName
 					}, "Save changes")
 				)
-
 
 				R.div({className: 'basicInfo'},
 					R.h4({}, "BASIC INFO"),
@@ -174,7 +175,7 @@ load = (win) ->
 									placeholder: field.get('placeholder')
 									value
 									onChange: @_updateDetailUnit.bind null, fieldId
-									maxLength: 35
+									# maxLength: 35
 								})
 							)
 						)
@@ -202,22 +203,8 @@ load = (win) ->
 			@setState {status: event.target.value}
 
 		_submit: ->
-
-			updatedDetailUnits = @props.clientFile.get('detailUnits')
-			@props.clientDetailGroupHeaders.map (clientDetailGroupHeader) =>
-				clientDetailGroupId = clientDetailGroupHeader.get('id')
-				clientDetailGroup = @props.clientDetailGroupsById.get(clientDetailGroupId)
-				clientDetailGroupFields = clientDetailGroup.get('fields')
-				clientDetailGroup = @props.clientDetailGroupsById.get(clientDetailGroupId)
-
-				clientDetailGroupFields.map (field) =>
-					fieldId = field.get('id')
-					updatedDetailUnits.push Imm.fromJS {
-						fieldId
-						value: @state.fieldId
-					}
-				console.log "updatedDetailUnits", updatedDetailUnits
-
+			updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
+				detailUnit.toJS()
 
 			updatedClientFile = @props.clientFile
 			.setIn(['clientName', 'first'], @state.firstName)
@@ -227,11 +214,8 @@ load = (win) ->
 			.set('status', @state.status)
 			.set('detailUnits', updatedDetailUnits)
 
-			console.log "clientFile", @props.clientFile.toJS()
-
 			global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
-
 				if err
 					if err instanceof Persist.IOError
 						console.error err
@@ -243,9 +227,6 @@ load = (win) ->
 
 					CrashHandler.handle err
 					return
-
-
-
 
 	return {InfoView}
 
