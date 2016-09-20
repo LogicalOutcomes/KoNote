@@ -226,19 +226,23 @@ load = (win) ->
 
 				, (err, results) =>
 					if err
-						console.error err
+						if err instanceof Persist.IOError
+							Bootbox.alert "Please check your network connection and try again."
+							return
+
+						CrashHandler.handle err
 						return
 
 					progEvents = Imm.List(results).flatten()
 
-					console.log "Final events result:", progEvents.toJS()
-
+					# TODO: Move to series
 					CSVConverter.json2csv progEvents.toJS(), (err, result) =>
 						if err
 							CrashHandler.handle err
 							return
+
 						csv = result
-						@_updateProg100ress
+						@_updateProgress(100)
 
 
 						# destination path must exist in order to save
@@ -247,6 +251,7 @@ load = (win) ->
 								@setState {isLoading: false}
 
 								if err
+									# TODO: Account for write errors without hard-crash
 									CrashHandler.handle err
 									return
 
@@ -419,7 +424,11 @@ load = (win) ->
 
 			, (err, results) =>
 				if err
-					console.error err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+
+					CrashHandler.handle err
 					return
 
 
