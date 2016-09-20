@@ -79,9 +79,9 @@ load = (win, {clientFileId}) ->
 				planTargetsById: Imm.Map()
 				programsById: Imm.Map()
 				metricsById: Imm.Map()
-				clientDetailGroupsById: Imm.Map()
 				planTemplateHeaders: Imm.List()
-				clientDetailGroupHeaders: Imm.List()
+				detailDefinitionGroups: Imm.List()
+
 				loadErrorType: null
 				loadErrorData: null
 			}
@@ -147,9 +147,7 @@ load = (win, {clientFileId}) ->
 				clientFile: @state.clientFile
 				clientName
 				clientPrograms
-
-				clientDetailGroupHeaders: @state.clientDetailGroupHeaders
-				clientDetailGroupsById: @state.clientDetailGroupsById
+				detailDefinitionGroups: @state.detailDefinitionGroups
 
 				progNoteHistories
 				progressEvents: @state.progressEvents
@@ -162,8 +160,6 @@ load = (win, {clientFileId}) ->
 				eventTypes: @state.eventTypes
 				globalEvents
 				alerts: @state.alerts
-
-
 
 				headerIndex: @state.headerIndex
 				progNoteTotal: @state.progNoteTotal
@@ -204,7 +200,9 @@ load = (win, {clientFileId}) ->
 			alertHeaders = null
 			alerts = null
 			groupsArray = null
-			clientDetailGroupHeaders = null
+			detailDefinitionHeaders = null
+			detailDefinitionGroups = null
+
 
 			checkFileSync = (newData, oldData) =>
 				unless fileIsUnsync
@@ -445,25 +443,29 @@ load = (win, {clientFileId}) ->
 						if err
 							cb err
 							return
+
 						planTemplateHeaders = result
 						.filter (template) -> template.get('status') is 'default'
 						cb()
+
 				(cb) =>
 					ActiveSession.persist.clientDetailDefinitionGroups.list (err, result) =>
 						if err
 							cb err
 							return
-						clientDetailGroupHeaders = result
+
+						detailDefinitionHeaders = result
 						cb()
+
 				(cb) =>
-					# if no groups have been created yet
-					if clientDetailGroupHeaders.size > 0 or Config.clientDetailDefinitionGroups is 0
+					# Check to see whether detailGroups (from Config) have been created yet
+					if detailDefinitionHeaders.size > 0 or Config.clientDetailDefinitionGroups is 0
 						cb()
 						return
-					# Creating array of additional field objects from config
-					groupsArray = Config.clientDetailDefinitionGroups.map (group) =>
-						groupFields = []
-						groupFields = group.fields.map (field) =>
+
+					# Ok, we need to seed the definitions objects from config (FRESH RUN)
+					newDetailDefinitionGroups = Config.clientDetailDefinitionGroups.map (group) =>
+						fields = group.fields.map (field) =>
 							return {
 								id: Persist.generateId()
 								name: field.name
@@ -471,37 +473,31 @@ load = (win, {clientFileId}) ->
 								placeholder: field.placeholder
 							}
 
-						clientDetailDefinitionGroupObj = Imm.fromJS {
+						Imm.fromJS {
 							title: group.title
 							status: 'default'
-							fields: groupFields
+							fields
 						}
-					console.log "array of groups before creation", groupsArray
 
-					# only if no groups created yet, create groups
-
-					console.log "creating groups with persist"
-					Async.map groupsArray, (obj, cb) =>
+					Async.map newDetailDefinitionGroups, (obj, cb) =>
 						ActiveSession.persist.clientDetailDefinitionGroups.create obj, (err, result) =>
 							if err
 								cb err
 								return
-							newGroup = result
-							console.log "newly created group ->>>", newGroup.toJS()
-							cb(null, result)
 
+							newGroup = result
+							cb(null, result)
 					, (err, results) ->
 						if err
 							cb err
 							return
 
-						clientDetailGroupHeaders = Imm.List(results)
-						console.log "groupHeaders", clientDetailGroupHeaders
+						# Not actually headers, but we use them as such
+						detailDefinitionHeaders = Imm.List(results)
 						cb()
 
 				(cb) =>
-					# do i need this and clientDetailGroupsById? i think one or the other
-					Async.map clientDetailGroupHeaders.toArray(), (clientDetailGroupHeader, cb) =>
+					Async.map detailDefinitionHeaders.toArray(), (clientDetailGroupHeader, cb) =>
 						clientDetailGroupId = clientDetailGroupHeader.get('id')
 
 						ActiveSession.persist.clientDetailDefinitionGroups.readLatestRevisions clientDetailGroupId, 1, cb
@@ -510,28 +506,11 @@ load = (win, {clientFileId}) ->
 							cb err
 							return
 
-						clientDetailGroups = Imm.List(results).map (clientDetailGroup) -> stripMetadata clientDetailGroup.get(0)
+						detailDefinitionGroups = Imm.List(results).map (clientDetailGroup) =>
+							stripMetadata clientDetailGroup.first()
+
+						checkFileSync detailDefinitionGroups, @state.detailDefinitionGroups
 						cb()
-
-				(cb) =>
-					Async.map clientDetailGroupHeaders.toArray(), (clientDetailGroupHeader, cb) =>
-						clientDetailGroupId = clientDetailGroupHeader.get('id')
-
-						ActiveSession.persist.clientDetailDefinitionGroups.readLatestRevisions clientDetailGroupId, 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						clientDetailGroupsById = Imm.List(results)
-						.map (clientDetailGroup) =>
-							clientDetailGroup = stripMetadata clientDetailGroup.first()
-							return [clientDetailGroup.get('id'), clientDetailGroup]
-						.fromEntrySeq().toMap()
-
-						checkFileSync clientDetailGroupsById, @state.clientDetailGroupsById
-						cb()
-
 
 			], (err) =>
 				if err
@@ -593,11 +572,10 @@ load = (win, {clientFileId}) ->
 						globalEvents
 						metricsById
 						planTargetsById
-						clientDetailGroupsById
 						planTemplateHeaders
 						programs
 						programsById
-						clientDetailGroupHeaders
+						detailDefinitionGroups
 						clientFileProgramLinkHeaders
 						eventTypes
 						alerts
@@ -1027,9 +1005,8 @@ load = (win, {clientFileId}) ->
 							ref: 'infoTab'
 							clientFileId
 							clientFile: @props.clientFile
-							clientDetailGroupHeaders: @props.clientDetailGroupHeaders
 							programsById: @props.programsById
-							clientDetailGroupsById: @props.clientDetailGroupsById
+							detailDefinitionGroups: @props.detailDefinitionGroups
 							isReadOnly
 						})
 					)
