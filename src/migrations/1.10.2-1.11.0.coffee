@@ -561,6 +561,16 @@ module.exports = {
 				"""
 				fixProgNoteRevisionFields dataDir, globalEncryptionKey, cb
 
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "5. Add new db sub-directory: '_offlineQueue'"
+				createEmptyDirectory dataDir, '_offlineQueue', cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "6. Add new db sub-directory: '_timeIndex'"
+				createEmptyDirectory dataDir, '_timeIndex', cb
+
 		]
 
 
