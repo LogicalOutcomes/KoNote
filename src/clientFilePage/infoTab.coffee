@@ -34,12 +34,16 @@ load = (win) ->
 			# TODO: Do stuff with this
 			existingDetailUnits = @props.clientFile.get('detailUnits')
 			detailUnitsById = @props.detailDefinitionGroups.flatMap (definitionGroup) =>
-				definitionGroup.get('fields').map (field) =>
 
+				definitionGroup.get('fields').map (field) =>
 					fieldId = field.get('id')
 					existingDetailUnit = existingDetailUnits.find((unit) ->
 						unit.get('fieldId') is fieldId)
-					value = existingDetailUnit.get('value') or ''
+
+					if existingDetailUnit?
+						value = existingDetailUnit.get('value')
+					else
+						value = ''
 
 					return [field.get('id'), Imm.fromJS {
 						fieldId
@@ -69,8 +73,9 @@ load = (win) ->
 					}, "Save changes")
 				)
 
+				R.h4({}, "Basic Information"),
+
 				R.div({className: 'basicInfo'},
-					R.h4({}, "BASIC INFO"),
 					R.div({className: 'form-group'},
 						R.label({}, "First name"),
 						R.input({
@@ -115,68 +120,72 @@ load = (win) ->
 							})
 						)
 					)
-					R.div({className: 'form-group'},
-						R.label({}, "Client File Status"),
-						R.div({className: 'btn-toolbar'},
-							R.button({
-								className:
-									if @state.status is 'active'
-										'btn btn-success'
-									else 'btn btn-default'
-								onClick: @_updateStatus
-								value: 'active'
+				)
+				R.div({className: 'form-group'},
+					R.label({}, "Client File Status"),
+					R.div({className: 'btn-toolbar'},
+						R.button({
+							className:
+								if @state.status is 'active'
+									'btn btn-success'
+								else 'btn btn-default'
+							onClick: @_updateStatus
+							value: 'active'
 
-								},
-							"Active"
-							)
-							R.button({
-								className:
-									if @state.status is 'inactive'
-										'btn btn-warning'
-									else 'btn btn-default'
-								onClick: @_updateStatus
-								value: 'inactive'
+							},
+						"Active"
+						)
+						R.button({
+							className:
+								if @state.status is 'inactive'
+									'btn btn-warning'
+								else 'btn btn-default'
+							onClick: @_updateStatus
+							value: 'inactive'
 
-								},
-							"Inactive"
-							)
-							R.button({
-								className:
-									if @state.status is 'discharged'
-										'btn btn-danger'
-									else 'btn btn-default'
-								onClick: @_updateStatus
-								value: 'discharged'
+							},
+						"Inactive"
+						)
+						R.button({
+							className:
+								if @state.status is 'discharged'
+									'btn btn-danger'
+								else 'btn btn-default'
+							onClick: @_updateStatus
+							value: 'discharged'
 
-								},
-							"Discharged"
-							)
+							},
+						"Discharged"
 						)
 					)
 				)
 
-				(@props.detailDefinitionGroups.map (definitionGroup) =>
-					groupId = definitionGroup.get('id')
-					fields = definitionGroup.get('fields')
+				R.div({className: 'detailUnitGroups'},
+					(@props.detailDefinitionGroups.map (definitionGroup) =>
+						groupId = definitionGroup.get('id')
+						fields = definitionGroup.get('fields')
 
-					R.div({className: 'detailUnitGroup'},
-						R.h4({}, definitionGroup.get('title'))
+						R.div({className: 'detailUnitGroup'},
+							R.h4({}, definitionGroup.get('title'))
 
-						(fields.map (field) =>
-							fieldId = field.get('id')
-							value = @state.detailUnitsById.getIn([fieldId, 'value'])
-							inputType = field.get('inputType')
+							R.div({className: 'detailFields'},
+								(fields.map (field) =>
+									fieldId = field.get('id')
+									value = @state.detailUnitsById.getIn([fieldId, 'value'])
+									inputType = field.get('inputType')
 
-							R.div({className: 'form-group'},
-								R.label({}, "#{field.get('name')}"),
+									R.div({className: 'form-group'},
+										R.label({}, "#{field.get('name')}"),
 
-								R[inputType]({
-									className: 'form-control'
-									placeholder: field.get('placeholder')
-									value
-									onChange: @_updateDetailUnit.bind null, fieldId
-									# maxLength: 35
-								})
+										R[inputType]({
+											className: 'form-control'
+											placeholder: field.get('placeholder')
+											value
+											onChange: @_updateDetailUnit.bind null, fieldId
+											# maxLength: 35
+										})
+									)
+								)
 							)
 						)
 					)
