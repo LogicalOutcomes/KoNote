@@ -214,7 +214,13 @@ load = (win) ->
 			.reverse()
 
 			# Either use the revision's name (ex: target name), or the dataModel name
-			dataName = revisions.first().get('name') or capitalize(Term @props.dataModelName)
+			firstRevision = revisions.first()
+
+			dataName = if firstRevision? and firstRevision.get('name')
+				firstRevision.get('name')
+			else
+				capitalize(Term @props.dataModelName)
+
 
 			return R.div({className: 'revisionHistory'},
 				R.div({className: 'heading'},
