@@ -21,16 +21,19 @@ load = (win) ->
 					title: "Print"
 				}
 				disabled: false
+				className: ''
 			}
 
 		render: ->
+			className = ['btn printButton', @props.className].join ' '
+
 			return WithTooltip({
 				showTooltip: @props.tooltip.show
 				placement: @props.tooltip.placement
 				title: @props.tooltip.title
 			},
 				R.button({
-					className: 'btn printButton'
+					className
 					onClick: @_print
 					ref: 'printButton'
 					disabled: @props.disabled

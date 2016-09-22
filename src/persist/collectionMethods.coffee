@@ -75,10 +75,6 @@ createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 				cb new Error "new objects cannot already have a timestamp"
 				return
 
-		# Pull out the IDs of this object's ancestors
-		# E.g. if we're creating a prognote, extract clientFileId
-		contextualIds = extractContextualIds obj
-
 		# Add metadata fields
 		obj = obj
 		.set 'id', generateId()
@@ -95,7 +91,7 @@ createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 				cb validation.error
 			return
 
-		backend.createObject contextualIds, Imm.fromJS(validation.value), context, modelDef, (err) ->
+		backend.createObject Imm.fromJS(validation.value), context, modelDef, (err) ->
 			if err
 				cb err
 				return
@@ -152,10 +148,6 @@ createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 
 		objId = obj.get('id')
 
-		# Use the model definition to determine what IDs are needed to figure
-		# out where this object's collection is located.
-		contextualIds = extractContextualIds obj
-
 		# Add the relevant metadata fields
 		obj = obj
 		.set 'revisionId', generateId()
@@ -171,7 +163,7 @@ createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 				cb validation.error
 			return
 
-		backend.createObjectRevision contextualIds, Imm.fromJS(validation.value), context, modelDef, (err) ->
+		backend.createObjectRevision Imm.fromJS(validation.value), context, modelDef, (err) ->
 			if err
 				cb err
 				return
@@ -281,32 +273,6 @@ createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 				return
 
 			cb null, Imm.fromJS validation.value
-
-	# Private utility methods
-
-	# Extract from `obj` the ID field for every ancestor object.
-	#
-	# Some collections exist within another object.  E.g. a collection of
-	# progress notes exists inside every client file object.  Suppose we want
-	# to `list()` one of those progress note collections.  In order to know
-	# which progress notes folder to read, we need to know the ID of the client
-	# file that contains it.  That client file is called the "parent" of the
-	# collection.
-	#
-	# This function returns a list of the IDs needed to figure out where a
-	# collection is located.  Suppose we want to access the "comments"
-	# collection at `data/clientFiles/123/progNotes/234/comments/`.  This
-	# function would access the object's `clientFileId` and `progNoteId`, and
-	# return `["123", "234"]`.  In this example, client file 123 and prognote
-	# 234 are "ancestors" of the comments collection.
-	extractContextualIds = (obj) ->
-		return context.map (contextDef) ->
-			contextIdProp = contextDef.name + 'Id'
-
-			if obj.has(contextIdProp)
-				return obj.get(contextIdProp)
-
-			throw new Error "Object is missing field #{JSON.stringify contextIdProp}"
 
 	# Build and return the actual collection API, using the previously defined methods
 	result = {

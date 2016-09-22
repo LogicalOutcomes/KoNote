@@ -213,11 +213,23 @@ load = (win) ->
 			.map(@_buildInChangeLog)
 			.reverse()
 
+			# Either use the revision's name (ex: target name), or the dataModel name
+			firstRevision = revisions.first()
+
+			dataName = if firstRevision? and firstRevision.get('name')
+				firstRevision.get('name')
+			else
+				capitalize(Term @props.dataModelName)
+
+
 			return R.div({className: 'revisionHistory'},
 				R.div({className: 'heading'},
-					R.h3({}, "Revision History")
-					unless revisions.isEmpty()
-						R.h4({}, revisions.first().get('name'))
+					(unless revisions.isEmpty()
+						R.section({className: 'dataName'},
+							revisions.first().get('name') or capitalize(Term @props.dataModelName)
+						)
+					)
+					R.section({className: 'title'}, "Revision History")
 				)
 
 				(if revisions.isEmpty()

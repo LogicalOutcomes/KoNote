@@ -4,6 +4,7 @@
 
 Base64url = require 'base64url'
 Crypto = require 'crypto'
+Imm = require 'immutable'
 Joi = require 'joi'
 
 # Generate a unique ID.
@@ -34,6 +35,44 @@ stripMetadata = (persistObj) ->
 	.delete('author')
 	.delete('timestamp')
 	.delete('_dirPath')
+
+# Extract from `obj` the ID field for every ancestor object.
+#
+# Some collections exist within another object.  E.g. a collection of
+# progress notes exists inside every client file object.  Suppose we want
+# to `list()` one of those progress note collections.  In order to know
+# which progress notes folder to read, we need to know the ID of the client
+# file that contains it.  That client file is called the "parent" of the
+# collection.
+#
+# This function returns a list of the IDs needed to figure out where a
+# collection is located.  Suppose we want to access the "comments"
+# collection at `data/clientFiles/123/progNotes/234/comments/`.  This
+# function would access the object's `clientFileId` and `progNoteId`, and
+# return `["123", "234"]`.  In this example, client file 123 and prognote
+# 234 are "ancestors" of the comments collection.
+extractContextualIds = (obj, context) ->
+	return context.map (contextDef) ->
+		contextIdProp = contextDef.name + 'Id'
+
+		if obj.has(contextIdProp)
+			return obj.get(contextIdProp)
+
+		throw new Error "Object is missing field #{JSON.stringify contextIdProp}"
+
+flattenModelDefs = (modelDefs, context=Imm.List()) ->
+	result = Imm.Map()
+
+	for modelDef in modelDefs
+		# Add this model def to result
+		result = result.set(modelDef.collectionName, Imm.Map({modelDef, context}))
+
+		# Recurse over this model def's children, and merge them into result
+		if modelDef.children
+			descendantModelDefs = flattenModelDefs modelDef.children, context.push(modelDef)
+			result = result.merge descendantModelDefs
+
+	return result
 
 
 # This class allows new error types to be created easily without breaking stack
@@ -79,6 +118,8 @@ module.exports = {
 	IdSchema
 	ObjectNotFoundError
 	TimestampFormat
+	extractContextualIds
+	flattenModelDefs
 	generateId
 	isValidJSON
 	stripMetadata

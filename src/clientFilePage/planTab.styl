@@ -2,6 +2,8 @@
 	flex 1
 	display flex
 
+	@require 'reorderPlanView'
+
 	> .targetList
 		flex 1
 		overflow inherit
@@ -20,75 +22,15 @@
 			> .btn > .fa
 				padding-right 10px
 
-		> .toolbar
-			display flex
-			flex-shrink 0
 
-			border-bottom 1px solid sidebar-borders
-
-			padding 21px 25px
-
-			button
-				outline none
-
-				> .fa
-					margin-right 8px
-
-			> div
-
-				&.leftMenu
-					flex 1
-
-					.saveButton
-						padding-right 30px
-						padding-left 30px
-						transition all 0.5s ease
-
-				&.rightMenu
-					text-align right
-
-					.createTemplateButton
-						border none
-						background white
-						margin-left 15px
-
-						transition all 0.25 ease
-
-						&:hover, &:focus
-							outline none
-							color #286090
-
-						> .fa
-							margin 0
-
-			@media (max-width: 1150px)
-				display block
-
-				> div
-					display block
-					flex none
-					width 100%
-
-					> button
-						width 100%
-
-					&.rightMenu
-						margin-top 10px
-						display flex
-
-						> .btn
-							flex 3
-
-						> .printButton
-							flex 1
-
-		> .sections
+		> .sections, > div > .sections
 			position relative
 
 			flex 1
 			overflow-y auto
 			overflow-x hidden
-			padding 0 25px 25px 25px
+			padding 25px
+			padding-top 10px
 
 			// TODO: Make this multi-use (it's used again in targets!)
 			&.status-completed, &.status-deactivated
@@ -316,11 +258,21 @@
 		overflow-y auto
 		overflow-x hidden
 		flex 1
+		display flex
 
 		border-left 2px solid sidebar-borders
 
+		> .revisionHistoryContainer
+			flex 1
+			display flex
+
+			.revisionHistory
+				flex 1
+
 		> .noSelection
+			flex 1
 			padding 100px 0
 
 			color #888
 			text-align center
+

@@ -13,6 +13,8 @@ Imm = require 'immutable'
 Path = require 'path'
 
 CollectionMethods = require './collectionMethods'
+
+CloudBackend = require './backends/cloudBackend'
 FileSystemBackend = require './backends/fileSystemBackend'
 
 # Generate the persistent object API based on the specified definitions.
@@ -24,13 +26,31 @@ buildApi = (backendConfig, session, dataModelDefinitions) ->
 
 	switch backendConfig.type
 		when 'file-system'
-			backend = FileSystemBackend.create eventBus, session.globalEncryptionKey, backendConfig.dataDirectory
+			backend = FileSystemBackend.create(
+				eventBus, session.globalEncryptionKey,
+				backendConfig.dataDirectory
+			)
+		when 'cloud'
+			backend = CloudBackend.create(
+				eventBus, session.globalEncryptionKey,
+				backendConfig.serverUrl, backendConfig.localDataDirectory,
+				dataModelDefinitions
+			)
+
+			# TODO show UI for this with progress bar for sync progress
+			backend.goOnline (err) ->
+				if err
+					console.error err
+					console.error err.stack
+					return
 		else
 			throw new Error "unknown backend type: #{JSON.stringify backendConfig.type}"
 
 	result = processModels(backend, session, eventBus, dataModelDefinitions).toJS()
 
 	result.eventBus = eventBus
+	result.goOnline = backend.goOnline
+	result.goOffline = backend.goOffline
 
 	return result
 
@@ -65,8 +85,8 @@ processModel = (backend, session, eventBus, modelDef, context=Imm.List()) ->
 			Invalid name: #{JSON.stringify modelDef.name}
 		"""
 
-	# Validate collection name (eventBus is reserved)
-	invalidCollNames = ['', 'eventBus']
+	# Validate collection name (some names are reserved)
+	invalidCollNames = ['', 'eventBus', 'goOnline', 'goOffline']
 	if modelDef.collectionName in invalidCollNames or modelDef.collectionName[0] is '_'
 		throw new Error """
 			Invalid collection name: #{JSON.stringify modelDef.collectionName}

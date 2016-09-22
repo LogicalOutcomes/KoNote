@@ -24,6 +24,7 @@ Crypto = require '../crypto'
 	ObjectNotFoundError
 	TimestampFormat
 	generateId
+	extractContextualIds
 } = require '../utils'
 
 # Create a file system backend instance.
@@ -47,7 +48,9 @@ create = (eventBus, globalEncryptionKey, dataDirectory) ->
 	# (see persist/crypto for details).
 	fileNameEncryptionKey = new Crypto.WeakSymmetricEncryptionKey(globalEncryptionKey, 5)
 
-	createObject = (contextualIds, obj, context, modelDef, cb) ->
+	createObject = (obj, context, modelDef, cb) ->
+		contextualIds = extractContextualIds obj, context
+
 		destObjDir = null
 		objDir = null
 		objDirOp = null
@@ -224,8 +227,9 @@ create = (eventBus, globalEncryptionKey, dataDirectory) ->
 				# Read the only revision
 				readObjectRevisionFile revisionFilePath, contextualIds, id, context, modelDef, cb
 
-	createObjectRevision = (contextualIds, obj, context, modelDef, cb) ->
+	createObjectRevision = (obj, context, modelDef, cb) ->
 		objId = obj.get('id')
+		contextualIds = extractContextualIds obj, context
 
 		objDir = null
 
