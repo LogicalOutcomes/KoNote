@@ -31,26 +31,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
-			existingDetailUnits = @props.clientFile.get('detailUnits')
-			detailUnitsById = @props.detailDefinitionGroups.flatMap (definitionGroup) =>
-
-				definitionGroup.get('fields').map (field) =>
-					fieldId = field.get('id')
-					existingDetailUnit = existingDetailUnits.find((unit) ->
-						unit.get('fieldId') is fieldId)
-
-					if existingDetailUnit?
-						value = existingDetailUnit.get('value')
-					else
-						value = ''
-
-					return [field.get('id'), Imm.fromJS {
-						fieldId
-						groupId: definitionGroup.get('id')
-						value
-					}]
-				.fromEntrySeq().toMap()
-			.fromEntrySeq().toMap()
+			detailUnitsById = @_getDetailUnitsById()
 
 			return {
 				firstName: @props.clientFile.getIn(['clientName', 'first'])
@@ -65,7 +46,6 @@ load = (win) ->
 			return R.div({className: "infoView"},
 
 				hasChanges = @hasChanges()
-				console.log "hasChanges?", hasChanges
 
 				R.div({className: "flexButtonToolbar"},
 					R.button({
@@ -79,7 +59,18 @@ load = (win) ->
 						' '
 						"Save Changes"
 					)
+					R.button({
+						className: [
+							'discardButton'
+							'collapsed' unless hasChanges
+						].join ' '
+						onClick: @_resetChanges
+					},
+						FaIcon('undo')
+						"Discard"
+					)
 				)
+
 
 				R.div({className: 'basicInfo'},
 					R.h4({}, "Client Name"),
@@ -140,8 +131,8 @@ load = (win) ->
 									onClick: @_updateStatus
 									value: 'active'
 
-									},
-								"Active"
+								},
+									"Active"
 								)
 								R.button({
 									className:
@@ -151,8 +142,8 @@ load = (win) ->
 									onClick: @_updateStatus
 									value: 'inactive'
 
-									},
-								"Inactive"
+								},
+									"Inactive"
 								)
 								R.button({
 									className:
@@ -162,8 +153,8 @@ load = (win) ->
 									onClick: @_updateStatus
 									value: 'discharged'
 
-									},
-								"Discharged"
+								},
+									"Discharged"
 								)
 							)
 						)
@@ -206,41 +197,22 @@ load = (win) ->
 
 		hasChanges: ->
 			# If there is a difference, then there have been changes
-			updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
-				detailUnit.toJS()
-			existingDetailUnits = @props.clientFile.get('detailUnits')
+			detailUnitsById = @_getDetailUnitsById()
 
-			detailUnitsById = @props.detailDefinitionGroups.flatMap (definitionGroup) =>
-				definitionGroup.get('fields').map (field) =>
-					fieldId = field.get('id')
-					existingDetailUnit = existingDetailUnits.find((unit) ->
-						unit.get('fieldId') is fieldId)
+			detailUnitsHasChanges = Imm.is detailUnitsById, @state.detailUnitsById
+			statusHasChanges = @props.clientFile.get('status') is @state.status
+			firstNameHasChanges = @props.clientFile.getIn(['clientName', 'first']) is @state.firstName
+			middleNameHasChanges = @props.clientFile.getIn(['clientName', 'middle']) is @state.middleName
+			lastNameHasChanges = @props.clientFile.getIn(['clientName', 'last']) is @state.lastName
+			recordIdHasChanges = @props.clientFile.get('recordId') is @state.recordId
 
-					if existingDetailUnit?
-						value = existingDetailUnit.get('value')
-					else
-						value = ''
-
-					return [field.get('id'), Imm.fromJS {
-						fieldId
-						groupId: definitionGroup.get('id')
-						value
-					}]
-				.fromEntrySeq().toMap()
-			.fromEntrySeq().toMap()
-
-			# why does this always return true?
-			# unless Imm.is detailUnitsById, @state.detailUnitsById and
-			# @props.clientFile.get('status') is @state.status
-			# 	return true
-
-			unless Imm.is detailUnitsById, @state.detailUnitsById
+			unless detailUnitsHasChanges and
+			statusHasChanges and
+			firstNameHasChanges and
+			middleNameHasChanges and
+			lastNameHasChanges and
+			recordIdHasChanges
 				return true
-			unless @props.clientFile.get('status') is @state.status
-				return true
-			unless @props.clientFile.getIn(['clientName', 'first']) is @state.firstName
-				return true
-
 			return false
 
 
@@ -262,6 +234,42 @@ load = (win) ->
 
 		_updateStatus: (event) ->
 			@setState {status: event.target.value}
+
+		_getDetailUnitsById: ->
+			existingDetailUnits = @props.clientFile.get('detailUnits')
+			detailUnitsById = @props.detailDefinitionGroups.flatMap (definitionGroup) =>
+				definitionGroup.get('fields').map (field) =>
+					fieldId = field.get('id')
+					existingDetailUnit = existingDetailUnits.find((unit) ->
+						unit.get('fieldId') is fieldId)
+
+					if existingDetailUnit?
+						value = existingDetailUnit.get('value')
+					else
+						value = ''
+
+					return [field.get('id'), Imm.fromJS {
+						fieldId
+						groupId: definitionGroup.get('id')
+						value
+					}]
+				.fromEntrySeq().toMap()
+			.fromEntrySeq().toMap()
+			return detailUnitsById
+
+		_resetChanges: ->
+			Bootbox.confirm "Discard all changes made to the #{Term 'Client File'}?", (ok) =>
+				if ok
+					detailUnitsById = @_getDetailUnitsById()
+
+					@setState {
+						firstName: @props.clientFile.getIn(['clientName', 'first'])
+						middleName: @props.clientFile.getIn(['clientName', 'middle'])
+						lastName: @props.clientFile.getIn(['clientName', 'last'])
+						recordId: @props.clientFile.get('recordId')
+						status: @props.clientFile.get('status')
+						detailUnitsById
+					}
 
 		_submit: ->
 			updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>

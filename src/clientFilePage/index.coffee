@@ -1011,8 +1011,6 @@ load = (win, {clientFileId}) ->
 							programsById: @props.programsById
 							detailDefinitionGroups: @props.detailDefinitionGroups
 							isReadOnly
-
-							hasChanges: @hasChanges
 						})
 					)
 				)
