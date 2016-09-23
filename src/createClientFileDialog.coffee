@@ -248,7 +248,6 @@ load = (win) ->
 			  plan: {
 			    sections: []
 			  }
-			  detailUnits: []
 			}
 
 			clientFileHeaders = null
