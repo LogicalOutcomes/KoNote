@@ -258,16 +258,7 @@ load = (win) ->
 		_resetChanges: ->
 			Bootbox.confirm "Discard all changes made to the #{Term 'Client File'}?", (ok) =>
 				if ok
-					detailUnitsById = @_getDetailUnitsById()
-
-					@setState {
-						firstName: @props.clientFile.getIn(['clientName', 'first'])
-						middleName: @props.clientFile.getIn(['clientName', 'middle'])
-						lastName: @props.clientFile.getIn(['clientName', 'last'])
-						recordId: @props.clientFile.get('recordId')
-						status: @props.clientFile.get('status')
-						detailUnitsById
-					}
+					@setState @getInitialState()
 
 		_submit: ->
 			updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
