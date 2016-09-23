@@ -42,6 +42,13 @@ dataModelDefinitions = [
 					})
 				)
 			})
+			detailUnits: Joi.array().items(
+				Joi.object().keys({
+					groupId: IdSchema
+					fieldId: IdSchema
+					value: Joi.string().allow('')
+				})
+			)
 		})
 		children: [
 			{
@@ -168,6 +175,25 @@ dataModelDefinitions = [
 				})
 			}
 		]
+	}
+	{
+		name: 'clientDetailDefinitionGroup'
+		collectionName: 'clientDetailDefinitionGroups'
+		isMutable: true
+		indexes: [['status']]
+		schema: Joi.object().keys({
+			title: Joi.string()
+			status: ['default', 'cancelled']
+			fields: Joi.array().items(
+				Joi.object().keys({
+					id: IdSchema
+					name: Joi.string()
+					inputType: ['input', 'textarea']
+					# height, width, max length? etc
+					placeholder: Joi.string().allow('')
+				})
+			)
+		})
 	}
 	{
 		name: 'progNoteTemplate'
