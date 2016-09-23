@@ -121,118 +121,126 @@ load = (win) ->
 			return R.div({className: 'progNotesView'},
 				R.div({className: 'panes'},
 					R.section({className: 'leftPane'},
-						R.div({className: "empty #{showWhen not hasEnoughData}"},
-							R.div({className: 'message'},
-								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
+
+						(if hasEnoughData
+
+							R.div({className: "flexButtonToolbar"},
+								R.button({
+									className: [
+										'saveButton'
+										'collapsed' unless @state.revisingProgNote
+									].join ' '
+									onClick: @_saveProgNoteRevision
+									disabled: not hasChanges
+								},
+									FaIcon('save')
+									"Save #{Term 'Progress Note'}"
+								)
+
+								R.button({
+									className: [
+										'discardButton'
+										'collapsed' unless @state.revisingProgNote
+									].join ' '
+									onClick: @_cancelRevisingProgNote
+								},
+									FaIcon('undo')
+									"Discard"
+								)
+
+								R.button({
+									className: [
+										'newProgNoteButton'
+										'collapsed' if @state.revisingProgNote
+									].join ' '
+									onClick: @_openNewProgNote
+									disabled: @state.isLoading or @props.isReadOnly
+								},
+									FaIcon('file')
+									"New #{Term 'Progress Note'}"
+								)
+
+								R.button({
+									className: [
+										'addQuickNoteButton'
+										'collapsed' if @state.revisingProgNote
+									].join ' '
+									onClick: @_openNewQuickNote
+									disabled: @props.isReadOnly
+								},
+									FaIcon('plus')
+									"Add #{Term 'Quick Note'}"
+								)
 							)
-							R.button({
-								className: 'btn btn-primary btn-lg newProgNote'
-								onClick: @_openNewProgNote
-								disabled: @state.isLoading or @props.isReadOnly
-							},
-								FaIcon 'file'
-								"New #{Term 'progress note'}"
-							)
-							R.button({
-								className: 'btn btn-default btn-lg addQuickNote'
-								onClick: @_openNewQuickNote
-								disabled: @props.isReadOnly
-							},
-								FaIcon 'plus'
-								"Add #{Term 'quick note'}"
+
+						else
+							R.div({className: 'empty'},
+								R.div({className: 'message'},
+									"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
+								)
+								R.button({
+									className: 'btn btn-primary btn-lg newProgNoteButton'
+									onClick: @_openNewProgNote
+									disabled: @state.isLoading or @props.isReadOnly
+								},
+									FaIcon 'file'
+									"New #{Term 'progress note'}"
+								)
+								R.button({
+									className: 'btn btn-default btn-lg addQuickNoteButton'
+									onClick: @_openNewQuickNote
+									disabled: @props.isReadOnly
+								},
+									FaIcon 'plus'
+									"Add #{Term 'quick note'}"
+								)
 							)
 						)
-						R.div({className: "flexButtonToolbar #{showWhen hasEnoughData}"},
-							R.button({
-								className: [
-									'saveButton'
-									'collapsed' unless @state.revisingProgNote
-								].join ' '
-								onClick: @_saveProgNoteRevision
-								disabled: not hasChanges
-							},
-								FaIcon('save')
-								"Save #{Term 'Progress Note'}"
-							)
 
-							R.button({
-								className: [
-									'discardButton'
-									'collapsed' unless @state.revisingProgNote
-								].join ' '
-								onClick: @_cancelRevisingProgNote
-							},
-								FaIcon('undo')
-								"Discard"
-							)
+						(unless historyEntries.isEmpty()
+							R.div({className: 'progNotesList'},
+								(historyEntries.map (entry) =>
+									switch entry.get('type')
+										when 'progNote'
+											ProgNoteContainer({
+												key: entry.get('id')
 
-							R.button({
-								className: [
-									'newProgNoteButton'
-									'collapsed' if @state.revisingProgNote
-								].join ' '
-								onClick: @_openNewProgNote
-								disabled: @state.isLoading or @props.isReadOnly
-							},
-								FaIcon('file')
-								"New #{Term 'Progress Note'}"
-							)
+												progNoteHistory: entry.get('data')
+												eventTypes: @props.eventTypes
+												clientFile: @props.clientFile
 
-							R.button({
-								className: [
-									'addQuickNoteButton'
-									'collapsed' if @state.revisingProgNote
-								].join ' '
-								onClick: @_openNewQuickNote
-								disabled: @props.isReadOnly
-							},
-								FaIcon('plus')
-								"Add #{Term 'Quick Note'}"
-							)
-						)
+												progEvents: @props.progEvents
+												programsById: @props.programsById
 
-						R.div({className: 'progNotesList'},
-							(historyEntries.map (entry) =>
-								switch entry.get('type')
-									when 'progNote'
-										ProgNoteContainer({
-											key: entry.get('id')
+												revisingProgNote: @state.revisingProgNote
+												isReadOnly: @props.isReadOnly
 
-											progNoteHistory: entry.get('data')
-											eventTypes: @props.eventTypes
-											clientFile: @props.clientFile
+												setSelectedItem: @_setSelectedItem
+												selectProgNote: @_selectProgNote
+												setEditingProgNoteId: @_setEditingProgNoteId
+												updatePlanTargetNotes: @_updatePlanTargetNotes
+												setHighlightedProgNoteId: @_setHighlightedProgNoteId
+												setHighlightedTargetId: @_setHighlightedTargetId
+												selectedItem: @state.selectedItem
 
-											progEvents: @props.progEvents
-											programsById: @props.programsById
-
-											revisingProgNote: @state.revisingProgNote
-											isReadOnly: @props.isReadOnly
-
-											setSelectedItem: @_setSelectedItem
-											selectProgNote: @_selectProgNote
-											setEditingProgNoteId: @_setEditingProgNoteId
-											updatePlanTargetNotes: @_updatePlanTargetNotes
-											setHighlightedProgNoteId: @_setHighlightedProgNoteId
-											setHighlightedTargetId: @_setHighlightedTargetId
-											selectedItem: @state.selectedItem
-
-											startRevisingProgNote: @_startRevisingProgNote
-											cancelRevisingProgNote: @_cancelRevisingProgNote
-											updateBasicUnitNotes: @_updateBasicUnitNotes
-											updateBasicMetric: @_updateBasicMetric
-											updatePlanTargetMetric: @_updatePlanTargetMetric
-											updateQuickNotes: @_updateQuickNotes
-											saveProgNoteRevision: @_saveProgNoteRevision
-											setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
-										})
-									when 'globalEvent'
-										GlobalEventView({
-											key: entry.get('id')
-											globalEvent: entry.get('data')
-											programsById: @props.programsById
-										})
-									else
-										throw new Error "Unknown historyEntry type #{entry.get('type')}"
+												startRevisingProgNote: @_startRevisingProgNote
+												cancelRevisingProgNote: @_cancelRevisingProgNote
+												updateBasicUnitNotes: @_updateBasicUnitNotes
+												updateBasicMetric: @_updateBasicMetric
+												updatePlanTargetMetric: @_updatePlanTargetMetric
+												updateQuickNotes: @_updateQuickNotes
+												saveProgNoteRevision: @_saveProgNoteRevision
+												setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
+											})
+										when 'globalEvent'
+											GlobalEventView({
+												key: entry.get('id')
+												globalEvent: entry.get('data')
+												programsById: @props.programsById
+											})
+										else
+											throw new Error "Unknown historyEntry type #{entry.get('type')}"
+								)
 							)
 						)
 					)
@@ -572,6 +580,8 @@ load = (win) ->
 					return
 
 		_toggleQuickNotePopover: ->
+			# TODO: Refactor to stateful React component
+
 			quickNoteToggle = $('.addQuickNoteButton:not(.hide)')
 
 			if quickNoteToggle.data('isVisible')
@@ -641,12 +651,7 @@ load = (win) ->
 				beginTimestamp: @quickNoteBeginTimestamp
 			}
 
-			global.ActiveSession.persist.progNotes.create quickNote, (err) =>
-				if err
-					cb err
-					return
-
-				cb()
+			global.ActiveSession.persist.progNotes.create quickNote, cb
 
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}

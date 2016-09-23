@@ -33,25 +33,40 @@
 			overflow auto
 
 			&.leftPane
-				//
 
-				.flexButtonToolbar
-					// quickNote popover styles
-					.popover
-						max-width none
+				.empty
+					text-align center
 
-						.popover-content
-							> textarea
-								width 500px
-								height 300px
+					> .message
+						padding 100px 80px 50px
 
-							> .buttonBar
-								padding 10px 0 0
+						color #888
+						font-size 16px
 
-								text-align right
+					> .btn
+						clear both
+						margin 15px
 
-								> .btn
-									margin-left 5px
+						> .fa
+							padding-right 10px
+
+
+				// quickNote popover styles
+				.popover
+					max-width none
+
+					.popover-content
+						> textarea
+							width 500px
+							height 300px
+
+						> .buttonBar
+							padding 10px 0 0
+
+							text-align right
+
+							> .btn
+								margin-left 5px
 
 			&.rightPane
 				border-left 2px solid sidebar-borders
@@ -92,23 +107,6 @@
 					&:hover
 						color inherit
 						text-decoration underline
-
-
-			> .empty
-				text-align center
-
-				> .message
-					padding 100px 80px 50px
-
-					color #888
-					font-size 16px
-
-				> .btn
-					clear both
-					margin 15px
-
-					> .fa
-						padding-right 10px
 
 
 			> .cancelStub
