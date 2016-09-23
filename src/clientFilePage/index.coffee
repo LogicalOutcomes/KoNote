@@ -35,6 +35,7 @@ load = (win, {clientFileId}) ->
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
+	InfoTab = require('./infoTab').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
@@ -78,7 +79,9 @@ load = (win, {clientFileId}) ->
 				planTargetsById: Imm.Map()
 				programsById: Imm.Map()
 				metricsById: Imm.Map()
-				planTemplateHeaders: Imm.Map()
+				planTemplateHeaders: Imm.List()
+				detailDefinitionGroups: Imm.List()
+
 				loadErrorType: null
 				loadErrorData: null
 			}
@@ -144,6 +147,7 @@ load = (win, {clientFileId}) ->
 				clientFile: @state.clientFile
 				clientName
 				clientPrograms
+				detailDefinitionGroups: @state.detailDefinitionGroups
 
 				progNoteHistories
 				progressEvents: @state.progressEvents
@@ -184,6 +188,7 @@ load = (win, {clientFileId}) ->
 			progressEvents = null
 			metricHeaders = null
 			metricsById = null
+			clientDetailGroupsById = null
 			clientFileProgramLinkHeaders = null
 			programHeaders = null
 			programs = null
@@ -194,6 +199,10 @@ load = (win, {clientFileId}) ->
 			globalEvents = null
 			alertHeaders = null
 			alerts = null
+			groupsArray = null
+			detailDefinitionHeaders = null
+			detailDefinitionGroups = null
+
 
 			checkFileSync = (newData, oldData) =>
 				unless fileIsUnsync
@@ -434,8 +443,73 @@ load = (win, {clientFileId}) ->
 						if err
 							cb err
 							return
+
 						planTemplateHeaders = result
 						.filter (template) -> template.get('status') is 'default'
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.clientDetailDefinitionGroups.list (err, result) =>
+						if err
+							cb err
+							return
+
+						detailDefinitionHeaders = result
+						cb()
+
+				(cb) =>
+					# Check to see whether detailGroups (from Config) have been created yet
+					if detailDefinitionHeaders.size > 0 or Config.clientDetailDefinitionGroups is 0
+						cb()
+						return
+
+					# Ok, we need to seed the definitions objects from config (FRESH RUN)
+					newDetailDefinitionGroups = Config.clientDetailDefinitionGroups.map (group) =>
+						fields = group.fields.map (field) =>
+							return {
+								id: Persist.generateId()
+								name: field.name
+								inputType: field.inputType
+								placeholder: field.placeholder
+							}
+
+						Imm.fromJS {
+							title: group.title
+							status: 'default'
+							fields
+						}
+
+					Async.map newDetailDefinitionGroups, (obj, cb) =>
+						ActiveSession.persist.clientDetailDefinitionGroups.create obj, (err, result) =>
+							if err
+								cb err
+								return
+
+							newGroup = result
+							cb(null, result)
+					, (err, results) ->
+						if err
+							cb err
+							return
+
+						# Not actually headers, but we use them as such
+						detailDefinitionHeaders = Imm.List(results)
+						cb()
+
+				(cb) =>
+					Async.map detailDefinitionHeaders.toArray(), (clientDetailGroupHeader, cb) =>
+						clientDetailGroupId = clientDetailGroupHeader.get('id')
+
+						ActiveSession.persist.clientDetailDefinitionGroups.readLatestRevisions clientDetailGroupId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						detailDefinitionGroups = Imm.List(results).map (clientDetailGroup) =>
+							stripMetadata clientDetailGroup.first()
+
+						checkFileSync detailDefinitionGroups, @state.detailDefinitionGroups
 						cb()
 
 			], (err) =>
@@ -501,6 +575,7 @@ load = (win, {clientFileId}) ->
 						planTemplateHeaders
 						programs
 						programsById
+						detailDefinitionGroups
 						clientFileProgramLinkHeaders
 						eventTypes
 						alerts
@@ -742,6 +817,8 @@ load = (win, {clientFileId}) ->
 				@refs.planTab.hasChanges()
 			else if @refs.sidebar
 				@refs.sidebar.hasChanges()
+			else if @refs.infoTab?
+			 	@refs.infoTab.hasChanges()
 			else
 				false
 
@@ -809,6 +886,35 @@ load = (win, {clientFileId}) ->
 			else if @refs.sidebar.hasChanges()
 				Bootbox.confirm "Discard unsaved changes to #{Term 'client'} alerts?", (ok) =>
 					if ok then @props.closeWindow()
+
+			else if @refs.infoTab.hasChanges()
+				Bootbox.dialog {
+					title: "Unsaved Changes to #{Term 'Client File'}"
+					message: """
+						You have unsaved changes in Client Information for #{clientName}.
+						How would you like to proceed?
+					"""
+					buttons: {
+						default: {
+							label: "Cancel"
+							className: "btn-default"
+							callback: => Bootbox.hideAll()
+						}
+						danger: {
+							label: "Discard Changes"
+							className: "btn-danger"
+							callback: =>
+								@props.closeWindow()
+						}
+						success: {
+							label: "View Additional Information"
+							className: "btn-success"
+							callback: =>
+								Bootbox.hideAll()
+								@setState {activeTabId: 'info'}
+						}
+					}
+				}
 			else
 				@props.closeWindow()
 
@@ -920,6 +1026,21 @@ load = (win, {clientFileId}) ->
 							isReadOnly
 						})
 					)
+					R.div({
+						className: [
+							'view'
+							showWhen(activeTabId is 'info')
+						].join ' '
+					},
+						InfoTab.InfoView({
+							ref: 'infoTab'
+							clientFileId
+							clientFile: @props.clientFile
+							programsById: @props.programsById
+							detailDefinitionGroups: @props.detailDefinitionGroups
+							isReadOnly
+						})
+					)
 				)
 			)
 
@@ -1006,6 +1127,12 @@ load = (win, {clientFileId}) ->
 						icon: 'line-chart'
 						isActive: activeTabId is 'analysis'
 						onClick: @props.onTabChange.bind null, 'analysis'
+					})
+					SidebarTab({
+						name: "Client Information"
+						icon: 'info'
+						isActive: activeTabId is 'info'
+						onClick: @props.onTabChange.bind null, 'info'
 					})
 				)
 

@@ -32,6 +32,7 @@ Create.clientFile = (cb) ->
 		plan: {
 			sections: []
 		}
+		detailUnits: []
 	}
 
 	createData 'clientFiles', clientFile, cb
