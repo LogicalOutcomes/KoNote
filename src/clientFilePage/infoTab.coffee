@@ -71,7 +71,6 @@ load = (win) ->
 					)
 				)
 
-
 				R.div({className: 'basicInfo'},
 					R.h4({}, "Client Name"),
 					R.div({className: 'basicFields'}
@@ -86,7 +85,6 @@ load = (win) ->
 								maxLength: 35
 							})
 						)
-
 						R.div({className: 'form-group'},
 							R.label({}, "Middle name"),
 							R.input({
