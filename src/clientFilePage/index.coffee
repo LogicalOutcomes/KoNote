@@ -817,9 +817,8 @@ load = (win, {clientFileId}) ->
 				@refs.planTab.hasChanges()
 			else if @refs.sidebar
 				@refs.sidebar.hasChanges()
-			# else if @refs.infoTab?
-			# 	@refs.infoTab.hasChanges()
-
+			else if @refs.infoTab?
+			 	@refs.infoTab.hasChanges()
 			else
 				false
 
@@ -887,6 +886,35 @@ load = (win, {clientFileId}) ->
 			else if @refs.sidebar.hasChanges()
 				Bootbox.confirm "Discard unsaved changes to #{Term 'client'} alerts?", (ok) =>
 					if ok then @props.closeWindow()
+
+			else if @refs.infoTab.hasChanges()
+				Bootbox.dialog {
+					title: "Unsaved Changes to #{Term 'Client File'}"
+					message: """
+						You have unsaved changes in Client Information for #{clientName}.
+						How would you like to proceed?
+					"""
+					buttons: {
+						default: {
+							label: "Cancel"
+							className: "btn-default"
+							callback: => Bootbox.hideAll()
+						}
+						danger: {
+							label: "Discard Changes"
+							className: "btn-danger"
+							callback: =>
+								@props.closeWindow()
+						}
+						success: {
+							label: "View Additional Information"
+							className: "btn-success"
+							callback: =>
+								Bootbox.hideAll()
+								@setState {activeTabId: 'info'}
+						}
+					}
+				}
 			else
 				@props.closeWindow()
 
