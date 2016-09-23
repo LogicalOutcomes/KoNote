@@ -817,6 +817,9 @@ load = (win, {clientFileId}) ->
 				@refs.planTab.hasChanges()
 			else if @refs.sidebar
 				@refs.sidebar.hasChanges()
+			# else if @refs.infoTab?
+			# 	@refs.infoTab.hasChanges()
+
 			else
 				false
 
@@ -1008,6 +1011,8 @@ load = (win, {clientFileId}) ->
 							programsById: @props.programsById
 							detailDefinitionGroups: @props.detailDefinitionGroups
 							isReadOnly
+
+							hasChanges: @hasChanges
 						})
 					)
 				)

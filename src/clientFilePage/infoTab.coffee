@@ -31,7 +31,6 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
-			# TODO: Do stuff with this
 			existingDetailUnits = @props.clientFile.get('detailUnits')
 			detailUnitsById = @props.detailDefinitionGroups.flatMap (definitionGroup) =>
 
@@ -65,99 +64,111 @@ load = (win) ->
 		render: ->
 			return R.div({className: "infoView"},
 
-				R.div({className: 'btn-toolbar'},
-					R.button({
-						className: 'btn btn-primary'
-						onClick: @_submit
-						disabled: not @state.firstName or not @state.lastName
-					}, "Save changes")
-				)
+				hasChanges = @hasChanges()
+				console.log "hasChanges?", hasChanges
 
-				R.h4({}, "Basic Information"),
+				R.div({className: "flexButtonToolbar"},
+					R.button({
+						className: [
+							'saveButton'
+							'collapsed' unless hasChanges
+						].join ' '
+						onClick: @_submit
+					},
+						FaIcon('save')
+						' '
+						"Save Changes"
+					)
+				)
 
 				R.div({className: 'basicInfo'},
-					R.div({className: 'form-group'},
-						R.label({}, "First name"),
-						R.input({
-							ref: 'firstNameField'
-							className: 'form-control'
-							onChange: @_updateFirstName
-							value: @state.firstName
-							# onKeyDown: @_onEnterKeyDown
-							maxLength: 35
-						})
-					)
-
-					R.div({className: 'form-group'},
-						R.label({}, "Middle name"),
-						R.input({
-							className: 'form-control'
-							onChange: @_updateMiddleName
-							value: @state.middleName
-							placeholder: "(optional)"
-							maxLength: 35
-						})
-					)
-					R.div({className: 'form-group'},
-						R.label({}, "Last name"),
-						R.input({
-							className: 'form-control'
-							onChange: @_updateLastName
-							value: @state.lastName
-							maxLength: 35
-						})
-					)
-					(if Config.clientFileRecordId.isEnabled
+					R.h4({}, "Client Name"),
+					R.div({className: 'basicFields'}
 						R.div({className: 'form-group'},
-							R.label({}, Config.clientFileRecordId.label),
+							R.label({}, "First name"),
 							R.input({
+								ref: 'firstNameField'
 								className: 'form-control'
-								onChange: @_updateRecordId
-								value: @state.recordId
-								placeholder: "(optional)"
-								onKeyDown: @_onEnterKeyDown
-								maxLength: 23
+								onChange: @_updateFirstName
+								value: @state.firstName
+								# onKeyDown: @_onEnterKeyDown
+								maxLength: 35
 							})
 						)
+
+						R.div({className: 'form-group'},
+							R.label({}, "Middle name"),
+							R.input({
+								className: 'form-control'
+								onChange: @_updateMiddleName
+								value: @state.middleName
+								placeholder: "(optional)"
+								maxLength: 35
+							})
+						)
+						R.div({className: 'form-group'},
+							R.label({}, "Last name"),
+							R.input({
+								className: 'form-control'
+								onChange: @_updateLastName
+								value: @state.lastName
+								maxLength: 35
+							})
+						)
+						(if Config.clientFileRecordId.isEnabled
+							R.div({className: 'form-group'},
+								R.label({}, Config.clientFileRecordId.label),
+								R.input({
+									className: 'form-control'
+									onChange: @_updateRecordId
+									value: @state.recordId
+									placeholder: "(optional)"
+									onKeyDown: @_onEnterKeyDown
+									maxLength: 23
+								})
+							)
+						)
+
+						R.div({className: 'form-group'},
+							R.label({}, "Client File Status"),
+							R.div({className: 'btn-toolbar'},
+								R.button({
+									className:
+										if @state.status is 'active'
+											'btn btn-success'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									value: 'active'
+
+									},
+								"Active"
+								)
+								R.button({
+									className:
+										if @state.status is 'inactive'
+											'btn btn-warning'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									value: 'inactive'
+
+									},
+								"Inactive"
+								)
+								R.button({
+									className:
+										if @state.status is 'discharged'
+											'btn btn-danger'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									value: 'discharged'
+
+									},
+								"Discharged"
+								)
+							)
+						)
 					)
-				)
-				R.div({className: 'form-group'},
-					R.label({}, "Client File Status"),
-					R.div({className: 'btn-toolbar'},
-						R.button({
-							className:
-								if @state.status is 'active'
-									'btn btn-success'
-								else 'btn btn-default'
-							onClick: @_updateStatus
-							value: 'active'
 
-							},
-						"Active"
-						)
-						R.button({
-							className:
-								if @state.status is 'inactive'
-									'btn btn-warning'
-								else 'btn btn-default'
-							onClick: @_updateStatus
-							value: 'inactive'
-
-							},
-						"Inactive"
-						)
-						R.button({
-							className:
-								if @state.status is 'discharged'
-									'btn btn-danger'
-								else 'btn btn-default'
-							onClick: @_updateStatus
-							value: 'discharged'
-
-							},
-						"Discharged"
-						)
-					)
 				)
 
 				R.div({className: 'detailUnitGroups'},
@@ -191,6 +202,47 @@ load = (win) ->
 					)
 				)
 			)
+
+
+		hasChanges: ->
+			# If there is a difference, then there have been changes
+			updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
+				detailUnit.toJS()
+			existingDetailUnits = @props.clientFile.get('detailUnits')
+
+			detailUnitsById = @props.detailDefinitionGroups.flatMap (definitionGroup) =>
+				definitionGroup.get('fields').map (field) =>
+					fieldId = field.get('id')
+					existingDetailUnit = existingDetailUnits.find((unit) ->
+						unit.get('fieldId') is fieldId)
+
+					if existingDetailUnit?
+						value = existingDetailUnit.get('value')
+					else
+						value = ''
+
+					return [field.get('id'), Imm.fromJS {
+						fieldId
+						groupId: definitionGroup.get('id')
+						value
+					}]
+				.fromEntrySeq().toMap()
+			.fromEntrySeq().toMap()
+
+			# why does this always return true?
+			# unless Imm.is detailUnitsById, @state.detailUnitsById and
+			# @props.clientFile.get('status') is @state.status
+			# 	return true
+
+			unless Imm.is detailUnitsById, @state.detailUnitsById
+				return true
+			unless @props.clientFile.get('status') is @state.status
+				return true
+			unless @props.clientFile.getIn(['clientName', 'first']) is @state.firstName
+				return true
+
+			return false
+
 
 		_updateDetailUnit: (fieldId, event) ->
 			detailUnitsById = @state.detailUnitsById.setIn [fieldId, 'value'], event.target.value
