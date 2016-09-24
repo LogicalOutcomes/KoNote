@@ -48,6 +48,7 @@ load = (win) ->
 						null
 
 					ColorKeyBubble({
+						key: colorKeyHex
 						colorKeyHex
 						icon
 						onClick: @_onClick.bind null, colorKeyHex, isSelected, alreadyInUse

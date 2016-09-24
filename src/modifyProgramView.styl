@@ -1,0 +1,17 @@
+.modifyProgramView
+	flex 1
+	display flex
+
+	> section
+		flex 1
+
+		$insidePadding = 20px / 2
+
+		&:first-child
+			padding-right $insidePadding
+
+		&:last-child
+			padding-left $insidePadding
+
+	.saveButtonToolbar
+		padding-top 10px

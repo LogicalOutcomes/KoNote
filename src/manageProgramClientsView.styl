@@ -13,9 +13,14 @@
 			flex 1
 
 	.programClientsContainer
+		display flex
 		overflow auto
 
 		.programClients
+			display flex
+			flex-direction column
+			flex 1
+
 			h3
 				border-bottom 2px solid #eee
 				padding-bottom 10px
@@ -32,11 +37,14 @@
 					float right
 
 			.panel-body
+				padding 0
+				flex 1
 
-				&.noData
+				.noData
 					text-align center
 					padding 15px
 					font-style italic
+
 
 	.clientPickerContainer
 		display flex
