@@ -527,9 +527,40 @@ fixProgNoteRevisionFields = (dataDir, globalEncryptionKey, cb) ->
 
 		finalizeMigrationStep(dataDir, cb)
 
+addClientFileDetailUnitsField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn clientFileDirPath, (clientFileRev, cb) ->
+			clientFileRevPath = Path.join(clientFileDirPath, clientFileRev)
+			clientFileRevObject = null
+
+			Async.series [
+				(cb) =>
+					# Read clientFile object
+					Fs.readFile clientFileRevPath, (err, result) ->
+						if err
+							cb err
+							return
+						clientFileRevObject = JSON.parse globalEncryptionKey.decrypt result
+						cb()
+				(cb) =>
+					# Add 'detailUnits' property
+					clientFileRevObject.detailUnits = []
+					encryptedObj = globalEncryptionKey.encrypt(JSON.stringify clientFileRevObject)
+					Fs.writeFile clientFileRevPath, encryptedObj, cb
+			], cb
+		, cb
+	, (err) ->
+		if err
+			console.info "Problem with clientFile detailUnits"
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
 
 # ////////////////////// Migration Series //////////////////////
-
 
 module.exports = {
 	run: (dataDir, userName, password, lastMigrationStep, cb) ->
@@ -570,6 +601,11 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "6. Add new db sub-directory: '_timeIndex'"
 				createEmptyDirectory dataDir, '_timeIndex', cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "7. Add detailUnits: [] to clientFile objects"
+				addClientFileDetailUnitsField dataDir, globalEncryptionKey, cb
 
 		]
 
