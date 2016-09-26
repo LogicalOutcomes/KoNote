@@ -758,6 +758,11 @@ load = (win, {clientFileId}) ->
 					metricsById = @state.metricsById.set metricDefinition.get('id'), metricDefinition
 					@setState {metricsById}
 
+				'create:planTemplate': (newTemplate) =>
+					planTemplateHeaders = @state.planTemplateHeaders.push newTemplate
+					@setState {planTemplateHeaders}
+
+
 				'create:eventType': (newEventType) =>
 					eventTypes = @state.eventTypes.push newEventType
 					@setState {eventTypes}
