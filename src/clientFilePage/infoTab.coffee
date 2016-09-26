@@ -47,126 +47,120 @@ load = (win) ->
 
 				hasChanges = @hasChanges()
 
-				R.div({className: "leftSide"},
-
-					R.div({className: "flexButtonToolbar"},
-						R.button({
-							className: [
-								'saveButton'
-								'collapsed' unless hasChanges
-							].join ' '
-							onClick: @_submit
-						},
-							FaIcon('save')
-							' '
-							"Save Changes"
-						)
-						R.button({
-							className: [
-								'discardButton'
-								'collapsed' unless hasChanges
-							].join ' '
-							onClick: @_resetChanges
-						},
-							FaIcon('undo')
-							"Discard"
-						)
+				R.div({className: "flexButtonToolbar"},
+					R.button({
+						className: [
+							'saveButton'
+							'collapsed' unless hasChanges
+						].join ' '
+						onClick: @_submit
+					},
+						FaIcon('save')
+						' '
+						"Save Changes"
 					)
-
-					R.div({className: 'basicInfo'},
-						R.h4({}, "Client Name"),
-						R.div({className: 'basicFields'}
-							R.div({className: 'form-group'},
-								R.label({}, "First name"),
-								R.input({
-									ref: 'firstNameField'
-									className: 'form-control'
-									onChange: @_updateFirstName
-									value: @state.firstName
-									# onKeyDown: @_onEnterKeyDown
-									maxLength: 35
-								})
-							)
-							R.div({className: 'form-group'},
-								R.label({}, "Middle name"),
-								R.input({
-									className: 'form-control'
-									onChange: @_updateMiddleName
-									value: @state.middleName
-									placeholder: "(optional)"
-									maxLength: 35
-								})
-							)
-							R.div({className: 'form-group'},
-								R.label({}, "Last name"),
-								R.input({
-									className: 'form-control'
-									onChange: @_updateLastName
-									value: @state.lastName
-									maxLength: 35
-								})
-							)
-							(if Config.clientFileRecordId.isEnabled
-								R.div({className: 'form-group'},
-									R.label({}, Config.clientFileRecordId.label),
-									R.input({
-										className: 'form-control'
-										onChange: @_updateRecordId
-										value: @state.recordId
-										placeholder: "(optional)"
-										onKeyDown: @_onEnterKeyDown
-										maxLength: 23
-									})
-								)
-							)
-
-							R.div({className: 'form-group'},
-								R.label({}, "Client File Status"),
-								R.div({className: 'btn-toolbar'},
-									R.button({
-										className:
-											if @state.status is 'active'
-												'btn btn-success'
-											else 'btn btn-default'
-										onClick: @_updateStatus
-										value: 'active'
-
-									},
-										"Active"
-									)
-									R.button({
-										className:
-											if @state.status is 'inactive'
-												'btn btn-warning'
-											else 'btn btn-default'
-										onClick: @_updateStatus
-										value: 'inactive'
-
-									},
-										"Inactive"
-									)
-									R.button({
-										className:
-											if @state.status is 'discharged'
-												'btn btn-danger'
-											else 'btn btn-default'
-										onClick: @_updateStatus
-										value: 'discharged'
-
-									},
-										"Discharged"
-									)
-								)
-							)
-						)
-
+					R.button({
+						className: [
+							'discardButton'
+							'collapsed' unless hasChanges
+						].join ' '
+						onClick: @_resetChanges
+					},
+						FaIcon('undo')
+						"Discard"
 					)
 				)
 
-				R.div({className: 'detailUnitGroups'},
-					R.div({className: 'heading'},
-						R.section({className: 'title'}, "Additional Fields")
+				R.div({className: 'basicInfo'},
+					R.h4({}, "Client Name"),
+					R.div({className: 'basicFields'}
+						R.div({className: 'form-group'},
+							R.label({}, "First name"),
+							R.input({
+								ref: 'firstNameField'
+								className: 'form-control'
+								onChange: @_updateFirstName
+								value: @state.firstName
+								# onKeyDown: @_onEnterKeyDown
+								maxLength: 35
+							})
+						)
+						R.div({className: 'form-group'},
+							R.label({}, "Middle name"),
+							R.input({
+								className: 'form-control'
+								onChange: @_updateMiddleName
+								value: @state.middleName
+								placeholder: "(optional)"
+								maxLength: 35
+							})
+						)
+						R.div({className: 'form-group'},
+							R.label({}, "Last name"),
+							R.input({
+								className: 'form-control'
+								onChange: @_updateLastName
+								value: @state.lastName
+								maxLength: 35
+							})
+						)
+						(if Config.clientFileRecordId.isEnabled
+							R.div({className: 'form-group'},
+								R.label({}, Config.clientFileRecordId.label),
+								R.input({
+									className: 'form-control'
+									onChange: @_updateRecordId
+									value: @state.recordId
+									placeholder: "(optional)"
+									onKeyDown: @_onEnterKeyDown
+									maxLength: 23
+								})
+							)
+						)
+
+						R.div({className: 'form-group'},
+							R.label({}, "Client File Status"),
+							R.div({className: 'btn-toolbar'},
+								R.button({
+									className:
+										if @state.status is 'active'
+											'btn btn-success'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									value: 'active'
+
+								},
+									"Active"
+								)
+								R.button({
+									className:
+										if @state.status is 'inactive'
+											'btn btn-warning'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									value: 'inactive'
+
+								},
+									"Inactive"
+								)
+								R.button({
+									className:
+										if @state.status is 'discharged'
+											'btn btn-danger'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									value: 'discharged'
+
+								},
+									"Discharged"
+								)
+							)
+						)
 					)
+
+				)
+
+				R.div({className: 'detailUnitGroups'},
 					(@props.detailDefinitionGroups.map (definitionGroup) =>
 						groupId = definitionGroup.get('id')
 						fields = definitionGroup.get('fields')
