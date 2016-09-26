@@ -49,10 +49,12 @@ load = (win) ->
 
 				R.div({className: "flexButtonToolbar"},
 					R.button({
-						className: [
-							'saveButton'
-							'collapsed' unless hasChanges
-						].join ' '
+						className:
+							if hasChanges
+								'saveButton'
+							else
+								'disabled'
+
 						onClick: @_submit
 					},
 						FaIcon('save')
@@ -60,10 +62,12 @@ load = (win) ->
 						"Save Changes"
 					)
 					R.button({
-						className: [
-							'discardButton'
-							'collapsed' unless hasChanges
-						].join ' '
+						className:
+							if hasChanges
+								'discardButton'
+							else
+								'disabled'
+
 						onClick: @_resetChanges
 					},
 						FaIcon('undo')
