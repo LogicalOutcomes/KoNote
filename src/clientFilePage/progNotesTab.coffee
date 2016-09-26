@@ -16,6 +16,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	{findDOMNode} = win.ReactDOM
 	ReactDOMServer = win.ReactDOMServer
 
 	CancelProgNoteDialog = require('./cancelProgNoteDialog').load(win)
@@ -57,22 +58,6 @@ load = (win) ->
 			# 	if @props.isLoading is false and @props.headerIndex < @props.progNoteTotal
 			# 		if progNotesPane.scrollTop() + (progNotesPane.innerHeight() * 2) >= progNotesPane[0].scrollHeight
 			# 			@props.renewAllData()
-
-			quickNoteToggle = $('.addQuickNoteButton')
-			quickNoteToggle.data 'isVisible', false
-			quickNoteToggle.popover {
-				placement: 'bottom'
-				html: true
-				trigger: 'manual'
-				content: '''
-					<textarea class="form-control"></textarea>
-					<div class="buttonBar form-inline">
-						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
-						<button class="cancel btn btn-danger"><i class="fa fa-trash"></i> Discard</button>
-						<button class="save btn btn-primary"><i class="fa fa-check"></i> Save</button>
-					</div>
-				'''
-			}
 
 		hasChanges: ->
 			@_revisingProgNoteHasChanges()
@@ -124,7 +109,7 @@ load = (win) ->
 
 						(if hasEnoughData
 
-							R.div({className: "flexButtonToolbar"},
+							R.div({className: 'flexButtonToolbar'},
 								R.button({
 									className: [
 										'saveButton'
@@ -161,6 +146,7 @@ load = (win) ->
 								)
 
 								R.button({
+									ref: 'addQuickNoteButton'
 									className: [
 										'addQuickNoteButton'
 										'collapsed' if @state.revisingProgNote
@@ -187,6 +173,7 @@ load = (win) ->
 									"New #{Term 'progress note'}"
 								)
 								R.button({
+									ref: 'addQuickNoteButton'
 									className: 'btn btn-default btn-lg addQuickNoteButton'
 									onClick: @_openNewQuickNote
 									disabled: @props.isReadOnly
@@ -582,17 +569,31 @@ load = (win) ->
 		_toggleQuickNotePopover: ->
 			# TODO: Refactor to stateful React component
 
-			quickNoteToggle = $('.addQuickNoteButton:not(.hide)')
+			quickNoteToggle = $(findDOMNode @refs.addQuickNoteButton)
+
+			quickNoteToggle.popover {
+				placement: 'bottom'
+				html: true
+				trigger: 'manual'
+				content: '''
+					<textarea class="form-control"></textarea>
+					<div class="buttonBar form-inline">
+						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
+						<button class="cancel btn btn-danger"><i class="fa fa-trash"></i> Discard</button>
+						<button class="save btn btn-primary"><i class="fa fa-check"></i> Save</button>
+					</div>
+				'''
+			}
 
 			if quickNoteToggle.data('isVisible')
 				quickNoteToggle.popover('hide')
 				quickNoteToggle.data('isVisible', false)
 			else
-				global.document = win.document
 				quickNoteToggle.popover('show')
 				quickNoteToggle.data('isVisible', true)
 
 				popover = quickNoteToggle.siblings('.popover')
+
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
