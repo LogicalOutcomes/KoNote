@@ -53,6 +53,9 @@ load = (win) ->
 				historyEntries: Imm.List()
 			}
 
+		componentWillReceiveProps: (nextProps) ->
+			@_buildHistoryEntries(nextProps)
+		
 		componentDidMount: ->
 			@_buildHistoryEntries()
 			
@@ -85,9 +88,13 @@ load = (win) ->
 		hasChanges: ->
 			@_revisingProgNoteHasChanges()
 
-		_buildHistoryEntries: ->
-			progNoteHistories = @props.progNoteHistories
-			clientFileId = @props.clientFileId
+		_buildHistoryEntries: (nextProps) ->
+			if nextProps?
+				progNoteHistories = nextProps.progNoteHistories
+				clientFileId = nextProps.clientFileId
+			else
+				progNoteHistories = @props.progNoteHistories
+				clientFileId = @props.clientFileId
 			historyEntries = null
 			
 			Async.series [
@@ -653,10 +660,17 @@ load = (win) ->
 					event.preventDefault()
 
 					@_createQuickNote popover.find('textarea').val(), @state.backdate, @state.attachment, (err) =>
+						
+						if @state.attachment?
+							# refresh if we have an attachment since it is not ready when create:prognote fires in
+							# the parent. TODO: make this more elegant
+							@_buildHistoryEntries()
+						
 						@setState {
 							backdate: '',
 							attachment: null
 						}
+						
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
@@ -669,8 +683,6 @@ load = (win) ->
 
 						quickNoteToggle.popover('hide')
 						quickNoteToggle.data('isVisible', false)
-						@_buildHistoryEntries()
-
 
 				popover.find('.backdate.date').datetimepicker({
 					format: 'MMM-DD-YYYY h:mm A'
@@ -917,10 +929,8 @@ load = (win) ->
 						# absolute path required for windows
 						filepath = Path.join process.cwd(), Config.dataDirectory, '_tmp', filename
 						file = new Buffer(encodedData, 'base64')
-						# write it somewhere temporary
-						# TODO prompt user to save file?
+						# TODO cleanup file...
 						Fs.writeFileSync filepath, file
-						# open it
 						nw.Shell.openItem filepath
 
 		_selectQuickNote: ->
