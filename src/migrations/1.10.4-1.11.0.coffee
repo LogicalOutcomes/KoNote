@@ -107,12 +107,15 @@ forEachFileIn = (parentDir, loopBody, cb) ->
 				fileNames = result
 				cb()
 		(cb) ->
-			if fileNames.length is 0 then console.warn "(no files to iterate over)"
+			if fileNames.length is 0
+				console.warn "(no files to iterate over)"
+				cb()
+				return
 
 			Async.eachSeries fileNames, (fileName, cb) ->
 				# Skip .DS_Store & Thumbs.db files, and known children folders
 				# TODO: Make this a regex check
-				if fileName in ['.DS_Store', 'Thumbs.db', 'progEvents', 'planTargets', 'progNotes']
+				if fileName in ['.DS_Store', 'Thumbs.db', 'progEvents', 'planTargets', 'progNotes', 'alerts']
 					console.warn "Skipping #{fileName}"
 					cb()
 					return
@@ -465,6 +468,8 @@ changeGlobalEventProperty = (dataDir, globalEncryptionKey, cb) ->
 			cb err
 			return
 
+		finalizeMigrationStep(dataDir, cb)
+
 
 fixProgNoteRevisionFields = (dataDir, globalEncryptionKey, cb) ->
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
@@ -526,6 +531,7 @@ fixProgNoteRevisionFields = (dataDir, globalEncryptionKey, cb) ->
 			return
 
 		finalizeMigrationStep(dataDir, cb)
+
 
 addClientFileDetailUnitsField = (dataDir, globalEncryptionKey, cb) ->
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
@@ -606,6 +612,11 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "7. Add detailUnits: [] to clientFile objects"
 				addClientFileDetailUnitsField dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "8. Add new db sub-directory: 'clientDetailDefinitionGroups'"
+				createEmptyDirectory dataDir, 'clientDetailDefinitionGroups', cb
 
 		]
 
