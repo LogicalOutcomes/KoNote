@@ -15,6 +15,7 @@ yauzl = require 'yauzl'
 path = require 'path'
 mkdirp = require 'mkdirp'
 
+
 load = (win) ->
 	# Libraries from browser context
 	$ = win.jQuery
@@ -27,7 +28,7 @@ load = (win) ->
 
 	Spinner = require('./spinner').load(win)
 	CrashHandler = require('./crashHandler').load(win)
-	{FaIcon} = require('./utils').load(win)
+	{handleCustomError, FaIcon} = require('./utils').load(win)
 
 
 	NewInstallationPage = React.createFactory React.createClass
@@ -471,10 +472,7 @@ load = (win) ->
 							return
 
 					if err instanceof Persist.IOError
-						Bootbox.alert {
-							title: "Connection Error (IOError)"
-							message: "Please check your network connection and try again."
-						}
+						handleCustomError(err)
 						return
 
 					Bootbox.alert {
@@ -548,6 +546,7 @@ load = (win) ->
 				return
 
 			systemAccount = null
+			newUserName = 'admin'
 			adminPassword = @state.password
 
 			destDataDirectoryPath = Config.backend.dataDirectory
@@ -586,6 +585,7 @@ load = (win) ->
 						# Save our atomic operation
 						atomicOp = op
 						cb()
+
 				(cb) =>
 					@_updateProgress 0, "Setting up database..."
 
@@ -596,6 +596,7 @@ load = (win) ->
 							return
 
 						cb()
+
 				(cb) =>
 					@_updateProgress 25, "Generating encryption keys (this may take a while...)"
 
@@ -615,33 +616,30 @@ load = (win) ->
 						systemAccount = result
 						isDone = true
 						cb()
+
 				(cb) =>
 					@_updateProgress 75, "Creating \"admin\" user..."
+
 					# Create admin user account using systemAccount
-					Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
-						if err
-							if err instanceof Persist.Users.UserNameTakenError
-								Bootbox.alert "An admin #{Term 'user account'} already exists."
-								process.exit(1)
-								return
+					Persist.Users.Account.create systemAccount, newUserName, adminPassword, 'admin', cb
 
-							cb err
-							return
-
-						cb()
 				(cb) =>
 					atomicOp.commit cb
+
 			], (err) =>
 				if err
 					@setState {isLoading: false}
 
-					if err instanceof Persist.IOError
-						Bootbox.alert {
-							title: "Connection Error (IOError)"
-							message: "Please check your network connection and try again."
-						}
-						console.error err
+					if err instanceof Persist.CustomError
+						handleCustomError(err, newUserName ->
+							# Close the app if we encounter a UserNameTakenError
+							if err instanceof Persist.Users.UserNameTakenError
+								process.exit(1)
+						)
 						return
+
+
+					# Crash more gracefully here with an informative alert
 
 					errCode = [
 						err.name or ''
