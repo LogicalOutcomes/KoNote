@@ -16,8 +16,6 @@ load = (win) ->
 	R = React.DOM
 	Gui = win.require 'nw.gui'
 
-	CrashHandler = require('./crashHandler').load(win)
-
 
 	# Execute variable as a function if it is one
 	executeIfFunction = (variable, arg) ->
@@ -143,6 +141,7 @@ load = (win) ->
 
 	# Wraps error in Bootbox.alert, uses CustomError's built-in alertTitle/Message
 	# Must be a custom error (such as IOError) that's submitted
+	# 'arg' is any custom data name involved in the IO operation, such as userName for logging in
 	handleError = (err, arg, cb) ->
 
 		if typeof arg is 'function' # 'arg' is optional 2nd argument
@@ -155,7 +154,7 @@ load = (win) ->
 
 		unless err instanceof CustomError
 			# Hard-crash the app if not a CustomError
-			CrashHandler.handle(err)
+			throw new Error "Error can only be an instance of CustomError"
 			return
 
 		if not err.alertMessage or not err.alertTitle
