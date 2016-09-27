@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+Fs = require 'fs'
+Path = require 'path'
 Assert = require 'assert'
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -42,16 +44,22 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				editingProgNoteId: null
-
+				attachment: null
 				selectedItem: null
 				highlightedProgNoteId: null
 				highlightedTargetId: null
 				backdate: ''
 				revisingProgNote: null
 				isLoading: null
+				historyEntries: Imm.List()
 			}
 
+		componentWillReceiveProps: (nextProps) ->
+			@_buildHistoryEntries(nextProps)
+		
 		componentDidMount: ->
+			@_buildHistoryEntries()
+			
 			# TODO: Restore for lazyload feature
 			# progNotesPane = $('.historyEntries')
 			# progNotesPane.on 'scroll', =>
@@ -62,21 +70,55 @@ load = (win) ->
 		hasChanges: ->
 			@_revisingProgNoteHasChanges()
 
+		_buildHistoryEntries: (nextProps) ->
+			if nextProps?
+				progNoteHistories = nextProps.progNoteHistories
+				clientFileId = nextProps.clientFileId
+			else
+				progNoteHistories = @props.progNoteHistories
+				clientFileId = @props.clientFileId
+			historyEntries = null
+			
+			Async.series [
+				(cb) =>
+					Async.map progNoteHistories.toArray(), (progNoteHistory, cb) =>
+						timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
+						progNoteId = progNoteHistory.last().get('id')
+						attachmentFilename = null
+
+						ActiveSession.persist.attachments.list clientFileId, progNoteId, (err, results) =>
+							unless err
+								if results.size > 0
+									attachmentFilename = {
+										clientFileId
+										progNoteId
+										attachmentId: results.first().get('id')
+										filename: results.first().get('filename')
+									}
+								
+							entry = Imm.fromJS {
+								type: 'progNote'
+								id: progNoteId
+								timestamp
+								attachmentFilename
+								data: progNoteHistory
+							}
+
+							cb null, entry
+
+					, (err, results) ->
+						if err
+							console.log err
+						historyEntries = Imm.List(results)
+						cb()
+			], (err) =>
+				if err
+					console.log err
+				@setState {historyEntries}
+		
 		render: ->
-			progNoteHistories = @props.progNoteHistories
+			historyEntries = @state.historyEntries
 			hasChanges = @_revisingProgNoteHasChanges()
-
-			historyEntries = progNoteHistories
-			.map (progNoteHistory) ->
-				timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
-
-				return Imm.fromJS {
-					type: 'progNote'
-					id: progNoteHistory.last().get('id')
-					timestamp
-					data: progNoteHistory
-				}
-
 			historyEntries = if @state.revisingProgNote?
 				# Only show the single progNote while editing
 				Imm.List [
@@ -101,6 +143,7 @@ load = (win) ->
 			historyEntries = historyEntries.reverse()
 
 			hasEnoughData = (@props.progNoteHistories.size + @props.globalEvents.size) > 0
+<<<<<<< HEAD
 
 
 			return R.div({className: 'progNotesView'},
@@ -193,6 +236,7 @@ load = (win) ->
 												key: entry.get('id')
 
 												progNoteHistory: entry.get('data')
+												attachments: entry.get('attachmentFilename')
 												eventTypes: @props.eventTypes
 												clientFile: @props.clientFile
 
@@ -231,6 +275,7 @@ load = (win) ->
 							)
 						)
 					)
+<<<<<<< HEAD
 					R.section({className: 'rightPane'},
 						ProgNoteDetailView({
 							item: @state.selectedItem
@@ -566,6 +611,38 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
+		_attach: ->
+			# Configures hidden file inputs with custom attributes, and clicks it
+			$nwbrowse = $('#nwBrowse')
+			$nwbrowse
+			.off()
+			#.attr('accept', ".#{extension}")
+			.on('change', (event) => @_encodeFile event.target.value)
+			.click()
+
+		_encodeFile: (file) ->
+			if file
+				filename = Path.basename file
+				attachment = Fs.readFileSync(file)
+				filesize = Buffer.byteLength(attachment, 'base64')
+				if filesize < 1048576
+					filesize = (filesize / 1024).toFixed() + " KB"
+				else
+					filesize = (filesize / 1048576).toFixed() + " MB"
+
+				# convert to base64 encoded string
+				encodedAttachment = new Buffer(attachment).toString 'base64'
+
+				@setState {
+					attachment: {
+						encodedData: encodedAttachment
+						filename: filename
+					}
+				}
+				$('#attachmentArea').append filename + " (" + filesize + ")"
+				#@_decodeFile encodedAttachment
+			return
+			
 		_toggleQuickNotePopover: ->
 			# TODO: Refactor to stateful React component
 
@@ -577,10 +654,13 @@ load = (win) ->
 				trigger: 'manual'
 				content: '''
 					<textarea class="form-control"></textarea>
+					<div id="attachmentArea"></div>
 					<div class="buttonBar form-inline">
 						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
+						<button class="btn btn-default" id="attachBtn"><i class="fa fa-paperclip"></i> Attach</button>
 						<button class="cancel btn btn-danger"><i class="fa fa-trash"></i> Discard</button>
 						<button class="save btn btn-primary"><i class="fa fa-check"></i> Save</button>
+						<input type="file" class="hidden" id="nwBrowse"></input>
 					</div>
 				'''
 			}
@@ -592,13 +672,28 @@ load = (win) ->
 				quickNoteToggle.popover('show')
 				quickNoteToggle.data('isVisible', true)
 
+				attachFile = $('#attachBtn')
+				attachFile.on 'click', (event) =>
+					@_attach event
+					attachFile.blur()
+
 				popover = quickNoteToggle.siblings('.popover')
 
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
-					@_createQuickNote popover.find('textarea').val(), @state.backdate, (err) =>
-						@setState {backdate: ''}
+					@_createQuickNote popover.find('textarea').val(), @state.backdate, @state.attachment, (err) =>
+						
+						if @state.attachment?
+							# refresh if we have an attachment since it is not ready when create:prognote fires in
+							# the parent. TODO: make this more elegant
+							@_buildHistoryEntries()
+						
+						@setState {
+							backdate: '',
+							attachment: null
+						}
+						
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
@@ -611,7 +706,6 @@ load = (win) ->
 
 						quickNoteToggle.popover('hide')
 						quickNoteToggle.data('isVisible', false)
-
 
 				popover.find('.backdate.date').datetimepicker({
 					format: 'MMM-DD-YYYY h:mm A'
@@ -628,7 +722,10 @@ load = (win) ->
 
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
-					@setState {backdate: ''}
+					@setState {
+						backdate: '',
+						attachment: null
+					}
 					quickNoteToggle.popover('hide')
 					quickNoteToggle.data('isVisible', false)
 
@@ -637,7 +734,7 @@ load = (win) ->
 				# Store quickNoteBeginTimestamp as class var, since it wont change
 				@quickNoteBeginTimestamp = Moment().format(Persist.TimestampFormat)
 
-		_createQuickNote: (notes, backdate, cb) ->
+		_createQuickNote: (notes, backdate, attachment, cb) ->
 			unless notes
 				Bootbox.alert "Cannot create an empty #{Term 'quick note'}."
 				return
@@ -652,7 +749,27 @@ load = (win) ->
 				beginTimestamp: @quickNoteBeginTimestamp
 			}
 
-			global.ActiveSession.persist.progNotes.create quickNote, cb
+			global.ActiveSession.persist.progNotes.create quickNote, (err, result) =>
+				if err
+					cb err
+					return
+
+				unless attachment
+					cb()
+					return
+				
+				attachmentData = Imm.fromJS {
+					filename: attachment.filename
+					encodedData: attachment.encodedData
+					clientFileId: @props.clientFileId
+					progNoteId: result.get('id')
+				}
+				
+				global.ActiveSession.persist.attachments.create attachmentData, (err) =>
+					if err
+						cb err
+						return
+					cb()
 
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
@@ -714,6 +831,7 @@ load = (win) ->
 					QuickNoteView({
 						progNote
 						progNoteHistory: @props.progNoteHistory
+						attachments: @props.attachments
 						userProgram
 						clientFile: @props.clientFile
 						selectedItem: @props.selectedItem
@@ -767,6 +885,9 @@ load = (win) ->
 			isEditing = @props.isEditing
 
 			progNote = if isEditing then @props.revisingProgNote else @props.progNote
+			
+			if @props.attachments?
+				attachmentText = " " + @props.attachments.get('filename')
 
 			R.div({
 				className: 'basic progNote'
@@ -802,8 +923,37 @@ load = (win) ->
 							renderLineBreaks progNote.get('notes')
 						)
 					)
+					(if attachmentText?
+						R.a({
+							className: 'attachment'
+							onClick: @_openAttachment.bind null, @props.attachments
+						},
+							FaIcon(Path.extname attachmentText)
+							attachmentText
+						)
+					)
 				)
 			)
+		
+		_openAttachment: (attachment) ->
+			if attachment?
+				clientFileId = attachment.get('clientFileId')
+				progNoteId = attachment.get('progNoteId')
+				attachmentId = attachment.get('attachmentId')
+
+				global.ActiveSession.persist.attachments.readRevisions clientFileId, progNoteId, attachmentId, (err, object) ->
+					if err
+						console.log err
+						return
+					encodedData = object.first().get('encodedData')
+					filename = object.first().get('filename')
+					if filename?
+						# absolute path required for windows
+						filepath = Path.join process.cwd(), Config.dataDirectory, '_tmp', filename
+						file = new Buffer(encodedData, 'base64')
+						# TODO cleanup file...
+						Fs.writeFileSync filepath, file
+						nw.Shell.openItem filepath
 
 		_selectQuickNote: ->
 			@props.setSelectedItem Imm.fromJS {
