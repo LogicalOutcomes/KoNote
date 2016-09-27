@@ -25,7 +25,7 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
 	Dialog = require('./dialog').load(win)
-	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
+	{CustomError, handleCustomError, FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
 
 	LoginPage = React.createFactory React.createClass
@@ -139,26 +139,29 @@ load = (win) ->
 				@setState {isLoading: false, loadingMessage: ""}
 
 				if err
-					if err instanceof Persist.Session.UnknownUserNameError
-						@refs.ui.onLoginError('UnknownUserNameError')
-						return
+					if err instanceof CustomError
+						handleCustomError(err, userName, =>
+							# Call UI callback corresponding to error type
+							if err instanceof Persist.Session.UnknownUserNameError
+								@refs.ui.onLoginError('UnknownUserNameError')
+								return
 
-					if err instanceof Persist.Session.InvalidUserNameError
-						@refs.ui.onLoginError('InvalidUserNameError')
-						return
+							if err instanceof Persist.Session.InvalidUserNameError
+								@refs.ui.onLoginError('InvalidUserNameError')
+								return
 
-					if err instanceof Persist.Session.IncorrectPasswordError
-						@refs.ui.onLoginError('IncorrectPasswordError')
-						return
+							if err instanceof Persist.Session.IncorrectPasswordError
+								@refs.ui.onLoginError('IncorrectPasswordError')
+								return
 
-					if err instanceof Persist.Session.DeactivatedAccountError
-						@refs.ui.onLoginError('DeactivatedAccountError')
+							if err instanceof Persist.Session.DeactivatedAccountError
+								@refs.ui.onLoginError('DeactivatedAccountError')
+								return
+						)
 						return
 
 					CrashHandler.handle err
 					return
-
-				#Window.hide()
 
 
 	LoginPageUi = React.createFactory React.createClass
@@ -182,30 +185,16 @@ load = (win) ->
 		onLoginError: (type) ->
 			switch type
 				when 'UnknownUserNameError'
-					Bootbox.alert "Unknown user name. Please try again.", =>
-						setTimeout(=>
-							@refs.userNameField.focus()
-						, 100)
+					@refs.userNameField.focus()
 				when 'InvalidUserNameError'
-					Bootbox.alert "Invalid user name. Please try again.", =>
-						@refs.userNameField.focus()
-						setTimeout(=>
-							@refs.userNameField.focus()
-						, 100)
+					@refs.userNameField.focus()
 				when 'IncorrectPasswordError'
-					Bootbox.alert "Incorrect password. Please try again.", =>
-						@setState {password: ''}
-						setTimeout(=>
-							@refs.passwordField.focus()
-						, 100)
+					@setState {password: ''}
+					@refs.passwordField.focus()
 				when 'DeactivatedAccountError'
-					Bootbox.alert "This user account has been deactivated.", =>
-						@refs.userNameField.focus()
-						setTimeout(=>
-							@refs.userNameField.focus()
-						, 100)
+					@refs.userNameField.focus()
 				when 'IOError'
-					Bootbox.alert "Please check your network connection and try again."
+					return # Nothing to do
 				else
 					throw new Error "Invalid Login Error"
 
