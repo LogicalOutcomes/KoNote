@@ -14,6 +14,8 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+	Bootbox = win.bootbox
+
 	Gui = win.require 'nw.gui'
 
 
@@ -142,7 +144,7 @@ load = (win) ->
 	# Wraps error in Bootbox.alert, uses CustomError's built-in alertTitle/Message
 	# Must be a custom error (such as IOError) that's submitted
 	# 'arg' is any custom data name involved in the IO operation, such as userName for logging in
-	handleError = (err, arg, cb) ->
+	handleCustomError = (err, arg, cb) ->
 
 		if typeof arg is 'function' # 'arg' is optional 2nd argument
 			cb = arg
@@ -176,8 +178,7 @@ load = (win) ->
 		return Bootbox.alert {
 			title: err.alertTitle
 			message
-			callback: cb
-		}
+		}.on('hidden.bs.modal', cb)
 
 	##### Convenience methods for fetching data from a progNote
 
@@ -228,7 +229,7 @@ load = (win) ->
 		getUnitIndex
 		getPlanSectionIndex
 		getPlanTargetIndex
-		handleError
+		handleCustomError
 	}
 
 module.exports = {

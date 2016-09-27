@@ -40,7 +40,7 @@ load = (win) ->
 	GenerateSummariesDialog = require('./generateSummariesDialog').load(win)
 
 	CrashHandler = require('./crashHandler').load(win)
-	{handleError, FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
+	{handleCustomError, FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
 
 
 	ClientSelectionPage = React.createFactory React.createClass
@@ -206,7 +206,11 @@ load = (win) ->
 					], cb
 			], (err) =>
 				if err
-					handleError(err)
+					if err instanceof Persist.CustomError
+						handleCustomError(err)
+						return
+
+					CrashHandler.handle(err)
 					return
 
 				# Figure out userProgramId (We currently assume there can only be one)
