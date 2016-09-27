@@ -40,7 +40,7 @@ load = (win) ->
 	GenerateSummariesDialog = require('./generateSummariesDialog').load(win)
 
 	CrashHandler = require('./crashHandler').load(win)
-	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
+	{handleError, FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
 
 
 	ClientSelectionPage = React.createFactory React.createClass
@@ -206,13 +206,8 @@ load = (win) ->
 					], cb
 			], (err) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
-						return
-
-					CrashHandler.handle err
+					handleError(err)
 					return
-
 
 				# Figure out userProgramId (We currently assume there can only be one)
 				# TODO: Refactor to something a little nicer
