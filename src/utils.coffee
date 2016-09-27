@@ -229,6 +229,7 @@ load = (win) ->
 		getUnitIndex
 		getPlanSectionIndex
 		getPlanTargetIndex
+		handleError
 	}
 
 module.exports = {
