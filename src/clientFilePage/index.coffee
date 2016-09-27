@@ -768,7 +768,7 @@ load = (win, {clientFileId}) ->
 
 					templateIndex = @state.planTemplateHeaders.indexOf originalTemplate
 					planTemplateHeaders = @state.planTemplateHeaders.set templateIndex, newTemplateRev
-					@setState {programs}
+					@setState {planTemplateHeaders}
 
 				'create:eventType': (newEventType) =>
 					eventTypes = @state.eventTypes.push newEventType
