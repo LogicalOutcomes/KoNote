@@ -9,11 +9,15 @@ Moment = require 'moment'
 {CustomError} = require './persist/utils'
 Config = require './config'
 
+
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
 	Gui = win.require 'nw.gui'
+
+	CrashHandler = require('./crashHandler').load(win)
+
 
 	# Execute variable as a function if it is one
 	executeIfFunction = (variable, arg) ->
@@ -134,7 +138,47 @@ load = (win) ->
 
 		return text[...(maxLength - 1)] + '…'
 
+	# MomentJS convenience method
 	makeMoment = (timestamp) -> Moment timestamp, TimestampFormat
+
+	# Wraps error in Bootbox.alert, uses CustomError's built-in alertTitle/Message
+	# Must be a custom error (such as IOError) that's submitted
+	handleError = (err, arg, cb) ->
+
+		if typeof arg is 'function' # 'arg' is optional 2nd argument
+			cb = arg
+
+		unless err?
+			# Undefined or null error
+			throw new Error "Can't handle error that is #{typeof err}"
+			return
+
+		unless err instanceof CustomError
+			# Hard-crash the app if not a CustomError
+			CrashHandler.handle(err)
+			return
+
+		if not err.alertMessage or not err.alertTitle
+			# All CustomErrors need to have a user-facing alert title/message
+			throw new Error "Missing alertMessage/Title in error class"
+			return
+
+		# The errorMessage may be a function, taking an argument (such as a userName)
+		message = if typeof err.alertMessage is 'function'
+			unless arg
+				throw new Error "Missing handleError argument for alertMessage, for \"#{err.alertTitle}\""
+
+			err.alertMessage(arg)
+		else
+			err.alertMessage
+
+
+		# Prompt user with alert error dialog
+		return Bootbox.alert {
+			title: err.alertTitle
+			message
+			callback: cb
+		}
 
 	##### Convenience methods for fetching data from a progNote
 
