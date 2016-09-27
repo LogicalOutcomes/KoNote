@@ -108,7 +108,9 @@ class IOError extends CustomError
 		@message = cause.message
 		@stack = cause.stack
 
-		return
+		@alertTitle = "Connection Error (IOError)"
+		@alertMessage = "Please check your network connection and try again."
+
 	toString: ->
 		return "IOError: " + (@cause?.toString())
 

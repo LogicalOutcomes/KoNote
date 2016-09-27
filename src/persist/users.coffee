@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # This module handles all logic related to user accounts.
@@ -598,7 +598,7 @@ class DecryptedAccount extends Account
 			# See Account.decrypt* instead
 			throw new Error "DecryptedAccount constructor should only be used internally"
 
-		@_userDir = getUserDir @dataDirectory, @userName		
+		@_userDir = getUserDir @dataDirectory, @userName
 
 	# Change account Type: Admin -> Normal | Normal -> Admin.
 	#
@@ -612,7 +612,7 @@ class DecryptedAccount extends Account
 		privateInfo = @privateInfo
 		publicInfoPath = Path.join(@_userDir, 'public-info')
 		privateInfoPath = Path.join(@_userDir, 'private-info')
-		
+
 		unless loggedInAccount.publicInfo.accountType is 'admin'
 			cb new Error "only admins can change account types"
 			return
@@ -623,7 +623,7 @@ class DecryptedAccount extends Account
 		if loggedInAccount.userName == @userName
 			cb new AccountTypeError "you cannot change your own account type"
 			return
-		
+
 		Async.series [
 			(cb) =>
 				publicInfo.accountType = newType
@@ -645,7 +645,7 @@ class DecryptedAccount extends Account
 						return
 					cb()
 		], cb
-	
+
 	# Updates this user account's password.
 	#
 	# Errors:
@@ -657,7 +657,7 @@ class DecryptedAccount extends Account
 		kdfParams = generateKdfParams()
 		nextAccountKeyId = null
 		pwEncryptionKey = null
-		
+
 		tmpDirPath = Path.join(@dataDirectory, '_tmp')
 
 		Async.series [
@@ -680,7 +680,7 @@ class DecryptedAccount extends Account
 			(cb) =>
 				accountKeyEncoded = Base64url.encode pwEncryptionKey.encrypt(@_accountKey.export())
 				data = {kdfParams, accountKey: accountKeyEncoded}
-				
+
 				nextAccountKeyPath = Path.join(@_userDir, "account-key-#{nextAccountKeyId}")
 
 				Atomic.writeJSONToFile nextAccountKeyPath, tmpDirPath, JSON.stringify(data), cb
@@ -703,12 +703,62 @@ getUserDir = (dataDir, userName, cb) ->
 
 	return Path.join dataDir, '_users', userName
 
+
+# Custom userAccount errors
+# with user-facing error messages included (alertTitle, alertMessage)
+
 class UserNameTakenError extends CustomError
+	constructor: ->
+		super()
+
+		@alertTitle = "Username Taken (UserNameTakenError)"
+		@alertMessage = (userName) ->
+			"Cannot create user account with username \"#{userName}\" because it already exists."
+
+
 class UnknownUserNameError extends CustomError
+	constructor: ->
+		super()
+
+		@alertTitle = "User Not Found (UnknownUserNameError)"
+		@alertMessage = (userName) ->
+			"Cannot find the username \"#{userName}\" in the database."
+
+
 class InvalidUserNameError extends CustomError
+	constructor: ->
+		super()
+
+		@alertTitle = "Invalid Username (InvalidUserNameError)"
+		@alertMessage = (userName) ->
+			"The username entered \"#{userName}\" is invalid. Please try again."
+
+
 class IncorrectPasswordError extends CustomError
+	constructor: ->
+		super()
+
+		@alertTitle = "Incorrect Password"
+		@alertMessage = "Incorrect password entered. Please try again."
+
+
+
 class DeactivatedAccountError extends CustomError
+	constructor: ->
+		super()
+
+		@alertTitle = "Deactivated Account"
+		@alertMessage = "The user \"#{userName}\" has been deactivated."
+
+
 class AccountTypeError extends CustomError
+	constructor: ->
+		super()
+
+		@alertTitle = "Account Type Error"
+		@alertMessage = @message
+
+
 
 module.exports = {
 	isAccountSystemSetUp
