@@ -10,6 +10,7 @@ Config = require './config'
 Term = require './term'
 Persist = require './persist'
 
+
 load = (win) ->
 	# Libraries from browser context
 	$ = win.jQuery
@@ -25,6 +26,7 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 	Dialog = require('./dialog').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
+
 
 	LoginPage = React.createFactory React.createClass
 		displayName: 'LoginPage'
@@ -125,7 +127,7 @@ load = (win) ->
 						clientSelectionPageWindow = newWindow
 
 						Window.hide()
-						
+
 						clientSelectionPageWindow.on 'closed', =>
 							@props.closeWindow()
 							Window.quit()
