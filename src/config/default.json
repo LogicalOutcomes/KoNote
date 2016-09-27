@@ -27,7 +27,7 @@
 		"label": "ID#"
 	},
 
-	"timestampFormat": "MMMM Do, YYYY [at] h:mma",
+	"timestampFormat": "Do MMM, YYYY [-] h:mma",
 
 	"timeout": {
 		"duration": 25,
