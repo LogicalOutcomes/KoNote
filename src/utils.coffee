@@ -178,7 +178,8 @@ load = (win) ->
 		return Bootbox.alert {
 			title: err.alertTitle
 			message
-		}.on('hidden.bs.modal', cb)
+		}
+		.on('hidden.bs.modal', cb) # First ensure dialog hidden, then execute callback
 
 	##### Convenience methods for fetching data from a progNote
 
