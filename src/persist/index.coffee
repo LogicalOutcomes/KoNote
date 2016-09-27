@@ -16,6 +16,7 @@ Users = require './users'
 module.exports = {
 	buildDataDirectory
 	generateId
+	CustomError
 	IOError
 	ObjectNotFoundError
 	TimestampFormat
