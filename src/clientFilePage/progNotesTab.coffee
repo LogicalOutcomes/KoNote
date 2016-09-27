@@ -143,7 +143,6 @@ load = (win) ->
 			historyEntries = historyEntries.reverse()
 
 			hasEnoughData = (@props.progNoteHistories.size + @props.globalEvents.size) > 0
-<<<<<<< HEAD
 
 
 			return R.div({className: 'progNotesView'},
@@ -275,7 +274,6 @@ load = (win) ->
 							)
 						)
 					)
-<<<<<<< HEAD
 					R.section({className: 'rightPane'},
 						ProgNoteDetailView({
 							item: @state.selectedItem
