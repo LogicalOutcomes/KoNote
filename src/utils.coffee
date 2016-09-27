@@ -147,7 +147,7 @@ load = (win) ->
 	handleCustomError = (err, arg, cb) ->
 
 		if typeof arg is 'function' # 'arg' is optional 2nd argument
-			cb = arg
+			cb = arg or (->)
 
 		unless err?
 			# Undefined or null error
