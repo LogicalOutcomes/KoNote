@@ -2,10 +2,14 @@
 	position absolute
 	bottom 65px // Based off of BrandWidget
 	border-top 2px solid #cadbe5
+	background none
 	width 100%
 	cursor default
 
-	transition background .5s ease
+	transition all .5s ease
+
+	&:hover
+		background darken(sidebar-bg, 5%)
 
 	h3, #alertsContainer
 		padding 15px 20px
