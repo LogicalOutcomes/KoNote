@@ -3,12 +3,14 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # A dialog for allowing the user to create a new client file
+
 Async = require 'async'
 
 Persist = require './persist'
 Imm = require 'immutable'
 Config = require './config'
 Term = require './term'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -25,6 +27,7 @@ load = (win) ->
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
 	{renderName, renderRecordId, FaIcon, stripMetadata} = require('./utils').load(win)
+
 
 	CreateClientFileDialog = React.createFactory React.createClass
 		displayName: 'CreateClientFileDialog'
