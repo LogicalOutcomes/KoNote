@@ -711,7 +711,7 @@ class UserNameTakenError extends CustomError
 	constructor: ->
 		super()
 
-		@alertTitle = "Username Taken (UserNameTakenError)"
+		@alertTitle = "Username Already Exists"
 		@alertMessage = (userName) ->
 			"Cannot create user account with username \"#{userName}\" because it already exists."
 
@@ -720,7 +720,7 @@ class UnknownUserNameError extends CustomError
 	constructor: ->
 		super()
 
-		@alertTitle = "User Not Found (UnknownUserNameError)"
+		@alertTitle = "User Not Found"
 		@alertMessage = (userName) ->
 			"Cannot find the username \"#{userName}\" in the database."
 
@@ -729,9 +729,9 @@ class InvalidUserNameError extends CustomError
 	constructor: ->
 		super()
 
-		@alertTitle = "Invalid Username (InvalidUserNameError)"
+		@alertTitle = "Invalid Username"
 		@alertMessage = (userName) ->
-			"The username entered \"#{userName}\" is invalid. Please try again."
+			"The username \"#{userName}\" is invalid. Please try again."
 
 
 class IncorrectPasswordError extends CustomError
@@ -739,8 +739,7 @@ class IncorrectPasswordError extends CustomError
 		super()
 
 		@alertTitle = "Incorrect Password"
-		@alertMessage = "Incorrect password entered. Please try again."
-
+		@alertMessage = "Please try again."
 
 
 class DeactivatedAccountError extends CustomError
