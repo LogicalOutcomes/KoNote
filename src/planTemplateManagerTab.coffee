@@ -29,7 +29,7 @@ load = (win) ->
 	DialogLayer = require('./dialogLayer').load(win)
 	Dialog = require('./dialog').load(win)
 
-	{stripMetadata, FaIcon} = require('./utils').load(win)
+	{handleCustomError, stripMetadata, FaIcon} = require('./utils').load(win)
 
 
 	PlanTemplateManagerTab = React.createFactory React.createClass
@@ -59,8 +59,8 @@ load = (win) ->
 
 			], (err) =>
 					if err
-						if err instanceof Persist.IOError
-							Bootbox.alert "Please check your network connection and try again."
+						if err instanceof Persist.CustomError
+							handleCustomError err
 							return
 
 						CrashHandler.handle err
@@ -231,11 +231,11 @@ load = (win) ->
 
 			ActiveSession.persist.planTemplates.readLatestRevisions planTemplateId, 1, (err, result) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
-					CrashHandler.handle(err)
+					CrashHandler.handle err
 					return
 
 				planTemplate = stripMetadata result.get(0)
@@ -305,8 +305,8 @@ load = (win) ->
 
 			], (err) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err

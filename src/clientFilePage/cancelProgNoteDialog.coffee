@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
@@ -18,6 +18,7 @@ load = (win) ->
 	CrashHandler = require('../crashHandler').load(win)
 	Dialog = require('../dialog').load(win)
 	Spinner = require('../spinner').load(win)
+	{handleCustomError} = require('../utils').load(win)
 
 	CancelProgNoteDialog = React.createFactory React.createClass
 		displayName: 'CancelProgNoteDialog'
@@ -44,7 +45,7 @@ load = (win) ->
 			},
 				R.div({className: 'cancelProgNoteDialog'},
 					R.div({className: 'alert alert-warning'},
-						"This will cancel the #{Term 'progress note'} entry, 
+						"This will cancel the #{Term 'progress note'} entry,
 						including any recorded #{Term 'metrics'}/#{Term 'events'}."
 					)
 					R.div({className: 'form-group'},
@@ -61,7 +62,7 @@ load = (win) ->
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
-							onClick: @_cancel							
+							onClick: @_cancel
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-primary'
@@ -113,17 +114,15 @@ load = (win) ->
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert """
-							An error occurred.  Please check your network connection and try again.
-						"""
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
 					return
 
 				# Persist will trigger an event to update the UI
-				
+
 
 	return CancelProgNoteDialog
 

@@ -41,7 +41,11 @@ load = (win, {clientFileId}) ->
 	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
 	ClientAlerts = require('./clientAlerts').load(win)
 
-	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
+	{
+		handleCustomError, FaIcon, renderName,
+		renderRecordId, showWhen, stripMetadata
+	} = require('../utils').load(win)
+
 
 	loadingSpinner = React.createFactory React.createClass
 		displayName: 'loadingSpinner'
@@ -519,11 +523,8 @@ load = (win, {clientFileId}) ->
 					global.ActiveSession.persist.eventBus.trigger 'clientFilePage:loaded'
 					Window.show()
 
-					if err instanceof Persist.IOError
-						console.error err
-						console.error err.stack
-
-						@setState {loadErrorType: 'io-error', status: 'ready'}
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
@@ -665,10 +666,12 @@ load = (win, {clientFileId}) ->
 							idMap = idMap.set(transientId, persistentId)
 							cb()
 					, cb
+
 				(cb) =>
 					Async.each updatedPlanTargets.toArray(), (updatedPlanTarget, cb) =>
 						ActiveSession.persist.planTargets.createRevision updatedPlanTarget, cb
 					, cb
+
 				(cb) =>
 					# Replace transient IDs with newly created persistent IDs
 					newPlan = plan.update 'sections', (sections) =>
@@ -684,13 +687,11 @@ load = (win, {clientFileId}) ->
 						return
 
 					ActiveSession.persist.clientFiles.createRevision newClientFile, cb
-			], (err) =>
 
+			], (err) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert """
-							An error occurred.  Please check your network connection and try again.
-						"""
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
@@ -1164,27 +1165,6 @@ load = (win, {clientFileId}) ->
 				' '
 				@props.name
 			)
-
-
-	LoadError = React.createFactory React.createClass
-		displayName: 'LoadError'
-
-		componentDidMount: ->
-			console.log "loadErrorType:", @props.loadErrorType
-			msg = switch @props.loadErrorType
-				when 'io-error'
-					"""
-						An error occurred while loading the #{Term 'client file'}.
-						This may be due to a problem with your network connection.
-					"""
-				else
-					"An unknown error occured (loadErrorType: #{@props.loadErrorType}"
-
-			Bootbox.alert msg, =>
-				@props.closeWindow()
-
-		render: ->
-			return R.div({className: 'clientFilePage'})
 
 
 	ReadOnlyNotice = React.createFactory React.createClass

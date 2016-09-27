@@ -182,20 +182,12 @@ load = (win) ->
 				@setState {isLoading: false}
 
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert """
-							An error occurred.  Please check your network connection and try again.
-						"""
-						return
-
-					# TODO: Figure out why this doesn't work
-					if err instanceof Persist.Session.IncorrectPasswordError
-						Bootbox.alert "Incorrect password. Please try again."
-						return
-
-					if err.name is 'IncorrectPasswordError'
-						Bootbox.alert "Incorrect password. Please try again.", =>
-							@refs.currentPasswordField.focus()
+					if err instanceof Persist.CustomError
+						handleCustomError(err, =>
+							# Sometimes doesn't recognize instanceof
+							if err instanceof Persist.Session.IncorrectPasswordError or err.name is 'IncorrectPasswordError'
+								@refs.currentPasswordField.focus()
+						)
 						return
 
 					CrashHandler.handle err
@@ -214,9 +206,7 @@ load = (win) ->
 
 				if err
 					if err instanceof Persist.IOError
-						Bootbox.alert """
-							An error occurred.  Please check your network connection and try again.
-						"""
+						handleCustomError err
 						return
 
 					CrashHandler.handle err

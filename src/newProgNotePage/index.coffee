@@ -33,8 +33,10 @@ load = (win, {clientFileId}) ->
 	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
 	Spinner = require('../spinner').load(win)
 
-	{FaIcon, renderName, showWhen, stripMetadata,
-	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
+	{
+		FaIcon, renderName, showWhen, stripMetadata, handleCustomError
+		getUnitIndex, getPlanSectionIndex, getPlanTargetIndex
+	} = require('../utils').load(win)
 
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
@@ -770,17 +772,14 @@ load = (win, {clientFileId}) ->
 					, cb
 
 			], (err) =>
-
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert """
-							An error occurred while saving your work.
-							Please check your network connection and try again.
-						"""
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
 					return
+
 				@props.closeWindow()
 
 

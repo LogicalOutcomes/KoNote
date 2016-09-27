@@ -26,7 +26,7 @@ load = (win) ->
 	ProgramBubbles = require('./programBubbles').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
-	{renderName, renderRecordId, FaIcon, stripMetadata} = require('./utils').load(win)
+	{handleCustomError, renderName, renderRecordId, FaIcon, stripMetadata} = require('./utils').load(win)
 
 
 	CreateClientFileDialog = React.createFactory React.createClass
@@ -418,11 +418,8 @@ load = (win) ->
 				if err
 					if err is 'CANCEL' then return
 
-					if err instanceof Persist.IOError
-						console.error err
-						Bootbox.alert """
-							Please check your network connection and try again.
-						"""
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err

@@ -31,8 +31,10 @@ load = (win) ->
 	PrintButton = require('../printButton').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 
-	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName, makeMoment
-	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
+	{
+		FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, handleCustomError,
+		renderName, makeMoment, getUnitIndex, getPlanSectionIndex, getPlanTargetIndex
+	} = require('../utils').load(win)
 
 
 	ProgNotesTab = React.createFactory React.createClass
@@ -369,12 +371,9 @@ load = (win) ->
 			progNoteRevision = @_stripRevisingProgNote()
 
 			ActiveSession.persist.progNotes.createRevision progNoteRevision, (err, result) =>
-
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert """
-							An error occurred.  Please check your network connection and try again.
-						"""
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
@@ -599,11 +598,10 @@ load = (win) ->
 
 					@_createQuickNote popover.find('textarea').val(), @state.backdate, (err) =>
 						@setState {backdate: ''}
+
 						if err
-							if err instanceof Persist.IOError
-								Bootbox.alert """
-									An error occurred.  Please check your network connection and try again.
-								"""
+							if err instanceof Persist.CustomError
+								handleCustomError err
 								return
 
 							CrashHandler.handle err

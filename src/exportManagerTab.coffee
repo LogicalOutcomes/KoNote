@@ -22,7 +22,7 @@ load = (win) ->
 	Config = require('./config')
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
-	{FaIcon, renderName, showWhen} = require('./utils').load(win)
+	{handleCustomError, FaIcon, renderName, showWhen} = require('./utils').load(win)
 	{TimestampFormat} = require('./persist/utils')
 
 	ExportManagerTab = React.createFactory React.createClass
@@ -226,8 +226,8 @@ load = (win) ->
 
 				, (err, results) =>
 					if err
-						if err instanceof Persist.IOError
-							Bootbox.alert "Please check your network connection and try again."
+						if err instanceof CustomError
+							handleCustomError err
 							return
 
 						CrashHandler.handle err
@@ -424,8 +424,8 @@ load = (win) ->
 
 			, (err, results) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err

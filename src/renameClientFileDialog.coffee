@@ -19,6 +19,7 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)
+	{handleCustomError} = require('./utils').load(win)
 
 
 	RenameClientFileDialog = React.createFactory React.createClass
@@ -175,12 +176,8 @@ load = (win) ->
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
-					if err instanceof Persist.IOError
-						console.error err
-						console.error err.stack
-						Bootbox.alert """
-							Please check your network connection and try again.
-						"""
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err

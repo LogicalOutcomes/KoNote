@@ -71,8 +71,8 @@ load = (win) ->
 
 			], (err) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
@@ -345,10 +345,8 @@ load = (win) ->
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert """
-							Please check your network connection and try again.
-						"""
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err

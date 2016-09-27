@@ -34,7 +34,8 @@ load = (win) ->
 	ReorderPlanView = require('./reorderPlanView').load(win)
 
 	{
-		FaIcon, renderLineBreaks, showWhen, stripMetadata, formatTimestamp, capitalize
+		handleCustomError, FaIcon, renderLineBreaks,
+		stripMetadata, formatTimestamp, capitalize, showWhen
 	} = require('../utils').load(win)
 
 
@@ -564,11 +565,8 @@ load = (win) ->
 								Bootbox.alert "A #{Term 'metric'} in this template already exists for another #{Term 'plan target'}"
 								return
 
-							if err instanceof Persist.IOError
-								console.error err
-								Bootbox.alert """
-									Please check your network connection and try again.
-								"""
+							if err instanceof Persist.CustomError
+								handleCustomError err
 								return
 
 							CrashHandler.handle err
@@ -605,12 +603,14 @@ load = (win) ->
 				}
 
 				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
-					if err instanceof Persist.IOError
-						console.error err
-						Bootbox.alert """
-							Please check your network connection and try again
-						"""
+					if err
+						if err instanceof Persist.CustomError
+							handleCustomError err
+							return
+
+						CrashHandler.handle err
 						return
+
 					Bootbox.alert "New template: '#{templateName}' created."
 
 		_renameSection: (sectionId) ->
@@ -1246,12 +1246,14 @@ load = (win) ->
 				}
 
 				global.ActiveSession.persist.planTemplates.create sectionTemplate, (err, obj) =>
-					if err instanceof Persist.IOError
-						console.error err
-						Bootbox.alert """
-							Please check your network connection and try again
-						"""
+					if err
+						if err instanceof Persist.IOError
+							handleCustomError err
+							return
+
+						CrashHandler.handle err
 						return
+
 					Bootbox.alert "New template: '#{templateName}' created."
 
 

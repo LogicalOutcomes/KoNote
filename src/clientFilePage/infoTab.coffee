@@ -22,7 +22,7 @@ load = (win) ->
 	CrashHandler = require('../crashHandler').load(win)
 
 	{
-		FaIcon, renderLineBreaks, showWhen, capitalize
+		handleCustomError, FaIcon, renderLineBreaks, showWhen, capitalize
 	} = require('../utils').load(win)
 
 
@@ -279,12 +279,8 @@ load = (win) ->
 			global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 				if err
-					if err instanceof Persist.IOError
-						console.error err
-						console.error err.stack
-						Bootbox.alert """
-							Please check your network connection and try again.
-						"""
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err

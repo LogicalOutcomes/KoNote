@@ -36,7 +36,7 @@ load = (win) ->
 	ColorKeySelection = require('./colorKeySelection').load(win)
 	DialogLayer = require('./dialogLayer').load(win)
 
-	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
+	{handleCustomError, FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
 
 
 	ProgramManagerTab = React.createFactory React.createClass
@@ -553,8 +553,8 @@ load = (win) ->
 			# Update program revision, and close
 			ActiveSession.persist.programs.createRevision modifiedProgram, (err, modifiedProgram) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
@@ -841,8 +841,8 @@ load = (win) ->
 
 			, (err) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err

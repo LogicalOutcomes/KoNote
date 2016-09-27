@@ -29,7 +29,7 @@ load = (win) ->
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 
-	{FaIcon, renderLineBreaks} = require('../utils').load(win)
+	{handleCustomError, FaIcon, renderLineBreaks} = require('../utils').load(win)
 
 
 	ClientAlerts = React.createFactory React.createClass
@@ -148,10 +148,8 @@ load = (win) ->
 
 			saveAlert (err) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert """
-							An error occurred.  Please check your network connection and try again.
-						"""
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err

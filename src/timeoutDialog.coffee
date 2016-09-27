@@ -84,22 +84,13 @@ load = (win) ->
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
-					if err instanceof Persist.Session.IncorrectPasswordError
-						Bootbox.alert "Incorrect password for user \'#{global.ActiveSession.userName}\', please try again.", =>
-							@setState => password: ''
-							@_focusPasswordField()
+					if err instance of Persist.CustomError
+						handleCustomError(err, =>
+							if err instanceof Persist.Session.IncorrectPasswordError
+								@setState {password: ''}
+								@_focusPasswordField()
+						)
 						return
-
-					if err instanceof Persist.Session.DeactivatedAccountError
-						Bootbox.alert "This user account has been deactivated."
-						return
-
-					if err instanceof Persist.IOError
-						Bootbox.alert "An error occurred. Please check your network connection and try again.", =>
-							@_focusPasswordField()
-						return
-
-					console.error "Timeout Login Error:", err
 
 					CrashHandler.handle err
 					return

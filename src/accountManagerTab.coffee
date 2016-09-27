@@ -32,7 +32,7 @@ load = (win) ->
 	ProgramsDropdown = require('./programsDropdown').load(win)
 	DialogLayer = require('./dialogLayer').load(win)
 
-	{FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
+	{handleCustomError, FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
 
 
 	AccountManagerTab = React.createFactory React.createClass
@@ -84,8 +84,8 @@ load = (win) ->
 
 			], (err) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
@@ -442,15 +442,8 @@ load = (win) ->
 
 			], (err) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
-						return
-
-					if err instanceof Persist.Users.AccountTypeError
-						Bootbox.alert {
-							title: "Error modifying account"
-							message: err.message
-						}
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
@@ -516,8 +509,8 @@ load = (win) ->
 
 			], (err) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
@@ -564,16 +557,8 @@ load = (win) ->
 
 			], (err) =>
 				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
-						return
-
-					if err instanceof Persist.Users.UnknownUserNameError
-						Bootbox.alert "No account exists with this user name."
-						return
-
-					if err instanceof Persist.Users.DeactivatedAccountError
-						Bootbox.alert "This account is already deactivated."
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
@@ -760,19 +745,8 @@ load = (win) ->
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
-					if err instanceof Persist.Users.UserNameTakenError
-						Bootbox.alert "That user name is already taken."
-						return
-
-					if err instanceof Persist.Users.InvalidUserNameError
-						Bootbox.alert "User name must contain only letters, numbers, underscores, and dashes."
-						return
-
-					if err instanceof Persist.IOError
-						console.error err
-						Bootbox.alert """
-							Please check your network connection and try again.
-						"""
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
@@ -925,19 +899,8 @@ load = (win) ->
 				@props.setIsLoading false
 
 				if err
-					if err instanceof Persist.Users.UnknownUserNameError
-						Bootbox.alert "Unknown user! Please check user name and try again"
-						return
-
-					if err instanceof Persist.IOError
-						console.error err
-						Bootbox.alert """
-							Please check your network connection and try again.
-						"""
-						return
-
-					if err instanceof Persist.Users.DeactivatedAccountError
-						Bootbox.alert "The specified user account has been deactivated."
+					if err instanceof Persist.CustomError
+						handleCustomError err
 						return
 
 					CrashHandler.handle err
