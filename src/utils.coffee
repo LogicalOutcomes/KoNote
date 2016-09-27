@@ -29,7 +29,7 @@ load = (win) ->
 	FaIcon = (name, props = {}) ->
 		# if the name is an extension, return an appropriate icon (paperclip if unknown)
 		if /[.]/.test(name)
-			switch name
+			switch name.toLowerCase()
 				when '.avi' then name = 'file-video-o'
 				when '.bmp' then name = 'image'
 				when '.doc' then name = 'file-word-o'
