@@ -115,12 +115,9 @@ sidebar-borders = darken(sidebar-bg, 10%)
 					margin-left 45px
 
 
-
 			> img
 				margin 0 auto
-
 				max-width 150px
-
 				padding 15px 20px 5px
 
 			> .logoSubtitle
@@ -140,9 +137,9 @@ sidebar-borders = darken(sidebar-bg, 10%)
 					&:hover
 						opacity 0.6
 
-
 				> a
 					cursor default
+
 			> .inactiveStatus
 				width 100%
 				color orange
@@ -201,6 +198,20 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 					> .fa
 						padding-right 5px
+
+
+			@media (max-width: 1080px)
+				width 200px
+
+			@media (max-width: 860px)
+				width 175px
+
+				.tabStrip .fa
+					display none
+
+				.clientName
+					font-size 22px
+
 
 		> .view
 			flex 1
