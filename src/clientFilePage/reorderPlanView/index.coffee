@@ -46,8 +46,6 @@ load = (win) ->
 
 			numberOfTargets = sections
 			.reduce (last, section) ->
-				console.log "last", last
-				console.log "section", section.toJS()
 				last + section.get('targetIds').size
 			, 0
 
