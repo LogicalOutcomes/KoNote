@@ -307,14 +307,7 @@ load = (win, {clientFileId}) ->
 								when 'basic'
 									R.div({
 										key: unitId
-										className: [
-											'unit basic isEventRelatable'
-											'hoveredEventPlanRelation' if Imm.is unit, @state.hoveredEventPlanRelation
-											'selectedEventPlanRelation' if Imm.is unit, @state.selectedEventPlanRelation
-										].join ' '
-										onMouseOver: @_hoverEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
-										onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
-										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
+										className: 'unit basic'
 									},
 										R.h1({className: 'unitName'}, unit.get 'name')
 										ExpandingTextArea({
@@ -349,81 +342,15 @@ load = (win, {clientFileId}) ->
 										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
 
-											R.section({
+											PlanSection({
 												key: sectionId
-												className: [
-													'hoveredEventPlanRelation' if Imm.is section, @state.hoveredEventPlanRelation
-													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
-												].join ' '
-												onMouseOver: @_hoverEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
-												onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
-												onClick: @_selectEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
-											},
-												R.h2({}, section.get 'name')
-
-												(section.get('targets').map (target) =>
-													targetId = target.get 'id'
-
-													R.div({
-														key: targetId
-														className: [
-															'target'
-															'hoveredEventPlanRelation' if Imm.is target, @state.hoveredEventPlanRelation
-															'selectedEventPlanRelation' if Imm.is target, @state.selectedEventPlanRelation
-														].join ' '
-														onMouseOver: @_hoverEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
-														onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
-														onClick: @_selectEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
-													},
-														R.h3({},
-															target.get 'name'
-															R.span({
-																className: 'star'
-																title: "Mark as Important"
-																onClick: @_starTarget.bind(null, unitId, sectionId, targetId, target.get 'notes')
-															},
-																if target.get('notes').includes "***"
-																	FaIcon('star', {className:'checked'})
-																else
-																	FaIcon('star-o')
-															)
-														)
-														ExpandingTextArea {
-															value: target.get 'notes'
-															onFocus: @_selectPlanTarget.bind(
-																null, unit, section, target
-															)
-															onChange: @_updatePlanTargetNotes.bind(
-																null, unitId, sectionId, targetId
-															)
-														}
-														R.div({className: 'metrics'},
-															(target.get('metrics').map (metric) =>
-																metricId = metric.get 'id'
-
-																MetricWidget {
-																	key: metricId
-																	name: metric.get 'name'
-																	definition: metric.get 'definition'
-																	value: metric.get 'value'
-																	onFocus: @_selectPlanTarget.bind(
-																		null,
-																		unit, section, target
-																	)
-																	onChange: @_updatePlanTargetMetric.bind(
-																		null,
-																		unitId, sectionId, targetId, metricId
-																	)
-																	isEditable: true
-																}
-															)
-														)
-													)
-												).toJS()...
-											)
-										).toJS()...
+												unit
+												section
+												selectPlanTarget: @_selectPlanTarget
+											})
+										)
 									)
-						).toJS()...
+						)
 
 						# PROTOTYPE Shift Summary Feature
 						R.div({
@@ -438,7 +365,7 @@ load = (win, {clientFileId}) ->
 						)
 					)
 
-					if @hasChanges()
+					(if @hasChanges()
 						R.button({
 							id: 'saveNoteButton'
 							className: 'btn btn-success btn-lg animated fadeInUp'
@@ -448,6 +375,7 @@ load = (win, {clientFileId}) ->
 							"Save "
 							FaIcon('check')
 						)
+					)
 				)
 
 				ProgNoteDetailView({
@@ -577,27 +505,6 @@ load = (win, {clientFileId}) ->
 					targetName: target.get 'name'
 					targetDescription: target.get 'description'
 				}
-			}
-
-		_starTarget: (unitId, sectionId, targetId, note) ->
-			if note.includes "***"
-				newNotes = note.replace(/\*\*\*/g, '')
-			else
-				newNotes = "***" + note
-			unitIndex = getUnitIndex @state.progNote, unitId
-			sectionIndex = getPlanSectionIndex @state.progNote, unitIndex, sectionId
-			targetIndex = getPlanTargetIndex @state.progNote, unitIndex, sectionIndex, targetId
-
-			@setState {
-				progNote: @state.progNote.setIn(
-					[
-						'units', unitIndex
-						'sections', sectionIndex
-						'targets', targetIndex
-						'notes'
-					]
-					newNotes
-				)
 			}
 
 		_updateBackdate: (event) ->
@@ -819,6 +726,112 @@ load = (win, {clientFileId}) ->
 						FaIcon('times')
 					)
 			)
+
+
+	PlanSection = React.createFactory React.createClass
+		displayName: 'PlanSection'
+		mixins: [React.addons.PureRenderMixin]
+
+		getData: ->
+			targetIds = @props.section.get('targets').map (target) -> target.get('id')
+			# Grab data from each component ref (targetId)
+			targets = targetIds.map (id) => @refs[id].getData()
+
+			section = @props.section.set 'targets', targets
+
+			console.log "Section", section.toJS()
+			return section
+
+		render: ->
+			{unit, section, selectPlanTarget} = @props
+
+			return R.section({
+				onClick: @getData
+			},
+				R.h2({}, section.get 'name')
+
+				(section.get('targets').map (target) =>
+					PlanTarget({
+						ref: target.get 'id'
+						unit
+						section
+						target
+						selectPlanTarget
+					})
+				)
+			)
+
+
+	PlanTarget = React.createFactory React.createClass
+		displayName: 'PlanTemplate'
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: -> {
+			notes: ''
+		}
+
+		getData: ->
+			# Target obj is already in correct progNote format
+			return @props.target.set 'notes', @state.notes
+
+		render: ->
+			{unit, section, target, selectPlanTarget} = @props
+
+			return R.div({className: 'target'},
+				R.h3({},
+					target.get 'name'
+					R.span({
+						className: 'star'
+						title: "Mark as Important"
+						onClick: @_starTarget
+					},
+						(if @state.notes.includes "***"
+							FaIcon('star', {className:'checked'})
+						else
+							FaIcon('star-o')
+						)
+					)
+				)
+				ExpandingTextArea {
+					value: @state.notes
+					onFocus: selectPlanTarget.bind null, unit, section, target
+					onChange: @_updateNotes
+				}
+				R.div({className: 'metrics'},
+					# (target.get('metrics').map (metric) =>
+					# 	metricId = metric.get 'id'
+
+					# 	MetricWidget {
+					# 		key: metricId
+					# 		name: metric.get 'name'
+					# 		definition: metric.get 'definition'
+					# 		value: metric.get 'value'
+					# 		onFocus: @_selectPlanTarget.bind(
+					# 			null,
+					# 			unit, section, target
+					# 		)
+					# 		onChange: @_updatePlanTargetMetric.bind(
+					# 			null,
+					# 			unitId, sectionId, targetId, metricId
+					# 		)
+					# 		isEditable: true
+					# 	}
+					# )
+				)
+			)
+
+		_updateNotes: (event) ->
+			notes = event.target.value
+			@setState {notes}
+
+		_starTarget: ->
+			notes = if @state.notes.includes "***"
+				@state.notes.replace(/\*\*\*/g, '')
+			else
+				"***" + @state.notes
+
+			@setState {notes}
+
 
 	return NewProgNotePage
 
