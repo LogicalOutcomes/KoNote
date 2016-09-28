@@ -143,7 +143,7 @@ load = (win) ->
 						R.button({
 							className: 'addSectionButton'
 							onClick: @_addSection
-							disabled: hasChanges or @props.isReadOnly
+							disabled: @props.isReadOnly
 						},
 							FaIcon('plus')
 							"Add #{Term 'Section'}"
