@@ -8,6 +8,7 @@ Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
 _ = require 'underscore'
+ImmPropTypes = require 'react-immutable-proptypes'
 
 Config = require '../config'
 Term = require '../term'
@@ -19,6 +20,7 @@ load = (win, {clientFileId}) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
 
 	Gui = win.require 'nw.gui'
@@ -272,8 +274,7 @@ load = (win, {clientFileId}) ->
 						R.div({},
 							R.button({
 								className: 'btn btn-danger'
-								onClick: =>
-									@props.closeWindow()
+								onClick: @props.closeWindow
 							}, "Close")
 						)
 					)
@@ -283,6 +284,7 @@ load = (win, {clientFileId}) ->
 			@props.setWindowTitle """
 				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}: New #{Term 'Progress Note'}
 			"""
+
 
 			return R.div({className: 'newProgNotePage animated fadeIn'},
 
@@ -297,67 +299,39 @@ load = (win, {clientFileId}) ->
 					R.div({className: 'units'},
 						(@state.progNote.get('units').map (unit) =>
 							unitId = unit.get 'id'
+							unitType = unit.get 'type'
 
-							switch unit.get('type')
+							(switch unitType
 								when 'basic'
-									R.div({
+									Entry({
+										ref: unitId
 										key: unitId
-										className: 'unit basic'
-									},
-										R.h1({className: 'unitName'}, unit.get 'name')
-										ExpandingTextArea({
-											value: unit.get('notes')
-											onFocus: @_selectBasicUnit.bind null, unit
-											onChange: @_updateBasicNotes.bind null, unitId
-										})
-										R.div({className: 'metrics'},
-											(unit.get('metrics').map (metric) =>
-												metricId = metric.get 'id'
-
-												MetricWidget({
-													key: metric.get('id')
-													name: metric.get('name')
-													definition: metric.get('definition')
-													onFocus: @_selectBasicUnit.bind null, unit
-													onChange: @_updateBasicMetric.bind(
-														null,
-														unitId, metricId
-													)
-													value: metric.get('value')
-													isEditable: true
-												})
-											)
-										)
-									)
+										className: 'basic'
+										unit
+										entryData: unit
+										selectItem: @_selectItem
+									})
 								when 'plan'
-									R.div({
-										className: 'unit plan'
+									PlanUnit({
+										ref: unitId
 										key: unitId
-									},
-										(unit.get('sections').map (section) =>
-											sectionId = section.get 'id'
-
-											PlanSection({
-												key: sectionId
-												unit
-												section
-												selectPlanTarget: @_selectPlanTarget
-											})
-										)
-									)
+										unit
+										selectItem: @_selectItem
+									})
+								else
+									throw new Error """
+										Invalid progNote unit type: #{unitType} for progNote #{@state.progNote.toJS()}
+									"""
+							)
 						)
 
 						# PROTOTYPE Shift Summary Feature
-						R.div({
-							id: 'shiftSummaryField'
-							className: 'unit basic'
-						},
-							R.h2({}, "Shift Summary")
-							ExpandingTextArea({
-								value: @state.progNote.get('summary')
-								onChange: @_updateSummary
-							})
-						)
+						Entry({
+							ref: 'shiftSummary'
+							className: 'shiftSummary'
+							entryData: Imm.Map {name: "Shift Summary"}
+							# selectItem: @_selectItem # TODO: Shift summary history
+						})
 					)
 
 					(if @hasChanges()
@@ -478,6 +452,12 @@ load = (win, {clientFileId}) ->
 
 		_updateEventPlanRelationMode: (isEventPlanRelationMode) ->
 			@setState {isEventPlanRelationMode}
+
+		_selectItem: (unit, section, target) ->
+			if section and target
+				@_selectPlanTarget unit, section, target
+			else
+				@_selectBasicUnit unit
 
 		_selectBasicUnit: (unit) ->
 			@setState {
@@ -721,63 +701,96 @@ load = (win, {clientFileId}) ->
 			)
 
 
-	PlanSection = React.createFactory React.createClass
-		displayName: 'PlanSection'
-		mixins: [React.addons.PureRenderMixin]
+	PlanUnit =  React.createFactory React.createClass
+		displayName: 'PlanUnit'
 
-		getData: ->
-			# Grab data from each component ref (targetId)
-			targetIds = @props.section.get('targets').map (target) -> target.get('id')
-			targets = targetIds.map (id) => @refs[id].getData()
-			section = @props.section.set 'targets', targets
-
-			return section
+		getData: -> getDataFromRefs(@refs, @props.unit, 'sections')
 
 		render: ->
-			{unit, section, selectPlanTarget} = @props
+			{unit, selectItem} = @props
 
-			return R.section({onClick: @getData},
-				R.h2({}, section.get 'name')
-
-				(section.get('targets').map (target) =>
-					PlanTarget({
-						ref: target.get 'id'
+			return R.div({className: 'unit plan'},
+				(unit.get('sections').map (section) =>
+					PlanSection({
+						ref: section.get 'id'
+						key: section.get 'id'
 						unit
 						section
-						target
-						selectPlanTarget
+						selectItem
 					})
 				)
 			)
 
 
-	PlanTarget = React.createFactory React.createClass
-		displayName: 'PlanTemplate'
+	PlanSection = React.createFactory React.createClass
+		displayName: 'PlanSection'
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: -> {
-			notes: ''
-			metrics: @props.target.get 'metrics'
-		}
-
-		getData: ->
-			# Target obj is already in correct progNote format
-			return @props.target.merge @state
+		getData: -> getDataFromRefs(@refs, @props.section, 'targets')
 
 		render: ->
-			{unit, section, target, selectPlanTarget} = @props
+			{unit, section, selectItem} = @props
 
-			return R.div({className: 'target'},
+			return R.section({onClick: @getData},
+				R.h2({}, section.get 'name')
+
+				(section.get('targets').map (target) =>
+					Entry({
+						ref: target.get 'id'
+						className: 'target'
+						unit
+						parentData: section
+						entryData: target
+						selectItem
+					})
+				)
+			)
+
+
+	Entry = React.createFactory React.createClass
+		# Generic 'entry' component, which can be either a planTarget or a basicUnit
+		displayName: 'Entry'
+
+		getInitialState: ->
+			state = {notes: ''}
+
+			# Load metrics into state if exists
+			if @props.entryData.get('metrics')?
+				state.metrics = @props.entryData.get('metrics')
+
+			return state
+
+		propTypes: {
+			# className: PropTypes.string.isRequired()
+			# selectItem: PropTypes.func.isRequired()
+
+			# unit: ImmPropTypes.map.isRequired()
+			# parentData: ImmPropTypes.map # (section or undefined)
+			# entryData: ImmPropTypes.map.isRequired() # (target or unit)
+		}
+
+		getDefaultProps: -> {
+			className: ''
+			entryData: Imm.Map()
+			selectItem: (->)
+		}
+
+		getData: -> @props.entryData.merge @state
+
+		render: ->
+			{unit, parentData, entryData, selectItem, className} = @props
+
+			return R.div({className: "entry #{className}"},
 				R.h3({},
-					target.get 'name'
+					entryData.get 'name'
 
 					R.span({
 						className: 'star'
 						title: "Mark as Important"
-						onClick: @_starTarget
+						onClick: @_starEntry
 					},
 						(if @state.notes.includes "***"
-							FaIcon('star', {className:'checked'})
+							FaIcon('star', {className: 'checked'})
 						else
 							FaIcon('star-o')
 						)
@@ -786,23 +799,25 @@ load = (win, {clientFileId}) ->
 
 				ExpandingTextArea({
 					value: @state.notes
-					onFocus: selectPlanTarget.bind null, unit, section, target
+					onFocus: selectItem.bind null, unit, parentData, entryData
 					onChange: @_updateNotes
 				})
 
-				R.div({className: 'metrics'},
-					(target.get('metrics').map (metric, index) =>
-						metricId = metric.get 'id'
+				(if entryData.has 'metrics'
+					R.div({className: 'metrics'},
+						(entryData.get('metrics').map (metric, index) =>
+							metricId = metric.get 'id'
 
-						MetricWidget {
-							key: metricId
-							name: metric.get 'name'
-							definition: metric.get 'definition'
-							value: @state.metrics.getIn [index, 'value']
-							onFocus: selectPlanTarget.bind null, unit, section, target
-							onChange: @_updateMetric.bind null, index
-							isEditable: true
-						}
+							MetricWidget {
+								key: metricId
+								name: metric.get 'name'
+								definition: metric.get 'definition'
+								value: @state.metrics.getIn [index, 'value']
+								onFocus: selectItem.bind null, unit, parentData, entryData
+								onChange: @_updateMetric.bind null, index
+								isEditable: true
+							}
+						)
 					)
 				)
 			)
@@ -818,13 +833,21 @@ load = (win, {clientFileId}) ->
 			metrics = @state.metrics.setIn [index, 'value'], value
 			@setState {metrics}
 
-		_starTarget: ->
+		_starEntry: ->
 			notes = if @state.notes.includes "***"
 				@state.notes.replace(/\*\*\*/g, '')
 			else
 				"***" + @state.notes
 
 			@setState {notes}
+
+
+	# Utility for mapping over each component's getData() method,
+	# and returning the progNote data with current note/metricvalues intact
+	getDataFromRefs = (refs, data, name) ->
+		ids = data.get(name).map (child) -> child.get('id')
+		values = ids.map (id) => refs[id].getData()
+		return data.set name, values
 
 
 	return NewProgNotePage
