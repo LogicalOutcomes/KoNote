@@ -15,7 +15,6 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	# TODO: Refactor to single require
@@ -218,7 +217,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			planTemplateId: PropTypes.string.isRequired
+			planTemplateId: React.PropTypes.string.isRequired
 		}
 
 		getInitialState: -> {

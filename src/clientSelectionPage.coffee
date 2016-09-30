@@ -4,7 +4,6 @@
 
 # Node libs
 Imm = require 'immutable'
-ImmPropTypes = require 'react-immutable-proptypes'
 Async = require 'async'
 _ = require 'underscore'
 
@@ -18,7 +17,6 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	ReactDOM = win.ReactDOM
 	R = React.DOM
 
@@ -578,13 +576,13 @@ load = (win) ->
 		displayName: 'ClientTableWrapper'
 
 		propTypes: {
-			queryText: PropTypes.string.isRequired
+			queryText: React.PropTypes.string.isRequired
 
-			clientFileHeaders: ImmPropTypes.list.isRequired
-			clientFileProgramLinks: ImmPropTypes.list.isRequired
-			programs: ImmPropTypes.list.isRequired
+			clientFileHeaders: React.PropTypes.instanceOf(Imm.List).isRequired
+			clientFileProgramLinks: React.PropTypes.instanceOf(Imm.List).isRequired
+			programs: React.PropTypes.instanceOf(Imm.List).isRequired
 
-			onRowClick: PropTypes.func.isRequired
+			onRowClick: React.PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {
@@ -692,12 +690,12 @@ load = (win) ->
 		displayName: 'ClientTable'
 
 		propTypes: {
-			queryText: PropTypes.string.isRequired
-			data: ImmPropTypes.list.isRequired
-			hasProgramLinks: PropTypes.bool.isRequired
-			hasInactiveFiles: PropTypes.bool.isRequired
+			queryText: React.PropTypes.string.isRequired
+			data: React.PropTypes.instanceOf(Imm.List).isRequired
+			hasProgramLinks: React.PropTypes.bool.isRequired
+			hasInactiveFiles: React.PropTypes.bool.isRequired
 
-			onRowClick: PropTypes.func.isRequired
+			onRowClick: React.PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {

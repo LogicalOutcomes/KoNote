@@ -3,14 +3,12 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 
-ImmPropTypes = require 'react-immutable-proptypes'
+Imm = require 'immutable'
 Term = require './term'
-
 
 load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
@@ -29,13 +27,13 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			isAdmin: PropTypes.bool.isRequired
-			programs: ImmPropTypes.list.isRequired
-			userProgram: ImmPropTypes.map
-			managerLayer: PropTypes.string
-			isSmallHeaderSet: PropTypes.bool
+			isAdmin: React.PropTypes.bool.isRequired
+			programs: React.PropTypes.instanceOf(Imm.List).isRequired
+			userProgram: React.PropTypes.instanceOf(Imm.Map)
+			managerLayer: React.PropTypes.string
+			isSmallHeaderSet: React.PropTypes.bool
 
-			updateManagerLayer: PropTypes.func.isRequired
+			updateManagerLayer: React.PropTypes.func.isRequired
 		}
 
 		_overrideProgram: (program) ->

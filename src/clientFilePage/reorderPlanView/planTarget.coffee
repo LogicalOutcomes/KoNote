@@ -4,13 +4,12 @@
 
 # View to reorder plan sections & targets
 
+Imm = require 'immutable'
 Decorate = require 'es-decorate'
-ImmPropTypes = require 'react-immutable-proptypes'
 
 load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 	{findDOMNode} = win.ReactDOM
 	{DragDropContext, DragSource, DropTarget} = win.ReactDnD
@@ -22,18 +21,18 @@ load = (win) ->
 
 		propTypes: {
 			# DnD
-			connectDragSource: PropTypes.func.isRequired
-			connectDropTarget: PropTypes.func.isRequired
-			isDragging: PropTypes.bool.isRequired
+			connectDragSource: React.PropTypes.func.isRequired
+			connectDropTarget: React.PropTypes.func.isRequired
+			isDragging: React.PropTypes.bool.isRequired
 			# DnD props
-			index: PropTypes.number.isRequired
-			id: PropTypes.any.isRequired
+			index: React.PropTypes.number.isRequired
+			id: React.PropTypes.any.isRequired
 			# Raw data
-			target: ImmPropTypes.map.isRequired
+			target: React.PropTypes.instanceOf(Imm.Map).isRequired
 			# Methods
-			reorderTargetId: PropTypes.func.isRequired
+			reorderTargetId: React.PropTypes.func.isRequired
 			# Options
-			displayInactive: PropTypes.bool.isRequired
+			displayInactive: React.PropTypes.bool.isRequired
 		}
 
 		render: ->
