@@ -310,7 +310,7 @@ load = (win, {clientFileId}) ->
 									Entry({
 										ref: unitId
 										key: unitId
-										className: 'basic'
+										className: 'unit basic'
 										unit
 										entryData: unit
 										selectItem: @_selectItem
@@ -332,7 +332,7 @@ load = (win, {clientFileId}) ->
 						# PROTOTYPE Shift Summary Feature
 						Entry({
 							ref: 'shiftSummary'
-							className: "shiftSummary #{showWhen Config.features.shiftSummaries.isEnabled}"
+							className: "shiftSummary unit basic #{showWhen Config.features.shiftSummaries.isEnabled}"
 							entryData: Imm.Map {name: "Shift Summary"}
 							# selectItem: @_selectItem # TODO: Shift summary history
 						})
@@ -801,6 +801,7 @@ load = (win, {clientFileId}) ->
 				)
 
 				ExpandingTextArea({
+					ref: 'textarea'
 					value: @state.notes
 					onFocus: selectItem.bind null, unit, parentData, entryData
 					onChange: @_updateNotes
@@ -842,7 +843,8 @@ load = (win, {clientFileId}) ->
 			else
 				"***" + @state.notes
 
-			@setState {notes}
+			@setState {notes}, =>
+				@refs.textarea.focus()
 
 
 	# Utility for mapping over each component's getData() method,
