@@ -1058,12 +1058,13 @@ load = (win) ->
 													onChange: @props.updateBasicUnitNotes.bind null, unitId
 												})
 											else
-												if unit.get('notes').includes "***"
+												(if unit.get('notes').includes "***"
 													R.span({className: 'starred'},
-														renderLineBreaks unit.get('notes')
+														renderLineBreaks unit.get('notes').replace(/\*\*\*/g, '')
 													)
 												else
 													renderLineBreaks unit.get('notes')
+												)
 											)
 										)
 										unless unit.get('metrics').isEmpty()
@@ -1171,7 +1172,13 @@ load = (win) ->
 						R.div({className: 'basic unit'},
 							R.h3({}, "Shift Summary")
 							R.div({className: 'notes'},
-								renderLineBreaks progNote.get('summary')
+								(if progNote.get('summary').includes "***"
+									R.span({className: 'starred'},
+										renderLineBreaks progNote.get('summary').replace(/\*\*\*/g, '')
+									)
+								else
+									renderLineBreaks progNote.get('summary')
+								)
 							)
 						)
 					)
