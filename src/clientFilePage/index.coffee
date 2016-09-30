@@ -27,8 +27,7 @@ load = (win, {clientFileId}) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	Gui = win.require 'nw.gui'
-	Window = Gui.Window.get(win)
+	Window = nw.Window.get(win)
 
 	CrashHandler = require('../crashHandler').load(win)
 	BrandWidget = require('../brandWidget').load(win)

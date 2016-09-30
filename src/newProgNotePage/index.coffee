@@ -21,8 +21,7 @@ load = (win, {clientFileId}) ->
 	React = win.React
 	R = React.DOM
 
-	Gui = win.require 'nw.gui'
-	Window = Gui.Window.get(win)
+	Window = nw.Window.get(win)
 
 	EventTabView = require('./eventTabView').load(win)
 	CrashHandler = require('../crashHandler').load(win)

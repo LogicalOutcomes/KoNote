@@ -13,8 +13,7 @@ load = (win) ->
 	ReactDOM = win.ReactDOM
 	R = React.DOM
 	Bootbox = win.bootbox
-	Gui = win.require 'nw.gui'
-	nwWin = Gui.Window.get(win)
+	nwWin = nw.Window.get(win)
 
 	Dialog = require('./dialog').load(win)
 	Spinner = require('./spinner').load(win)

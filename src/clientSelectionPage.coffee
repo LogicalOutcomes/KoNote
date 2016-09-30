@@ -27,8 +27,7 @@ load = (win) ->
 	BootstrapTable = React.createFactory BootstrapTable
 	TableHeaderColumn = React.createFactory TableHeaderColumn
 
-	Gui = win.require 'nw.gui'
-	Window = Gui.Window.get()
+	Window = nw.Window.get(win)
 
 	MainMenu = require('./mainMenu').load(win)
 	BrandWidget = require('./brandWidget').load(win)

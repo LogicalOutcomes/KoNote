@@ -13,7 +13,6 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
-	Gui = win.require 'nw.gui'
 
 	# Execute variable as a function if it is one
 	executeIfFunction = (variable, arg) ->
@@ -73,7 +72,7 @@ load = (win) ->
 		if nw.Screen.screens[0].work_area.height < 700
 			height = nw.Screen.screens[0].work_area.height
 
-		Gui.Window.open 'src/main.html?' + $.param(params), {
+		nw.Window.open 'src/main.html?' + $.param(params), {
 			focus: false
 			show: false
 			width

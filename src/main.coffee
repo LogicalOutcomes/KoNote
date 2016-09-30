@@ -40,8 +40,7 @@ init = (win) ->
 	HotCodeReplace = require('./hotCodeReplace').load(win)
 	{getTimeoutListeners} = require('./timeoutDialog').load(win)
 
-	Gui = win.require 'nw.gui'
-	nwWin = Gui.Window.get(win)
+	nwWin = nw.Window.get(win)
 
 	# Handle any uncaught errors.
 	# Generally, errors should be passed directly to CrashHandler instead of
@@ -53,15 +52,14 @@ init = (win) ->
 
 	# Application menu bar required for osx copy-paste functionality
 	if process.platform is 'darwin'
-		menuBar = new Gui.Menu({type: 'menubar'})
+		menuBar = new nw.Menu({type: 'menubar'})
 		menuBar.createMacBuiltin(Config.productName)
-		Gui.Window.get().menu = menuBar
+		nwWin.menu = menuBar
 
 	containerElem = document.getElementById('container')
 
 	pageComponent = null
 	isLoggedIn = null
-	chokidarListener = null
 	allListeners = null
 
 	# Build page params object, assign default pageId if none provided
@@ -276,9 +274,6 @@ init = (win) ->
 		global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 
 	unregisterPageListeners = =>
-		# Unregister Chokidar
-		chokidarListener.close() if chokidarListener?
-
 		# Unregister all page listeners
 		allListeners.forEach ([name, action]) =>
 			global.ActiveSession.persist.eventBus.off name, action
