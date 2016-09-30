@@ -294,12 +294,7 @@ load = (win, {clientFileId}) ->
 						})
 					)
 
-					R.div({
-						className: [
-							'units'
-							'eventPlanRelationMode' if @state.isEventPlanRelationMode
-						].join ' '
-					},
+					R.div({className: 'units'},
 						(@state.progNote.get('units').map (unit) =>
 							unitId = unit.get 'id'
 
@@ -331,7 +326,7 @@ load = (win, {clientFileId}) ->
 													value: metric.get('value')
 													isEditable: true
 												})
-											).toJS()...
+											)
 										)
 									)
 								when 'plan'
@@ -605,8 +600,6 @@ load = (win, {clientFileId}) ->
 
 			@setState {progNote}
 
-		_isValidMetric: (value) -> value.match /^-?\d*\.?\d*$/
-
 		_save: ->
 			authorProgramId = global.ActiveSession.programId or ''
 			progNote = @state.progNote
@@ -733,21 +726,17 @@ load = (win, {clientFileId}) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getData: ->
-			targetIds = @props.section.get('targets').map (target) -> target.get('id')
 			# Grab data from each component ref (targetId)
+			targetIds = @props.section.get('targets').map (target) -> target.get('id')
 			targets = targetIds.map (id) => @refs[id].getData()
-
 			section = @props.section.set 'targets', targets
 
-			console.log "Section", section.toJS()
 			return section
 
 		render: ->
 			{unit, section, selectPlanTarget} = @props
 
-			return R.section({
-				onClick: @getData
-			},
+			return R.section({onClick: @getData},
 				R.h2({}, section.get 'name')
 
 				(section.get('targets').map (target) =>
@@ -768,11 +757,12 @@ load = (win, {clientFileId}) ->
 
 		getInitialState: -> {
 			notes: ''
+			metrics: @props.target.get 'metrics'
 		}
 
 		getData: ->
 			# Target obj is already in correct progNote format
-			return @props.target.set 'notes', @state.notes
+			return @props.target.merge @state
 
 		render: ->
 			{unit, section, target, selectPlanTarget} = @props
@@ -780,6 +770,7 @@ load = (win, {clientFileId}) ->
 			return R.div({className: 'target'},
 				R.h3({},
 					target.get 'name'
+
 					R.span({
 						className: 'star'
 						title: "Mark as Important"
@@ -792,37 +783,40 @@ load = (win, {clientFileId}) ->
 						)
 					)
 				)
-				ExpandingTextArea {
+
+				ExpandingTextArea({
 					value: @state.notes
 					onFocus: selectPlanTarget.bind null, unit, section, target
 					onChange: @_updateNotes
-				}
-				R.div({className: 'metrics'},
-					# (target.get('metrics').map (metric) =>
-					# 	metricId = metric.get 'id'
+				})
 
-					# 	MetricWidget {
-					# 		key: metricId
-					# 		name: metric.get 'name'
-					# 		definition: metric.get 'definition'
-					# 		value: metric.get 'value'
-					# 		onFocus: @_selectPlanTarget.bind(
-					# 			null,
-					# 			unit, section, target
-					# 		)
-					# 		onChange: @_updatePlanTargetMetric.bind(
-					# 			null,
-					# 			unitId, sectionId, targetId, metricId
-					# 		)
-					# 		isEditable: true
-					# 	}
-					# )
+				R.div({className: 'metrics'},
+					(target.get('metrics').map (metric, index) =>
+						metricId = metric.get 'id'
+
+						MetricWidget {
+							key: metricId
+							name: metric.get 'name'
+							definition: metric.get 'definition'
+							value: @state.metrics.getIn [index, 'value']
+							onFocus: selectPlanTarget.bind null, unit, section, target
+							onChange: @_updateMetric.bind null, index
+							isEditable: true
+						}
+					)
 				)
 			)
 
 		_updateNotes: (event) ->
 			notes = event.target.value
 			@setState {notes}
+
+		_updateMetric: (index, value) ->
+			# Validate is valid metric (+/- integer)
+			return unless value.match /^-?\d*\.?\d*$/
+
+			metrics = @state.metrics.setIn [index, 'value'], value
+			@setState {metrics}
 
 		_starTarget: ->
 			notes = if @state.notes.includes "***"
