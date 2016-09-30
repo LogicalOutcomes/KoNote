@@ -750,8 +750,8 @@ load = (win, {clientFileId}) ->
 			)
 
 
+	# Generic 'entry' component, which can be either a planTarget or a basicUnit
 	Entry = React.createFactory React.createClass
-		# Generic 'entry' component, which can be either a planTarget or a basicUnit
 		displayName: 'Entry'
 
 		getInitialState: ->
