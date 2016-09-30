@@ -8,7 +8,6 @@ Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
 _ = require 'underscore'
-ImmPropTypes = require 'react-immutable-proptypes'
 
 Config = require '../config'
 Term = require '../term'
@@ -229,7 +228,10 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		hasChanges: ->
-			hasProgNotes = not Imm.is @props.progNote, @state.progNote
+			originalProgNote = @_compileProgNote(@state.progNote)
+			progNote = @_compileNotesData(originalProgNote)
+
+			hasProgNotes = not Imm.is originalProgNote, progNote
 			hasProgEvents = not @state.progEvents.isEmpty()
 
 			return hasProgNotes or hasProgEvents
@@ -334,16 +336,14 @@ load = (win, {clientFileId}) ->
 						})
 					)
 
-					(if @hasChanges()
-						R.button({
-							id: 'saveNoteButton'
-							className: 'btn btn-success btn-lg animated fadeInUp'
-							disabled: @state.editingWhichEvent?
-							onClick: @_save
-						},
-							"Save "
-							FaIcon('check')
-						)
+					R.button({
+						id: 'saveNoteButton'
+						className: 'btn btn-success btn-lg animated fadeInUp'
+						disabled: @state.editingWhichEvent?
+						onClick: @_save
+					},
+						"Save "
+						FaIcon('check')
 					)
 				)
 
@@ -433,25 +433,22 @@ load = (win, {clientFileId}) ->
 				editingWhichEvent: null
 			}
 
-		_selectEventPlanRelation: (selectedEventPlanRelation, event) ->
-			event.stopPropagation() if event?
+		_compileProgNote: (progNote) ->
+			authorProgramId = global.ActiveSession.programId or ''
 
-			# Enable eventPlanRelationMode if not already on
-			unless @state.isEventPlanRelationMode
-				@setState {isEventPlanRelationMode: true}
+			return @props.progNote
+			.set 'authorProgramId', authorProgramId
+			.set 'beginTimestamp', @beginTimestamp
 
-			# Disable when chooses "No Relation" (null)
-			unless selectedEventPlanRelation?
-				@setState {isEventPlanRelationMode: false}
+		_compileNotesData: (progNote) ->
+			# Extract data from all unit refs, plus notes from shiftSummary
+			progNoteWithUnits = getDataFromRefs @refs, progNote, 'units'
+			shiftSummaryNotes = @refs.shiftSummary.getData().get('notes')
 
-			@setState {selectedEventPlanRelation}
+			return progNoteWithUnits
+			.set 'summary', shiftSummaryNotes
 
-		_hoverEventPlanRelation: (hoveredEventPlanRelation, event) ->
-			event.stopPropagation() if event?
-			@setState {hoveredEventPlanRelation}
-
-		_updateEventPlanRelationMode: (isEventPlanRelationMode) ->
-			@setState {isEventPlanRelationMode}
+			return progNote
 
 		_selectItem: (unit, section, target) ->
 			if section and target
@@ -581,10 +578,13 @@ load = (win, {clientFileId}) ->
 			@setState {progNote}
 
 		_save: ->
-			authorProgramId = global.ActiveSession.programId or ''
-			progNote = @state.progNote
-			.set('authorProgramId', authorProgramId)
-			.set('beginTimestamp', @beginTimestamp)
+			if @hasChanges()
+				Bootbox.alert """
+					Sorry, a #{Term 'progress note'} must contain at least 1 #{Term 'note'} or #{Term 'event'}.
+				"""
+				return
+
+			progNote = @_compileProgNoteData @_compileNotesData @state.progNote
 
 			progNoteId = null
 			createdProgNote = null
@@ -735,8 +735,11 @@ load = (win, {clientFileId}) ->
 				R.h2({}, section.get 'name')
 
 				(section.get('targets').map (target) =>
+					targetId = target.get 'id'
+
 					Entry({
-						ref: target.get 'id'
+						ref: targetId
+						key: targetId
 						className: 'target'
 						unit
 						parentData: section
@@ -843,7 +846,7 @@ load = (win, {clientFileId}) ->
 
 
 	# Utility for mapping over each component's getData() method,
-	# and returning the progNote data with current note/metricvalues intact
+	# and returning the progNote data with current note/metric values intact
 	getDataFromRefs = (refs, data, name) ->
 		ids = data.get(name).map (child) -> child.get('id')
 		values = ids.map (id) => refs[id].getData()
