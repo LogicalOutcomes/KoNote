@@ -228,8 +228,8 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		hasChanges: ->
-			originalProgNote = @_compileProgNote(@state.progNote)
-			progNote = @_compileNotesData(originalProgNote)
+			originalProgNote = @state.progNote
+			progNote = @_compileProgNoteData(@state.progNote)
 
 			hasProgNotes = not Imm.is originalProgNote, progNote
 			hasProgEvents = not @state.progEvents.isEmpty()
@@ -239,6 +239,13 @@ load = (win, {clientFileId}) ->
 		componentWillReceiveProps: (newProps) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
 				@setState {progNote: newProps.progNote}
+
+		componentWillMount: ->
+			clientName = renderName @props.clientFile.get('clientName')
+
+			@props.setWindowTitle """
+				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}: New #{Term 'Progress Note'}
+			"""
 
 		componentDidMount: ->
 			global.ActiveSession.persist.eventBus.trigger 'newProgNotePage:loaded'
@@ -281,11 +288,6 @@ load = (win, {clientFileId}) ->
 						)
 					)
 				)
-
-			clientName = renderName @props.clientFile.get('clientName')
-			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}: New #{Term 'Progress Note'}
-			"""
 
 
 			return R.div({className: 'newProgNotePage animated fadeIn'},
@@ -330,7 +332,7 @@ load = (win, {clientFileId}) ->
 						# PROTOTYPE Shift Summary Feature
 						Entry({
 							ref: 'shiftSummary'
-							className: 'shiftSummary'
+							className: "shiftSummary #{showWhen Config.features.shiftSummaries.isEnabled}"
 							entryData: Imm.Map {name: "Shift Summary"}
 							# selectItem: @_selectItem # TODO: Shift summary history
 						})
@@ -433,14 +435,7 @@ load = (win, {clientFileId}) ->
 				editingWhichEvent: null
 			}
 
-		_compileProgNote: (progNote) ->
-			authorProgramId = global.ActiveSession.programId or ''
-
-			return @props.progNote
-			.set 'authorProgramId', authorProgramId
-			.set 'beginTimestamp', @beginTimestamp
-
-		_compileNotesData: (progNote) ->
+		_compileProgNoteData: (progNote) ->
 			# Extract data from all unit refs, plus notes from shiftSummary
 			progNoteWithUnits = getDataFromRefs @refs, progNote, 'units'
 			shiftSummaryNotes = @refs.shiftSummary.getData().get('notes')
@@ -578,13 +573,18 @@ load = (win, {clientFileId}) ->
 			@setState {progNote}
 
 		_save: ->
-			if @hasChanges()
+			if not @hasChanges()
 				Bootbox.alert """
 					Sorry, a #{Term 'progress note'} must contain at least 1 #{Term 'note'} or #{Term 'event'}.
 				"""
 				return
 
-			progNote = @_compileProgNoteData @_compileNotesData @state.progNote
+			authorProgramId = global.ActiveSession.programId or ''
+
+			# Fetch notes data, add final properties for save
+			progNote = @_compileProgNoteData(@state.progNote)
+			.set 'authorProgramId', authorProgramId
+			.set 'beginTimestamp', @beginTimestamp
 
 			progNoteId = null
 			createdProgNote = null
