@@ -492,7 +492,7 @@ load = (win) ->
 
 						(cb) =>
 							templateSections = selectedPlanTemplate.get('sections').map (section) =>
-								targetIds = []
+								targetIds = Imm.List()
 								section.get('targets').forEach (target) =>
 									target.get('metricIds').forEach (metricId) =>
 
@@ -925,7 +925,7 @@ load = (win) ->
 			headerState = 'inline'
 
 			# Group targetIds into an object, with a property for each status
-			console.log 'section', section.toJS()
+			console.log 'section', section
 			console.log 'section target ids', section.get('targetIds')
 
 			targetIdsByStatus = section.get('targetIds').groupBy (targetId) ->
