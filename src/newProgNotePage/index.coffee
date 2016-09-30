@@ -575,7 +575,7 @@ load = (win, {clientFileId}) ->
 		_save: ->
 			if not @hasChanges()
 				Bootbox.alert """
-					Sorry, a #{Term 'progress note'} must contain at least 1 #{Term 'note'} or #{Term 'event'}.
+					Sorry, a #{Term 'progress note'} must contain at least 1 note or #{Term 'event'}.
 				"""
 				return
 
