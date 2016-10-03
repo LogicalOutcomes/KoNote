@@ -494,14 +494,12 @@ load = (win) ->
 					existsElsewhere = null
 					newCurrentRevs = null
 					newPlan = null
-					targetIds = null
+					targetIds = Imm.List()
 					clientFileId = @props.clientFileId
 
 					Async.series [
 
 						(cb) =>
-							console.log "plan before setting state", @state.plan.toJS()
-							console.log "currentTargetRevisionsById before setting state", @state.currentTargetRevisionsById.toJS()
 							ActiveSession.persist.planTemplates.readLatestRevisions templateId, 1, (err, result) ->
 								if err
 									cb err
@@ -511,22 +509,20 @@ load = (win) ->
 								cb()
 
 						(cb) =>
-							templateSections = selectedPlanTemplate.get('sections').map (section) =>
+							templateSections = selectedPlanTemplate.get('sections').map (templateSection) =>
 								targetIds = Imm.List()
-								section.get('targets').forEach (target) =>
+								newCurrentRevs = @state.currentTargetRevisionsById
+								templateSection.get('targets').forEach (target) =>
 									target.get('metricIds').forEach (metricId) =>
 
 										# Metric exists in another target
 										existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
 											return target.get('metricIds').contains(metricId)
-
 										if existsElsewhere
 											return
 
 									targetId = '__transient__' + Persist.generateId()
-									targetIds.push targetId
-
-									console.log "targetIDs list after pushing", targetIds.toJS()
+									targetIds = targetIds.push targetId
 
 									newTarget = Imm.fromJS {
 										id: targetId
@@ -537,9 +533,9 @@ load = (win) ->
 										metricIds: target.get('metricIds')
 									}
 
-									newCurrentRevs = @state.currentTargetRevisionsById.set targetId, newTarget
+									newCurrentRevs = newCurrentRevs.set targetId, newTarget
 
-								section = section.set 'status', 'default'
+								section = templateSection.set 'status', 'default'
 								.set 'targetIds', targetIds
 								.set 'id', Persist.generateId()
 								.remove 'targets'
@@ -549,21 +545,18 @@ load = (win) ->
 							if existsElsewhere
 								cb('CANCEL')
 								return
-
 							cb()
 
 						(cb) =>
 
-							console.log "template sections before being pushed to plan", templateSections.toJS()
 							newPlan = @state.plan.update 'sections', (sections) =>
 								return sections.concat(templateSections)
 
 							@setState {
 								plan: newPlan
 								currentTargetRevisionsById: newCurrentRevs
-							}
-							console.log "plan after setting state", @state.plan.toJS()
-							console.log "currentTargetRevisionsById after setting state", @state.currentTargetRevisionsById.toJS()
+							},
+
 							cb()
 
 					], (err) =>
@@ -581,9 +574,6 @@ load = (win) ->
 
 							CrashHandler.handle err
 							return
-
-
-
 					return
 
 		_createTemplate: ->
@@ -940,8 +930,6 @@ load = (win) ->
 			headerState = 'inline'
 
 			# Group targetIds into an object, with a property for each status
-
-			console.log 'section target ids', section.get('targetIds').toJS()
 
 			targetIdsByStatus = section.get('targetIds').groupBy (targetId) ->
 				return currentTargetRevisionsById.getIn([targetId, 'status'])
