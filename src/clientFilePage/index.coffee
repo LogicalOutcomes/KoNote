@@ -1076,19 +1076,19 @@ load = (win, {clientFileId}) ->
 					Config.logoSubtitle
 				)
 				R.div({className: 'clientName'},
-					(if ActiveSession.accountType is 'admin'
-						WithTooltip({title: "Edit Client Information", placement: 'right', container: 'body'},
-							OpenDialogLink({
-								dialog: RenameClientFileDialog
-								clientFile: @props.clientFile
-								className: 'clientNameField'
-							},
-								@props.clientName
-							)
-						)
-					else
-						@props.clientName
-					)
+					# (if ActiveSession.accountType is 'admin'
+					# 	WithTooltip({title: "Edit Client Information", placement: 'right', container: 'body'},
+					# 		OpenDialogLink({
+					# 			dialog: RenameClientFileDialog
+					# 			clientFile: @props.clientFile
+					# 			className: 'clientNameField'
+					# 		},
+					# 			@props.clientName
+					# 		)
+					# 	)
+					# else
+					@props.clientName
+					# )
 				)
 				(if not @props.clientPrograms.isEmpty()
 					R.div({className: 'programs'},

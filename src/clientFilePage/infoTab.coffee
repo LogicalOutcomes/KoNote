@@ -265,30 +265,42 @@ load = (win) ->
 					@setState @getInitialState()
 
 		_submit: ->
-			updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
-				detailUnit.toJS()
+			if not @state.firstName
+				Bootbox.alert "Cannot save the Client File without a First Name"
+				# setTimeout(=>
+				# 	$("firstNameField").focus()
+				# , 250)
+				return
 
-			updatedClientFile = @props.clientFile
-			.setIn(['clientName', 'first'], @state.firstName)
-			.setIn(['clientName', 'middle'], @state.middleName)
-			.setIn(['clientName', 'last'], @state.lastName)
-			.set('recordId', @state.recordId)
-			.set('status', @state.status)
-			.set('detailUnits', updatedDetailUnits)
+			else if not @state.lastName
+				Bootbox.alert "Cannot save the Client File without a Last Name"
+				return
 
-			global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
-				@refs.dialog.setIsLoading(false) if @refs.dialog?
-				if err
-					if err instanceof Persist.IOError
-						console.error err
-						console.error err.stack
-						Bootbox.alert """
-							Please check your network connection and try again.
-						"""
+			else
+				updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
+					detailUnit.toJS()
+
+				updatedClientFile = @props.clientFile
+				.setIn(['clientName', 'first'], @state.firstName)
+				.setIn(['clientName', 'middle'], @state.middleName)
+				.setIn(['clientName', 'last'], @state.lastName)
+				.set('recordId', @state.recordId)
+				.set('status', @state.status)
+				.set('detailUnits', updatedDetailUnits)
+
+				global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
+					@refs.dialog.setIsLoading(false) if @refs.dialog?
+					if err
+						if err instanceof Persist.IOError
+							console.error err
+							console.error err.stack
+							Bootbox.alert """
+								Please check your network connection and try again.
+							"""
+							return
+
+						CrashHandler.handle err
 						return
-
-					CrashHandler.handle err
-					return
 
 	return {InfoView}
 
