@@ -440,10 +440,7 @@ load = (win, {clientFileId}) ->
 			progNoteWithUnits = getDataFromRefs @refs, progNote, 'units'
 			shiftSummaryNotes = @refs.shiftSummary.getData().get('notes')
 
-			return progNoteWithUnits
-			.set 'summary', shiftSummaryNotes
-
-			return progNote
+			return progNoteWithUnits.set 'summary', shiftSummaryNotes
 
 		_selectItem: (unit, section, target) ->
 			if section and target
@@ -753,6 +750,7 @@ load = (win, {clientFileId}) ->
 	# Generic 'entry' component, which can be either a planTarget or a basicUnit
 	Entry = React.createFactory React.createClass
 		displayName: 'Entry'
+		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
 			state = {notes: ''}
@@ -807,23 +805,15 @@ load = (win, {clientFileId}) ->
 					onChange: @_updateNotes
 				})
 
-				(if entryData.has 'metrics'
-					R.div({className: 'metrics'},
-						(entryData.get('metrics').map (metric, index) =>
-							metricId = metric.get 'id'
-
-							MetricWidget {
-								key: metricId
-								name: metric.get 'name'
-								definition: metric.get 'definition'
-								value: @state.metrics.getIn [index, 'value']
-								onFocus: selectItem.bind null, unit, parentData, entryData
-								onChange: @_updateMetric.bind null, index
-								isEditable: true
-							}
-						)
-					)
-				)
+				MetricsView({
+					ref: 'metrics'
+					unit
+					parentData
+					entryData
+					metrics: @state.metrics
+					updateMetric: @_updateMetric
+					selectItem
+				})
 			)
 
 		_updateNotes: (event) ->
@@ -845,6 +835,30 @@ load = (win, {clientFileId}) ->
 
 			@setState {notes}, =>
 				@refs.textarea.focus()
+
+
+	MetricsView = React.createFactory React.createClass
+		displayName: 'MetricsView'
+		mixins: [React.addons.PureRenderMixin]
+
+		render: ->
+			return null if not @props.metrics or @props.metrics.isEmpty()
+
+			return R.div({className: 'metrics'},
+				(@props.metrics.map (metric, index) =>
+					metricId = metric.get 'id'
+
+					MetricWidget {
+						key: metricId
+						name: metric.get 'name'
+						definition: metric.get 'definition'
+						value: @props.metrics.getIn [index, 'value']
+						onFocus: @props.selectItem.bind null, unit, parentData, entryData
+						onChange: @props.updateMetric.bind null, index
+						isEditable: true
+					}
+				)
+			)
 
 
 	# Utility for mapping over each component's getData() method,
