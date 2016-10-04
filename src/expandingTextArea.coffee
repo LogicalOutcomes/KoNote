@@ -43,18 +43,14 @@ load = (win) ->
 			)
 
 		componentDidMount: ->
-			@_windowResizeListener = _.debounce =>
-				@_resize()
-			, 50 # milliseconds
-
-			win.addEventListener 'resize', @_windowResizeListener
-
+			win.addEventListener 'resize', @_resize
 			@_resize()
 
 		componentWillUnmount: ->
 			win.removeEventListener 'resize', @_windowResizeListener
 
-		_resize: ->
+		_resize: _.throttle(->
+			console.time('resize')
 			textareaDom = @refs.textarea
 			outerDom = @refs.outer
 			return unless textareaDom? and outerDom?
@@ -76,9 +72,12 @@ load = (win) ->
 			# Allow outer div to resize to new height
 			outerDom.style.height = 'auto'
 
+			console.timeEnd('resize')
+		, 500)
+
 		_onChange: (event) ->
-			@_resize()
 			@props.onChange event
+			@_resize()
 
 		focus: ->
 			@refs.textarea.focus()
