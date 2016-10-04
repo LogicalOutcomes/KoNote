@@ -52,7 +52,6 @@ load = (win) ->
 			win.removeEventListener 'resize', @_windowResizeListener
 
 		_resize: _.throttle(->
-			console.time('resize')
 			textareaDom = @refs.textarea
 			outerDom = @refs.outer
 			return unless textareaDom? and outerDom?
@@ -74,7 +73,6 @@ load = (win) ->
 			# Allow outer div to resize to new height
 			outerDom.style.height = 'auto'
 
-			console.timeEnd('resize')
 		, 100)
 
 		_onChange: (event) ->
