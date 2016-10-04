@@ -10,7 +10,6 @@ _ = require 'underscore'
 
 load = (win) ->
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	ExpandingTextArea = React.createFactory React.createClass
@@ -18,14 +17,14 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			value: PropTypes.string.isRequired
-			placeholder: PropTypes.string
-			disabled: PropTypes.bool
-			className: PropTypes.string
+			value: React.PropTypes.string.isRequired
+			placeholder: React.PropTypes.string
+			disabled: React.PropTypes.bool
+			className: React.PropTypes.string
 
-			onChange: PropTypes.func.isRequired
-			onFocus: PropTypes.func
-			onClick: PropTypes.func
+			onChange: React.PropTypes.func.isRequired
+			onFocus: React.PropTypes.func
+			onClick: React.PropTypes.func
 		}
 
 		render: ->
@@ -77,7 +76,9 @@ load = (win) ->
 			outerDom.style.height = 'auto'
 
 		_onChange: (event) ->
-			@_resize()
+			_.debounce =>
+				@_resize()
+			, 250
 			@props.onChange event
 
 		focus: ->
