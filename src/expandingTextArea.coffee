@@ -76,7 +76,9 @@ load = (win) ->
 			outerDom.style.height = 'auto'
 
 		_onChange: (event) ->
-			@_resize()
+			_.debounce =>
+				@_resize()
+			, 250
 			@props.onChange event
 
 		focus: ->
