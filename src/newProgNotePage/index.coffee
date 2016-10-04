@@ -842,19 +842,21 @@ load = (win, {clientFileId}) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			return null if not @props.metrics or @props.metrics.isEmpty()
+			{metrics, unit, parentData, entryData, selectItem, updateMetric} = @props
+
+			return null if not metrics or metrics.isEmpty()
 
 			return R.div({className: 'metrics'},
-				(@props.metrics.map (metric, index) =>
+				(metrics.map (metric, index) =>
 					metricId = metric.get 'id'
 
 					MetricWidget {
 						key: metricId
 						name: metric.get 'name'
 						definition: metric.get 'definition'
-						value: @props.metrics.getIn [index, 'value']
-						onFocus: @props.selectItem.bind null, unit, parentData, entryData
-						onChange: @props.updateMetric.bind null, index
+						value: metrics.getIn [index, 'value']
+						onFocus: selectItem.bind null, unit, parentData, entryData
+						onChange: updateMetric.bind null, index
 						isEditable: true
 					}
 				)
