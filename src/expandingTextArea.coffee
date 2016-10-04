@@ -39,6 +39,8 @@ load = (win) ->
 					onChange: @_onChange
 					value: @props.value
 					disabled: @props.disabled
+					style:
+						overflow: 'hidden'
 				})
 			)
 
@@ -73,7 +75,7 @@ load = (win) ->
 			outerDom.style.height = 'auto'
 
 			console.timeEnd('resize')
-		, 500)
+		, 100)
 
 		_onChange: (event) ->
 			@props.onChange event
