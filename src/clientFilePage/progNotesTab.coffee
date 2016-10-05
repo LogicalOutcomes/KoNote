@@ -56,10 +56,10 @@ load = (win) ->
 
 		componentWillReceiveProps: (nextProps) ->
 			@_buildHistoryEntries(nextProps)
-		
+
 		componentDidMount: ->
 			@_buildHistoryEntries()
-			
+
 			# TODO: Restore for lazyload feature
 			# progNotesPane = $('.historyEntries')
 			# progNotesPane.on 'scroll', =>
@@ -78,7 +78,7 @@ load = (win) ->
 				progNoteHistories = @props.progNoteHistories
 				clientFileId = @props.clientFileId
 			historyEntries = null
-			
+
 			Async.series [
 				(cb) =>
 					Async.map progNoteHistories.toArray(), (progNoteHistory, cb) =>
@@ -95,7 +95,7 @@ load = (win) ->
 										attachmentId: results.first().get('id')
 										filename: results.first().get('filename')
 									}
-								
+
 							entry = Imm.fromJS {
 								type: 'progNote'
 								id: progNoteId
@@ -115,7 +115,7 @@ load = (win) ->
 				if err
 					console.log err
 				@setState {historyEntries}
-		
+
 		render: ->
 			historyEntries = @state.historyEntries
 			hasChanges = @_revisingProgNoteHasChanges()
@@ -181,7 +181,7 @@ load = (win) ->
 										'collapsed' if @state.revisingProgNote
 									].join ' '
 									onClick: @_openNewProgNote
-									disabled: @state.isLoading or @props.isReadOnly
+									disabled: (not Config.devMode and @state.isLoading) or @props.isReadOnly
 								},
 									FaIcon('file')
 									"New #{Term 'Progress Note'}"
@@ -209,10 +209,10 @@ load = (win) ->
 								R.button({
 									className: 'btn btn-primary btn-lg newProgNoteButton'
 									onClick: @_openNewProgNote
-									disabled: @state.isLoading or @props.isReadOnly
+									disabled: (not Config.devMode and @state.isLoading) or @props.isReadOnly
 								},
 									FaIcon 'file'
-									"New #{Term 'progress note'}"
+									"New #{Term 'Progress Note'}"
 								)
 								R.button({
 									ref: 'addQuickNoteButton'
@@ -221,7 +221,7 @@ load = (win) ->
 									disabled: @props.isReadOnly
 								},
 									FaIcon 'plus'
-									"Add #{Term 'quick note'}"
+									"Add #{Term 'Quick Note'}"
 								)
 							)
 						)
@@ -640,7 +640,7 @@ load = (win) ->
 				$('#attachmentArea').append filename + " (" + filesize + ")"
 				#@_decodeFile encodedAttachment
 			return
-			
+
 		_toggleQuickNotePopover: ->
 			# TODO: Refactor to stateful React component
 
@@ -681,17 +681,17 @@ load = (win) ->
 					event.preventDefault()
 
 					@_createQuickNote popover.find('textarea').val(), @state.backdate, @state.attachment, (err) =>
-						
+
 						if @state.attachment?
 							# refresh if we have an attachment since it is not ready when create:prognote fires in
 							# the parent. TODO: make this more elegant
 							@_buildHistoryEntries()
-						
+
 						@setState {
 							backdate: '',
 							attachment: null
 						}
-						
+
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
@@ -755,14 +755,14 @@ load = (win) ->
 				unless attachment
 					cb()
 					return
-				
+
 				attachmentData = Imm.fromJS {
 					filename: attachment.filename
 					encodedData: attachment.encodedData
 					clientFileId: @props.clientFileId
 					progNoteId: result.get('id')
 				}
-				
+
 				global.ActiveSession.persist.attachments.create attachmentData, (err) =>
 					if err
 						cb err
@@ -883,7 +883,7 @@ load = (win) ->
 			isEditing = @props.isEditing
 
 			progNote = if isEditing then @props.revisingProgNote else @props.progNote
-			
+
 			if @props.attachments?
 				attachmentText = " " + @props.attachments.get('filename')
 
@@ -932,7 +932,7 @@ load = (win) ->
 					)
 				)
 			)
-		
+
 		_openAttachment: (attachment) ->
 			if attachment?
 				clientFileId = attachment.get('clientFileId')
@@ -1058,12 +1058,13 @@ load = (win) ->
 													onChange: @props.updateBasicUnitNotes.bind null, unitId
 												})
 											else
-												if unit.get('notes').includes "***"
+												(if unit.get('notes').includes "***"
 													R.span({className: 'starred'},
-														renderLineBreaks unit.get('notes')
+														renderLineBreaks unit.get('notes').replace(/\*\*\*/g, '')
 													)
 												else
 													renderLineBreaks unit.get('notes')
+												)
 											)
 										)
 										unless unit.get('metrics').isEmpty()
@@ -1171,7 +1172,13 @@ load = (win) ->
 						R.div({className: 'basic unit'},
 							R.h3({}, "Shift Summary")
 							R.div({className: 'notes'},
-								renderLineBreaks progNote.get('summary')
+								(if progNote.get('summary').includes "***"
+									R.span({className: 'starred'},
+										renderLineBreaks progNote.get('summary').replace(/\*\*\*/g, '')
+									)
+								else
+									renderLineBreaks progNote.get('summary')
+								)
 							)
 						)
 					)
