@@ -10,6 +10,7 @@ _ = require 'underscore'
 
 load = (win) ->
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
 
 	ExpandingTextArea = React.createFactory React.createClass
@@ -17,14 +18,14 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			value: React.PropTypes.string.isRequired
-			placeholder: React.PropTypes.string
-			disabled: React.PropTypes.bool
-			className: React.PropTypes.string
+			value: PropTypes.string.isRequired
+			placeholder: PropTypes.string
+			disabled: PropTypes.bool
+			className: PropTypes.string
 
-			onChange: React.PropTypes.func.isRequired
-			onFocus: React.PropTypes.func
-			onClick: React.PropTypes.func
+			onChange: PropTypes.func.isRequired
+			onFocus: PropTypes.func
+			onClick: PropTypes.func
 		}
 
 		render: ->
@@ -38,22 +39,19 @@ load = (win) ->
 					onChange: @_onChange
 					value: @props.value
 					disabled: @props.disabled
+					style:
+						overflow: 'hidden' # Prevents scrollbar from flashing upon resize
 				})
 			)
 
 		componentDidMount: ->
-			@_windowResizeListener = _.debounce =>
-				@_resize()
-			, 50 # milliseconds
-
-			win.addEventListener 'resize', @_windowResizeListener
-
+			win.addEventListener 'resize', @_resize
 			@_resize()
 
 		componentWillUnmount: ->
 			win.removeEventListener 'resize', @_windowResizeListener
 
-		_resize: ->
+		_resize: _.throttle(->
 			textareaDom = @refs.textarea
 			outerDom = @refs.outer
 			return unless textareaDom? and outerDom?
@@ -75,11 +73,11 @@ load = (win) ->
 			# Allow outer div to resize to new height
 			outerDom.style.height = 'auto'
 
+		, 100)
+
 		_onChange: (event) ->
-			_.debounce =>
-				@_resize()
-			, 250
 			@props.onChange event
+			@_resize()
 
 		focus: ->
 			@refs.textarea.focus()
