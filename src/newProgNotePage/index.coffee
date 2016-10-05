@@ -394,11 +394,6 @@ load = (win, {clientFileId}) ->
 									editMode: @state.editingWhichEvent?
 									clientPrograms: @props.clientPrograms
 									isBeingEdited
-
-									updateEventPlanRelationMode: @_updateEventPlanRelationMode
-									selectedEventPlanRelation: @state.selectedEventPlanRelation
-									selectEventPlanRelation: @_selectEventPlanRelation
-									hoverEventPlanRelation: @_hoverEventPlanRelation
 								})
 							)
 						)
@@ -429,11 +424,7 @@ load = (win, {clientFileId}) ->
 			if @state.progEvents.get(index) and @state.progEvents.get(index).isEmpty()
 				@setState {progEvents: @state.progEvents.delete(index)}
 
-			@setState {
-				selectedEventPlanRelation: null
-				hoveredEventPlanRelation: null
-				editingWhichEvent: null
-			}
+			@setState {editingWhichEvent: null}
 
 		_compileProgNoteData: (progNote) ->
 			# Extract data from all unit refs, plus notes from shiftSummary
@@ -638,7 +629,6 @@ load = (win, {clientFileId}) ->
 								.set('programId', programId)
 								.set('backdate', createdProgNote.get('backdate'))
 								.set('status', 'default')
-								.remove('relatedElement')
 
 								ActiveSession.persist.globalEvents.create globalEvent, cb
 

@@ -384,10 +384,7 @@ load = (win) ->
 		_closeForm: (event) ->
 			event.preventDefault()
 
-			if (
-				@state.title or @state.endDate or @state.description or
-				@props.selectedEventPlanRelation or @state.typeId
-			)
+			if @state.title or @state.endDate or @state.description or @state.typeId
 				Bootbox.confirm "Cancel #{Term 'event'} editing?", (ok) =>
 					if ok
 						# Make sure all states are reset, then cancel
