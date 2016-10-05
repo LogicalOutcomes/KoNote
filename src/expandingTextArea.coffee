@@ -40,7 +40,7 @@ load = (win) ->
 					value: @props.value
 					disabled: @props.disabled
 					style:
-						overflow: 'hidden'
+						overflow: 'hidden' # Prevents scrollbar from flashing upon resize
 				})
 			)
 
