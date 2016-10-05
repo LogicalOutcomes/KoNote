@@ -14,7 +14,6 @@
 		border-radius 0
 		border-color sidebar-borders
 		border-right 1px solid sidebar-borders
-		box-shadow inset 0px 0px 0px 0px sidebar-borders
 		padding 0
 		transition all .1s ease
 
@@ -38,9 +37,7 @@
 			transition all .1s ease
 
 		&:hover, button:hover
-			background #eaf1f5
-			box-shadow inset 0px -3px 0px 0px sidebar-borders
-			font-size 1.05em
+			background #dae6ed
 
 	// Overrides for B.Dropdown
 	> .dropdown
@@ -115,11 +112,8 @@
 
 		&.newProgNoteButton
 			$bgColor = rgba(49, 118, 170, 1)
-			box-shadow inset 0px 0px 0px 0px darken($bgColor, 25%)
-
 			color white
 			background $bgColor
 
 			&:hover
 				background lighten($bgColor, 25%)
-				box-shadow inset 0px -3px 0px 0px darken($bgColor, 25%)

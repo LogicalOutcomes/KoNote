@@ -16,8 +16,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	Gui = win.require 'nw.gui'
-	Window = Gui.Window.get()
+	Window = nw.Window.get(win)
 
 	NewInstallationPage = require('./newInstallationPage').load(win)
 

@@ -27,8 +27,7 @@ load = (win, {clientFileId}) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	Gui = win.require 'nw.gui'
-	Window = Gui.Window.get(win)
+	Window = nw.Window.get(win)
 
 	CrashHandler = require('../crashHandler').load(win)
 	BrandWidget = require('../brandWidget').load(win)
@@ -38,7 +37,6 @@ load = (win, {clientFileId}) ->
 	InfoTab = require('./infoTab').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
 	WithTooltip = require('../withTooltip').load(win)
-	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
 	ClientAlerts = require('./clientAlerts').load(win)
 
 	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
@@ -1077,19 +1075,7 @@ load = (win, {clientFileId}) ->
 					Config.logoSubtitle
 				)
 				R.div({className: 'clientName'},
-					(if ActiveSession.accountType is 'admin'
-						WithTooltip({title: "Edit Client Information", placement: 'right', container: 'body'},
-							OpenDialogLink({
-								dialog: RenameClientFileDialog
-								clientFile: @props.clientFile
-								className: 'clientNameField'
-							},
-								@props.clientName
-							)
-						)
-					else
-						@props.clientName
-					)
+					@props.clientName
 				)
 				(if not @props.clientPrograms.isEmpty()
 					R.div({className: 'programs'},

@@ -6,13 +6,11 @@
 
 Imm = require 'immutable'
 Term = require '../../term'
-ImmPropTypes = require 'react-immutable-proptypes'
 
 
 load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	{DragDropContext} = win.ReactDnD
@@ -27,10 +25,10 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			plan: ImmPropTypes.map.isRequired
-			currentTargetRevisionsById: ImmPropTypes.map.isRequired
-			reorderSection: PropTypes.func.isRequired
-			reorderTargetId: PropTypes.func.isRequired
+			plan: React.PropTypes.instanceOf(Imm.Map).isRequired
+			currentTargetRevisionsById: React.PropTypes.instanceOf(Imm.Map).isRequired
+			reorderSection: React.PropTypes.func.isRequired
+			reorderTargetId: React.PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {

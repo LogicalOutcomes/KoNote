@@ -99,6 +99,23 @@ load = (win) ->
 							FaIcon('plus')
 							"Add #{Term 'section'}"
 						)
+						R.div({className: 'templates'},
+							(unless @props.planTemplateHeaders.isEmpty()
+								B.DropdownButton({
+									className: 'btn btn-lg'
+									title: "Apply #{Term 'Template'}"
+								},
+									(@props.planTemplateHeaders.map (planTemplateHeader) =>
+										B.MenuItem({
+											key: planTemplateHeader.get('id')
+											onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+										},
+											planTemplateHeader.get('name')
+										)
+									)
+								)
+							)
+						)
 					)
 					R.div({className: "flexButtonToolbar #{showWhen plan.get('sections').size > 0}"},
 						R.button({
@@ -472,11 +489,12 @@ load = (win) ->
 			Bootbox.confirm "Are you sure you want to apply this template?", (ok) =>
 				if ok
 					clientFileHeaders = null
-					newClientFileObj = null
-					newClientFile = null
 					selectedPlanTemplate = null
 					templateSections = null
 					existsElsewhere = null
+					newCurrentRevs = null
+					newPlan = null
+					targetIds = Imm.List()
 					clientFileId = @props.clientFileId
 
 					Async.series [
@@ -491,16 +509,23 @@ load = (win) ->
 								cb()
 
 						(cb) =>
-							templateSections = selectedPlanTemplate.get('sections').map (section) =>
-								templateTargets = section.get('targets').map (target) =>
+							templateSections = selectedPlanTemplate.get('sections').map (templateSection) =>
+								targetIds = Imm.List()
+								newCurrentRevs = @state.currentTargetRevisionsById
+								templateSection.get('targets').forEach (target) =>
 									target.get('metricIds').forEach (metricId) =>
+
 										# Metric exists in another target
 										existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
 											return target.get('metricIds').contains(metricId)
 										if existsElsewhere
 											return
 
-									Imm.fromJS {
+									targetId = '__transient__' + Persist.generateId()
+									targetIds = targetIds.push targetId
+
+									newTarget = Imm.fromJS {
+										id: targetId
 										clientFileId
 										name: target.get('name')
 										description: target.get('description')
@@ -508,53 +533,29 @@ load = (win) ->
 										metricIds: target.get('metricIds')
 									}
 
-								return section.set 'targets', templateTargets
+									newCurrentRevs = newCurrentRevs.set targetId, newTarget
+
+								section = templateSection.set 'status', 'default'
+								.set 'targetIds', targetIds
+								.set 'id', Persist.generateId()
+								.remove 'targets'
+
+								return section
 
 							if existsElsewhere
 								cb('CANCEL')
 								return
-
 							cb()
 
 						(cb) =>
-							Async.map templateSections.toArray(), (section, cb) ->
-								Async.map section.get('targets').toArray(), (target, cb) ->
-									global.ActiveSession.persist.planTargets.create target, (err, result) ->
-										if err
-											cb err
-											return
 
-										cb null, result.get('id')
-
-								, (err, results) ->
-									if err
-										cb err
-										return
-
-									targetIds = Imm.List(results)
-
-									newSection = Imm.fromJS {
-										id: Persist.generateId()
-										name: section.get('name')
-										targetIds: results
-										status: 'default'
-									}
-
-									cb null, newSection
-
-							, (err, results) ->
-								if err
-									cb err
-									return
-
-								templateSections = Imm.List(results)
-								cb()
-
-						(cb) =>
 							newPlan = @state.plan.update 'sections', (sections) =>
 								return sections.concat(templateSections)
 
-							@setState {plan: newPlan}
+							@setState {
+								plan: newPlan
+								currentTargetRevisionsById: newCurrentRevs
+							},
 
 							cb()
 
@@ -573,9 +574,6 @@ load = (win) ->
 
 							CrashHandler.handle err
 							return
-
-
-
 					return
 
 		_createTemplate: ->
@@ -749,6 +747,7 @@ load = (win) ->
 
 
 			# Group sections into an object, with a property for each status
+
 			sectionsByStatus = plan.get('sections').groupBy (section) ->
 				return section.get('status')
 
@@ -931,6 +930,7 @@ load = (win) ->
 			headerState = 'inline'
 
 			# Group targetIds into an object, with a property for each status
+
 			targetIdsByStatus = section.get('targetIds').groupBy (targetId) ->
 				return currentTargetRevisionsById.getIn([targetId, 'status'])
 

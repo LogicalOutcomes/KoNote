@@ -48,6 +48,8 @@ describe 'ApiBuilder', ->
 			api = buildApi(b, s, [])
 			Assert.deepEqual api, {
 				eventBus: api.eventBus
+				goOnline: api.goOnline
+				goOffline: api.goOffline
 			}
 
 		it 'refuses to allow a collection named `eventBus`', ->

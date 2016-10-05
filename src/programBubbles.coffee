@@ -2,12 +2,11 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-ImmPropTypes = require 'react-immutable-proptypes'
+Imm = require 'immutable'
 
 load = (win) ->
 	# Libraries from browser context
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
@@ -18,7 +17,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			programs: ImmPropTypes.list.isRequired
+			programs: React.PropTypes.instanceOf(Imm.List).isRequired
 		}
 
 		render: ->

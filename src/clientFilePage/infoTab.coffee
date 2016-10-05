@@ -40,9 +40,11 @@ load = (win) ->
 				recordId: @props.clientFile.get('recordId')
 				status: @props.clientFile.get('status')
 				detailUnitsById
+				selectedGroupId: null
 			}
 
 		render: ->
+
 			return R.div({className: "infoView"},
 
 				hasChanges = @hasChanges()
@@ -54,7 +56,6 @@ load = (win) ->
 								'saveButton'
 							else
 								'disabled'
-
 						onClick: @_submit
 					},
 						FaIcon('save')
@@ -67,7 +68,6 @@ load = (win) ->
 								'discardButton'
 							else
 								'disabled'
-
 						onClick: @_resetChanges
 					},
 						FaIcon('undo')
@@ -75,101 +75,113 @@ load = (win) ->
 					)
 				)
 
-				R.div({className: 'basicInfo'},
-					R.h4({}, "Client Name"),
-					R.div({className: 'basicFields'}
-						R.div({className: 'form-group'},
-							R.label({}, "First name"),
-							R.input({
-								ref: 'firstNameField'
-								className: 'form-control'
-								onChange: @_updateFirstName
-								value: @state.firstName
-								# onKeyDown: @_onEnterKeyDown
-								maxLength: 35
-							})
-						)
-						R.div({className: 'form-group'},
-							R.label({}, "Middle name"),
-							R.input({
-								className: 'form-control'
-								onChange: @_updateMiddleName
-								value: @state.middleName
-								placeholder: "(optional)"
-								maxLength: 35
-							})
-						)
-						R.div({className: 'form-group'},
-							R.label({}, "Last name"),
-							R.input({
-								className: 'form-control'
-								onChange: @_updateLastName
-								value: @state.lastName
-								maxLength: 35
-							})
-						)
-						(if Config.clientFileRecordId.isEnabled
+				R.div({className: 'detailUnitGroups'},
+					isSelected = @isSelected('basic')
+
+					R.div({
+						className: [
+							'detailUnitGroup'
+							'isSelected' if isSelected
+						].join ' '
+						onClick: @_updateSelectedGroupId.bind null, 'basic'
+					}
+						R.h4({}, "Client Name"),
+						R.div({className: 'detailFields'},
 							R.div({className: 'form-group'},
-								R.label({}, Config.clientFileRecordId.label),
+								R.label({className: 'detailLabel'}, "First name"),
 								R.input({
+									ref: 'firstNameField'
 									className: 'form-control'
-									onChange: @_updateRecordId
-									value: @state.recordId
-									placeholder: "(optional)"
-									onKeyDown: @_onEnterKeyDown
-									maxLength: 23
+									onChange: @_updateFirstName
+									value: @state.firstName
+									# onKeyDown: @_onEnterKeyDown
+									maxLength: 35
 								})
 							)
-						)
-
-						R.div({className: 'form-group'},
-							R.label({}, "Client File Status"),
-							R.div({className: 'btn-toolbar'},
-								R.button({
-									className:
-										if @state.status is 'active'
-											'btn btn-success'
-										else 'btn btn-default'
-									onClick: @_updateStatus
-									value: 'active'
-
-								},
-									"Active"
+							R.div({className: 'form-group'},
+								R.label({className: 'detailLabel'}, "Middle name"),
+								R.input({
+									className: 'form-control'
+									onChange: @_updateMiddleName
+									value: @state.middleName
+									placeholder: "(optional)"
+									maxLength: 35
+								})
+							)
+							R.div({className: 'form-group'},
+								R.label({className: 'detailLabel'}, "Last name"),
+								R.input({
+									className: 'form-control'
+									onChange: @_updateLastName
+									value: @state.lastName
+									maxLength: 35
+								})
+							)
+							(if Config.clientFileRecordId.isEnabled
+								R.div({className: 'form-group'},
+									R.label({className: 'detailLabel'}, Config.clientFileRecordId.label),
+									R.input({
+										className: 'form-control'
+										onChange: @_updateRecordId
+										value: @state.recordId
+										placeholder: "(optional)"
+										onKeyDown: @_onEnterKeyDown
+										maxLength: 23
+									})
 								)
-								R.button({
-									className:
-										if @state.status is 'inactive'
-											'btn btn-warning'
-										else 'btn btn-default'
-									onClick: @_updateStatus
-									value: 'inactive'
+							)
 
-								},
-									"Inactive"
-								)
-								R.button({
-									className:
-										if @state.status is 'discharged'
-											'btn btn-danger'
-										else 'btn btn-default'
-									onClick: @_updateStatus
-									value: 'discharged'
-
-								},
-									"Discharged"
+							R.div({className: 'form-group'},
+								R.label({className: 'detailLabel'}, "Client File Status"),
+								R.div({className: 'btn-toolbar'},
+									R.button({
+										className:
+											if @state.status is 'active'
+												'btn btn-success'
+											else 'btn btn-default'
+										onClick: @_updateStatus
+										value: 'active'
+									},
+										"Active"
+									)
+									R.button({
+										className:
+											if @state.status is 'inactive'
+												'btn btn-warning'
+											else 'btn btn-default'
+										onClick: @_updateStatus
+										value: 'inactive'
+									},
+										"Inactive"
+									)
+									R.button({
+										className:
+											if @state.status is 'discharged'
+												'btn btn-danger'
+											else 'btn btn-default'
+										onClick: @_updateStatus
+										value: 'discharged'
+									},
+										"Discharged"
+									)
 								)
 							)
 						)
 					)
 
-				)
-
-				R.div({className: 'detailUnitGroups'},
 					(@props.detailDefinitionGroups.map (definitionGroup) =>
 						groupId = definitionGroup.get('id')
 						fields = definitionGroup.get('fields')
 
-						R.div({className: 'detailUnitGroup'},
+						isSelected = @isSelected(groupId)
+
+						R.div({
+							className: [
+								'detailUnitGroup'
+								'isSelected' if isSelected
+							].join ' '
+							onClick: @_updateSelectedGroupId.bind null, groupId
+						},
 							R.h4({}, definitionGroup.get('title'))
 
 							R.div({className: 'detailFields'},
@@ -179,7 +191,8 @@ load = (win) ->
 									inputType = field.get('inputType')
 
 									R.div({className: 'form-group'},
-										R.label({}, "#{field.get('name')}"),
+										R.label({className: 'detailLabel'},
+										"#{field.get('name')}"),
 
 										R[inputType]({
 											className: 'form-control'
@@ -196,6 +209,11 @@ load = (win) ->
 				)
 			)
 
+		isSelected: (groupId) ->
+			if groupId is @state.selectedGroupId
+				return true
+			else
+				return false
 
 		hasChanges: ->
 			# If there is a difference, then there have been changes
@@ -217,6 +235,9 @@ load = (win) ->
 				return true
 			return false
 
+		_updateSelectedGroupId: (groupId, event) ->
+			selectedGroupId = groupId
+			@setState {selectedGroupId}
 
 		_updateDetailUnit: (fieldId, event) ->
 			detailUnitsById = @state.detailUnitsById.setIn [fieldId, 'value'], event.target.value
@@ -265,30 +286,42 @@ load = (win) ->
 					@setState @getInitialState()
 
 		_submit: ->
-			updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
-				detailUnit.toJS()
+			if not @state.firstName
+				Bootbox.alert "Cannot save the Client File without a First Name"
+				# setTimeout(=>
+				# 	$("firstNameField").focus()
+				# , 250)
+				return
 
-			updatedClientFile = @props.clientFile
-			.setIn(['clientName', 'first'], @state.firstName)
-			.setIn(['clientName', 'middle'], @state.middleName)
-			.setIn(['clientName', 'last'], @state.lastName)
-			.set('recordId', @state.recordId)
-			.set('status', @state.status)
-			.set('detailUnits', updatedDetailUnits)
+			else if not @state.lastName
+				Bootbox.alert "Cannot save the Client File without a Last Name"
+				return
 
-			global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
-				@refs.dialog.setIsLoading(false) if @refs.dialog?
-				if err
-					if err instanceof Persist.IOError
-						console.error err
-						console.error err.stack
-						Bootbox.alert """
-							Please check your network connection and try again.
-						"""
+			else
+				updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
+					detailUnit.toJS()
+
+				updatedClientFile = @props.clientFile
+				.setIn(['clientName', 'first'], @state.firstName)
+				.setIn(['clientName', 'middle'], @state.middleName)
+				.setIn(['clientName', 'last'], @state.lastName)
+				.set('recordId', @state.recordId)
+				.set('status', @state.status)
+				.set('detailUnits', updatedDetailUnits)
+
+				global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
+					@refs.dialog.setIsLoading(false) if @refs.dialog?
+					if err
+						if err instanceof Persist.IOError
+							console.error err
+							console.error err.stack
+							Bootbox.alert """
+								Please check your network connection and try again.
+							"""
+							return
+
+						CrashHandler.handle err
 						return
-
-					CrashHandler.handle err
-					return
 
 	return {InfoView}
 

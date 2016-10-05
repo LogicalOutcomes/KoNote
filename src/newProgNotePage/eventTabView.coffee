@@ -9,14 +9,12 @@ Moment = require 'moment'
 _ = require 'underscore'
 nlp = require 'nlp_compromise'
 Term = require '../term'
-ImmPropTypes = require 'react-immutable-proptypes'
 {TimestampFormat} = require '../persist/utils'
 
 
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 	Bootbox = win.bootbox
 
@@ -581,9 +579,9 @@ load = (win) ->
 			}
 
 		propTypes: {
-			eventData: ImmPropTypes.map.isRequired
-			clientFileId: PropTypes.string.isRequired
-			clientPrograms: ImmPropTypes.list.isRequired
+			eventData: React.PropTypes.instanceOf(Imm.Map).isRequired
+			clientFileId: React.PropTypes.string.isRequired
+			clientPrograms: React.PropTypes.instanceOf(Imm.List).isRequired
 		}
 
 		render: ->
