@@ -84,6 +84,7 @@ Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 		relatedProgNoteId
 		authorProgramId: ''
 		clientFileId
+		relatedElement: ''
 	}
 
 	createData 'progEvents', progEvent, cb

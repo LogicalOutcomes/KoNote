@@ -65,6 +65,10 @@ dataModelDefinitions = [
 					relatedProgNoteId: IdSchema
 					authorProgramId: IdSchema.allow('')
 					backdate: Joi.date().format(TimestampFormat).raw().allow('')
+					relatedElement: Joi.object().keys({
+						id: IdSchema
+						type: ['progNoteUnit', 'planSection', 'planTarget']
+					}).allow('')
 					status: ['default', 'cancelled']
 					statusReason: Joi.string().optional()
 				})

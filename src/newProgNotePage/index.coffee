@@ -19,7 +19,6 @@ load = (win, {clientFileId}) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	Window = nw.Window.get(win)
@@ -227,10 +226,7 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		hasChanges: ->
-			originalProgNote = @state.progNote
-			progNote = @_compileProgNoteData(@state.progNote)
-
-			hasProgNotes = not Imm.is originalProgNote, progNote
+			hasProgNotes = not Imm.is @props.progNote, @state.progNote
 			hasProgEvents = not @state.progEvents.isEmpty()
 
 			return hasProgNotes or hasProgEvents
@@ -238,13 +234,6 @@ load = (win, {clientFileId}) ->
 		componentWillReceiveProps: (newProps) ->
 			unless Imm.is(newProps.progNote, @props.progNote)
 				@setState {progNote: newProps.progNote}
-
-		componentWillMount: ->
-			clientName = renderName @props.clientFile.get('clientName')
-
-			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}: New #{Term 'Progress Note'}
-			"""
 
 		componentDidMount: ->
 			global.ActiveSession.persist.eventBus.trigger 'newProgNotePage:loaded'
@@ -282,12 +271,17 @@ load = (win, {clientFileId}) ->
 						R.div({},
 							R.button({
 								className: 'btn btn-danger'
-								onClick: @props.closeWindow
+								onClick: =>
+									@props.closeWindow()
 							}, "Close")
 						)
 					)
 				)
 
+			clientName = renderName @props.clientFile.get('clientName')
+			@props.setWindowTitle """
+				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}: New #{Term 'Progress Note'}
+			"""
 
 			return R.div({className: 'newProgNotePage animated fadeIn'},
 
@@ -299,53 +293,160 @@ load = (win, {clientFileId}) ->
 						})
 					)
 
-					R.div({className: 'units'},
+					R.div({
+						className: [
+							'units'
+							'eventPlanRelationMode' if @state.isEventPlanRelationMode
+						].join ' '
+					},
 						(@state.progNote.get('units').map (unit) =>
 							unitId = unit.get 'id'
-							unitType = unit.get 'type'
 
-							(switch unitType
+							switch unit.get('type')
 								when 'basic'
-									Entry({
-										ref: unitId
+									R.div({
 										key: unitId
-										className: 'unit basic'
-										unit
-										entryData: unit
-										selectItem: @_selectItem
-									})
+										className: [
+											'unit basic isEventRelatable'
+											'hoveredEventPlanRelation' if Imm.is unit, @state.hoveredEventPlanRelation
+											'selectedEventPlanRelation' if Imm.is unit, @state.selectedEventPlanRelation
+										].join ' '
+										onMouseOver: @_hoverEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
+										onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
+										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
+									},
+										R.h1({className: 'unitName'}, unit.get 'name')
+										ExpandingTextArea({
+											value: unit.get('notes')
+											onFocus: @_selectBasicUnit.bind null, unit
+											onChange: @_updateBasicNotes.bind null, unitId
+										})
+										R.div({className: 'metrics'},
+											(unit.get('metrics').map (metric) =>
+												metricId = metric.get 'id'
+
+												MetricWidget({
+													key: metric.get('id')
+													name: metric.get('name')
+													definition: metric.get('definition')
+													onFocus: @_selectBasicUnit.bind null, unit
+													onChange: @_updateBasicMetric.bind(
+														null,
+														unitId, metricId
+													)
+													value: metric.get('value')
+													isEditable: true
+												})
+											).toJS()...
+										)
+									)
 								when 'plan'
-									PlanUnit({
-										ref: unitId
+									R.div({
+										className: 'unit plan'
 										key: unitId
-										unit
-										selectItem: @_selectItem
-									})
-								else
-									throw new Error """
-										Invalid progNote unit type: #{unitType} for progNote #{@state.progNote.toJS()}
-									"""
-							)
-						)
+									},
+										(unit.get('sections').map (section) =>
+											sectionId = section.get 'id'
+
+											R.section({
+												key: sectionId
+												className: [
+													'hoveredEventPlanRelation' if Imm.is section, @state.hoveredEventPlanRelation
+													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
+												].join ' '
+												onMouseOver: @_hoverEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
+												onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
+												onClick: @_selectEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
+											},
+												R.h2({}, section.get 'name')
+
+												(section.get('targets').map (target) =>
+													targetId = target.get 'id'
+
+													R.div({
+														key: targetId
+														className: [
+															'target'
+															'hoveredEventPlanRelation' if Imm.is target, @state.hoveredEventPlanRelation
+															'selectedEventPlanRelation' if Imm.is target, @state.selectedEventPlanRelation
+														].join ' '
+														onMouseOver: @_hoverEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
+														onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
+														onClick: @_selectEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
+													},
+														R.h3({},
+															target.get 'name'
+															R.span({
+																className: 'star'
+																title: "Mark as Important"
+																onClick: @_starTarget.bind(null, unitId, sectionId, targetId, target.get 'notes')
+															},
+																if target.get('notes').includes "***"
+																	FaIcon('star', {className:'checked'})
+																else
+																	FaIcon('star-o')
+															)
+														)
+														ExpandingTextArea {
+															value: target.get 'notes'
+															onFocus: @_selectPlanTarget.bind(
+																null, unit, section, target
+															)
+															onChange: @_updatePlanTargetNotes.bind(
+																null, unitId, sectionId, targetId
+															)
+														}
+														R.div({className: 'metrics'},
+															(target.get('metrics').map (metric) =>
+																metricId = metric.get 'id'
+
+																MetricWidget {
+																	key: metricId
+																	name: metric.get 'name'
+																	definition: metric.get 'definition'
+																	value: metric.get 'value'
+																	onFocus: @_selectPlanTarget.bind(
+																		null,
+																		unit, section, target
+																	)
+																	onChange: @_updatePlanTargetMetric.bind(
+																		null,
+																		unitId, sectionId, targetId, metricId
+																	)
+																	isEditable: true
+																}
+															)
+														)
+													)
+												).toJS()...
+											)
+										).toJS()...
+									)
+						).toJS()...
 
 						# PROTOTYPE Shift Summary Feature
-						Entry({
-							ref: 'shiftSummary'
-							className: "shiftSummary unit basic #{showWhen Config.features.shiftSummaries.isEnabled}"
-							entryData: Imm.Map {name: "Shift Summary"}
-							# selectItem: @_selectItem # TODO: Shift summary history
-						})
+						R.div({
+							id: 'shiftSummaryField'
+							className: 'unit basic'
+						},
+							R.h2({}, "Shift Summary")
+							ExpandingTextArea({
+								value: @state.progNote.get('summary')
+								onChange: @_updateSummary
+							})
+						)
 					)
 
-					R.button({
-						id: 'saveNoteButton'
-						className: 'btn btn-success btn-lg animated fadeInUp'
-						disabled: @state.editingWhichEvent?
-						onClick: @_save
-					},
-						"Save "
-						FaIcon('check')
-					)
+					if @hasChanges()
+						R.button({
+							id: 'saveNoteButton'
+							className: 'btn btn-success btn-lg animated fadeInUp'
+							disabled: @state.editingWhichEvent?
+							onClick: @_save
+						},
+							"Save "
+							FaIcon('check')
+						)
 				)
 
 				ProgNoteDetailView({
@@ -393,6 +494,11 @@ load = (win, {clientFileId}) ->
 									editMode: @state.editingWhichEvent?
 									clientPrograms: @props.clientPrograms
 									isBeingEdited
+
+									updateEventPlanRelationMode: @_updateEventPlanRelationMode
+									selectedEventPlanRelation: @state.selectedEventPlanRelation
+									selectEventPlanRelation: @_selectEventPlanRelation
+									hoverEventPlanRelation: @_hoverEventPlanRelation
 								})
 							)
 						)
@@ -423,20 +529,31 @@ load = (win, {clientFileId}) ->
 			if @state.progEvents.get(index) and @state.progEvents.get(index).isEmpty()
 				@setState {progEvents: @state.progEvents.delete(index)}
 
-			@setState {editingWhichEvent: null}
+			@setState {
+				selectedEventPlanRelation: null
+				hoveredEventPlanRelation: null
+				editingWhichEvent: null
+			}
 
-		_compileProgNoteData: (progNote) ->
-			# Extract data from all unit refs, plus notes from shiftSummary
-			progNoteWithUnits = getDataFromRefs @refs, progNote, 'units'
-			shiftSummaryNotes = @refs.shiftSummary.getData().get('notes')
+		_selectEventPlanRelation: (selectedEventPlanRelation, event) ->
+			event.stopPropagation() if event?
 
-			return progNoteWithUnits.set 'summary', shiftSummaryNotes
+			# Enable eventPlanRelationMode if not already on
+			unless @state.isEventPlanRelationMode
+				@setState {isEventPlanRelationMode: true}
 
-		_selectItem: (unit, section, target) ->
-			if section and target
-				@_selectPlanTarget unit, section, target
-			else
-				@_selectBasicUnit unit
+			# Disable when chooses "No Relation" (null)
+			unless selectedEventPlanRelation?
+				@setState {isEventPlanRelationMode: false}
+
+			@setState {selectedEventPlanRelation}
+
+		_hoverEventPlanRelation: (hoveredEventPlanRelation, event) ->
+			event.stopPropagation() if event?
+			@setState {hoveredEventPlanRelation}
+
+		_updateEventPlanRelationMode: (isEventPlanRelationMode) ->
+			@setState {isEventPlanRelationMode}
 
 		_selectBasicUnit: (unit) ->
 			@setState {
@@ -459,6 +576,27 @@ load = (win, {clientFileId}) ->
 					targetName: target.get 'name'
 					targetDescription: target.get 'description'
 				}
+			}
+
+		_starTarget: (unitId, sectionId, targetId, note) ->
+			if note.includes "***"
+				newNotes = note.replace(/\*\*\*/g, '')
+			else
+				newNotes = "***" + note
+			unitIndex = getUnitIndex @state.progNote, unitId
+			sectionIndex = getPlanSectionIndex @state.progNote, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex @state.progNote, unitIndex, sectionIndex, targetId
+
+			@setState {
+				progNote: @state.progNote.setIn(
+					[
+						'units', unitIndex
+						'sections', sectionIndex
+						'targets', targetIndex
+						'notes'
+					]
+					newNotes
+				)
 			}
 
 		_updateBackdate: (event) ->
@@ -559,19 +697,13 @@ load = (win, {clientFileId}) ->
 
 			@setState {progNote}
 
+		_isValidMetric: (value) -> value.match /^-?\d*\.?\d*$/
+
 		_save: ->
-			if not @hasChanges()
-				Bootbox.alert """
-					Sorry, a #{Term 'progress note'} must contain at least 1 note or #{Term 'event'}.
-				"""
-				return
-
 			authorProgramId = global.ActiveSession.programId or ''
-
-			# Fetch notes data, add final properties for save
-			progNote = @_compileProgNoteData(@state.progNote)
-			.set 'authorProgramId', authorProgramId
-			.set 'beginTimestamp', @beginTimestamp
+			progNote = @state.progNote
+			.set('authorProgramId', authorProgramId)
+			.set('beginTimestamp', @beginTimestamp)
 
 			progNoteId = null
 			createdProgNote = null
@@ -628,6 +760,7 @@ load = (win, {clientFileId}) ->
 								.set('programId', programId)
 								.set('backdate', createdProgNote.get('backdate'))
 								.set('status', 'default')
+								.remove('relatedElement')
 
 								ActiveSession.persist.globalEvents.create globalEvent, cb
 
@@ -685,180 +818,6 @@ load = (win, {clientFileId}) ->
 						FaIcon('times')
 					)
 			)
-
-
-	PlanUnit =  React.createFactory React.createClass
-		displayName: 'PlanUnit'
-
-		getData: -> getDataFromRefs(@refs, @props.unit, 'sections')
-
-		render: ->
-			{unit, selectItem} = @props
-
-			return R.div({className: 'unit plan'},
-				(unit.get('sections').map (section) =>
-					PlanSection({
-						ref: section.get 'id'
-						key: section.get 'id'
-						unit
-						section
-						selectItem
-					})
-				)
-			)
-
-
-	PlanSection = React.createFactory React.createClass
-		displayName: 'PlanSection'
-		mixins: [React.addons.PureRenderMixin]
-
-		getData: -> getDataFromRefs(@refs, @props.section, 'targets')
-
-		render: ->
-			{unit, section, selectItem} = @props
-
-			return R.section({onClick: @getData},
-				R.h2({}, section.get 'name')
-
-				(section.get('targets').map (target) =>
-					targetId = target.get 'id'
-
-					Entry({
-						ref: targetId
-						key: targetId
-						className: 'target'
-						unit
-						parentData: section
-						entryData: target
-						selectItem
-					})
-				)
-			)
-
-
-	# Generic 'entry' component, which can be either a planTarget or a basicUnit
-	Entry = React.createFactory React.createClass
-		displayName: 'Entry'
-		mixins: [React.addons.PureRenderMixin]
-
-		getInitialState: ->
-			state = {notes: ''}
-
-			# Load metrics into state if exists
-			if @props.entryData.get('metrics')?
-				state.metrics = @props.entryData.get('metrics')
-
-			return state
-
-		propTypes: {
-			# className: PropTypes.string.isRequired()
-			# selectItem: PropTypes.func.isRequired()
-
-			# unit: ImmPropTypes.map.isRequired()
-			# parentData: ImmPropTypes.map # (section or undefined)
-			# entryData: ImmPropTypes.map.isRequired() # (target or unit)
-		}
-
-		getDefaultProps: -> {
-			className: ''
-			entryData: Imm.Map()
-			selectItem: (->)
-		}
-
-		getData: -> @props.entryData.merge @state
-
-		render: ->
-			{unit, parentData, entryData, selectItem, className} = @props
-
-			return R.div({className: "entry #{className}"},
-				R.h3({},
-					entryData.get 'name'
-
-					R.span({
-						className: 'star'
-						title: "Mark as Important"
-						onClick: @_starEntry
-					},
-						(if @state.notes.includes "***"
-							FaIcon('star', {className: 'checked'})
-						else
-							FaIcon('star-o')
-						)
-					)
-				)
-
-				ExpandingTextArea({
-					ref: 'textarea'
-					value: @state.notes
-					onFocus: selectItem.bind null, unit, parentData, entryData
-					onChange: @_updateNotes
-				})
-
-				MetricsView({
-					ref: 'metrics'
-					unit
-					parentData
-					entryData
-					metrics: @state.metrics
-					updateMetric: @_updateMetric
-					selectItem
-				})
-			)
-
-		_updateNotes: (event) ->
-			notes = event.target.value
-			@setState {notes}
-
-		_updateMetric: (index, value) ->
-			# Validate is valid metric (+/- integer)
-			return unless value.match /^-?\d*\.?\d*$/
-
-			metrics = @state.metrics.setIn [index, 'value'], value
-			@setState {metrics}
-
-		_starEntry: ->
-			notes = if @state.notes.includes "***"
-				@state.notes.replace(/\*\*\*/g, '')
-			else
-				"***" + @state.notes
-
-			@setState {notes}, =>
-				@refs.textarea.focus()
-
-
-	MetricsView = React.createFactory React.createClass
-		displayName: 'MetricsView'
-		mixins: [React.addons.PureRenderMixin]
-
-		render: ->
-			{metrics, unit, parentData, entryData, selectItem, updateMetric} = @props
-
-			return null if not metrics or metrics.isEmpty()
-
-			return R.div({className: 'metrics'},
-				(metrics.map (metric, index) =>
-					metricId = metric.get 'id'
-
-					MetricWidget {
-						key: metricId
-						name: metric.get 'name'
-						definition: metric.get 'definition'
-						value: metrics.getIn [index, 'value']
-						onFocus: selectItem.bind null, unit, parentData, entryData
-						onChange: updateMetric.bind null, index
-						isEditable: true
-					}
-				)
-			)
-
-
-	# Utility for mapping over each component's getData() method,
-	# and returning the progNote data with current note/metric values intact
-	getDataFromRefs = (refs, data, name) ->
-		ids = data.get(name).map (child) -> child.get('id')
-		values = ids.map (id) => refs[id].getData()
-		return data.set name, values
-
 
 	return NewProgNotePage
 
