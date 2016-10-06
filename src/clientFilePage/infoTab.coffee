@@ -130,44 +130,48 @@ load = (win) ->
 									})
 								)
 							)
+						)
+					)
 
-							R.div({className: 'form-group'},
-								R.label({className: 'detailLabel'}, "Client File Status"),
-								R.div({className: 'btn-toolbar'},
-									R.button({
-										className:
-											if @state.status is 'active'
-												'btn btn-success'
-											else 'btn btn-default'
-										onClick: @_updateStatus
-										value: 'active'
-									},
-										"Active"
-									)
-									R.button({
-										className:
-											if @state.status is 'inactive'
-												'btn btn-warning'
-											else 'btn btn-default'
-										onClick: @_updateStatus
-										value: 'inactive'
-									},
-										"Inactive"
-									)
-									R.button({
-										className:
-											if @state.status is 'discharged'
-												'btn btn-danger'
-											else 'btn btn-default'
-										onClick: @_updateStatus
-										value: 'discharged'
-									},
-										"Discharged"
-									)
+
+					R.div({className: 'detailUnitGroup'}
+						R.h4({}, "Client File Status"),
+						R.div({className: 'form-group'},
+							R.div({className: 'btn-toolbar'},
+								R.button({
+									className:
+										if @state.status is 'active'
+											'btn btn-success'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									value: 'active'
+								},
+									"Active"
+								)
+								R.button({
+									className:
+										if @state.status is 'inactive'
+											'btn btn-warning'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									value: 'inactive'
+								},
+									"Inactive"
+								)
+								R.button({
+									className:
+										if @state.status is 'discharged'
+											'btn btn-danger'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									value: 'discharged'
+								},
+									"Discharged"
 								)
 							)
 						)
 					)
+
 
 					(@props.detailDefinitionGroups.map (definitionGroup) =>
 						groupId = definitionGroup.get('id')
