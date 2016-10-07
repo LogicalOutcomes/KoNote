@@ -19,7 +19,9 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	ReactDOM = win.ReactDOM
+
 	CrashHandler = require('../crashHandler').load(win)
+	ExpandingTextArea = require('../expandingTextArea').load(win)
 
 	{
 		FaIcon, renderLineBreaks, showWhen, capitalize
@@ -44,98 +46,114 @@ load = (win) ->
 			}
 
 		render: ->
+			hasChanges = @hasChanges()
 
-			return R.div({className: "infoView"},
+			return R.div({className: 'infoView'},
 
-				hasChanges = @hasChanges()
-
-				R.div({className: "flexButtonToolbar"},
-					R.button({
-						className:
-							if hasChanges
-								'saveButton'
-							else
-								'disabled'
-						onClick: @_submit
-					},
-						FaIcon('save')
-						' '
-						"Save Changes"
+				R.div({className: 'menuBar'},
+					R.div({className: 'title'},
+						R.span({},
+							"#{Term 'Client'} Information"
+						)
 					)
-					R.button({
-						className:
-							if hasChanges
+					R.div({className: 'flexButtonToolbar'},
+						R.button({
+							className: [
 								'discardButton'
-							else
-								'disabled'
-						onClick: @_resetChanges
-					},
-						FaIcon('undo')
-						' '
-						"Discard"
+								'collapsed' unless hasChanges
+							].join ' '
+							onClick: @_resetChanges
+						},
+							FaIcon('undo')
+							' '
+							"Discard"
+						)
+						R.button({
+							className: [
+								'saveButton'
+								'collapsed' unless hasChanges
+							].join ' '
+							onClick: @_submit
+						},
+							FaIcon('save')
+							' '
+							"Save Changes"
+						)
 					)
 				)
 
-				R.div({className: 'detailUnitGroups'},
-					isSelected = @_isSelected('basic')
+				R.div({className: 'detailUnitsContainer'},
 
 					R.div({
+						id: 'basicInfoGroup'
 						className: [
 							'detailUnitGroup'
-							'isSelected' if isSelected
+							'isSelected' if @_isSelected('basic')
 						].join ' '
 						onClick: @_updateSelectedGroupId.bind null, 'basic'
-					}
-						R.h4({}, "#{Term 'Client'} Name"),
-						R.div({className: 'detailFields'},
-							R.div({className: 'form-group'},
-								R.label({className: 'detailLabel'}, "First name"),
-								R.input({
-									ref: 'firstNameField'
-									className: 'form-control'
-									onChange: @_updateFirstName
-									value: @state.firstName
-									maxLength: 35
-								})
+					},
+						R.section({className: 'avatar'},
+							R.div({},
+								FaIcon('user')
 							)
-							R.div({className: 'form-group'},
-								R.label({className: 'detailLabel'}, "Middle name"),
-								R.input({
-									className: 'form-control'
-									onChange: @_updateMiddleName
-									value: @state.middleName
-									placeholder: "(optional)"
-									maxLength: 35
-								})
-							)
-							R.div({className: 'form-group'},
-								R.label({className: 'detailLabel'}, "Last name"),
-								R.input({
-									className: 'form-control'
-									onChange: @_updateLastName
-									value: @state.lastName
-									maxLength: 35
-								})
-							)
-							(if Config.clientFileRecordId.isEnabled
-								R.div({className: 'form-group'},
-									R.label({className: 'detailLabel'}, Config.clientFileRecordId.label),
-									R.input({
-										className: 'form-control'
-										onChange: @_updateRecordId
-										value: @state.recordId
-										placeholder: "(optional)"
-										maxLength: 23
-									})
+						)
+
+						R.section({className: 'nameId'},
+							R.table({},
+								R.tr({},
+									R.td({}, "First Name")
+									R.td({},
+										R.input({
+											ref: 'firstNameField'
+											className: 'form-control'
+											onChange: @_updateFirstName
+											value: @state.firstName
+											maxLength: 35
+										})
+									)
+								)
+								R.tr({},
+									R.td({}, "Middle Name")
+									R.td({},
+										R.input({
+											className: 'form-control'
+											onChange: @_updateMiddleName
+											value: @state.middleName
+											placeholder: "(optional)"
+											maxLength: 35
+										})
+									)
+								)
+								R.tr({},
+									R.td({}, "Last Name")
+									R.td({},
+										R.input({
+											className: 'form-control'
+											onChange: @_updateLastName
+											value: @state.lastName
+											maxLength: 35
+										})
+									)
+								)
+								(if Config.clientFileRecordId.isEnabled
+									R.tr({},
+										R.td({}, Config.clientFileRecordId.label)
+										R.td({},
+											R.input({
+												className: 'form-control'
+												onChange: @_updateRecordId
+												value: @state.recordId
+												placeholder: "(optional)"
+												maxLength: 23
+											})
+										)
+									)
 								)
 							)
 						)
-					)
 
-
-					R.div({className: 'detailUnitGroup'}
-						R.h4({}, "#{Term 'Client File'} Status"),
-						R.div({className: 'form-group'},
+						R.section({className: 'status'},
+							R.h4({}, "#{Term 'File'} Status")
 							R.div({className: 'btn-toolbar'},
 								R.button({
 									className:
@@ -169,41 +187,49 @@ load = (win) ->
 								)
 							)
 						)
+
 					)
 
+					R.div({className: 'detailUnitGroups'},
+						(@props.detailDefinitionGroups.map (definitionGroup) =>
+							groupId = definitionGroup.get('id')
+							fields = definitionGroup.get('fields')
 
-					(@props.detailDefinitionGroups.map (definitionGroup) =>
-						groupId = definitionGroup.get('id')
-						fields = definitionGroup.get('fields')
+							isSelected = @_isSelected(groupId)
 
-						isSelected = @_isSelected(groupId)
+							R.div({
+								key: groupId
+								className: [
+									'detailUnitGroup'
+									'isSelected' if isSelected
+								].join ' '
+								onClick: @_updateSelectedGroupId.bind null, groupId
+							},
+								R.h4({}, definitionGroup.get('title'))
 
-						R.div({
-							className: [
-								'detailUnitGroup'
-								'isSelected' if isSelected
-							].join ' '
-							onClick: @_updateSelectedGroupId.bind null, groupId
-						},
-							R.h4({}, definitionGroup.get('title'))
+								R.table({},
+									(fields.map (field) =>
+										fieldId = field.get('id')
+										value = @state.detailUnitsById.getIn([fieldId, 'value'])
+										inputType = field.get('inputType')
 
-							R.div({className: 'detailFields'},
-								(fields.map (field) =>
-									fieldId = field.get('id')
-									value = @state.detailUnitsById.getIn([fieldId, 'value'])
-									inputType = field.get('inputType')
+										# Special case for textarea to use our ExpandingTextArea
+										InputComponent = if inputType is 'textarea'
+											ExpandingTextArea
+										else
+											R[inputType]
 
-									R.div({className: 'form-group'},
-										R.label({className: 'detailLabel'},
-										"#{field.get('name')}"),
-
-										R[inputType]({
-											className: 'form-control'
-											placeholder: field.get('placeholder')
-											value
-											onChange: @_updateDetailUnit.bind null, fieldId
-											# maxLength: 35
-										})
+										R.tr({key: fieldId},
+											R.td({}, field.get('name'))
+											R.td({},
+												InputComponent({
+													className: 'form-control'
+													placeholder: "( #{field.get('placeholder')} )"
+													value
+													onChange: @_updateDetailUnit.bind null, fieldId
+												})
+											)
+										)
 									)
 								)
 							)
