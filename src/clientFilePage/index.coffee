@@ -1126,7 +1126,7 @@ load = (win, {clientFileId}) ->
 						onClick: @props.onTabChange.bind null, 'analysis'
 					})
 					SidebarTab({
-						name: "Client Information"
+						name: "Information"
 						icon: 'info'
 						isActive: activeTabId is 'info'
 						onClick: @props.onTabChange.bind null, 'info'
