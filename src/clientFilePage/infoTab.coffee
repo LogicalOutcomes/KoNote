@@ -100,52 +100,54 @@ load = (win) ->
 
 						R.section({className: 'nameId'},
 							R.table({},
-								R.tr({},
-									R.td({}, "First Name")
-									R.td({},
-										R.input({
-											ref: 'firstNameField'
-											className: 'form-control'
-											onChange: @_updateFirstName
-											value: @state.firstName
-											maxLength: 35
-										})
-									)
-								)
-								R.tr({},
-									R.td({}, "Middle Name")
-									R.td({},
-										R.input({
-											className: 'form-control'
-											onChange: @_updateMiddleName
-											value: @state.middleName
-											placeholder: "(optional)"
-											maxLength: 35
-										})
-									)
-								)
-								R.tr({},
-									R.td({}, "Last Name")
-									R.td({},
-										R.input({
-											className: 'form-control'
-											onChange: @_updateLastName
-											value: @state.lastName
-											maxLength: 35
-										})
-									)
-								)
-								(if Config.clientFileRecordId.isEnabled
+								R.tbody({},
 									R.tr({},
-										R.td({}, Config.clientFileRecordId.label)
+										R.td({}, "First Name")
+										R.td({},
+											R.input({
+												ref: 'firstNameField'
+												className: 'form-control'
+												onChange: @_updateFirstName
+												value: @state.firstName
+												maxLength: 35
+											})
+										)
+									)
+									R.tr({},
+										R.td({}, "Middle Name")
 										R.td({},
 											R.input({
 												className: 'form-control'
-												onChange: @_updateRecordId
-												value: @state.recordId
+												onChange: @_updateMiddleName
+												value: @state.middleName
 												placeholder: "(optional)"
-												maxLength: 23
+												maxLength: 35
 											})
+										)
+									)
+									R.tr({},
+										R.td({}, "Last Name")
+										R.td({},
+											R.input({
+												className: 'form-control'
+												onChange: @_updateLastName
+												value: @state.lastName
+												maxLength: 35
+											})
+										)
+									)
+									(if Config.clientFileRecordId.isEnabled
+										R.tr({},
+											R.td({}, Config.clientFileRecordId.label)
+											R.td({},
+												R.input({
+													className: 'form-control'
+													onChange: @_updateRecordId
+													value: @state.recordId
+													placeholder: "(optional)"
+													maxLength: 23
+												})
+											)
 										)
 									)
 								)
@@ -208,26 +210,28 @@ load = (win) ->
 								R.h4({}, definitionGroup.get('title'))
 
 								R.table({},
-									(fields.map (field) =>
-										fieldId = field.get('id')
-										value = @state.detailUnitsById.getIn([fieldId, 'value'])
-										inputType = field.get('inputType')
+									R.tbody({},
+										(fields.map (field) =>
+											fieldId = field.get('id')
+											value = @state.detailUnitsById.getIn([fieldId, 'value'])
+											inputType = field.get('inputType')
 
-										# Special case for textarea to use our ExpandingTextArea
-										InputComponent = if inputType is 'textarea'
-											ExpandingTextArea
-										else
-											R[inputType]
+											# Special case for textarea to use our ExpandingTextArea
+											InputComponent = if inputType is 'textarea'
+												ExpandingTextArea
+											else
+												R[inputType]
 
-										R.tr({key: fieldId},
-											R.td({}, field.get('name'))
-											R.td({},
-												InputComponent({
-													className: 'form-control'
-													placeholder: "( #{field.get('placeholder')} )"
-													value
-													onChange: @_updateDetailUnit.bind null, fieldId
-												})
+											R.tr({key: fieldId},
+												R.td({}, field.get('name'))
+												R.td({},
+													InputComponent({
+														className: 'form-control'
+														placeholder: "( #{field.get('placeholder')} )"
+														value
+														onChange: @_updateDetailUnit.bind null, fieldId
+													})
+												)
 											)
 										)
 									)
