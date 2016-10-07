@@ -67,6 +67,8 @@ load = (win) ->
 		width = 1200
 		height = 700
 
+		if options instanceof Function then cb = options
+
 		if options.maximize
 			width = nw.Screen.screens[0].work_area.width
 			height = nw.Screen.screens[0].work_area.height
