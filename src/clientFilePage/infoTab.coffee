@@ -85,7 +85,7 @@ load = (win) ->
 						].join ' '
 						onClick: @_updateSelectedGroupId.bind null, 'basic'
 					}
-						R.h4({}, "Client Name"),
+						R.h4({}, "#{Term 'Client'} Name"),
 						R.div({className: 'detailFields'},
 							R.div({className: 'form-group'},
 								R.label({className: 'detailLabel'}, "First name"),
@@ -135,7 +135,7 @@ load = (win) ->
 
 
 					R.div({className: 'detailUnitGroup'}
-						R.h4({}, "Client File Status"),
+						R.h4({}, "#{Term 'Client File'} Status"),
 						R.div({className: 'form-group'},
 							R.div({className: 'btn-toolbar'},
 								R.button({
@@ -285,20 +285,17 @@ load = (win) ->
 			return detailUnitsById
 
 		_resetChanges: ->
-			Bootbox.confirm "Discard all changes made to the #{Term 'Client File'}?", (ok) =>
+			Bootbox.confirm "Discard all changes made to the #{Term 'client file'}?", (ok) =>
 				if ok
 					@setState @getInitialState()
 
 		_submit: ->
 			if not @state.firstName
-				Bootbox.alert "Cannot save the Client File without a First Name"
-				# setTimeout(=>
-				# 	$("firstNameField").focus()
-				# , 250)
+				Bootbox.alert "Cannot save the #{Term 'client file'} without a first name"
 				return
 
 			else if not @state.lastName
-				Bootbox.alert "Cannot save the Client File without a Last Name"
+				Bootbox.alert "Cannot save the #{Term 'client file'} without a last name"
 				return
 
 			else

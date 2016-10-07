@@ -901,7 +901,7 @@ load = (win, {clientFileId}) ->
 				Bootbox.dialog {
 					title: "Unsaved Changes to #{Term 'Client File'}"
 					message: """
-						You have unsaved changes in Client Information for #{clientName}.
+						You have unsaved changes in #{Term 'client'} information for #{clientName}.
 						How would you like to proceed?
 					"""
 					buttons: {
