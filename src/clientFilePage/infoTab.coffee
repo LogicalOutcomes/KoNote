@@ -71,12 +71,13 @@ load = (win) ->
 						onClick: @_resetChanges
 					},
 						FaIcon('undo')
+						' '
 						"Discard"
 					)
 				)
 
 				R.div({className: 'detailUnitGroups'},
-					isSelected = @isSelected('basic')
+					isSelected = @_isSelected('basic')
 
 					R.div({
 						className: [
@@ -175,7 +176,7 @@ load = (win) ->
 						groupId = definitionGroup.get('id')
 						fields = definitionGroup.get('fields')
 
-						isSelected = @isSelected(groupId)
+						isSelected = @_isSelected(groupId)
 
 						R.div({
 							className: [
@@ -211,11 +212,8 @@ load = (win) ->
 				)
 			)
 
-		isSelected: (groupId) ->
-			if groupId is @state.selectedGroupId
-				return true
-			else
-				return false
+		_isSelected: (groupId) ->
+			return groupId is @state.selectedGroupId
 
 		hasChanges: ->
 			# If there is a difference, then there have been changes
