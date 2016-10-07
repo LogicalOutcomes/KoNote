@@ -50,7 +50,7 @@ load = (win) ->
 				when '.xlsx' then name = 'file-excel-o'
 				when '.zip' then name = 'file-archive-o'
 				else name = 'paperclip'
-		
+
 		className = "fa fa-#{name}"
 
 		# Extend with className from props if any
@@ -63,7 +63,7 @@ load = (win) ->
 
 	# A convenience method for opening a new window
 	# Callback function (optional) provides window context as argument
-	openWindow = (params, options, cb=(->)) ->
+	openWindow = (params, options = {}, cb=(->)) ->
 		width = 1200
 		height = 700
 
