@@ -219,21 +219,19 @@ load = (win) ->
 			# If there is a difference, then there have been changes
 			detailUnitsById = @_getDetailUnitsById()
 
-			detailUnitsHasChanges = Imm.is detailUnitsById, @state.detailUnitsById
-			statusHasChanges = @props.clientFile.get('status') is @state.status
-			firstNameHasChanges = @props.clientFile.getIn(['clientName', 'first']) is @state.firstName
-			middleNameHasChanges = @props.clientFile.getIn(['clientName', 'middle']) is @state.middleName
-			lastNameHasChanges = @props.clientFile.getIn(['clientName', 'last']) is @state.lastName
-			recordIdHasChanges = @props.clientFile.get('recordId') is @state.recordId
+			detailUnitsHasChanges = not Imm.is detailUnitsById, @state.detailUnitsById
+			statusHasChanges = @props.clientFile.get('status') isnt @state.status
+			firstNameHasChanges = @props.clientFile.getIn(['clientName', 'first']) isnt @state.firstName
+			middleNameHasChanges = @props.clientFile.getIn(['clientName', 'middle']) isnt @state.middleName
+			lastNameHasChanges = @props.clientFile.getIn(['clientName', 'last']) isnt @state.lastName
+			recordIdHasChanges = @props.clientFile.get('recordId') isnt @state.recordId
 
-			unless detailUnitsHasChanges and
-			statusHasChanges and
-			firstNameHasChanges and
-			middleNameHasChanges and
-			lastNameHasChanges and
+			return detailUnitsHasChanges or
+			statusHasChanges or
+			firstNameHasChanges or
+			middleNameHasChanges or
+			lastNameHasChanges or
 			recordIdHasChanges
-				return true
-			return false
 
 		_updateSelectedGroupId: (groupId, event) ->
 			selectedGroupId = groupId
