@@ -94,7 +94,6 @@ load = (win) ->
 									className: 'form-control'
 									onChange: @_updateFirstName
 									value: @state.firstName
-									# onKeyDown: @_onEnterKeyDown
 									maxLength: 35
 								})
 							)
@@ -125,7 +124,6 @@ load = (win) ->
 										onChange: @_updateRecordId
 										value: @state.recordId
 										placeholder: "(optional)"
-										onKeyDown: @_onEnterKeyDown
 										maxLength: 23
 									})
 								)
