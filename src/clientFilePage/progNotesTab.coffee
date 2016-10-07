@@ -56,10 +56,10 @@ load = (win) ->
 
 		componentWillReceiveProps: (nextProps) ->
 			@_buildHistoryEntries(nextProps)
-		
+
 		componentDidMount: ->
 			@_buildHistoryEntries()
-			
+
 			# TODO: Restore for lazyload feature
 			# progNotesPane = $('.historyEntries')
 			# progNotesPane.on 'scroll', =>
@@ -78,7 +78,7 @@ load = (win) ->
 				progNoteHistories = @props.progNoteHistories
 				clientFileId = @props.clientFileId
 			historyEntries = null
-			
+
 			Async.series [
 				(cb) =>
 					Async.map progNoteHistories.toArray(), (progNoteHistory, cb) =>
@@ -95,7 +95,7 @@ load = (win) ->
 										attachmentId: results.first().get('id')
 										filename: results.first().get('filename')
 									}
-								
+
 							entry = Imm.fromJS {
 								type: 'progNote'
 								id: progNoteId
@@ -115,7 +115,7 @@ load = (win) ->
 				if err
 					console.log err
 				@setState {historyEntries}
-		
+
 		render: ->
 			historyEntries = @state.historyEntries
 			hasChanges = @_revisingProgNoteHasChanges()
@@ -640,7 +640,7 @@ load = (win) ->
 				$('#attachmentArea').append filename + " (" + filesize + ")"
 				#@_decodeFile encodedAttachment
 			return
-			
+
 		_toggleQuickNotePopover: ->
 			# TODO: Refactor to stateful React component
 
@@ -681,17 +681,17 @@ load = (win) ->
 					event.preventDefault()
 
 					@_createQuickNote popover.find('textarea').val(), @state.backdate, @state.attachment, (err) =>
-						
+
 						if @state.attachment?
 							# refresh if we have an attachment since it is not ready when create:prognote fires in
 							# the parent. TODO: make this more elegant
 							@_buildHistoryEntries()
-						
+
 						@setState {
 							backdate: '',
 							attachment: null
 						}
-						
+
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
@@ -755,14 +755,14 @@ load = (win) ->
 				unless attachment
 					cb()
 					return
-				
+
 				attachmentData = Imm.fromJS {
 					filename: attachment.filename
 					encodedData: attachment.encodedData
 					clientFileId: @props.clientFileId
 					progNoteId: result.get('id')
 				}
-				
+
 				global.ActiveSession.persist.attachments.create attachmentData, (err) =>
 					if err
 						cb err
@@ -883,7 +883,7 @@ load = (win) ->
 			isEditing = @props.isEditing
 
 			progNote = if isEditing then @props.revisingProgNote else @props.progNote
-			
+
 			if @props.attachments?
 				attachmentText = " " + @props.attachments.get('filename')
 
@@ -932,7 +932,7 @@ load = (win) ->
 					)
 				)
 			)
-		
+
 		_openAttachment: (attachment) ->
 			if attachment?
 				clientFileId = attachment.get('clientFileId')
@@ -1434,7 +1434,7 @@ load = (win) ->
 				EntryHeader({
 					revisionHistory: Imm.List [globalEvent]
 					userProgram: program
-					dateFormat: 'MMMM Do, YYYY' if isFullDay
+					dateFormat: Config.dateFormat if isFullDay
 				})
 				R.h3({},
 					FaIcon('globe')

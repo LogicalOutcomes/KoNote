@@ -28,6 +28,7 @@
 	},
 
 	"timestampFormat": "Do MMM, YYYY [-] h:mma",
+	"dateFormat": "Do MMM, YYYY",
 
 	"timeout": {
 		"duration": 25,
