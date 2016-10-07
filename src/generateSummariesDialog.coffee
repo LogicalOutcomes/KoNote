@@ -87,7 +87,7 @@ load = (win) ->
 			clipboard = nw.Clipboard.get()
 			clipboard.set @state.summariesString
 
-			notification = new win.Notification "Shift Summaries", {
+			notification = new Notification "Shift Summaries", {
 				body: "Copied to clipboard"
 				icon: Config.iconNotification
 			}
