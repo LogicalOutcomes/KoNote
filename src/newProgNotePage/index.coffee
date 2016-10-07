@@ -222,7 +222,11 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		hasChanges: ->
-			hasProgNotes = not Imm.is @props.progNote, @state.progNote
+			# Ignore backdate from comparison, it doesn't count
+			progNoteTemplate = @props.progNote.remove('backdate')
+			progNote = @state.progNote.remove('backdate')
+
+			hasProgNotes = not Imm.is progNoteTemplate, progNote
 			hasProgEvents = not @state.progEvents.isEmpty()
 
 			return hasProgNotes or hasProgEvents
