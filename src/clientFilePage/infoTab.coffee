@@ -51,7 +51,12 @@ load = (win) ->
 
 			return R.div({className: 'infoView'},
 
-				R.div({className: 'menuBar'},
+				R.div({
+					className: [
+						'menuBar'
+						'hasChanges' if hasChanges
+					].join ' '
+				},
 					R.div({className: 'title'},
 						R.span({},
 							"#{Term 'Client'} Information"
@@ -95,8 +100,10 @@ load = (win) ->
 					},
 						(if Config.features.clientAvatar.isEnabled
 							# TODO: Client photo/avatar feature
-							R.div({},
-								FaIcon('user')
+							R.section({className: 'avatar'},
+								R.div({},
+									FaIcon('user')
+								)
 							)
 						)
 

@@ -18,13 +18,19 @@ $side-padding = 25px
 		height 60px // Match to flexButtonToolbar
 		border-bottom 1px solid sidebar-borders
 
+		@media (max-width: 750px)
+			&:not(.hasChanges)
+				.flexButtonToolbar
+					display none
+
+			&.hasChanges
+				.title
+					display none
+
 		.title
 			flex 3
 			display flex
 			align-items center
-
-			@media (max-width: 750px)
-				display none
 
 			> span
 				font-weight 300
