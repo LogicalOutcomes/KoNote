@@ -69,6 +69,7 @@ load = (win) ->
 								'collapsed' unless hasChanges
 							].join ' '
 							onClick: @_resetChanges
+							disabled: @props.isReadOnly
 						},
 							FaIcon('undo')
 							' '
@@ -80,6 +81,7 @@ load = (win) ->
 								'collapsed' unless hasChanges
 							].join ' '
 							onClick: @_submit
+							disabled: @props.isReadOnly
 						},
 							FaIcon('save')
 							' '
@@ -118,6 +120,7 @@ load = (win) ->
 												className: 'form-control'
 												onChange: @_updateFirstName
 												value: @state.firstName
+												disabled: @props.isReadOnly
 												maxLength: 35
 											})
 										)
@@ -130,6 +133,7 @@ load = (win) ->
 												onChange: @_updateMiddleName
 												value: @state.middleName
 												placeholder: "(optional)"
+												disabled: @props.isReadOnly
 												maxLength: 35
 											})
 										)
@@ -141,6 +145,7 @@ load = (win) ->
 												className: 'form-control'
 												onChange: @_updateLastName
 												value: @state.lastName
+												disabled: @props.isReadOnly
 												maxLength: 35
 											})
 										)
@@ -154,6 +159,7 @@ load = (win) ->
 													onChange: @_updateRecordId
 													value: @state.recordId
 													placeholder: "(optional)"
+													disabled: @props.isReadOnly
 													maxLength: 23
 												})
 											)
@@ -172,6 +178,7 @@ load = (win) ->
 											'btn btn-success'
 										else 'btn btn-default'
 									onClick: @_updateStatus
+									disabled: @props.isReadOnly
 									value: 'active'
 								},
 									"Active"
@@ -182,6 +189,7 @@ load = (win) ->
 											'btn btn-warning'
 										else 'btn btn-default'
 									onClick: @_updateStatus
+									disabled: @props.isReadOnly
 									value: 'inactive'
 								},
 									"Inactive"
@@ -192,6 +200,7 @@ load = (win) ->
 											'btn btn-danger'
 										else 'btn btn-default'
 									onClick: @_updateStatus
+									disabled: @props.isReadOnly
 									value: 'discharged'
 								},
 									"Discharged"
@@ -239,6 +248,7 @@ load = (win) ->
 														placeholder: "( #{field.get('placeholder')} )"
 														value
 														onChange: @_updateDetailUnit.bind null, fieldId
+														disabled: @props.isReadOnly
 													})
 												)
 											)

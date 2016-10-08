@@ -68,6 +68,9 @@ $side-padding = 25px
 					padding-right 5%
 
 		input, textarea
+			&[disabled]
+				background white
+
 			&::-webkit-input-placeholder
 				font-style italic
 
@@ -123,12 +126,17 @@ $side-padding = 25px
 			padding $side-padding
 			border-bottom 1px solid #eee
 
+			input, textarea
+				&[disabled]
+					border-color transparent
+					box-shadow none
+
 			&:not(.isSelected)
 				input, textarea
 					border-color transparent
 					box-shadow none
 
-					&:hover
+					&:not([disabled]):hover
 						border-color rgb(204, 204, 204)
 						box-shadow rgba(0, 0, 0, 0.075) 0px 1px 1px 0px inset
 
