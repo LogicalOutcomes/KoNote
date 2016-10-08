@@ -13,6 +13,7 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -92,7 +93,8 @@ load = (win) ->
 						].join ' '
 						onClick: @_updateSelectedGroupId.bind null, 'basic'
 					},
-						R.section({className: 'avatar'},
+						(if Config.features.clientAvatar.isEnabled
+							# TODO: Client photo/avatar feature
 							R.div({},
 								FaIcon('user')
 							)

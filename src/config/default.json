@@ -18,6 +18,9 @@
 	"features": {
 		"shiftSummaries": {
 			"isEnabled": false
+		},
+		"clientAvatar": {
+			"isEnabled": false
 		}
 	},
 
