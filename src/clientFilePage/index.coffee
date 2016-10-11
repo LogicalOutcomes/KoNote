@@ -457,7 +457,8 @@ load = (win, {clientFileId}) ->
 
 				(cb) =>
 					# Check to see whether detailGroups (from Config) have been created yet
-					if detailDefinitionHeaders.size > 0 or Config.clientDetailDefinitionGroups is 0
+					# make this dynamic, ie what if config is edited? add logic to handle this.
+					if detailDefinitionHeaders.size > 0 or Config.clientDetailDefinitionGroups.size is 0
 						cb()
 						return
 
