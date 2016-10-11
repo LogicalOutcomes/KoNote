@@ -15,7 +15,6 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	# TODO: Refactor to single require
@@ -60,9 +59,7 @@ load = (win) ->
 			], (err) =>
 					if err
 						if err instanceof Persist.IOError
-							console.error err
-							console.error err.stack
-							@setState {loadErrorType: 'io-error'}
+							Bootbox.alert "Please check your network connection and try again."
 							return
 
 						CrashHandler.handle err
@@ -220,7 +217,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			planTemplateId: PropTypes.string.isRequired
+			planTemplateId: React.PropTypes.string.isRequired
 		}
 
 		getInitialState: -> {
@@ -255,22 +252,26 @@ load = (win) ->
 				R.div({id: 'modifyPlanTemplateDialog'},
 					R.h4({}, planTemplateName)
 					R.hr({})
-					R.div({},
+					R.div({className: 'btn-toolbar'},
 						R.button({
-							className: 'btn btn-danger btn-block'
+							className: 'btn btn-danger'
 							onClick: @_handleDeactivate.bind null, planTemplateName
 						},
-							"Cancel"
+							"Deactivate"
 							" "
 							FaIcon('ban')
 						)
+						R.button({
+							className: 'btn btn-default'
+							onClick: @props.onCancel
+						}, "Cancel")
 					)
 				)
 			)
 
 		_handleDeactivate: (planTemplateName) ->
 			Bootbox.confirm """
-				Permanently cancel #{Term 'plan template'}: <strong>#{planTemplateName}</strong>?
+				Permanently deactivate #{Term 'plan template'}: <strong>#{planTemplateName}</strong>?
 			""", (ok) =>
 				if ok then @_updatePlanTemplateStatus('cancelled')
 

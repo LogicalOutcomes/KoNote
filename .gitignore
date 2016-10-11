@@ -11,5 +11,5 @@
 /node_modules/
 /build/releases/
 
-develop.json
 npm-debug.log
+develop.json

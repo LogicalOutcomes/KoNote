@@ -340,9 +340,13 @@ load = (win) ->
 				# Attach hover binding to progEvent region
 				$('.' + progEvent.get('id')).hover((event) =>
 
+					description = progEvent.get('description') or "(no description)"
+					if description.length > 1000
+						description = description.substring(0, 2000) + " . . ."
+
 					eventInfo.addClass('show')
 					eventInfo.find('.title').text progEvent.get('title')
-					eventInfo.find('.description').text(progEvent.get('description') or "(no description)")
+					eventInfo.find('.description').text(description)
 
 					startTimestamp = new Moment(progEvent.get('startTimestamp'), TimestampFormat)
 					endTimestamp = new Moment(progEvent.get('endTimestamp'), TimestampFormat)
@@ -359,7 +363,7 @@ load = (win) ->
 
 					# Make eventInfo follow the mouse
 					$(win.document).on('mousemove', (event) ->
-						eventInfo.css 'top', event.clientY - (eventInfo.outerHeight() + 15)
+						eventInfo.css 'top', event.clientY + 25
 						eventInfo.css 'left', event.clientX
 					)
 				, =>

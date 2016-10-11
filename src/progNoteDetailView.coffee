@@ -186,25 +186,21 @@ load = (win) ->
 
 			return R.div({className: 'progNoteDetailView'},
 				R.div({className: 'itemDetails'},
-					R.div({},
-						R.div({
-							className: 'itemName'
-							onClick: => @setState {descriptionIsVisible: not @state.descriptionIsVisible}
-						},
-							(if itemDescription?
-								R.span({
-									className: 'toggleDescriptionButton'
-								},
-									if @state.descriptionIsVisible then "Hide" else "View"
-									" description"
-								)
+					R.div({
+						className: 'itemName'
+						onClick: => @setState {descriptionIsVisible: not @state.descriptionIsVisible}
+					},
+						R.h3({}, itemName)
+						(if itemDescription?
+							R.div({className: 'toggleDescriptionButton'},
+								if @state.descriptionIsVisible then "Hide" else "View"
+								" description"
 							)
-							R.h3({}, itemName)
 						)
-						(if itemDescription? and @state.descriptionIsVisible
-							R.div({className: 'itemDescription'},
-								renderLineBreaks itemDescription
-							)
+					)
+					(if itemDescription? and @state.descriptionIsVisible
+						R.div({className: 'itemDescription'},
+							renderLineBreaks itemDescription
 						)
 					)
 				)

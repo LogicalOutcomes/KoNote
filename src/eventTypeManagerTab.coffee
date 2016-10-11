@@ -42,6 +42,7 @@ load = (win) ->
 			return {
 				dataIsReady: false
 				eventTypes: Imm.List()
+				displayInactive: false
 			}
 
 		componentWillMount: ->
@@ -72,9 +73,7 @@ load = (win) ->
 			], (err) =>
 					if err
 						if err instanceof Persist.IOError
-							console.error err
-							console.error err.stack
-							@setState {loadErrorType: 'io-error'}
+							Bootbox.alert "Please check your network connection and try again."
 							return
 
 						CrashHandler.handle err
@@ -87,6 +86,18 @@ load = (win) ->
 
 		render: ->
 			hasData = not @state.eventTypes.isEmpty()
+
+
+			eventTypes = @state.eventTypes
+
+			unless @state.displayInactive
+				eventTypes = @state.eventTypes.filter (eventType) ->
+					eventType.get('status') is 'default'
+
+			inactiveEventTypes = @state.eventTypes.filter (eventType) ->
+				eventType.get('status') isnt "default"
+
+			hasInactiveEventTypes = not inactiveEventTypes.isEmpty()
 
 
 			return R.div({className: 'eventTypeManagerTab'},
@@ -103,8 +114,20 @@ load = (win) ->
 								FaIcon('plus')
 								" New #{Term 'Event Type'}"
 							)
-							# TODO: Inactive eventTypes toggle
+							(if hasInactiveEventTypes
+								R.div({className: 'toggleInactive'},
+									R.label({},
+										"Show inactive (#{inactiveEventTypes.size})"
+										R.input({
+											type: 'checkbox'
+											checked: @state.displayInactive
+											onClick: @_toggleDisplayInactive
+										})
+									)
+								)
+							)
 						)
+
 						Term 'Event Types'
 					)
 
@@ -115,10 +138,10 @@ load = (win) ->
 							R.div({className: 'responsiveTable animated fadeIn'},
 								DialogLayer({
 									ref: 'dialogLayer'
-									eventTypes: @state.eventTypes
+									eventTypes
 								},
 									BootstrapTable({
-										data: @state.eventTypes.toJS()
+										data: eventTypes.toJS()
 										keyField: 'id'
 										bordered: false
 										options: {
@@ -129,8 +152,10 @@ load = (win) ->
 													eventTypeId: id
 													onSuccess: @_modifyEventType
 												}
+
 											noDataText: "No #{Term 'event types'} to display"
 										}
+										trClassName: (row) -> 'inactive' if row.status isnt 'default'
 									},
 										TableHeaderColumn({
 											dataField: 'colorKeyHex'
@@ -149,6 +174,21 @@ load = (win) ->
 											className: 'descriptionColumn'
 											columnClassName: 'descriptionColumn'
 										}, "Description")
+										TableHeaderColumn({
+											dataField: 'status'
+											className: [
+												'statusColumn'
+												'rightPadding' if @state.displayInactive
+											].join ' '
+											columnClassName: [
+												'statusColumn'
+												'rightPadding' if @state.displayInactive
+											].join ' '
+											dataSort: true
+											hidden: not @state.displayInactive
+											headerAlign: 'right'
+											dataAlign: 'right'
+										}, "Status")
 									)
 								)
 							)
@@ -162,6 +202,9 @@ load = (win) ->
 					)
 				)
 			)
+		_toggleDisplayInactive: ->
+			displayInactive = not @state.displayInactive
+			@setState {displayInactive}
 
 		_addNewEventType: (newEventType) ->
 			eventTypes = @state.eventTypes.push newEventType
@@ -332,6 +375,34 @@ load = (win) ->
 							rows: 3
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "#{Term 'Event Type'} Status"),
+						R.div({className: 'btn-toolbar'},
+							R.button({
+								className:
+									if @state.status is 'default'
+										'btn btn-success'
+									else 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'default'
+
+								},
+							"Default"
+							)
+							R.button({
+								className:
+									'btn btn-' + if @state.status is 'cancelled'
+										'danger'
+									else
+										'default'
+								onClick: @_updateStatus
+								value: 'cancelled'
+
+								},
+							"Deactivated"
+							)
+						)
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -359,6 +430,9 @@ load = (win) ->
 		_updateColorKeyHex: (colorKeyHex) ->
 			@setState {colorKeyHex}
 
+		_updateStatus: (event) ->
+			@setState {status: event.target.value}
+
 		_getEventType: ->
 			@props.eventTypes.find (eventType) =>
 				eventType.get('id') is @props.eventTypeId
@@ -371,7 +445,7 @@ load = (win) ->
 				name: @state.name
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex
-				status: originalEventType.get('status')
+				status: @state.status
 			})
 
 		_hasChanges: ->

@@ -1,21 +1,30 @@
 .revisionHistory
 	overflow auto
+	display flex
+	flex-direction column
 
 	> .heading
+		overflow visible
+		display flex
 		padding 15px
 		padding-left 19px
-		height: 77px
+		height 60px
+		min-height 60px
 
-		border-bottom 2px solid hsl(202, 34%, 85%)
+		border-bottom 1px solid hsl(202, 34%, 85%)
 
-		> h3
-			margin 10px 7px
-			font-size 24px
-			font-weight 300
-			float right
+		section.dataName
+			flex 1
+			flex-grow 1
+			font-size 20px
+			font-weight 500
+			align-self flex-end
 
-		> h4
-			margin-top 19px
+		section.title
+			flex 1
+			text-align right
+			font-size 20px
+			color rgb(76, 93, 103)
 
 	> .noRevisions
 		padding 20px
@@ -24,6 +33,8 @@
 		text-align center
 
 	> .revisions
+		flex 1
+		overflow auto
 
 		> section.revision
 			position relative
@@ -58,6 +69,7 @@
 
 			.changeLog
 				overflow-wrap break-word
+				padding-left 25px
 
 			.metricWidget
 				margin 5px

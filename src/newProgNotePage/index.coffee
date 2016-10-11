@@ -21,8 +21,7 @@ load = (win, {clientFileId}) ->
 	React = win.React
 	R = React.DOM
 
-	Gui = win.require 'nw.gui'
-	Window = Gui.Window.get(win)
+	Window = nw.Window.get(win)
 
 	EventTabView = require('./eventTabView').load(win)
 	CrashHandler = require('../crashHandler').load(win)
@@ -200,10 +199,6 @@ load = (win, {clientFileId}) ->
 
 				progEvents: Imm.List()
 				editingWhichEvent: null
-
-				isEventPlanRelationMode: null
-				selectedEventPlanRelation: null
-				hoveredEventPlanRelation: null
 			}
 
 		suggestClose: ->
@@ -227,7 +222,11 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		hasChanges: ->
-			hasProgNotes = not Imm.is @props.progNote, @state.progNote
+			# Ignore backdate from comparison, it doesn't count
+			progNoteTemplate = @props.progNote.remove('backdate')
+			progNote = @state.progNote.remove('backdate')
+
+			hasProgNotes = not Imm.is progNoteTemplate, progNote
 			hasProgEvents = not @state.progEvents.isEmpty()
 
 			return hasProgNotes or hasProgEvents
@@ -294,12 +293,7 @@ load = (win, {clientFileId}) ->
 						})
 					)
 
-					R.div({
-						className: [
-							'units'
-							'eventPlanRelationMode' if @state.isEventPlanRelationMode
-						].join ' '
-					},
+					R.div({className: 'units'},
 						(@state.progNote.get('units').map (unit) =>
 							unitId = unit.get 'id'
 
@@ -307,14 +301,7 @@ load = (win, {clientFileId}) ->
 								when 'basic'
 									R.div({
 										key: unitId
-										className: [
-											'unit basic isEventRelatable'
-											'hoveredEventPlanRelation' if Imm.is unit, @state.hoveredEventPlanRelation
-											'selectedEventPlanRelation' if Imm.is unit, @state.selectedEventPlanRelation
-										].join ' '
-										onMouseOver: @_hoverEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
-										onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
-										onClick: @_selectEventPlanRelation.bind(null, unit) if @state.isEventPlanRelationMode
+										className: 'unit basic'
 									},
 										R.h1({className: 'unitName'}, unit.get 'name')
 										ExpandingTextArea({
@@ -349,16 +336,7 @@ load = (win, {clientFileId}) ->
 										(unit.get('sections').map (section) =>
 											sectionId = section.get 'id'
 
-											R.section({
-												key: sectionId
-												className: [
-													'hoveredEventPlanRelation' if Imm.is section, @state.hoveredEventPlanRelation
-													'selectedEventPlanRelation' if Imm.is section, @state.selectedEventPlanRelation
-												].join ' '
-												onMouseOver: @_hoverEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
-												onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
-												onClick: @_selectEventPlanRelation.bind(null, section) if @state.isEventPlanRelationMode
-											},
+											R.section({key: sectionId},
 												R.h2({}, section.get 'name')
 
 												(section.get('targets').map (target) =>
@@ -366,14 +344,7 @@ load = (win, {clientFileId}) ->
 
 													R.div({
 														key: targetId
-														className: [
-															'target'
-															'hoveredEventPlanRelation' if Imm.is target, @state.hoveredEventPlanRelation
-															'selectedEventPlanRelation' if Imm.is target, @state.selectedEventPlanRelation
-														].join ' '
-														onMouseOver: @_hoverEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
-														onMouseOut: @_hoverEventPlanRelation.bind(null, null) if @state.isEventPlanRelationMode
-														onClick: @_selectEventPlanRelation.bind(null, target) if @state.isEventPlanRelationMode
+														className: 'target'
 													},
 														R.h3({},
 															target.get 'name'
@@ -495,11 +466,6 @@ load = (win, {clientFileId}) ->
 									editMode: @state.editingWhichEvent?
 									clientPrograms: @props.clientPrograms
 									isBeingEdited
-
-									updateEventPlanRelationMode: @_updateEventPlanRelationMode
-									selectedEventPlanRelation: @state.selectedEventPlanRelation
-									selectEventPlanRelation: @_selectEventPlanRelation
-									hoverEventPlanRelation: @_hoverEventPlanRelation
 								})
 							)
 						)
@@ -530,31 +496,7 @@ load = (win, {clientFileId}) ->
 			if @state.progEvents.get(index) and @state.progEvents.get(index).isEmpty()
 				@setState {progEvents: @state.progEvents.delete(index)}
 
-			@setState {
-				selectedEventPlanRelation: null
-				hoveredEventPlanRelation: null
-				editingWhichEvent: null
-			}
-
-		_selectEventPlanRelation: (selectedEventPlanRelation, event) ->
-			event.stopPropagation() if event?
-
-			# Enable eventPlanRelationMode if not already on
-			unless @state.isEventPlanRelationMode
-				@setState {isEventPlanRelationMode: true}
-
-			# Disable when chooses "No Relation" (null)
-			unless selectedEventPlanRelation?
-				@setState {isEventPlanRelationMode: false}
-
-			@setState {selectedEventPlanRelation}
-
-		_hoverEventPlanRelation: (hoveredEventPlanRelation, event) ->
-			event.stopPropagation() if event?
-			@setState {hoveredEventPlanRelation}
-
-		_updateEventPlanRelationMode: (isEventPlanRelationMode) ->
-			@setState {isEventPlanRelationMode}
+			@setState {editingWhichEvent: null}
 
 		_selectBasicUnit: (unit) ->
 			@setState {
@@ -752,14 +694,15 @@ load = (win, {clientFileId}) ->
 									cb()
 									return
 
+								programId = globalEvent.get('programId')
+
 								# Tack on contextual information about the original progEvent
 								globalEvent = globalEvent
 								.set('relatedProgEventId', progEventId)
 								.set('relatedProgNoteId', createdProgNote.get('id'))
-								.set('authorProgramId', authorProgramId)
+								.set('programId', programId)
 								.set('backdate', createdProgNote.get('backdate'))
 								.set('status', 'default')
-								.remove('relatedElement')
 
 								ActiveSession.persist.globalEvents.create globalEvent, cb
 

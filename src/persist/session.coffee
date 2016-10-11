@@ -21,8 +21,8 @@ DataModels = require './dataModels'
 	DeactivatedAccountError	
 } = require './users'
 
-login = (dataDir, userName, password, cb) ->
-	Account.read dataDir, userName, (err, account) ->
+login = (userName, password, backend, cb) ->
+	Account.read backend, userName, (err, account) ->
 		if err
 			cb err
 			return
@@ -32,21 +32,22 @@ login = (dataDir, userName, password, cb) ->
 				cb err
 				return
 
-			cb null, new Session(decryptedAccount)
+			cb null, new Session(decryptedAccount, backend)
+
+createBackend = (backendConfig) ->
 
 class Session
-	constructor: (@account) ->
+	constructor: (@account, @backend) ->
 		unless @account instanceof DecryptedAccount
 			throw new Error "invalid account object"
 
-		@dataDirectory = @account.dataDirectory
 		@userName = @account.userName
 		@accountType = @account.publicInfo.accountType
 		@globalEncryptionKey = SymmetricEncryptionKey.import @account.privateInfo.globalEncryptionKey
 
 		@_ended = false
 
-		@persist = DataModels.getApi(@)
+		@persist = DataModels.getApi(@backend, @)
 		timeoutSpec = Config.timeout
 
 		@timeoutMs = timeoutSpec.duration * 60000

@@ -1,6 +1,6 @@
 .manageProgramDialog
 	width 620px
-	max-height 400px
+	max-height 500px
 	display flex
 
 	> div
@@ -8,11 +8,17 @@
 		display flex
 		flex-direction column
 
-	.saveBar
-		padding-top 10px
-
 	.modifyProgramViewContainer
 		display flex
 		justify-content center
 		align-items center
-		padding 15px
+		padding-top 15px
+
+	.saveButtonToolbar
+		display flex
+
+		> button
+			flex 1
+
+	@require modifyProgramView
+	@require manageProgramClientsView

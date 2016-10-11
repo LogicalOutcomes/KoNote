@@ -14,25 +14,52 @@ Path = require 'path'
 
 CollectionMethods = require './collectionMethods'
 
+CloudBackend = require './backends/cloudBackend'
+FileSystemBackend = require './backends/fileSystemBackend'
+
 # Generate the persistent object API based on the specified definitions.
 # The resulting API will perform operations under the specified user session
 # (i.e. all changes will include the user name of the account that is logged
 # in).
-buildApi = (session, dataModelDefinitions) ->
+buildApi = (backendConfig, session, dataModelDefinitions) ->
 	eventBus = Object.create Backbone.Events
 
-	result = processModels(session, eventBus, dataModelDefinitions).toJS()
+	switch backendConfig.type
+		when 'file-system'
+			backend = FileSystemBackend.create(
+				eventBus, session.globalEncryptionKey,
+				backendConfig.dataDirectory
+			)
+		when 'cloud'
+			backend = CloudBackend.create(
+				eventBus, session.globalEncryptionKey,
+				backendConfig.serverUrl, backendConfig.localDataDirectory,
+				dataModelDefinitions
+			)
+
+			# TODO show UI for this with progress bar for sync progress
+			backend.goOnline (err) ->
+				if err
+					console.error err
+					console.error err.stack
+					return
+		else
+			throw new Error "unknown backend type: #{JSON.stringify backendConfig.type}"
+
+	result = processModels(backend, session, eventBus, dataModelDefinitions).toJS()
 
 	result.eventBus = eventBus
+	result.goOnline = backend.goOnline
+	result.goOffline = backend.goOffline
 
 	return result
 
 # Generate collection APIs for multiple data models and their children
-processModels = (session, eventBus, modelDefs, context=Imm.List()) ->
+processModels = (backend, session, eventBus, modelDefs, context=Imm.List()) ->
 	result = Imm.Map()
 
 	for modelDef in modelDefs
-		partialResult = processModel session, eventBus, modelDef, context
+		partialResult = processModel backend, session, eventBus, modelDef, context
 
 		if mapKeysOverlap partialResult, result
 			throw new Error "Detected duplicate collection names.  Check data model definitions."
@@ -49,7 +76,7 @@ mapKeysOverlap = (map1, map2) ->
 	return map1Keys.intersect(map2Keys).size > 0
 
 # Generate collection APIs for a single data model and its children.
-processModel = (session, eventBus, modelDef, context=Imm.List()) ->
+processModel = (backend, session, eventBus, modelDef, context=Imm.List()) ->
 	# Result will be a set of (collection name, collection API) pairs
 	result = Imm.Map({})
 
@@ -58,8 +85,8 @@ processModel = (session, eventBus, modelDef, context=Imm.List()) ->
 			Invalid name: #{JSON.stringify modelDef.name}
 		"""
 
-	# Validate collection name (eventBus is reserved)
-	invalidCollNames = ['', 'eventBus']
+	# Validate collection name (some names are reserved)
+	invalidCollNames = ['', 'eventBus', 'goOnline', 'goOffline']
 	if modelDef.collectionName in invalidCollNames or modelDef.collectionName[0] is '_'
 		throw new Error """
 			Invalid collection name: #{JSON.stringify modelDef.collectionName}
@@ -69,7 +96,7 @@ processModel = (session, eventBus, modelDef, context=Imm.List()) ->
 	modelDef.children or= []
 
 	# Create the collection API for this data model
-	collectionApi = CollectionMethods.createCollectionApi session, eventBus, context, modelDef
+	collectionApi = CollectionMethods.createCollectionApi backend, session, eventBus, context, modelDef
 
 	# Add the API to the result set
 	result = result.set modelDef.collectionName, collectionApi
@@ -77,11 +104,7 @@ processModel = (session, eventBus, modelDef, context=Imm.List()) ->
 	# Process the children of this data model
 	# That processing will include this data model as a context entry,
 	# since the children have this data model as a parent
-	contextEntry = Imm.Map({
-		definition: modelDef
-		api: collectionApi
-	})
-	children = processModels session, eventBus, modelDef.children, context.push(contextEntry)
+	children = processModels backend, session, eventBus, modelDef.children, context.push(modelDef)
 
 	if children.has modelDef.name
 		throw new Error """

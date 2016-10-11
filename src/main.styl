@@ -25,6 +25,13 @@ a, button, label, th, .btn
 	cursor default !important
 	-webkit-user-select none !important
 
+	&[disabled]
+		cursor not-allowed !important
+
+
+div[disabled]
+	cursor not-allowed !important
+
 
 html, body
 	min-height 500px
@@ -81,12 +88,10 @@ textarea
 @require createEventTypeDialog
 
 @require createClientFileDialog
-@require renameClientFileDialog
 
 @require programManagerTab
 @require createProgramDialog
 @require manageProgramDialog
-@require manageProgramClientsView
 
 @require planTemplateManagerTab
 
@@ -95,6 +100,7 @@ textarea
 
 @require clientFilePage
 @require 'clientFilePage/modifyTargetStatusDialog'
+
 @require newProgNotePage
 @require 'newProgNotePage/eventTabView'
 @require 'newProgNotePage/amendGlobalEventDialog'

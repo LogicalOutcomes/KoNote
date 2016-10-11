@@ -38,22 +38,19 @@ load = (win) ->
 					onChange: @_onChange
 					value: @props.value
 					disabled: @props.disabled
+					style:
+						overflow: 'hidden' # Prevents scrollbar from flashing upon resize
 				})
 			)
 
 		componentDidMount: ->
-			@_windowResizeListener = _.debounce =>
-				@_resize()
-			, 50 # milliseconds
-
-			win.addEventListener 'resize', @_windowResizeListener
-
+			win.addEventListener 'resize', @_resize
 			@_resize()
 
 		componentWillUnmount: ->
 			win.removeEventListener 'resize', @_windowResizeListener
 
-		_resize: ->
+		_resize: _.throttle(->
 			textareaDom = @refs.textarea
 			outerDom = @refs.outer
 			return unless textareaDom? and outerDom?
@@ -75,11 +72,11 @@ load = (win) ->
 			# Allow outer div to resize to new height
 			outerDom.style.height = 'auto'
 
+		, 100)
+
 		_onChange: (event) ->
-			_.debounce =>
-				@_resize()
-			, 250
 			@props.onChange event
+			@_resize()
 
 		focus: ->
 			@refs.textarea.focus()

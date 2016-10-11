@@ -3,7 +3,6 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
-ImmPropTypes = require 'react-immutable-proptypes'
 Term = require './term'
 
 
@@ -24,10 +23,10 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			selectedProgram: ImmPropTypes.map
-			programs: ImmPropTypes.list.isRequired
-			placeholder: PropTypes.string
-			onSelect: PropTypes.func.isRequired
+			selectedProgram: React.PropTypes.instanceOf(Imm.Map)
+			programs: React.PropTypes.instanceOf(Imm.List).isRequired
+			placeholder: React.PropTypes.string
+			onSelect: React.PropTypes.func.isRequired
 		}
 
 		getDefaultProps: ->
@@ -72,7 +71,11 @@ load = (win) ->
 						selectedProgram.get('name') or @props.placeholder
 					)
 				},
-					(remainingPrograms.map (program) =>
+					(remainingPrograms
+					.filter (program) =>
+						program.get('status') is 'default'
+
+					.map (program) =>
 						B.MenuItem({
 							key: program.get('id')
 							onClick: @props.onSelect.bind null, program

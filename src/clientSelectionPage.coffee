@@ -4,7 +4,6 @@
 
 # Node libs
 Imm = require 'immutable'
-ImmPropTypes = require 'react-immutable-proptypes'
 Async = require 'async'
 _ = require 'underscore'
 
@@ -18,7 +17,6 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	ReactDOM = win.ReactDOM
 	R = React.DOM
 
@@ -27,8 +25,7 @@ load = (win) ->
 	BootstrapTable = React.createFactory BootstrapTable
 	TableHeaderColumn = React.createFactory TableHeaderColumn
 
-	Gui = win.require 'nw.gui'
-	Window = Gui.Window.get()
+	Window = nw.Window.get(win)
 
 	MainMenu = require('./mainMenu').load(win)
 	BrandWidget = require('./brandWidget').load(win)
@@ -117,7 +114,7 @@ load = (win) ->
 							clientFileId
 						}
 			else
-				openWindow {page: 'clientFile', clientFileId}, (clientFileWindow) =>
+				openWindow {page: 'clientFile', clientFileId}, maximize:true, (clientFileWindow) =>
 						# prevent window from closing before its ready
 						clientFileWindow.on 'close', =>
 							clientFileWindow = null
@@ -207,9 +204,7 @@ load = (win) ->
 			], (err) =>
 				if err
 					if err instanceof Persist.IOError
-						console.error err
-						console.error err.stack
-						@setState {loadErrorType: 'io-error'}
+						Bootbox.alert "Please check your network connection and try again."
 						return
 
 					CrashHandler.handle err
@@ -368,11 +363,14 @@ load = (win) ->
 					'menuIsOpen' if @state.menuIsOpen
 				].join ' '
 			},
-				R.div({id: 'shiftSummariesContainer'},
-					OpenDialogLink({
-						className: 'btn btn-default btn-sm animated fadeIn'
-						dialog: GenerateSummariesDialog
-					}, "Today's Shift Summaries")
+				# TODO: Move to MainMenu
+				(if Config.features.shiftSummaries.isEnabled
+					R.div({id: 'shiftSummariesContainer'},
+						OpenDialogLink({
+							className: 'btn btn-default btn-sm animated fadeIn'
+							dialog: GenerateSummariesDialog
+						}, "Today's Shift Summaries")
+					)
 				)
 				R.a({
 					id: 'expandMenuButton'
@@ -578,13 +576,13 @@ load = (win) ->
 		displayName: 'ClientTableWrapper'
 
 		propTypes: {
-			queryText: PropTypes.string.isRequired
+			queryText: React.PropTypes.string.isRequired
 
-			clientFileHeaders: ImmPropTypes.list.isRequired
-			clientFileProgramLinks: ImmPropTypes.list.isRequired
-			programs: ImmPropTypes.list.isRequired
+			clientFileHeaders: React.PropTypes.instanceOf(Imm.List).isRequired
+			clientFileProgramLinks: React.PropTypes.instanceOf(Imm.List).isRequired
+			programs: React.PropTypes.instanceOf(Imm.List).isRequired
 
-			onRowClick: PropTypes.func.isRequired
+			onRowClick: React.PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {
@@ -692,12 +690,12 @@ load = (win) ->
 		displayName: 'ClientTable'
 
 		propTypes: {
-			queryText: PropTypes.string.isRequired
-			data: ImmPropTypes.list.isRequired
-			hasProgramLinks: PropTypes.bool.isRequired
-			hasInactiveFiles: PropTypes.bool.isRequired
+			queryText: React.PropTypes.string.isRequired
+			data: React.PropTypes.instanceOf(Imm.List).isRequired
+			hasProgramLinks: React.PropTypes.bool.isRequired
+			hasInactiveFiles: React.PropTypes.bool.isRequired
 
-			onRowClick: PropTypes.func.isRequired
+			onRowClick: React.PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {

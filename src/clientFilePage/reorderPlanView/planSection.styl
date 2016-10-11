@@ -1,0 +1,22 @@
+.planSection
+	padding 15px
+	border 1px dashed #cadbe5
+	border-bottom 0
+	cursor move
+	transition all .25s ease
+
+	&.isDragging
+		background #eaf1f5
+		opacity 0.75
+
+	&:not(.collapsed):last-child
+		border-bottom 1px dashed #cadbe5
+
+	&.collapsed
+		height 0px
+		overflow hidden
+		padding 0
+		margin 0
+
+	h4
+		margin-top 0

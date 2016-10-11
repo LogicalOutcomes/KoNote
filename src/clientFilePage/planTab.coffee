@@ -31,10 +31,12 @@ load = (win) ->
 	MetricWidget = require('../metricWidget').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
 	PrintButton = require('../printButton').load(win)
+	ReorderPlanView = require('./reorderPlanView').load(win)
 
 	{
 		FaIcon, renderLineBreaks, showWhen, stripMetadata, formatTimestamp, capitalize
 	} = require('../utils').load(win)
+
 
 	PlanView = React.createFactory React.createClass
 		displayName: 'PlanView'
@@ -43,8 +45,10 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				plan: @props.plan
-				selectedTargetId: null
 				currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
+
+				selectedTargetId: null
+				isReorderingPlan: null
 			}
 
 		componentWillReceiveProps: (newProps) ->
@@ -95,129 +99,167 @@ load = (win) ->
 							FaIcon('plus')
 							"Add #{Term 'section'}"
 						)
-					)
-					R.div({className: "toolbar #{showWhen plan.get('sections').size > 0}"},
-						R.div({className: 'leftMenu'},
-							R.button({
-								className: [
-									'btn'
-									if hasChanges then 'btn-success'
-									'saveButton'
-								].join ' '
-								disabled: not hasChanges or @props.isReadOnly
-								onClick: @_save
-							},
-								FaIcon('save')
-								"Save #{Term 'Plan'}"
-							)
-							R.button({
-								className: "btn btn-link #{showWhen hasChanges}"
-								onClick: @_resetChanges
-							},
-								"Discard"
-							)
-						)
-						R.div({className: 'rightMenu'},
-							R.div({className: 'btn-group btn-group'},
-								R.button({
-									className: 'addSection btn btn-default'
-									onClick: @_addSection
-									disabled: hasChanges or @props.isReadOnly
-								},
-									FaIcon('plus')
-									"Add #{Term 'Section'}"
-								)
-
-
+						R.div({className: 'templates'},
+							(unless @props.planTemplateHeaders.isEmpty()
 								B.DropdownButton({
-									title: R.span({},
-										FaIcon('wpforms')
-										" "
-										"Templates"
-									)
+									className: 'btn btn-lg'
+									title: "Apply #{Term 'Template'}"
 								},
-
-									B.MenuItem({
-										onClick: @_createTemplate
-									},
-										R.h5({
-											onclick: @_createTemplate
+									(@props.planTemplateHeaders.map (planTemplateHeader) =>
+										B.MenuItem({
+											key: planTemplateHeader.get('id')
+											onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
 										},
-											FaIcon('plus')
-											" "
-											"New Plan Template"
+											planTemplateHeader.get('name')
 										)
 									)
-									unless @props.planTemplateHeaders.isEmpty()
-										[
-											B.MenuItem({divider: true})
-
-											B.MenuItem({header: true}, R.h5({}, "Apply Template"))
-
-											(@props.planTemplateHeaders.map (planTemplateHeader) =>
-												B.MenuItem({
-													key: planTemplateHeader.get('id')
-													onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
-												},
-													R.div({
-														onclick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
-													},
-														planTemplateHeader.get('name')
-
-													)
-												)
-											)
-										]
 								)
 							)
-
-							PrintButton({
-								dataSet: [
-									{
-										format: 'plan'
-										data: {
-											sections: plan.get('sections')
-											targets: @state.currentTargetRevisionsById
-											metrics: @props.metricsById
-										}
-										clientFile: @props.clientFile
-									}
-								]
-								iconOnly: true
-								disabled: hasChanges or @props.isReadOnly
-								tooltip: {
-									show: true
-									placement: 'bottom'
-									title: (
-										if hasChanges or @props.isReadOnly
-											"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
-										else
-											"Print plan"
-									)
-								}
-							})
 						)
 					)
-					SectionsView({
-						clientFile: @props.clientFile
-						plan: @state.plan
-						metricsById: @props.metricsById
-						currentTargetRevisionsById: @state.currentTargetRevisionsById
-						selectedTargetId: @state.selectedTargetId
-						isReadOnly: @props.isReadOnly
-						planTargetsById: @props.planTargetsById
+					R.div({className: "flexButtonToolbar #{showWhen plan.get('sections').size > 0}"},
+						R.button({
+							className: [
+								'saveButton'
+								'collapsed' unless hasChanges
+							].join ' '
+							disabled: @props.isReadOnly
+							onClick: @_save
+						},
+							FaIcon('save')
+							' '
+							"Save Changes"
+						)
 
-						renameSection: @_renameSection
-						addTargetToSection: @_addTargetToSection
-						removeNewTarget: @_removeNewTarget
-						removeNewSection: @_removeNewSection
-						hasTargetChanged: @_hasTargetChanged
-						updateTarget: @_updateTarget
-						setSelectedTarget: @_setSelectedTarget
-						addMetricToTarget: @_addMetricToTarget
-						deleteMetricFromTarget: @_deleteMetricFromTarget
-						getSectionIndex: @_getSectionIndex
-					})
+						R.button({
+							className: [
+								'discardButton'
+								'collapsed' unless hasChanges
+							].join ' '
+							disabled: @props.isReadOnly
+							onClick: @_resetChanges
+						},
+							FaIcon('undo')
+							"Discard"
+						)
+
+						R.button({
+							className: 'reorderButton'
+							onClick: @_toggleReorderPlan
+							disabled: @props.isReadOnly
+						},
+							if @state.isReorderingPlan
+								R.div({},
+									FaIcon('sitemap')
+									"Edit Plan"
+								)
+							else
+								R.div({},
+									FaIcon('sort-amount-asc')
+									"Edit Order"
+								)
+						)
+
+						R.button({
+							className: 'addSectionButton'
+							onClick: @_addSection
+							disabled: @props.isReadOnly
+						},
+							FaIcon('plus')
+							"Add #{Term 'Section'}"
+						)
+
+						WithTooltip({
+							title: Term 'Plan Templates'
+							container: '.dropdown.btn-group'
+							placement: 'bottom'
+						},
+							B.DropdownButton({
+								id: 'planTemplatesDropdown'
+								title: FaIcon('wpforms')
+							},
+								B.MenuItem({onClick: @_createTemplate},
+									R.h5({},
+										"Generate #{Term 'Plan Template'}"
+									)
+								)
+								(unless @props.planTemplateHeaders.isEmpty()
+									[
+										B.MenuItem({divider: true})
+
+										B.MenuItem({header: true}, R.h5({}, "Apply #{Term 'Template'}"))
+
+										(@props.planTemplateHeaders.map (planTemplateHeader) =>
+											B.MenuItem({
+												key: planTemplateHeader.get('id')
+												onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+												disabled: @props.isReadOnly
+											},
+												planTemplateHeader.get('name')
+											)
+										)
+									]
+								)
+							)
+						)
+
+						PrintButton({
+							className: 'collapsed' if hasChanges
+							dataSet: [
+								{
+									format: 'plan'
+									data: {
+										sections: plan.get('sections')
+										targets: @state.currentTargetRevisionsById
+										metrics: @props.metricsById
+									}
+									clientFile: @props.clientFile
+								}
+							]
+							iconOnly: true
+							disabled: hasChanges
+							tooltip: {
+								show: true
+								placement: 'bottom'
+								title: (
+									if hasChanges
+										"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
+									else
+										"Print plan"
+								)
+							}
+						})
+					)
+
+					(if @state.isReorderingPlan
+						ReorderPlanView({
+							plan: @state.plan
+							currentTargetRevisionsById: @state.currentTargetRevisionsById
+							reorderSection: @_reorderSection
+							reorderTargetId: @_reorderTargetId
+						})
+					else
+						SectionsView({
+							clientFile: @props.clientFile
+							plan: @state.plan
+							metricsById: @props.metricsById
+							currentTargetRevisionsById: @state.currentTargetRevisionsById
+							selectedTargetId: @state.selectedTargetId
+							isReadOnly: @props.isReadOnly
+							planTargetsById: @props.planTargetsById
+
+							renameSection: @_renameSection
+							addTargetToSection: @_addTargetToSection
+							removeNewTarget: @_removeNewTarget
+							removeNewSection: @_removeNewSection
+							hasTargetChanged: @_hasTargetChanged
+							updateTarget: @_updateTarget
+							setSelectedTarget: @_setSelectedTarget
+							addMetricToTarget: @_addMetricToTarget
+							deleteMetricFromTarget: @_deleteMetricFromTarget
+							getSectionIndex: @_getSectionIndex
+						})
+					)
 				)
 				R.div({className: 'targetDetail'},
 					(if not selectedTarget?
@@ -226,7 +268,7 @@ load = (win) ->
 							"a #{Term 'target'} on the left."
 						)
 					else
-						R.div({className: 'targetDetailContainer'},
+						R.div({className: 'revisionHistoryContainer'},
 							RevisionHistory({
 								revisions: selectedTarget.get('revisions')
 								type: 'planTarget'
@@ -329,6 +371,45 @@ load = (win) ->
 
 				@props.updatePlan @state.plan, newPlanTargets, updatedPlanTargets
 
+		_toggleReorderPlan: ->
+			isReorderingPlan = not @state.isReorderingPlan
+			@setState {isReorderingPlan}
+
+		_reorderSection: (dragIndex, hoverIndex) ->
+			if @props.isReadOnly
+				@_showReadOnlyAlert()
+				return
+
+			sections = @state.plan.get('sections')
+			dragSection = sections.get(dragIndex)
+
+			sections = sections
+			.delete(dragIndex)
+			.splice(hoverIndex, 0, dragSection)
+
+			plan = @state.plan.set('sections', sections)
+
+			@setState {plan}
+
+		_reorderTargetId: (sectionIndex, dragIndex, hoverIndex) ->
+			if @props.isReadOnly
+				@_showReadOnlyAlert()
+				return
+
+			targetIds = @state.plan.getIn(['sections', sectionIndex, 'targetIds'])
+			dragTarget = targetIds.get(dragIndex)
+
+			targetIds = targetIds
+			.delete(dragIndex)
+			.splice(hoverIndex, 0, dragTarget)
+
+			plan = @state.plan.setIn(['sections', sectionIndex, 'targetIds'], targetIds)
+
+			@setState {plan}
+
+		_showReadOnlyAlert: ->
+			Bootbox.alert "Sorry, you can't modify the #{Term 'plan'} while in read-only mode."
+
 		_resetChanges: ->
 			Bootbox.confirm "Discard all changes made to the #{Term 'plan'}?", (ok) =>
 				if ok
@@ -412,11 +493,12 @@ load = (win) ->
 			Bootbox.confirm "Are you sure you want to apply this template?", (ok) =>
 				if ok
 					clientFileHeaders = null
-					newClientFileObj = null
-					newClientFile = null
 					selectedPlanTemplate = null
 					templateSections = null
 					existsElsewhere = null
+					newCurrentRevs = null
+					newPlan = null
+					targetIds = Imm.List()
 					clientFileId = @props.clientFileId
 
 					Async.series [
@@ -431,16 +513,23 @@ load = (win) ->
 								cb()
 
 						(cb) =>
-							templateSections = selectedPlanTemplate.get('sections').map (section) =>
-								templateTargets = section.get('targets').map (target) =>
+							templateSections = selectedPlanTemplate.get('sections').map (templateSection) =>
+								targetIds = Imm.List()
+								newCurrentRevs = @state.currentTargetRevisionsById
+								templateSection.get('targets').forEach (target) =>
 									target.get('metricIds').forEach (metricId) =>
+
 										# Metric exists in another target
 										existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
 											return target.get('metricIds').contains(metricId)
 										if existsElsewhere
 											return
 
-									Imm.fromJS {
+									targetId = '__transient__' + Persist.generateId()
+									targetIds = targetIds.push targetId
+
+									newTarget = Imm.fromJS {
+										id: targetId
 										clientFileId
 										name: target.get('name')
 										description: target.get('description')
@@ -448,53 +537,29 @@ load = (win) ->
 										metricIds: target.get('metricIds')
 									}
 
-								return section.set 'targets', templateTargets
+									newCurrentRevs = newCurrentRevs.set targetId, newTarget
+
+								section = templateSection.set 'status', 'default'
+								.set 'targetIds', targetIds
+								.set 'id', Persist.generateId()
+								.remove 'targets'
+
+								return section
 
 							if existsElsewhere
 								cb('CANCEL')
 								return
-
 							cb()
 
 						(cb) =>
-							Async.map templateSections.toArray(), (section, cb) ->
-								Async.map section.get('targets').toArray(), (target, cb) ->
-									global.ActiveSession.persist.planTargets.create target, (err, result) ->
-										if err
-											cb err
-											return
 
-										cb null, result.get('id')
-
-								, (err, results) ->
-									if err
-										cb err
-										return
-
-									targetIds = Imm.List(results)
-
-									newSection = Imm.fromJS {
-										id: Persist.generateId()
-										name: section.get('name')
-										targetIds: results
-										status: 'default'
-									}
-
-									cb null, newSection
-
-							, (err, results) ->
-								if err
-									cb err
-									return
-
-								templateSections = Imm.List(results)
-								cb()
-
-						(cb) =>
 							newPlan = @state.plan.update 'sections', (sections) =>
 								return sections.concat(templateSections)
 
-							@setState {plan: newPlan}
+							@setState {
+								plan: newPlan
+								currentTargetRevisionsById: newCurrentRevs
+							},
 
 							cb()
 
@@ -513,9 +578,6 @@ load = (win) ->
 
 							CrashHandler.handle err
 							return
-
-
-
 					return
 
 		_createTemplate: ->
@@ -689,6 +751,7 @@ load = (win) ->
 
 
 			# Group sections into an object, with a property for each status
+
 			sectionsByStatus = plan.get('sections').groupBy (section) ->
 				return section.get('status')
 
@@ -871,6 +934,7 @@ load = (win) ->
 			headerState = 'inline'
 
 			# Group targetIds into an object, with a property for each status
+
 			targetIdsByStatus = section.get('targetIds').groupBy (targetId) ->
 				return currentTargetRevisionsById.getIn([targetId, 'status'])
 
@@ -1066,8 +1130,9 @@ load = (win) ->
 						"Add #{Term 'target'}"
 					)
 					WithTooltip({
-						placement: 'bottom'
 						title: "Create Section Template"
+						placement: 'top'
+						container: 'body'
 					},
 						R.button({
 							className: 'btn btn-default'
@@ -1083,14 +1148,17 @@ load = (win) ->
 					(if isExistingSection
 						(if sectionStatus is 'default'
 							R.div({className: 'statusButtonGroup'},
-								WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
+								WithTooltip({
+									title: "Deactivate #{Term 'Section'}" unless @props.isReadOnly or @props.hasTargetChanged
+									placement: 'top'
+									container: 'body'
+								},
 									OpenDialogLink({
 										clientFile
 										className: 'statusButton'
 										dialog: ModifySectionStatusDialog
 										newStatus: 'deactivated'
 										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
 										title: "Deactivate #{Term 'Section'}"
 										message: """
 											This will remove the #{Term 'section'} from the #{Term 'client'}
@@ -1103,14 +1171,17 @@ load = (win) ->
 										FaIcon 'times'
 									)
 								)
-								WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
+								WithTooltip({
+									title: "Complete #{Term 'Section'}" unless @props.isReadOnly or @props.hasTargetChanged
+									placement: 'top'
+									container: 'body'
+								},
 									OpenDialogLink({
 										clientFile
 										className: 'statusButton'
 										dialog: ModifySectionStatusDialog
 										newStatus: 'completed'
 										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
 										title: "Complete #{Term 'Section'}"
 										message: """
 											This will set the #{Term 'section'} as 'completed'. This often
@@ -1132,7 +1203,6 @@ load = (win) ->
 										dialog: ModifySectionStatusDialog
 										newStatus: 'default'
 										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
 										title: "Reactivate #{Term 'Section'}"
 										message: """
 											This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'}
@@ -1375,7 +1445,11 @@ load = (win) ->
 		_onTargetClick: (event) ->
 			@props.onTargetSelection()
 
-			unless (event.target.classList.contains 'field') or (event.target.classList.contains 'lookupField') or (event.target.classList.contains 'btn')
+			unless (
+				(event.target.classList.contains 'field') or
+				(event.target.classList.contains 'lookupField') or
+				(event.target.classList.contains 'btn')
+			)
 				@refs.nameField.focus() unless @props.isReadOnly
 
 		_focusMetricLookupField: ->
@@ -1385,6 +1459,8 @@ load = (win) ->
 		_hideMetricInput: ->
 			$(@refs.metricLookup).hide()
 
+
 	return {PlanView}
+
 
 module.exports = {load}

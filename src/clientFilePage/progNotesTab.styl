@@ -1,26 +1,8 @@
 .progNotesView
 	flex 1
+	overflow auto
 	display flex
 	flex-direction column
-
-	> .toolbar
-		border-bottom 2px solid sidebar-borders
-
-		.btn
-			margin 20px
-			margin-right 0
-			outline none
-
-			&.btn-link
-				padding-left 0
-				padding-right 0
-
-			> .fa
-				padding-right 8px
-
-			&.saveRevisingProgNote
-				transition all .25s ease
-				padding 6px 30px
 
 		.popover
 			z-index 1001
@@ -39,15 +21,69 @@
 					> .btn
 						margin-left 5px
 
-	> .panes
+	.panes
+		overflow auto
 		display flex
 		flex 1
 
-		> .historyEntries
+		> section
 			flex 1
+			display flex
+			flex-direction column
 			overflow auto
 
+			&.leftPane
+
+				.empty
+					text-align center
+
+					> .message
+						padding 100px 80px 50px
+
+						color #888
+						font-size 16px
+
+					> .btn
+						clear both
+						margin 15px
+
+						> .fa
+							padding-right 10px
+
+
+				// quickNote popover styles
+				.popover
+					max-width none
+
+					.popover-content
+						> textarea
+							width 500px
+							height 300px
+
+						> .buttonBar
+							padding 10px 0 0
+
+							text-align right
+
+							> .btn
+								margin-left 5px
+
+			&.rightPane
+				border-left 2px solid sidebar-borders
+
+		.progNotesList
+			flex 1
+			overflow auto
 			padding 10px 20px
+			padding-top 22px
+
+			.attachment
+				transition all .15s ease
+				color #337ab7
+				font-weight 500
+				&:hover
+					text-decoration none
+					color #024e90
 
 			.entryHeader
 				display flex
@@ -80,38 +116,6 @@
 						color inherit
 						text-decoration underline
 
-
-			> .empty
-				text-align center
-
-				> .message
-					padding 100px 80px 50px
-
-					color #888
-					font-size 16px
-
-				> .btn
-					clear both
-					margin 15px
-
-					> .fa
-						padding-right 10px
-
-				> .popover
-					max-width none
-
-					.popover-content
-						> textarea
-							width 500px
-							height 300px
-
-						> .buttonBar
-							padding 10px 0 0
-
-							text-align right
-
-							> .btn
-								margin-left 5px
 
 			> .cancelStub
 				margin 0 -6px 20px
@@ -292,6 +296,9 @@
 								color #888
 
 							section
+								&:first-child
+									padding-top 10px
+
 								> .target
 									cursor default
 									padding-left 15px
@@ -327,8 +334,3 @@
 
 										> .metricWidget
 											margin 5px
-
-		> .progNoteDetailView
-			flex 1
-
-			border-left 2px solid sidebar-borders

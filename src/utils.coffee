@@ -13,7 +13,6 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
-	Gui = win.require 'nw.gui'
 
 	# Execute variable as a function if it is one
 	executeIfFunction = (variable, arg) ->
@@ -27,6 +26,31 @@ load = (win) ->
 
 	# Shortcut for using Font Awesome icons in React
 	FaIcon = (name, props = {}) ->
+		# if the name is an extension, return an appropriate icon (paperclip if unknown)
+		if /[.]/.test(name)
+			switch name.toLowerCase()
+				when '.avi' then name = 'file-video-o'
+				when '.bmp' then name = 'image'
+				when '.doc' then name = 'file-word-o'
+				when '.docx' then name = 'file-word-o'
+				when '.jpeg' then name = 'image'
+				when '.jpg' then name = 'image'
+				when '.mov' then name = 'file-video-o'
+				when '.ogg' then name = 'file-video-o'
+				when '.mp3' then name = 'file-audio-o'
+				when '.mp4' then name = 'file-video-o'
+				when '.pdf' then name = 'file-pdf-o'
+				when '.png' then name = 'image'
+				when '.rtf' then name = 'file-text-o'
+				when '.tga' then name = 'image'
+				when '.tiff' then name = 'image'
+				when '.txt' then name = 'file-text-o'
+				when '.wav' then name = 'file-audio-o'
+				when '.xls' then name = 'file-excel-o'
+				when '.xlsx' then name = 'file-excel-o'
+				when '.zip' then name = 'file-archive-o'
+				else name = 'paperclip'
+
 		className = "fa fa-#{name}"
 
 		# Extend with className from props if any
@@ -39,16 +63,22 @@ load = (win) ->
 
 	# A convenience method for opening a new window
 	# Callback function (optional) provides window context as argument
-	openWindow = (params, cb=(->)) ->
+	openWindow = (params, options = {}, cb=(->)) ->
 		width = 1200
 		height = 700
 
-		if nw.Screen.screens[0].work_area.width < 1200
-			width = nw.Screen.screens[0].work_area.width
-		if nw.Screen.screens[0].work_area.height < 700
-			height = nw.Screen.screens[0].work_area.height
+		if options instanceof Function then cb = options
 
-		Gui.Window.open 'src/main.html?' + $.param(params), {
+		if options.maximize
+			width = nw.Screen.screens[0].work_area.width
+			height = nw.Screen.screens[0].work_area.height
+		else
+			if nw.Screen.screens[0].work_area.width < 1200
+				width = nw.Screen.screens[0].work_area.width
+			if nw.Screen.screens[0].work_area.height < 700
+				height = nw.Screen.screens[0].work_area.height
+
+		nw.Window.open 'src/main.html?' + $.param(params), {
 			focus: false
 			show: false
 			width

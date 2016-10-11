@@ -3,14 +3,12 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
-ImmPropTypes = require 'react-immutable-proptypes'
 Term = require './term'
 
 load = (win) ->
 	# Libraries from browser context
 	React = win.React
 	Bootbox = win.bootbox
-	{PropTypes} = React
 	R = React.DOM
 
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
@@ -21,10 +19,10 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			colors: ImmPropTypes.list.isRequired
-			data: ImmPropTypes.list.isRequired
-			selectedColorKeyHex: PropTypes.string
-			onSelect: PropTypes.func.isRequired
+			colors: React.PropTypes.instanceOf(Imm.List).isRequired
+			data: React.PropTypes.instanceOf(Imm.List).isRequired
+			selectedColorKeyHex: React.PropTypes.string
+			onSelect: React.PropTypes.func.isRequired
 		}
 
 		getDefaultProps: ->
@@ -48,6 +46,7 @@ load = (win) ->
 						null
 
 					ColorKeyBubble({
+						key: colorKeyHex
 						colorKeyHex
 						icon
 						onClick: @_onClick.bind null, colorKeyHex, isSelected, alreadyInUse

@@ -5,7 +5,6 @@
 Async = require 'async'
 _ = require 'underscore'
 Imm = require 'immutable'
-ImmPropTypes = require 'react-immutable-proptypes'
 
 Persist = require './persist'
 Config = require './config'
@@ -16,7 +15,6 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	# TODO: Refactor to single require
@@ -40,7 +38,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			userProgramLinks: ImmPropTypes.list
+			userProgramLinks: React.PropTypes.instanceOf(Imm.List)
 		}
 
 		getInitialState: ->
@@ -59,7 +57,7 @@ load = (win) ->
 
 			Async.series [
 				(cb) =>
-					Persist.Users.listUserNames Config.dataDirectory, (err, result) =>
+					Persist.Users.listUserNames Config.backend, (err, result) =>
 						if err
 							cb err
 							return
@@ -69,7 +67,7 @@ load = (win) ->
 
 				(cb) =>
 					Async.map userNames.toArray(), (userName, cb) =>
-						Persist.Users.Account.read Config.dataDirectory, userName, (err, result) =>
+						Persist.Users.Account.read Config.backend, userName, (err, result) =>
 							if err
 								cb err
 								return
@@ -84,6 +82,10 @@ load = (win) ->
 
 			], (err) =>
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+
 					CrashHandler.handle err
 					return
 
@@ -169,11 +171,11 @@ load = (win) ->
 						R.div({className: 'responsiveTable animated fadeIn'},
 							DialogLayer({
 								ref: 'dialogLayer'
-								userAccounts: tableData
+								userAccounts: @state.userAccounts
 								programs: @props.programs
 								userProgramLinks: @props.userProgramLinks
 								updateAccount: @_updateAccount
-							}
+							},
 								BootstrapTable({
 									data: tableData.toJS()
 									keyField: 'userName'
@@ -265,11 +267,11 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			userName: PropTypes.string.isRequired
-			userAccounts: ImmPropTypes.list.isRequired
-			programs: ImmPropTypes.list.isRequired
-			userProgramLinks: ImmPropTypes.list.isRequired
-			updateAccount: PropTypes.func.isRequired
+			userName: React.PropTypes.string.isRequired
+			userAccounts: React.PropTypes.instanceOf(Imm.List).isRequired
+			programs: React.PropTypes.instanceOf(Imm.List).isRequired
+			userProgramLinks: React.PropTypes.instanceOf(Imm.List).isRequired
+			updateAccount: React.PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {
@@ -399,7 +401,6 @@ load = (win) ->
 
 			newAccountType = if isAdmin then 'normal' else 'admin'
 
-			dataDirectory = global.ActiveSession.account.dataDirectory
 			sessionAccount = global.ActiveSession.account
 			userAccountOp = null
 			decryptedUserAccount = null
@@ -413,7 +414,7 @@ load = (win) ->
 						return
 
 				(cb) =>
-					Persist.Users.Account.read dataDirectory, userName, (err, account) =>
+					Persist.Users.Account.read Config.backend, userName, (err, account) =>
 						if err
 							cb err
 							return
@@ -534,7 +535,6 @@ load = (win) ->
 				Bootbox.alert "Accounts cannot deactivate themselves.  Try logging in using a different account."
 				return
 
-			dataDirectory = global.ActiveSession.account.dataDirectory
 			userAccountOp = null
 
 			Async.series [
@@ -544,7 +544,7 @@ load = (win) ->
 						return
 
 				(cb) =>
-					Persist.Users.Account.read dataDirectory, userName, (err, account) =>
+					Persist.Users.Account.read Config.backend, userName, (err, account) =>
 						if err
 							cb err
 							return
@@ -785,9 +785,9 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			onCancel: PropTypes.func.isRequired
-			onSuccess: PropTypes.func.isRequired
-			userName: PropTypes.string.isRequired
+			onCancel: React.PropTypes.func.isRequired
+			onSuccess: React.PropTypes.func.isRequired
+			userName: React.PropTypes.string.isRequired
 		}
 
 		getInitialState: ->
@@ -892,7 +892,6 @@ load = (win) ->
 
 			@props.setIsLoading true
 
-			dataDirectory = global.ActiveSession.account.dataDirectory
 			password = @state.password
 
 			userAccount = null
@@ -900,7 +899,7 @@ load = (win) ->
 
 			Async.series [
 				(cb) =>
-					Persist.Users.Account.read dataDirectory, @props.userName, (err, result) =>
+					Persist.Users.Account.read Config.backend, @props.userName, (err, result) =>
 						if err
 							cb err
 							return

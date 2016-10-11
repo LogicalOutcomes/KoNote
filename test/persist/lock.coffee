@@ -15,7 +15,10 @@ locksDir = Path.join dataDir, '_locks'
 tmpDir = Path.join dataDir, '_tmp'
 session = {
 	userName: 'user1'
-	dataDirectory: dataDir
+	backend: {
+		type: 'file-system'
+		dataDirectory: dataDir
+	}
 	persist: {
 		eventBus: {
 			on: (a, b) ->

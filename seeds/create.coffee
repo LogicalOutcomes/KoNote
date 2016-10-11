@@ -32,17 +32,26 @@ Create.clientFile = (cb) ->
 		plan: {
 			sections: []
 		}
+		detailUnits: []
 	}
 
 	createData 'clientFiles', clientFile, cb
 
 Create.globalEvent = ({progEvent}, cb) ->
-	globalEvent = stripMetadata(progEvent)
-	.set('clientFileId', progEvent.get('clientFileId'))
-	.set('relatedProgNoteId', progEvent.get('relatedProgNoteId'))
-	.set('relatedProgEventId', progEvent.get('id'))
-	.remove('id')
-	.remove('relatedElement')
+	globalEvent = Imm.fromJS {
+		title: progEvent.get('title')
+		description: progEvent.get('description')
+		startTimestamp: progEvent.get('startTimestamp')
+		endTimestamp: progEvent.get('endTimestamp')
+		typeId: progEvent.get('typeId')
+		clientFileId: progEvent.get('clientFileId')
+		relatedProgNoteId: progEvent.get('relatedProgNoteId')
+		relatedProgEventId: progEvent.get('id')
+		programId: progEvent.get('authorProgramId')
+		backdate: progEvent.get('backdate')
+		status: progEvent.get('status')
+		statusReason: progEvent.get('statusReason')
+	}
 
 	createData 'globalEvents', globalEvent, cb
 
@@ -75,7 +84,6 @@ Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 		relatedProgNoteId
 		authorProgramId: ''
 		clientFileId
-		relatedElement: ''
 	}
 
 	createData 'progEvents', progEvent, cb
@@ -205,6 +213,7 @@ Create.program = (index, cb) ->
 	program = Imm.fromJS({
 		name: Faker.company.bsBuzz()
 		description: Faker.lorem.paragraph()
+		status: 'default'
 		# chooses a hexColor randomly from an imported list of hexcolors
 		colorKeyHex: ProgramColors.get(Math.floor(Math.random() * ProgramColors.size))
 	})

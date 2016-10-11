@@ -1,0 +1,118 @@
+.flexButtonToolbar
+	display flex
+	flex-shrink 0
+
+	background white
+	border-bottom 1px solid sidebar-borders
+	height 60px
+
+	> button, > .dropdown
+		background none
+		outline none
+		flex 1
+		border 0
+		border-radius 0
+		border-color sidebar-borders
+		border-right 1px solid sidebar-borders
+		padding 0
+		transition all .1s ease
+
+		color black
+
+		&:not(.collapsed):last-child
+			border-right 0 !important
+
+		&.collapsed
+			flex none !important
+			border 0 !important
+			width 0
+			padding 0
+			margin 0
+			overflow hidden
+
+		> .fa, > div > .fa, .dropdown-toggle .fa
+			margin 8px
+			transition all .1s ease
+
+		&:hover, button:hover
+			&:not([disabled])
+				background #dae6ed
+
+	// Overrides for B.Dropdown
+	> .dropdown
+		display flex
+		flex 0.5 // TEMPORARY
+
+		> button
+			flex 1
+			border 0 !important
+			border-radius 0
+			background none
+			box-shadow none
+
+		.caret
+			display block
+			position absolute
+			bottom 3px
+			left calc(50% - 4px)
+			color sidebar-borders
+
+		.dropdown-menu
+			z-index 10000
+
+	// Button customizations
+	> button
+
+		&[disabled]
+			opacity 0.5
+
+		///////////////////// PlanTab
+
+		&.saveButton
+			$bgColor = rgba(92, 184, 92, 1)
+			box-shadow inset 0px 0px 0px 0px darken($bgColor, 25%)
+
+			flex 1.25
+			color white
+			background $bgColor !important
+
+			&:not([disabled]):hover
+				background lighten($bgColor, 25%)
+				box-shadow inset 0px -3px 0px 0px darken($bgColor, 25%)
+
+		&.discardButton
+			$bgColor = rgba(249, 175, 53, 1)
+			box-shadow inset 0px 0px 0px 0px darken($bgColor, 25%)
+
+			flex 0.75
+			color white
+			background $bgColor
+
+			&:not([disabled]):hover
+				background lighten($bgColor, 25%)
+				box-shadow inset 0px -3px 0px 0px darken($bgColor, 25%)
+
+		&.addSectionButton
+			//
+
+		&.printButton
+			flex 0.5
+			border-right 0
+
+
+		///////////////////// Info Tab
+
+
+
+
+
+
+		///////////////////// ProgNotes Tab
+
+		&.newProgNoteButton
+			$bgColor = rgba(49, 118, 170, 1)
+			color white
+			background $bgColor
+
+			&:not([disabled]):hover
+				background lighten($bgColor, 25%)

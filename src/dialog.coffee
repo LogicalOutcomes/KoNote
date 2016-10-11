@@ -12,7 +12,6 @@
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	Spinner = require('./spinner').load(win)
@@ -35,9 +34,9 @@ load = (win) ->
 			}
 
 		propTypes: {
-			containerClasses: PropTypes.array
-			onClose: PropTypes.func
-			disableCancel: PropTypes.bool
+			containerClasses: React.PropTypes.array
+			onClose: React.PropTypes.func
+			disableCancel: React.PropTypes.bool
 		}
 
 		render: ->

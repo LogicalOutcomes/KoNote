@@ -1,6 +1,10 @@
 {
 	"devMode": true,
-	"backend": "file-system",
+	"backend": {
+		"type": "file-system",
+		"dataDirectory": "data"
+	},
+
 	"productName": "KoNote",
 	"supportEmailAddress": "help@konote.ca",
 
@@ -11,15 +15,23 @@
 	"logoSubtitle": "beta",
 	"logoSubtitleColor": "hsl(205, 78%, 47%)",
 
+	"features": {
+		"shiftSummaries": {
+			"isEnabled": false
+		},
+		"clientAvatar": {
+			"isEnabled": false
+		}
+	},
+
 	"clientFileRecordId": {
 		"isEnabled": true,
 		"isRequired": false,
 		"label": "ID#"
 	},
 
-	"dataDirectory": "data",
-
-	"timestampFormat": "MMMM Do, YYYY [at] h:mma",
+	"timestampFormat": "Do MMM, YYYY [-] h:mma",
+	"dateFormat": "Do MMM, YYYY",
 
 	"timeout": {
 		"duration": 25,
@@ -85,5 +97,38 @@
 				}
 			]
 		}
-	}
+	},
+
+	"clientDetailDefinitionGroups": [
+		{
+			"title": "Basic Information",
+			"fields": [
+				{
+					"name": "Email Address",
+					"inputType": "input",
+					"placeholder": "Email"
+				},
+				{
+					"name": "Home Phone",
+					"inputType": "input",
+					"placeholder": "Home Phone"
+				},
+				{
+					"name": "Mobile Phone",
+					"inputType": "input",
+					"placeholder": "Mobile Phone"
+				},
+				{
+					"name": "Address",
+					"inputType": "textarea",
+					"placeholder": "Address"
+				},
+				{
+					"name": "Additional Comments",
+					"inputType": "textarea",
+					"placeholder": "Additional Comments"
+				}
+			]
+		}
+	]
 }

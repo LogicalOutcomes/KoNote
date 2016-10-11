@@ -5,7 +5,6 @@
 Async = require 'async'
 Imm = require 'immutable'
 _ = require 'underscore'
-ImmPropTypes = require 'react-immutable-proptypes'
 
 Persist = require './persist'
 Config = require './config'
@@ -17,7 +16,6 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	# TODO: Refactor to single require
@@ -43,6 +41,11 @@ load = (win) ->
 		displayName: 'ProgramManagerTab'
 		mixins: [React.addons.PureRenderMixin]
 
+
+		getInitialState: -> {
+			displayInactive: false
+		}
+
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
 			hasData = not @props.programs.isEmpty()
@@ -57,8 +60,12 @@ load = (win) ->
 				newProgram = program.set 'numberClients', numberClients
 				return newProgram
 
-			inactivePrograms = @props.clientFileProgramLinks.filter (link) ->
-				link.get('status') is "enrolled"
+			unless @state.displayInactive
+				programs = programs.filter (program) ->
+					program.get('status') is 'default'
+
+			inactivePrograms = @props.programs.filter (program) ->
+				program.get('status') isnt "default"
 
 			hasInactivePrograms = not inactivePrograms.isEmpty()
 
@@ -80,19 +87,19 @@ load = (win) ->
 									" New #{Term 'Program'}"
 								)
 							)
-							## TODO: Toggle for inactive programs display
-							# (if hasInactivePrograms
-							# 	R.div({className: 'toggleInactive'},
-							# 		R.label({},
-							# 			"Show inactive (#{inactivePrograms.size})"
-							# 			R.input({
-							# 				type: 'checkbox'
-							# 				checked: @state.displayInactive
-							# 				onClick: @_toggleDisplayInactive
-							# 			})
-							# 		)
-							# 	)
-							# )
+
+							(if hasInactivePrograms
+								R.div({className: 'toggleInactive'},
+									R.label({},
+										"Show inactive (#{inactivePrograms.size})"
+										R.input({
+											type: 'checkbox'
+											checked: @state.displayInactive
+											onClick: @_toggleDisplayInactive
+										})
+									)
+								)
+							)
 						)
 						Term 'Programs'
 					)
@@ -102,7 +109,7 @@ load = (win) ->
 						R.div({className: 'responsiveTable animated fadeIn'},
 							DialogLayer({
 								ref: 'dialogLayer'
-								programs
+								programs: @props.programs
 								clientFileProgramLinks: @props.clientFileProgramLinks
 								clientFileHeaders: @props.clientFileHeaders
 							}
@@ -115,6 +122,7 @@ load = (win) ->
 										defaultSortOrder: 'asc'
 										onRowClick: @_openProgramManagerDialog
 									}
+									trClassName: (row) -> 'inactive' if row.status isnt 'default'
 								},
 									TableHeaderColumn({
 										dataField: 'colorKeyHex'
@@ -139,6 +147,21 @@ load = (win) ->
 										headerAlign: 'center'
 										dataAlign: 'center'
 									}, "# #{Term 'Clients'}")
+									TableHeaderColumn({
+										dataField: 'status'
+										className: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
+										columnClassName: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
+										dataSort: true
+										hidden: not @state.displayInactive
+										headerAlign: 'right'
+										dataAlign: 'right'
+									}, "Status")
 								)
 							)
 						)
@@ -154,6 +177,10 @@ load = (win) ->
 
 		_openProgramManagerDialog: ({id}) ->
 			@refs.dialogLayer.open ManageProgramDialog, {programId: id}
+
+		_toggleDisplayInactive: ->
+			displayInactive = not @state.displayInactive
+			@setState {displayInactive}
 
 	CreateProgramDialog = React.createFactory React.createClass
 		displayName: 'CreateProgramDialog'
@@ -238,6 +265,7 @@ load = (win) ->
 				name: @state.name
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex
+				status: 'default'
 			})
 
 		_submit: (event) ->
@@ -262,15 +290,13 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			programId: PropTypes.string.isRequired
-			clientFileProgramLinks: ImmPropTypes.list
-			clientFileHeaders: ImmPropTypes.list
+			programId: React.PropTypes.string.isRequired
+			clientFileProgramLinks: React.PropTypes.instanceOf(Imm.List)
+			clientFileHeaders: React.PropTypes.instanceOf(Imm.List)
 		}
 
 		getInitialState: -> {
-			# Admin will most frequently want to manage clients,
-			# so this is the default view
-			view: 'manageClients'
+			view: 'modifyProgram'
 		}
 
 		render: ->
@@ -280,14 +306,16 @@ load = (win) ->
 			return Dialog({
 				ref: 'dialog'
 				title: "Manage #{Term 'Program'}"
-				onClose: @props.onClose
+				onClose: @_suggestClose
 			},
 				R.div({className: 'manageProgramDialog'},
 					Tabs({
+						id: 'manageProgramTabs'
 						activeKey: @state.view
 						onSelect: @_changeView
 					}
 						Tab({
+							id: 'nameTab'
 							title: R.span({},
 								ColorKeyBubble({colorKeyHex: program.get('colorKeyHex')})
 								' '
@@ -296,26 +324,35 @@ load = (win) ->
 							eventKey: 'name'
 							disabled: true
 						})
+
 						Tab({
-							title: "#{Term 'Clients'}"
-							eventKey: 'manageClients'
-						},
-							ManageProgramClientsView({
-								program
-								clientFileHeaders: @props.clientFileHeaders
-								clientFileProgramLinks: @props.clientFileProgramLinks
-								onSuccess: @props.onSuccess
-								onCancel: @props.onCancel
-							})
-						)
-						Tab({
+							id: 'modifyProgramTab'
 							title: "Modify Details"
 							eventKey: 'modifyProgram'
 						},
 							R.div({className: 'modifyProgramViewContainer'},
 								ModifyProgramView({
+									ref: 'modifyProgramView'
 									program
 									programs: @props.programs
+									onSuccess: @props.onSuccess
+									onCancel: @props.onCancel
+									clientFileProgramLinks: @props.clientFileProgramLinks
+								})
+							)
+						)
+
+						(if program.get('status') is 'default'
+							Tab({
+								id: 'manageClientsTab'
+								title: "#{Term 'Clients'}"
+								eventKey: 'manageClients'
+							},
+								ManageProgramClientsView({
+									ref: 'manageProgramClientsView'
+									program
+									clientFileHeaders: @props.clientFileHeaders
+									clientFileProgramLinks: @props.clientFileProgramLinks
 									onSuccess: @props.onSuccess
 									onCancel: @props.onCancel
 								})
@@ -328,14 +365,44 @@ load = (win) ->
 		_changeView: (view) ->
 			@setState {view}
 
+		_suggestClose: ->
+			if @refs.modifyProgramView.hasChanges()
+				return @_promptHasChangesAlert "to this #{Term 'program'}"
+			else if @refs.manageProgramClientsView.hasChanges()
+				return @_promptHasChangesAlert "to #{Term 'client'} enrollments"
+
+			@props.onClose()
+
+		_promptHasChangesAlert: (toMessage) ->
+			Bootbox.dialog {
+				title: "Unsaved Changes to #{Term 'Program'}"
+				message: """
+					You have unsaved changes #{toMessage}.
+					How would you like to proceed?
+				"""
+				buttons: {
+					default: {
+						label: "Cancel"
+						className: "btn-default"
+						callback: => Bootbox.hideAll()
+					}
+					warning: {
+						label: "Discard Changes"
+						className: "btn-danger"
+						callback: =>
+							@props.onClose()
+					}
+				}
+			}
+
 
 	ModifyProgramView = React.createFactory React.createClass
 		displayName: 'ModifyProgramView'
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			program: ImmPropTypes.map
-			programs: ImmPropTypes.list
+			program: React.PropTypes.instanceOf(Imm.Map)
+			programs: React.PropTypes.instanceOf(Imm.List)
 		}
 
 		getInitialState: ->
@@ -344,9 +411,26 @@ load = (win) ->
 		componentDidMount: ->
 			@refs.programName.focus()
 
+		hasChanges: ->
+			originalProgram = stripMetadata @props.program
+			modifiedProgram = @_buildModifiedProgramObject()
+
+			return not Imm.is originalProgram, modifiedProgram
+
 		render: ->
-			R.div({className: 'createProgramDialog'},
-				R.div({className: 'innerContainer'},
+			enrolledClients = @props.clientFileProgramLinks.filter (link) =>
+				link.get('programId') is @props.program.get('id') and link.get('status') is "enrolled"
+
+			programIsEmpty = enrolledClients.isEmpty()
+
+			# The current program should be excluded from the list of existing programs
+			# for ColorKeySelection
+			currentProgramIndex = @props.programs.indexOf(@props.program)
+			otherPrograms = @props.programs.remove(currentProgramIndex)
+
+
+			return R.div({className: 'modifyProgramView'},
+				R.section({className: 'createProgramDialog'}, # Use same styles from createProgramDialog
 					R.div({className: 'form-group'},
 						R.label({}, "Name")
 						R.input({
@@ -361,15 +445,6 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Colour Key")
-						ColorKeySelection({
-							colors: ProgramColors
-							data: @props.programs
-							selectedColorKeyHex: @state.colorKeyHex
-							onSelect: @_updateColorKeyHex
-						})
-					)
-					R.div({className: 'form-group'},
 						R.label({}, "Description")
 						R.textarea({
 							className: 'form-control'
@@ -379,29 +454,82 @@ load = (win) ->
 							rows: 3
 						})
 					)
-					R.div({className: 'btn-toolbar'},
+					R.div({className: 'btn-toolbar saveButtonToolbar'},
 						R.button({
 							className: 'btn btn-default'
 							onClick: @props.onCancel
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-success'
-							disabled: (
-								not @state.name or not @state.description or not @state.colorKeyHex
-							) or not @_hasChanges()
+							disabled: not @_formIsValid()
 							onClick: @_submit
 						},
-							"Finished"
+							"Save"
+							' '
+							FaIcon('check')
 						)
 					)
 				)
+
+				R.section({},
+					R.div({className: 'form-group'},
+						R.label({}, "Status"),
+						(if programIsEmpty
+							R.div({className: 'btn-toolbar'},
+								R.button({
+									className: [
+										'btn btn-default'
+										'btn-primary' if @state.status is 'default'
+									].join ' '
+									onClick: @_updateStatus
+									value: 'default'
+									disabled: not programIsEmpty
+								},
+									"Active"
+								)
+								R.button({
+									className: [
+										'btn btn-default'
+										'btn-danger' if @state.status is 'cancelled'
+									].join ' '
+									onClick: @_updateStatus
+									value: 'cancelled'
+									disabled: not programIsEmpty
+								},
+									"Deactivated"
+								)
+							)
+						else
+							R.div({className: 'alert alert-warning'},
+								FaIcon('warning')
+								' '
+								"Un-enroll all #{Term 'clients'} to change status."
+							)
+						)
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Colour Key")
+						ColorKeySelection({
+							colors: ProgramColors
+							data: otherPrograms
+							selectedColorKeyHex: @state.colorKeyHex
+							onSelect: @_updateColorKeyHex
+						})
+					)
+				)
 			)
+
+		_formIsValid: ->
+			return @state.name and @state.description and @state.colorKeyHex and @hasChanges()
 
 		_updateName: (event) ->
 			@setState {name: event.target.value}
 
 		_updateDescription: (event) ->
 			@setState {description: event.target.value}
+
+		_updateStatus: (event) ->
+			@setState {status: event.target.value}
 
 		_updateColorKeyHex: (colorKeyHex) ->
 			@setState {colorKeyHex}
@@ -410,14 +538,10 @@ load = (win) ->
 			return Imm.fromJS({
 				id: @props.program.get('id')
 				name: @state.name
+				status: @state.status
 				description: @state.description
 				colorKeyHex: @state.colorKeyHex
 			})
-
-		_hasChanges: ->
-			originalProgramObject = @props.program
-			modifiedProgramObject = @_buildModifiedProgramObject()
-			return not Imm.is originalProgramObject, modifiedProgramObject
 
 		_submit: (event) ->
 			event.preventDefault()
@@ -427,6 +551,10 @@ load = (win) ->
 			# Update program revision, and close
 			ActiveSession.persist.programs.createRevision modifiedProgram, (err, modifiedProgram) =>
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+
 					CrashHandler.handle err
 					return
 
@@ -438,9 +566,9 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			program: ImmPropTypes.map
-			clientFileHeaders: ImmPropTypes.list
-			clientFileProgramLinks: ImmPropTypes.list
+			program: React.PropTypes.instanceOf(Imm.Map)
+			clientFileHeaders: React.PropTypes.instanceOf(Imm.List)
+			clientFileProgramLinks: React.PropTypes.instanceOf(Imm.List)
 		}
 
 		getInitialState: ->
@@ -452,6 +580,9 @@ load = (win) ->
 		componentDidMount: ->
 			@refs.clientSearchBox.focus()
 
+		hasChanges: ->
+			Imm.is @state.clientFileProgramLinks, @_originalLinks()
+
 		render: ->
 			enrolledLinks = @state.clientFileProgramLinks.filter (link) ->
 				link.get('status') is "enrolled"
@@ -462,7 +593,7 @@ load = (win) ->
 				return not enrolledLinks.some (link) ->
 					link.get('clientFileId') is clientFileId
 
-			hasChanges = @_hasChanges()
+			hasChanges = @hasChanges()
 
 
 			return R.div({className: 'manageProgramClientsView'},
@@ -479,45 +610,64 @@ load = (win) ->
 									"Enrolled #{Term 'Clients'}"
 								)
 							)
-							(if enrolledLinks.isEmpty()
-								R.div({className: 'panel-body noData'},
-									"This #{Term 'program'} has no members yet."
-								)
-							else
-								R.table({className: 'panel-body table table-striped'}
-									R.thead({},
-										R.tr({},
-											R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
-											R.td({colSpan: 2}, "#{Term 'Client'} Name")
-										)
+							R.div({className: 'panel-body'},
+								(if enrolledLinks.isEmpty()
+									R.div({className: 'noData'},
+										"This #{Term 'program'} has no members yet."
 									)
-									R.tbody({},
-										(enrolledLinks.map (link) =>
-											clientFileId = link.get('clientFileId')
-											client = @_findClientById clientFileId
-											recordId = client.get('recordId')
+								else
+									R.table({className: 'table table-striped'}
+										R.thead({},
+											R.tr({},
+												R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
+												R.td({colSpan: 2}, "#{Term 'Client'} Name")
+											)
+										)
+										R.tbody({},
+											(enrolledLinks.map (link) =>
+												clientFileId = link.get('clientFileId')
+												client = @_findClientById clientFileId
+												recordId = client.get('recordId')
 
-											R.tr({key: clientFileId},
-												if Config.clientFileRecordId?
-													R.td({},
-														(if recordId.length > 0
-															recordId
-														else
-															R.div({className: 'noId'}, "n/a")
+												R.tr({key: clientFileId},
+													if Config.clientFileRecordId?
+														R.td({},
+															(if recordId.length > 0
+																recordId
+															else
+																R.div({className: 'noId'}, "n/a")
+															)
 														)
-													)
-												R.td({}, renderName client.get('clientName'))
-												R.td({},
-													R.button({
-														className: 'btn btn-danger btn-xs'
-														onClick: @_unenrollClient.bind null, link
-													},
-														FaIcon('minus')
+													R.td({}, renderName client.get('clientName'))
+													R.td({},
+														R.button({
+															className: 'btn btn-danger btn-xs'
+															onClick: @_unenrollClient.bind null, link
+														},
+															FaIcon('minus')
+														)
 													)
 												)
 											)
 										)
 									)
+								)
+							)
+							R.div({className: 'btn-toolbar saveButtonToolbar'},
+								R.button({
+									className: 'btn btn-default'
+									onClick: @props.onCancel
+								},
+									"Cancel"
+								)
+								R.button({
+									className: 'btn btn-success btn-large'
+									onClick: @_submit
+									disabled: hasChanges
+								},
+									"Save"
+									' '
+									FaIcon('check')
 								)
 							)
 						)
@@ -536,7 +686,9 @@ load = (win) ->
 								)
 								(if searchResults.isEmpty()
 									R.div({className: 'panel-body noData'},
-										"No #{Term 'client'} matches for \"#{@state.searchQuery}\""
+										(if @state.searchQuery
+											"No #{Term 'client'} matches for \"#{@state.searchQuery}\""
+										)
 									)
 								else
 									R.div({className: 'panel-body searchResults'},
@@ -556,7 +708,7 @@ load = (win) ->
 														key: clientFileId
 														onClick: @_enrollClient.bind null, clientFileId
 													},
-														if Config.clientFileRecordId?
+														(if Config.clientFileRecordId?
 															R.td({},
 																(if recordId.length > 0
 																	recordId
@@ -564,6 +716,7 @@ load = (win) ->
 																	R.div({className: 'noId'}, "n/a")
 																)
 															)
+														)
 														R.td({}, renderName result.get('clientName'))
 													)
 												)
@@ -575,30 +728,11 @@ load = (win) ->
 						)
 					)
 				)
-				R.div({className: 'btn-toolbar pull-right saveBar'},
-					R.button({
-						className: 'btn btn-default'
-						onClick: @props.onCancel
-					},
-						"Cancel"
-					)
-					R.button({
-						className: 'btn btn-success btn-large'
-						onClick: @_submit
-						disabled: hasChanges
-					},
-						"Save "
-						FaIcon('check')
-					)
-				)
 			)
 
 		_originalLinks: ->
 			return @props.clientFileProgramLinks.filter (link) =>
 				link.get('programId') is @props.program.get('id')
-
-		_hasChanges: ->
-			Imm.is @state.clientFileProgramLinks, @_originalLinks()
 
 		_enrollClient: (clientFileId) ->
 			newLink = Imm.fromJS {
@@ -705,6 +839,10 @@ load = (win) ->
 
 			, (err) =>
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+
 					CrashHandler.handle err
 					return
 

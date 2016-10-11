@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+Fs = require 'fs'
+Path = require 'path'
 Assert = require 'assert'
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -16,6 +18,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	{findDOMNode} = win.ReactDOM
 	ReactDOMServer = win.ReactDOMServer
 
 	CancelProgNoteDialog = require('./cancelProgNoteDialog').load(win)
@@ -41,16 +44,22 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				editingProgNoteId: null
-
+				attachment: null
 				selectedItem: null
 				highlightedProgNoteId: null
 				highlightedTargetId: null
 				backdate: ''
 				revisingProgNote: null
 				isLoading: null
+				historyEntries: Imm.List()
 			}
 
+		componentWillReceiveProps: (nextProps) ->
+			@_buildHistoryEntries(nextProps)
+
 		componentDidMount: ->
+			@_buildHistoryEntries()
+
 			# TODO: Restore for lazyload feature
 			# progNotesPane = $('.historyEntries')
 			# progNotesPane.on 'scroll', =>
@@ -58,40 +67,58 @@ load = (win) ->
 			# 		if progNotesPane.scrollTop() + (progNotesPane.innerHeight() * 2) >= progNotesPane[0].scrollHeight
 			# 			@props.renewAllData()
 
-			quickNoteToggle = $('.addQuickNote')
-			quickNoteToggle.data 'isVisible', false
-			quickNoteToggle.popover {
-				placement: 'bottom'
-				html: true
-				trigger: 'manual'
-				content: '''
-					<textarea class="form-control"></textarea>
-					<div class="buttonBar form-inline">
-						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
-						<button class="cancel btn btn-danger"><i class="fa fa-trash"></i> Discard</button>
-						<button class="save btn btn-primary"><i class="fa fa-check"></i> Save</button>
-					</div>
-				'''
-			}
-
 		hasChanges: ->
 			@_revisingProgNoteHasChanges()
 
+		_buildHistoryEntries: (nextProps) ->
+			if nextProps?
+				progNoteHistories = nextProps.progNoteHistories
+				clientFileId = nextProps.clientFileId
+			else
+				progNoteHistories = @props.progNoteHistories
+				clientFileId = @props.clientFileId
+			historyEntries = null
+
+			Async.series [
+				(cb) =>
+					Async.map progNoteHistories.toArray(), (progNoteHistory, cb) =>
+						timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
+						progNoteId = progNoteHistory.last().get('id')
+						attachmentFilename = null
+
+						ActiveSession.persist.attachments.list clientFileId, progNoteId, (err, results) =>
+							unless err
+								if results.size > 0
+									attachmentFilename = {
+										clientFileId
+										progNoteId
+										attachmentId: results.first().get('id')
+										filename: results.first().get('filename')
+									}
+
+							entry = Imm.fromJS {
+								type: 'progNote'
+								id: progNoteId
+								timestamp
+								attachmentFilename
+								data: progNoteHistory
+							}
+
+							cb null, entry
+
+					, (err, results) ->
+						if err
+							console.log err
+						historyEntries = Imm.List(results)
+						cb()
+			], (err) =>
+				if err
+					console.log err
+				@setState {historyEntries}
+
 		render: ->
-			progNoteHistories = @props.progNoteHistories
+			historyEntries = @state.historyEntries
 			hasChanges = @_revisingProgNoteHasChanges()
-
-			historyEntries = progNoteHistories
-			.map (progNoteHistory) ->
-				timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
-
-				return Imm.fromJS {
-					type: 'progNote'
-					id: progNoteHistory.last().get('id')
-					timestamp
-					data: progNoteHistory
-				}
-
 			historyEntries = if @state.revisingProgNote?
 				# Only show the single progNote while editing
 				Imm.List [
@@ -106,7 +133,7 @@ load = (win) ->
 							type: 'globalEvent'
 							id: globalEvent.get('id')
 							timestamp: globalEvent.get('startTimestamp')
-							programId: globalEvent.get('authorProgramId')
+							programId: globalEvent.get('programId')
 							data: globalEvent
 						}
 				)
@@ -118,129 +145,148 @@ load = (win) ->
 			hasEnoughData = (@props.progNoteHistories.size + @props.globalEvents.size) > 0
 
 
-			return R.div({className: "progNotesView"},
-				R.div({className: "toolbar #{showWhen hasEnoughData}"},
-					(if @state.revisingProgNote?
-						R.div({},
-							R.button({
-								className: [
-									'btn'
-									'btn-success' if hasChanges
-									'saveRevisingProgNote'
-								].join ' '
-								onClick: @_saveProgNoteRevision
-								disabled: not hasChanges
-							},
-								FaIcon 'save'
-								"Save #{Term 'Progress Note'}"
-							)
-							R.button({
-								className: 'btn btn-default cancelRevisingProgNote'
-								onClick: @_cancelRevisingProgNote
-							},
-								"Cancel"
-							)
-						)
-					else
-						R.div({},
-							R.button({
-								className: 'newProgNote btn btn-primary'
-								onClick: @_openNewProgNote
-								disabled: @state.isLoading or @props.isReadOnly
-							},
-								FaIcon 'file'
-								"New #{Term 'progress note'}"
-							)
-							R.button({
-								className: "addQuickNote btn btn-default #{showWhen hasEnoughData}"
-								onClick: @_openNewQuickNote
-								disabled: @props.isReadOnly
-							},
-								FaIcon 'plus'
-								"Add #{Term 'quick note'}"
-							)
-						)
-					)
-				)
+			return R.div({className: 'progNotesView'},
 				R.div({className: 'panes'},
-					R.div({className: 'historyEntries'},
-						R.div({className: "empty #{showWhen not hasEnoughData}"},
-							R.div({className: 'message'},
-								"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
+					R.section({className: 'leftPane'},
+
+						(if hasEnoughData
+
+							R.div({className: 'flexButtonToolbar'},
+								R.button({
+									className: [
+										'saveButton'
+										'collapsed' unless @state.revisingProgNote
+									].join ' '
+									onClick: @_saveProgNoteRevision
+									disabled: not hasChanges
+								},
+									FaIcon('save')
+									"Save #{Term 'Progress Note'}"
+								)
+
+								R.button({
+									className: [
+										'discardButton'
+										'collapsed' unless @state.revisingProgNote
+									].join ' '
+									onClick: @_cancelRevisingProgNote
+								},
+									FaIcon('undo')
+									"Discard"
+								)
+
+								R.button({
+									className: [
+										'newProgNoteButton'
+										'collapsed' if @state.revisingProgNote
+									].join ' '
+									onClick: @_openNewProgNote
+									disabled: @state.isLoading or @props.isReadOnly
+								},
+									FaIcon('file')
+									"New #{Term 'Progress Note'}"
+								)
+
+								R.button({
+									ref: 'addQuickNoteButton'
+									className: [
+										'addQuickNoteButton'
+										'collapsed' if @state.revisingProgNote
+									].join ' '
+									onClick: @_openNewQuickNote
+									disabled: @props.isReadOnly
+								},
+									FaIcon('plus')
+									"Add #{Term 'Quick Note'}"
+								)
 							)
-							R.button({
-								className: 'btn btn-primary btn-lg newProgNote'
-								onClick: @_openNewProgNote
-								disabled: @state.isLoading or @props.isReadOnly
-							},
-								FaIcon 'file'
-								"New #{Term 'progress note'}"
-							)
-							R.button({
-								className: 'btn btn-default btn-lg addQuickNote'
-								onClick: @_openNewQuickNote
-								disabled: @props.isReadOnly
-							},
-								FaIcon 'plus'
-								"Add #{Term 'quick note'}"
+
+						else
+							R.div({className: 'empty'},
+								R.div({className: 'message'},
+									"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
+								)
+								R.button({
+									className: 'btn btn-primary btn-lg newProgNoteButton'
+									onClick: @_openNewProgNote
+									disabled: @state.isLoading or @props.isReadOnly
+								},
+									FaIcon 'file'
+									"New #{Term 'progress note'}"
+								)
+								R.button({
+									ref: 'addQuickNoteButton'
+									className: 'btn btn-default btn-lg addQuickNoteButton'
+									onClick: @_openNewQuickNote
+									disabled: @props.isReadOnly
+								},
+									FaIcon 'plus'
+									"Add #{Term 'quick note'}"
+								)
 							)
 						)
-						(historyEntries.map (entry) =>
 
-							switch entry.get('type')
-								when 'progNote'
-									ProgNoteContainer({
-										key: entry.get('id')
+						(unless historyEntries.isEmpty()
+							R.div({className: 'progNotesList'},
+								(historyEntries.map (entry) =>
+									switch entry.get('type')
+										when 'progNote'
+											ProgNoteContainer({
+												key: entry.get('id')
 
-										progNoteHistory: entry.get('data')
-										eventTypes: @props.eventTypes
-										clientFile: @props.clientFile
+												progNoteHistory: entry.get('data')
+												attachments: entry.get('attachmentFilename')
+												eventTypes: @props.eventTypes
+												clientFile: @props.clientFile
 
-										progEvents: @props.progEvents
-										programsById: @props.programsById
+												progEvents: @props.progEvents
+												programsById: @props.programsById
 
-										revisingProgNote: @state.revisingProgNote
-										isReadOnly: @props.isReadOnly
+												revisingProgNote: @state.revisingProgNote
+												isReadOnly: @props.isReadOnly
 
-										setSelectedItem: @_setSelectedItem
-										selectProgNote: @_selectProgNote
-										setEditingProgNoteId: @_setEditingProgNoteId
-										updatePlanTargetNotes: @_updatePlanTargetNotes
-										setHighlightedProgNoteId: @_setHighlightedProgNoteId
-										setHighlightedTargetId: @_setHighlightedTargetId
-										selectedItem: @state.selectedItem
+												setSelectedItem: @_setSelectedItem
+												selectProgNote: @_selectProgNote
+												setEditingProgNoteId: @_setEditingProgNoteId
+												updatePlanTargetNotes: @_updatePlanTargetNotes
+												setHighlightedProgNoteId: @_setHighlightedProgNoteId
+												setHighlightedTargetId: @_setHighlightedTargetId
+												selectedItem: @state.selectedItem
 
-										startRevisingProgNote: @_startRevisingProgNote
-										cancelRevisingProgNote: @_cancelRevisingProgNote
-										updateBasicUnitNotes: @_updateBasicUnitNotes
-										updateBasicMetric: @_updateBasicMetric
-										updatePlanTargetMetric: @_updatePlanTargetMetric
-										updateQuickNotes: @_updateQuickNotes
-										saveProgNoteRevision: @_saveProgNoteRevision
-										setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
-									})
-								when 'globalEvent'
-									GlobalEventView({
-										key: entry.get('id')
-										globalEvent: entry.get('data')
-										programsById: @props.programsById
-									})
-								else
-									throw new Error "Unknown historyEntry type #{entry.get('type')}"
-						).toJS()...
+												startRevisingProgNote: @_startRevisingProgNote
+												cancelRevisingProgNote: @_cancelRevisingProgNote
+												updateBasicUnitNotes: @_updateBasicUnitNotes
+												updateBasicMetric: @_updateBasicMetric
+												updatePlanTargetMetric: @_updatePlanTargetMetric
+												updateQuickNotes: @_updateQuickNotes
+												saveProgNoteRevision: @_saveProgNoteRevision
+												setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
+											})
+										when 'globalEvent'
+											GlobalEventView({
+												key: entry.get('id')
+												globalEvent: entry.get('data')
+												programsById: @props.programsById
+											})
+										else
+											throw new Error "Unknown historyEntry type #{entry.get('type')}"
+								)
+							)
+						)
 					)
-
-					ProgNoteDetailView({
-						item: @state.selectedItem
-						highlightedProgNoteId: @state.highlightedProgNoteId
-						highlightedQuickNoteId: @state.highlightedQuickNoteId
-						highlightedTargetId: @state.highlightedTargetId
-						progNoteHistories: @props.progNoteHistories
-						progEvents: @props.progEvents
-						eventTypes: @props.eventTypes
-						metricsById: @props.metricsById
-						programsById: @props.programsById
-					})
+					R.section({className: 'rightPane'},
+						ProgNoteDetailView({
+							item: @state.selectedItem
+							highlightedProgNoteId: @state.highlightedProgNoteId
+							highlightedQuickNoteId: @state.highlightedQuickNoteId
+							highlightedTargetId: @state.highlightedTargetId
+							progNoteHistories: @props.progNoteHistories
+							progEvents: @props.progEvents
+							eventTypes: @props.eventTypes
+							metricsById: @props.metricsById
+							programsById: @props.programsById
+						})
+					)
 				)
 			)
 
@@ -563,23 +609,89 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
+		_attach: ->
+			# Configures hidden file inputs with custom attributes, and clicks it
+			$nwbrowse = $('#nwBrowse')
+			$nwbrowse
+			.off()
+			#.attr('accept', ".#{extension}")
+			.on('change', (event) => @_encodeFile event.target.value)
+			.click()
+
+		_encodeFile: (file) ->
+			if file
+				filename = Path.basename file
+				attachment = Fs.readFileSync(file)
+				filesize = Buffer.byteLength(attachment, 'base64')
+				if filesize < 1048576
+					filesize = (filesize / 1024).toFixed() + " KB"
+				else
+					filesize = (filesize / 1048576).toFixed() + " MB"
+
+				# convert to base64 encoded string
+				encodedAttachment = new Buffer(attachment).toString 'base64'
+
+				@setState {
+					attachment: {
+						encodedData: encodedAttachment
+						filename: filename
+					}
+				}
+				$('#attachmentArea').append filename + " (" + filesize + ")"
+				#@_decodeFile encodedAttachment
+			return
+
 		_toggleQuickNotePopover: ->
-			quickNoteToggle = $('.addQuickNote:not(.hide)')
+			# TODO: Refactor to stateful React component
+
+			quickNoteToggle = $(findDOMNode @refs.addQuickNoteButton)
+
+			quickNoteToggle.popover {
+				placement: 'bottom'
+				html: true
+				trigger: 'manual'
+				content: '''
+					<textarea class="form-control"></textarea>
+					<div id="attachmentArea"></div>
+					<div class="buttonBar form-inline">
+						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
+						<button class="btn btn-default" id="attachBtn"><i class="fa fa-paperclip"></i> Attach</button>
+						<button class="cancel btn btn-danger"><i class="fa fa-trash"></i> Discard</button>
+						<button class="save btn btn-primary"><i class="fa fa-check"></i> Save</button>
+						<input type="file" class="hidden" id="nwBrowse"></input>
+					</div>
+				'''
+			}
 
 			if quickNoteToggle.data('isVisible')
 				quickNoteToggle.popover('hide')
 				quickNoteToggle.data('isVisible', false)
 			else
-				global.document = win.document
 				quickNoteToggle.popover('show')
 				quickNoteToggle.data('isVisible', true)
 
+				attachFile = $('#attachBtn')
+				attachFile.on 'click', (event) =>
+					@_attach event
+					attachFile.blur()
+
 				popover = quickNoteToggle.siblings('.popover')
+
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
-					@_createQuickNote popover.find('textarea').val(), @state.backdate, (err) =>
-						@setState {backdate: ''}
+					@_createQuickNote popover.find('textarea').val(), @state.backdate, @state.attachment, (err) =>
+
+						if @state.attachment?
+							# refresh if we have an attachment since it is not ready when create:prognote fires in
+							# the parent. TODO: make this more elegant
+							@_buildHistoryEntries()
+
+						@setState {
+							backdate: '',
+							attachment: null
+						}
+
 						if err
 							if err instanceof Persist.IOError
 								Bootbox.alert """
@@ -592,7 +704,6 @@ load = (win) ->
 
 						quickNoteToggle.popover('hide')
 						quickNoteToggle.data('isVisible', false)
-
 
 				popover.find('.backdate.date').datetimepicker({
 					format: 'MMM-DD-YYYY h:mm A'
@@ -609,7 +720,10 @@ load = (win) ->
 
 				popover.find('.cancel.btn').on 'click', (event) =>
 					event.preventDefault()
-					@setState {backdate: ''}
+					@setState {
+						backdate: '',
+						attachment: null
+					}
 					quickNoteToggle.popover('hide')
 					quickNoteToggle.data('isVisible', false)
 
@@ -618,7 +732,7 @@ load = (win) ->
 				# Store quickNoteBeginTimestamp as class var, since it wont change
 				@quickNoteBeginTimestamp = Moment().format(Persist.TimestampFormat)
 
-		_createQuickNote: (notes, backdate, cb) ->
+		_createQuickNote: (notes, backdate, attachment, cb) ->
 			unless notes
 				Bootbox.alert "Cannot create an empty #{Term 'quick note'}."
 				return
@@ -633,12 +747,27 @@ load = (win) ->
 				beginTimestamp: @quickNoteBeginTimestamp
 			}
 
-			global.ActiveSession.persist.progNotes.create quickNote, (err) =>
+			global.ActiveSession.persist.progNotes.create quickNote, (err, result) =>
 				if err
 					cb err
 					return
 
-				cb()
+				unless attachment
+					cb()
+					return
+
+				attachmentData = Imm.fromJS {
+					filename: attachment.filename
+					encodedData: attachment.encodedData
+					clientFileId: @props.clientFileId
+					progNoteId: result.get('id')
+				}
+
+				global.ActiveSession.persist.attachments.create attachmentData, (err) =>
+					if err
+						cb err
+						return
+					cb()
 
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
@@ -700,6 +829,7 @@ load = (win) ->
 					QuickNoteView({
 						progNote
 						progNoteHistory: @props.progNoteHistory
+						attachments: @props.attachments
 						userProgram
 						clientFile: @props.clientFile
 						selectedItem: @props.selectedItem
@@ -754,6 +884,9 @@ load = (win) ->
 
 			progNote = if isEditing then @props.revisingProgNote else @props.progNote
 
+			if @props.attachments?
+				attachmentText = " " + @props.attachments.get('filename')
+
 			R.div({
 				className: 'basic progNote'
 				## TODO: Restore hover feature
@@ -788,8 +921,37 @@ load = (win) ->
 							renderLineBreaks progNote.get('notes')
 						)
 					)
+					(if attachmentText?
+						R.a({
+							className: 'attachment'
+							onClick: @_openAttachment.bind null, @props.attachments
+						},
+							FaIcon(Path.extname attachmentText)
+							attachmentText
+						)
+					)
 				)
 			)
+
+		_openAttachment: (attachment) ->
+			if attachment?
+				clientFileId = attachment.get('clientFileId')
+				progNoteId = attachment.get('progNoteId')
+				attachmentId = attachment.get('attachmentId')
+
+				global.ActiveSession.persist.attachments.readRevisions clientFileId, progNoteId, attachmentId, (err, object) ->
+					if err
+						console.log err
+						return
+					encodedData = object.first().get('encodedData')
+					filename = object.first().get('filename')
+					if filename?
+						# absolute path required for windows
+						filepath = Path.join process.cwd(), Config.dataDirectory, '_tmp', filename
+						file = new Buffer(encodedData, 'base64')
+						# TODO cleanup file...
+						Fs.writeFileSync filepath, file
+						nw.Shell.openItem filepath
 
 		_selectQuickNote: ->
 			@props.setSelectedItem Imm.fromJS {
@@ -985,7 +1147,7 @@ load = (win) ->
 
 															MetricWidget({
 																isEditable: isEditing
-																tooltipViewport: '.historyEntries'
+																tooltipViewport: '.progNotesList'
 																onChange: @props.updatePlanTargetMetric.bind(
 																	null,
 																	unitId, sectionId, targetId, metricId
@@ -1254,7 +1416,7 @@ load = (win) ->
 
 		render: ->
 			{globalEvent} = @props
-			programId = globalEvent.get('authorProgramId')
+			programId = globalEvent.get('programId')
 
 			program = @props.programsById.get(programId) or Imm.Map()
 			timestamp = globalEvent.get('backdate') or globalEvent.get('timestamp')
@@ -1272,7 +1434,7 @@ load = (win) ->
 				EntryHeader({
 					revisionHistory: Imm.List [globalEvent]
 					userProgram: program
-					dateFormat: 'MMMM Do, YYYY' if isFullDay
+					dateFormat: Config.dateFormat if isFullDay
 				})
 				R.h3({},
 					FaIcon('globe')

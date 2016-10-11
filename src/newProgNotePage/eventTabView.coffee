@@ -9,14 +9,12 @@ Moment = require 'moment'
 _ = require 'underscore'
 nlp = require 'nlp_compromise'
 Term = require '../term'
-ImmPropTypes = require 'react-immutable-proptypes'
 {TimestampFormat} = require '../persist/utils'
 
 
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 	Bootbox = win.bootbox
 
@@ -107,12 +105,6 @@ load = (win) ->
 			}).on 'dp.change', (thisInput) =>
 				@setState {endTime: thisInput.date}
 
-		componentDidUpdate: (oldProps, oldState) ->
-			# Provide parent with relatedElement isBeingEdited
-			if oldProps.isBeingEdited isnt @props.isBeingEdited and @props.isBeingEdited and @state.relatedElement
-				@props.selectEventPlanRelation @state.relatedElement
-				@props.updateEventPlanRelationMode false
-
 		render: ->
 			selectedEventType = @props.eventTypes.find (type) => type.get('id') is @state.typeId
 
@@ -147,72 +139,6 @@ load = (win) ->
 							placeholder: "Describe details (optional)"
 						})
 					)
-					## TODO: Completely remove planRelation stuff?
-					# R.div({className: 'form-group planRelationContainer'},
-					# 	R.label({}, "Relationship to Plan")
-					# 	DropdownButton({
-					# 		title: (
-					# 			if @props.selectedEventPlanRelation? and @props.selectedEventPlanRelation.get('name')?
-					# 				@props.selectedEventPlanRelation.get('name')
-					# 			else
-					# 				"No Relationship"
-					# 		)
-					# 		onToggle: @props.updateEventPlanRelationMode
-					# 	},
-					# 		(if @props.selectedEventPlanRelation?
-					# 			[
-					# 				R.li({
-					# 					onClick: @props.selectEventPlanRelation.bind null, null
-					# 					onMouseOver: @props.hoverEventPlanRelation.bind null, null
-					# 				},
-					# 					R.a({},
-					# 						"None "
-					# 						FaIcon('ban')
-					# 					)
-					# 				)
-					# 				MenuItem({divider: true})
-					# 			]
-					# 		)
-					# 		(@props.progNote.get('units').map (unit) =>
-					# 			switch unit.get('type')
-					# 				when 'basic'
-					# 					R.li({
-					# 						key: unit.get('id')
-					# 						onClick: @props.selectEventPlanRelation.bind null, unit
-					# 						onMouseOver: @props.hoverEventPlanRelation.bind null, unit
-					# 					},
-					# 						R.a({}, unit.get('name'))
-					# 					)
-					# 				when 'plan'
-					# 					([
-					# 						(unit.get('sections').map (section) =>
-					# 							([
-					# 								R.li({
-					# 									className: 'section'
-					# 									key: section.get('id')
-					# 									onClick: @props.selectEventPlanRelation.bind null, section
-					# 									onMouseOver: @props.hoverEventPlanRelation.bind null, section
-					# 								},
-					# 									R.a({}, section.get('name'))
-					# 								)
-
-					# 								(section.get('targets').map (target) =>
-					# 									R.li({
-					# 										className: 'target'
-					# 										key: target.get('id')
-					# 										onClick: @props.selectEventPlanRelation.bind null, target
-					# 										onMouseOver: @props.hoverEventPlanRelation.bind null, target
-					# 									},
-					# 										R.a({}, target.get('name'))
-					# 									)
-					# 								)
-					# 							])
-					# 						)
-					# 						MenuItem({divider: true})
-					# 					])
-					# 		)
-					# 	)
-					# )
 
 					(unless @props.eventTypes.isEmpty()
 						R.div({className: 'form-group eventTypeContainer'},
@@ -232,7 +158,11 @@ load = (win) ->
 										B.MenuItem({divider: true})
 									]
 
-								(@props.eventTypes.map (eventType) =>
+
+								(@props.eventTypes
+								.filter (eventType) =>
+									eventType.get('status') is 'default'
+								.map (eventType) =>
 									B.MenuItem({
 										key: eventType.get('id')
 										onClick: @_updateTypeId.bind null, eventType.get('id')
@@ -452,10 +382,7 @@ load = (win) ->
 		_closeForm: (event) ->
 			event.preventDefault()
 
-			if (
-				@state.title or @state.endDate or @state.description or
-				@props.selectedEventPlanRelation or @state.typeId
-			)
+			if @state.title or @state.endDate or @state.description or @state.typeId
 				Bootbox.confirm "Cancel #{Term 'event'} editing?", (ok) =>
 					if ok
 						# Make sure all states are reset, then cancel
@@ -494,43 +421,17 @@ load = (win) ->
 				startTimestamp = startTimestamp.startOf('day')
 
 				if @state.isDateSpan
-					endTimestamp = if endTimestamp then endTimestamp.endOf('day') else ''
+					endTimestamp = if endTimestamp then endTimestamp.endOf('day') else Moment()
 				else
 					# If only a single date was provided, assume it's an all-day event
 					isOneFullDay = true
 					endTimestamp = Moment(startTimestamp).endOf('day')
 
 
-			# # TODO: Axe this feature completely if we don't need it anymore
-			# if @props.selectedEventPlanRelation?
-			# 	# Figure out which element type it is
-			# 	relatedElementType = if @props.selectedEventPlanRelation.has('type')
-			# 			'progNoteUnit'
-			# 		else if @props.selectedEventPlanRelation.has('targets')
-			# 			'planSection'
-			# 		else if @props.selectedEventPlanRelation.has('metrics')
-			# 			'planTarget'
-			# 		else
-			# 			null
-			# 			console.error "Unknown relatedElementType:", @props.selectedEventPlanRelation.toJS()
-
-			# 	relatedElement = {
-			# 		id: @props.selectedEventPlanRelation.get('id')
-			# 		type: relatedElementType
-			# 	}
-
-			# else
-			relatedElement = ''
-
-			# # TODO: Axe this feature completely if we don't need it anymore
-			# Provide relatedElement to local state for later
-			# @setState => {relatedElement: @props.selectedEventPlanRelation}
-
 			progEventObject = Imm.fromJS {
 				title: @state.title
 				description: @state.description
 				typeId: @state.typeId
-				relatedElement
 				startTimestamp: startTimestamp.format(TimestampFormat)
 				endTimestamp: if @state.isDateSpan or isOneFullDay then endTimestamp.format(TimestampFormat) else ''
 			}
@@ -577,9 +478,9 @@ load = (win) ->
 			}
 
 		propTypes: {
-			eventData: ImmPropTypes.map.isRequired
-			clientFileId: PropTypes.string.isRequired
-			clientPrograms: ImmPropTypes.list.isRequired
+			eventData: React.PropTypes.instanceOf(Imm.Map).isRequired
+			clientFileId: React.PropTypes.string.isRequired
+			clientPrograms: React.PropTypes.instanceOf(Imm.List).isRequired
 		}
 
 		render: ->
@@ -692,7 +593,7 @@ load = (win) ->
 			.set('title', @state.title)
 			.set('description', @state.description)
 			.set('clientFileId', @props.clientFileId)
-			.set('authorProgramId', @state.program.get('id') or '')
+			.set('programId', @state.program.get('id') or '')
 
 			progEvent = @props.eventData.set('globalEvent', globalEvent)
 

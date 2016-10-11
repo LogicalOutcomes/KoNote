@@ -18,6 +18,12 @@ Rimraf = require 'rimraf'
 
 dataDir = Path.join process.cwd(), 'testData'
 
+# Backend config
+b = {
+	type: 'file-system'
+	dataDirectory: dataDir
+}
+
 # Mock session object
 s = {
 	userName: 'test-user'
@@ -39,14 +45,16 @@ describe 'ApiBuilder', ->
 			Rimraf dataDir, cb
 
 		it 'returns basic API with no collections if no definitions', ->
-			api = buildApi(s, [])
+			api = buildApi(b, s, [])
 			Assert.deepEqual api, {
 				eventBus: api.eventBus
+				goOnline: api.goOnline
+				goOffline: api.goOffline
 			}
 
 		it 'refuses to allow a collection named `eventBus`', ->
 			Assert.throws ->
-				api = buildApi(s, [{
+				api = buildApi(b, s, [{
 					name: 'thing'
 					collectionName: 'eventBus'
 					schema: Joi.object()
@@ -55,7 +63,7 @@ describe 'ApiBuilder', ->
 
 		it 'refuses to allow name=""', ->
 			Assert.throws ->
-				api = buildApi(s, [{
+				api = buildApi(b, s, [{
 					name: ''
 					collectionName: 'validCollectionName'
 					schema: Joi.object()
@@ -64,7 +72,7 @@ describe 'ApiBuilder', ->
 
 		it 'refuses to allow collectionName=""', ->
 			Assert.throws ->
-				api = buildApi(s, [{
+				api = buildApi(b, s, [{
 					name: 'validName'
 					collectionName: ''
 					schema: Joi.object()
@@ -101,7 +109,7 @@ describe 'ApiBuilder', ->
 			})
 
 			beforeEach (cb) ->
-				api = buildApi s, [immutablePersonDataModel]
+				api = buildApi b, s, [immutablePersonDataModel]
 				buildDataDirectory dataDir, [immutablePersonDataModel], cb
 
 			it 'provides a create method', (cb) ->
@@ -264,7 +272,7 @@ describe 'ApiBuilder', ->
 			})
 
 			beforeEach (cb) ->
-				api = buildApi s, [mutablePersonDataModel]
+				api = buildApi b, s, [mutablePersonDataModel]
 				buildDataDirectory dataDir, [mutablePersonDataModel], cb
 
 			it 'provides a create method', (cb) ->
@@ -422,6 +430,7 @@ describe 'ApiBuilder', ->
 					id: 'unknownId'
 					name: 'John Smith'
 					age: 35
+					nested: defaultNestedValue
 				}), (err, result) ->
 					Assert err
 					Assert err instanceof ObjectNotFoundError
@@ -607,7 +616,7 @@ describe 'ApiBuilder', ->
 			api = null
 
 			beforeEach (cb) ->
-				api = buildApi s, [personDataModel]
+				api = buildApi b, s, [personDataModel]
 				buildDataDirectory dataDir, [personDataModel], cb
 
 			it 'valid create type a', (cb) ->
@@ -694,7 +703,7 @@ describe 'ApiBuilder', ->
 			api = null
 
 			beforeEach (cb) ->
-				api = buildApi s, modelDefs
+				api = buildApi b, s, modelDefs
 				buildDataDirectory dataDir, modelDefs, cb
 
 			it 'immutable object with mutable child types', (cb) ->
