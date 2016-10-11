@@ -8,8 +8,12 @@ that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 <html>
 	<head>
 		<meta charset="utf-8">
-		<style id="main-css">/* see start.js */</style>
+		
 		<style>
+			@media print {
+				@page { margin: 0; }
+			}
+
 			html, body, #container, #preloader {
 				height: 100%;
 			}
@@ -54,6 +58,7 @@ that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 				20% { transform: scaleY(1.0); }
 			}
 		</style>
+		<style id="main-css">/* see start.js */</style>
 	</head>
 
 	<body>

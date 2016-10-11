@@ -6,7 +6,6 @@ load = (win) ->
 	# Libraries from browser context
 	$ = win.jQuery
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	{FaIcon} = require('./utils').load(win)
@@ -16,15 +15,15 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			colorKeyHex: PropTypes.string
-			popover: PropTypes.shape {
-				placement: PropTypes.oneOf ['left', 'right', 'top', 'bottom']
-				container: PropTypes.string
-				title: PropTypes.string
-				content: PropTypes.string
+			colorKeyHex: React.PropTypes.string
+			popover: React.PropTypes.shape {
+				placement: React.PropTypes.oneOf ['left', 'right', 'top', 'bottom']
+				container: React.PropTypes.string
+				title: React.PropTypes.string
+				content: React.PropTypes.string
 			}
-			icon: PropTypes.oneOf ['ban', 'check']
-			onClick: PropTypes.func
+			icon: React.PropTypes.oneOf ['ban', 'check']
+			onClick: React.PropTypes.func
 		}
 
 		getDefaultProps: ->

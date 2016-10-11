@@ -99,6 +99,23 @@ load = (win) ->
 							FaIcon('plus')
 							"Add #{Term 'section'}"
 						)
+						R.div({className: 'templates'},
+							(unless @props.planTemplateHeaders.isEmpty()
+								B.DropdownButton({
+									className: 'btn btn-lg'
+									title: "Apply #{Term 'Template'}"
+								},
+									(@props.planTemplateHeaders.map (planTemplateHeader) =>
+										B.MenuItem({
+											key: planTemplateHeader.get('id')
+											onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+										},
+											planTemplateHeader.get('name')
+										)
+									)
+								)
+							)
+						)
 					)
 					R.div({className: "flexButtonToolbar #{showWhen plan.get('sections').size > 0}"},
 						R.button({
@@ -106,6 +123,7 @@ load = (win) ->
 								'saveButton'
 								'collapsed' unless hasChanges
 							].join ' '
+							disabled: @props.isReadOnly
 							onClick: @_save
 						},
 							FaIcon('save')
@@ -118,6 +136,7 @@ load = (win) ->
 								'discardButton'
 								'collapsed' unless hasChanges
 							].join ' '
+							disabled: @props.isReadOnly
 							onClick: @_resetChanges
 						},
 							FaIcon('undo')
@@ -127,6 +146,7 @@ load = (win) ->
 						R.button({
 							className: 'reorderButton'
 							onClick: @_toggleReorderPlan
+							disabled: @props.isReadOnly
 						},
 							if @state.isReorderingPlan
 								R.div({},
@@ -173,6 +193,7 @@ load = (win) ->
 											B.MenuItem({
 												key: planTemplateHeader.get('id')
 												onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+												disabled: @props.isReadOnly
 											},
 												planTemplateHeader.get('name')
 											)
@@ -196,12 +217,12 @@ load = (win) ->
 								}
 							]
 							iconOnly: true
-							disabled: hasChanges or @props.isReadOnly
+							disabled: hasChanges
 							tooltip: {
 								show: true
 								placement: 'bottom'
 								title: (
-									if hasChanges or @props.isReadOnly
+									if hasChanges
 										"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
 									else
 										"Print plan"
@@ -472,11 +493,12 @@ load = (win) ->
 			Bootbox.confirm "Are you sure you want to apply this template?", (ok) =>
 				if ok
 					clientFileHeaders = null
-					newClientFileObj = null
-					newClientFile = null
 					selectedPlanTemplate = null
 					templateSections = null
 					existsElsewhere = null
+					newCurrentRevs = null
+					newPlan = null
+					targetIds = Imm.List()
 					clientFileId = @props.clientFileId
 
 					Async.series [
@@ -491,16 +513,23 @@ load = (win) ->
 								cb()
 
 						(cb) =>
-							templateSections = selectedPlanTemplate.get('sections').map (section) =>
-								templateTargets = section.get('targets').map (target) =>
+							templateSections = selectedPlanTemplate.get('sections').map (templateSection) =>
+								targetIds = Imm.List()
+								newCurrentRevs = @state.currentTargetRevisionsById
+								templateSection.get('targets').forEach (target) =>
 									target.get('metricIds').forEach (metricId) =>
+
 										# Metric exists in another target
 										existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
 											return target.get('metricIds').contains(metricId)
 										if existsElsewhere
 											return
 
-									Imm.fromJS {
+									targetId = '__transient__' + Persist.generateId()
+									targetIds = targetIds.push targetId
+
+									newTarget = Imm.fromJS {
+										id: targetId
 										clientFileId
 										name: target.get('name')
 										description: target.get('description')
@@ -508,53 +537,29 @@ load = (win) ->
 										metricIds: target.get('metricIds')
 									}
 
-								return section.set 'targets', templateTargets
+									newCurrentRevs = newCurrentRevs.set targetId, newTarget
+
+								section = templateSection.set 'status', 'default'
+								.set 'targetIds', targetIds
+								.set 'id', Persist.generateId()
+								.remove 'targets'
+
+								return section
 
 							if existsElsewhere
 								cb('CANCEL')
 								return
-
 							cb()
 
 						(cb) =>
-							Async.map templateSections.toArray(), (section, cb) ->
-								Async.map section.get('targets').toArray(), (target, cb) ->
-									global.ActiveSession.persist.planTargets.create target, (err, result) ->
-										if err
-											cb err
-											return
 
-										cb null, result.get('id')
-
-								, (err, results) ->
-									if err
-										cb err
-										return
-
-									targetIds = Imm.List(results)
-
-									newSection = Imm.fromJS {
-										id: Persist.generateId()
-										name: section.get('name')
-										targetIds: results
-										status: 'default'
-									}
-
-									cb null, newSection
-
-							, (err, results) ->
-								if err
-									cb err
-									return
-
-								templateSections = Imm.List(results)
-								cb()
-
-						(cb) =>
 							newPlan = @state.plan.update 'sections', (sections) =>
 								return sections.concat(templateSections)
 
-							@setState {plan: newPlan}
+							@setState {
+								plan: newPlan
+								currentTargetRevisionsById: newCurrentRevs
+							},
 
 							cb()
 
@@ -573,9 +578,6 @@ load = (win) ->
 
 							CrashHandler.handle err
 							return
-
-
-
 					return
 
 		_createTemplate: ->
@@ -749,6 +751,7 @@ load = (win) ->
 
 
 			# Group sections into an object, with a property for each status
+
 			sectionsByStatus = plan.get('sections').groupBy (section) ->
 				return section.get('status')
 
@@ -931,6 +934,7 @@ load = (win) ->
 			headerState = 'inline'
 
 			# Group targetIds into an object, with a property for each status
+
 			targetIdsByStatus = section.get('targetIds').groupBy (targetId) ->
 				return currentTargetRevisionsById.getIn([targetId, 'status'])
 
@@ -1126,8 +1130,9 @@ load = (win) ->
 						"Add #{Term 'target'}"
 					)
 					WithTooltip({
-						placement: 'bottom'
 						title: "Create Section Template"
+						placement: 'top'
+						container: 'body'
 					},
 						R.button({
 							className: 'btn btn-default'
@@ -1143,14 +1148,17 @@ load = (win) ->
 					(if isExistingSection
 						(if sectionStatus is 'default'
 							R.div({className: 'statusButtonGroup'},
-								WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
+								WithTooltip({
+									title: "Deactivate #{Term 'Section'}" unless @props.isReadOnly or @props.hasTargetChanged
+									placement: 'top'
+									container: 'body'
+								},
 									OpenDialogLink({
 										clientFile
 										className: 'statusButton'
 										dialog: ModifySectionStatusDialog
 										newStatus: 'deactivated'
 										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
 										title: "Deactivate #{Term 'Section'}"
 										message: """
 											This will remove the #{Term 'section'} from the #{Term 'client'}
@@ -1163,14 +1171,17 @@ load = (win) ->
 										FaIcon 'times'
 									)
 								)
-								WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
+								WithTooltip({
+									title: "Complete #{Term 'Section'}" unless @props.isReadOnly or @props.hasTargetChanged
+									placement: 'top'
+									container: 'body'
+								},
 									OpenDialogLink({
 										clientFile
 										className: 'statusButton'
 										dialog: ModifySectionStatusDialog
 										newStatus: 'completed'
 										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
 										title: "Complete #{Term 'Section'}"
 										message: """
 											This will set the #{Term 'section'} as 'completed'. This often
@@ -1192,7 +1203,6 @@ load = (win) ->
 										dialog: ModifySectionStatusDialog
 										newStatus: 'default'
 										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
 										title: "Reactivate #{Term 'Section'}"
 										message: """
 											This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'}

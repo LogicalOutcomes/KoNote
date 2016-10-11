@@ -22,8 +22,7 @@ load = (win) ->
 	R = React.DOM
 	Bootbox = win.bootbox
 
-	Gui = win.require 'nw.gui'
-	Window = Gui.Window.get()
+	Window = nw.Window.get(win)
 
 	Spinner = require('./spinner').load(win)
 	CrashHandler = require('./crashHandler').load(win)
@@ -496,7 +495,7 @@ load = (win) ->
 				}
 
 		_copyHelpEmail: (emailAddress) ->
-			clipboard = Gui.Clipboard.get()
+			clipboard = nw.Clipboard.get()
 			clipboard.set emailAddress
 
 			Bootbox.alert {

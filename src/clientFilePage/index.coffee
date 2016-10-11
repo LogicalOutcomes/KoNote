@@ -27,8 +27,7 @@ load = (win, {clientFileId}) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	Gui = win.require 'nw.gui'
-	Window = Gui.Window.get(win)
+	Window = nw.Window.get(win)
 
 	CrashHandler = require('../crashHandler').load(win)
 	BrandWidget = require('../brandWidget').load(win)
@@ -38,7 +37,6 @@ load = (win, {clientFileId}) ->
 	InfoTab = require('./infoTab').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
 	WithTooltip = require('../withTooltip').load(win)
-	RenameClientFileDialog = require('../renameClientFileDialog').load(win)
 	ClientAlerts = require('./clientAlerts').load(win)
 
 	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
@@ -459,7 +457,8 @@ load = (win, {clientFileId}) ->
 
 				(cb) =>
 					# Check to see whether detailGroups (from Config) have been created yet
-					if detailDefinitionHeaders.size > 0 or Config.clientDetailDefinitionGroups is 0
+					# make this dynamic, ie what if config is edited? add logic to handle this.
+					if detailDefinitionHeaders.size > 0 or Config.clientDetailDefinitionGroups.size is 0
 						cb()
 						return
 
@@ -609,7 +608,7 @@ load = (win, {clientFileId}) ->
 								if newLock
 									# Alert user about lock acquisition
 									clientName = renderName @state.clientFile.get('clientName')
-									new win.Notification "#{clientName} file unlocked", {
+									new Notification "#{clientName} file unlocked", {
 										body: "You now have the read/write permissions for this #{Term 'client file'}"
 										icon: Config.iconNotification
 									}
@@ -903,7 +902,7 @@ load = (win, {clientFileId}) ->
 				Bootbox.dialog {
 					title: "Unsaved Changes to #{Term 'Client File'}"
 					message: """
-						You have unsaved changes in Client Information for #{clientName}.
+						You have unsaved changes in #{Term 'client'} information for #{clientName}.
 						How would you like to proceed?
 					"""
 					buttons: {
@@ -933,7 +932,6 @@ load = (win, {clientFileId}) ->
 		componentDidMount: ->
 			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
 			Window.focus()
-			Window.maximize()
 
 			# It's now OK to close the window
 			@hasMounted = true
@@ -1077,19 +1075,7 @@ load = (win, {clientFileId}) ->
 					Config.logoSubtitle
 				)
 				R.div({className: 'clientName'},
-					(if ActiveSession.accountType is 'admin'
-						WithTooltip({title: "Edit Client Information", placement: 'right', container: 'body'},
-							OpenDialogLink({
-								dialog: RenameClientFileDialog
-								clientFile: @props.clientFile
-								className: 'clientNameField'
-							},
-								@props.clientName
-							)
-						)
-					else
-						@props.clientName
-					)
+					@props.clientName
 				)
 				(if not @props.clientPrograms.isEmpty()
 					R.div({className: 'programs'},
@@ -1141,7 +1127,7 @@ load = (win, {clientFileId}) ->
 						onClick: @props.onTabChange.bind null, 'analysis'
 					})
 					SidebarTab({
-						name: "Client Information"
+						name: "Information"
 						icon: 'info'
 						isActive: activeTabId is 'info'
 						onClick: @props.onTabChange.bind null, 'info'

@@ -5,7 +5,6 @@
 Async = require 'async'
 Imm = require 'immutable'
 _ = require 'underscore'
-ImmPropTypes = require 'react-immutable-proptypes'
 
 Persist = require './persist'
 Config = require './config'
@@ -17,7 +16,6 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	# TODO: Refactor to single require
@@ -292,9 +290,9 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			programId: PropTypes.string.isRequired
-			clientFileProgramLinks: ImmPropTypes.list
-			clientFileHeaders: ImmPropTypes.list
+			programId: React.PropTypes.string.isRequired
+			clientFileProgramLinks: React.PropTypes.instanceOf(Imm.List)
+			clientFileHeaders: React.PropTypes.instanceOf(Imm.List)
 		}
 
 		getInitialState: -> {
@@ -403,8 +401,8 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			program: ImmPropTypes.map
-			programs: ImmPropTypes.list
+			program: React.PropTypes.instanceOf(Imm.Map)
+			programs: React.PropTypes.instanceOf(Imm.List)
 		}
 
 		getInitialState: ->
@@ -568,9 +566,9 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			program: ImmPropTypes.map
-			clientFileHeaders: ImmPropTypes.list
-			clientFileProgramLinks: ImmPropTypes.list
+			program: React.PropTypes.instanceOf(Imm.Map)
+			clientFileHeaders: React.PropTypes.instanceOf(Imm.List)
+			clientFileProgramLinks: React.PropTypes.instanceOf(Imm.List)
 		}
 
 		getInitialState: ->

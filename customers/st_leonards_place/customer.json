@@ -1,11 +1,5 @@
 {
 	"logoCustomerLg": "stleonards-logo-lg.png",
 	"logoCustomerSm": "stleonards-logo-sm.png",
-	"logoSubtitle": "",
-
-	"features": {
-		"shiftSummaries": {
-			"isEnabled": false
-		}
-	},
+	"logoSubtitle": ""
 }

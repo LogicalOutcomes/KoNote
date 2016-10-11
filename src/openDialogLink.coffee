@@ -35,6 +35,7 @@ load = (win) ->
 			return R.div({
 				className: @props.className
 				onClick: @_openDialog
+				disabled: @props.disabled
 			},
 				@props.children
 			)

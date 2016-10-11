@@ -5,7 +5,6 @@
 Async = require 'async'
 _ = require 'underscore'
 Imm = require 'immutable'
-ImmPropTypes = require 'react-immutable-proptypes'
 
 Persist = require './persist'
 Config = require './config'
@@ -16,7 +15,6 @@ load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	# TODO: Refactor to single require
@@ -40,7 +38,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			userProgramLinks: ImmPropTypes.list
+			userProgramLinks: React.PropTypes.instanceOf(Imm.List)
 		}
 
 		getInitialState: ->
@@ -269,11 +267,11 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			userName: PropTypes.string.isRequired
-			userAccounts: ImmPropTypes.list.isRequired
-			programs: ImmPropTypes.list.isRequired
-			userProgramLinks: ImmPropTypes.list.isRequired
-			updateAccount: PropTypes.func.isRequired
+			userName: React.PropTypes.string.isRequired
+			userAccounts: React.PropTypes.instanceOf(Imm.List).isRequired
+			programs: React.PropTypes.instanceOf(Imm.List).isRequired
+			userProgramLinks: React.PropTypes.instanceOf(Imm.List).isRequired
+			updateAccount: React.PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {
@@ -787,9 +785,9 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			onCancel: PropTypes.func.isRequired
-			onSuccess: PropTypes.func.isRequired
-			userName: PropTypes.string.isRequired
+			onCancel: React.PropTypes.func.isRequired
+			onSuccess: React.PropTypes.func.isRequired
+			userName: React.PropTypes.string.isRequired
 		}
 
 		getInitialState: ->

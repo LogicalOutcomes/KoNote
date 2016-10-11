@@ -3,7 +3,6 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
-ImmPropTypes = require 'react-immutable-proptypes'
 Term = require './term'
 {diffSentences, diffWordsWithSpace} = require 'diff'
 DiffMatchPatch = require 'diff-match-patch'
@@ -32,8 +31,8 @@ load = (win) ->
 
 		propTypes: -> {
 			dataModelName: React.PropTypes.string().isRequired()
-			revisions: ImmPropTypes.list.isRequired()
-			programsById: ImmPropTypes.map.isRequired()
+			revisions: React.PropTypes.instanceOf(Imm.List).isRequired()
+			programsById: React.PropTypes.instanceOf(Imm.Map).isRequired()
 		}
 
 		_diffStrings: (oldString, newString) ->
@@ -272,8 +271,9 @@ load = (win) ->
 
 			# Special cases made for planTarget types
 			isPlanTarget = @props.type is 'planTarget'
-			isTargetStatusChange = isPlanTarget and not (changeLog.first().get('action') is 'revised')
-			isRenameEntry = changeLog.first().get('property') is 'name'
+			isRevision = changeLog.first()? and changeLog.first().get('action') is 'revised'
+			isTargetStatusChange = isPlanTarget and not isRevision
+			isRenameEntry = changeLog.first()? and changeLog.first().get('property') is 'name'
 
 			return R.section({className: 'revision'},
 				R.div({className: 'header'},

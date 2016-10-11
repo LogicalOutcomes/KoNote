@@ -17,8 +17,7 @@ load = (win) ->
 	ReactDOM = win.ReactDOM
 	R = React.DOM
 
-	Gui = win.require 'nw.gui'
-	nwWin = Gui.Window.get(win)
+	nwWin = nw.Window.get(win)
 	{FaIcon} = require('./utils').load(win)
 
 	handle = (err) ->
@@ -113,7 +112,7 @@ load = (win) ->
 			)
 
 		_copyCrashTrace: ->
-			clipboard = Gui.Clipboard.get()
+			clipboard = nw.Clipboard.get()
 			clipboard.set JSON.stringify @props.crash
 
 		_selectDebugInfo: ->

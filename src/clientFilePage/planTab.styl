@@ -19,6 +19,9 @@
 				color #888
 				font-size 16px
 
+			> .templates
+				padding-top 20px
+
 			> .btn > .fa
 				padding-right 10px
 
@@ -88,7 +91,7 @@
 							opacity 0.6
 							transition opacity .15s ease
 
-							&:hover
+							&:not([disabled]):hover
 								opacity 1
 
 					&.inline
@@ -235,7 +238,7 @@
 									opacity 0.6
 									transition opacity .15s ease
 
-									&:hover
+									&:not([disabled]):hover
 										opacity 1
 
 						> .metrics

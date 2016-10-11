@@ -84,10 +84,10 @@ load = (win) ->
 		_copyToClipboard: ->
 			@refs.textarea.select()
 
-			clipboard = Gui.Clipboard.get()
+			clipboard = nw.Clipboard.get()
 			clipboard.set @state.summariesString
 
-			notification = new win.Notification "Shift Summaries", {
+			notification = new Notification "Shift Summaries", {
 				body: "Copied to clipboard"
 				icon: Config.iconNotification
 			}

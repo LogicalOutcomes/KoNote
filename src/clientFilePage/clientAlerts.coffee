@@ -12,7 +12,6 @@
 
 
 Imm = require 'immutable'
-ImmPropTypes = require 'react-immutable-proptypes'
 Moment = require 'moment'
 Async = require 'async'
 
@@ -21,7 +20,6 @@ Persist = require '../persist'
 
 load = (win) ->
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 	Bootbox = win.bootbox
 
@@ -37,9 +35,9 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			alerts: ImmPropTypes.list.isRequired
-			clientFileId: PropTypes.string.isRequired
-			isDisabled: PropTypes.bool.isRequired
+			alerts: React.PropTypes.instanceOf(Imm.List).isRequired
+			clientFileId: React.PropTypes.string.isRequired
+			isDisabled: React.PropTypes.bool.isRequired
 		}
 
 		_getSingleAlert: ->
