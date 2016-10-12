@@ -14,6 +14,7 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -30,6 +31,7 @@ load = (win) ->
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 	dateDisplayFormat = 'MMM Do - YYYY'
 
+
 	AnalysisView = React.createFactory React.createClass
 		displayName: 'AnalysisView'
 		mixins: [React.addons.PureRenderMixin]
@@ -44,12 +46,15 @@ load = (win) ->
 				selectedMetricIds: Imm.Set()
 				filteredProgEvents: Imm.Set()
 				selectedEventTypeIds: Imm.Set()
+				highlightedEventTypeIds: Imm.List()
+				persistentHighlightedEventTypeIds: Imm.List()
 				excludedTargetIds: Imm.Set()
 				xTicks: Imm.List()
 				xDays: Imm.List()
 				timeSpan: null
 			}
 
+		# # Leave this here, need for diff-checking renders/vs/state-props
 		# componentDidUpdate: (oldProps, oldState) ->
 		# 	# Figure out what changed
 		# 	for property of @props
@@ -112,19 +117,14 @@ load = (win) ->
 			# Filter out progEvents that aren't cancelled or excluded
 			filteredProgEvents = @props.progEvents
 			.concat @props.globalEvents
+			.filter (progEvent) => progEvent.get('status') is 'default'
 			.filter (progEvent) =>
-				switch progEvent.get('status')
-					when 'default'
-						return true
-					when 'cancelled'
-						return false
-					else
-						throw new Error "unkown progEvent status: #{progEvent.get('status')}"
-			.filter (progEvent) =>
+				# TODO: Refactor this
 				if progEvent.get('typeId')
 					@state.selectedEventTypeIds.contains progEvent.get('typeId')
 				else
 					@state.selectedEventTypeIds.contains null
+
 
 			# Build list of timestamps from progEvents (start & end) & metrics
 			daysOfData = Imm.List()
@@ -138,7 +138,6 @@ load = (win) ->
 				return Moment(metricTimestamp, Persist.TimestampFormat).startOf('day').valueOf()
 			.toOrderedSet()
 			.sort()
-
 
 
 			#################### Date Range ####################
@@ -160,6 +159,13 @@ load = (win) ->
 
 			hasEnoughData = daysOfData.size > 0
 			untypedEvents = @props.progEvents.filterNot (progEvent) => progEvent.get('typeId')
+
+
+			#################### Event Type Highlighting ####################
+
+			# Persistent highlighted eventTypeIds override the transient ones
+			highlightedEventTypeIds = @state.highlightedEventTypeIds.merge(@state.persistentHighlightedEventTypeIds)
+
 
 			return R.div({className: "analysisView"},
 				R.div({className: "noData #{showWhen not hasEnoughData}"},
@@ -214,11 +220,15 @@ load = (win) ->
 				)
 				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
 					R.div({className: 'chartContainer'},
+
+						# Fade out un-highlighted regions when exists
+						InlineHighlightStyles(highlightedEventTypeIds)
+
 						# Force chart to be re-rendered when tab is opened
-						if not xTicks.isEmpty() and (
+						(if not xTicks.isEmpty() and (
 							not filteredProgEvents.isEmpty() or
 							not @state.selectedMetricIds.isEmpty()
-						)
+							)
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
@@ -242,6 +252,7 @@ load = (win) ->
 									)
 								)
 							)
+						)
 					)
 					R.div({className: 'selectionPanel'},
 						R.div({className: 'dataType progEvents'},
@@ -274,15 +285,31 @@ load = (win) ->
 									R.div({className: 'dataOptions'},
 										(@props.eventTypes.map (eventType) =>
 											eventTypeId = eventType.get('id')
+											# TODO: Extract this to before render
 											typeEvents = @props.progEvents.filter (progEvent) => progEvent.get('typeId') is eventTypeId
 
-											if not typeEvents.isEmpty()
+											isSelected = @state.selectedEventTypeIds.contains eventTypeId
+											isHighlighted = @state.highlightedEventTypeIds.contains eventTypeId
+											isPersistent = @state.persistentHighlightedEventTypeIds.contains eventTypeId
+
+											(if not typeEvents.isEmpty()
 												R.div({
-													className: 'checkbox'
 													key: eventTypeId
+													className: [
+														'checkbox'
+														'isHighlighted' if isPersistent
+													].join ' '
+													onMouseEnter: @_highlightEventType.bind(null, eventTypeId) if isSelected
+													onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isSelected
 													style:
 														borderRight: "5px solid #{eventType.get('colorKeyHex')}"
 												},
+													(if isSelected
+														FaIcon('star', {
+															onClick: @_togglePersistentHighlightEventType.bind null, eventTypeId
+														})
+													)
+
 													R.label({},
 														R.input({
 															type: 'checkbox'
@@ -292,6 +319,7 @@ load = (win) ->
 														eventType.get('name')
 													)
 												)
+											)
 										)
 									)
 								)
@@ -456,6 +484,32 @@ load = (win) ->
 
 				return {selectedEventTypeIds}
 
+		_highlightEventType: (eventTypeId) ->
+			return if @state.persistentHighlightedEventTypeIds.includes eventTypeId
+
+			highlightedEventTypeIds = @state.highlightedEventTypeIds.push eventTypeId
+			@setState {highlightedEventTypeIds}, =>
+				console.log "highlightedEventTypeIds", @state.highlightedEventTypeIds.toJS()
+
+		_unhighlightEventType: (eventTypeId) ->
+			return if @state.persistentHighlightedEventTypeIds.includes eventTypeId
+			# Ensure that all instances of eventTypeId are removed
+			highlightedEventTypeIds = @state.highlightedEventTypeIds.filterNot (id) ->
+				return id is eventTypeId
+
+			@setState {highlightedEventTypeIds}, =>
+				console.log "highlightedEventTypeIds", @state.highlightedEventTypeIds.toJS()
+
+		_togglePersistentHighlightEventType: (eventTypeId) ->
+			if @state.persistentHighlightedEventTypeIds.includes eventTypeId
+				index = @state.persistentHighlightedEventTypeIds.indexOf eventTypeId
+				persistentHighlightedEventTypeIds = @state.persistentHighlightedEventTypeIds.delete index
+			else
+				persistentHighlightedEventTypeIds = @state.persistentHighlightedEventTypeIds.push eventTypeId
+
+			@setState {persistentHighlightedEventTypeIds}, =>
+				console.log "persistentHighlightedEventTypeIds", @state.persistentHighlightedEventTypeIds.toJS()
+
 		_toggleAllMetrics: (allMetricsSelected, metricIdsWithData) ->
 			@setState ({selectedMetricIds}) =>
 				if allMetricsSelected
@@ -481,6 +535,20 @@ load = (win) ->
 			return unless @state.timeSpan
 			timeSpan = @state.timeSpan.set(type, newDate)
 			@setState {timeSpan}
+
+
+	InlineHighlightStyles = (eventTypeIds) ->
+		return null if eventTypeIds.isEmpty()
+
+		# Selectively exclude highlighted events from opacity change
+		notStatements = eventTypeIds
+		.map (id) -> ":not(.typeId-#{id})"
+		.toJS().join ''
+
+		return R.style({},
+			"g.c3-region#{notStatements} rect {fill-opacity: 0.25 !important}\n"
+		)
+
 
 	extractMetricsFromProgNoteHistory = (progNoteHist) ->
 		createdAt = progNoteHist.first().get('timestamp')

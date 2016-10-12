@@ -264,6 +264,10 @@ load = (win) ->
 					start: @_toUnixMs progEvent.get('startTimestamp')
 					class: "progEventRange #{progEvent.get('id')}"
 				}
+
+				if progEvent.get('typeId')
+					eventRegion['class'] += " typeId-#{progEvent.get('typeId')}"
+
 				if Moment(progEvent.get('endTimestamp'), TimestampFormat).isValid()
 					eventRegion.end = @_toUnixMs progEvent.get('endTimestamp')
 
@@ -299,7 +303,7 @@ load = (win) ->
 					)
 						# Append class with row number
 						progEvent = Imm.fromJS(thisEvent)
-						newClass = progEvent.get('class') + " row#{rowIndex}"
+						newClass = "#{progEvent.get('class')} row#{rowIndex}"
 
 						# Convert single-point event date to a short span
 						if not progEvent.get('end')
@@ -307,7 +311,7 @@ load = (win) ->
 							progEvent = progEvent.set 'end', startDate.clone().add(6, 'hours')
 							newClass = newClass + " singlePoint"
 
-						# Update class
+						# Update class (needs to be 'class' for C3js)
 						progEvent = progEvent.set('class', newClass)
 
 						# Update eventRows, remove from remainingEvents
