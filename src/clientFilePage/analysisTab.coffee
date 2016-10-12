@@ -46,8 +46,8 @@ load = (win) ->
 				selectedMetricIds: Imm.Set()
 				filteredProgEvents: Imm.Set()
 				selectedEventTypeIds: Imm.Set()
-				highlightedEventTypeIds: Imm.List()
-				persistentHighlightedEventTypeIds: Imm.List()
+				highlightedEventTypeIds: Imm.Set()
+				starredEventTypeIds: Imm.Set()
 				excludedTargetIds: Imm.Set()
 				xTicks: Imm.List()
 				xDays: Imm.List()
@@ -164,7 +164,7 @@ load = (win) ->
 			#################### Event Type Highlighting ####################
 
 			# Persistent highlighted eventTypeIds override the transient ones
-			highlightedEventTypeIds = @state.highlightedEventTypeIds.merge(@state.persistentHighlightedEventTypeIds)
+			highlightedEventTypeIds = @state.highlightedEventTypeIds.merge(@state.starredEventTypeIds)
 
 
 			return R.div({className: "analysisView"},
@@ -290,7 +290,7 @@ load = (win) ->
 
 											isSelected = @state.selectedEventTypeIds.contains eventTypeId
 											isHighlighted = @state.highlightedEventTypeIds.contains eventTypeId
-											isPersistent = @state.persistentHighlightedEventTypeIds.contains eventTypeId
+											isPersistent = @state.starredEventTypeIds.contains eventTypeId
 
 											(if not typeEvents.isEmpty()
 												R.div({
@@ -300,13 +300,13 @@ load = (win) ->
 														'isHighlighted' if isPersistent
 													].join ' '
 													onMouseEnter: @_highlightEventType.bind(null, eventTypeId) if isSelected
-													onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isSelected
+													onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isHighlighted
 													style:
 														borderRight: "5px solid #{eventType.get('colorKeyHex')}"
 												},
 													(if isSelected
 														FaIcon('star', {
-															onClick: @_togglePersistentHighlightEventType.bind null, eventTypeId
+															onClick: @_toggleStarredEventType.bind null, eventTypeId
 														})
 													)
 
@@ -464,51 +464,53 @@ load = (win) ->
 				return {excludedTargetIds}
 
 		_updateSelectedEventTypes: (eventTypeId) ->
-			@setState ({selectedEventTypeIds}) =>
-				if selectedEventTypeIds.contains eventTypeId
-					selectedEventTypeIds = selectedEventTypeIds.delete eventTypeId
-				else
-					selectedEventTypeIds = selectedEventTypeIds.add eventTypeId
+			if @state.selectedEventTypeIds.contains eventTypeId
+				selectedEventTypeIds = @state.selectedEventTypeIds.delete eventTypeId
+				# Also remove persistent eventType highlighting if exists
+				starredEventTypeIds = @state.starredEventTypeIds.delete eventTypeId
+			else
+				selectedEventTypeIds = @state.selectedEventTypeIds.add eventTypeId
+				starredEventTypeIds = @state.starredEventTypeIds
 
-				return {selectedEventTypeIds}
+			@setState {selectedEventTypeIds, starredEventTypeIds}
 
 		_toggleAllEventTypes: (allEventTypesSelected) ->
-			@setState ({selectedEventTypeIds}) =>
-				unless allEventTypesSelected
-					selectedEventTypeIds = @props.eventTypes
-					.map (eventType) -> eventType.get('id') # all evenTypes
-					.push(null) # null = progEvents without an eventType
-					.toSet()
-				else
-					selectedEventTypeIds = selectedEventTypeIds.clear()
+			if not allEventTypesSelected
+				selectedEventTypeIds = @props.eventTypes
+				.map (eventType) -> eventType.get('id') # all eventTypes
+				.push(null) # null = progEvents without an eventType
+				.toSet()
 
-				return {selectedEventTypeIds}
+				starredEventTypeIds = @state.starredEventTypeIds
+			else
+				# Clear all
+				selectedEventTypeIds = selectedEventTypeIds.clear()
+				starredEventTypeIds = @state.starredEventTypeIds.clear()
+
+			@setState {selectedEventTypeIds, starredEventTypeIds}
 
 		_highlightEventType: (eventTypeId) ->
-			return if @state.persistentHighlightedEventTypeIds.includes eventTypeId
+			# Ignore persistent eventTypeIds
+			return if @state.starredEventTypeIds.contains eventTypeId
 
-			highlightedEventTypeIds = @state.highlightedEventTypeIds.push eventTypeId
-			@setState {highlightedEventTypeIds}, =>
-				console.log "highlightedEventTypeIds", @state.highlightedEventTypeIds.toJS()
+			highlightedEventTypeIds = @state.highlightedEventTypeIds.add eventTypeId
+			@setState {highlightedEventTypeIds}
 
 		_unhighlightEventType: (eventTypeId) ->
-			return if @state.persistentHighlightedEventTypeIds.includes eventTypeId
+			# Ignore persistent eventTypeIds
+			return if @state.starredEventTypeIds.contains(eventTypeId)
 			# Ensure that all instances of eventTypeId are removed
-			highlightedEventTypeIds = @state.highlightedEventTypeIds.filterNot (id) ->
-				return id is eventTypeId
+			highlightedEventTypeIds = @state.highlightedEventTypeIds.delete eventTypeId
 
-			@setState {highlightedEventTypeIds}, =>
-				console.log "highlightedEventTypeIds", @state.highlightedEventTypeIds.toJS()
+			@setState {highlightedEventTypeIds}
 
-		_togglePersistentHighlightEventType: (eventTypeId) ->
-			if @state.persistentHighlightedEventTypeIds.includes eventTypeId
-				index = @state.persistentHighlightedEventTypeIds.indexOf eventTypeId
-				persistentHighlightedEventTypeIds = @state.persistentHighlightedEventTypeIds.delete index
+		_toggleStarredEventType: (eventTypeId) ->
+			if @state.starredEventTypeIds.includes eventTypeId
+				starredEventTypeIds = @state.starredEventTypeIds.delete eventTypeId
 			else
-				persistentHighlightedEventTypeIds = @state.persistentHighlightedEventTypeIds.push eventTypeId
+				starredEventTypeIds = @state.starredEventTypeIds.add eventTypeId
 
-			@setState {persistentHighlightedEventTypeIds}, =>
-				console.log "persistentHighlightedEventTypeIds", @state.persistentHighlightedEventTypeIds.toJS()
+			@setState {starredEventTypeIds}
 
 		_toggleAllMetrics: (allMetricsSelected, metricIdsWithData) ->
 			@setState ({selectedMetricIds}) =>
@@ -545,8 +547,10 @@ load = (win) ->
 		.map (id) -> ":not(.typeId-#{id})"
 		.toJS().join ''
 
+		fillOpacity = 0.15
+
 		return R.style({},
-			"g.c3-region#{notStatements} rect {fill-opacity: 0.25 !important}\n"
+			"g.c3-region#{notStatements} rect {fill-opacity: #{fillOpacity} !important}\n"
 		)
 
 
@@ -565,6 +569,7 @@ load = (win) ->
 					return extractMetricsFromProgNoteSection section, timestamp
 			else
 				throw new Error "unknown progNote type: #{JSON.stringify progNote.get('type')}"
+
 
 	extractMetricsFromProgNoteSection = (section, timestamp) ->
 		switch section.get 'type'
