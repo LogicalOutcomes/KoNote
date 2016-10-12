@@ -41,14 +41,15 @@
 					box-shadow none
 					background #c8dae4
 
-				.slider-handle
-					transition background 0.2s ease
-					background #607886
-					margin-top -3px
-					border 3px solid white
+			.slider-handle
+				transition opacity 0.2s ease
+				opacity 0.8
+				background #3b4e59 !important
+				margin-top 3px
+				border 3px solid white
 
-					&:hover
-						background #3b4e59
+				&:hover
+					opacity 1
 
 			.tooltip
 				margin-top -33px
@@ -163,8 +164,9 @@
 					display none
 					z-index 9999
 					position absolute
-					width 150px
-					margin-left -(@width / 2)
+					min-width 150px
+					max-width 500px
+					margin-right 10px
 
 					background #fff
 					border 1px solid sidebar-borders

@@ -13,13 +13,16 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
 	ReactDOM = win.ReactDOM
+
 	CrashHandler = require('../crashHandler').load(win)
+	ExpandingTextArea = require('../expandingTextArea').load(win)
 
 	{
 		FaIcon, renderLineBreaks, showWhen, capitalize
@@ -44,163 +47,212 @@ load = (win) ->
 			}
 
 		render: ->
+			hasChanges = @hasChanges()
 
-			return R.div({className: "infoView"},
+			return R.div({className: 'infoView'},
 
-				hasChanges = @hasChanges()
-
-				R.div({className: "flexButtonToolbar"},
-					R.button({
-						className:
-							if hasChanges
-								'saveButton'
-							else
-								'disabled'
-						onClick: @_submit
-					},
-						FaIcon('save')
-						' '
-						"Save Changes"
+				R.div({
+					className: [
+						'menuBar'
+						'hasChanges' if hasChanges
+					].join ' '
+				},
+					R.div({className: 'title'},
+						R.span({},
+							"#{Term 'Client'} Information"
+						)
 					)
-					R.button({
-						className:
-							if hasChanges
+					R.div({className: 'flexButtonToolbar'},
+						R.button({
+							className: [
 								'discardButton'
-							else
-								'disabled'
-						onClick: @_resetChanges
-					},
-						FaIcon('undo')
-						"Discard"
+								'collapsed' unless hasChanges
+							].join ' '
+							onClick: @_resetChanges
+							disabled: @props.isReadOnly
+						},
+							FaIcon('undo')
+							' '
+							"Discard"
+						)
+						R.button({
+							className: [
+								'saveButton'
+								'collapsed' unless hasChanges
+							].join ' '
+							onClick: @_submit
+							disabled: @props.isReadOnly
+						},
+							FaIcon('save')
+							' '
+							"Save Changes"
+						)
 					)
 				)
 
-				R.div({className: 'detailUnitGroups'},
-					isSelected = @isSelected('basic')
+				R.div({className: 'detailUnitsContainer'},
 
 					R.div({
+						id: 'basicInfoGroup'
 						className: [
 							'detailUnitGroup'
-							'isSelected' if isSelected
+							'isSelected' if @_isSelected('basic')
 						].join ' '
 						onClick: @_updateSelectedGroupId.bind null, 'basic'
-					}
-						R.h4({}, "Client Name"),
-						R.div({className: 'detailFields'},
-							R.div({className: 'form-group'},
-								R.label({className: 'detailLabel'}, "First name"),
-								R.input({
-									ref: 'firstNameField'
-									className: 'form-control'
-									onChange: @_updateFirstName
-									value: @state.firstName
-									# onKeyDown: @_onEnterKeyDown
-									maxLength: 35
-								})
-							)
-							R.div({className: 'form-group'},
-								R.label({className: 'detailLabel'}, "Middle name"),
-								R.input({
-									className: 'form-control'
-									onChange: @_updateMiddleName
-									value: @state.middleName
-									placeholder: "(optional)"
-									maxLength: 35
-								})
-							)
-							R.div({className: 'form-group'},
-								R.label({className: 'detailLabel'}, "Last name"),
-								R.input({
-									className: 'form-control'
-									onChange: @_updateLastName
-									value: @state.lastName
-									maxLength: 35
-								})
-							)
-							(if Config.clientFileRecordId.isEnabled
-								R.div({className: 'form-group'},
-									R.label({className: 'detailLabel'}, Config.clientFileRecordId.label),
-									R.input({
-										className: 'form-control'
-										onChange: @_updateRecordId
-										value: @state.recordId
-										placeholder: "(optional)"
-										onKeyDown: @_onEnterKeyDown
-										maxLength: 23
-									})
+					},
+						(if Config.features.clientAvatar.isEnabled
+							# TODO: Client photo/avatar feature
+							R.section({className: 'avatar'},
+								R.div({},
+									FaIcon('user')
 								)
 							)
+						)
 
-							R.div({className: 'form-group'},
-								R.label({className: 'detailLabel'}, "Client File Status"),
-								R.div({className: 'btn-toolbar'},
-									R.button({
-										className:
-											if @state.status is 'active'
-												'btn btn-success'
-											else 'btn btn-default'
-										onClick: @_updateStatus
-										value: 'active'
-									},
-										"Active"
+						R.section({className: 'nameId'},
+							R.table({},
+								R.tbody({},
+									R.tr({},
+										R.td({}, "First Name")
+										R.td({},
+											R.input({
+												ref: 'firstNameField'
+												className: 'form-control'
+												onChange: @_updateFirstName
+												value: @state.firstName
+												disabled: @props.isReadOnly
+												maxLength: 35
+											})
+										)
 									)
-									R.button({
-										className:
-											if @state.status is 'inactive'
-												'btn btn-warning'
-											else 'btn btn-default'
-										onClick: @_updateStatus
-										value: 'inactive'
-									},
-										"Inactive"
+									R.tr({},
+										R.td({}, "Middle Name")
+										R.td({},
+											R.input({
+												className: 'form-control'
+												onChange: @_updateMiddleName
+												value: @state.middleName
+												placeholder: "(optional)"
+												disabled: @props.isReadOnly
+												maxLength: 35
+											})
+										)
 									)
-									R.button({
-										className:
-											if @state.status is 'discharged'
-												'btn btn-danger'
-											else 'btn btn-default'
-										onClick: @_updateStatus
-										value: 'discharged'
-									},
-										"Discharged"
+									R.tr({},
+										R.td({}, "Last Name")
+										R.td({},
+											R.input({
+												className: 'form-control'
+												onChange: @_updateLastName
+												value: @state.lastName
+												disabled: @props.isReadOnly
+												maxLength: 35
+											})
+										)
+									)
+									(if Config.clientFileRecordId.isEnabled
+										R.tr({},
+											R.td({}, Config.clientFileRecordId.label)
+											R.td({},
+												R.input({
+													className: 'form-control'
+													onChange: @_updateRecordId
+													value: @state.recordId
+													placeholder: "(optional)"
+													disabled: @props.isReadOnly
+													maxLength: 23
+												})
+											)
+										)
 									)
 								)
 							)
 						)
+
+						R.section({className: 'status'},
+							R.h4({}, "#{Term 'File'} Status")
+							R.div({className: 'btn-toolbar'},
+								R.button({
+									className:
+										if @state.status is 'active'
+											'btn btn-success'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									disabled: @props.isReadOnly
+									value: 'active'
+								},
+									"Active"
+								)
+								R.button({
+									className:
+										if @state.status is 'inactive'
+											'btn btn-warning'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									disabled: @props.isReadOnly
+									value: 'inactive'
+								},
+									"Inactive"
+								)
+								R.button({
+									className:
+										if @state.status is 'discharged'
+											'btn btn-danger'
+										else 'btn btn-default'
+									onClick: @_updateStatus
+									disabled: @props.isReadOnly
+									value: 'discharged'
+								},
+									"Discharged"
+								)
+							)
+						)
+
 					)
 
-					(@props.detailDefinitionGroups.map (definitionGroup) =>
-						groupId = definitionGroup.get('id')
-						fields = definitionGroup.get('fields')
+					R.div({className: 'detailUnitGroups'},
+						(@props.detailDefinitionGroups.map (definitionGroup) =>
+							groupId = definitionGroup.get('id')
+							fields = definitionGroup.get('fields')
 
-						isSelected = @isSelected(groupId)
+							isSelected = @_isSelected(groupId)
 
-						R.div({
-							className: [
-								'detailUnitGroup'
-								'isSelected' if isSelected
-							].join ' '
-							onClick: @_updateSelectedGroupId.bind null, groupId
-						},
-							R.h4({}, definitionGroup.get('title'))
+							R.div({
+								key: groupId
+								className: [
+									'detailUnitGroup'
+									'isSelected' if isSelected
+								].join ' '
+								onClick: @_updateSelectedGroupId.bind null, groupId
+							},
+								R.h4({}, definitionGroup.get('title'))
 
-							R.div({className: 'detailFields'},
-								(fields.map (field) =>
-									fieldId = field.get('id')
-									value = @state.detailUnitsById.getIn([fieldId, 'value'])
-									inputType = field.get('inputType')
+								R.table({},
+									R.tbody({},
+										(fields.map (field) =>
+											fieldId = field.get('id')
+											value = @state.detailUnitsById.getIn([fieldId, 'value'])
+											inputType = field.get('inputType')
 
-									R.div({className: 'form-group'},
-										R.label({className: 'detailLabel'},
-										"#{field.get('name')}"),
+											# Special case for textarea to use our ExpandingTextArea
+											InputComponent = if inputType is 'textarea'
+												ExpandingTextArea
+											else
+												R[inputType]
 
-										R[inputType]({
-											className: 'form-control'
-											placeholder: field.get('placeholder')
-											value
-											onChange: @_updateDetailUnit.bind null, fieldId
-											# maxLength: 35
-										})
+											R.tr({key: fieldId},
+												R.td({}, field.get('name'))
+												R.td({},
+													InputComponent({
+														className: 'form-control'
+														placeholder: "( #{field.get('placeholder')} )"
+														value
+														onChange: @_updateDetailUnit.bind null, fieldId
+														disabled: @props.isReadOnly
+													})
+												)
+											)
+										)
 									)
 								)
 							)
@@ -209,31 +261,26 @@ load = (win) ->
 				)
 			)
 
-		isSelected: (groupId) ->
-			if groupId is @state.selectedGroupId
-				return true
-			else
-				return false
+		_isSelected: (groupId) ->
+			return groupId is @state.selectedGroupId
 
 		hasChanges: ->
 			# If there is a difference, then there have been changes
 			detailUnitsById = @_getDetailUnitsById()
 
-			detailUnitsHasChanges = Imm.is detailUnitsById, @state.detailUnitsById
-			statusHasChanges = @props.clientFile.get('status') is @state.status
-			firstNameHasChanges = @props.clientFile.getIn(['clientName', 'first']) is @state.firstName
-			middleNameHasChanges = @props.clientFile.getIn(['clientName', 'middle']) is @state.middleName
-			lastNameHasChanges = @props.clientFile.getIn(['clientName', 'last']) is @state.lastName
-			recordIdHasChanges = @props.clientFile.get('recordId') is @state.recordId
+			detailUnitsHasChanges = not Imm.is detailUnitsById, @state.detailUnitsById
+			statusHasChanges = @props.clientFile.get('status') isnt @state.status
+			firstNameHasChanges = @props.clientFile.getIn(['clientName', 'first']) isnt @state.firstName
+			middleNameHasChanges = @props.clientFile.getIn(['clientName', 'middle']) isnt @state.middleName
+			lastNameHasChanges = @props.clientFile.getIn(['clientName', 'last']) isnt @state.lastName
+			recordIdHasChanges = @props.clientFile.get('recordId') isnt @state.recordId
 
-			unless detailUnitsHasChanges and
-			statusHasChanges and
-			firstNameHasChanges and
-			middleNameHasChanges and
-			lastNameHasChanges and
+			return detailUnitsHasChanges or
+			statusHasChanges or
+			firstNameHasChanges or
+			middleNameHasChanges or
+			lastNameHasChanges or
 			recordIdHasChanges
-				return true
-			return false
 
 		_updateSelectedGroupId: (groupId, event) ->
 			selectedGroupId = groupId
@@ -281,20 +328,17 @@ load = (win) ->
 			return detailUnitsById
 
 		_resetChanges: ->
-			Bootbox.confirm "Discard all changes made to the #{Term 'Client File'}?", (ok) =>
+			Bootbox.confirm "Discard all changes made to the #{Term 'client file'}?", (ok) =>
 				if ok
 					@setState @getInitialState()
 
 		_submit: ->
 			if not @state.firstName
-				Bootbox.alert "Cannot save the Client File without a First Name"
-				# setTimeout(=>
-				# 	$("firstNameField").focus()
-				# , 250)
+				Bootbox.alert "Cannot save the #{Term 'client file'} without a first name"
 				return
 
 			else if not @state.lastName
-				Bootbox.alert "Cannot save the Client File without a Last Name"
+				Bootbox.alert "Cannot save the #{Term 'client file'} without a last name"
 				return
 
 			else

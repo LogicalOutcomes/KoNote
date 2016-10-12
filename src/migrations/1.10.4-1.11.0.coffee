@@ -566,6 +566,45 @@ addClientFileDetailUnitsField = (dataDir, globalEncryptionKey, cb) ->
 		finalizeMigrationStep(dataDir, cb)
 
 
+removeProgEventRelatedElementField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFilePath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn Path.join(clientFilePath, 'progEvents'), (progEvent, cb) ->
+			progEventPath = Path.join(clientFilePath, 'progEvents', progEvent)
+
+			forEachFileIn progEventPath, (revision, cb) ->
+				progEventObjectFilePath = Path.join(progEventPath, revision)
+				progEventObject = null
+
+				Async.series [
+					(cb) =>
+						Fs.readFile progEventObjectFilePath, (err, result) ->
+							if err
+								cb err
+								return
+
+							progEventObject = JSON.parse globalEncryptionKey.decrypt result
+							cb()
+
+					(cb) =>
+						# Remove 'relatedElement' field
+						delete progEventObject.relatedElement
+						encryptedObj = globalEncryptionKey.encrypt JSON.stringify progEventObject
+
+						Fs.writeFile progEventObjectFilePath, encryptedObj, cb
+
+				], cb
+			, cb
+		, cb
+	, (err) ->
+		if err
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+
 # ////////////////////// Migration Series //////////////////////
 
 module.exports = {
@@ -617,6 +656,11 @@ module.exports = {
 				console.groupEnd()
 				console.groupCollapsed "8. Add new db sub-directory: 'clientDetailDefinitionGroups'"
 				createEmptyDirectory dataDir, 'clientDetailDefinitionGroups', cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "9. Remove 'relatedElement' field from progEvents"
+				removeProgEventRelatedElementField dataDir, globalEncryptionKey, cb
 
 		]
 

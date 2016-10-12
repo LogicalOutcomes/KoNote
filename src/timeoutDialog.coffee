@@ -183,7 +183,7 @@ load = (win) ->
 				unless global.ActiveSession.initialWarningDelivered
 					console.log "TIMEOUT: Initial Warning issued"
 
-					global.ActiveSession.initialWarningDelivered = new win.Notification "Inactivity Warning", {
+					global.ActiveSession.initialWarningDelivered = new Notification "Inactivity Warning", {
 						body: """
 							Your session will expire in #{Config.timeout.warnings.initial}
 							minute#{if Config.timeout.warnings.initial > 1 then 's' else ''}
@@ -197,7 +197,7 @@ load = (win) ->
 				unless global.ActiveSession.finalWarningDelivered
 					console.log "TIMEOUT: Final Warning issued"
 
-					global.ActiveSession.finalWarningDelivered = new win.Notification "Final Warning", {
+					global.ActiveSession.finalWarningDelivered = new Notification "Final Warning", {
 						body: """
 							Your session will expire in #{Config.timeout.warnings.final}
 							minute#{if Config.timeout.warnings.final > 1 then 's' else ''}.

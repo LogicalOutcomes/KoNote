@@ -123,6 +123,7 @@ load = (win) ->
 								'saveButton'
 								'collapsed' unless hasChanges
 							].join ' '
+							disabled: @props.isReadOnly
 							onClick: @_save
 						},
 							FaIcon('save')
@@ -135,6 +136,7 @@ load = (win) ->
 								'discardButton'
 								'collapsed' unless hasChanges
 							].join ' '
+							disabled: @props.isReadOnly
 							onClick: @_resetChanges
 						},
 							FaIcon('undo')
@@ -144,6 +146,7 @@ load = (win) ->
 						R.button({
 							className: 'reorderButton'
 							onClick: @_toggleReorderPlan
+							disabled: @props.isReadOnly
 						},
 							if @state.isReorderingPlan
 								R.div({},
@@ -190,6 +193,7 @@ load = (win) ->
 											B.MenuItem({
 												key: planTemplateHeader.get('id')
 												onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+												disabled: @props.isReadOnly
 											},
 												planTemplateHeader.get('name')
 											)
@@ -213,12 +217,12 @@ load = (win) ->
 								}
 							]
 							iconOnly: true
-							disabled: hasChanges or @props.isReadOnly
+							disabled: hasChanges
 							tooltip: {
 								show: true
 								placement: 'bottom'
 								title: (
-									if hasChanges or @props.isReadOnly
+									if hasChanges
 										"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
 									else
 										"Print plan"
@@ -1126,8 +1130,9 @@ load = (win) ->
 						"Add #{Term 'target'}"
 					)
 					WithTooltip({
-						placement: 'bottom'
 						title: "Create Section Template"
+						placement: 'top'
+						container: 'body'
 					},
 						R.button({
 							className: 'btn btn-default'
@@ -1143,14 +1148,17 @@ load = (win) ->
 					(if isExistingSection
 						(if sectionStatus is 'default'
 							R.div({className: 'statusButtonGroup'},
-								WithTooltip({title: "Deactivate #{Term 'Section'}", placement: 'top', container: 'body'},
+								WithTooltip({
+									title: "Deactivate #{Term 'Section'}" unless @props.isReadOnly or @props.hasTargetChanged
+									placement: 'top'
+									container: 'body'
+								},
 									OpenDialogLink({
 										clientFile
 										className: 'statusButton'
 										dialog: ModifySectionStatusDialog
 										newStatus: 'deactivated'
 										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
 										title: "Deactivate #{Term 'Section'}"
 										message: """
 											This will remove the #{Term 'section'} from the #{Term 'client'}
@@ -1163,14 +1171,17 @@ load = (win) ->
 										FaIcon 'times'
 									)
 								)
-								WithTooltip({title: "Complete #{Term 'Section'}", placement: 'top', container: 'body'},
+								WithTooltip({
+									title: "Complete #{Term 'Section'}" unless @props.isReadOnly or @props.hasTargetChanged
+									placement: 'top'
+									container: 'body'
+								},
 									OpenDialogLink({
 										clientFile
 										className: 'statusButton'
 										dialog: ModifySectionStatusDialog
 										newStatus: 'completed'
 										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
 										title: "Complete #{Term 'Section'}"
 										message: """
 											This will set the #{Term 'section'} as 'completed'. This often
@@ -1192,7 +1203,6 @@ load = (win) ->
 										dialog: ModifySectionStatusDialog
 										newStatus: 'default'
 										sectionIndex: getSectionIndex section.get('id')
-										# sectionTargetIds: section.get('targetIds')
 										title: "Reactivate #{Term 'Section'}"
 										message: """
 											This will reactivate the #{Term 'section'} so it appears in the #{Term 'client'}

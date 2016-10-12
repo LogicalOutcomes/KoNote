@@ -457,7 +457,8 @@ load = (win, {clientFileId}) ->
 
 				(cb) =>
 					# Check to see whether detailGroups (from Config) have been created yet
-					if detailDefinitionHeaders.size > 0 or Config.clientDetailDefinitionGroups is 0
+					# make this dynamic, ie what if config is edited? add logic to handle this.
+					if detailDefinitionHeaders.size > 0 or Config.clientDetailDefinitionGroups.size is 0
 						cb()
 						return
 
@@ -607,7 +608,7 @@ load = (win, {clientFileId}) ->
 								if newLock
 									# Alert user about lock acquisition
 									clientName = renderName @state.clientFile.get('clientName')
-									new win.Notification "#{clientName} file unlocked", {
+									new Notification "#{clientName} file unlocked", {
 										body: "You now have the read/write permissions for this #{Term 'client file'}"
 										icon: Config.iconNotification
 									}
@@ -901,7 +902,7 @@ load = (win, {clientFileId}) ->
 				Bootbox.dialog {
 					title: "Unsaved Changes to #{Term 'Client File'}"
 					message: """
-						You have unsaved changes in Client Information for #{clientName}.
+						You have unsaved changes in #{Term 'client'} information for #{clientName}.
 						How would you like to proceed?
 					"""
 					buttons: {
@@ -931,7 +932,6 @@ load = (win, {clientFileId}) ->
 		componentDidMount: ->
 			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
 			Window.focus()
-			Window.maximize()
 
 			# It's now OK to close the window
 			@hasMounted = true
@@ -1127,7 +1127,7 @@ load = (win, {clientFileId}) ->
 						onClick: @props.onTabChange.bind null, 'analysis'
 					})
 					SidebarTab({
-						name: "Client Information"
+						name: "Information"
 						icon: 'info'
 						isActive: activeTabId is 'info'
 						onClick: @props.onTabChange.bind null, 'info'
