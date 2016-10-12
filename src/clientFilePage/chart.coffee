@@ -262,11 +262,13 @@ load = (win) ->
 			.map (progEvent) =>
 				eventRegion = {
 					start: @_toUnixMs progEvent.get('startTimestamp')
-					class: "progEventRange #{progEvent.get('id')}"
+					class: "progEventRange #{progEvent.get('id')} typeId-"
 				}
 
-				if progEvent.get('typeId')
-					eventRegion['class'] += " typeId-#{progEvent.get('typeId')}"
+				eventRegion['class'] += if progEvent.get('typeId')
+					progEvent.get('typeId')
+				else
+					"null" # typeId-null is how we know it doesn't have an eventType
 
 				if Moment(progEvent.get('endTimestamp'), TimestampFormat).isValid()
 					eventRegion.end = @_toUnixMs progEvent.get('endTimestamp')
@@ -376,17 +378,22 @@ load = (win) ->
 					$(win.document).off('mousemove')
 				)
 
+
+				rect = $('.' + progEvent.get('id')).find('rect')[0]
+
 				# Fill progEvent region with eventType color if exists
 				if progEvent.get('typeId') and not @props.eventTypes.isEmpty()
 					eventType = @props.eventTypes
 					.find (type) -> type.get('id') is progEvent.get('typeId')
 
-					rect = $('.' + progEvent.get('id')).find('rect')[0]
 					$(rect).attr({
 						style:
 							"fill: #{eventType.get('colorKeyHex')} !important;
 							stroke: #{eventType.get('colorKeyHex')} !important;"
 					})
+				else
+					# At least clear it for non-typed events
+					$(rect).attr({style: ''})
 
 		_toUnixMs: (timestamp) ->
 			# Converts to unix ms

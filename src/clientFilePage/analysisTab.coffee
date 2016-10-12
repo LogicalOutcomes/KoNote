@@ -165,6 +165,10 @@ load = (win) ->
 
 			# Persistent highlighted eventTypeIds override the transient ones
 			highlightedEventTypeIds = @state.highlightedEventTypeIds.merge(@state.starredEventTypeIds)
+			# Booleans for the OTHER menu (TODO: Component-alize this stuff!)
+			otherEventTypesIsSelected = @state.selectedEventTypeIds.contains null
+			otherEventTypesIsPersistent = @state.starredEventTypeIds.contains null
+			otherEventTypesIsHighlighted = @state.highlightedEventTypeIds.contains null
 
 
 			return R.div({className: "analysisView"},
@@ -329,11 +333,24 @@ load = (win) ->
 								R.div({},
 									R.h3({}, "Other")
 									R.div({className: 'dataOptions'},
-										R.div({className: 'checkbox'},
+										R.div({
+											className: [
+												'checkbox'
+												'isHighlighted' if otherEventTypesIsPersistent
+											].join ' '
+											onMouseEnter: @_highlightEventType.bind(null, null) if otherEventTypesIsSelected
+											onMouseLeave: @_unhighlightEventType.bind(null, null) if otherEventTypesIsHighlighted
+										},
+											(if otherEventTypesIsSelected
+												FaIcon('star', {
+													onClick: @_toggleStarredEventType.bind null, null
+												})
+											)
+
 											R.label({},
 												R.input({
 													type: 'checkbox'
-													checked: @state.selectedEventTypeIds.contains null
+													checked: otherEventTypesIsSelected
 													onChange: @_updateSelectedEventTypes.bind null, null
 												})
 												untypedEvents.size
@@ -484,7 +501,7 @@ load = (win) ->
 				starredEventTypeIds = @state.starredEventTypeIds
 			else
 				# Clear all
-				selectedEventTypeIds = selectedEventTypeIds.clear()
+				selectedEventTypeIds = @state.selectedEventTypeIds.clear()
 				starredEventTypeIds = @state.starredEventTypeIds.clear()
 
 			@setState {selectedEventTypeIds, starredEventTypeIds}
@@ -498,7 +515,11 @@ load = (win) ->
 
 		_unhighlightEventType: (eventTypeId) ->
 			# Ignore persistent eventTypeIds
-			return if @state.starredEventTypeIds.contains(eventTypeId)
+			console.log "@state.starredEventTypeIds.contains(eventTypeId)", @state.starredEventTypeIds.contains(eventTypeId)
+			console.log "@state.highlightedEventTypeIds.contains(eventTypeId)", @state.highlightedEventTypeIds.contains(eventTypeId)
+
+			return if @state.starredEventTypeIds.contains(eventTypeId) or
+			not @state.highlightedEventTypeIds.contains(eventTypeId)
 			# Ensure that all instances of eventTypeId are removed
 			highlightedEventTypeIds = @state.highlightedEventTypeIds.delete eventTypeId
 
@@ -549,9 +570,11 @@ load = (win) ->
 
 		fillOpacity = 0.15
 
-		return R.style({},
-			"g.c3-region#{notStatements} rect {fill-opacity: #{fillOpacity} !important}\n"
-		)
+		styles = "g.c3-region#{notStatements} rect {fill-opacity: #{fillOpacity} !important}"
+
+		console.log "Styles:", styles
+
+		return R.style({}, styles)
 
 
 	extractMetricsFromProgNoteHistory = (progNoteHist) ->
