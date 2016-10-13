@@ -10,8 +10,6 @@
 # It seems that only code that was included via a <script> tag can rely on
 # `window` being set correctly.
 
-_ = require 'underscore'
-
 defaultPageId = 'login'
 pageModulePathsById = {
 	login: './loginPage'
@@ -92,7 +90,11 @@ init = (win) ->
 					unregisterPageListeners() if isLoggedIn
 					nwWin.removeListener 'close', onWindowCloseEvent
 					ReactDOM.unmountComponentAtNode containerElem
-					win.location.href = "main.html?" + QueryString.stringify(pageParams)
+					switch pageParams.page
+						when 'clientSelection'
+							win.location.href = "main-clientSelection.html?" + QueryString.stringify(pageParams)
+						else
+							win.location.href = "main.html?" + QueryString.stringify(pageParams)
 
 			closeWindow: =>
 				nwWin.hide()
