@@ -114,9 +114,11 @@ load = (win) ->
 			.map (progEvent) -> progEvent.get 'id'
 			.toSet()
 
+			# Build master set of events
+			allEvents = @props.progEvents.concat @props.globalEvents
+
 			# Filter out progEvents that aren't cancelled or excluded
-			filteredProgEvents = @props.progEvents
-			.concat @props.globalEvents
+			filteredProgEvents = allEvents
 			.filter (progEvent) => progEvent.get('status') is 'default'
 			.filter (progEvent) =>
 				# TODO: Refactor this
@@ -289,14 +291,14 @@ load = (win) ->
 									R.div({className: 'dataOptions'},
 										(@props.eventTypes.map (eventType) =>
 											eventTypeId = eventType.get('id')
-											# TODO: Extract this to before render
-											typeEvents = @props.progEvents.filter (progEvent) => progEvent.get('typeId') is eventTypeId
+
+											typeEvents = allEvents.filter (progEvent) => progEvent.get('typeId') is eventTypeId
 
 											isSelected = @state.selectedEventTypeIds.contains eventTypeId
 											isHighlighted = @state.highlightedEventTypeIds.contains eventTypeId
 											isPersistent = @state.starredEventTypeIds.contains eventTypeId
 
-											(if not typeEvents.isEmpty()
+											(unless typeEvents.isEmpty()
 												R.div({
 													key: eventTypeId
 													className: [
