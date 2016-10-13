@@ -36,7 +36,7 @@
     "grunt-text-replace": "^0.4.0",
     "mocha": "^3.1.0",
     "nw": "0.17.6-sdk",
-    "nwjs-builder": "^1.10.5",
+    "nwjs-builder": "^1.13.1",
     "stylus": "^0.54.5"
   },
   "optionalDependencies": {
