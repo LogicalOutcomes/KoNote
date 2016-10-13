@@ -191,6 +191,8 @@ load = (win) ->
 					}
 				}
 				data: {
+					#type: 'scatter'
+					#type: 'spline'
 					hide: true
 					xFormat: D3TimestampFormat
 					columns: scaledDataSeries.toJS()
