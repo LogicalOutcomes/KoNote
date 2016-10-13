@@ -3,8 +3,6 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Async = require 'async'
-Imm = require 'immutable'
-Assert = require 'assert'
 
 Config = require './config'
 Term = require './term'
@@ -17,8 +15,6 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	Window = nw.Window.get(win)
-
-	NewInstallationPage = require('./newInstallationPage').load(win)
 
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
