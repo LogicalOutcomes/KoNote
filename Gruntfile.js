@@ -151,6 +151,28 @@ module.exports = function(grunt) {
 					}
 				]
 			},
+			start: {
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/src/start.html'],
+				overwrite: true,
+				replacements: [
+					{
+						from: 'react-with-addons.js',
+						to: 'react-with-addons.min.js'
+					},
+					{
+						from: 'react-dom-server.js',
+						to: 'react-dom-server.min.js'
+					},
+					{
+						from: 'react-dom.js',
+						to: 'react-dom.min.js'
+					},
+					{
+						from: '<style id="main-css">/* see start.js */</style>',
+						to: '<link rel="stylesheet" href="main.css">'
+					}
+				]
+			},
 			config: {
 				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/src/config/default.json'],
 				overwrite: true,
@@ -293,6 +315,7 @@ module.exports = function(grunt) {
 		release.forEach(function(entry) {
 			grunt.task.run('copy:main:'+entry);
 			grunt.task.run('replace:main:'+entry);
+			grunt.task.run('replace:start:'+entry);
 			grunt.task.run('replace:config:'+entry);
 			grunt.task.run('copy:production:'+entry);
 			if (entry == "generic-win") {
