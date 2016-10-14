@@ -142,7 +142,7 @@ load = (win) ->
 			.sort()
 
 
-			#################### Date Range ####################
+			#################### Date Range / TimeSpan ####################
 
 			# Determine earliest & latest days
 			firstDay = Moment daysOfData.first()
@@ -153,14 +153,15 @@ load = (win) ->
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
-			# Default timespan to full xTicks
-			timeSpan = if @state.timeSpan then @state.timeSpan else Imm.Map {
-				start: xTicks.first()
-				end: xTicks.last()
-			}
+			# Declare inital default timeSpan
+			if not @defaultTimeSpan?
+				@defaultTimeSpan = Imm.Map {
+					start: xTicks.first()
+					end: xTicks.last()
+				}
 
-			hasEnoughData = daysOfData.size > 0
-			untypedEvents = @props.progEvents.filterNot (progEvent) => progEvent.get('typeId')
+			# Assign default timespan if null
+			timeSpan = if not @state.timeSpan? then @defaultTimeSpan else @state.timeSpan
 
 
 			#################### Event Type Highlighting ####################
@@ -175,6 +176,12 @@ load = (win) ->
 			otherEventTypesIsSelected = @state.selectedEventTypeIds.contains null
 			otherEventTypesIsPersistent = @state.starredEventTypeIds.contains null
 			otherEventTypesIsHighlighted = @state.highlightedEventTypeId is null
+
+
+			#################### ETC ####################
+
+			hasEnoughData = daysOfData.size > 0
+			untypedEvents = @props.progEvents.filterNot (progEvent) => progEvent.get('typeId')
 
 
 			return R.div({className: "analysisView"},
@@ -569,8 +576,10 @@ load = (win) ->
 			@setState {metricColors}
 
 		_updateTimeSpanDate: (newDate, type) ->
-			return unless @state.timeSpan
-			timeSpan = @state.timeSpan.set(type, newDate)
+			# Use default if timeSpan is null
+			timeSpan = if not @state.timeSpan? then @defaultTimeSpan else @state.timeSpan
+
+			timeSpan = timeSpan.set(type, newDate)
 			@setState {timeSpan}
 
 
