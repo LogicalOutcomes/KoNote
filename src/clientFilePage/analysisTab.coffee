@@ -46,7 +46,7 @@ load = (win) ->
 				selectedMetricIds: Imm.Set()
 				filteredProgEvents: Imm.Set()
 				selectedEventTypeIds: Imm.Set()
-				highlightedEventTypeIds: Imm.Set()
+				highlightedEventTypeId: undefined # null reserved for Other Types
 				starredEventTypeIds: Imm.Set()
 				excludedTargetIds: Imm.Set()
 				xTicks: Imm.List()
@@ -165,12 +165,16 @@ load = (win) ->
 
 			#################### Event Type Highlighting ####################
 
-			# Persistent highlighted eventTypeIds override the transient ones
-			highlightedEventTypeIds = @state.highlightedEventTypeIds.merge(@state.starredEventTypeIds)
+			# Include hovered/highlighted eventTypeId with starred eventTypeIds
+			highlightedEventTypeIds = if @state.highlightedEventTypeId isnt undefined
+				@state.starredEventTypeIds.add @state.highlightedEventTypeId
+			else
+				@state.starredEventTypeIds
+
 			# Booleans for the OTHER menu (TODO: Component-alize this stuff!)
 			otherEventTypesIsSelected = @state.selectedEventTypeIds.contains null
 			otherEventTypesIsPersistent = @state.starredEventTypeIds.contains null
-			otherEventTypesIsHighlighted = @state.highlightedEventTypeIds.contains null
+			otherEventTypesIsHighlighted = @state.highlightedEventTypeId is null
 
 
 			return R.div({className: "analysisView"},
@@ -295,7 +299,7 @@ load = (win) ->
 											typeEvents = allEvents.filter (progEvent) => progEvent.get('typeId') is eventTypeId
 
 											isSelected = @state.selectedEventTypeIds.contains eventTypeId
-											isHighlighted = @state.highlightedEventTypeIds.contains eventTypeId
+											isHighlighted = @state.highlightedEventTypeId is eventTypeId
 											isPersistent = @state.starredEventTypeIds.contains eventTypeId
 
 											(unless typeEvents.isEmpty()
@@ -307,22 +311,24 @@ load = (win) ->
 													].join ' '
 													onMouseEnter: @_highlightEventType.bind(null, eventTypeId) if isSelected
 													onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isHighlighted
-													style:
-														borderRight: "5px solid #{eventType.get('colorKeyHex')}"
 												},
-													(if isSelected
-														FaIcon('star', {
-															onClick: @_toggleStarredEventType.bind null, eventTypeId
-														})
-													)
+													R.div({
+														style: {borderRight: "5px solid #{eventType.get('colorKeyHex')}"}
+													},
+														(if isSelected
+															FaIcon('star', {
+																onClick: @_toggleStarredEventType.bind null, eventTypeId
+															})
+														)
 
-													R.label({},
-														R.input({
-															type: 'checkbox'
-															checked: @state.selectedEventTypeIds.contains eventTypeId
-															onChange: @_updateSelectedEventTypes.bind null, eventTypeId
-														})
-														eventType.get('name')
+														R.label({},
+															R.input({
+																type: 'checkbox'
+																checked: @state.selectedEventTypeIds.contains eventTypeId
+																onChange: @_updateSelectedEventTypes.bind null, eventTypeId
+															})
+															eventType.get('name')
+														)
 													)
 												)
 											)
@@ -397,27 +403,30 @@ load = (win) ->
 												},
 													R.h5({}, target.get('name'))
 
+													# TODO: Extract to component
 													(targetMetricsById.get(targetId).map (metricId) =>
-
 														metric = @props.metricsById.get(metricId)
 
 														R.div({
 															key: metricId
 															className: 'checkbox metric'
-															style:
-																borderRight: (
-																	if @state.metricColors?
-																		metricColor = @state.metricColors["y-#{metric.get('id')}"]
-																		"5px solid #{metricColor}"
-																)
 														},
-															R.label({},
-																R.input({
-																	type: 'checkbox'
-																	onChange: @_updateSelectedMetrics.bind null, metricId
-																	checked: @state.selectedMetricIds.contains metricId
-																})
-																metric.get('name')
+															R.div({
+																style:
+																	borderRight: (
+																		if @state.metricColors?
+																			metricColor = @state.metricColors["y-#{metric.get('id')}"]
+																			"5px solid #{metricColor}"
+																	)
+															},
+																R.label({},
+																	R.input({
+																		type: 'checkbox'
+																		onChange: @_updateSelectedMetrics.bind null, metricId
+																		checked: @state.selectedMetricIds.contains metricId
+																	})
+																	metric.get('name')
+																)
 															)
 														)
 													)
@@ -433,26 +442,28 @@ load = (win) ->
 									R.h3({}, "Inactive")
 									R.div({className: 'dataOptions'},
 										(@state.inactiveMetricIds.map (metricId) =>
-
 											metric = @props.metricsById.get(metricId)
 
 											R.div({
-												className: 'checkbox metric'
 												key: metricId
-												style:
-													borderRight: (
-														if @state.metricColors?
-															metricColor = @state.metricColors["y-#{metric.get('id')}"]
-															"5px solid #{metricColor}"
-													)
+												className: 'checkbox metric'
 											},
-												R.label({},
-													R.input({
-														type: 'checkbox'
-														onChange: @_updateSelectedMetrics.bind null, metricId
-														checked: @state.selectedMetricIds.contains metricId
-													})
-													metric.get('name')
+												R.div({
+													style:
+														borderRight: (
+															if @state.metricColors?
+																metricColor = @state.metricColors["y-#{metric.get('id')}"]
+																"5px solid #{metricColor}"
+														)
+												},
+													R.label({},
+														R.input({
+															type: 'checkbox'
+															onChange: @_updateSelectedMetrics.bind null, metricId
+															checked: @state.selectedMetricIds.contains metricId
+														})
+														metric.get('name')
+													)
 												)
 											)
 										)
@@ -491,7 +502,10 @@ load = (win) ->
 				selectedEventTypeIds = @state.selectedEventTypeIds.add eventTypeId
 				starredEventTypeIds = @state.starredEventTypeIds
 
-			@setState {selectedEventTypeIds, starredEventTypeIds}
+			# User is still hovering, so make sure it's still transiently-highlighted
+			highlightedEventTypeId = eventTypeId
+
+			@setState {selectedEventTypeIds, starredEventTypeIds, highlightedEventTypeId}
 
 		_toggleAllEventTypes: (allEventTypesSelected) ->
 			if not allEventTypesSelected
@@ -510,22 +524,20 @@ load = (win) ->
 
 		_highlightEventType: (eventTypeId) ->
 			# Ignore persistent eventTypeIds
-			return if @state.starredEventTypeIds.contains eventTypeId
+			return if @state.highlightedEventTypeId is eventTypeId or
+			@state.starredEventTypeIds.contains eventTypeId
 
-			highlightedEventTypeIds = @state.highlightedEventTypeIds.add eventTypeId
-			@setState {highlightedEventTypeIds}
+			highlightedEventTypeId = eventTypeId
+			@setState {highlightedEventTypeId}
 
 		_unhighlightEventType: (eventTypeId) ->
 			# Ignore persistent eventTypeIds
-			console.log "@state.starredEventTypeIds.contains(eventTypeId)", @state.starredEventTypeIds.contains(eventTypeId)
-			console.log "@state.highlightedEventTypeIds.contains(eventTypeId)", @state.highlightedEventTypeIds.contains(eventTypeId)
+			return if @state.highlightedEventTypeId isnt eventTypeId or
+			@state.starredEventTypeIds.contains eventTypeId
 
-			return if @state.starredEventTypeIds.contains(eventTypeId) or
-			not @state.highlightedEventTypeIds.contains(eventTypeId)
-			# Ensure that all instances of eventTypeId are removed
-			highlightedEventTypeIds = @state.highlightedEventTypeIds.delete eventTypeId
+			highlightedEventTypeId = undefined
 
-			@setState {highlightedEventTypeIds}
+			@setState {highlightedEventTypeId}
 
 		_toggleStarredEventType: (eventTypeId) ->
 			if @state.starredEventTypeIds.includes eventTypeId
@@ -571,10 +583,7 @@ load = (win) ->
 		.toJS().join ''
 
 		fillOpacity = 0.15
-
 		styles = "g.c3-region#{notStatements} rect {fill-opacity: #{fillOpacity} !important}"
-
-		console.log "Styles:", styles
 
 		return R.style({}, styles)
 
