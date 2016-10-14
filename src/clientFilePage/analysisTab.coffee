@@ -165,12 +165,6 @@ load = (win) ->
 			# Assign default timespan if null
 			timeSpan = if not @state.timeSpan? then @defaultTimeSpan else @state.timeSpan
 
-			# Ensure timeSpan is contained within the actual span of xTicks (days)
-			if timeSpan.get('end').isAfter xTicks.last()
-				timeSpan = timeSpan.set 'end', xTicks.last()
-			else if timeSpan.get('start').isBefore xTicks.first()
-				timeSpan = timeSpan.set 'start', xTicks.first()
-
 
 			#################### Event Type Highlighting ####################
 
