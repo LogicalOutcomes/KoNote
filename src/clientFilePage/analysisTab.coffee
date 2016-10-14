@@ -127,12 +127,14 @@ load = (win) ->
 				else
 					@state.selectedEventTypeIds.contains null
 
+			# We only grab endTimestamp from progEvents that have one
+			spannedProgEvents = filteredProgEvents.filter (progEvent) -> !!progEvent.get('endTimestamp')
 
 			# Build list of timestamps from progEvents (start & end) & metrics
 			daysOfData = Imm.List()
 			.concat filteredProgEvents.map (progEvent) ->
 				Moment(progEvent.get('startTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
-			.concat filteredProgEvents.map (progEvent) ->
+			.concat spannedProgEvents.map (progEvent) ->
 				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat metricValues.map (metric) ->
 				# Account for backdate, else normal timestamp
