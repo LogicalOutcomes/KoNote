@@ -104,6 +104,7 @@ load = (win) ->
 								B.DropdownButton({
 									className: 'btn btn-lg'
 									title: "Apply #{Term 'Template'}"
+									disabled: @props.isReadOnly
 								},
 									(@props.planTemplateHeaders.map (planTemplateHeader) =>
 										B.MenuItem({
@@ -177,6 +178,7 @@ load = (win) ->
 							B.DropdownButton({
 								id: 'planTemplatesDropdown'
 								title: FaIcon('wpforms')
+								disabled: @props.isReadOnly
 							},
 								B.MenuItem({onClick: @_createTemplate},
 									R.h5({},
