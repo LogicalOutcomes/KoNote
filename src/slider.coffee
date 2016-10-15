@@ -31,7 +31,10 @@ load = (win) ->
 			if oldProps.xTicks.size isnt @props.xTicks.size
 				@_initSlider()
 
-			if not oldProps.timeSpan? and not oldProps.timeSpan.is newTimeSpan
+			startChanged = not oldProps.timeSpan.get('start').isSame(newTimeSpan.get('start'))
+			endChanged = not oldProps.timeSpan.get('end').isSame(newTimeSpan.get('end'))
+
+			if startChanged or endChanged
 				newValue = @_calculateIndexValues(newTimeSpan, xTicks)
 
 				# Low value can't be bigger than the high value
@@ -41,8 +44,8 @@ load = (win) ->
 
 				# Ensure it's not same value as on the slider before updating
 				# Comparing an array requires underscore
-				if not _(newValue).isEqual @slider.slider('getValue')
-					@slider.slider 'setValue', newValue
+				# if not _(newValue).isEqual @slider.slider('getValue')
+				@slider.slider 'setValue', newValue
 
 		componentDidMount: ->
 			@_initSlider()
