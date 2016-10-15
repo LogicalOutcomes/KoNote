@@ -99,7 +99,7 @@ load = (win) ->
 							FaIcon('plus')
 							"Add #{Term 'section'}"
 						)
-						R.div({className: 'templates'},
+						R.span({className: 'templates'},
 							(unless @props.planTemplateHeaders.isEmpty()
 								B.DropdownButton({
 									className: 'btn btn-lg'
