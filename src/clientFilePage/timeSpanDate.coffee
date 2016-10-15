@@ -52,7 +52,7 @@ load = (win) ->
 			# TODO: Handle start/end logic in analysis, use generic component
 
 			startPropHasChanged = not oldProps.date.get('start').isSame(@props.timeSpan.get('start'))
-			startDateIsNew = not @dateTimePicker.date().isSame(@props.timeSpan.get('start'))
+			startDateIsNew = not @dateTimePicker.date().isSame(@props.timeSpan.get('start'), 'day')
 
 			if startPropHasChanged and startDateIsNew
 				startDate = @props.timeSpan.get('start')
@@ -63,7 +63,8 @@ load = (win) ->
 				else
 					# Catch bad updates
 					if startDate.isAfter @dateTimePicker.maxDate()
-						return console.warn "Tried to make minDate > maxDate, update cancelled"
+						console.warn "Tried to make minDate > maxDate, update cancelled"
+						return
 
 					# For 'end', just adjust the minDate
 					@dateTimePicker.minDate startDate
@@ -81,15 +82,18 @@ load = (win) ->
 				else
 					# Catch bad updates
 					if endDate.isBefore @dateTimePicker.minDate()
-						return console.warn "Tried to make maxDate < minDate, update cancelled"
+						console.warn "Tried to make maxDate < minDate, update cancelled"
+						return
 
 					# For 'start', just adjust the maxDate
 					@dateTimePicker.maxDate endDate
 
 		_onChange: (event) ->
 			# Needs to be created in millisecond format to stay consistent
-			newDate = Moment +Moment(event.target.value, Config.dateFormat)
-			@props.updateTimeSpanDate(newDate, @props.type)
+			newDate = Moment +Moment(event.target.value, Config.dateFormat).startOf('day')
+			timeSpan = @props.timeSpan.set(@props.type, newDate)
+
+			@props.updateTimeSpanDate timeSpan
 
 		_toggleDateTimePicker: -> @dateTimePicker.toggle()
 

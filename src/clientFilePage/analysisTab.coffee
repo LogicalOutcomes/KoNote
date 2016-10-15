@@ -60,11 +60,11 @@ load = (win) ->
 		# 	for property of @props
 		# 		# console.log "property", property
 		# 		if @props[property] isnt oldProps[property]
-		# 			console.log "#{property} changed"
+		# 			console.info "#{property} changed"
 
 		# 	for property of @state
 		# 		if @state[property] isnt oldState[property]
-		# 			console.log "#{property} changed"
+		# 			console.info "#{property} changed"
 
 		render: ->
 
@@ -155,16 +155,21 @@ load = (win) ->
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
-			# Declare inital default timeSpan
-			if not @defaultTimeSpan?
-				@defaultTimeSpan = Imm.Map {
-					start: xTicks.first()
-					end: xTicks.last()
-				}
+			# Declare default timeSpan
+			@defaultTimeSpan = Imm.Map {
+				start: xTicks.first()
+				end: xTicks.last()
+			}
 
 			# Assign default timespan if null
 			timeSpan = if not @state.timeSpan? then @defaultTimeSpan else @state.timeSpan
 
+			## TODO:
+			## Ensure timeSpan is contained within the actual span of xTicks (days)
+			# if timeSpan.get('end').isAfter xTicks.last()
+			# 	timeSpan = timeSpan.set 'end', xTicks.last()
+			# else if timeSpan.get('start').isBefore xTicks.first()
+			# 	timeSpan = timeSpan.set 'start', xTicks.first()
 
 			#################### Event Type Highlighting ####################
 
@@ -203,20 +208,7 @@ load = (win) ->
 							isRange: true
 							timeSpan
 							xTicks
-							onChange: (event) =>
-								# Convert event value (string) to JS numerical array
-								timeSpanArray = event.target.value.split(",")
-								# Use index values to fetch moment objects from xTicks
-								start = xTicks.get Number(timeSpanArray[0])
-								end = xTicks.get Number(timeSpanArray[1])
-
-								newTimeSpan = Imm.Map {start, end}
-								@setState {timeSpan: newTimeSpan}
-							formatter: ([start, end]) =>
-								return unless start? and end?
-								startTime = Moment(xTicks.get(start)).format('MMM Do')
-								endTime = Moment(xTicks.get(end)).format('MMM Do')
-								return "#{startTime} - #{endTime}"
+							onChange: (newTimeSpan) => @setState {timeSpan: newTimeSpan}
 						})
 						R.div({className: 'dateDisplay'},
 							TimeSpanDate({
@@ -577,11 +569,7 @@ load = (win) ->
 		_updateMetricColors: (metricColors) ->
 			@setState {metricColors}
 
-		_updateTimeSpanDate: (newDate, type) ->
-			# Use default if timeSpan is null
-			timeSpan = if not @state.timeSpan? then @defaultTimeSpan else @state.timeSpan
-
-			timeSpan = timeSpan.set(type, newDate)
+		_updateTimeSpanDate: (timeSpan) ->
 			@setState {timeSpan}
 
 

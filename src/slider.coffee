@@ -5,6 +5,9 @@
 # Slider input component with range capabilities
 
 _ = require 'underscore'
+Moment = require 'moment'
+Imm = require 'immutable'
+
 Term = require './term'
 
 
@@ -20,17 +23,21 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidUpdate: (oldProps, oldState) ->
-			# Re-init slider when ticks.length changes
-			unless oldProps.xTicks.size is @props.xTicks.size
-				@_initSlider()
 
 			# Manually set slider value when @props.timeSpan changes
-			if oldProps.timeSpan isnt @props.timeSpan
-				newValue = @_calculateIndexValues(@props.timeSpan)
+			newTimeSpan = @props.timeSpan
+			xTicks = @props.xTicks
+
+			if oldProps.xTicks.size isnt @props.xTicks.size
+				@_initSlider()
+
+			if not oldProps.timeSpan? and not oldProps.timeSpan.is newTimeSpan
+				newValue = @_calculateIndexValues(newTimeSpan, xTicks)
 
 				# Low value can't be bigger than the high value
 				if newValue[0] > newValue[1]
-					return console.warn "Tried to make slider's minDate > maxDate, update cancelled"
+					console.warn "Tried to make slider's minDate > maxDate, update cancelled", newValue[0], newValue[1]
+					return
 
 				# Ensure it's not same value as on the slider before updating
 				# Comparing an array requires underscore
@@ -40,38 +47,55 @@ load = (win) ->
 		componentDidMount: ->
 			@_initSlider()
 
-		_calculateIndexValues: (timeSpan) ->
+		componentWillUnmount: ->
+			@slider.slider('destroy')
+
+		_calculateIndexValues: (timeSpan, xTicks) ->
 			start = timeSpan.get('start')
 			end = timeSpan.get('end')
 
-			matchingStartValue = @props.xTicks.find (date) -> date.isSame(start)
-			startIndex = @props.xTicks.indexOf matchingStartValue
+			matchingStartValue = xTicks.find (date) -> date.isSame(start)
+			startIndex = xTicks.indexOf matchingStartValue
 
-			matchingEndValue = @props.xTicks.find (date) -> date.isSame(end)
-			endIndex = @props.xTicks.indexOf matchingEndValue
+			matchingEndValue = xTicks.find (date) -> date.isSame(end)
+			endIndex = xTicks.indexOf matchingEndValue
 
 			indexValues = [startIndex, endIndex]
-
 			return indexValues
 
 		_initSlider: ->
 			# Destroy it if already exists
 			if @slider? then @slider.slider('destroy')
 
-			value = @_calculateIndexValues(@props.timeSpan)
+			{timeSpan, xTicks, formatter} = @props
+			value = @_calculateIndexValues(timeSpan, xTicks)
 
 			@slider = $(@refs.slider).slider({
 				enabled: true
 				tooltip: 'show'
 				range: true
 				min: 0
-				max: @props.xTicks.size - 1
+				max: xTicks.size - 1
 				value
-				formatter: @props.formatter
+				formatter: ([start, end]) =>
+					return unless start? and end?
+					startTime = Moment(xTicks.get(start)).format('MMM Do')
+					endTime = Moment(xTicks.get(end)).format('MMM Do')
+					return "#{startTime} - #{endTime}"
 			})
 
 			# Register events
-			@slider.on 'slideStop', @props.onChange
+			@slider.on 'slideStop', @_onChange
+
+		_onChange: (event) ->
+			# Convert event value (string) to JS numerical array
+			timeSpanArray = event.target.value.split(",")
+			# Use index values to fetch moment objects from xTicks
+			start = @props.xTicks.get Number(timeSpanArray[0])
+			end = @props.xTicks.get Number(timeSpanArray[1])
+
+			newTimeSpan = Imm.Map {start, end}
+			@props.onChange newTimeSpan
 
 		render: ->
 			return R.input({ref: 'slider'})
