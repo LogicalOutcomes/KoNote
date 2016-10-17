@@ -104,14 +104,14 @@
 			"title": "Basic Information",
 			"fields": [
 				{
-					"name": "Phone (Primary)",
+					"name": "Primary Phone",
 					"inputType": "input",
-					"placeholder": "Home Phone"
+					"placeholder": "Primary Phone"
 				},
 				{
-					"name": "Phone (Other)",
+					"name": "Other Phone",
 					"inputType": "input",
-					"placeholder": "Mobile Phone"
+					"placeholder": "Other Phone"
 				},
 				{
 					"name": "Email",
