@@ -38,12 +38,13 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				dataIsReady: false
-				planTemplateHeaders: Imm.List()
+				planTemplates: Imm.List()
 				displayInactive: null
 			}
 
 		componentWillMount: ->
 			planTemplateHeaders = null
+			planTemplates = null
 
 			# Putting this in an Async Series since we will expand functionality soon.
 			Async.series [
@@ -55,6 +56,19 @@ load = (win) ->
 
 						planTemplateHeaders = result
 						cb()
+				(cb) =>
+					Async.map planTemplateHeaders.toArray(), (planTemplateHeader, cb) =>
+						planTemplateId = planTemplateHeader.get('id')
+
+						ActiveSession.persist.planTemplates.readLatestRevisions planTemplateId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						planTemplates = Imm.List(results).map (planTemplate) -> stripMetadata planTemplate.get(0)
+						cb()
+
 
 			], (err) =>
 					if err
@@ -67,27 +81,27 @@ load = (win) ->
 
 					@setState {
 						dataIsReady: true
-						planTemplateHeaders
+						planTemplates
 					}
 
 		render: ->
-			planTemplateHeaders = @state.planTemplateHeaders
+			planTemplates = @state.planTemplates
 
 			# Determine inactive plan templates
-			inactivePlanTemplates = planTemplateHeaders.filter (template) ->
+			inactivePlanTemplates = planTemplates.filter (template) ->
 				template.get('status') isnt 'default'
 
 			hasInactivePlanTemplates = not inactivePlanTemplates.isEmpty()
-			hasData = not @state.planTemplateHeaders.isEmpty()
+			hasData = not @state.planTemplates.isEmpty()
 
 			# UI Filters
 			unless @state.displayInactive
-				planTemplateHeaders = planTemplateHeaders.filter (template) ->
+				planTemplates = planTemplates.filter (template) ->
 					template.get('status') is 'default'
 
 			# Table display formats (TODO: extract to a tableWrapper component)
 			# Convert 'default' -> 'active' for table display (TODO: Term)
-			planTemplateHeaders = planTemplateHeaders.map (template) ->
+			planTemplates = planTemplates.map (template) ->
 				if template.get('status') is 'default'
 					return template.set('status', 'active')
 
@@ -105,7 +119,7 @@ load = (win) ->
 							# 	onSuccess: @_createMetric
 							# },
 							# 	FaIcon('plus')
-							# 	" New #{Term 'Metric'} Definition"
+							# 	" New "
 							# )
 							(if hasInactivePlanTemplates
 								R.div({className: 'toggleInactive'},
@@ -129,10 +143,10 @@ load = (win) ->
 							R.div({className: 'responsiveTable animated fadeIn'},
 								DialogLayer({
 									ref: 'dialogLayer'
-									planTemplateHeaders: @state.planTemplateHeaders
+									planTemplates: @state.planTemplates
 								},
 									BootstrapTable({
-										data: planTemplateHeaders.toJS()
+										data: planTemplates.toJS()
 										keyField: 'id'
 										bordered: false
 										options: {
@@ -144,7 +158,7 @@ load = (win) ->
 
 												@refs.dialogLayer.open ModifyPlanTemplateDialog, {
 													planTemplateId: row.id
-													onSuccess: @_updatePlanTemplateHeaders
+													onSuccess: @_updatePlanTemplates
 												}
 											noDataText: "No #{Term 'plan templates'} to display"
 										}
@@ -167,6 +181,19 @@ load = (win) ->
 											].join ' '
 											dataSort: true
 										}, "Template Name")
+
+										TableHeaderColumn({
+											dataField: 'description'
+											className: [
+												'descriptionColumn'
+												'rightPadding' unless @state.displayInactive
+											].join ' '
+											columnClassName: [
+												'rightPadding' unless @state.displayInactive
+											].join ' '
+											dataSort: false
+										}, "Description")
+
 										TableHeaderColumn({
 											dataField: 'status'
 											className: [
@@ -200,16 +227,16 @@ load = (win) ->
 			displayInactive = not @state.displayInactive
 			@setState {displayInactive}
 
-		_updatePlanTemplateHeaders: (updatedPlanTemplate) ->
-			planTemplateHeaders = @state.planTemplateHeaders
+		_updatePlanTemplates: (updatedPlanTemplate) ->
+			planTemplates = @state.planTemplates
 
-			matchingPlanTemplate = planTemplateHeaders.find (template) ->
+			matchingPlanTemplate = planTemplates.find (template) ->
 				template.get('id') is updatedPlanTemplate.get('id')
 
-			planTemplateIndex = planTemplateHeaders.indexOf matchingPlanTemplate
-			planTemplateHeaders = planTemplateHeaders.set planTemplateIndex, updatedPlanTemplate
+			planTemplateIndex = planTemplates.indexOf matchingPlanTemplate
+			planTemplates = planTemplates.set planTemplateIndex, updatedPlanTemplate
 
-			@setState {planTemplateHeaders}
+			@setState {planTemplates}
 
 
 	ModifyPlanTemplateDialog = React.createFactory React.createClass
