@@ -32,6 +32,7 @@ load = (win) ->
 	OpenDialogLink = require('../openDialogLink').load(win)
 	PrintButton = require('../printButton').load(win)
 	ReorderPlanView = require('./reorderPlanView').load(win)
+	CreatePlanTemplateDialog = require('./createPlanTemplateDialog').load(win)
 
 	{
 		FaIcon, renderLineBreaks, showWhen, stripMetadata, formatTimestamp, capitalize
@@ -170,6 +171,24 @@ load = (win) ->
 							"Add #{Term 'Section'}"
 						)
 
+						R.button({
+							title: "Create Plan Template"
+							className: 'addSectionButton'
+							placement: 'top'
+							container: '.dropdown.btn-group'
+						},
+							OpenDialogLink({
+								className: 'addSectionButton'
+								dialog: CreatePlanTemplateDialog
+								title: "Create Template from Plan"
+								sections: @state.plan.get('sections')
+								currentTargetRevisionsById: @state.currentTargetRevisionsById
+								# disabled: isReadOnly
+							},
+								FaIcon 'wpForms'
+							)
+						)
+
 						WithTooltip({
 							title: Term 'Plan Templates'
 							container: '.dropdown.btn-group'
@@ -180,7 +199,8 @@ load = (win) ->
 								title: FaIcon('wpforms')
 								disabled: @props.isReadOnly
 							},
-								B.MenuItem({onClick: @_createTemplate},
+								B.MenuItem({onClick: @_createTemplate
+									},
 									R.h5({},
 										"Generate #{Term 'Plan Template'}"
 									)
@@ -581,41 +601,6 @@ load = (win) ->
 							CrashHandler.handle err
 							return
 					return
-
-		_createTemplate: ->
-			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
-				unless templateName
-					return
-
-				templateSections = @state.plan.get('sections').map (section) =>
-					sectionTargets = section.get('targetIds').map (targetId) =>
-						target = @state.currentTargetRevisionsById.get(targetId)
-						# Removing irrelevant data from object
-						return target
-						.remove('status')
-						.remove('statusReason')
-						.remove('clientFileId')
-						.remove('id')
-
-					section = Imm.fromJS {
-						name: section.get('name')
-						targets: sectionTargets
-					}
-
-				planTemplate = Imm.fromJS {
-					name: templateName
-					status: 'default'
-					sections: templateSections
-				}
-
-				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
-					if err instanceof Persist.IOError
-						console.error err
-						Bootbox.alert """
-							Please check your network connection and try again
-						"""
-						return
-					Bootbox.alert "New template: '#{templateName}' created."
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
@@ -1136,14 +1121,17 @@ load = (win) ->
 						placement: 'top'
 						container: 'body'
 					},
-						R.button({
+						OpenDialogLink({
 							className: 'btn btn-default'
-							onClick: @_createSectionTemplate
+							dialog: CreatePlanTemplateDialog
+							title: "Create Template from Section"
+							sections: Imm.List([section])
+							currentTargetRevisionsById
+							disabled: isReadOnly
 						},
-							FaIcon('wpforms')
+							FaIcon 'wpForms'
 						)
 					)
-
 				)
 				# TODO: Extract to component
 				(if canSetStatus
@@ -1230,41 +1218,6 @@ load = (win) ->
 					)
 				)
 			)
-
-
-		_createSectionTemplate: ->
-			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
-				unless templateName
-					return
-
-				sectionTargets = @props.section.get('targetIds').map (targetId) =>
-					target = @props.currentTargetRevisionsById.get(targetId)
-					# Removing irrelevant data from object
-					return target
-					.remove('status')
-					.remove('statusReason')
-					.remove('clientFileId')
-					.remove('id')
-
-				templateSection = Imm.fromJS [{
-					name: @props.section.get('name')
-					targets: sectionTargets
-				}]
-
-				sectionTemplate = Imm.fromJS {
-					name: templateName
-					status: 'default'
-					sections: templateSection
-				}
-
-				global.ActiveSession.persist.planTemplates.create sectionTemplate, (err, obj) =>
-					if err instanceof Persist.IOError
-						console.error err
-						Bootbox.alert """
-							Please check your network connection and try again
-						"""
-						return
-					Bootbox.alert "New template: '#{templateName}' created."
 
 
 	PlanTarget = React.createFactory React.createClass
