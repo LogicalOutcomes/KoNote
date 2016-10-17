@@ -98,7 +98,7 @@ load = (win) ->
 							'detailUnitGroup'
 							'isSelected' if @_isSelected('basic')
 						].join ' '
-						onClick: @_updateSelectedGroupId.bind null, 'basic'
+						onBlur: @_updateSelectedGroupId.bind null, null
 					},
 						(if Config.features.clientAvatar.isEnabled
 							# TODO: Client photo/avatar feature
@@ -119,6 +119,7 @@ load = (win) ->
 												ref: 'firstNameField'
 												className: 'form-control'
 												onChange: @_updateFirstName
+												onClick: @_updateSelectedGroupId.bind null, 'basic'
 												value: @state.firstName
 												disabled: @props.isReadOnly
 												maxLength: 35
@@ -131,6 +132,7 @@ load = (win) ->
 											R.input({
 												className: 'form-control'
 												onChange: @_updateMiddleName
+												onClick: @_updateSelectedGroupId.bind null, 'basic'
 												value: @state.middleName
 												placeholder: "(optional)"
 												disabled: @props.isReadOnly
@@ -144,6 +146,7 @@ load = (win) ->
 											R.input({
 												className: 'form-control'
 												onChange: @_updateLastName
+												onClick: @_updateSelectedGroupId.bind null, 'basic'
 												value: @state.lastName
 												disabled: @props.isReadOnly
 												maxLength: 35
@@ -157,6 +160,7 @@ load = (win) ->
 												R.input({
 													className: 'form-control'
 													onChange: @_updateRecordId
+													onClick: @_updateSelectedGroupId.bind null, 'basic'
 													value: @state.recordId
 													placeholder: "(optional)"
 													disabled: @props.isReadOnly
@@ -223,7 +227,7 @@ load = (win) ->
 									'detailUnitGroup'
 									'isSelected' if isSelected
 								].join ' '
-								onClick: @_updateSelectedGroupId.bind null, groupId
+								onBlur: @_updateSelectedGroupId.bind null, null
 							},
 								R.h4({}, definitionGroup.get('title'))
 
@@ -249,6 +253,7 @@ load = (win) ->
 														value
 														onChange: @_updateDetailUnit.bind null, fieldId
 														disabled: @props.isReadOnly
+														onClick: @_updateSelectedGroupId.bind null, groupId
 													})
 												)
 											)
