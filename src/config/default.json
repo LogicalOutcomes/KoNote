@@ -104,19 +104,19 @@
 			"title": "Basic Information",
 			"fields": [
 				{
-					"name": "Email Address",
-					"inputType": "input",
-					"placeholder": "Email"
-				},
-				{
-					"name": "Home Phone",
+					"name": "Phone (Primary)",
 					"inputType": "input",
 					"placeholder": "Home Phone"
 				},
 				{
-					"name": "Mobile Phone",
+					"name": "Phone (Other)",
 					"inputType": "input",
 					"placeholder": "Mobile Phone"
+				},
+				{
+					"name": "Email",
+					"inputType": "input",
+					"placeholder": "Email"
 				},
 				{
 					"name": "Address",
@@ -124,7 +124,7 @@
 					"placeholder": "Address"
 				},
 				{
-					"name": "Additional Comments",
+					"name": "Comments",
 					"inputType": "textarea",
 					"placeholder": "Additional Comments"
 				}
