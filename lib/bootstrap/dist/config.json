@@ -390,6 +390,7 @@
     "buttons.less",
     "button-groups.less",
     "input-groups.less",
+    "navs.less",
     "labels.less",
     "badges.less",
     "alerts.less",
@@ -411,8 +412,9 @@
     "modal.js",
     "tooltip.js",
     "popover.js",
+    "tab.js",
     "collapse.js",
     "transition.js"
   ],
-  "customizerUrl": "http://getbootstrap.com/customize/?id=2b53f862579b18eb083b0804ab8e66a5"
+  "customizerUrl": "http://getbootstrap.com/customize/?id=bbb9fa5509e6dada36e75956084aaa1e"
 }
