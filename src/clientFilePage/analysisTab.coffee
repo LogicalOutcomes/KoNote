@@ -44,6 +44,7 @@ load = (win) ->
 				inactiveMetricIds: Imm.List()
 				metricValues: null
 				selectedMetricIds: Imm.Set()
+				chartType: 'line'
 				filteredProgEvents: Imm.Set()
 				selectedEventTypeIds: Imm.Set()
 				highlightedEventTypeId: undefined # null reserved for Other Types
@@ -249,6 +250,7 @@ load = (win) ->
 								metricValues
 								xTicks
 								selectedMetricIds: @state.selectedMetricIds
+								chartType: @state.chartType
 								timeSpan
 								updateMetricColors: @_updateMetricColors
 							})
@@ -391,6 +393,33 @@ load = (win) ->
 							)
 
 							R.div({className: 'dataOptions'},
+								R.div({className: "chartTypeContainer"},
+									"Chart Type: "
+									R.label({},
+										"Line "
+										R.input({
+											type: 'checkbox'
+											checked: @state.chartType is 'line'
+											onChange: @_updateChartType.bind null, 'line'
+										})
+									)
+									R.label({},
+										"Spline "
+										R.input({
+											type: 'checkbox'
+											checked: @state.chartType is 'spline'
+											onChange: @_updateChartType.bind null, 'spline'
+										})
+									)
+									R.label({},
+										"Scatter "
+										R.input({
+											type: 'checkbox'
+											checked: @state.chartType is 'scatter'
+											onChange: @_updateChartType.bind null, 'scatter'
+										})
+									)
+								)
 								(@props.plan.get('sections').map (section) =>
 									R.div({key: section.get('id')},
 										R.h3({}, section.get('name'))
@@ -557,6 +586,9 @@ load = (win) ->
 
 				return {selectedMetricIds}
 
+		_updateChartType: (type) ->
+			@setState {chartType: type}
+		
 		_updateSelectedMetrics: (metricId) ->
 			@setState ({selectedMetricIds}) =>
 				if selectedMetricIds.contains metricId

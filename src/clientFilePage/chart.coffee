@@ -193,6 +193,7 @@ load = (win) ->
 				data: {
 					#type: 'scatter'
 					#type: 'spline'
+					type: @props.chartType
 					hide: true
 					xFormat: D3TimestampFormat
 					columns: scaledDataSeries.toJS()
