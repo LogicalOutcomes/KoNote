@@ -1129,7 +1129,7 @@ load = (win) ->
 							currentTargetRevisionsById
 							disabled: isReadOnly
 						},
-							FaIcon 'wpForms'
+							FaIcon 'wpforms'
 						)
 					)
 				)
