@@ -12,6 +12,9 @@ sidebar-borders = darken(sidebar-bg, 10%)
 		display flex
 		justify-content center
 		align-items center
+		animation-name showEffect
+		animation-timing-function ease-in
+		animation-duration 1.5s
 
 	.spinnerContainer
 		display flex
@@ -45,11 +48,19 @@ sidebar-borders = darken(sidebar-bg, 10%)
 		-webkit-animation-delay -0.8s
 		animation-delay -0.8s
 
-	@-webkit-keyframes sk-stretchdelay
+	@keyframes sk-stretchdelay
 		0%, 40%, 100%
 			-webkit-transform scaleY(0.4)
 		20%
 			-webkit-transform scaleY(1.0)
+
+	@keyframes showEffect
+		0%
+			opacity 0
+		25%
+			opacity 0
+		100%
+			opacity 1
 
 
 #container > .clientFilePage

@@ -29,7 +29,6 @@ load = (win) ->
 			return {
 				isSetUp: null
 				isNewSetUp: null
-
 				isLoading: false
 			}
 
@@ -53,11 +52,8 @@ load = (win) ->
 
 			LoginPageUi({
 				ref: 'ui'
-
 				isLoading: @state.isLoading
 				loadingMessage: @state.loadingMessage
-
-				isSetUp: @state.isSetUp
 				isNewSetUp: @state.isNewSetUp
 				activateWindow: @_activateWindow
 				login: @_login
@@ -74,7 +70,6 @@ load = (win) ->
 
 				if isSetUp
 					# Already set up, no need to continue here
-					console.log "Set up confirmed..."
 					@setState {isSetUp: true}
 					return
 
