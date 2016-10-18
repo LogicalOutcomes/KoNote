@@ -76,7 +76,7 @@ load = (win) ->
 
 				if @props.type is 'start'
 					# Update 'start' datetimepicker
-					@dateTimePicker.date startDate.seconds(0)
+					@dateTimePicker.date startDate
 				else
 					# Catch bad updates
 					if startDate.isAfter @dateTimePicker.maxDate()
