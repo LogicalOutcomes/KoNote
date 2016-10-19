@@ -77,6 +77,7 @@ load = (win) ->
 			else
 				progNoteHistories = @props.progNoteHistories
 				clientFileId = @props.clientFileId
+
 			historyEntries = null
 
 			Async.series [
@@ -87,14 +88,17 @@ load = (win) ->
 						attachmentFilename = null
 
 						ActiveSession.persist.attachments.list clientFileId, progNoteId, (err, results) =>
-							unless err
-								if results.size > 0
-									attachmentFilename = {
-										clientFileId
-										progNoteId
-										attachmentId: results.first().get('id')
-										filename: results.first().get('filename')
-									}
+							if err
+								cb err
+								return
+
+							if results.size > 0
+								attachmentFilename = {
+									clientFileId
+									progNoteId
+									attachmentId: results.first().get('id')
+									filename: results.first().get('filename')
+								}
 
 							entry = Imm.fromJS {
 								type: 'progNote'
@@ -108,12 +112,24 @@ load = (win) ->
 
 					, (err, results) ->
 						if err
-							console.log err
+							cb err
+							return
+
 						historyEntries = Imm.List(results)
 						cb()
+
 			], (err) =>
 				if err
-					console.log err
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
+					CrashHandler.handle err
+					return
+
 				@setState {historyEntries}
 
 		render: ->
