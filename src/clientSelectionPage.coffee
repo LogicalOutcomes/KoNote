@@ -5,7 +5,6 @@
 # Node libs
 Imm = require 'immutable'
 Async = require 'async'
-_ = require 'underscore'
 
 Config = require './config'
 Term = require './term'
