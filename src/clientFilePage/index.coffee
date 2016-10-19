@@ -35,8 +35,6 @@ load = (win, {clientFileId}) ->
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
 	InfoTab = require('./infoTab').load(win)
-	#OpenDialogLink = require('../openDialogLink').load(win)
-	#WithTooltip = require('../withTooltip').load(win)
 	ClientAlerts = require('./clientAlerts').load(win)
 
 	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
