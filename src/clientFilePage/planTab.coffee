@@ -199,12 +199,24 @@ load = (win) ->
 								title: FaIcon('wpforms')
 								disabled: @props.isReadOnly
 							},
-								B.MenuItem({onClick: @_createTemplate
+
+
+								B.MenuItem({},
+									OpenDialogLink({
+										className: 'addSectionButton'
+										dialog: CreatePlanTemplateDialog
+										title: "Create Template from Plan"
+										sections: @state.plan.get('sections')
+										currentTargetRevisionsById: @state.currentTargetRevisionsById
+										# disabled: isReadOnly
 									},
-									R.h5({},
-										"Generate #{Term 'Plan Template'}"
+										"Create Template from Plan"
 									)
 								)
+
+
+
+
 								(unless @props.planTemplateHeaders.isEmpty()
 									[
 										B.MenuItem({divider: true})
