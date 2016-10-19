@@ -36,6 +36,7 @@ load = (win) ->
 		getDefaultProps: ->
 			return {
 				progEvents: Imm.List()
+				globalEvents: Imm.List()
 			}
 
 		render: ->
@@ -84,54 +85,76 @@ load = (win) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
 
+		_cancelEvents: (events) ->
+			return events
+			.filter (progEvent) -> progEvent.get('status') is 'default'
+			.map (progEvent) =>
+				progEvent
+				.set('status', 'cancelled')
+				.set('statusReason', @state.reason)
+
 		_submit: ->
 			# Cancel progNote with reason
 			cancelledProgNote = @props.progNote
 			.set('status', 'cancelled')
 			.set('statusReason', @state.reason)
 
-			# Cancel only active/default progEvents, with same reason
-			cancelledEvents = @props.progEvents
-			.filter (progEvent) -> progEvent.get('status') is 'default'
-			.map (progEvent) =>
-				return progEvent
-				.set('status', 'cancelled')
-				.set('statusReason', @state.reason)
+			# Cancel only active/default events, with same reason
+			cancelledProgEvents = @_cancelEvents @props.progEvents
+			cancelledGlobalEvents = @_cancelEvents @props.globalEvents
+
+			cancelledEvents = cancelledProgEvents
+			.concat(cancelledGlobalEvents)
+			.sortBy (event) -> event.get('startTimestamp')
+
+			# Build HTML for each event entry
+			eventsList = cancelledEvents.toJS().map ({title, startTimestamp, endTimestamp, relatedProgEventId}) ->
+				# relatedProgEventId indicates this is a globalEvent
+				if relatedProgEventId?
+					title += " (#{Term 'global event'})"
+
+				return """
+					<li>
+						<strong>#{title}</strong>\n
+						<div>From: <em>#{formatTimestamp startTimestamp}</em></div>
+						<div>Until: <em>#{formatTimestamp endTimestamp}</em></div>
+					</li>
+				"""
+			.join('')
 
 			# Build HTML for events warning
 			eventsMessage = """
 				<br><br>
 				The following #{Term 'events'} will also be cancelled:
 				<ul>
-					#{
-						cancelledEvents.toJS().map ({title, startTimestamp, endTimestamp}) -> """
-							<li>
-								<strong>#{title}</strong>\n
-								<div>From: <em>#{formatTimestamp startTimestamp}</em></div>
-								<div>Until: <em>#{formatTimestamp endTimestamp}</em></div>
-							</li>
-						"""
-						.join('')
-					}
+					#{eventsList}
 				</ul>
 			"""
 
+			eventsMessage = if cancelledEvents.isEmpty() then '' else eventsMessage
+
+			# Prompt the user, include eventsMessage if any to show
 			Bootbox.confirm """
 				Are you sure you want to cancel this #{Term 'progress note'}?
-				#{eventsMessage unless cancelledEvents.isEmpty()}
+				#{eventsMessage}
 			""", (ok) =>
 				if ok
-					@_cancelProgNote cancelledProgNote, cancelledEvents
+					@_cancelProgNote cancelledProgNote, cancelledProgEvents, cancelledGlobalEvents
 
 
-		_cancelProgNote: (progNote, progEvents) ->
+		_cancelProgNote: (progNote, progEvents, globalEvents) ->
 			Async.series [
 				(cb) =>
 					ActiveSession.persist.progNotes.createRevision progNote, cb
 
 				(cb) =>
-					Async.map progEvents.toArray(), (progEvent, cb) =>
+					Async.map progEvents.toArray(), (progEvent, cb) ->
 						ActiveSession.persist.progEvents.createRevision progEvent, cb
+					, cb
+
+				(cb) =>
+					Async.map globalEvents.toArray(), (globalEvent, cb) ->
+						ActiveSession.persist.globalEvents.createRevision globalEvent, cb
 					, cb
 
 			], (err) =>

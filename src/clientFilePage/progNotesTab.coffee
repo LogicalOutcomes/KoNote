@@ -256,6 +256,7 @@ load = (win) ->
 												clientFile: @props.clientFile
 
 												progEvents: @props.progEvents
+												globalEvents: @props.globalEvents
 												programsById: @props.programsById
 
 												revisingProgNote: @state.revisingProgNote
@@ -810,8 +811,12 @@ load = (win) ->
 			isEditing = @props.revisingProgNote? and @props.revisingProgNote.get('id') is progNoteId
 
 			# Filter out only events for this progNote
-			progEvents = @props.progEvents.filter (progEvent) =>
+			progEvents = @props.progEvents.filter (progEvent) ->
 				return progEvent.get('relatedProgNoteId') is progNote.get('id')
+
+			globalEvents = @props.globalEvents.filter (globalEvent) ->
+				return globalEvent.get('relatedProgNoteId') is progNoteId
+
 
 			# TODO: Pass props down in a more efficient manner, maybe by grouping them together
 
@@ -819,6 +824,7 @@ load = (win) ->
 				return CancelledProgNoteView({
 					progNoteHistory: @props.progNoteHistory
 					progEvents
+					globalEvents
 					eventTypes: @props.eventTypes
 					clientFile: @props.clientFile
 					userProgram
@@ -866,6 +872,7 @@ load = (win) ->
 						progNote
 						progNoteHistory: @props.progNoteHistory
 						progEvents
+						globalEvents
 						userProgram
 						eventTypes: @props.eventTypes
 						clientFile: @props.clientFile
@@ -920,6 +927,7 @@ load = (win) ->
 							progNote
 							progNoteHistory: @props.progNoteHistory
 							progEvents: @props.progEvents
+							globalEvents: @props.globalEvents
 							clientFile: @props.clientFile
 							selectedItem: @props.selectedItem
 
@@ -1029,11 +1037,7 @@ load = (win) ->
 			# Filter out any empty notes/metrics, unless we're editing
 			progNote = if isEditing then @props.revisingProgNote else @_filterEmptyValues(@props.progNote)
 
-			R.div({
-				className: 'full progNote'
-				## TODO: Restore hover feature
-				# onMouseEnter: @props.setHighlightedProgNoteId.bind null, progNote.get('id')
-			},
+			R.div({className: 'full progNote'},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
@@ -1045,6 +1049,7 @@ load = (win) ->
 							progNote: @props.progNote
 							progNoteHistory: @props.progNoteHistory
 							progEvents: @props.progEvents
+							globalEvents: @props.globalEvents
 							clientFile: @props.clientFile
 							selectedItem: @props.selectedItem
 
@@ -1299,6 +1304,7 @@ load = (win) ->
 								progNote: @props.progNoteHistory.last()
 								progNoteHistory: @props.progNoteHistory
 								progEvents: @props.progEvents
+								globalEvents: @props.globalEvents
 								eventTypes: @props.eventTypes
 								userProgram: @props.userProgram
 								clientFile: @props.clientFile
@@ -1366,6 +1372,7 @@ load = (win) ->
 			progNote
 			progNoteHistory
 			progEvents
+			globalEvents
 			clientFile
 			selectedItem
 
@@ -1419,6 +1426,7 @@ load = (win) ->
 					dialog: CancelProgNoteDialog
 					progNote
 					progEvents
+					globalEvents
 				},
 					R.a({}, "Cancel")
 				)
