@@ -28,9 +28,6 @@ load = (win, {clientFileId}) ->
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
-	Dialog = require('../dialog').load(win)
-	LayeredComponentMixin = require('../layeredComponentMixin').load(win)
-	Spinner = require('../spinner').load(win)
 
 	{FaIcon, renderName, showWhen, stripMetadata,
 	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
