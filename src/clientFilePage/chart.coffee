@@ -73,6 +73,13 @@ load = (win) ->
 
 				@_chart.axis.min {x: newMin}
 				@_chart.axis.max {x: newMax}
+			
+			# Update chart type?
+			sameChartType = Imm.is @props.chartType, oldProps.chartType
+			unless sameChartType
+				@_generateChart()
+				@_refreshSelectedMetrics()
+				@_refreshProgEvents()
 
 
 		componentDidMount: ->
