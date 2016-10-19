@@ -40,12 +40,8 @@ load = (win) ->
 			return {
 				hasEnoughData: null
 				daysOfData: null
-				targetMetricsById: Imm.Map()
-				inactiveMetricIds: Imm.List()
-				metricValues: null
 				selectedMetricIds: Imm.Set()
 				chartType: 'line'
-				filteredProgEvents: Imm.Set()
 				selectedEventTypeIds: Imm.Set()
 				highlightedEventTypeId: undefined # null reserved for Other Types
 				starredEventTypeIds: Imm.Set()
@@ -69,43 +65,56 @@ load = (win) ->
 
 		render: ->
 
-			# Build targets list as targetId:[metricIds]
-			targetMetricsById = @props.plan.get('sections').flatMap (section) =>
-				section.get('targetIds').map (targetId) =>
-					target = @props.planTargetsById.getIn([targetId, 'revisions']).first()
-					return [target.get('id'), target.get('metricIds')]
-				.fromEntrySeq().toMap()
-			.fromEntrySeq().toMap()
-
-			# Flatten to a single list of targets' metric ids
-			targetMetricIdsList = targetMetricsById.toList().flatten(true)
+			#################### Metric Values/Entries ####################
 
 			# All non-empty metric values
 			metricValues = @props.progNoteHistories
-			.filter (progNoteHist) ->
-				# Ignore data from cancelled prognotes
-				switch progNoteHist.last().get('status')
-					when 'default'
-						return true
-					when 'cancelled'
-						return false
-					else
-						throw new Error "unknown progNote status: #{progNoteHist.last().get('status')}"
-			.flatMap (progNoteHist) ->
-				# Extract metrics
-				return extractMetricsFromProgNoteHistory progNoteHist
-			.filter (metricValue) ->
-				# Ignore blank metric values
-				return metricValue.get('value').trim().length > 0
+			.filter (progNoteHist) -> progNoteHist.last().get('status') is 'default'
+			.flatMap (progNoteHist) -> extractMetricsFromProgNoteHistory progNoteHist
+			.filter (metricValue) -> metricValue.get('value').trim().length > 0
 
 			# All metric IDs for which this client file has data
 			metricIdsWithData = metricValues
 			.map (m) -> m.get 'id'
 			.toSet()
 
-			# Build list of inactive metricIds that have data
-			inactiveMetricIds = metricIdsWithData.filterNot (metricId) ->
-				targetMetricIdsList.contains metricId
+
+			#################### Plan Targets & Metrics ####################
+
+			# Replace plan target & metric ids with obj, discard empty / without metric data
+			planSectionsWithData = @props.plan.get('sections').map (section) =>
+
+				targets = section.get('targetIds').map (targetId) =>
+					# Grab latest target & metric objects
+					target = @props.planTargetsById.getIn([targetId, 'revisions']).first()
+					metrics = target.get('metricIds')
+					.filter (metricId) -> metricIdsWithData.includes metricId
+					.map (metricId) => @props.metricsById.get(metricId)
+
+					return target.remove('metricIds').set 'metrics', metrics
+
+				.filterNot (target) ->
+					target.get('metrics').isEmpty()
+
+				return section.remove('targetIds').set 'targets', targets
+
+			.filterNot (section) ->
+				section.get('targets').isEmpty()
+
+			# Flat map of plan metrics, as {id: metric}
+			planMetricsById = planSectionsWithData.flatMap (section) ->
+				section.get('targets').flatMap (target) ->
+					target.get('metrics').map (metric) ->
+						return [metric.get('id'), metric]
+					.fromEntrySeq().toMap()
+				.fromEntrySeq().toMap()
+			.fromEntrySeq().toMap()
+
+			# Flat list of unassigned metrics (has data, but since removed from target)
+			unassignedMetricsList = metricIdsWithData
+			.filterNot (metricId) -> planMetricsById.has metricId
+			.map (metricId) => @props.metricsById.get metricId
+			.toList()
 
 
 			#################### ProgEvents ####################
@@ -114,6 +123,8 @@ load = (win) ->
 			progEventIdsWithData = @props.progEvents
 			.map (progEvent) -> progEvent.get 'id'
 			.toSet()
+
+			# TODO: All eventTypeIds with data
 
 			# Build master set of events
 			allEvents = @props.progEvents.concat @props.globalEvents
@@ -420,12 +431,14 @@ load = (win) ->
 										})
 									)
 								)
-								(@props.plan.get('sections').map (section) =>
+								(planSectionsWithData.map (section) =>
 									R.div({key: section.get('id')},
 										R.h3({}, section.get('name'))
 										R.section({key: section.get('id')},
-											(section.get('targetIds').map (targetId) =>
-												target = @props.planTargetsById.getIn([targetId, 'revisions']).first()
+
+											(section.get('targets').map (target) =>
+												targetId = target.get('id')
+												targetIsInactive = target.get('status') isnt 'default'
 
 												R.div({
 													key: targetId
@@ -434,8 +447,9 @@ load = (win) ->
 													R.h5({}, target.get('name'))
 
 													# TODO: Extract to component
-													(targetMetricsById.get(targetId).map (metricId) =>
-														metric = @props.metricsById.get(metricId)
+													(target.get('metrics').map (metric) =>
+														metricId = metric.get('id')
+														metricIsInactive = targetIsInactive or metric.get('status') isnt 'default'
 
 														R.div({
 															key: metricId
@@ -466,13 +480,12 @@ load = (win) ->
 									)
 								)
 							)
-
-							(unless @state.inactiveMetricIds.isEmpty()
+							(unless unassignedMetricsList.isEmpty()
 								R.div({},
 									R.h3({}, "Inactive")
 									R.div({className: 'dataOptions'},
-										(@state.inactiveMetricIds.map (metricId) =>
-											metric = @props.metricsById.get(metricId)
+										(unassignedMetricsList.map (metric) =>
+											metricId = metric.get('id')
 
 											R.div({
 												key: metricId
@@ -588,7 +601,7 @@ load = (win) ->
 
 		_updateChartType: (type) ->
 			@setState {chartType: type}
-		
+
 		_updateSelectedMetrics: (metricId) ->
 			@setState ({selectedMetricIds}) =>
 				if selectedMetricIds.contains metricId
