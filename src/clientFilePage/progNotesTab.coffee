@@ -141,10 +141,13 @@ load = (win) ->
 					historyEntries.find (entry) => entry.get('id') is @state.revisingProgNote.get('id')
 				]
 			else
-				# Tack on the globalEvents, and sort!
+				# Tack on any active globalEvents, and sort!
 				historyEntries
 				.concat(
-					@props.globalEvents.map (globalEvent) ->
+					@props.globalEvents
+					.filter (globalEvent) ->
+						globalEvent.get('status') is 'default'
+					.map (globalEvent) ->
 						return Imm.fromJS {
 							type: 'globalEvent'
 							id: globalEvent.get('id')

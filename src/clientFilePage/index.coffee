@@ -114,23 +114,16 @@ load = (win, {clientFileId}) ->
 
 			clientHasPrograms = not clientPrograms.isEmpty()
 
-			# Filter to only global events that fit our criteria:
-			# TODO: Move this up to data-load (issue #735)
+			# Filter down to active global events that belong in this clientFile
 			globalEvents = @state.globalEvents.filter (globalEvent) =>
-				# Originally created from this clientFile
-				return true if globalEvent.get('clientFileId') is clientFileId
+				isActive = globalEvent.get('status') is 'default'
+				originatesFromClient = globalEvent.get('clientFileId') is clientFileId
 
-				# GlobalEvent is fully global (no program)
 				programId = globalEvent.get('programId')
-				return true if not programId
+				hasNoProgram = not programId
+				isInClientProgram = clientPrograms.contains @state.programsById.get(programId)
 
-				# globalEvent program matches up with one of clientFile's programs
-				# TODO: This is one example of where we need to search clientPrograms by ID
-				matchingProgram = clientPrograms.contains @state.programsById.get(programId)
-				return true if matchingProgram
-
-				# Failed criteria tests, so discard this globalEvent
-				return false
+				return (isActive or originatesFromClient) and (hasNoProgram or isInClientProgram)
 
 
 			return ClientFilePageUi({
@@ -698,6 +691,8 @@ load = (win, {clientFileId}) ->
 				# that update the UI.
 
 		getPageListeners: ->
+			# TODO: Refactor these to be more consistent & performant
+
 			return {
 				'createRevision:clientFile': (newRev) =>
 					return unless newRev.get('id') is clientFileId
@@ -793,6 +788,14 @@ load = (win, {clientFileId}) ->
 
 				'create:globalEvent': (globalEvent) =>
 					globalEvents = @state.globalEvents.push globalEvent
+					@setState {globalEvents}
+
+				'createRevision:globalEvent': (newGlobalEventRev) =>
+					originalGlobalEvent = @state.globalEvents
+					.find (globalEvent) -> globalEvent.get('id') is newGlobalEventRev.get('id')
+
+					globalEventIndex = @state.globalEvents.indexOf originalGlobalEvent
+					globalEvents = @state.globalEvents.set globalEventIndex, newGlobalEventRev
 					@setState {globalEvents}
 
 				# TODO: Update to allow for multiple alerts
