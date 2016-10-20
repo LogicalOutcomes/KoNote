@@ -90,11 +90,7 @@ init = (win) ->
 					unregisterPageListeners() if isLoggedIn
 					nwWin.removeListener 'close', onWindowCloseEvent
 					ReactDOM.unmountComponentAtNode containerElem
-					switch pageParams.page
-						when 'clientSelection'
-							win.location.href = "main-clientSelection.html?" + QueryString.stringify(pageParams)
-						else
-							win.location.href = "main.html?" + QueryString.stringify(pageParams)
+					win.location.href = "main.html?" + QueryString.stringify(pageParams)
 
 			closeWindow: =>
 				nwWin.hide()

@@ -78,7 +78,13 @@ load = (win) ->
 			if nw.Screen.screens[0].work_area.height < 700
 				height = nw.Screen.screens[0].work_area.height
 
-		nw.Window.open 'src/main.html?' + $.param(params), {
+		switch params.page
+			when 'clientSelection'
+				page = 'src/main-clientSelection.html?'
+			else
+				page = 'src/main.html?'
+
+		nw.Window.open page + $.param(params), {
 			focus: false
 			show: false
 			width
