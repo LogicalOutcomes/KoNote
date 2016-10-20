@@ -46,10 +46,8 @@ load = (win) ->
 				editingProgNoteId: null
 				attachment: null
 				selectedItem: null
-				highlightedProgNoteId: null
-				highlightedTargetId: null
 				backdate: ''
-				revisingProgNote: null
+				transientData: null
 				isLoading: null
 				historyEntries: Imm.List()
 			}
@@ -68,7 +66,7 @@ load = (win) ->
 			# 			@props.renewAllData()
 
 		hasChanges: ->
-			@_revisingProgNoteHasChanges()
+			@_transientDataHasChanges()
 
 		_buildHistoryEntries: (nextProps) ->
 			if nextProps?
@@ -134,14 +132,18 @@ load = (win) ->
 
 		render: ->
 			historyEntries = @state.historyEntries
-			hasChanges = @_revisingProgNoteHasChanges()
-			historyEntries = if @state.revisingProgNote?
+
+			transientData = @state.transientData
+			hasChanges = @_transientDataHasChanges()
+			isEditing = transientData?
+
+			historyEntries = if isEditing
 				# Only show the single progNote while editing
 				Imm.List [
-					historyEntries.find (entry) => entry.get('id') is @state.revisingProgNote.get('id')
+					historyEntries.find (entry) => entry.get('id') is transientData.getIn(['progNote', 'id'])
 				]
 			else
-				# Tack on any active globalEvents, and sort!
+				# Display all progNotes, tack on any active globalEvents, and sort!
 				historyEntries
 				.concat(
 					@props.globalEvents
@@ -157,9 +159,7 @@ load = (win) ->
 						}
 				)
 				.sortBy (entry) -> entry.get('timestamp')
-
-			# Reverse order so by newest -> oldest
-			historyEntries = historyEntries.reverse()
+				.reverse()
 
 			hasEnoughData = (@props.progNoteHistories.size + @props.globalEvents.size) > 0
 
@@ -174,9 +174,9 @@ load = (win) ->
 								R.button({
 									className: [
 										'saveButton'
-										'collapsed' unless @state.revisingProgNote
+										'collapsed' unless isEditing
 									].join ' '
-									onClick: @_saveProgNoteRevision
+									onClick: @_saveTransientData
 									disabled: not hasChanges
 								},
 									FaIcon('save')
@@ -186,7 +186,7 @@ load = (win) ->
 								R.button({
 									className: [
 										'discardButton'
-										'collapsed' unless @state.revisingProgNote
+										'collapsed' unless isEditing
 									].join ' '
 									onClick: @_cancelRevisingProgNote
 								},
@@ -197,7 +197,7 @@ load = (win) ->
 								R.button({
 									className: [
 										'newProgNoteButton'
-										'collapsed' if @state.revisingProgNote
+										'collapsed' if isEditing
 									].join ' '
 									onClick: @_openNewProgNote
 									disabled: @state.isLoading or @props.isReadOnly
@@ -210,7 +210,7 @@ load = (win) ->
 									ref: 'addQuickNoteButton'
 									className: [
 										'addQuickNoteButton'
-										'collapsed' if @state.revisingProgNote
+										'collapsed' if isEditing
 									].join ' '
 									onClick: @_openNewQuickNote
 									disabled: @props.isReadOnly
@@ -262,25 +262,23 @@ load = (win) ->
 												globalEvents: @props.globalEvents
 												programsById: @props.programsById
 
-												revisingProgNote: @state.revisingProgNote
 												isReadOnly: @props.isReadOnly
 
 												setSelectedItem: @_setSelectedItem
 												selectProgNote: @_selectProgNote
-												setEditingProgNoteId: @_setEditingProgNoteId
-												updatePlanTargetNotes: @_updatePlanTargetNotes
-												setHighlightedProgNoteId: @_setHighlightedProgNoteId
-												setHighlightedTargetId: @_setHighlightedTargetId
 												selectedItem: @state.selectedItem
+
+												transientData
+												isEditing
 
 												startRevisingProgNote: @_startRevisingProgNote
 												cancelRevisingProgNote: @_cancelRevisingProgNote
+
+												updatePlanTargetNotes: @_updatePlanTargetNotes
 												updateBasicUnitNotes: @_updateBasicUnitNotes
 												updateBasicMetric: @_updateBasicMetric
 												updatePlanTargetMetric: @_updatePlanTargetMetric
 												updateQuickNotes: @_updateQuickNotes
-												saveProgNoteRevision: @_saveProgNoteRevision
-												setHighlightedQuickNoteId: @_setHighlightedQuickNoteId
 											})
 										when 'globalEvent'
 											GlobalEventView({
@@ -297,9 +295,6 @@ load = (win) ->
 					R.section({className: 'rightPane'},
 						ProgNoteDetailView({
 							item: @state.selectedItem
-							highlightedProgNoteId: @state.highlightedProgNoteId
-							highlightedQuickNoteId: @state.highlightedQuickNoteId
-							highlightedTargetId: @state.highlightedTargetId
 							progNoteHistories: @props.progNoteHistories
 							progEvents: @props.progEvents
 							eventTypes: @props.eventTypes
@@ -310,40 +305,54 @@ load = (win) ->
 				)
 			)
 
-		_startRevisingProgNote: (originalProgNote) ->
-			# Attach the original revision inside the progNote, strip it out when save
-			revisingProgNote = originalProgNote.set('originalRevision', originalProgNote)
-			@setState {revisingProgNote}
+		_startRevisingProgNote: (progNote, progEvents) ->
+			# Include transient and original data into generic store
+			transientData = Imm.fromJS {
+				progNote
+				originalProgNote: progNote
+
+				progEvents
+				originalProgEvents: progEvents
+				# TODO: Allow editing for globalEvents as well
+			}
+
+			@setState {transientData}
 
 		_cancelRevisingProgNote: ->
-			if @_revisingProgNoteHasChanges()
+			if @_transientDataHasChanges()
 				return Bootbox.confirm "Discard all changes made to the #{Term 'progress note'}?", (ok) =>
-					if ok then @_discardRevisingProgNote()
+					if ok then @_discardTransientData()
 
-			@_discardRevisingProgNote()
+			@_discardTransientData()
 
-		_discardRevisingProgNote: ->
-			@setState {revisingProgNote: null}
+		_discardTransientData: ->
+			@setState {transientData: null}
 
-		_revisingProgNoteHasChanges: ->
-			return null unless @state.revisingProgNote?
+		_transientDataHasChanges: ->
+			transientData = @state.transientData
+			return null unless transientData?
 
-			originalRevision = @state.revisingProgNote.get('originalRevision')
-			newRevision = @_stripRevisingProgNote()
-			return not Imm.is originalRevision, newRevision
+			originalProgNote = transientData.get('originalProgNote')
+			progNote = transientData.get('progNote')
+			progNoteHasChanges = not Imm.is progNote, originalProgNote
 
-		_stripRevisingProgNote: ->
-			# Strip out the originalRevision for saving/comparing
-			@state.revisingProgNote.remove 'originalRevision'
+			originalProgEvents = transientData.get('originalProgEvents')
+			progEvents = transientData.get('progEvents')
+			progEventsHasChanges = not Imm.is progEvents, originalProgEvents
+
+			# TODO: Compare globalEvents
+			return progNoteHasChanges or progEventsHasChanges
 
 		_updateBasicUnitNotes: (unitId, event) ->
 			newNotes = event.target.value
+			transientData = @state.transientData
 
-			unitIndex = getUnitIndex @state.revisingProgNote, unitId
+			unitIndex = getUnitIndex transientData.get('progNote'), unitId
 
 			@setState {
-				revisingProgNote: @state.revisingProgNote.setIn(
+				transientData: transientData.setIn(
 					[
+						'progNote'
 						'units', unitIndex
 						'notes'
 					]
@@ -354,13 +363,17 @@ load = (win) ->
 		_updatePlanTargetNotes: (unitId, sectionId, targetId, event) ->
 			newNotes = event.target.value
 
-			unitIndex = getUnitIndex @state.revisingProgNote, unitId
-			sectionIndex = getPlanSectionIndex @state.revisingProgNote, unitIndex, sectionId
-			targetIndex = getPlanTargetIndex @state.revisingProgNote, unitIndex, sectionIndex, targetId
+			transientData = @state.transientData
+			progNote = transientData.get('progNote')
+
+			unitIndex = getUnitIndex progNote, unitId
+			sectionIndex = getPlanSectionIndex progNote, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex progNote, unitIndex, sectionIndex, targetId
 
 			@setState {
-				revisingProgNote: @state.revisingProgNote.setIn(
+				transientData: transientData.setIn(
 					[
+						'progNote'
 						'units', unitIndex
 						'sections', sectionIndex
 						'targets', targetIndex
@@ -373,19 +386,23 @@ load = (win) ->
 		_updateQuickNotes: (event) ->
 			newNotes = event.target.value
 
-			revisingProgNote = @state.revisingProgNote.set 'notes', newNotes
-			@setState {revisingProgNote}
+			@setState {
+				transientData: @state.transientData.setIn ['progNote', 'notes'], newNotes
+			}
 
 		_isValidMetric: (value) -> value.match /^-?\d*\.?\d*$/
 
 		_updatePlanTargetMetric: (unitId, sectionId, targetId, metricId, newMetricValue) ->
 			return unless @_isValidMetric(newMetricValue)
 
-			unitIndex = getUnitIndex @state.revisingProgNote, unitId
-			sectionIndex = getPlanSectionIndex @state.revisingProgNote, unitIndex, sectionId
-			targetIndex = getPlanTargetIndex @state.revisingProgNote, unitIndex, sectionIndex, targetId
+			transientData = @state.transientData
+			progNote = transientData.get('progNote')
 
-			metricIndex = @state.revisingProgNote.getIn(
+			unitIndex = getUnitIndex progNote, unitId
+			sectionIndex = getPlanSectionIndex progNote, unitIndex, sectionId
+			targetIndex = getPlanTargetIndex progNote, unitIndex, sectionIndex, targetId
+
+			metricIndex = progNote.getIn(
 				[
 					'units', unitIndex
 					'sections', sectionIndex
@@ -396,8 +413,9 @@ load = (win) ->
 				return metric.get('id') is metricId
 
 			@setState {
-				revisingProgNote: @state.revisingProgNote.setIn(
+				transientData: transientData.setIn(
 					[
+						'progNote'
 						'units', unitIndex
 						'sections', sectionIndex
 						'targets', targetIndex
@@ -411,15 +429,19 @@ load = (win) ->
 		_updateBasicMetric: (unitId, metricId, newMetricValue) ->
 			return unless @_isValidMetric(newMetricValue)
 
-			unitIndex = getUnitIndex @state.revisingProgNote, unitId
+			transientData = @state.transientData
+			progNote = transientData.get('progNote')
 
-			metricIndex = @state.revisingProgNote.getIn(['units', unitIndex, 'metrics'])
+			unitIndex = getUnitIndex progNote, unitId
+
+			metricIndex = progNote.getIn ['units', unitIndex, 'metrics']
 			.findIndex (metric) =>
 				return metric.get('id') is metricId
 
 			@setState {
-				progNote: @state.revisingProgNote.setIn(
+				transientData: transientData.setIn(
 					[
+						'progNote'
 						'units', unitIndex
 						'metrics', metricIndex
 						'value'
@@ -428,11 +450,10 @@ load = (win) ->
 				)
 			}
 
-		_saveProgNoteRevision: ->
-			progNoteRevision = @_stripRevisingProgNote()
+		_saveTransientData: ->
+			revisedProgNote = @state.transientData.get('progNote')
 
-			ActiveSession.persist.progNotes.createRevision progNoteRevision, (err, result) =>
-
+			ActiveSession.persist.progNotes.createRevision revisedProgNote, (err, result) =>
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """
@@ -443,17 +464,8 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				@_discardRevisingProgNote()
+				@_discardTransientData()
 				return
-
-		_setHighlightedProgNoteId: (highlightedProgNoteId) ->
-			@setState {highlightedProgNoteId}
-
-		_setHighlightedQuickNoteId: (highlightedQuickNoteId) ->
-			@setState {highlightedQuickNoteId}
-
-		_setHighlightedTargetId: (highlightedTargetId) ->
-			@setState {highlightedTargetId}
 
 		_checkUserProgram: (cb) ->
 			# Skip if no clientProgram(s)
@@ -767,6 +779,7 @@ load = (win) ->
 				beginTimestamp: @quickNoteBeginTimestamp
 			}
 
+			# TODO: Async series
 			global.ActiveSession.persist.progNotes.create quickNote, (err, result) =>
 				if err
 					cb err
@@ -804,14 +817,14 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
+			{isEditing} = @props
+
 			progNote = @props.progNoteHistory.last()
 			progNoteId = progNote.get('id')
 
 			firstProgNoteRev = @props.progNoteHistory.first()
 			userProgramId = firstProgNoteRev.get('authorProgramId')
 			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
-
-			isEditing = @props.revisingProgNote? and @props.revisingProgNote.get('id') is progNoteId
 
 			# Filter out only events for this progNote
 			progEvents = @props.progEvents.filter (progEvent) ->
@@ -836,8 +849,8 @@ load = (win) ->
 					selectProgNote: @props.selectProgNote
 					isReadOnly: @props.isReadOnly
 
-					isEditing
-					revisingProgNote: @props.revisingProgNote
+					isEditing: @props.isEditing
+					transientData: @props.transientData
 					startRevisingProgNote: @props.startRevisingProgNote
 					cancelRevisingProgNote: @props.cancelRevisingProgNote
 					updateBasicUnitNotes: @props.updateBasicUnitNotes
@@ -858,13 +871,12 @@ load = (win) ->
 						userProgram
 						clientFile: @props.clientFile
 						selectedItem: @props.selectedItem
-						setHighlightedQuickNoteId: @props.setHighlightedQuickNoteId
 						setSelectedItem: @props.setSelectedItem
 						selectProgNote: @props.selectProgNote
 						isReadOnly: @props.isReadOnly
 
 						isEditing
-						revisingProgNote: @props.revisingProgNote
+						transientData: @props.transientData
 						startRevisingProgNote: @props.startRevisingProgNote
 						cancelRevisingProgNote: @props.cancelRevisingProgNote
 						updateQuickNotes: @props.updateQuickNotes
@@ -883,13 +895,11 @@ load = (win) ->
 						selectProgNote: @props.selectProgNote
 						setEditingProgNoteId: @props.setEditingProgNoteId
 						updatePlanTargetNotes: @props.updatePlanTargetNotes
-						setHighlightedProgNoteId: @props.setHighlightedProgNoteId
-						setHighlightedTargetId: @props.setHighlightedTargetId
 						selectedItem: @props.selectedItem
 						isReadOnly: @props.isReadOnly
 
 						isEditing
-						revisingProgNote: @props.revisingProgNote
+						transientData: @props.transientData
 						startRevisingProgNote: @props.startRevisingProgNote
 						cancelRevisingProgNote: @props.cancelRevisingProgNote
 						updateBasicUnitNotes: @props.updateBasicUnitNotes
@@ -908,17 +918,12 @@ load = (win) ->
 		render: ->
 			isEditing = @props.isEditing
 
-			progNote = if isEditing then @props.revisingProgNote else @props.progNote
+			progNote = if isEditing then @props.transientData.get('progNote') else @props.progNote
 
 			if @props.attachments?
 				attachmentText = " " + @props.attachments.get('filename')
 
-			R.div({
-				className: 'basic progNote'
-				## TODO: Restore hover feature
-				# onMouseEnter: @props.setHighlightedQuickNoteId.bind null, @props.progNote.get('id')
-				# onMouseLeave: @props.setHighlightedQuickNoteId.bind null, null
-			},
+			R.div({className: 'basic progNote'},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
@@ -968,8 +973,15 @@ load = (win) ->
 
 				global.ActiveSession.persist.attachments.readRevisions clientFileId, progNoteId, attachmentId, (err, object) ->
 					if err
-						console.log err
+						if err instanceof Persist.IOError
+							Bootbox.alert """
+								An error occurred.  Please check your network connection and try again.
+							"""
+							return
+
+						CrashHandler.handle err
 						return
+
 					encodedData = object.first().get('encodedData')
 					filename = object.first().get('filename')
 					if filename?
@@ -1035,10 +1047,10 @@ load = (win) ->
 			return progNote.set('units', progNoteUnits)
 
 		render: ->
-			isEditing = @props.isEditing
+			{isEditing} = @props
 
 			# Filter out any empty notes/metrics, unless we're editing
-			progNote = if isEditing then @props.revisingProgNote else @_filterEmptyValues(@props.progNote)
+			progNote = if isEditing then @props.transientData.get('progNote') else @_filterEmptyValues(@props.progNote)
 
 			R.div({className: 'full progNote'},
 				EntryHeader({
@@ -1063,7 +1075,8 @@ load = (win) ->
 					(progNote.get('units').map (unit) =>
 						unitId = unit.get 'id'
 
-						switch unit.get('type')
+						# TODO: Make these into components
+						(switch unit.get('type')
 							when 'basic'
 								if unit.get('notes')
 									R.div({
@@ -1090,23 +1103,22 @@ load = (win) ->
 													renderLineBreaks unit.get('notes')
 											)
 										)
-										unless unit.get('metrics').isEmpty()
+
+										(unless unit.get('metrics').isEmpty()
 											R.div({className: 'metrics'},
 												(unit.get('metrics').map (metric) =>
 													MetricWidget({
-														isEditable: false
+														isEditable: isEditing
 														key: metric.get('id')
 														name: metric.get('name')
 														definition: metric.get('definition')
 														onFocus: @_selectBasicUnit.bind null, unit
-														onChange: @props.updateBasicMetric.bind(
-															null,
-															unitId, metricId
-														)
+														onChange: @props.updateBasicMetric.bind null, unitId, metricId
 														value: metric.get('value')
 													})
-												).toJS()...
+												)
 											)
+										)
 									)
 							when 'plan'
 								R.div({
@@ -1119,9 +1131,6 @@ load = (win) ->
 										R.section({key: sectionId},
 											R.h2({}, section.get('name'))
 											R.div({
-												## TODO: Restore hover feature
-												# onMouseEnter: @props.setHighlightedProgNoteId.bind null, progNote.get('id')
-												# onMouseLeave: @props.setHighlightedProgNoteId.bind null, null
 												className: [
 													'empty'
 													showWhen section.get('targets').isEmpty()
@@ -1140,8 +1149,6 @@ load = (win) ->
 														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is targetId
 													].join ' '
 													onClick: @_selectPlanSectionTarget.bind(null, unit, section, target)
-													## TODO: Restore hover feature
-													# onMouseEnter: @props.setHighlightedTargetId.bind null, target.get('id')
 												},
 													R.h3({}, target.get('name'))
 													R.div({className: "empty #{showWhen target.get('notes') is '' and not isEditing}"},
@@ -1182,14 +1189,15 @@ load = (win) ->
 																definition: metric.get('definition')
 																value: metric.get('value')
 															})
-														).toJS()...
+														)
 													)
 												)
-											).toJS()...
+											)
 										)
 									)
 								)
-					).toJS()...
+						)
+					)
 
 					(if progNote.get('summary')
 						R.div({className: 'basic unit'},
@@ -1200,9 +1208,10 @@ load = (win) ->
 						)
 					)
 
-					unless @props.progEvents.isEmpty()
+					(unless @props.progEvents.isEmpty()
 						R.div({className: 'progEvents'}
 							R.h3({}, Term 'Events')
+
 							(@props.progEvents.map (progEvent) =>
 								ProgEventsWidget({
 									key: progEvent.get('id')
@@ -1210,8 +1219,9 @@ load = (win) ->
 									data: progEvent
 									eventTypes: @props.eventTypes
 								})
-							).toJS()...
+							)
 						)
+					)
 				)
 			)
 
@@ -1296,7 +1306,7 @@ load = (win) ->
 								isReadOnly: true
 
 								isEditing: @props.isEditing
-								revisingProgNote: @props.revisingProgNote
+								transientData: @props.transientData
 								startRevisingProgNote: @props.startRevisingProgNote
 								cancelRevisingProgNote: @props.cancelRevisingProgNote
 								updateQuickNotes: @props.updateQuickNotes
@@ -1317,7 +1327,7 @@ load = (win) ->
 								isReadOnly: true
 
 								isEditing: @props.isEditing
-								revisingProgNote: @props.revisingProgNote
+								transientData: @props.transientData
 								startRevisingProgNote: @props.startRevisingProgNote
 								cancelRevisingProgNote: @props.cancelRevisingProgNote
 								updatePlanTargetNotes: @props.updatePlanTargetNotes
@@ -1419,7 +1429,7 @@ load = (win) ->
 				(if userIsAuthor
 					R.a({
 						className: "editNote #{showWhen not isReadOnly}"
-						onClick: startRevisingProgNote.bind null, progNote
+						onClick: startRevisingProgNote.bind null, progNote, progEvents
 					},
 						"Edit"
 					)
