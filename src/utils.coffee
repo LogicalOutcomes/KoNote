@@ -172,6 +172,31 @@ load = (win) ->
 
 	makeMoment = (timestamp) -> Moment timestamp, TimestampFormat
 
+	renderTimeSpan: (startTimestamp, endTimestamp) ->
+		startMoment = makeMoment(startTimestamp)
+
+		if not endMoment
+			# No endMoment means it's a point-event
+			return startMoment.format(Config.timestampFormat)
+
+		# Must be a span-event
+		endMoment = makeMoment(endTimestamp)
+
+		isFromStartOfDay = startMoment.format('HH:mm') is '00:00'
+		isToEndOfDay = endMoment.format('HH:mm') is '23:59'
+
+		if isFromStartOfDay and isToEndOfDay
+			# Special case to only use date for a full-day event
+			isSameDay = startMoment.isSame endMoment, 'day'
+
+			if isSameDay
+				return startMoment.format(Config.dateFormat)
+			else
+				return "#{startMoment.format(Config.dateFormat)} - #{endMoment.format(Config.dateFormat)}"
+
+		# Otherwise, use default timeSpan format
+		return "#{startMoment.format(Config.timestampFormat)} - #{endMoment.format(Config.timestampFormat)}"
+
 	##### Convenience methods for fetching data from a progNote
 
 	getUnitIndex = (progNote, unitId) ->
@@ -218,6 +243,7 @@ load = (win) ->
 		capitalize
 		truncateText
 		makeMoment
+		renderTimeSpan
 		getUnitIndex
 		getPlanSectionIndex
 		getPlanTargetIndex
