@@ -130,29 +130,7 @@ module.exports = function(grunt) {
 		},
 		replace: {
 			main: {
-				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/src/main.html'],
-				overwrite: true,
-				replacements: [
-					{
-						from: 'react-with-addons.js',
-						to: 'react-with-addons.min.js'
-					},
-					{
-						from: 'react-dom-server.js',
-						to: 'react-dom-server.min.js'
-					},
-					{
-						from: 'react-dom.js',
-						to: 'react-dom.min.js'
-					},
-					{
-						from: '<style id="main-css">/* see start.js */</style>',
-						to: '<link rel="stylesheet" href="main.css">'
-					}
-				]
-			},
-			start: {
-				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/src/start.html'],
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/src/start.html','build/releases/temp/<%= grunt.task.current.args[0] %>/src/main.html','build/releases/temp/<%= grunt.task.current.args[0] %>/src/main-clientSelection.html'],
 				overwrite: true,
 				replacements: [
 					{
@@ -321,7 +299,6 @@ module.exports = function(grunt) {
 		release.forEach(function(entry) {
 			grunt.task.run('copy:main:'+entry);
 			grunt.task.run('replace:main:'+entry);
-			grunt.task.run('replace:start:'+entry);
 			grunt.task.run('replace:config:'+entry);
 			grunt.task.run('copy:production:'+entry);
 			if (entry == "generic-win") {
