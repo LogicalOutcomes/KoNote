@@ -40,6 +40,7 @@ load = (win) ->
 
 
 	PlanView = React.createFactory React.createClass
+
 		displayName: 'PlanView'
 		mixins: [React.addons.PureRenderMixin]
 
@@ -87,6 +88,17 @@ load = (win) ->
 			hasChanges = @hasChanges()
 
 			return R.div({className: "planView"},
+
+				OpenDialogLink({
+					ref: 'test'
+					className: ''
+					dialog: CreatePlanTemplateDialog
+					title: "Create Template from Plan"
+					sections: @state.plan.get('sections')
+					currentTargetRevisionsById: @state.currentTargetRevisionsById
+					# disabled: isReadOnly
+				})
+
 				R.div({className: 'targetList'},
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
 						R.div({className: 'message'},
@@ -171,24 +183,6 @@ load = (win) ->
 							"Add #{Term 'Section'}"
 						)
 
-						R.button({
-							title: "Create Plan Template"
-							className: 'addSectionButton'
-							placement: 'top'
-							container: '.dropdown.btn-group'
-						},
-							OpenDialogLink({
-								className: 'addSectionButton'
-								dialog: CreatePlanTemplateDialog
-								title: "Create Template from Plan"
-								sections: @state.plan.get('sections')
-								currentTargetRevisionsById: @state.currentTargetRevisionsById
-								# disabled: isReadOnly
-							},
-								FaIcon 'wpForms'
-							)
-						)
-
 						WithTooltip({
 							title: Term 'Plan Templates'
 							container: '.dropdown.btn-group'
@@ -201,20 +195,9 @@ load = (win) ->
 							},
 
 
-								B.MenuItem({},
-									OpenDialogLink({
-										className: 'addSectionButton'
-										dialog: CreatePlanTemplateDialog
-										title: "Create Template from Plan"
-										sections: @state.plan.get('sections')
-										currentTargetRevisionsById: @state.currentTargetRevisionsById
-										# disabled: isReadOnly
-									},
-										"Create Template from Plan"
-									)
+								B.MenuItem({onClick: @_openCreateTemplateDialog},
+									"Create Plan Template"
 								)
-
-
 
 
 								(unless @props.planTemplateHeaders.isEmpty()
@@ -522,6 +505,9 @@ load = (win) ->
 
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
+
+		_openCreateTemplateDialog: (event) ->
+			@refs.test.open(event)
 
 		_applyPlanTemplate: (templateId) ->
 			Bootbox.confirm "Are you sure you want to apply this template?", (ok) =>
