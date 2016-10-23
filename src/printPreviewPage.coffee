@@ -52,27 +52,93 @@ load = (win, {dataSet}) ->
 		displayName: 'PrintPreviewPageUi'
 		mixins: [React.addons.PureRenderMixin]
 
-		componentDidMount: ->
-			# Without timeout, print() triggers before DOM renders
-			setTimeout(->
-				Window.show()
-				Window.focus()
+		getInitialState: ->
+			return {
+				previewType: 'default'
+			}
 
-				setTimeout(->
-					win.print()
-				, 250)
 
-			, 250)
+		# componentDidMount: ->
+		# 	# Without timeout, print() triggers before DOM renders
+		# 	setTimeout(->
+		# 		Window.show()
+		# 		Window.focus()
+
+		# 		setTimeout(->
+		# 			win.print()
+		# 		, 250)
+
+		# 	, 250)
 
 		render: ->
 			R.div({className: 'printPreview'},
+				# R.div({className: 'menu'},
+
+				# 	R.div({className: 'btn-group btn-group-sm'},
+				# 		R.button({
+				# 			ref: 'print'
+				# 			className: 'print btn btn-primary'
+				# 			onClick: win.print
+				# 		},
+				# 			FaIcon('print')
+				# 			"Print"
+				# 		)
+				# 		R.button({
+				# 			ref: 'print'
+				# 			className: 'print btn btn-primary'
+				# 			onClick: @_togglePreviewType
+				# 		},
+				# 			"Default"
+				# 		)
+				# 		R.button({
+				# 			ref: 'print'
+				# 			className: 'print btn btn-primary'
+				# 			onClick: @_togglePreviewType
+				# 		},
+				# 			"Cheat Sheet"
+				# 		)
+				# 	)
+
+				# )
 				(@props.printDataSet.map (printObj) =>
 					clientFile = printObj.get('clientFile')
 					data = printObj.get('data')
 					progEvents = printObj.get('progEvents')
 					title = null
 
+
 					R.div({className: 'printObj'},
+						R.div({className: 'menu'},
+							R.button({
+								ref: 'print'
+								className: 'print btn btn-primary'
+								onClick: win.print
+							},
+								FaIcon('print')
+								"Print"
+							)
+
+							(if printObj.get('format') is 'plan'
+								R.div({className: 'btn-group btn-group-sm'},
+
+									R.button({
+										ref: 'print'
+										className: 'print btn btn-primary'
+										onClick: @_togglePreviewType
+									},
+										"Default"
+									)
+									R.button({
+										ref: 'print'
+										className: 'print btn btn-primary'
+										onClick: @_togglePreviewType
+									},
+										"Cheat Sheet"
+									)
+								)
+							)
+						)
+
 						PrintHeader({
 							data
 							format: printObj.get('format')
@@ -96,17 +162,34 @@ load = (win, {dataSet}) ->
 									else
 										throw new Error "Unknown progNote type: #{progNote.get('type')}"
 							when 'plan'
-								SinglePlanView({
-									title: "Care Plan"
-									data
-									clientFile
-									progEvents
-								})
+								if @state.previewType is 'default'
+									SinglePlanView({
+										title: "Care Plan"
+										data
+										clientFile
+										progEvents
+									})
+								else if @state.previewType is 'cheatSheet'
+									CheatSheetPlanView({
+										title: "Care Plan"
+										data
+										clientFile
+										progEvents
+									})
+
+
 							else
 								throw new Error "Unknown print-data type: #{setType}"
 					)
 				).toJS()...
 			)
+
+		_togglePreviewType: ->
+			unless @state.previewType is 'default'
+				@setState {previewType: 'default'}
+				return
+			@setState {previewType: 'cheatSheet'}
+
 
 
 	PrintHeader = React.createFactory React.createClass
@@ -294,6 +377,58 @@ load = (win, {dataSet}) ->
 													definition: metric.get('definition')
 													value: metric.get('value')
 													key: metricId
+												})
+											).toJS()...
+										)
+									)
+								).toJS()...
+							)
+						)
+					).toJS()...
+				)
+			)
+
+	CheatSheetPlanView = React.createFactory React.createClass
+		displayName: 'SinglePlanView'
+		mixins: [React.addons.PureRenderMixin]
+		render: ->
+			R.div({className: 'plan unit'},
+				R.div({className: 'sections'},
+					(@props.data.get('sections')
+					.filter (section) =>
+						section.get('status') is 'default'
+
+					.map (section) =>
+						R.section({className: 'section planTargets', key: section.get('id')},
+							R.h2({className: 'name'}, section.get('name'))
+							(if section.get('targetIds').size is 0
+								R.div({className: 'noTargets'},
+									"This #{Term 'section'} is empty."
+								)
+							)
+							R.div({className: 'targets'},
+								(section.get('targetIds')
+								.filter (targetId) =>
+									targets = @props.data.get('targets')
+									thisTarget = targets.get(targetId)
+									return thisTarget.get('status') is 'default'
+								.map (targetId) =>
+									targets = @props.data.get('targets')
+									thisTarget = targets.get(targetId)
+
+									R.div({className: 'target'},
+										R.h3({className: 'name'}, thisTarget.get('name'))
+										R.div({className: 'description'}, thisTarget.get('description'))
+										R.div({className: 'metrics'},
+											(thisTarget.get('metricIds').map (metricId) =>
+												metric = @props.data.get('metrics').get(metricId)
+												MetricWidget({
+													name: metric.get('name')
+													definition: metric.get('definition')
+													value: metric.get('value')
+													key: metricId
+													includeDefinition: true
+													styleClass: 'cheatSheet'
 												})
 											).toJS()...
 										)
