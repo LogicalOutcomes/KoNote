@@ -46,7 +46,7 @@ load = (win) ->
 			{progEvent, eventTypes, isEditing, format} = @props
 
 			eventType = eventTypes.find (eventType) ->
-				eventType.get('id') is progEvent.get('eventTypeId')
+				eventType.get('id') is progEvent.get('typeId')
 
 
 			return (switch format
@@ -69,18 +69,17 @@ load = (win) ->
 			)
 
 		_updateProgEvent: (property, event) ->
-			value = (switch property
+			value = switch property
 				when 'title', 'description'
 					event.target.value
 				when 'startTimestamp'
 					event.get('start').format Persist.TimestampFormat
 				when 'endTimestamp'
 					event.get('end').format Persist.TimestampFormat
-				when 'eventType'
+				when 'eventTypeId'
 					event
 				else
 					throw new Error "Unrecognized property: #{property}"
-			)
 
 			progEvent = @props.progEvent.set property, value
 			@props.updateProgEvent(progEvent)
@@ -148,15 +147,17 @@ load = (win) ->
 					)
 				)
 			)
-			(unless progEvent or progEvents.isEmpty()
+			(unless eventTypes.isEmpty()
 				R.div({},
 					"Type: "
 
 					(if isEditing
 						EventTypesDropdown({
-
+							eventTypes
+							selectedEventType: eventType
+							onSelect: updateProgEvent.bind null, 'typeId'
 						})
-					else
+					else if eventType
 						R.span({
 							style:
 								borderBottom: "2px solid #{eventType.get('colorKeyHex')}"
