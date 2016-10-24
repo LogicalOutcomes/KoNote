@@ -19,9 +19,9 @@ load = (win) ->
 	R = React.DOM
 
 	WithTooltip = require('./withTooltip').load(win)
-	TimeSpanDate = require('./clientFilePage/timeSpanDate').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 	EventTypesDropdown = require('./eventTypesDropdown').load(win)
+	TimeSpanSelection = require('./timeSpanSelection').load(win)
 	{FaIcon, openWindow, renderLineBreaks, makeMoment, renderTimeSpan} = require('./utils').load(win)
 
 
@@ -69,14 +69,11 @@ load = (win) ->
 			)
 
 		_updateProgEvent: (property, event) ->
+			# TODO: Make this less weird
 			value = switch property
 				when 'title', 'description'
 					event.target.value
-				when 'startTimestamp'
-					event.get('start').format Persist.TimestampFormat
-				when 'endTimestamp'
-					event.get('end').format Persist.TimestampFormat
-				when 'eventTypeId'
+				when 'startTimestamp', 'endTimestamp', 'typeId'
 					event
 				else
 					throw new Error "Unrecognized property: #{property}"
@@ -85,89 +82,86 @@ load = (win) ->
 			@props.updateProgEvent(progEvent)
 
 
-	FullWidget = ({progEvent, eventType, eventTypes, format, isEditing, updateProgEvent}) ->
-		progEventId = progEvent.get('id')
+	FullWidget = React.createFactory React.createClass
+		displayName: 'FullWidget'
+		mixins: [React.addons.PureRenderMixin]
 
-		startMoment = makeMoment progEvent.get('startTimestamp')
+		render: ->
+			{progEvent, eventType, eventTypes, format, isEditing, updateProgEvent} = @props
 
-		endMoment = if progEvent.get('endTimestamp')
-			makeMoment(progEvent.get('endTimestamp'))
-		else
-			null
+			progEventId = progEvent.get('id')
 
-		timeSpan = Imm.Map {
-			start: startMoment
-			end: endMoment
-		}
+			# startMoment = makeMoment progEvent.get('startTimestamp')
 
-		return R.div({className: "progEventWidget fullWidget #{format}"},
-			R.h5({className: 'title'},
-				FaIcon('calendar')
-				' '
-				(if isEditing
-					R.input({
-						className: 'form-control'
-						value: progEvent.get('title')
-						onChange: updateProgEvent.bind null, 'title'
-					})
-				else
-					progEvent.get('title')
-				)
-			)
-			R.div({className: 'description'},
-				(if isEditing
-					ExpandingTextArea({
-						value: progEvent.get('description')
-						onChange: updateProgEvent.bind null, 'description'
-					})
-				else
-					renderLineBreaks progEvent.get('description')
-				)
+			# endMoment = if progEvent.get('endTimestamp')
+			# 	makeMoment(progEvent.get('endTimestamp'))
+			# else
+			# 	null
 
-				R.div({className: 'date'},
+			# timeSpan = Imm.Map {
+			# 	start: startMoment
+			# 	end: endMoment
+			# }
+
+			return R.div({className: "progEventWidget fullWidget #{format}"},
+				R.h5({className: 'title'},
+					FaIcon('calendar')
+					' '
 					(if isEditing
-						R.div({},
-							TimeSpanDate({
-								type: 'start'
-								date: startMoment
-								timeSpan
-								updateTimeSpanDate: updateProgEvent.bind null, 'startTimestamp'
+						R.input({
+							className: 'form-control'
+							value: progEvent.get('title')
+							onChange: updateProgEvent.bind null, 'title'
+						})
+					else
+						progEvent.get('title')
+					)
+				)
+				R.div({className: 'description'},
+					(if isEditing
+						ExpandingTextArea({
+							value: progEvent.get('description')
+							onChange: updateProgEvent.bind null, 'description'
+						})
+					else
+						renderLineBreaks progEvent.get('description')
+					)
+
+					R.div({className: 'date'},
+						(if isEditing
+							TimeSpanSelection({
+								ref: 'timeSpanSelection'
+								startTimestamp: progEvent.get('startTimestamp')
+								endTimestamp: progEvent.get('endTimestamp')
+								updateStartTimestamp: updateProgEvent.bind null, 'startTimestamp'
+								updateEndTimestamp: updateProgEvent.bind null, 'endTimestamp'
 							})
-							(if endMoment
-								TimeSpanDate({
-									type: 'end'
-									date: endMoment
-									timeSpan
-									updateTimeSpanDate: updateProgEvent.bind null, 'endTimestamp'
-								})
+						else
+							renderTimeSpan progEvent.get('startTimestamp'), progEvent.get('endTimestamp')
+						)
+					)
+				)
+				(unless eventTypes.isEmpty()
+					R.div({},
+						"Type: "
+
+						(if isEditing
+							EventTypesDropdown({
+								eventTypes
+								selectedEventType: eventType
+								onSelect: updateProgEvent.bind null, 'typeId'
+							})
+						else if eventType
+							R.span({
+								style:
+									borderBottom: "2px solid #{eventType.get('colorKeyHex')}"
+							},
+								eventType.get('name')
 							)
 						)
-					else
-						renderTimeSpan progEvent.get('startTimestamp'), progEvent.get('endTimestamp')
 					)
 				)
 			)
-			(unless eventTypes.isEmpty()
-				R.div({},
-					"Type: "
-
-					(if isEditing
-						EventTypesDropdown({
-							eventTypes
-							selectedEventType: eventType
-							onSelect: updateProgEvent.bind null, 'typeId'
-						})
-					else if eventType
-						R.span({
-							style:
-								borderBottom: "2px solid #{eventType.get('colorKeyHex')}"
-						},
-							eventType.get('name')
-						)
-					)
-				)
-			)
-		)
 
 
 
