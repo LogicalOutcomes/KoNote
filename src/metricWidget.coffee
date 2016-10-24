@@ -61,12 +61,6 @@ load = (win) ->
 				else
 					null
 				)
-				(if @props.includeDefinition is true
-					R.div({className: 'definition', ref: 'definition'},
-						@props.definition
-					)
-
-				)
 			)
 		_onChange: (event) ->
 			if @props.onChange
