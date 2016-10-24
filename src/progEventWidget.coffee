@@ -88,20 +88,7 @@ load = (win) ->
 
 		render: ->
 			{progEvent, eventType, eventTypes, format, isEditing, updateProgEvent} = @props
-
 			progEventId = progEvent.get('id')
-
-			# startMoment = makeMoment progEvent.get('startTimestamp')
-
-			# endMoment = if progEvent.get('endTimestamp')
-			# 	makeMoment(progEvent.get('endTimestamp'))
-			# else
-			# 	null
-
-			# timeSpan = Imm.Map {
-			# 	start: startMoment
-			# 	end: endMoment
-			# }
 
 			return R.div({className: "progEventWidget fullWidget #{format}"},
 				R.h5({className: 'title'},
@@ -141,7 +128,7 @@ load = (win) ->
 						)
 					)
 				)
-				(unless eventTypes.isEmpty()
+				(if (not isEditing and eventType) or (isEditing and not eventTypes.isEmpty())
 					R.div({},
 						"Type: "
 
