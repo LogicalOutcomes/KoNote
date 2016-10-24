@@ -8,13 +8,18 @@ load = (win) ->
 	R = React.DOM
 
 	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
+	{FaIcon} = require('./utils').load(win)
 
 
 	EventTypesDropdown = ({eventTypes, selectedEventType, onSelect}) ->
+		title = if selectedEventType? then selectedEventType.get('name') else "No Type"
 
-		B.DropdownButton({
-			title: if selectedEventType? then selectedEventType.get('name') else "No Type"
-		},
+		# Discard inactive eventTypes
+		eventTypes = eventTypes.filter (eventType) =>
+			eventType.get('status') is 'default'
+
+
+		B.DropdownButton({title},
 			if selectedEventType
 				B.MenuItem({
 					onClick: onSelect.bind null, ''
@@ -26,13 +31,10 @@ load = (win) ->
 			if selectedEventType
 				B.MenuItem({divider: true})
 
-			(@props.eventTypes
-			.filter (eventType) =>
-				eventType.get('status') is 'default'
-			.map (eventType) =>
+			(eventTypes.map (eventType) =>
 				B.MenuItem({
 					key: eventType.get('id')
-					onClick: onSelect.bind null, eventType.get('id')
+					onClick: onSelect.bind null, eventType.get('id') # ?
 				},
 					R.div({
 						onClick: onSelect.bind null, eventType.get('id')
