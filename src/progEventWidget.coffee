@@ -73,9 +73,9 @@ load = (win) ->
 				when 'title', 'description'
 					event.target.value
 				when 'startTimestamp'
-					event.get('start')
+					event.get('start').format Persist.TimestampFormat
 				when 'endTimestamp'
-					event.get('end')
+					event.get('end').format Persist.TimestampFormat
 				when 'eventType'
 					event
 				else
