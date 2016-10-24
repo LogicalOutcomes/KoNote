@@ -92,19 +92,20 @@ load = (win, {dataSet}) ->
 							)
 
 							(if printObj.get('format') is 'plan'
-								R.div({className: 'btn-group btn-group-sm'},
-
+								R.div({className: 'toggle btn-group btn-group-sm'},
 									R.button({
 										ref: 'print'
-										className: 'print btn btn-primary'
+										className: 'default btn btn-primary'
 										onClick: @_togglePreviewType
+										disabled: @state.previewType is 'default'
 									},
 										"Default"
 									)
 									R.button({
 										ref: 'print'
-										className: 'print btn btn-primary'
+										className: 'cheatSheet btn btn-primary'
 										onClick: @_togglePreviewType
+										disabled: @state.previewType is 'cheatSheet'
 									},
 										"Cheat Sheet"
 									)
