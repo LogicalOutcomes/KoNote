@@ -172,10 +172,10 @@ load = (win) ->
 
 	makeMoment = (timestamp) -> Moment timestamp, TimestampFormat
 
-	renderTimeSpan: (startTimestamp, endTimestamp) ->
+	renderTimeSpan = (startTimestamp, endTimestamp) ->
 		startMoment = makeMoment(startTimestamp)
 
-		if not endMoment
+		if not endTimestamp
 			# No endMoment means it's a point-event
 			return startMoment.format(Config.timestampFormat)
 
@@ -192,10 +192,10 @@ load = (win) ->
 			if isSameDay
 				return startMoment.format(Config.dateFormat)
 			else
-				return "#{startMoment.format(Config.dateFormat)} - #{endMoment.format(Config.dateFormat)}"
+				return "#{startMoment.format(Config.dateFormat)} to #{endMoment.format(Config.dateFormat)}"
 
 		# Otherwise, use default timeSpan format
-		return "#{startMoment.format(Config.timestampFormat)} - #{endMoment.format(Config.timestampFormat)}"
+		return "#{startMoment.format(Config.timestampFormat)} to #{endMoment.format(Config.timestampFormat)}"
 
 	##### Convenience methods for fetching data from a progNote
 
