@@ -1,0 +1,33 @@
+.timeSpanSelection
+	display flex
+	padding 15px 0
+
+	input
+		margin 0
+		display inline-block
+		clear left
+
+	section
+		flex 1
+		text-align center
+
+		&.arrow
+			flex 0.25
+			display flex
+			justify-content center
+			align-items center
+
+		.startDate, .endDate, .startTime, .endTime
+			display flex
+
+			.inputContainer
+				flex 5
+
+			button
+				flex 1
+				min-width 25px
+
+		&.usesTimeOfDay
+			button
+				display none
+				flex 0

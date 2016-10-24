@@ -99,74 +99,83 @@ load = (win) ->
 			@setState {isDateSpan}
 
 		render: ->
-			R.div({className: 'timeSpanSelection'},
-				R.div({className: 'dateGroup'},
-					R.div({className: 'form-group date'},
-						R.label({}, if @state.isDateSpan then "Start Date" else "Date")
-						R.input({
-							ref: 'startDate'
-							className: 'form-control'
-							type: 'text'
-						})
-					)
-					R.div({className: "form-group timeOfDay #{showWhen @state.usesTimeOfDay}"},
-						R.label({},
-							R.span({onClick: @_toggleUsesTimeOfDay},
+			R.div({className: 'timeSpanSelection form-group'},
+
+				R.section({},
+					R.label({}, if @state.isDateSpan then "Start Date" else "Date")
+					R.div({className: 'startDate'},
+						R.div({className: 'inputContainer'},
+							R.input({
+								ref: 'startDate'
+								className: 'form-control'
+								type: 'text'
+							})
+						)
+						(if not @state.usesTimeOfDay
+							R.button({
+								className: "btn btn-default"
+								onClick: @_toggleUsesTimeOfDay
+							},
 								FaIcon('clock-o')
-								FaIcon('times')
 							)
 						)
-						R.input({
-							ref: 'startTime'
-							className: 'form-control'
-							type: 'text'
-							placeholder: "00:00 --"
-						})
 					)
-					R.div({className: "form-group useTimeOfDay #{showWhen not @state.usesTimeOfDay}"}
+					R.div({className: "startTime #{showWhen @state.usesTimeOfDay}"},
+						R.div({className: 'inputContainer'},
+							R.input({
+								ref: 'startTime'
+								className: 'form-control'
+								type: 'text'
+								placeholder: "00:00 --"
+							})
+						)
 						R.button({
 							className: 'btn btn-default'
 							onClick: @_toggleUsesTimeOfDay
-						}, FaIcon('clock-o'))
-					)
-				)
-				R.div({className: "dateGroup #{showWhen @state.isDateSpan}"},
-					R.div({
-						className: 'form-group removeDateSpan'
-					}
-						R.span({onClick: @toggleIsDateSpan},
-							FaIcon('arrow-right')
+						},
 							FaIcon('times')
 						)
 					)
-					R.div({className: 'form-group date'},
-						R.label({}, "End Date")
-						R.input({
-							ref: 'endDate'
-							className: 'form-control'
-							type: 'text'
-							placeholder: "Select date"
-						})
-					)
-					R.div({className: "form-group timeOfDay #{showWhen @state.usesTimeOfDay}"},
-						R.label({},
-							R.span({onClick: @_toggleUsesTimeOfDay},
+				)
+
+				R.section({className: "arrow #{showWhen @state.isDateSpan}"},
+					FaIcon('arrow-right')
+				)
+
+				R.section({},
+					R.label({}, "End Date")
+					R.div({className: 'endDate'},
+						R.div({className: 'inputContainer'},
+							R.input({
+								ref: 'endDate'
+								className: 'form-control'
+								type: 'text'
+							})
+						)
+						(if not @state.usesTimeOfDay
+							R.button({
+								className: 'btn btn-default'
+								onClick: @_toggleUsesTimeOfDay
+							},
 								FaIcon('clock-o')
-								FaIcon('times')
 							)
 						)
-						R.input({
-							ref: 'endTime'
-							className: 'form-control'
-							type: 'text'
-							placeholder: "00:00 --"
-						})
 					)
-					R.div({className: "form-group useTimeOfDay #{showWhen not @state.usesTimeOfDay}"}
+					R.div({className: "endTime #{showWhen @state.usesTimeOfDay}"},
+						R.div({className: 'inputContainer'},
+							R.input({
+								ref: 'endTime'
+								className: 'form-control'
+								type: 'text'
+								placeholder: "00:00 --"
+							})
+						)
 						R.button({
 							className: 'btn btn-default'
 							onClick: @_toggleUsesTimeOfDay
-						}, FaIcon('clock-o'))
+						},
+							FaIcon('times')
+						)
 					)
 				)
 			)
@@ -190,7 +199,7 @@ load = (win) ->
 
 			@props.updateStartTimestamp(startTimestamp)
 
-		_updateEndTime: (startTime) ->
+		_updateEndTime: (endTime) ->
 			endTimestamp = makeMoment(@props.endTimestamp)
 			.set 'hour', endTime.hour()
 			.set 'minute', endTime.minute()
@@ -198,9 +207,9 @@ load = (win) ->
 
 			@props.updateEndTimestamp(endTimestamp)
 
-		_updateEndDate: (startDate) ->
+		_updateEndDate: (endDate) ->
 			endTimestamp = makeMoment(@props.endTimestamp)
-			.set 'date', startDate.date()
+			.set 'date', endDate.date()
 			.format TimestampFormat
 
 			@props.updateEndTimestamp(endTimestamp)
