@@ -456,9 +456,23 @@ load = (win) ->
 			}
 
 		_saveTransientData: ->
-			revisedProgNote = @state.transientData.get('progNote')
+			{progNote, progEvents, originalProgNote, originalProgEvents} = @state.transientData.toObject()
 
-			ActiveSession.persist.progNotes.createRevision revisedProgNote, (err, result) =>
+			# Any progEvents modified?
+			revisedProgEvents = progEvents.filter (progEvent, index) ->
+				not Imm.is progEvent, originalProgEvents.get(index)
+
+			# Only save modified progNotes/progEvents
+			Async.series [
+				(cb) ->
+					return cb() if Imm.is originalProgNote, progNote
+					ActiveSession.persist.progNotes.createRevision progNote, cb
+
+				(cb) ->
+					return cb() if revisedProgEvents.isEmpty()
+					Async.map revisedProgEvents, ActiveSession.persist.progEvents.createRevision, cb
+
+			], (err) =>
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """
@@ -470,7 +484,6 @@ load = (win) ->
 					return
 
 				@_discardTransientData()
-				return
 
 		_checkUserProgram: (cb) ->
 			# Skip if no clientProgram(s)
