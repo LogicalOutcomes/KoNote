@@ -20,6 +20,7 @@ load = (win, {dataSet}) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
+	ExpandedMetricWidget = require('./expandedMetricWidget').load(win)
 	ProgEventsWidget = require('./progEventsWidget').load(win)
 	{FaIcon,renderLineBreaks, renderName,
 	renderRecordId, showWhen, formatTimestamp} = require('./utils').load(win)
@@ -72,34 +73,6 @@ load = (win, {dataSet}) ->
 
 		render: ->
 			R.div({className: 'printPreview'},
-				# R.div({className: 'menu'},
-
-				# 	R.div({className: 'btn-group btn-group-sm'},
-				# 		R.button({
-				# 			ref: 'print'
-				# 			className: 'print btn btn-primary'
-				# 			onClick: win.print
-				# 		},
-				# 			FaIcon('print')
-				# 			"Print"
-				# 		)
-				# 		R.button({
-				# 			ref: 'print'
-				# 			className: 'print btn btn-primary'
-				# 			onClick: @_togglePreviewType
-				# 		},
-				# 			"Default"
-				# 		)
-				# 		R.button({
-				# 			ref: 'print'
-				# 			className: 'print btn btn-primary'
-				# 			onClick: @_togglePreviewType
-				# 		},
-				# 			"Cheat Sheet"
-				# 		)
-				# 	)
-
-				# )
 				(@props.printDataSet.map (printObj) =>
 					clientFile = printObj.get('clientFile')
 					data = printObj.get('data')
@@ -108,7 +81,7 @@ load = (win, {dataSet}) ->
 
 
 					R.div({className: 'printObj'},
-						R.div({className: 'menu'},
+						R.div({className: 'noPrint'},
 							R.button({
 								ref: 'print'
 								className: 'print btn btn-primary'
@@ -419,16 +392,14 @@ load = (win, {dataSet}) ->
 									R.div({className: 'target'},
 										R.h3({className: 'name'}, thisTarget.get('name'))
 										R.div({className: 'description'}, thisTarget.get('description'))
-										R.div({className: 'metrics'},
+										R.div({className: 'cheatMetrics'},
 											(thisTarget.get('metricIds').map (metricId) =>
 												metric = @props.data.get('metrics').get(metricId)
-												MetricWidget({
+												ExpandedMetricWidget({
 													name: metric.get('name')
 													definition: metric.get('definition')
 													value: metric.get('value')
 													key: metricId
-													includeDefinition: true
-													styleClass: 'cheatSheet'
 												})
 											).toJS()...
 										)
