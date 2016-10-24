@@ -30,12 +30,13 @@ load = (win) ->
 			if @dateTimePicker? then @dateTimePicker.destroy()
 
 			# Assess min/maxDate based on which TimeSpanDate type
-			if @props.type is 'start'
-				minDate = @props.xTicks.first()
-				maxDate = @props.timeSpan.get('end')
-			else
-				minDate = @props.timeSpan.get('start')
-				maxDate = @props.xTicks.last()
+			if @props.xTicks?
+				if @props.type is 'start'
+					minDate = @props.xTicks.first()
+					maxDate = @props.timeSpan.get('end')
+				else
+					minDate = @props.timeSpan.get('start')
+					maxDate = @props.xTicks.last()
 
 			# Init datetimepicker
 			$(@refs.hiddenDateTimePicker).datetimepicker({
@@ -56,7 +57,7 @@ load = (win) ->
 		componentDidUpdate: (oldProps) ->
 			# TODO: Handle start/end logic in analysis, use generic component
 
-			if @props.xTicks.size isnt oldProps.xTicks.size
+			if @props.xTicks and @props.xTicks.size isnt oldProps.xTicks.size
 				firstDay = @props.xTicks.first()
 				lastDay = @props.xTicks.last()
 
