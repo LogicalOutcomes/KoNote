@@ -66,17 +66,19 @@ load = (win) ->
 	openWindow = (params, options = {}, cb=(->)) ->
 		width = 1200
 		height = 700
+		screenWidth = nw.Screen.screens[0].work_area.width
+		screenHeight = nw.Screen.screens[0].work_area.height
 
 		if options instanceof Function then cb = options
 
 		if options.maximize
-			width = nw.Screen.screens[0].work_area.width
-			height = nw.Screen.screens[0].work_area.height
+			width = screenWidth
+			height = screenHeight
 		else
-			if nw.Screen.screens[0].work_area.width < 1200
-				width = nw.Screen.screens[0].work_area.width
-			if nw.Screen.screens[0].work_area.height < 700
-				height = nw.Screen.screens[0].work_area.height
+			if screenWidth < 1200
+				width = screenWidth
+			if screenHeight < 700
+				height = screenHeight
 
 		switch params.page
 			when 'clientSelection'

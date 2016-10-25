@@ -1,10 +1,20 @@
 @media print
 	.printPreview
 		margin 0.4in
+	.noPrint
+		display none !important
 
 .printPreview
 	background white
 	min-height 100%
+
+	.print
+		margin-left 0
+		margin-right 8px
+	.noPrint
+		margin-left auto
+		margin-right auto
+		margin-bottom 20px
 
 	.printObj
 		padding 25px
@@ -144,6 +154,12 @@
 							padding 0 2px
 
 							color #888
+
+						> .cheatMetrics
+							width 50%
+							margin -5px
+
+							padding-top 5px
 
 						> .metrics
 							display flex
