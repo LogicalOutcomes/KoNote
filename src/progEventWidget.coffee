@@ -138,7 +138,7 @@ load = (win) ->
 								selectedEventType: eventType
 								onSelect: updateProgEvent.bind null, 'typeId'
 							})
-						else if eventType
+						else
 							R.span({
 								style:
 									borderBottom: "2px solid #{eventType.get('colorKeyHex')}"

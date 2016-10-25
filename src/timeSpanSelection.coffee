@@ -7,6 +7,7 @@
 Imm = require 'immutable'
 Moment = require 'moment'
 
+Config = require './config'
 {TimestampFormat} = require './persist/utils'
 
 
@@ -16,6 +17,7 @@ load = (win) ->
 	{PropTypes} = React
 	R = React.DOM
 
+	WithTooltip = require('./withTooltip').load(win)
 	{FaIcon, renderName, showWhen, formatTimestamp, makeMoment} = require('./utils').load(win)
 
 
@@ -30,11 +32,32 @@ load = (win) ->
 		}
 
 		getInitialState: ->
-			isDateSpan = !!@props.endTimestamp
+			{startTimestamp, endTimestamp} = @props
+
+			# (endTimestamp won't exist for point-events)
+			endTimestampExists = !!endTimestamp
+
+			startMoment = makeMoment(startTimestamp)
+			endMoment = if endTimestampExists then makeMoment(endTimestamp) else null
+
+			# Work out whether usesTimeOfDay (full day and daySpan don't count)
+			isFromStartOfDay = startMoment.isSame startMoment.clone().startOf('day')
+			isToEndOfDay = endTimestampExists and endMoment.clone().isSame endMoment.endOf('day')
+			isFromStartToEndOfDay = isFromStartOfDay and isToEndOfDay
+
+			isSameDay = endTimestampExists and startMoment.clone().isSame endMoment, 'day'
+
+			# These are cases where we don't want to start with a timeOfDay
+			isOneFullDay = isSameDay and isFromStartToEndOfDay
+			isSpanOfDays = endTimestampExists and not isSameDay and isFromStartToEndOfDay
+
+			# Finally, declare how to set our initial state
+			isDateSpan = not isOneFullDay and isSpanOfDays
+			usesTimeOfDay = not isOneFullDay and not isFromStartToEndOfDay
 
 			return {
 				isDateSpan
-				usesTimeOfDay: false
+				usesTimeOfDay
 			}
 
 		componentDidMount: ->
@@ -53,7 +76,7 @@ load = (win) ->
 			$startDate.datetimepicker({
 				maxDate: endDate
 				useCurrent: false
-				format: 'Do MMM, \'YY'
+				format: Config.dateFormat
 				defaultDate: startDate
 				widgetPositioning: {
 					horizontal: 'right'
@@ -62,9 +85,12 @@ load = (win) ->
 				$endDate.data('DateTimePicker').minDate(date)
 				@_updateStartDate(date)
 
+			@startDate = $startDate.data('DateTimePicker')
+
+
 			$startTime.datetimepicker({
 				useCurrent: false
-				format: 'hh:mm a'
+				format: Config.timeFormat
 				defaultDate: startDate
 				widgetPositioning: {
 					horizontal: 'right'
@@ -72,11 +98,13 @@ load = (win) ->
 			}).on 'dp.change', ({date}) =>
 				@_updateStartTime(date)
 
+			@startTime = $startTime.data('DateTimePicker')
+
 
 			$endDate.datetimepicker({
 				minDate: startDate
 				useCurrent: false
-				format: 'Do MMM, \'YY'
+				format: Config.dateFormat
 				defaultDate: endDate
 				widgetPositioning: {
 					horizontal: 'right'
@@ -85,55 +113,90 @@ load = (win) ->
 				$startDate.data('DateTimePicker').maxDate(date)
 				@_updateEndDate(date)
 
+			@endDate = $endDate.data('DateTimePicker')
+
+
 			$endTime.datetimepicker({
 				useCurrent: false
-				format: 'hh:mm a'
+				format: Config.timeFormat
+				defaultDate: endDate
 				widgetPositioning: {
 					horizontal: 'right'
 				}
 			}).on 'dp.change', ({date}) =>
 				@_updateEndTime(date)
 
-		toggleIsDateSpan: -> # public method
-			isDateSpan = not @state.isDateSpan
-			@setState {isDateSpan}
+			@endTime = $endDate.data('DateTimePicker')
+
 
 		render: ->
-			R.div({className: 'timeSpanSelection form-group'},
+			# Titles reflect the timestamps actually saved
+			startDateTitle = if @state.isDateSpan and @state.usesTimeOfDay
+				"Start Date & Time"
+			else if @state.isDateSpan and not @state.usesTimeOfDay
+				"Start Date"
+			else if not @state.isDateSpan and not @state.usesTimeOfDay
+				"Date (full day)"
+			else
+				"Date & Time"
+
+			endDateTitle = if @state.usesTimeOfDay
+				"End Date & Time"
+			else
+				"End Date"
+
+
+			return R.div({className: 'timeSpanSelection form-group'},
 
 				R.section({},
-					R.label({}, if @state.isDateSpan then "Start Date" else "Date")
-					R.div({className: 'startDate'},
-						R.div({className: 'inputContainer'},
-							R.input({
-								ref: 'startDate'
-								className: 'form-control'
-								type: 'text'
-							})
-						)
-						(if not @state.usesTimeOfDay
-							R.button({
-								className: "btn btn-default"
-								onClick: @_toggleUsesTimeOfDay
-							},
-								FaIcon('clock-o')
+					R.div({},
+						R.label({}, startDateTitle)
+						R.div({className: 'startDate'},
+							R.div({className: 'inputContainer'},
+								R.input({
+									ref: 'startDate'
+									className: 'form-control'
+									type: 'text'
+								})
+							)
+							(if not @state.usesTimeOfDay
+								R.div({className: 'buttonContainer'},
+									WithTooltip({
+										title: "Add time of day"
+										placement: 'top'
+									},
+										R.button({
+											className: 'btn btn-default timeOfDayToggleButton'
+											onClick: @_toggleUsesTimeOfDay
+										},
+											FaIcon('clock-o')
+										)
+									)
+								)
 							)
 						)
-					)
-					R.div({className: "startTime #{showWhen @state.usesTimeOfDay}"},
-						R.div({className: 'inputContainer'},
-							R.input({
-								ref: 'startTime'
-								className: 'form-control'
-								type: 'text'
-								placeholder: "00:00 --"
-							})
-						)
-						R.button({
-							className: 'btn btn-default'
-							onClick: @_toggleUsesTimeOfDay
-						},
-							FaIcon('times')
+						R.div({className: "startTime #{showWhen @state.usesTimeOfDay}"},
+							R.div({className: 'inputContainer'},
+								R.input({
+									ref: 'startTime'
+									className: 'form-control'
+									type: 'text'
+									placeholder: "00:00 --"
+								})
+							)
+							R.div({className: 'buttonContainer'},
+								WithTooltip({
+									title: "Remove time of day"
+									placement: 'top'
+								},
+									R.button({
+										className: 'btn btn-default timeOfDayToggleButton'
+										onClick: @_toggleUsesTimeOfDay
+									},
+										FaIcon('minus')
+									)
+								)
+							)
 						)
 					)
 				)
@@ -143,38 +206,44 @@ load = (win) ->
 				)
 
 				R.section({},
-					R.label({}, "End Date")
-					R.div({className: 'endDate'},
-						R.div({className: 'inputContainer'},
-							R.input({
-								ref: 'endDate'
-								className: 'form-control'
-								type: 'text'
-							})
+					R.div({className: "endDateContainer #{showWhen @state.isDateSpan}"},
+						WithTooltip({
+							title: "Remove end date"
+							placement: 'top'
+						},
+							FaIcon('times', {onClick: @_toggleIsDateSpan})
 						)
-						(if not @state.usesTimeOfDay
-							R.button({
-								className: 'btn btn-default'
-								onClick: @_toggleUsesTimeOfDay
-							},
-								FaIcon('clock-o')
+						R.label({}, endDateTitle)
+						R.div({className: 'endDate'},
+							R.div({className: 'inputContainer'},
+								R.input({
+									ref: 'endDate'
+									className: 'form-control'
+									type: 'text'
+								})
+							)
+						)
+						R.div({className: 'endTime'},
+							R.div({className: "inputContainer #{showWhen @state.usesTimeOfDay}"},
+								R.input({
+									ref: 'endTime'
+									className: 'form-control'
+									type: 'text'
+									placeholder: "00:00 --"
+								})
 							)
 						)
 					)
-					R.div({className: "endTime #{showWhen @state.usesTimeOfDay}"},
-						R.div({className: 'inputContainer'},
-							R.input({
-								ref: 'endTime'
-								className: 'form-control'
-								type: 'text'
-								placeholder: "00:00 --"
-							})
-						)
-						R.button({
-							className: 'btn btn-default'
-							onClick: @_toggleUsesTimeOfDay
-						},
-							FaIcon('times')
+
+					R.span({
+						className: "addEndDateButton #{showWhen not @state.isDateSpan}"
+						onClick: @_toggleIsDateSpan
+					},
+						R.div({},
+							R.label({}, "Add End Date")
+							R.div({},
+								FaIcon('plus')
+							)
 						)
 					)
 				)
@@ -183,6 +252,10 @@ load = (win) ->
 		_toggleUsesTimeOfDay: ->
 			usesTimeOfDay = not @state.usesTimeOfDay
 			@setState {usesTimeOfDay}
+
+		_toggleIsDateSpan: ->
+			isDateSpan = not @state.isDateSpan
+			@setState {isDateSpan}
 
 		_updateStartTime: (startTime) ->
 			startTimestamp = makeMoment(@props.startTimestamp)
