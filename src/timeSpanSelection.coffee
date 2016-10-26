@@ -32,6 +32,7 @@ load = (win) ->
 		}
 
 		getInitialState: ->
+			# TODO: Work this logic out within render, feeds datepicker components
 			{startTimestamp, endTimestamp} = @props
 
 			# (endTimestamp won't exist for point-events)
@@ -49,7 +50,7 @@ load = (win) ->
 
 			# These are cases where we don't want to start with a timeOfDay
 			isOneFullDay = isSameDay and isFromStartToEndOfDay
-			isSpanOfDays = endTimestampExists and not isSameDay and isFromStartToEndOfDay
+			isSpanOfDays = endTimestampExists and not isSameDay
 
 			# Finally, declare how to set our initial state
 			isDateSpan = not isOneFullDay and isSpanOfDays
@@ -130,7 +131,7 @@ load = (win) ->
 
 
 		render: ->
-			# Titles reflect the timestamps actually saved
+			# Titles reflect the nature of the start/end timestamps
 			startDateTitle = if @state.isDateSpan and @state.usesTimeOfDay
 				"Start Date & Time"
 			else if @state.isDateSpan and not @state.usesTimeOfDay
@@ -248,44 +249,99 @@ load = (win) ->
 					)
 				)
 			)
+			R.div({}, formatTimestamp @props.startTimestamp)
+			R.div({}, if @props.endTimestamp then formatTimestamp(@props.endTimestamp) else "NONE")
+			)
 
 		_toggleUsesTimeOfDay: ->
 			usesTimeOfDay = not @state.usesTimeOfDay
+
+			startTime = @startDate.date().startOf 'day'
+
+			if usesTimeOfDay
+				# ADDING timeOfDay
+				@_updateStartTime startTime
+
+			else
+				# REMOVING timeOfDay
+				if @state.isDateSpan
+					endTime = @endDate.date().endOf 'day'
+					@_updateEndTime endTime
+					@_updateStartTime startTime
+				else
+					endTime = @startDate.date().endOf 'day'
+					@_updateEndTime endTime
+					@_updateEndDate endTime
+					@_updateStartTime startTime
+
+
 			@setState {usesTimeOfDay}
 
 		_toggleIsDateSpan: ->
 			isDateSpan = not @state.isDateSpan
+
+			if isDateSpan
+				# ADDING dateSpan
+				# End date defaults to 1 day after startDay
+				endTimestamp = @startDate.date().add(1, 'day')
+				@_updateEndDate endTimestamp
+
+				if @state.usesTimeOfDay
+					# When using time of day, default to same as startTime
+					startTime = @startTime.date()
+					@_updateEndTime startTime
+				else
+					# Otherwise, we assume it's a span of days, so use end of day
+					@_updateEndTime endTimestamp.clone().endOf 'day'
+			else
+				# REMOVING dateSpan
+				if @state.usesTimeOfDay
+					# Point event requires no endTimestamp
+					@props.updateEndTimestamp('')
+				else
+					# Reset endTimestamp to end of same day
+					endTimestamp = @startDate.date().endOf 'day'
+					@_updateEndDate endTimestamp
+					@_updateEndTime endTimestamp
+
+
 			@setState {isDateSpan}
 
 		_updateStartTime: (startTime) ->
-			startTimestamp = makeMoment(@props.startTimestamp)
+			startTimestamp = @startTime.date()
 			.set 'hour', startTime.hour()
 			.set 'minute', startTime.minute()
-			.format TimestampFormat
 
-			@props.updateStartTimestamp(startTimestamp)
+			@startTime.date startTimestamp
+
+			@props.updateStartTimestamp startTimestamp.format(TimestampFormat)
 
 		_updateStartDate: (startDate) ->
-			startTimestamp = makeMoment(@props.startTimestamp)
+			startTimestamp = @startDate.date()
 			.set 'date', startDate.date()
-			.format TimestampFormat
 
-			@props.updateStartTimestamp(startTimestamp)
+			@startDate.date startTimestamp
+
+			@props.updateStartTimestamp startTimestamp.format(TimestampFormat)
 
 		_updateEndTime: (endTime) ->
-			endTimestamp = makeMoment(@props.endTimestamp)
+			endTimestamp = @endTime.date()
 			.set 'hour', endTime.hour()
 			.set 'minute', endTime.minute()
-			.format TimestampFormat
 
-			@props.updateEndTimestamp(endTimestamp)
+			@endTime.date endTimestamp
+
+			@props.updateEndTimestamp endTimestamp.format(TimestampFormat)
 
 		_updateEndDate: (endDate) ->
-			endTimestamp = makeMoment(@props.endTimestamp)
-			.set 'date', endDate.date()
-			.format TimestampFormat
+			date = @endDate.date() or @startDate.date()
 
-			@props.updateEndTimestamp(endTimestamp)
+			endTimestamp = date
+			.set 'date', endDate.date()
+
+			@endDate.date endTimestamp
+
+			@props.updateEndTimestamp endTimestamp.format(TimestampFormat)
 
 
 	return TimeSpanSelection
