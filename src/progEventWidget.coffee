@@ -63,6 +63,7 @@ load = (win) ->
 					SmallWidget({
 						progEvent
 						eventType
+						format
 					})
 				else
 					throw new Error "Unknown progEventsWidget format: #{format}"
@@ -153,9 +154,10 @@ load = (win) ->
 
 
 
-	SmallWidget = ({progEvent, eventType}) ->
+	SmallWidget = ({progEvent, eventType, format}) ->
 		eventDate = renderTimeSpan progEvent.get('startTimestamp'), progEvent.get('endTimestamp')
-		tooltipText = "#{eventDate}\n{title}"
+		title = progEvent.get('title')
+		tooltipText = eventDate
 
 		return WithTooltip({
 			title: tooltipText
@@ -163,7 +165,7 @@ load = (win) ->
 			showTooltip: true
 		},
 			R.div({
-				className: 'progEventWidget smallWidget'
+				className: "progEventWidget #{format}"
 				style:
 					background: eventType.get('colorKeyHex') if eventType?
 			},
