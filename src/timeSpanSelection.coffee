@@ -249,9 +249,6 @@ load = (win) ->
 					)
 				)
 			)
-			R.div({}, formatTimestamp @props.startTimestamp)
-			R.div({}, if @props.endTimestamp then formatTimestamp(@props.endTimestamp) else "NONE")
-			)
 
 		_toggleUsesTimeOfDay: ->
 			usesTimeOfDay = not @state.usesTimeOfDay
