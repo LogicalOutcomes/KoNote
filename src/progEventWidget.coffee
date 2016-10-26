@@ -112,7 +112,9 @@ load = (win) ->
 							onChange: updateProgEvent.bind null, 'description'
 						})
 					else
-						renderLineBreaks progEvent.get('description')
+						R.span({},
+							renderLineBreaks progEvent.get('description')
+						)
 					)
 
 					R.div({className: 'date'},
