@@ -57,7 +57,8 @@ load = (win) ->
 						eventTypes
 						format
 						isEditing
-						updateProgEvent: @_updateProgEvent
+						updateProperty: @_updateProperty
+						updateTimestamps: @_updateTimestamps
 					})
 				when 'small'
 					SmallWidget({
@@ -69,17 +70,27 @@ load = (win) ->
 					throw new Error "Unknown progEventsWidget format: #{format}"
 			)
 
-		_updateProgEvent: (property, event) ->
+		_updateProperty: (property, event) ->
 			# TODO: Make this less weird
 			value = switch property
 				when 'title', 'description'
 					event.target.value
-				when 'startTimestamp', 'endTimestamp', 'typeId'
+				when 'typeId'
 					event
 				else
 					throw new Error "Unrecognized property: #{property}"
 
 			progEvent = @props.progEvent.set property, value
+			@props.updateProgEvent(progEvent)
+
+		_updateTimestamps: ({startTimestamp, endTimestamp}) ->
+			progEvent = @props.progEvent
+
+			if startTimestamp?
+				progEvent = progEvent.set 'startTimestamp', startTimestamp
+			if endTimestamp?
+				progEvent = progEvent.set 'endTimestamp', endTimestamp
+
 			@props.updateProgEvent(progEvent)
 
 
@@ -88,7 +99,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			{progEvent, eventType, eventTypes, format, isEditing, updateProgEvent} = @props
+			{progEvent, eventType, eventTypes, format, isEditing, updateProperty, updateTimestamps} = @props
 			progEventId = progEvent.get('id')
 
 			return R.div({className: "progEventWidget fullWidget #{format}"},
@@ -99,7 +110,7 @@ load = (win) ->
 						R.input({
 							className: 'form-control'
 							value: progEvent.get('title')
-							onChange: updateProgEvent.bind null, 'title'
+							onChange: updateProperty.bind null, 'title'
 						})
 					else
 						progEvent.get('title')
@@ -109,7 +120,7 @@ load = (win) ->
 					(if isEditing
 						ExpandingTextArea({
 							value: progEvent.get('description')
-							onChange: updateProgEvent.bind null, 'description'
+							onChange: updateProperty.bind null, 'description'
 						})
 					else
 						R.span({},
@@ -123,8 +134,7 @@ load = (win) ->
 								ref: 'timeSpanSelection'
 								startTimestamp: progEvent.get('startTimestamp')
 								endTimestamp: progEvent.get('endTimestamp')
-								updateStartTimestamp: updateProgEvent.bind null, 'startTimestamp'
-								updateEndTimestamp: updateProgEvent.bind null, 'endTimestamp'
+								updateTimestamps
 							})
 						else
 							renderTimeSpan progEvent.get('startTimestamp'), progEvent.get('endTimestamp')
@@ -139,7 +149,7 @@ load = (win) ->
 							EventTypesDropdown({
 								eventTypes
 								selectedEventType: eventType
-								onSelect: updateProgEvent.bind null, 'typeId'
+								onSelect: updateProperty.bind null, 'typeId'
 							})
 						else
 							R.span({

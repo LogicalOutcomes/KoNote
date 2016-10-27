@@ -25,10 +25,9 @@ load = (win) ->
 		displayName: 'TimeSpanSelection'
 
 		propTypes: {
-			startTimestamp: PropTypes.instanceOf(Moment)
+			startTimestamp: PropTypes.instanceOf(Moment).isRequired
 			endTimestamp: PropTypes.instanceOf(Moment)
-			updateStartTimestamp: PropTypes.func.isRequired
-			updateEndTimestamp: PropTypes.func.isRequired
+			updateTimestamps: PropTypes.func.isRequired
 		}
 
 		getInitialState: ->
@@ -70,7 +69,7 @@ load = (win) ->
 			{startTimestamp, endTimestamp} = @props
 
 			startDate = makeMoment(startTimestamp).toDate()
-			endDate = if endTimestamp then makeMoment(endTimestamp).toDate() else null
+			endDate = if endTimestamp then makeMoment(endTimestamp).toDate() else false
 
 			# Make sure these datetimepickers stay within the frame
 			leftPositioning = {
@@ -93,8 +92,7 @@ load = (win) ->
 				defaultDate: startDate
 				widgetPositioning: leftPositioning
 			}).on 'dp.change', ({date}) =>
-				$endDate.data('DateTimePicker').minDate(date)
-				@_updateStartDate(date)
+				@_updateStartDate @_getStartMoment(), date
 
 			@startDate = $startDate.data('DateTimePicker')
 
@@ -105,7 +103,7 @@ load = (win) ->
 				defaultDate: startDate
 				widgetPositioning: leftPositioning
 			}).on 'dp.change', ({date}) =>
-				@_updateStartTime(date)
+				@_updateStartTime @_getStartMoment(), date
 
 			@startTime = $startTime.data('DateTimePicker')
 
@@ -117,8 +115,7 @@ load = (win) ->
 				defaultDate: endDate
 				widgetPositioning: rightPositioning
 			}).on 'dp.change', ({date}) =>
-				$startDate.data('DateTimePicker').maxDate(date)
-				@_updateEndDate(date)
+				@_updateEndDate @_getEndMoment(), date
 
 			@endDate = $endDate.data('DateTimePicker')
 
@@ -129,7 +126,7 @@ load = (win) ->
 				defaultDate: endDate
 				widgetPositioning: rightPositioning
 			}).on 'dp.change', ({date}) =>
-				@_updateEndTime(date)
+				@_updateEndTime @_getEndMoment(), date
 
 			@endTime = $endTime.data('DateTimePicker')
 
@@ -205,11 +202,11 @@ load = (win) ->
 						)
 					)
 					## Raw view of props, for debugging purposes
-					# R.div({},
-					# 	formatTimestamp makeMoment @props.startTimestamp
-					# 	R.br()
-					# 	if @props.endTimestamp then formatTimestamp makeMoment @props.endTimestamp else "NONE"
-					# )
+					R.div({},
+						formatTimestamp makeMoment @props.startTimestamp
+						R.br()
+						if @props.endTimestamp then formatTimestamp makeMoment @props.endTimestamp else "NONE"
+					)
 				)
 
 				R.section({className: "arrow #{showWhen @state.isDateSpan}"},
@@ -268,27 +265,23 @@ load = (win) ->
 
 			if usesTimeOfDay
 				# ADDING timeOfDay
-				@_updateStartTime startMoment
+				@_updateStartTime startMoment, startMoment
 
 				if not @state.isDateSpan
-					@props.updateEndTimestamp('')
+					@_clearEndTimestamp()
 
 			else
 				# REMOVING timeOfDay
 				if @state.isDateSpan
-					endOfDay = endMoment.clone().endOf 'day'
-					startOfDay = startMoment.clone().startOf 'day'
+					startOfStartDay = startMoment.clone().startOf 'day'
+					endOfEndDay = endMoment.clone().endOf 'day'
 
-					@_updateStartTime startOfDay
-					@_updateEndDate endOfDay
-					@_updateEndTime endOfDay
+					@_updateBothTimestamps startOfStartDay, endOfEndDay
 				else
-					endOfDay = startMoment.clone().endOf 'day'
-					startOfDay = endMoment.clone().startOf 'day'
+					startOfStartDay = startMoment.clone().startOf 'day'
+					endOfStartDay = startMoment.clone().endOf 'day'
 
-					@_updateStartTime startOfDay
-					@_updateEndDate endOfDay
-					@_updateEndTime endOfDay
+					@_updateBothTimestamps startOfStartDay, endOfStartDay
 
 
 			@setState {usesTimeOfDay}
@@ -304,65 +297,76 @@ load = (win) ->
 
 				if @state.usesTimeOfDay
 					# When using time of day, default to same as startTime
-					@_updateEndTime startMoment
+					@_updateEndTime endMoment, startMoment
 				else
 					# Otherwise, we assume it's a span of days, so use end of day
-					@_updateEndTime endMoment.clone().endOf 'day'
+					@_updateEndTime endMoment, endMoment.clone().endOf 'day'
 
 				# End date defaults to 1 day after startDay
-				@_updateEndDate startMoment.clone().add(1, 'day')
+				@_updateEndDate endMoment, startMoment.clone().add(1, 'day')
 
 			else
 				# REMOVING dateSpan
 				if @state.usesTimeOfDay
 					# Point event requires no endTimestamp
-					@props.updateEndTimestamp('')
+					@_clearEndTimestamp()
 				else
 					# Reset endTimestamp to end of same day
 					endOfStartDay = startMoment.clone().endOf 'day'
-					@_updateEndDate endOfStartDay
+					@_updateEndDate endMoment, endOfStartDay
 					# @_updateEndTime endOfStartDay
 
 
 			@setState {isDateSpan}
 
-		_updateStartTime: (startTime) ->
-			startTimestamp = @_getStartMoment()
+		_updateStartTime: (startMoment, startTime) ->
+			startTimestamp = startMoment.clone()
 			.set 'hour', startTime.hour()
 			.set 'minute', startTime.minute()
 
 			@startTime.date startTimestamp
+			@endTime.minDate startTimestamp
 
-			@props.updateStartTimestamp startTimestamp.format(TimestampFormat)
+			@props.updateTimestamps {startTimestamp: startTimestamp.format(TimestampFormat)}
 
-		_updateStartDate: (startDate) ->
-			startTimestamp = @_getStartMoment()
+		_updateStartDate: (startMoment, startDate) ->
+			startTimestamp = startMoment.clone()
 			.set 'date', startDate.date()
 
 			@startDate.date startTimestamp
+			@endDate.minDate startTimestamp
 
-			@props.updateStartTimestamp startTimestamp.format(TimestampFormat)
+			@props.updateTimestamps {startTimestamp: startTimestamp.clone().format(TimestampFormat)}
 
-		_updateEndTime: (endTime) ->
-			date = @_getEndMoment()
-
-			endTimestamp = date
+		_updateEndTime: (endMoment, endTime) ->
+			endTimestamp = endMoment.clone()
 			.set 'hour', endTime.hour()
 			.set 'minute', endTime.minute()
 
 			@endTime.date endTimestamp
+			@startTime.maxDate endTimestamp
 
-			@props.updateEndTimestamp endTimestamp.format(TimestampFormat)
+			@props.updateTimestamps {endTimestamp: endTimestamp.format(TimestampFormat)}
 
-		_updateEndDate: (endDate) ->
-			date = @_getEndMoment()
-
-			endTimestamp = date
+		_updateEndDate: (endMoment, endDate) ->
+			endTimestamp = endMoment.clone()
 			.set 'date', endDate.date()
 
 			@endDate.date endTimestamp
+			@startDate.maxDate endTimestamp
 
-			@props.updateEndTimestamp endTimestamp.format(TimestampFormat)
+			@props.updateTimestamps {endTimestamp: endTimestamp.format(TimestampFormat)}
+
+		_updateBothTimestamps: (startDate, endDate) ->
+			startTimestamp = startDate.format(TimestampFormat)
+			endTimestamp = endDate.format(TimestampFormat)
+
+			@props.updateTimestamps {startTimestamp, endTimestamp}
+
+		_clearEndTimestamp: ->
+			@props.updateTimestamps {endTimestamp: ''}
+			@startDate.maxDate false
+			@startTime.maxDate false
 
 		_getStartMoment: ->
 			makeMoment @props.startTimestamp
