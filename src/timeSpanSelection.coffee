@@ -257,7 +257,9 @@ load = (win) ->
 				)
 			)
 
-		_toggleUsesTimeOfDay: ->
+		_toggleUsesTimeOfDay: (event) ->
+			event.preventDefault()
+
 			usesTimeOfDay = not @state.usesTimeOfDay
 
 			startMoment = @_getStartMoment()
@@ -286,7 +288,9 @@ load = (win) ->
 
 			@setState {usesTimeOfDay}
 
-		_toggleIsDateSpan: ->
+		_toggleIsDateSpan: (event) ->
+			event.preventDefault()
+
 			isDateSpan = not @state.isDateSpan
 
 			startMoment = @_getStartMoment()
