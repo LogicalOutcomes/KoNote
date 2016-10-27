@@ -202,11 +202,11 @@ load = (win) ->
 						)
 					)
 					## Raw view of props, for debugging purposes
-					R.div({},
-						formatTimestamp makeMoment @props.startTimestamp
-						R.br()
-						if @props.endTimestamp then formatTimestamp makeMoment @props.endTimestamp else "NONE"
-					)
+					# R.div({},
+					# 	formatTimestamp makeMoment @props.startTimestamp
+					# 	R.br()
+					# 	if @props.endTimestamp then formatTimestamp makeMoment @props.endTimestamp else "NONE"
+					# )
 				)
 
 				R.section({className: "arrow #{showWhen @state.isDateSpan}"},
