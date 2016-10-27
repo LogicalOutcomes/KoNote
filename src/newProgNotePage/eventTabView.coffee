@@ -36,20 +36,29 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
-			# Use backdate instead of current date (if exists)
-			startTimestamp = @props.backdate or Moment().format(TimestampFormat)
+			# Use progNote's back/date to start (full-day event)
+			startingDate = if @props.backdate then makeMoment(@props.backdate) else Moment()
+			startTimestamp = startingDate.startOf('day').format(TimestampFormat)
+			endTimestamp = startingDate.endOf('day').format(TimestampFormat)
 
 			return {
-				title: ''
-				description: ''
-				typeId: ''
-				startTimestamp
-				endTimestamp: ''
+				progEvent: Imm.Map {
+					title: ''
+					description: ''
+					typeId: ''
+					startTimestamp
+					endTimestamp
+				}
 				isGlobalEvent: null
 			}
 
 		render: ->
-			selectedEventType = @props.eventTypes.find (type) => type.get('id') is @state.typeId
+			progEvent = @state.progEvent
+			typeId = progEvent.get 'typeId'
+			selectedEventType = @props.eventTypes.find (type) => type.get('id') is typeId
+
+			formIsInvalid = @_formIsInvalid()
+			hasChanges = @_hasChanges()
 
 			return R.div({
 				className: [
@@ -69,7 +78,7 @@ load = (win) ->
 						R.input({
 							id: 'nameInput'
 							className: 'form-control'
-							value: @state.title
+							value: progEvent.get('title')
 							onChange: @_updateTitle
 							placeholder: "Name of #{Term 'event'}"
 						})
@@ -77,7 +86,7 @@ load = (win) ->
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
 						ExpandingTextArea({
-							value: @state.description
+							value: progEvent.get('description')
 							onChange: @_updateDescription
 							placeholder: "Describe details (optional)"
 						})
@@ -125,33 +134,26 @@ load = (win) ->
 					)
 
 					TimeSpanSelection({
-						startTimestamp: @state.startTimestamp
-						endTimestamp: @state.endTimestamp
-						updateStartTimestamp: @_updateStartTimestamp
-						updateEndTimestamp: @_updateEndTimestamp
+						startTimestamp: progEvent.get('startTimestamp')
+						endTimestamp: progEvent.get('endTimestamp')
+						updateTimestamps: @_updateTimestamps
 					})
 
 					R.div({className: 'btn-toolbar'},
-						R.button({
-							className: "btn btn-default #{showWhen not @state.isDateSpan}"
-							onClick: @_toggleIsDateSpan
-						},
-							"Add End Date"
-						)
 
 						# TODO: Refactor to something more generic
 						(if @state.isGlobalEvent
 							OpenDialogLink({
 								dialog: AmendGlobalEventDialog
-								eventData: @_compiledFormData()
+								eventData: progEvent
 								clientFileId: @props.clientFileId
 								clientPrograms: @props.clientPrograms
 								onSuccess: @_saveProgEvent
 							},
 								R.button({
-									className: "btn btn-success #{'fullWidth' if @state.isDateSpan}"
+									className: 'btn btn-success'
 									type: 'submit'
-									disabled: @_formIsInvalid()
+									disabled: formIsInvalid or not hasChanges
 								},
 									"Save "
 									FaIcon('check')
@@ -159,10 +161,10 @@ load = (win) ->
 							)
 						else
 							R.button({
-								className: "btn btn-success #{'fullWidth' if @state.isDateSpan}"
+								className: 'btn btn-success'
 								type: 'submit'
 								onClick: @_submit
-								disabled: @_formIsInvalid()
+								disabled: formIsInvalid or not hasChanges
 							},
 								"Save "
 								FaIcon('check')
@@ -181,22 +183,33 @@ load = (win) ->
 		)
 
 		_updateTitle: (event) ->
-			@setState {title: event.target.value}
+			progEvent = @state.progEvent.set 'title', event.target.value
+			@setState {progEvent}
 
 		_updateDescription: (event) ->
-			@setState {description: event.target.value}
+			progEvent = @state.progEvent.set 'description', event.target.value
+			@setState {progEvent}
 
 		_updateTypeId: (typeId) ->
-			@setState {typeId}
+			progEvent = @state.progEvent.set 'typeId', typeId
+			@setState {progEvent}
 
-		_updateStartTimestamp: (startTimestamp) ->
-			@setState {startTimestamp}
+		_updateTimestamps: ({startTimestamp, endTimestamp}) ->
+			progEvent = @state.progEvent
 
-		_updateEndTimestamp: (endTimestamp) ->
-			@setState {endTimestamp}
+			if startTimestamp?
+				progEvent = progEvent.set 'startTimestamp', startTimestamp
+			if endTimestamp?
+				progEvent = progEvent.set 'endTimestamp', endTimestamp
+
+			@setState {progEvent}
 
 		_formIsInvalid: ->
-			return not @state.title or not @state.description or not @state.startTimestamp
+			{title, description, startTimestamp} = @state.progEvent.toObject()
+			return not title or not description or not startTimestamp
+
+		_hasChanges: ->
+			return not Imm.is @state.progEvent, @props.data
 
 		_toggleIsGlobalEvent: ->
 			@setState {isGlobalEvent: not @state.isGlobalEvent}
@@ -204,36 +217,23 @@ load = (win) ->
 		_closeForm: (event) ->
 			event.preventDefault()
 
-			if @state.title or @state.endTimestamp or @state.description or @state.typeId
+			if @_hasChanges()
 				Bootbox.confirm "Cancel #{Term 'event'} editing?", (ok) =>
 					if ok
-						# Make sure all states are reset, then cancel
-						@setState @props.data, =>
-							@props.cancel @props.atIndex
+						@_resetProgEvent()
 			else
-				@setState @props.data, =>
-					@props.cancel @props.atIndex
+				@_resetProgEvent()
+
+		_resetProgEvent: ->
+			@setState {progEvent: @props.data}, =>
+				@props.cancel @props.atIndex
 
 		_submit: (event) ->
 			event.preventDefault()
-			progEvent = @_compiledFormData()
-			@_saveProgEvent progEvent
+			@_saveProgEvent @state.progEvent
 
 		_saveProgEvent: (progEvent) ->
 			@props.saveProgEvent progEvent, @props.atIndex
-
-		_compiledFormData: ->
-			# isOneFullDay = null
-
-			progEventObject = Imm.fromJS {
-				title: @state.title
-				description: @state.description
-				typeId: @state.typeId
-				startTimestamp: @state.startTimestamp
-				endTimestamp: @state.endTimestamp
-			}
-
-			return progEventObject
 
 
 	AmendGlobalEventDialog = React.createFactory React.createClass
@@ -256,7 +256,6 @@ load = (win) ->
 					programId = @props.clientPrograms.first()
 
 				else
-					console.log "Testing programs"
 					matchingProgram = @props.clientPrograms.find (program) -> program.get('id') is userProgramId
 
 					if matchingProgram?
@@ -268,7 +267,7 @@ load = (win) ->
 			return {
 				title: @props.eventData.get('title')
 				description: @props.eventData.get('description')
-				program
+				program # TODO: Check this
 			}
 
 		propTypes: {
