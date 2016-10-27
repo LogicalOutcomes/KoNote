@@ -4,7 +4,7 @@
   "version": "1.11.0-RC1",
   "author": "KoNote",
   "description": "KoNote",
-  "main": "src/start.html",
+  "main": "src/main.html",
   "chromium-args": "--enable-spell-checking",
   "nwjsBuilder": {
     "companyName": "KoNote",

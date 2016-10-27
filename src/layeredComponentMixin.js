@@ -44,8 +44,8 @@ module.exports = {
 	load: function (win) {
 		// Explicitly access all page globals via the window object
 		// (required for NW.js compatibility)
-		var React = win.React;
-		var ReactDOM = win.ReactDOM;
+		var React = require ('react');
+		var ReactDOM = require('react-dom');
 
 		var document = win.document;
 

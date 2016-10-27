@@ -13,7 +13,7 @@ Persist = require './persist'
 
 load = (win) ->
 	# Window libs
-	$ = require 'jquery'
+	$ = win.jQuery
 	Bootbox = require 'bootbox'
 
 	React = require 'react'
@@ -29,8 +29,8 @@ load = (win) ->
 	Window = nw.Window.get(win)
 
 	#MainMenu = require('./mainMenu').load(win)
-	#OpenDialogLink = require('./openDialogLink').load(win)
-	#ProgramBubbles = require('./programBubbles').load(win)
+	OpenDialogLink = require('./openDialogLink').load(win)
+	ProgramBubbles = require('./programBubbles').load(win)
 
 	#ManagerLayer = require('./managerLayer').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)

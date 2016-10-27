@@ -7,17 +7,18 @@
 _ = require 'underscore'
 
 load = (win) ->
-	$ = win.jQuery
-	Bootbox = win.bootbox
-	React = win.React
+	$ = require 'jquery'
+	Bootbox = require 'bootbox'
+	React = require 'react'
 	R = React.DOM
+	PureRenderMixin = require 'react-addons-pure-render-mixin'
 
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	{FaIcon} = require('./utils').load(win)
 
 	OpenDialogLink = React.createFactory React.createClass
 		displayName: 'OpenDialogLink'
-		mixins: [React.addons.PureRenderMixin, LayeredComponentMixin]
+		mixins: [PureRenderMixin, LayeredComponentMixin]
 
 		getInitialState: -> {
 			isOpen: false

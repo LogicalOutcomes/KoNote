@@ -4,7 +4,7 @@
 
 load = (win) ->
 	# Libraries from browser context
-	$ = require 'jquery'
+	$ = win.jQuery
 	React = require 'react'
 	R = React.DOM
 	PureRenderMixin = require 'react-addons-pure-render-mixin'
