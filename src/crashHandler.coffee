@@ -13,9 +13,10 @@ Moment = require 'moment'
 {generateId} = require './persist'
 
 load = (win) ->
-	React = win.React
-	ReactDOM = win.ReactDOM
+	React = require 'react'
+	ReactDOM = require 'react-dom'
 	R = React.DOM
+	PureRenderMixin = require 'react-addons-pure-render-mixin'
 
 	nwWin = nw.Window.get(win)
 	{FaIcon} = require('./utils').load(win)
@@ -75,7 +76,7 @@ load = (win) ->
 
 	CrashOverlay = React.createFactory React.createClass
 		displayName: 'CrashOverlay'
-		mixins: [React.addons.PureRenderMixin]
+		mixins: [PureRenderMixin]
 		render: ->
 			return R.div({className: 'crashOverlay'},
 				R.div({className: 'crashMessage'},

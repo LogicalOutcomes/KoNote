@@ -6,15 +6,16 @@ Imm = require 'immutable'
 
 load = (win) ->
 	# Libraries from browser context
-	React = win.React
+	React = require 'react'
 	R = React.DOM
+	PureRenderMixin = require 'react-addons-pure-render-mixin'
 
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
 
 	ProgramBubbles = React.createFactory React.createClass
 		displayName: 'ProgramBubbles'
-		mixins: [React.addons.PureRenderMixin]
+		mixins: [PureRenderMixin]
 
 		propTypes: {
 			programs: React.PropTypes.instanceOf(Imm.List).isRequired

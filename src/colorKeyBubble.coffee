@@ -4,15 +4,16 @@
 
 load = (win) ->
 	# Libraries from browser context
-	$ = win.jQuery
-	React = win.React
+	$ = require 'jquery'
+	React = require 'react'
 	R = React.DOM
+	PureRenderMixin = require 'react-addons-pure-render-mixin'
 
 	{FaIcon} = require('./utils').load(win)
 
 	ColorKeyBubble = React.createFactory React.createClass
 		displayName: 'ColorKeyBubble'
-		mixins: [React.addons.PureRenderMixin]
+		mixins: [PureRenderMixin]
 
 		propTypes: {
 			colorKeyHex: React.PropTypes.string

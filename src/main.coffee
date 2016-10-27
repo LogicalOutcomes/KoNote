@@ -31,8 +31,9 @@ init = (win) ->
 	Config = require('./config')
 
 	document = win.document
-	React = win.React
-	ReactDOM = win.ReactDOM
+
+	React = require 'react'
+	ReactDOM = require 'react-dom'
 
 	CrashHandler = require('./crashHandler').load(win)
 	HotCodeReplace = require('./hotCodeReplace').load(win)
@@ -176,7 +177,7 @@ init = (win) ->
 
 			# Convenience method for checking React perf
 			# Simply call start(), [do action], stop() from the window console
-			Perf = React.addons.Perf
+			Perf = require 'react-addons-perf'
 			win.start = Perf.start
 			win.stop = ->
 				Perf.stop()

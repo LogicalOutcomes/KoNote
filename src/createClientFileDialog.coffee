@@ -11,12 +11,14 @@ Config = require './config'
 Term = require './term'
 
 load = (win) ->
-	$ = win.jQuery
-	Bootbox = win.bootbox
-	React = win.React
-	R = React.DOM
+	$ = require 'jquery'
+	Bootbox = require 'bootbox'
 
-	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
+	React = require 'react'
+	R = React.DOM
+	PureRenderMixin = require 'react-addons-pure-render-mixin'
+
+	B = require 'react-bootstrap'
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
@@ -28,7 +30,7 @@ load = (win) ->
 
 	CreateClientFileDialog = React.createFactory React.createClass
 		displayName: 'CreateClientFileDialog'
-		mixins: [React.addons.PureRenderMixin]
+		mixins: [PureRenderMixin]
 
 		componentDidMount: ->
 			@refs.firstNameField.focus()

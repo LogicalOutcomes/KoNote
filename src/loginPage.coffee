@@ -10,10 +10,12 @@ Persist = require './persist'
 
 load = (win) ->
 	# Libraries from browser context
-	$ = win.jQuery
-	Bootbox = win.bootbox
-	React = win.React
+	$ = require 'jquery'
+	Bootbox = require 'bootbox'
+	React = require 'react'
 	R = React.DOM
+	PureRenderMixin = require 'react-addons-pure-render-mixin'
+
 	Window = nw.Window.get(win)
 
 	CrashHandler = require('./crashHandler').load(win)
@@ -23,7 +25,7 @@ load = (win) ->
 
 	LoginPage = React.createFactory React.createClass
 		displayName: 'LoginPage'
-		mixins: [React.addons.PureRenderMixin]
+		mixins: [PureRenderMixin]
 
 		getInitialState: ->
 			return {
@@ -151,7 +153,7 @@ load = (win) ->
 
 	LoginPageUi = React.createFactory React.createClass
 		displayName: 'LoginPageUi'
-		mixins: [React.addons.PureRenderMixin]
+		mixins: [PureRenderMixin]
 		getInitialState: ->
 			return {
 				userName: ''

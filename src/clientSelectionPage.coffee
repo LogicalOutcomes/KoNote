@@ -13,25 +13,26 @@ Persist = require './persist'
 
 load = (win) ->
 	# Window libs
-	$ = win.jQuery
-	Bootbox = win.bootbox
-	React = win.React
-	ReactDOM = win.ReactDOM
+	$ = require 'jquery'
+	Bootbox = require 'bootbox'
+
+	React = require 'react'
+	ReactDOM = require 'react-dom'
 	R = React.DOM
+	PureRenderMixin = require 'react-addons-pure-render-mixin'
 
 	# TODO: Refactor to single require
-	{BootstrapTable, TableHeaderColumn} = win.ReactBootstrapTable
+	{BootstrapTable, TableHeaderColumn} = require 'react-bootstrap-table'
 	BootstrapTable = React.createFactory BootstrapTable
 	TableHeaderColumn = React.createFactory TableHeaderColumn
 
 	Window = nw.Window.get(win)
 
-	MainMenu = require('./mainMenu').load(win)
-	BrandWidget = require('./brandWidget').load(win)
-	OpenDialogLink = require('./openDialogLink').load(win)
-	ProgramBubbles = require('./programBubbles').load(win)
+	#MainMenu = require('./mainMenu').load(win)
+	#OpenDialogLink = require('./openDialogLink').load(win)
+	#ProgramBubbles = require('./programBubbles').load(win)
 
-	ManagerLayer = require('./managerLayer').load(win)
+	#ManagerLayer = require('./managerLayer').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	if Config.features.shiftSummaries.isEnabled then GenerateSummariesDialog = require('./generateSummariesDialog').load(win)
 
@@ -340,7 +341,7 @@ load = (win) ->
 
 	ClientSelectionPageUi = React.createFactory React.createClass
 		displayName: 'ClientSelectionPageUi'
-		mixins: [React.addons.PureRenderMixin]
+		mixins: [PureRenderMixin]
 
 		getInitialState: ->
 			return {
@@ -436,7 +437,7 @@ load = (win) ->
 								noData = @props.clientFileHeaders.isEmpty()
 
 								R.div({className: 'input-group'}
-									(unless noData
+								(unless noData
 										OpenDialogLink({
 											className: 'input-group-btn'
 											ref: 'openCreateClientSmall'

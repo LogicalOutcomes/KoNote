@@ -62,7 +62,18 @@
     "rimraf": "^2.5.4",
     "source-map-support": "^0.4.0",
     "underscore": "^1.8.3",
-    "yauzl": "^2.5.0"
+    "yauzl": "^2.5.0",
+    "jquery": "3.1.1",
+    "bootstrap": "3.3.7",
+    "bootbox": "4.4.0",
+    "react": "15.3.2",
+    "react-dom": "15.3.2",
+    "react-addons-pure-render-mixin": "15.3.2",
+    "react-addons-perf": "15.3.2",
+    "moment": "2.15.2",
+    "jquery-typeahead": "2.7.2",
+    "react-bootstrap": "0.30.5",
+    "react-bootstrap-table": "2.5.6"
   },
   "scripts": {
     "start": "nw . --enable-logging=stderr --remote-debugging-port=9222 --load-extension=scripts/react-devtools-immutable/",

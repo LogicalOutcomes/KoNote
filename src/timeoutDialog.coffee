@@ -8,11 +8,12 @@ Config = require './config'
 Persist = require './persist'
 
 load = (win) ->
-	$ = win.jQuery
-	React = win.React
-	ReactDOM = win.ReactDOM
+	$ = require 'jquery'
+	React = require 'react'
+	ReactDOM = require 'react-dom'
 	R = React.DOM
-	Bootbox = win.bootbox
+	Bootbox = require 'bootbox'
+
 	nwWin = nw.Window.get(win)
 
 	Dialog = require('./dialog').load(win)

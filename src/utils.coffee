@@ -10,8 +10,9 @@ Moment = require 'moment'
 Config = require './config'
 
 load = (win) ->
-	$ = win.jQuery
-	React = win.React
+	#$ = require('jquery')(win)
+	$ = require 'jquery'
+	React = require 'react'
 	R = React.DOM
 
 	# Execute variable as a function if it is one

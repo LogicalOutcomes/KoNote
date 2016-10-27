@@ -10,16 +10,17 @@
 # 	disableCancel: boolean
 
 load = (win) ->
-	$ = win.jQuery
-	React = win.React
+	$ = require 'jquery'
+	React = require 'react'
 	R = React.DOM
+	PureRenderMixin = require 'react-addons-pure-render-mixin'
 
 	Spinner = require('./spinner').load(win)
 	{FaIcon} = require('./utils').load(win)
 
 	Dialog = React.createFactory React.createClass
 		displayName: 'Dialog'
-		mixins: [React.addons.PureRenderMixin]
+		mixins: [PureRenderMixin]
 
 		getInitialState: ->
 			return {

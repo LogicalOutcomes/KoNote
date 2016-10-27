@@ -7,13 +7,14 @@
 # while the animation is visible.
 
 load = (win) ->
-	React = win.React
+	React = require 'react'
 	R = React.DOM
+	PureRenderMixin = require 'react-addons-pure-render-mixin'
 	{showWhen} = require('./utils').load(win)
 
 	Spinner = React.createFactory React.createClass
 		displayName: 'Spinner'
-		mixins: [React.addons.PureRenderMixin]
+		mixins: [PureRenderMixin]
 
 		render: ->
 			spinner = R.div({
