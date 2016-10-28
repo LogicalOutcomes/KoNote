@@ -27,6 +27,7 @@ load = (win, {clientFileId}) ->
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	WithTooltip = require('../withTooltip').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 
 	{FaIcon, renderName, showWhen, stripMetadata,
@@ -236,18 +237,8 @@ load = (win, {clientFileId}) ->
 			global.ActiveSession.persist.eventBus.trigger 'newProgNotePage:loaded'
 			Window.focus()
 
-			# Store beginTimestamp as class var, since it wont change
+			# Store beginTimestamp as static class variable, since it wont change
 			@beginTimestamp = Moment().format(Persist.TimestampFormat)
-
-		componentDidUpdate: ->
-			if @state.editingWhichEvent?
-				$('#saveNoteButton').tooltip {
-					html: true
-					placement: 'top'
-					title: "Please finish editing your #{Term 'event'} before saving"
-				}
-			else
-				$('#saveNoteButton').tooltip 'destroy'
 
 		render: ->
 
@@ -268,8 +259,7 @@ load = (win, {clientFileId}) ->
 						R.div({},
 							R.button({
 								className: 'btn btn-danger'
-								onClick: =>
-									@props.closeWindow()
+								onClick: @props.closeWindow
 							}, "Close")
 						)
 					)
@@ -277,7 +267,8 @@ load = (win, {clientFileId}) ->
 
 			clientName = renderName @props.clientFile.get('clientName')
 			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}: New #{Term 'Progress Note'}
+				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}
+				: New #{Term 'Progress Note'}
 			"""
 
 			return R.div({className: 'newProgNotePage animated fadeIn'},
@@ -348,7 +339,9 @@ load = (win, {clientFileId}) ->
 															R.span({
 																className: 'star'
 																title: "Mark as Important"
-																onClick: @_starTarget.bind(null, unitId, sectionId, targetId, target.get 'notes')
+																onClick: @_starTarget.bind(
+																	null, unitId, sectionId, targetId, target.get 'notes'
+																)
 															},
 																if target.get('notes').includes "***"
 																	FaIcon('star', {className:'checked'})
@@ -408,16 +401,23 @@ load = (win, {clientFileId}) ->
 						)
 					)
 
-					if @hasChanges()
-						R.button({
-							id: 'saveNoteButton'
-							className: 'btn btn-success btn-lg animated fadeInUp'
-							disabled: @state.editingWhichEvent?
-							onClick: @_save
+					(if @hasChanges()
+						WithTooltip({
+							title: if @state.editingWhichEvent?
+								"Please finish editing your #{Term 'event'} before saving"
+							placement: 'top'
 						},
-							"Save "
-							FaIcon('check')
+							R.button({
+								id: 'saveNoteButton'
+								className: 'btn btn-success btn-lg animated fadeInUp'
+								disabled: @state.editingWhichEvent?
+								onClick: @_save
+							},
+								"Save "
+								FaIcon('check')
+							)
 						)
+					)
 				)
 
 				ProgNoteDetailView({
@@ -436,16 +436,16 @@ load = (win, {clientFileId}) ->
 							'editMode' if @state.editingWhichEvent?
 						].join ' '
 					},
-						(@state.progEvents.map (thisEvent, index) =>
+						(@state.progEvents.map (progEvent, index) =>
 							isBeingEdited = @state.editingWhichEvent is index
-							isGlobalEvent = !!thisEvent.get('globalEvent')
+							isGlobalEvent = progEvent.has 'globalEvent'
 
 							R.div({
+								key: index
 								className: [
 									'eventTab'
 									'isEditing' if isBeingEdited
 								].join ' '
-								key: index
 							},
 								R.div({
 									className: 'icon'
@@ -454,20 +454,19 @@ load = (win, {clientFileId}) ->
 									FaIcon (if isGlobalEvent then 'globe' else 'calendar')
 								)
 								EventTabView({
-									data: thisEvent
+									progEvent
 									clientFileId: @props.clientFile.get('id')
 									backdate: @state.progNote.get('backdate')
 									eventTypes: @props.eventTypes
-									atIndex: index
-									progNote: @state.progNote
-									saveProgEvent: @_saveProgEvent
-									cancel: @_cancelEditing
+									saveProgEvent: @_saveProgEvent.bind null, index
+									cancel: @_cancelEditing.bind null, index
 									editMode: @state.editingWhichEvent?
 									clientPrograms: @props.clientPrograms
 									isBeingEdited
 								})
 							)
 						)
+
 						R.button({
 							className: 'btn btn-default addEventButton'
 							onClick: @_newEventTab
@@ -478,24 +477,34 @@ load = (win, {clientFileId}) ->
 			)
 
 		_newEventTab: ->
-			newProgEvent = Imm.Map()
-			# Add in the new event, select last one
-			@setState {progEvents: @state.progEvents.push newProgEvent}, =>
-				@setState {editingWhichEvent: @state.progEvents.size - 1}
+			# Add in the new (empty) progEvent
+			progEvent = Imm.Map()
+			progEvents = @state.progEvents.push progEvent
+
+			# Select last one for editing
+			editingWhichEvent = progEvents.size - 1
+
+			@setState {progEvents, editingWhichEvent}
 
 		_editEventTab: (index) ->
-			@setState {editingWhichEvent: index}
+			editingWhichEvent = index
+			@setState {editingWhichEvent}
 
-		_saveProgEvent: (data, index) ->
-			newProgEvents = @state.progEvents.set index, data
-			@setState {progEvents: newProgEvents}, @_cancelEditing
+		_saveProgEvent: (index, progEvent) ->
+			progEvents = @state.progEvents.set index, progEvent
+			editingWhichEvent = null
+
+			@setState {progEvents, editingWhichEvent}
 
 		_cancelEditing: (index) ->
 			# Delete if new event
-			if @state.progEvents.get(index) and @state.progEvents.get(index).isEmpty()
-				@setState {progEvents: @state.progEvents.delete(index)}
+			editingWhichEvent = null
+			progEvents = @state.progEvents
 
-			@setState {editingWhichEvent: null}
+			if @state.progEvents.has(index) and @state.progEvents.get(index).isEmpty()
+				progEvents = progEvents.delete index
+
+			@setState {progEvents, editingWhichEvent}
 
 		_selectBasicUnit: (unit) ->
 			@setState {
@@ -525,6 +534,7 @@ load = (win, {clientFileId}) ->
 				newNotes = note.replace(/\*\*\*/g, '')
 			else
 				newNotes = "***" + note
+
 			unitIndex = getUnitIndex @state.progNote, unitId
 			sectionIndex = getPlanSectionIndex @state.progNote, unitIndex, sectionId
 			targetIndex = getPlanTargetIndex @state.progNote, unitIndex, sectionIndex, targetId
@@ -542,11 +552,10 @@ load = (win, {clientFileId}) ->
 			}
 
 		_updateBackdate: (event) ->
-			if event
-				newBackdate = Moment(event.date).format(Persist.TimestampFormat)
-				@setState {progNote: @state.progNote.set 'backdate', newBackdate}
-			else
-				@setState {progNote: @state.progNote.set 'backdate', ''}
+			backdate = if event then event.date else ''
+			progNote = @state.progNote.set 'backdate', ''
+
+			@setState {progNote}
 
 		_updateBasicNotes: (unitId, event) ->
 			newNotes = event.target.value
@@ -710,7 +719,6 @@ load = (win, {clientFileId}) ->
 					, cb
 
 			], (err) =>
-
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """
@@ -721,6 +729,7 @@ load = (win, {clientFileId}) ->
 
 					CrashHandler.handle err
 					return
+
 				@props.closeWindow()
 
 
