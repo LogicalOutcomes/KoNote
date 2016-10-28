@@ -8,7 +8,6 @@ Async = require 'async'
 Imm = require 'immutable'
 
 Persist = require './persist'
-Config = require './config'
 
 
 load = (win) ->
@@ -22,7 +21,6 @@ load = (win) ->
 	BootstrapTable = React.createFactory BootstrapTable
 	TableHeaderColumn = React.createFactory TableHeaderColumn
 
-	Config = require './config'
 	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	DialogLayer = require('./dialogLayer').load(win)

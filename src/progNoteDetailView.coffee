@@ -3,11 +3,8 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
-Moment = require 'moment'
 
-Config = require './config'
 Term = require './term'
-Persist = require './persist'
 
 
 load = (win) ->
