@@ -123,7 +123,8 @@ load = (win) ->
 
 									(unless @props.clientPrograms.isEmpty()
 										WithTooltip({
-											title: "A copy of this #{Term 'event'} will visible to all #{Term 'client files'}"
+											title: "A copy of this #{Term 'event'}
+											will visible to all #{Term 'client files'}"
 										},
 											FaIcon('question-circle')
 										)
@@ -145,7 +146,7 @@ load = (win) ->
 						(if @state.isGlobalEvent
 							OpenDialogLink({
 								dialog: AmendGlobalEventDialog
-								eventData: progEvent
+								progEvent
 								clientFileId: @props.clientFileId
 								clientPrograms: @props.clientPrograms
 								onSuccess: @_saveProgEvent
@@ -174,10 +175,12 @@ load = (win) ->
 				)
 
 				R.div({className: "details #{showWhen not @props.isBeingEdited}"},
-					R.div({className: 'title'}, @props.data.get('title'))
-					R.div({className: 'description'}, @props.data.get('description'))
+					R.div({className: 'title'}, @props.progEvent.get('title'))
+					R.div({className: 'description'}, @props.progEvent.get('description'))
 					R.div({className: 'timeSpan'},
-						renderTimeSpan @props.data.get('startTimestamp'), @props.data.get('endTimestamp')
+						renderTimeSpan(
+							@props.progEvent.get('startTimestamp'), @props.progEvent.get('endTimestamp')
+						)
 					)
 				)
 		)
@@ -225,15 +228,15 @@ load = (win) ->
 				@_resetProgEvent()
 
 		_resetProgEvent: ->
-			@setState {progEvent: @props.data}, =>
-				@props.cancel @props.atIndex
+			@setState {progEvent: @props.progEvent}, =>
+				@props.cancel()
 
 		_submit: (event) ->
 			event.preventDefault()
 			@_saveProgEvent @state.progEvent
 
 		_saveProgEvent: (progEvent) ->
-			@props.saveProgEvent progEvent, @props.atIndex
+			@props.saveProgEvent progEvent
 
 
 	AmendGlobalEventDialog = React.createFactory React.createClass
@@ -242,13 +245,13 @@ load = (win) ->
 
 		getInitialState: ->
 			# Use client's program if has only 1
-			# Otherwise use the program that matched userProgramId
+			# Otherwise use the program that matches userProgramId
 			# Else, user must select program from list
-			clientHasPrograms = not @props.clientPrograms.isEmpty()
 			userProgramId = global.ActiveSession.programId
 
-			program = Imm.Map()
+			programId = ''
 			@programSelectionRequired = false
+			clientHasPrograms = not @props.clientPrograms.isEmpty()
 
 			if clientHasPrograms
 
@@ -256,28 +259,32 @@ load = (win) ->
 					programId = @props.clientPrograms.first()
 
 				else
-					matchingProgram = @props.clientPrograms.find (program) -> program.get('id') is userProgramId
+					clientIsInUserProgram = @props.clientPrograms.some (program) ->
+						program.get('id') is userProgramId
 
-					if matchingProgram?
-						programId = matchingProgram
+					if clientIsInUserProgram
+						programId = userProgramId
 					else
 						@programSelectionRequired = true
 
 
 			return {
-				title: @props.eventData.get('title')
-				description: @props.eventData.get('description')
-				program # TODO: Check this
+				title: @props.progEvent.get('title')
+				description: @props.progEvent.get('description')
+				programId
 			}
 
 		propTypes: {
-			eventData: React.PropTypes.instanceOf(Imm.Map).isRequired
+			progEvent: React.PropTypes.instanceOf(Imm.Map).isRequired
 			clientFileId: React.PropTypes.string.isRequired
 			clientPrograms: React.PropTypes.instanceOf(Imm.List).isRequired
 		}
 
 		render: ->
 			flaggedNames = @_generateFlaggedNames()
+			selectedProgram = @props.clientPrograms.find (program) ->
+				program.get('id') is @state.programId
+
 
 			return Dialog({
 				ref: 'dialog'
@@ -322,7 +329,7 @@ load = (win) ->
 
 							R.label({}, "Select a program for this #{Term 'global event'}")
 							ProgramsDropdown({
-								selectedProgram: @state.program
+								selectedProgram
 								programs: @props.clientPrograms
 								onSelect: @_updateProgram
 								excludeNone: true
@@ -360,16 +367,16 @@ load = (win) ->
 			@setState {description}
 
 		_updateProgram: (program) ->
-			@setState {program}
+			programId = program.get('id')
+			@setState {programId}
 
 		_formIsInvalid: ->
-			return not @state.title or
-			not @state.description or
-			(@programSelectionRequired and not @state.program.has('name'))
+			return not @state.title or not @state.description or
+			(@programSelectionRequired and not @state.programId)
 
 		_generateFlaggedNames: ->
 			# TODO: Process the title as well?
-			people = nlp.text(@props.eventData.get('description')).people()
+			people = nlp.text(@props.progEvent.get('description')).people()
 			names = []
 
 			for i of people
@@ -380,15 +387,16 @@ load = (win) ->
 		_submit: (event) ->
 			event.preventDefault()
 
-			# Attach globalEvent as a property of the progEvent
-			# which will get extracted during final save process
-			globalEvent = Imm.fromJS(@props.eventData)
-			.set('title', @state.title)
-			.set('description', @state.description)
-			.set('clientFileId', @props.clientFileId)
-			.set('programId', @state.program.get('id') or '')
+			# Set up globalEvent object
+			globalEvent = @props.progEvent
+			.set 'title', @state.title
+			.set 'description', @state.description
+			.set 'clientFileId', @props.clientFileId
+			.set 'programId', @state.programId
 
-			progEvent = @props.eventData.set('globalEvent', globalEvent)
+			# Attach globalEvent as a property of the progEvent,
+			# which will get extracted during final save process
+			progEvent = @props.progEvent.set 'globalEvent', globalEvent
 
 			@props.onSuccess(progEvent)
 
