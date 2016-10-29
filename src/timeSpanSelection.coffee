@@ -23,11 +23,13 @@ load = (win) ->
 
 	TimeSpanSelection = React.createFactory React.createClass
 		displayName: 'TimeSpanSelection'
+		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
 			startTimestamp: PropTypes.instanceOf(Moment).isRequired
 			endTimestamp: PropTypes.instanceOf(Moment)
 			updateTimestamps: PropTypes.func.isRequired
+			widgetPositioning: PropTypes.shape
 		}
 
 		getInitialState: ->
@@ -71,13 +73,16 @@ load = (win) ->
 			startDate = makeMoment(startTimestamp).toDate()
 			endDate = if endTimestamp then makeMoment(endTimestamp).toDate() else false
 
+			# Positioning can be overridden to single one
+			widgetPositioning = @props.widgetPositioning
+
 			# Make sure these datetimepickers stay within the frame
-			leftPositioning = {
+			leftPositioning = widgetPositioning or {
 				horizontal: 'left'
 				vertical: 'top'
 			}
 
-			rightPositioning = {
+			rightPositioning = widgetPositioning or {
 				horizontal: 'right'
 				vertical: 'top'
 			}
@@ -286,7 +291,9 @@ load = (win) ->
 					@_updateBothTimestamps startOfStartDay, endOfStartDay
 
 
-			@setState {usesTimeOfDay}
+			@setState {usesTimeOfDay}, =>
+				if usesTimeOfDay
+					@startTime.toggle()
 
 		_toggleIsDateSpan: (event) ->
 			event.preventDefault()
@@ -318,10 +325,12 @@ load = (win) ->
 					# Reset endTimestamp to end of same day
 					endOfStartDay = startMoment.clone().endOf 'day'
 					@_updateEndDate endMoment, endOfStartDay
-					# @_updateEndTime endOfStartDay
 
 
-			@setState {isDateSpan}
+			@setState {isDateSpan}, =>
+				if isDateSpan
+					# Open the endDate datepicker
+					@endDate.toggle()
 
 		_updateStartTime: (startMoment, startTime) ->
 			startTimestamp = startMoment.clone()
@@ -336,6 +345,8 @@ load = (win) ->
 		_updateStartDate: (startMoment, startDate) ->
 			startTimestamp = startMoment.clone()
 			.set 'date', startDate.date()
+			.set 'month', startDate.month()
+			.set 'year', startDate.year()
 
 			@startDate.date startTimestamp
 			@endDate.minDate startTimestamp
@@ -355,6 +366,8 @@ load = (win) ->
 		_updateEndDate: (endMoment, endDate) ->
 			endTimestamp = endMoment.clone()
 			.set 'date', endDate.date()
+			.set 'month', endDate.month()
+			.set 'year', endDate.year()
 
 			@endDate.date endTimestamp
 			@startDate.maxDate endTimestamp

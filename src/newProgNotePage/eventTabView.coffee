@@ -138,6 +138,10 @@ load = (win) ->
 						startTimestamp: progEvent.get('startTimestamp')
 						endTimestamp: progEvent.get('endTimestamp')
 						updateTimestamps: @_updateTimestamps
+						widgetPositioning: {
+							horizontal: 'right'
+							vertical: 'top'
+						}
 					})
 
 					R.div({className: 'btn-toolbar'},
@@ -152,7 +156,7 @@ load = (win) ->
 								onSuccess: @_saveProgEvent
 							},
 								R.button({
-									className: 'btn btn-success'
+									className: 'btn btn-success btn-block'
 									type: 'submit'
 									disabled: formIsInvalid or not hasChanges
 								},
@@ -162,7 +166,7 @@ load = (win) ->
 							)
 						else
 							R.button({
-								className: 'btn btn-success'
+								className: 'btn btn-success btn-block'
 								type: 'submit'
 								onClick: @_submit
 								disabled: formIsInvalid or not hasChanges
