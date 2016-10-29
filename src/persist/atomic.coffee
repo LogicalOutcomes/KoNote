@@ -19,7 +19,7 @@ Fs = require 'graceful-fs'
 Path = require 'path'
 Rimraf = require 'rimraf'
 
-{generateId, IOError, isValidJSON} = require './utils'
+{generateFastId, IOError, isValidJSON} = require './utils'
 
 # Atomically write a file to the specified path.
 #
@@ -33,7 +33,7 @@ Rimraf = require 'rimraf'
 #
 # Note: any existing file at `path` will be overwritten.
 writeFile = (path, tmpDirPath, cb) =>
-	tmpPath = Path.join tmpDirPath, generateId()
+	tmpPath = Path.join tmpDirPath, generateFastId()
 
 	Fs.open tmpPath, 'w', (err, fd) =>
 		if err
@@ -142,7 +142,7 @@ writeJSONToFile = (path, tmpDirPath, dataJSON, cb) =>
 #    'ENOTEMPTY'.
 #
 writeDirectory = (path, tmpDirPath, cb) =>
-	tmpPath = Path.join tmpDirPath, generateId()
+	tmpPath = Path.join tmpDirPath, generateFastId()
 
 	Fs.mkdir tmpPath, (err) =>
 		if err
@@ -184,7 +184,7 @@ writeDirectoryNormally = (path, tmpDirPath, cb) =>
 #
 # This function acts like 'rm -rf', except that it is an atomic operation.
 deleteDirectory = (path, tmpDirPath, cb) =>
-	tmpPath = Path.join tmpDirPath, generateId()
+	tmpPath = Path.join tmpDirPath, generateFastId()
 
 	Async.series [
 		(cb) =>
