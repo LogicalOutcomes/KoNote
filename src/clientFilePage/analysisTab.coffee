@@ -119,15 +119,18 @@ load = (win) ->
 
 			#################### ProgEvents ####################
 
+			# Filter out any cancelled progEvents
+			progEvents = @props.progEvents.filter (progEvent) -> progEvent.get('status') is 'default'
+
 			# Build set list of progEvent Ids
-			progEventIdsWithData = @props.progEvents
+			progEventIdsWithData = progEvents
 			.map (progEvent) -> progEvent.get 'id'
 			.toSet()
 
 			# TODO: All eventTypeIds with data
 
 			# Build master set of events
-			allEvents = @props.progEvents.concat @props.globalEvents
+			allEvents = progEvents.concat @props.globalEvents
 
 			# Filter out progEvents that aren't cancelled or excluded
 			filteredProgEvents = allEvents
@@ -200,7 +203,7 @@ load = (win) ->
 			#################### ETC ####################
 
 			hasEnoughData = daysOfData.size > 0
-			untypedEvents = @props.progEvents.filterNot (progEvent) => progEvent.get('typeId')
+			untypedEvents = progEvents.filterNot (progEvent) => progEvent.get('typeId')
 
 
 			return R.div({className: "analysisView"},
@@ -297,7 +300,7 @@ load = (win) ->
 								Term 'Events'
 							)
 
-							(if @props.progEvents.isEmpty()
+							(if progEvents.isEmpty()
 								R.div({className: 'noData'},
 									"No #{Term 'events'} have been recorded yet."
 								)
