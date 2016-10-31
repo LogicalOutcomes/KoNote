@@ -26,7 +26,6 @@ dataModelDefinitions = [
 				middle: Joi.string().allow('')
 				last: Joi.string()
 			})
-			birthdate: Joi.string().optional()
 			status: ['active', 'inactive', 'discharged']
 			statusReason: Joi.string().optional()
 			recordId: [Joi.string(), '']
