@@ -21,12 +21,16 @@ load = (win) ->
 	R = React.DOM
 	ReactDOM = win.ReactDOM
 
+	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
+
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 
 	{
 		FaIcon, renderLineBreaks, showWhen, capitalize
 	} = require('../utils').load(win)
+
+	months = Moment.months()
 
 
 	InfoView = React.createFactory React.createClass
@@ -36,12 +40,27 @@ load = (win) ->
 		getInitialState: ->
 			detailUnitsById = @_getDetailUnitsById()
 
+			if @props.clientFile.get('birthdate')?
+				birthdate = Moment(@props.clientFile.get('birthdate'))
+				birthMonth = Moment(@props.clientFile.get('birthdate')).month()
+				birthDay = Moment(@props.clientFile.get('birthdate')).date()
+				birthYear = Moment(@props.clientFile.get('birthdate')).year()
+			else
+				birthMonth = null
+				birthDay = null
+				birthDay = null
+
 			return {
 				firstName: @props.clientFile.getIn(['clientName', 'first'])
 				middleName: @props.clientFile.getIn(['clientName', 'middle'])
 				lastName: @props.clientFile.getIn(['clientName', 'last'])
 				recordId: @props.clientFile.get('recordId')
 				status: @props.clientFile.get('status')
+
+				birthDay
+				birthMonth
+				birthYear
+
 				detailUnitsById
 				selectedGroupId: null
 			}
@@ -151,6 +170,35 @@ load = (win) ->
 												disabled: @props.isReadOnly
 												maxLength: 35
 											})
+										)
+									)
+									R.tr({},
+										R.td({}, "Birthdate")
+										R.td({},
+
+											B.DropdownButton({
+												title: if @state.birthMonth? then @state.birthMonth else "Month"
+											},
+												months.map (month) =>
+													B.MenuItem({
+														key: month
+														onclick: @_updateBirthMonth.bind null, month
+													},
+													  month
+													)
+											)
+											B.DropdownButton({
+												title: if @state.birthMonth? then @state.birthMonth else "Month"
+											},
+												months.map (month) =>
+													B.MenuItem({
+														key: month
+														onclick: @_updateBirthMonth.bind null, month
+													},
+													  month
+													)
+											)
+
 										)
 									)
 									(if Config.clientFileRecordId.isEnabled
@@ -303,6 +351,15 @@ load = (win) ->
 
 		_updateLastName: (event) ->
 			@setState {lastName: event.target.value}
+
+		_updateBirthMonth: (birthMonth) ->
+			@setState {birthMonth}
+
+		_updateBirthDay: (birthDay) ->
+			@setState {birthDay}
+
+		_updateBirthYear: (birthYear) ->
+			@setState {birthYear}
 
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
