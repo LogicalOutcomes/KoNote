@@ -134,6 +134,10 @@ module.exports = function(grunt) {
 				overwrite: true,
 				replacements: [
 					{
+						from: '<script src="start.js"></script>',
+						to: '<script>process.env.NODE_ENV = "production"; require("./main").init(window);</script>'
+					},
+					{
 						from: 'react-with-addons.js',
 						to: 'react-with-addons.min.js'
 					},
