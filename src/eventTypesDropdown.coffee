@@ -12,7 +12,7 @@ load = (win) ->
 
 
 	EventTypesDropdown = ({eventTypes, selectedEventType, onSelect}) ->
-		title = if selectedEventType? then selectedEventType.get('name') else "No Type"
+		title = if selectedEventType? then selectedEventType.get('name') else "None"
 
 		# Discard inactive eventTypes
 		eventTypes = eventTypes.filter (eventType) =>
@@ -20,16 +20,18 @@ load = (win) ->
 
 
 		B.DropdownButton({title},
-			if selectedEventType
+			(if selectedEventType
 				B.MenuItem({
 					onClick: onSelect.bind null, ''
 				},
 					"None "
 					FaIcon('ban')
 				)
+			)
 
-			if selectedEventType
+			(if selectedEventType
 				B.MenuItem({divider: true})
+			)
 
 			(eventTypes.map (eventType) =>
 				B.MenuItem({
@@ -37,7 +39,6 @@ load = (win) ->
 					onClick: onSelect.bind null, eventType.get('id') # ?
 				},
 					R.div({
-						onClick: onSelect.bind null, eventType.get('id')
 						style:
 							borderRight: "5px solid #{eventType.get('colorKeyHex')}"
 					},

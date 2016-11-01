@@ -73,15 +73,32 @@ load = (win) ->
 					},
 						FaIcon('times')
 					)
-					R.div({className: 'form-group'},
-						R.label({}, "Name")
-						R.input({
-							id: 'nameInput'
-							className: 'form-control'
-							value: progEvent.get('title')
-							onChange: @_updateTitle
-							placeholder: "Name of #{Term 'event'}"
-						})
+					R.div({className: 'form-group titleContainer'},
+						(unless @props.eventTypes.isEmpty()
+							R.div({},
+								R.label({}, Term 'Event Type')
+								R.div({},
+									EventTypesDropdown({
+										selectedEventType
+										eventTypes: @props.eventTypes
+										onSelect: @_updateTypeId
+									})
+								)
+							)
+						)
+						# eventType can be used instead of title (#871)
+						(unless selectedEventType
+							R.div({},
+								R.label({}, "Title")
+								R.input({
+									id: 'titleInput'
+									className: 'form-control'
+									value: progEvent.get('title')
+									onChange: @_updateTitle
+									placeholder: "Title of #{Term 'event'}"
+								})
+							)
+						)
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
@@ -89,14 +106,6 @@ load = (win) ->
 							value: progEvent.get('description')
 							onChange: @_updateDescription
 							placeholder: "Describe details (optional)"
-						})
-					)
-
-					(unless @props.eventTypes.isEmpty()
-						EventTypesDropdown({
-							selectedEventType
-							eventTypes: @props.eventTypes
-							onSelect: @_updateTypeId
 						})
 					)
 
@@ -212,8 +221,8 @@ load = (win) ->
 			@setState {progEvent}
 
 		_formIsInvalid: ->
-			{title, description, startTimestamp} = @state.progEvent.toObject()
-			return not title or not description or not startTimestamp
+			{title, description, startTimestamp, typeId} = @state.progEvent.toObject()
+			return (not typeId and not title) or not description or not startTimestamp
 
 		_hasChanges: ->
 			return not Imm.is @state.progEvent, @props.data
@@ -240,6 +249,10 @@ load = (win) ->
 			@_saveProgEvent @state.progEvent
 
 		_saveProgEvent: (progEvent) ->
+			# Axe the title if an eventType is being used instead (#871)
+			if progEvent.get 'typeId'
+				progEvent = progEvent.set 'title', ''
+
 			@props.saveProgEvent progEvent
 
 

@@ -34,16 +34,35 @@
 		.expandingTextAreaComponent
 			max-height 140px
 
-		#nameInput
-			display block
-			width 100%
-
 		button.closeButton
 			position absolute
 			top -10px
 			left -10px
 			padding 2px 6px
 			border-radius 15px
+
+		.titleContainer
+			display flex
+
+			> div
+				flex 1
+
+				&:first-child
+					padding-right 5px
+					flex 3
+
+				&:last-child
+					flex 5
+
+			.dropdown
+				width 100%
+
+				button
+					width 100%
+
+			#titleInput
+				display block
+				width 100%
 
 		.eventTypeContainer
 			cursor default !important

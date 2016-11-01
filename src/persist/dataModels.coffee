@@ -57,7 +57,7 @@ dataModelDefinitions = [
 				isMutable: true
 				indexes: [['status'], ['relatedProgNoteId']]
 				schema: Joi.object().keys({
-					title: Joi.string()
+					title: Joi.string().allow('')
 					description: Joi.string().allow('')
 					startTimestamp: Joi.date().format(TimestampFormat).raw()
 					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
