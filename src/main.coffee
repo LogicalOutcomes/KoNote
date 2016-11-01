@@ -35,7 +35,7 @@ init = (win) ->
 	ReactDOM = win.ReactDOM
 
 	CrashHandler = require('./crashHandler').load(win)
-	HotCodeReplace = require('./hotCodeReplace').load(win)
+	if Config.devMode then HotCodeReplace = require('./hotCodeReplace').load(win)
 	{getTimeoutListeners} = require('./timeoutDialog').load(win)
 
 	nwWin = nw.Window.get(win)
