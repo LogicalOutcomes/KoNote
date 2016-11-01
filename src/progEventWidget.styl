@@ -2,25 +2,60 @@
 
 	&.large, &.print
 		margin-top 15px
-		padding-left 25px
+		padding-left 30px
 
-		.title
-			font-weight 600
-			font-size 18px
+		> div
+			padding-bottom 5px
 
-			> .fa
-				float left
-				margin-left -25px
-				color #07488b
+		.eventTypeTitleContainer
+			display flex
+			position relative
+			align-items center
+			height 22px
+
+			.iconContainer
+				position absolute
+				left -30px
+				font-size 15px
+				background none
+				border-radius 12.5px
+				width 25px
+				height 25px
+				display flex
+				align-items center
+				justify-content center
+				padding-bottom 1px // Better v-centering
+
+				> .fa
+					color black
+
+			.eventType
+				padding-right 8px
+
+				span
+					border-bottom 2px solid transparent
+
+			.title
+				flex 1
+				font-weight 500
+
+				.eventTypeName
+					font-weight 300 !important
 
 		.description
 			color #000
+
+			textarea
+				margin-top 15px // Ensures padding while isEditing
 
 		.date > span
 			color #888
 
 	// Black & White printing
 	&.print
+		.iconContainer
+			background none !important
+
 		.fa
 			color #000 !important
 

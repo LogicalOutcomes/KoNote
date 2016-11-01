@@ -102,63 +102,89 @@ load = (win) ->
 			{progEvent, eventType, eventTypes, format, isEditing, updateProperty, updateTimestamps} = @props
 			progEventId = progEvent.get('id')
 
+			canEditEventTypes = isEditing and not eventTypes.isEmpty()
+			hasEventType = !!eventType
+			hasTitle = !!progEvent.get('title')
+			hasDescription = !!progEvent.get('description')
+
+
 			return R.div({className: "progEventWidget fullWidget #{format}"},
-				R.h5({className: 'title'},
-					FaIcon('calendar')
-					' '
-					(if isEditing
-						R.input({
-							className: 'form-control'
-							value: progEvent.get('title')
-							onChange: updateProperty.bind null, 'title'
+				R.div({className: 'eventTypeTitleContainer'},
+					R.span({
+						className: 'iconContainer'
+						style: {
+							background: eventType.get('colorKeyHex') if hasEventType
+						}
+					},
+						FaIcon('calendar', {
+							style:
+								color: 'white' if hasEventType
 						})
-					else
-						progEvent.get('title')
-					)
-				)
-				R.div({className: 'description'},
-					(if isEditing
-						ExpandingTextArea({
-							value: progEvent.get('description')
-							onChange: updateProperty.bind null, 'description'
-						})
-					else
-						R.span({},
-							renderLineBreaks progEvent.get('description')
-						)
 					)
 
-					R.div({className: 'date'},
-						(if isEditing
-							TimeSpanSelection({
-								ref: 'timeSpanSelection'
-								startTimestamp: progEvent.get('startTimestamp')
-								endTimestamp: progEvent.get('endTimestamp')
-								updateTimestamps
-							})
-						else
-							renderTimeSpan progEvent.get('startTimestamp'), progEvent.get('endTimestamp')
-						)
-					)
-				)
-				(if (not isEditing and eventType) or (isEditing and not eventTypes.isEmpty())
-					R.div({},
-						"Type: "
-
-						(if isEditing
-							EventTypesDropdown({
-								eventTypes
-								selectedEventType: eventType
-								onSelect: updateProperty.bind null, 'typeId'
-							})
-						else
-							R.span({
-								style:
-									borderBottom: "2px solid #{eventType.get('colorKeyHex')}"
-							},
-								eventType.get('name')
+					(if canEditEventTypes
+						R.div({className: 'eventType'},
+							R.div({},
+								"Type: "
+								EventTypesDropdown({
+									eventTypes
+									selectedEventType: eventType
+									onSelect: updateProperty.bind null, 'typeId'
+								})
 							)
 						)
+					)
+
+					R.div({className: 'title'},
+						(if isEditing and not hasEventType
+							R.input({
+								className: 'form-control'
+								value: progEvent.get('title')
+								onChange: updateProperty.bind null, 'title'
+								placeholder: "Title"
+							})
+						else if not isEditing
+							R.span({},
+								progEvent.get('title') or EventTypeName(eventType)
+
+								(if hasTitle and hasEventType
+									R.span({className: 'eventTypeName'},
+										" ("
+										EventTypeName(eventType)
+										")"
+									)
+								)
+							)
+						)
+					)
+				)
+
+				(if hasDescription or isEditing
+					R.div({className: 'description'},
+						(if isEditing
+							ExpandingTextArea({
+								value: progEvent.get('description')
+								onChange: updateProperty.bind null, 'description'
+								placeholder: "Description"
+							})
+						else
+							R.span({},
+								renderLineBreaks progEvent.get('description')
+							)
+						)
+					)
+				)
+
+				R.div({className: 'date'},
+					(if isEditing
+						TimeSpanSelection({
+							ref: 'timeSpanSelection'
+							startTimestamp: progEvent.get('startTimestamp')
+							endTimestamp: progEvent.get('endTimestamp')
+							updateTimestamps
+						})
+					else
+						renderTimeSpan progEvent.get('startTimestamp'), progEvent.get('endTimestamp')
 					)
 				)
 			)
@@ -185,6 +211,15 @@ load = (win) ->
 				' '
 				title
 			)
+		)
+
+
+	EventTypeName = (eventType) ->
+		R.span({
+			style:
+				borderBottom: "2px solid #{eventType.get('colorKeyHex')}"
+		},
+			eventType.get('name')
 		)
 
 
