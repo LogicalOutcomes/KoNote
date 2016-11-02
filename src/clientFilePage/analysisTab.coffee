@@ -262,7 +262,7 @@ load = (win) ->
 						InlineHighlightStyles(highlightedEventTypeIds)
 
 						# Force chart to be re-rendered when tab is opened
-						(if not xTicks.isEmpty()
+						(unless @state.selectedEventTypeIds.isEmpty() and @state.selectedMetricIds.isEmpty()
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
