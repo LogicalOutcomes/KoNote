@@ -117,26 +117,30 @@ load = (win) ->
 
 			#################### ProgEvents ####################
 
-			# Filter out any cancelled progEvents
-			progEvents = @props.progEvents.filter (progEvent) -> progEvent.get('status') is 'default'
+			# TODO: Filter out cancelled prog/globalEvents @ top-level
 
-			# Build master set of events
-			allEvents = progEvents.concat @props.globalEvents
+			# Ensure globalEvents aren't cancelled
+			activeGlobalEvents = @props.globalEvents.filter (globalEvent) -> globalEvent.get('status') is 'default'
 
-			# We only deal with progEvents that aren't cancelled
-			activeProgEvents = allEvents.filter (progEvent) => progEvent.get('status') is 'default'
+			# Figure out which progEvents don't have a globalEvent, and ignore cancelled ones
+			uniqueProgEvents = @props.progEvents.filterNot (progEvent) ->
+				progEventId = progEvent.get('id')
+				return progEvent.get('status') isnt 'default' or activeGlobalEvents.find (globalEvent) ->
+					globalEvent.get('relatedProgEventId') is progEventId
+
+			allEvents = uniqueProgEvents.concat activeGlobalEvents
 
 			# List of progEvents currently selected
 			# 'null' is used to identify un-typed/other progEvents
-			selectedProgEvents = activeProgEvents.filter (progEvent) =>
+			selectedProgEvents = allEvents.filter (progEvent) =>
 				@state.selectedEventTypeIds.contains (progEvent.get('typeId') or null)
 
 			# We only grab endTimestamp from progEvents that have one
-			spannedProgEvents = activeProgEvents.filter (progEvent) -> !!progEvent.get('endTimestamp')
+			spannedProgEvents = allEvents.filter (progEvent) -> !!progEvent.get('endTimestamp')
 
 			# Build list of timestamps from progEvents (start & end) & metrics as Unix Timestamps (ms)
 			daysOfData = Imm.List()
-			.concat activeProgEvents.map (progEvent) ->
+			.concat allEvents.map (progEvent) ->
 				Moment(progEvent.get('startTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat spannedProgEvents.map (progEvent) ->
 				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
@@ -190,9 +194,10 @@ load = (win) ->
 				startMoment = makeMoment progEvent.get('startTimestamp')
 
 				if endTimestamp
-					endMoment = makeMoment endTimestamp
-					return timeSpan.get('start').isBetween(startMoment, endMoment) or
-					timeSpan.get('end').isBetween(startMoment, endMoment)
+					endMoment = makeMoment(endTimestamp)
+					return startMoment.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
+					endMoment.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
+					(startMoment.isBefore(timeSpan.get('start')) and endMoment.isAfter(timeSpan.get('end')))
 				else
 					return startMoment.isBetween(timeSpan.get('start'), timeSpan.get('end'))
 
@@ -209,7 +214,7 @@ load = (win) ->
 			#################### ETC ####################
 
 			hasEnoughData = daysOfData.size > 0
-			untypedEvents = activeProgEvents.filterNot (progEvent) => !!progEvent.get('typeId')
+			untypedEvents = allEvents.filterNot (progEvent) => !!progEvent.get('typeId')
 
 
 			return R.div({className: "analysisView"},
@@ -303,7 +308,7 @@ load = (win) ->
 								Term 'Events'
 							)
 
-							(if progEvents.isEmpty()
+							(if allEvents.isEmpty()
 								R.div({className: 'noData'},
 									"No #{Term 'events'} have been recorded yet."
 								)
@@ -316,7 +321,9 @@ load = (win) ->
 										(@props.eventTypes.map (eventType) =>
 											eventTypeId = eventType.get('id')
 
-											progEventsWithType = activeProgEvents.filter (progEvent) -> progEvent.get('typeId') is eventTypeId
+											# TODO: Make this faster
+											progEventsWithType = allEvents.filter (progEvent) -> progEvent.get('typeId') is eventTypeId
+
 											visibleProgEvents = visibleProgEventsByTypeId.get(eventTypeId)
 
 											isSelected = @state.selectedEventTypeIds.contains eventTypeId
