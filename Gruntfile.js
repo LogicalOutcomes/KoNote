@@ -134,6 +134,10 @@ module.exports = function(grunt) {
 				overwrite: true,
 				replacements: [
 					{
+						from: '<script src="start.js"></script>',
+						to: '<script>process.env.NODE_ENV = "production"; require("./main").init(window);</script>'
+					},
+					{
 						from: 'react-with-addons.js',
 						to: 'react-with-addons.min.js'
 					},
@@ -158,6 +162,16 @@ module.exports = function(grunt) {
 					{
 						from: '"devMode": true,',
 						to: ''
+					}
+				]
+			},
+			griffin: {
+				src: ['build/releases/temp/<%= grunt.task.current.args[0] %>/src/clientSelectionPage.coffee'],
+				overwrite: true,
+				replacements: [
+					{
+						from: 'R.img({src: Config.logoCustomerLg})',
+						to: 'R.svg({width:"162.5",height:"165",viewBox:"0 0 162.5 165"},R.path({d:"M54.078 158.477L7.5 158.47V6.25H155v24.66l-5.8.795c-9.396 1.288-16.49.926-23.866-1.218-14.7-4.274-31.533 2.189-37.803 14.513-3.331 6.547-4.09 11.714-2.555 17.412 1.584 5.883 7.424 13.076 12.926 15.92l3.78 1.956-3.028 2.329c-1.666 1.28-5.418 3.325-8.337 4.543-6.733 2.81-7.105 6.522-1.206 12.034l4.11 3.84-4.086 6.073c-10.427 15.494-8.219 31.346 6.113 43.883 3.621 3.168 6.312 5.626 5.98 5.463-.331-.163-21.54.028-47.15.024zm83.08-2.798c5.935-5.05 11.845-10.926 10.47-12.3-.87-.87-2.834-.248-6.16 1.953-6.382 4.224-14.111 6.232-19.924 5.177-14.924-2.708-24.088-14.166-24.017-30.029.073-16.115 12.084-26.393 26.956-23.065 3.638.814 8.003 2.572 9.7 3.908 1.698 1.335 4.25 2.427 5.673 2.427 3.066 0 6.985-5.406 5.924-8.172-2.135-5.565-20.829-7.7-32.488-3.711-6.68 2.285-11.339 1.77-12.55-1.39-1.738-4.527 4.321-8.109 14.77-8.731 10.157-.606 20.005-5.609 24.984-12.693 4.914-6.99 5.852-17.41 2.198-24.41l-2.47-4.731 4.836.285c3.259.193 5.667-.467 7.387-2.024l2.553-2.31V158.454l-10.577.029-10.555-.004zm-28.714-81.39C97.592 68.4 96.55 43.525 106.872 36.762c3.983-2.61 11.085-2.57 15.136.085 9.779 6.408 10.825 30.9 1.596 37.365-3.595 2.517-10.595 2.553-15.16.077z", fill:"#0076bf"}))'
 					}
 				]
 			},
@@ -306,6 +320,7 @@ module.exports = function(grunt) {
 			}
 			if (entry == "griffin-mac" || entry == "griffin-win") {
 				grunt.task.run('copy:griffin:'+entry);
+				grunt.task.run('replace:griffin:'+entry);
 			}
 			if (entry == "stleonards-mac" || entry == "stleonards-win") {
 				grunt.task.run('copy:stleonards:'+entry);

@@ -5,8 +5,6 @@
 # Page overlay for managing client files
 
 Persist = require './persist'
-Imm = require 'immutable'
-Config = require './config'
 Term = require './term'
 
 load = (win) ->
@@ -16,9 +14,6 @@ load = (win) ->
 	R = React.DOM
 
 	CrashHandler = require('./crashHandler').load(win)
-	Dialog = require('./dialog').load(win)
-	OpenDialogLink = require('./openDialogLink').load(win)
-	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	Spinner = require('./spinner').load(win)
 	{FaIcon, renderName, showWhen} = require('./utils').load(win)
 

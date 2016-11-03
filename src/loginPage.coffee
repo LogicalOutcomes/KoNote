@@ -18,7 +18,6 @@ load = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
-	Dialog = require('./dialog').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
 	LoginPage = React.createFactory React.createClass
@@ -62,8 +61,6 @@ load = (win) ->
 		_checkSetUp: ->
 			# Check to make sure the dataDir exists and has an account system
 			Persist.Users.isAccountSystemSetUp Config.backend, (err, isSetUp) =>
-				@setState {isLoading: false}
-
 				if err
 					CrashHandler.handle err
 					return

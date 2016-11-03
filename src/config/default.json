@@ -30,8 +30,8 @@
 		"label": "ID#"
 	},
 
-	"timestampFormat": "Do MMM, YYYY [-] h:mma",
-	"dateFormat": "Do MMM, YYYY",
+	"timestampFormat": "MMM Do, YYYY [-] h:mma",
+	"dateFormat": "MMM Do, YYYY",
 	"timeFormat": "h:mma",
 
 	"timeout": {

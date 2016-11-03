@@ -27,7 +27,6 @@ load = (win) ->
 	Window = nw.Window.get(win)
 
 	MainMenu = require('./mainMenu').load(win)
-	BrandWidget = require('./brandWidget').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ProgramBubbles = require('./programBubbles').load(win)
 

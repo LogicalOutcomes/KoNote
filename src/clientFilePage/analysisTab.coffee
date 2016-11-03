@@ -21,7 +21,7 @@ load = (win) ->
 	C3 = win.c3
 	React = win.React
 	R = React.DOM
-	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
+	{FaIcon, renderLineBreaks, showWhen, stripMetadata, makeMoment} = require('../utils').load(win)
 	{TimestampFormat} = require('../persist/utils')
 
 	Slider = require('../slider').load(win)
@@ -46,8 +46,6 @@ load = (win) ->
 				highlightedEventTypeId: undefined # null reserved for Other Types
 				starredEventTypeIds: Imm.Set()
 				excludedTargetIds: Imm.Set()
-				xTicks: Imm.List()
-				xDays: Imm.List()
 				timeSpan: null
 			}
 
@@ -119,32 +117,30 @@ load = (win) ->
 
 			#################### ProgEvents ####################
 
-			# Build set list of progEvent Ids
-			progEventIdsWithData = @props.progEvents
-			.map (progEvent) -> progEvent.get 'id'
-			.toSet()
+			# TODO: Filter out cancelled prog/globalEvents @ top-level
 
-			# TODO: All eventTypeIds with data
+			# Ensure globalEvents aren't cancelled
+			activeGlobalEvents = @props.globalEvents.filter (globalEvent) -> globalEvent.get('status') is 'default'
 
-			# Build master set of events
-			allEvents = @props.progEvents.concat @props.globalEvents
+			# Figure out which progEvents don't have a globalEvent, and ignore cancelled ones
+			uniqueProgEvents = @props.progEvents.filterNot (progEvent) ->
+				progEventId = progEvent.get('id')
+				return progEvent.get('status') isnt 'default' or activeGlobalEvents.find (globalEvent) ->
+					globalEvent.get('relatedProgEventId') is progEventId
 
-			# Filter out progEvents that aren't cancelled or excluded
-			filteredProgEvents = allEvents
-			.filter (progEvent) => progEvent.get('status') is 'default'
-			.filter (progEvent) =>
-				# TODO: Refactor this
-				if progEvent.get('typeId')
-					@state.selectedEventTypeIds.contains progEvent.get('typeId')
-				else
-					@state.selectedEventTypeIds.contains null
+			allEvents = uniqueProgEvents.concat activeGlobalEvents
+
+			# List of progEvents currently selected
+			# 'null' is used to identify un-typed/other progEvents
+			selectedProgEvents = allEvents.filter (progEvent) =>
+				@state.selectedEventTypeIds.contains (progEvent.get('typeId') or null)
 
 			# We only grab endTimestamp from progEvents that have one
-			spannedProgEvents = filteredProgEvents.filter (progEvent) -> !!progEvent.get('endTimestamp')
+			spannedProgEvents = allEvents.filter (progEvent) -> !!progEvent.get('endTimestamp')
 
-			# Build list of timestamps from progEvents (start & end) & metrics
+			# Build list of timestamps from progEvents (start & end) & metrics as Unix Timestamps (ms)
 			daysOfData = Imm.List()
-			.concat filteredProgEvents.map (progEvent) ->
+			.concat allEvents.map (progEvent) ->
 				Moment(progEvent.get('startTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat spannedProgEvents.map (progEvent) ->
 				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
@@ -183,7 +179,7 @@ load = (win) ->
 			# else if timeSpan.get('start').isBefore xTicks.first()
 			# 	timeSpan = timeSpan.set 'start', xTicks.first()
 
-			#################### Event Type Highlighting ####################
+			#################### Event Types ####################
 
 			# Include hovered/highlighted eventTypeId with starred eventTypeIds
 			highlightedEventTypeIds = if @state.highlightedEventTypeId isnt undefined
@@ -191,16 +187,34 @@ load = (win) ->
 			else
 				@state.starredEventTypeIds
 
+
+			# Map out visible progEvents (within timeSpan) by eventTypeId
+			visibleProgEvents = selectedProgEvents.filter (progEvent) ->
+				endTimestamp = progEvent.get('endTimestamp')
+				startMoment = makeMoment progEvent.get('startTimestamp')
+
+				if endTimestamp
+					endMoment = makeMoment(endTimestamp)
+					return startMoment.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
+					endMoment.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
+					(startMoment.isBefore(timeSpan.get('start')) and endMoment.isAfter(timeSpan.get('end')))
+				else
+					return startMoment.isBetween(timeSpan.get('start'), timeSpan.get('end'))
+
+			visibleProgEventsByTypeId = visibleProgEvents.groupBy (progEvent) -> progEvent.get('typeId')
+
+
 			# Booleans for the OTHER menu (TODO: Component-alize this stuff!)
 			otherEventTypesIsSelected = @state.selectedEventTypeIds.contains null
 			otherEventTypesIsPersistent = @state.starredEventTypeIds.contains null
 			otherEventTypesIsHighlighted = @state.highlightedEventTypeId is null
+			visibleUntypedProgEvents = visibleProgEventsByTypeId.get('')
 
 
 			#################### ETC ####################
 
 			hasEnoughData = daysOfData.size > 0
-			untypedEvents = @props.progEvents.filterNot (progEvent) => progEvent.get('typeId')
+			untypedEvents = allEvents.filterNot (progEvent) => !!progEvent.get('typeId')
 
 
 			return R.div({className: "analysisView"},
@@ -220,7 +234,7 @@ load = (win) ->
 							isRange: true
 							timeSpan
 							xTicks
-							onChange: (newTimeSpan) => @setState {timeSpan: newTimeSpan}
+							onChange: @_updateTimeSpanDate
 						})
 						R.div({className: 'dateDisplay'},
 							TimeSpanDate({
@@ -248,14 +262,11 @@ load = (win) ->
 						InlineHighlightStyles(highlightedEventTypeIds)
 
 						# Force chart to be re-rendered when tab is opened
-						(if not xTicks.isEmpty() and (
-							not filteredProgEvents.isEmpty() or
-							not @state.selectedMetricIds.isEmpty()
-							)
+						(unless @state.selectedEventTypeIds.isEmpty() and @state.selectedMetricIds.isEmpty()
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
-								progEvents: filteredProgEvents
+								progEvents: selectedProgEvents
 								eventTypes: @props.eventTypes
 								metricsById: @props.metricsById
 								metricValues
@@ -297,7 +308,7 @@ load = (win) ->
 								Term 'Events'
 							)
 
-							(if @props.progEvents.isEmpty()
+							(if allEvents.isEmpty()
 								R.div({className: 'noData'},
 									"No #{Term 'events'} have been recorded yet."
 								)
@@ -310,13 +321,16 @@ load = (win) ->
 										(@props.eventTypes.map (eventType) =>
 											eventTypeId = eventType.get('id')
 
-											typeEvents = allEvents.filter (progEvent) => progEvent.get('typeId') is eventTypeId
+											# TODO: Make this faster
+											progEventsWithType = allEvents.filter (progEvent) -> progEvent.get('typeId') is eventTypeId
+
+											visibleProgEvents = visibleProgEventsByTypeId.get(eventTypeId)
 
 											isSelected = @state.selectedEventTypeIds.contains eventTypeId
 											isHighlighted = @state.highlightedEventTypeId is eventTypeId
 											isPersistent = @state.starredEventTypeIds.contains eventTypeId
 
-											(unless typeEvents.isEmpty()
+											(unless progEventsWithType.isEmpty()
 												R.div({
 													key: eventTypeId
 													className: [
@@ -333,6 +347,10 @@ load = (win) ->
 															FaIcon('star', {
 																onClick: @_toggleStarredEventType.bind null, eventTypeId
 															})
+														)
+
+														(if visibleProgEvents?
+															R.span({className: 'visibleCount'}, visibleProgEvents.size)
 														)
 
 														R.label({},
@@ -363,21 +381,29 @@ load = (win) ->
 											onMouseEnter: @_highlightEventType.bind(null, null) if otherEventTypesIsSelected
 											onMouseLeave: @_unhighlightEventType.bind(null, null) if otherEventTypesIsHighlighted
 										},
-											(if otherEventTypesIsSelected
-												FaIcon('star', {
-													onClick: @_toggleStarredEventType.bind null, null
-												})
-											)
+											R.div({
+												style: {borderRight: "5px solid #cadbe5"}
+											},
+												(if otherEventTypesIsSelected
+													FaIcon('star', {
+														onClick: @_toggleStarredEventType.bind null, null
+													})
+												)
 
-											R.label({},
-												R.input({
-													type: 'checkbox'
-													checked: otherEventTypesIsSelected
-													onChange: @_updateSelectedEventTypes.bind null, null
-												})
-												untypedEvents.size
-												' '
-												Term (if untypedEvents.size is 1 then 'Event' else 'Events')
+												(if visibleUntypedProgEvents?
+													R.span({className: 'visibleCount'}, visibleUntypedProgEvents.size)
+												)
+
+												R.label({},
+													R.input({
+														type: 'checkbox'
+														checked: otherEventTypesIsSelected
+														onChange: @_updateSelectedEventTypes.bind null, null
+													})
+													untypedEvents.size
+													' '
+													Term (if untypedEvents.size is 1 then 'Event' else 'Events')
+												)
 											)
 										)
 									)
