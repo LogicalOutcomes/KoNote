@@ -56,6 +56,14 @@ load = (win) ->
 			unless sameSelectedMetrics
 				@_refreshSelectedMetrics()
 
+			# Destroy and re-mount chart when values changed
+			# TODO: Make this more efficient
+			sameMetricValues = Imm.is @props.metricValues, oldProps.metricValues
+			if not sameMetricValues and @_chart?
+				console.info "Re-drawing chart..."
+				@_chart.destroy()
+				@componentDidMount()
+
 			# Update selected progEvents?
 			sameProgEvents = Imm.is @props.progEvents, oldProps.progEvents
 			unless sameProgEvents
