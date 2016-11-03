@@ -311,7 +311,10 @@
 					margin 0
 					padding-bottom 5px
 
-					.visibleCount
+					label
+						width 100%
+
+					.colorKeyCount
 						float right
 						display flex
 						align-items center
@@ -319,12 +322,15 @@
 						background #eee
 						width 18px
 						height 18px
-						border-radius 9px
 						text-align center
 						font-size 10px
-						font-weight 800
-						opacity 0.75
-						margin-right 5px
+						font-weight 700
+						color white
+
+						&.circle
+							border-radius 10px
+							width 20px
+							height 20px
 
 					.fa-star // Same as from newProgNotePage
 						opacity 0
@@ -347,7 +353,7 @@
 						-webkit-text-stroke 1px #888
 
 				.dataOptions
-					padding 0px 25px
+					padding 0px 15px 0 25px
 
 					label
 						color #5c5c5c

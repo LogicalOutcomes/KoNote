@@ -85,6 +85,7 @@ load = (win) ->
 				targets = section.get('targetIds').map (targetId) =>
 					# Grab latest target & metric objects
 					target = @props.planTargetsById.getIn([targetId, 'revisions']).first()
+
 					metrics = target.get('metricIds')
 					.filter (metricId) -> metricIdsWithData.includes metricId
 					.map (metricId) => @props.metricsById.get(metricId)
@@ -100,6 +101,7 @@ load = (win) ->
 				section.get('targets').isEmpty()
 
 			# Flat map of plan metrics, as {id: metric}
+			# TODO: Do we even need this?
 			planMetricsById = planSectionsWithData.flatMap (section) ->
 				section.get('targets').flatMap (target) ->
 					target.get('metrics').map (metric) ->
@@ -203,6 +205,11 @@ load = (win) ->
 
 			visibleProgEventsByTypeId = visibleProgEvents.groupBy (progEvent) -> progEvent.get('typeId')
 
+			# Map out visible metric values (within timeSpan) by metric [definition] id
+			visibleMetricValues = metricValues.filter (value) ->
+				makeMoment(value.get('timestamp')).isBetween timeSpan.get('start'), timeSpan.get('end')
+
+			visibleMetricValuesById = visibleMetricValues.groupBy (value) -> value.get('id')
 
 			# Booleans for the OTHER menu (TODO: Component-alize this stuff!)
 			otherEventTypesIsSelected = @state.selectedEventTypeIds.contains null
@@ -340,27 +347,29 @@ load = (win) ->
 													onMouseEnter: @_highlightEventType.bind(null, eventTypeId) if isSelected
 													onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isHighlighted
 												},
-													R.div({
-														style: {borderRight: "5px solid #{eventType.get('colorKeyHex')}"}
-													},
+													R.label({},
+														(if visibleProgEvents?
+															R.span({
+																className: 'colorKeyCount'
+																style:
+																	background: eventType.get('colorKeyHex')
+															},
+																visibleProgEvents.size
+															)
+														)
+
 														(if isSelected
 															FaIcon('star', {
 																onClick: @_toggleStarredEventType.bind null, eventTypeId
 															})
 														)
 
-														(if visibleProgEvents?
-															R.span({className: 'visibleCount'}, visibleProgEvents.size)
-														)
-
-														R.label({},
-															R.input({
-																type: 'checkbox'
-																checked: @state.selectedEventTypeIds.contains eventTypeId
-																onChange: @_updateSelectedEventTypes.bind null, eventTypeId
-															})
-															eventType.get('name')
-														)
+														R.input({
+															type: 'checkbox'
+															checked: @state.selectedEventTypeIds.contains eventTypeId
+															onChange: @_updateSelectedEventTypes.bind null, eventTypeId
+														})
+														eventType.get('name')
 													)
 												)
 											)
@@ -381,29 +390,31 @@ load = (win) ->
 											onMouseEnter: @_highlightEventType.bind(null, null) if otherEventTypesIsSelected
 											onMouseLeave: @_unhighlightEventType.bind(null, null) if otherEventTypesIsHighlighted
 										},
-											R.div({
-												style: {borderRight: "5px solid #cadbe5"}
-											},
+											R.label({},
+												(if visibleUntypedProgEvents?
+													R.span({
+														className: 'colorKeyCount'
+														style:
+															background: '#cadbe5' # Default (other) eventType color
+													},
+														visibleUntypedProgEvents.size
+													)
+												)
+
 												(if otherEventTypesIsSelected
 													FaIcon('star', {
 														onClick: @_toggleStarredEventType.bind null, null
 													})
 												)
 
-												(if visibleUntypedProgEvents?
-													R.span({className: 'visibleCount'}, visibleUntypedProgEvents.size)
-												)
-
-												R.label({},
-													R.input({
-														type: 'checkbox'
-														checked: otherEventTypesIsSelected
-														onChange: @_updateSelectedEventTypes.bind null, null
-													})
-													untypedEvents.size
-													' '
-													Term (if untypedEvents.size is 1 then 'Event' else 'Events')
-												)
+												R.input({
+													type: 'checkbox'
+													checked: otherEventTypesIsSelected
+													onChange: @_updateSelectedEventTypes.bind null, null
+												})
+												untypedEvents.size
+												' '
+												Term (if untypedEvents.size is 1 then 'Event' else 'Events')
 											)
 										)
 									)
@@ -476,27 +487,30 @@ load = (win) ->
 													(target.get('metrics').map (metric) =>
 														metricId = metric.get('id')
 														metricIsInactive = targetIsInactive or metric.get('status') isnt 'default'
+														visibleValues = visibleMetricValuesById.get metricId
+														isSelected = @state.selectedMetricIds.contains metricId
+														metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
 
 														R.div({
 															key: metricId
 															className: 'checkbox metric'
 														},
-															R.div({
-																style:
-																	borderRight: (
-																		if @state.metricColors?
-																			metricColor = @state.metricColors["y-#{metric.get('id')}"]
-																			"5px solid #{metricColor}"
+															R.label({},
+																(if isSelected and visibleValues?
+																	R.span({
+																		className: 'colorKeyCount circle'
+																		style:
+																			background: metricColor
+																	},
+																		visibleValues.size
 																	)
-															},
-																R.label({},
-																	R.input({
-																		type: 'checkbox'
-																		onChange: @_updateSelectedMetrics.bind null, metricId
-																		checked: @state.selectedMetricIds.contains metricId
-																	})
-																	metric.get('name')
 																)
+																R.input({
+																	type: 'checkbox'
+																	onChange: @_updateSelectedMetrics.bind null, metricId
+																	checked: isSelected
+																})
+																metric.get('name')
 															)
 														)
 													)
@@ -512,27 +526,30 @@ load = (win) ->
 									R.div({className: 'dataOptions'},
 										(unassignedMetricsList.map (metric) =>
 											metricId = metric.get('id')
+											isSelected = @state.selectedMetricIds.contains metricId
+											visibleValues = visibleMetricValuesById.get metricId
+											metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
 
 											R.div({
 												key: metricId
 												className: 'checkbox metric'
 											},
-												R.div({
-													style:
-														borderRight: (
-															if @state.metricColors?
-																metricColor = @state.metricColors["y-#{metric.get('id')}"]
-																"5px solid #{metricColor}"
+												R.label({},
+													(if isSelected and visibleValues?
+														R.span({
+															className: 'colorKeyCount circle'
+															style:
+																background: metricColor
+														},
+															visibleValues.size
 														)
-												},
-													R.label({},
-														R.input({
-															type: 'checkbox'
-															onChange: @_updateSelectedMetrics.bind null, metricId
-															checked: @state.selectedMetricIds.contains metricId
-														})
-														metric.get('name')
 													)
+													R.input({
+														type: 'checkbox'
+														onChange: @_updateSelectedMetrics.bind null, metricId
+														checked: isSelected
+													})
+													metric.get('name')
 												)
 											)
 										)
@@ -698,5 +715,6 @@ load = (win) ->
 
 
 	return {AnalysisView}
+
 
 module.exports = {load}
