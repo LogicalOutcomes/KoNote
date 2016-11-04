@@ -21,8 +21,6 @@ load = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
-	Spinner = require('./spinner').load(win)
-	ProgramBubbles = require('./programBubbles').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
 	{renderName, renderRecordId, FaIcon, stripMetadata} = require('./utils').load(win)
