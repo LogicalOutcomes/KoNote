@@ -119,11 +119,7 @@ load = (win) ->
 										key: month
 										onClick: @_updateBirthMonth.bind null, month
 									},
-										R.div({
-											onclick: @_updateBirthMonth.bind null, month
-										},
-											month
-										)
+										month
 									)
 								)
 							)
@@ -135,11 +131,7 @@ load = (win) ->
 										key: day
 										onClick: @_updateBirthDay.bind null, day
 									},
-										R.div({
-											onClick: @_updateBirthDay.bind null, day
-										},
-											day
-										)
+										day
 									)
 							)
 
@@ -151,11 +143,7 @@ load = (win) ->
 										key: year
 										onClick: @_updateBirthYear.bind null, year
 									},
-										R.div({
-											onClick: @_updateBirthYear.bind null, year
-										},
-											year
-										)
+										year
 									)
 							)
 						)
