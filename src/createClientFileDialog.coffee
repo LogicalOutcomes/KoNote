@@ -110,8 +110,7 @@ load = (win) ->
 					)
 					R.tr({},
 						R.label({}, "Birthdate")
-						R.td({},
-
+						R.div({},
 							B.DropdownButton({
 								title: if @state.birthMonth isnt '' then @state.birthMonth else "Month"
 							},
