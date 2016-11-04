@@ -37,7 +37,7 @@ load = (win, {clientFileId}) ->
 	InfoTab = require('./infoTab').load(win)
 	ClientAlerts = require('./clientAlerts').load(win)
 
-	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
+	{FaIcon, renderName, renderRecordId, showWhen, showWhen3d, stripMetadata} = require('../utils').load(win)
 
 	loadingSpinner = React.createFactory React.createClass
 		displayName: 'loadingSpinner'
@@ -972,6 +972,7 @@ load = (win, {clientFileId}) ->
 					R.div({
 						className: [
 							'view'
+							'plan'
 							showWhen(activeTabId is 'plan')
 						].join ' '
 					},
@@ -991,7 +992,7 @@ load = (win, {clientFileId}) ->
 					R.div({
 						className: [
 							'view'
-							showWhen(activeTabId is 'progressNotes')
+							showWhen3d(activeTabId is 'progressNotes')
 						].join ' '
 					},
 						ProgNotesTab({
@@ -1020,6 +1021,7 @@ load = (win, {clientFileId}) ->
 					R.div({
 						className: [
 							'view'
+							'analysis'
 							showWhen(activeTabId is 'analysis')
 						].join ' '
 					},
@@ -1040,6 +1042,7 @@ load = (win, {clientFileId}) ->
 					R.div({
 						className: [
 							'view'
+							'info'
 							showWhen(activeTabId is 'info')
 						].join ' '
 					},

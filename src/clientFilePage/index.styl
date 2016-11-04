@@ -232,6 +232,12 @@ sidebar-borders = darken(sidebar-bg, 10%)
 			display flex
 			overflow auto
 
+			&.plan
+				margin-right calc(-100% + 250px)
+			
+			&.analysis, &.info
+				margin-left calc(-100% + 250px)
+
 			@require 'planTab'
 			@require 'progNotesTab'
 			@require 'analysisTab'

@@ -149,6 +149,11 @@ load = (win) ->
 
 		return 'hide'
 
+	showWhen3d = (condition) ->
+		if condition
+			return ''
+		return 'shrink'
+
 	# Persistent objects come with metadata that makes it difficult to compare
 	# revisions (e.g. timestamp).  This method removes those attributes.
 	stripMetadata = (persistObj) ->
@@ -215,6 +220,7 @@ load = (win) ->
 		renderName
 		renderRecordId
 		showWhen
+		showWhen3d
 		stripMetadata
 		formatTimestamp
 		capitalize
