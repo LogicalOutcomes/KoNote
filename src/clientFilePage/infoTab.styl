@@ -135,13 +135,16 @@ $side-padding = 25px
 					box-shadow none
 
 			&:not(.isSelected)
-				input, textarea
+				input, textarea, button
 					border-color transparent
 					box-shadow none
 
 					&:not([disabled]):hover
 						border-color rgb(204, 204, 204)
 						box-shadow rgba(0, 0, 0, 0.075) 0px 1px 1px 0px inset
+
+					.caret
+						visibility hidden
 
 			&:last-child
 				padding-bottom 10px
