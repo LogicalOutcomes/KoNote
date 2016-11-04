@@ -8,6 +8,7 @@ Assert = require 'assert'
 Imm = require 'immutable'
 Moment = require 'moment'
 Async = require 'async'
+_ = require 'underscore'
 
 Config = require '../config'
 Term = require '../term'
@@ -53,7 +54,8 @@ load = (win) ->
 			}
 
 		componentWillReceiveProps: (nextProps) ->
-			@_buildHistoryEntries(nextProps)
+			unless _.isEqual(@props, nextProps)
+				@_buildHistoryEntries(nextProps)
 
 		componentDidMount: ->
 			@_buildHistoryEntries()

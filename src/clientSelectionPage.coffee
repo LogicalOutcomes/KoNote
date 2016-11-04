@@ -65,7 +65,7 @@ load = (win) ->
 			@props.closeWindow()
 
 		render: ->
-			unless @state.status is 'ready' then return R.div({})
+			unless @state.status is 'ready' then return null
 
 			userProgram = @_getUserProgram()
 

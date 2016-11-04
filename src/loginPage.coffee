@@ -47,7 +47,7 @@ load = (win) ->
 
 		render: ->
 			unless @state.isSetUp
-				return R.div({})
+				return null
 
 			LoginPageUi({
 				ref: 'ui'
