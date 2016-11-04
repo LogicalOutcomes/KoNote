@@ -28,7 +28,7 @@ load = (win) ->
 		FaIcon, renderLineBreaks, showWhen, capitalize
 	} = require('../utils').load(win)
 
-	months = Moment.months()
+	months = Moment.monthsShort()
 
 
 	InfoView = React.createFactory React.createClass
@@ -38,11 +38,11 @@ load = (win) ->
 		getInitialState: ->
 			detailUnitsById = @_getDetailUnitsById()
 
-			if @props.clientFile.get('birthdate')?
-				birthdate = Moment(@props.clientFile.get('birthdate'))
-				birthMonth = Moment(@props.clientFile.get('birthdate')).month()
-				birthDay = Moment(@props.clientFile.get('birthdate')).date()
-				birthYear = Moment(@props.clientFile.get('birthdate')).year()
+			if @props.clientFile.get('birthDate')?
+				birthDate = Moment(@props.clientFile.get('birthDate'))
+				birthMonth = months[Moment(@props.clientFile.get('birthDate')).month()]
+				birthDay = Moment(@props.clientFile.get('birthDate')).date()
+				birthYear = Moment(@props.clientFile.get('birthDate')).year()
 			else
 				birthMonth = null
 				birthDay = null
@@ -63,6 +63,8 @@ load = (win) ->
 
 		render: ->
 			hasChanges = @hasChanges()
+			currentYear = Moment().year()
+			earlyYear = currentYear - 100
 
 			return R.div({className: 'infoView'},
 
@@ -175,23 +177,49 @@ load = (win) ->
 											B.DropdownButton({
 												title: if @state.birthMonth? then @state.birthMonth else "Month"
 											},
-												months.map (month) =>
+												(months.map (month) =>
 													B.MenuItem({
 														key: month
-														onclick: @_updateBirthMonth.bind null, month
+														onClick: @_updateBirthMonth.bind null, month
 													},
-													  month
+														R.div({
+															onclick: @_updateBirthMonth.bind null, month
+														},
+															month
+														)
 													)
+												)
 											)
 											B.DropdownButton({
 												title: if @state.birthDay? then @state.birthDay else "Day"
-											}
-
+											},
+												for day in [1..31]
+													B.MenuItem({
+														key: day
+														onClick: @_updateBirthDay.bind null, day
+													},
+														R.div({
+															onClick: @_updateBirthDay.bind null, day
+														},
+															day
+														)
+													)
 											)
+
 											B.DropdownButton({
 												title: if @state.birthYear? then @state.birthYear else "Year"
-											}
-
+											},
+												for year in [currentYear..earlyYear]
+													B.MenuItem({
+														key: year
+														onClick: @_updateBirthYear.bind null, year
+													},
+														R.div({
+															onClick: @_updateBirthYear.bind null, year
+														},
+															year
+														)
+													)
 											)
 										)
 									)
@@ -321,13 +349,19 @@ load = (win) ->
 			middleNameHasChanges = @props.clientFile.getIn(['clientName', 'middle']) isnt @state.middleName
 			lastNameHasChanges = @props.clientFile.getIn(['clientName', 'last']) isnt @state.lastName
 			recordIdHasChanges = @props.clientFile.get('recordId') isnt @state.recordId
+			birthMonthHasChanges = months[Moment(@props.clientFile.get('birthDate')).month()] isnt @state.birthMonth
+			birthDayHasChanges = Moment(@props.clientFile.get('birthDate')).date() isnt @state.birthDay
+			birthYearHasChanges = Moment(@props.clientFile.get('birthDate')).year() isnt @state.birthYear
 
 			return detailUnitsHasChanges or
 			statusHasChanges or
 			firstNameHasChanges or
 			middleNameHasChanges or
 			lastNameHasChanges or
-			recordIdHasChanges
+			recordIdHasChanges or
+			birthYearHasChanges or
+			birthDayHasChanges or
+			birthMonthHasChanges
 
 		_updateSelectedGroupId: (groupId, event) ->
 			selectedGroupId = groupId
@@ -354,7 +388,6 @@ load = (win) ->
 
 		_updateBirthYear: (birthYear) ->
 			@setState {birthYear}
-
 
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
@@ -402,6 +435,15 @@ load = (win) ->
 				updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
 					detailUnit.toJS()
 
+				updatedBirthDate = Moment()
+				.year(@state.birthYear)
+				.month(@state.birthMonth)
+				.date(@state.birthDay)
+				.format('YYYYMMMMDD')
+
+
+				console.log "updatedBirthDate", updatedBirthDate
+
 				updatedClientFile = @props.clientFile
 				.setIn(['clientName', 'first'], @state.firstName)
 				.setIn(['clientName', 'middle'], @state.middleName)
@@ -409,6 +451,8 @@ load = (win) ->
 				.set('recordId', @state.recordId)
 				.set('status', @state.status)
 				.set('detailUnits', updatedDetailUnits)
+				.set('birthDate', updatedBirthDate)
+
 
 				global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
 					@refs.dialog.setIsLoading(false) if @refs.dialog?

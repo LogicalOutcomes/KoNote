@@ -8,6 +8,7 @@ Async = require 'async'
 Persist = require './persist'
 Imm = require 'immutable'
 Config = require './config'
+Moment = require 'moment'
 Term = require './term'
 
 load = (win) ->
@@ -26,6 +27,8 @@ load = (win) ->
 
 	{renderName, renderRecordId, FaIcon, stripMetadata} = require('./utils').load(win)
 
+	months = Moment.monthsShort()
+
 	CreateClientFileDialog = React.createFactory React.createClass
 		displayName: 'CreateClientFileDialog'
 		mixins: [React.addons.PureRenderMixin]
@@ -36,6 +39,9 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
+				birthDay: ''
+				birthMonth: ''
+				birthYear: ''
 				firstName: ''
 				middleName: ''
 				lastName: ''
@@ -59,6 +65,8 @@ load = (win) ->
 				@setState {planTemplateHeaders}
 
 		render: ->
+			currentYear = Moment().year()
+			earlyYear = currentYear - 100
 			formIsValid = @_formIsValid()
 			selectedPlanTemplateHeaders = @state.planTemplateHeaders.find (template) => template.get('id') is @state.templateId
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
@@ -99,6 +107,59 @@ load = (win) ->
 							onKeyDown: @_onEnterKeyDown
 							maxLength: 35
 						})
+					)
+					R.tr({},
+						R.label({}, "Birthdate")
+						R.td({},
+
+							B.DropdownButton({
+								title: if @state.birthMonth isnt '' then @state.birthMonth else "Month"
+							},
+								(months.map (month) =>
+									B.MenuItem({
+										key: month
+										onClick: @_updateBirthMonth.bind null, month
+									},
+										R.div({
+											onclick: @_updateBirthMonth.bind null, month
+										},
+											month
+										)
+									)
+								)
+							)
+							B.DropdownButton({
+								title: if @state.birthDay isnt '' then @state.birthDay else "Day"
+							},
+								for day in [1..31]
+									B.MenuItem({
+										key: day
+										onClick: @_updateBirthDay.bind null, day
+									},
+										R.div({
+											onClick: @_updateBirthDay.bind null, day
+										},
+											day
+										)
+									)
+							)
+
+							B.DropdownButton({
+								title: if @state.birthYear isnt '' then @state.birthYear else "Year"
+							},
+								for year in [currentYear..earlyYear]
+									B.MenuItem({
+										key: year
+										onClick: @_updateBirthYear.bind null, year
+									},
+										R.div({
+											onClick: @_updateBirthYear.bind null, year
+										},
+											year
+										)
+									)
+							)
+						)
 					)
 
 					(unless @props.programs.isEmpty()
@@ -214,6 +275,15 @@ load = (win) ->
 		_updateLastName: (event) ->
 			@setState {lastName: event.target.value}
 
+		_updateBirthMonth: (birthMonth) ->
+			@setState {birthMonth}
+
+		_updateBirthDay: (birthDay) ->
+			@setState {birthDay}
+
+		_updateBirthYear: (birthYear) ->
+			@setState {birthYear}
+
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
 
@@ -240,11 +310,18 @@ load = (win) ->
 			middle = @state.middleName
 			last = @state.lastName
 			recordId = @state.recordId
+			birthDate = Moment()
+			.year(@state.birthYear)
+			.month(@state.birthMonth)
+			.date(@state.birthDay)
+			.format('YYYYMMMMDD')
+
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
 			  recordId: recordId
 			  status: 'active'
+			  birthDate
 			  plan: {
 			    sections: []
 			  }
