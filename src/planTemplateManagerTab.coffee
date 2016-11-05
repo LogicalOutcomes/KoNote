@@ -19,7 +19,6 @@ load = (win) ->
 	# TODO: Refactor to single require
 	{BootstrapTable, TableHeaderColumn} = win.ReactBootstrapTable
 	BootstrapTable = React.createFactory BootstrapTable
-	ExpandingTextArea = require('./expandingTextArea').load(win)
 	TableHeaderColumn = React.createFactory TableHeaderColumn
 
 	Term = require('./term')
@@ -271,8 +270,9 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
-						ExpandingTextArea({
+						R.textArea({
 							ref: 'definitionField'
+							className: 'templateDescription'
 							onChange: @_updateDescription
 							value: @state.description
 						})
