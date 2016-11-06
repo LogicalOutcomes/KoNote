@@ -373,12 +373,12 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "#{Term 'Event Type'} Status"),
+						R.label({}, "Status"),
 						R.div({className: 'btn-toolbar'},
 							R.button({
 								className:
 									if @state.status is 'default'
-										'btn btn-success'
+										'btn btn-default active'
 									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'default'
@@ -389,7 +389,7 @@ load = (win) ->
 							R.button({
 								className:
 									'btn btn-' + if @state.status is 'cancelled'
-										'danger'
+										'active'
 									else
 										'default'
 								onClick: @_updateStatus
@@ -400,19 +400,20 @@ load = (win) ->
 							)
 						)
 					)
-					R.div({className: 'btn-toolbar'},
+					R.hr({})
+					R.div({className: 'btn-toolbar pull-right'},
 						R.button({
 							className: 'btn btn-default'
 							onClick: @props.onCancel
 						}, "Cancel")
 						R.button({
-							className: 'btn btn-success'
+							className: 'btn btn-primary'
 							disabled: (
 								not @state.name or not @state.description or not @state.colorKeyHex
 							) or not @_hasChanges()
 							onClick: @_submit
 						},
-							"Finished"
+							"Save Changes"
 						)
 					)
 				)
