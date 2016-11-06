@@ -23,7 +23,7 @@ load = (win) ->
 	Dialog = require('./dialog').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 
-	{renderName, renderRecordId, FaIcon, stripMetadata} = require('./utils').load(win)
+	{renderName, renderRecordId, FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
 
 	months = Moment.monthsShort()
 
@@ -37,9 +37,9 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				birthDay: ''
-				birthMonth: ''
-				birthYear: ''
+				birthDay: null
+				birthMonth: null
+				birthYear: null
 				firstName: ''
 				middleName: ''
 				lastName: ''
@@ -106,11 +106,18 @@ load = (win) ->
 							maxLength: 35
 						})
 					)
-					R.tr({},
+					R.div({},
 						R.label({}, "Birthdate")
+						R.button({
+							className: [
+								'btn btn-link btnReset'
+								showWhen @state.birthDay? or @state.birthMonth? or @state.birthYear?
+							].join ' '
+							onClick: @_resetBirthDate
+						}, "clear")
 						R.div({},
 							B.DropdownButton({
-								title: if @state.birthMonth isnt '' then @state.birthMonth else "Month"
+								title: if @state.birthMonth? then @state.birthMonth else "Month"
 							},
 								(months.map (month) =>
 									B.MenuItem({
@@ -122,7 +129,7 @@ load = (win) ->
 								)
 							)
 							B.DropdownButton({
-								title: if @state.birthDay isnt '' then @state.birthDay else "Day"
+								title: if @state.birthDay? then @state.birthDay else "Day"
 							},
 								for day in [1..31]
 									B.MenuItem({
@@ -134,7 +141,7 @@ load = (win) ->
 							)
 
 							B.DropdownButton({
-								title: if @state.birthYear isnt '' then @state.birthYear else "Year"
+								title: if @state.birthYear? then @state.birthYear else "Year"
 							},
 								for year in [currentYear..earlyYear]
 									B.MenuItem({
@@ -243,13 +250,26 @@ load = (win) ->
 			)
 
 		_formIsValid: ->
+			# dob field must be all or none
+			birthday = true
+			if @state.birthDay? or @state.birthMonth? or @state.birthYear?
+				unless @state.birthDay? and @state.birthMonth? and @state.birthYear?
+					birthday = false
+
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
 			if recordIdIsRequired
-				return @state.firstName and @state.lastName and @state.recordId
+				return birthday and @state.firstName and @state.lastName and @state.recordId
 			else
-				return @state.firstName and @state.lastName
+				return birthday and @state.firstName and @state.lastName
 		_cancel: ->
 			@props.onCancel()
+
+		_resetBirthDate: ->
+			@setState {
+				birthDay: null
+				birthMonth: null
+				birthYear: null
+			}
 
 		_updateFirstName: (event) ->
 			@setState {firstName: event.target.value}
@@ -295,12 +315,11 @@ load = (win) ->
 			middle = @state.middleName
 			last = @state.lastName
 			recordId = @state.recordId
-			birthDate = Moment()
-			.year(@state.birthYear)
-			.month(@state.birthMonth)
-			.date(@state.birthDay)
-			.format('YYYYMMMMDD')
 
+			birthDate = ''
+			birthDateStr = @state.birthDay + @state.birthMonth + @state.birthYear
+			if birthDateStr?
+				birthDate = Moment(birthDateStr).format('YYYYMMMDD')
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
