@@ -316,10 +316,10 @@ load = (win) ->
 			last = @state.lastName
 			recordId = @state.recordId
 
-			birthDate = ''
-			birthDateStr = @state.birthDay + @state.birthMonth + @state.birthYear
-			if birthDateStr?
-				birthDate = Moment(birthDateStr).format('YYYYMMMDD')
+			if @state.birthYear? and @state.birthMonth? and @state.birthDay?
+				birthDate = Moment(@state.birthYear + @state.birthMonth + @state.birthDay, 'YYYYMMMD', true).format('YYYYMMMDD')
+			else
+				birthDate = ''
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}

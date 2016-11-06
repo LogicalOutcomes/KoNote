@@ -29,6 +29,7 @@ load = (win) ->
 	} = require('../utils').load(win)
 
 	months = Moment.monthsShort()
+	birthDateFormat = 'YYYYMMMDD'
 
 
 	InfoView = React.createFactory React.createClass
@@ -38,15 +39,14 @@ load = (win) ->
 		getInitialState: ->
 			detailUnitsById = @_getDetailUnitsById()
 
-			if @props.clientFile.get('birthDate')?
-				birthDate = Moment(@props.clientFile.get('birthDate'))
-				birthMonth = months[Moment(@props.clientFile.get('birthDate')).month()]
-				birthDay = Moment(@props.clientFile.get('birthDate')).date()
-				birthYear = Moment(@props.clientFile.get('birthDate')).year()
+			if @props.clientFile.get('birthDate') isnt ''
+				birthMonth = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('MMM')
+				birthDay = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('DD')
+				birthYear = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('YYYY')
 			else
 				birthMonth = null
 				birthDay = null
-				birthDay = null
+				birthYear = null
 
 			return {
 				firstName: @props.clientFile.getIn(['clientName', 'first'])
@@ -60,6 +60,10 @@ load = (win) ->
 				birthMonth
 				birthYear
 			}
+
+		componentDidMount: ->
+			if Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('YYYYMMMDD') is "Invalid Date"
+				Bootbox.alert "Warning! Invalid birthdate detected. Please update and save."
 
 		render: ->
 			hasChanges = @hasChanges()
@@ -349,9 +353,15 @@ load = (win) ->
 			middleNameHasChanges = @props.clientFile.getIn(['clientName', 'middle']) isnt @state.middleName
 			lastNameHasChanges = @props.clientFile.getIn(['clientName', 'last']) isnt @state.lastName
 			recordIdHasChanges = @props.clientFile.get('recordId') isnt @state.recordId
-			birthMonthHasChanges = months[Moment(@props.clientFile.get('birthDate')).month()] isnt @state.birthMonth
-			birthDayHasChanges = Moment(@props.clientFile.get('birthDate')).date() isnt @state.birthDay
-			birthYearHasChanges = Moment(@props.clientFile.get('birthDate')).year() isnt @state.birthYear
+			# if there was a valid date in props, check state and props. if date props is empty, check state and null
+			if @props.clientFile.get('birthDate') isnt ''
+				birthMonthHasChanges = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('MMM') isnt @state.birthMonth
+				birthDayHasChanges = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('DD') isnt @state.birthDay
+				birthYearHasChanges = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('YYYY') isnt @state.birthYear
+			else
+				birthMonthHasChanges = @state.birthMonth isnt null
+				birthDayHasChanges = @state.birthDay isnt null
+				birthYearHasChanges = @state.birthYear isnt null
 
 			return detailUnitsHasChanges or
 			statusHasChanges or
@@ -381,12 +391,15 @@ load = (win) ->
 			@setState {lastName: event.target.value}
 
 		_updateBirthMonth: (birthMonth) ->
+			birthMonth = Moment(birthMonth, 'MMM', true).format('MMM')
 			@setState {birthMonth}
 
 		_updateBirthDay: (birthDay) ->
+			birthDay = Moment(birthDay, 'D', true).format('DD')
 			@setState {birthDay}
 
 		_updateBirthYear: (birthYear) ->
+			birthYear = Moment(birthYear, 'YYYY', true).format('YYYY')
 			@setState {birthYear}
 
 		_updateRecordId: (event) ->
@@ -431,18 +444,18 @@ load = (win) ->
 				Bootbox.alert "Cannot save the #{Term 'client file'} without a last name"
 				return
 
+			else if (@state.birthDay? or @state.birthMonth? or @state.birthYear?) and not (@state.birthDay? and @state.birthMonth? and @state.birthYear?)
+				Bootbox.alert "Cannot save the #{Term 'client file'} without a valid birthdate"
+				return
+
 			else
 				updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
 					detailUnit.toJS()
 
-				updatedBirthDate = Moment()
-				.year(@state.birthYear)
-				.month(@state.birthMonth)
-				.date(@state.birthDay)
-				.format('YYYYMMMMDD')
-
-
-				console.log "updatedBirthDate", updatedBirthDate
+				if @state.birthYear? and @state.birthMonth? and @state.birthDay?
+					updatedBirthDate = Moment(@state.birthYear + @state.birthMonth + @state.birthDay, birthDateFormat, true).format(birthDateFormat)
+				else
+					updatedBirthDate = ''
 
 				updatedClientFile = @props.clientFile
 				.setIn(['clientName', 'first'], @state.firstName)
