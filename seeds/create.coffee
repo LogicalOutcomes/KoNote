@@ -24,7 +24,7 @@ Create.clientFile = (cb) ->
 	middle = Faker.name.firstName()
 	last = Faker.name.lastName()
 	recordId = Faker.random.number().toString()
-	birthDate = Moment().subtract(2, 'months').format('YYYYMMMMDD')
+	birthDate = Moment().subtract(2, 'months').format('YYYYMMMDD')
 
 	console.log "birthdate", birthDate
 
