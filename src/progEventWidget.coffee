@@ -81,6 +81,11 @@ load = (win) ->
 					throw new Error "Unrecognized property: #{property}"
 
 			progEvent = @props.progEvent.set property, value
+
+			# Reset the title when a typeId is indicated
+			if property is 'typeId' and !!value
+				progEvent = progEvent.set 'title', ''
+
 			@props.updateProgEvent(progEvent)
 
 		_updateTimestamps: ({startTimestamp, endTimestamp}) ->
@@ -136,7 +141,7 @@ load = (win) ->
 					)
 
 					R.div({className: 'title'},
-						(if isEditing and not hasEventType
+						(if isEditing and (hasTitle or not hasEventType)
 							R.input({
 								className: 'form-control'
 								value: progEvent.get('title')
