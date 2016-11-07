@@ -11,8 +11,15 @@ load = (win) ->
 	{FaIcon} = require('./utils').load(win)
 
 
-	EventTypesDropdown = ({eventTypes, selectedEventType, onSelect}) ->
-		title = if selectedEventType? then selectedEventType.get('name') else "None"
+	EventTypesDropdown = ({eventTypes, selectedEventType, onSelect, canSelectNone, typeId}) ->
+		noneIsSelected = typeId is ''
+
+		title = if selectedEventType?
+			selectedEventType.get('name')
+		else if noneIsSelected
+			"None"
+		else
+			"Select Type"
 
 		# Discard inactive eventTypes
 		eventTypes = eventTypes.filter (eventType) =>
@@ -20,7 +27,7 @@ load = (win) ->
 
 
 		B.DropdownButton({title},
-			(if selectedEventType
+			(if selectedEventType or canSelectNone and not noneIsSelected
 				B.MenuItem({
 					onClick: onSelect.bind null, ''
 				},
@@ -29,7 +36,7 @@ load = (win) ->
 				)
 			)
 
-			(if selectedEventType
+			(if selectedEventType or canSelectNone and not noneIsSelected
 				B.MenuItem({divider: true})
 			)
 
