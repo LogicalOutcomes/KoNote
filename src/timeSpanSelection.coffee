@@ -29,7 +29,7 @@ load = (win) ->
 			startTimestamp: PropTypes.instanceOf(Moment).isRequired
 			endTimestamp: PropTypes.instanceOf(Moment)
 			updateTimestamps: PropTypes.func.isRequired
-			widgetPositioning: PropTypes.shape
+			widgetPositioning: PropTypes.object
 		}
 
 		getInitialState: ->
