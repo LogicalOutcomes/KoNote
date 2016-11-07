@@ -988,7 +988,7 @@ load = (win) ->
 					filename = object.first().get('filename')
 					if filename?
 						# absolute path required for windows
-						filepath = Path.join process.cwd(), Config.dataDirectory, '_tmp', filename
+						filepath = Path.join process.cwd(), Config.backend.dataDirectory, '_tmp', filename
 						file = new Buffer(encodedData, 'base64')
 						# TODO cleanup file...
 						Fs.writeFileSync filepath, file
