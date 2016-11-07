@@ -391,7 +391,7 @@ addPlanTemplateDescriptionField = (dataDir, globalEncryptionKey, cb) ->
 						cb()
 				(cb) =>
 					# Add 'description' property
-					planTemplateRevObject.description = ''
+					planTemplateRevObject.description = ' '
 					encryptedObj = globalEncryptionKey.encrypt(JSON.stringify planTemplateRevObject)
 					Fs.writeFile planTemplateRevPath, encryptedObj, cb
 			], cb
@@ -439,10 +439,6 @@ addClientFileBirthDateField = (dataDir, globalEncryptionKey, cb) ->
 
 		finalizeMigrationStep(dataDir, cb)
 
-
-
-
-
 # ////////////////////// Migration Series //////////////////////
 
 module.exports = {
@@ -454,7 +450,7 @@ module.exports = {
 
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "1. Add 'description': '' field to plan template objects"
+				console.groupCollapsed "1. Add 'description': ' ' field to plan template objects"
 				addPlanTemplateDescriptionField dataDir, globalEncryptionKey, cb
 
 
