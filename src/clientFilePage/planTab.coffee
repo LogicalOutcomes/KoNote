@@ -185,7 +185,7 @@ load = (win) ->
 
 						WithTooltip({
 							title: Term 'Plan Templates'
-							container: '.dropdown.btn-group'
+							container: 'body'
 							placement: 'bottom'
 						},
 							B.DropdownButton({
