@@ -625,7 +625,9 @@ load = (win) ->
 
 			@setState {highlightedEventTypeId}
 
-		_toggleStarredEventType: (eventTypeId) ->
+		_toggleStarredEventType: (eventTypeId, event) ->
+			event.preventDefault() # Prevents surrounding <label> from stealing the click
+
 			if @state.starredEventTypeIds.includes eventTypeId
 				starredEventTypeIds = @state.starredEventTypeIds.delete eventTypeId
 			else
