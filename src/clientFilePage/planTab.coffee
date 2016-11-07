@@ -183,40 +183,34 @@ load = (win) ->
 							"Add #{Term 'Section'}"
 						)
 
-						WithTooltip({
-							title: Term 'Plan Templates'
-							container: 'body'
-							placement: 'bottom'
+						B.DropdownButton({
+							id: 'planTemplatesDropdown'
+							title: FaIcon('wpforms')
+							disabled: @props.isReadOnly
 						},
-							B.DropdownButton({
-								id: 'planTemplatesDropdown'
-								title: FaIcon('wpforms')
-								disabled: @props.isReadOnly
-							},
 
 
-								B.MenuItem({onClick: @_openCreateTemplateDialog},
-									"Create Plan Template"
-								)
+							B.MenuItem({onClick: @_openCreateTemplateDialog},
+								"Create Plan Template"
+							)
 
 
-								(unless @props.planTemplateHeaders.isEmpty()
-									[
-										B.MenuItem({divider: true})
+							(unless @props.planTemplateHeaders.isEmpty()
+								[
+									B.MenuItem({divider: true})
 
-										B.MenuItem({header: true}, R.h5({}, "Apply #{Term 'Template'}"))
+									B.MenuItem({header: true}, R.h5({}, "Apply #{Term 'Template'}"))
 
-										(@props.planTemplateHeaders.map (planTemplateHeader) =>
-											B.MenuItem({
-												key: planTemplateHeader.get('id')
-												onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
-												disabled: @props.isReadOnly
-											},
-												planTemplateHeader.get('name')
-											)
+									(@props.planTemplateHeaders.map (planTemplateHeader) =>
+										B.MenuItem({
+											key: planTemplateHeader.get('id')
+											onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+											disabled: @props.isReadOnly
+										},
+											planTemplateHeader.get('name')
 										)
-									]
-								)
+									)
+								]
 							)
 						)
 
@@ -235,16 +229,16 @@ load = (win) ->
 							]
 							iconOnly: true
 							disabled: hasChanges
-							tooltip: {
-								show: true
-								placement: 'bottom'
-								title: (
-									if hasChanges
-										"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
-									else
-										"Print plan"
-								)
-							}
+							# tooltip: {
+							# 	show: false
+							# 	placement: 'bottom'
+							# 	title: (
+							# 		if hasChanges
+							# 			"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
+							# 		else
+							# 			"Print plan"
+							# 	)
+							# }
 						})
 					)
 
