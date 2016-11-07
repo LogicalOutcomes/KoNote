@@ -11,7 +11,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
-	ProgEventsWidget = require('./progEventsWidget').load(win)
+	ProgEventWidget = require('./progEventWidget').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	RevisionHistory = require('./revisionHistory').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
@@ -271,10 +271,10 @@ load = (win) ->
 							if entry.get('progEvents')
 								R.div({className: 'progEvents'},
 									entry.get('progEvents').map (progEvent) =>
-										ProgEventsWidget({
-											format: 'small'
-											data: progEvent
+										ProgEventWidget({
 											key: progEvent.get('id')
+											format: 'small'
+											progEvent
 											eventTypes: @props.eventTypes
 										})
 								)

@@ -81,7 +81,7 @@ load = (win) ->
 
 				@_chart.axis.min {x: newMin}
 				@_chart.axis.max {x: newMax}
-			
+
 			# Update chart type?
 			sameChartType = Imm.is @props.chartType, oldProps.chartType
 			unless sameChartType
@@ -368,8 +368,17 @@ load = (win) ->
 					if description.length > 1000
 						description = description.substring(0, 2000) + " . . ."
 
+					title = progEvent.get('title')
+
+					# Tack on eventType to title
+					# TODO: Do this earlier on, to save redundancy
+					if progEvent.get('typeId')
+						eventType = @props.eventTypes.find (eventType) -> eventType.get('id') is progEvent.get('typeId')
+						if title then title += ' '
+						title += "(#{eventType.get('name')})"
+
 					eventInfo.addClass('show')
-					eventInfo.find('.title').text progEvent.get('title')
+					eventInfo.find('.title').text title
 					eventInfo.find('.description').text(description)
 
 					startTimestamp = new Moment(progEvent.get('startTimestamp'), TimestampFormat)

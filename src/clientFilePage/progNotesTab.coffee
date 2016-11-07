@@ -28,8 +28,8 @@ load = (win) ->
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
+	ProgEventWidget = require('../progEventWidget').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
-	ProgEventsWidget = require('../progEventsWidget').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	PrintButton = require('../printButton').load(win)
 	WithTooltip = require('../withTooltip').load(win)
@@ -280,6 +280,7 @@ load = (win) ->
 												updateBasicUnitNotes: @_updateBasicUnitNotes
 												updateBasicMetric: @_updateBasicMetric
 												updatePlanTargetMetric: @_updatePlanTargetMetric
+												updateProgEvent: @_updateProgEvent
 												updateQuickNotes: @_updateQuickNotes
 											})
 										when 'globalEvent'
@@ -392,6 +393,10 @@ load = (win) ->
 				transientData: @state.transientData.setIn ['progNote', 'notes'], newNotes
 			}
 
+		_updateProgEvent: (index, updatedProgEvent) ->
+			transientData = @state.transientData.setIn ['progEvents', index], updatedProgEvent
+			@setState {transientData}
+
 		_isValidMetric: (value) -> value.match /^-?\d*\.?\d*$/
 
 		_updatePlanTargetMetric: (unitId, sectionId, targetId, metricId, newMetricValue) ->
@@ -453,9 +458,23 @@ load = (win) ->
 			}
 
 		_saveTransientData: ->
-			revisedProgNote = @state.transientData.get('progNote')
+			{progNote, progEvents, originalProgNote, originalProgEvents} = @state.transientData.toObject()
 
-			ActiveSession.persist.progNotes.createRevision revisedProgNote, (err, result) =>
+			# Any progEvents modified?
+			revisedProgEvents = progEvents.filter (progEvent, index) ->
+				not Imm.is progEvent, originalProgEvents.get(index)
+
+			# Only save modified progNotes/progEvents
+			Async.series [
+				(cb) ->
+					return cb() if Imm.is originalProgNote, progNote
+					ActiveSession.persist.progNotes.createRevision progNote, cb
+
+				(cb) ->
+					return cb() if revisedProgEvents.isEmpty()
+					Async.map revisedProgEvents, ActiveSession.persist.progEvents.createRevision, cb
+
+			], (err) =>
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """
@@ -467,7 +486,6 @@ load = (win) ->
 					return
 
 				@_discardTransientData()
-				return
 
 		_checkUserProgram: (cb) ->
 			# Skip if no clientProgram(s)
@@ -858,6 +876,7 @@ load = (win) ->
 					updateBasicUnitNotes: @props.updateBasicUnitNotes
 					updatePlanTargetNotes: @props.updatePlanTargetNotes
 					updatePlanTargetMetric: @props.updatePlanTargetMetric
+					updateProgEvent: @props.updateProgEvent
 					updateQuickNotes: @props.updateQuickNotes
 					saveProgNoteRevision: @props.saveProgNoteRevision
 				})
@@ -907,6 +926,7 @@ load = (win) ->
 						updateBasicUnitNotes: @props.updateBasicUnitNotes
 						updateBasicMetric: @props.updateBasicMetric
 						updatePlanTargetMetric: @props.updatePlanTargetMetric
+						updateProgEvent: @props.updateProgEvent
 						saveProgNoteRevision: @props.saveProgNoteRevision
 					})
 				else
@@ -1051,8 +1071,10 @@ load = (win) ->
 		render: ->
 			{isEditing} = @props
 
-			# Filter out any empty notes/metrics, unless we're editing
+			# Use transient data when isEditing
 			progNote = if isEditing then @props.transientData.get('progNote') else @_filterEmptyValues(@props.progNote)
+			progEvents = if isEditing then @props.transientData.get('progEvents') else @props.progEvents
+
 
 			R.div({className: 'full progNote'},
 				EntryHeader({
@@ -1210,16 +1232,18 @@ load = (win) ->
 						)
 					)
 
-					(unless @props.progEvents.isEmpty()
+					(unless progEvents.isEmpty()
 						R.div({className: 'progEvents'}
 							R.h3({}, Term 'Events')
 
-							(@props.progEvents.map (progEvent) =>
-								ProgEventsWidget({
+							(progEvents.map (progEvent, index) =>
+								ProgEventWidget({
 									key: progEvent.get('id')
 									format: 'large'
-									data: progEvent
+									progEvent
 									eventTypes: @props.eventTypes
+									isEditing
+									updateProgEvent: @props.updateProgEvent.bind null, index
 								})
 							)
 						)
@@ -1334,6 +1358,7 @@ load = (win) ->
 								cancelRevisingProgNote: @props.cancelRevisingProgNote
 								updatePlanTargetNotes: @props.updatePlanTargetNotes
 								updatePlanTargetMetric: @props.updatePlanTargetMetric
+								updateProgEvent: @props.updateProgEvent
 								saveProgNoteRevision: @props.saveProgNoteRevision
 							})
 						else

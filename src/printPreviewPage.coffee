@@ -20,8 +20,8 @@ load = (win, {dataSet}) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
+	ProgEventWidget = require('./progEventWidget').load(win)
 	ExpandedMetricWidget = require('./expandedMetricWidget').load(win)
-	ProgEventsWidget = require('./progEventsWidget').load(win)
 	{FaIcon,renderLineBreaks, renderName,
 	renderRecordId, showWhen, formatTimestamp} = require('./utils').load(win)
 
@@ -306,9 +306,9 @@ load = (win, {dataSet}) ->
 						R.h3({}, Term 'Events')
 						(@props.progEvents.map (progEvent) =>
 							R.div({}
-								ProgEventsWidget({
+								ProgEventWidget({
 									format: 'print'
-									data: progEvent
+									progEvent
 								})
 							)
 						).toJS()...
