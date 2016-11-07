@@ -45,7 +45,7 @@ load = (win) ->
 				progEvent: Imm.Map {
 					title: ''
 					description: ''
-					typeId: ''
+					typeId: null
 					startTimestamp
 					endTimestamp
 				}
@@ -74,7 +74,7 @@ load = (win) ->
 						FaIcon('times')
 					)
 					R.div({className: 'form-group titleContainer'},
-						(unless @props.eventTypes.isEmpty()
+						(if not @props.eventTypes.isEmpty()
 							R.div({},
 								R.label({}, Term 'Event Type')
 								R.div({},
@@ -82,12 +82,14 @@ load = (win) ->
 										selectedEventType
 										eventTypes: @props.eventTypes
 										onSelect: @_updateTypeId
+										canSelectNone: true
+										typeId
 									})
 								)
 							)
 						)
 						# eventType can be used instead of title (#871)
-						(unless selectedEventType
+						(if typeId is '' or @props.eventTypes.isEmpty()
 							R.div({},
 								R.label({}, "Title")
 								R.input({
@@ -207,7 +209,10 @@ load = (win) ->
 			@setState {progEvent}
 
 		_updateTypeId: (typeId) ->
-			progEvent = @state.progEvent.set 'typeId', typeId
+			progEvent = @state.progEvent
+			.set 'typeId', typeId
+			.set 'title', '' # EventType takes place of 'title'
+
 			@setState {progEvent}
 
 		_updateTimestamps: ({startTimestamp, endTimestamp}) ->
@@ -250,8 +255,11 @@ load = (win) ->
 
 		_saveProgEvent: (progEvent) ->
 			# Axe the title if an eventType is being used instead (#871)
-			if progEvent.get 'typeId'
+			# Otherwise, make sure typeId isn't null
+			if !!progEvent.get('typeId')
 				progEvent = progEvent.set 'title', ''
+			else
+				progEvent = progEvent.set 'typeId', ''
 
 			@props.saveProgEvent progEvent
 
