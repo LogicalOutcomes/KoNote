@@ -456,7 +456,6 @@ load = (win) ->
 				unusedTargetIds = state.plan.get('sections').flatMap (section) =>
 					return section.get('targetIds').filter (targetId) =>
 						currentRev = state.currentTargetRevisionsById.get(targetId)
-
 						emptyName = currentRev.get('name') is ''
 						emptyDescription = currentRev.get('description') is ''
 						noMetrics = currentRev.get('metricIds').size is 0
@@ -533,9 +532,9 @@ load = (win) ->
 								cb()
 
 						(cb) =>
+							newCurrentRevs = @state.currentTargetRevisionsById
 							templateSections = selectedPlanTemplate.get('sections').map (templateSection) =>
 								targetIds = Imm.List()
-								newCurrentRevs = @state.currentTargetRevisionsById
 								templateSection.get('targets').forEach (target) =>
 									target.get('metricIds').forEach (metricId) =>
 
@@ -579,7 +578,7 @@ load = (win) ->
 							@setState {
 								plan: newPlan
 								currentTargetRevisionsById: newCurrentRevs
-							},
+							}
 
 							cb()
 
