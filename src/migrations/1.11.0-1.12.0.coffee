@@ -391,7 +391,7 @@ addPlanTemplateDescriptionField = (dataDir, globalEncryptionKey, cb) ->
 						cb()
 				(cb) =>
 					# Add 'description' property
-					planTemplateRevObject.description = ' '
+					planTemplateRevObject.description = ''
 					encryptedObj = globalEncryptionKey.encrypt(JSON.stringify planTemplateRevObject)
 					Fs.writeFile planTemplateRevPath, encryptedObj, cb
 			], cb
@@ -399,6 +399,41 @@ addPlanTemplateDescriptionField = (dataDir, globalEncryptionKey, cb) ->
 	, (err) ->
 		if err
 			console.info "Problem with planTemplate desc"
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+
+addClientFileBirthDateField = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		forEachFileIn clientFileDirPath, (clientFileRev, cb) ->
+			clientFileRevPath = Path.join(clientFileDirPath, clientFileRev)
+			clientFileRevObject = null
+
+			Async.series [
+				(cb) =>
+					# Read clientFile object
+					Fs.readFile clientFileRevPath, (err, result) ->
+						if err
+							cb err
+							return
+
+						clientFileRevObject = JSON.parse globalEncryptionKey.decrypt result
+
+						cb()
+				(cb) =>
+					# Add 'birthDate' property
+					clientFileRevObject.birthDate = ''
+					encryptedObj = globalEncryptionKey.encrypt(JSON.stringify clientFileRevObject)
+					Fs.writeFile clientFileRevPath, encryptedObj, cb
+			], cb
+		, cb
+	, (err) ->
+		if err
+			console.info "Problem with clientFile birthday"
 			cb err
 			return
 
@@ -419,8 +454,14 @@ module.exports = {
 
 			(cb) ->
 				console.groupEnd()
-				console.groupCollapsed "1. Add 'description': ' ' field to plan template objects"
+				console.groupCollapsed "1. Add 'description': '' field to plan template objects"
 				addPlanTemplateDescriptionField dataDir, globalEncryptionKey, cb
+
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "2. Add 'birthDate': '' field to clientFile objects"
+				addClientFileBirthDateField dataDir, globalEncryptionKey, cb
 
 		]
 
