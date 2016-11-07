@@ -270,9 +270,10 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
-						R.textArea({
+						R.textarea({
 							ref: 'definitionField'
-							className: 'templateDescription'
+							rows: 4
+							className: 'templateDescription form-control'
 							onChange: @_updateDescription
 							value: @state.description
 						})
