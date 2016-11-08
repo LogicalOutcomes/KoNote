@@ -43,7 +43,6 @@ load = (win) ->
 				selectedMetricIds: Imm.Set()
 				chartType: 'line'
 				selectedEventTypeIds: Imm.Set()
-				highlightedEventTypeId: undefined # null reserved for Other Types
 				starredEventTypeIds: Imm.Set()
 				excludedTargetIds: Imm.Set()
 				timeSpan: null
@@ -181,14 +180,8 @@ load = (win) ->
 			# else if timeSpan.get('start').isBefore xTicks.first()
 			# 	timeSpan = timeSpan.set 'start', xTicks.first()
 
+
 			#################### Event Types ####################
-
-			# Include hovered/highlighted eventTypeId with starred eventTypeIds
-			highlightedEventTypeIds = if @state.highlightedEventTypeId isnt undefined
-				@state.starredEventTypeIds.add @state.highlightedEventTypeId
-			else
-				@state.starredEventTypeIds
-
 
 			# Map out visible progEvents (within timeSpan) by eventTypeId
 			visibleProgEvents = selectedProgEvents.filter (progEvent) ->
@@ -214,7 +207,6 @@ load = (win) ->
 			# Booleans for the OTHER menu (TODO: Component-alize this stuff!)
 			otherEventTypesIsSelected = @state.selectedEventTypeIds.contains null
 			otherEventTypesIsPersistent = @state.starredEventTypeIds.contains null
-			otherEventTypesIsHighlighted = @state.highlightedEventTypeId is null
 			visibleUntypedProgEvents = visibleProgEventsByTypeId.get('') or Imm.List()
 
 
@@ -266,7 +258,10 @@ load = (win) ->
 					R.div({className: 'chartContainer'},
 
 						# Fade out un-highlighted regions when exists
-						InlineHighlightStyles(highlightedEventTypeIds)
+						InlineHighlightStyles({
+							ref: 'inlineHighlightStyles'
+							starredEventTypeIds: @state.starredEventTypeIds
+						})
 
 						# Force chart to be re-rendered when tab is opened
 						(unless @state.selectedEventTypeIds.isEmpty() and @state.selectedMetricIds.isEmpty()
@@ -334,7 +329,6 @@ load = (win) ->
 											visibleProgEvents = visibleProgEventsByTypeId.get(eventTypeId) or Imm.List()
 
 											isSelected = @state.selectedEventTypeIds.contains eventTypeId
-											isHighlighted = @state.highlightedEventTypeId is eventTypeId
 											isPersistent = @state.starredEventTypeIds.contains eventTypeId
 
 											(unless progEventsWithType.isEmpty()
@@ -345,7 +339,7 @@ load = (win) ->
 														'isHighlighted' if isPersistent
 													].join ' '
 													onMouseEnter: @_highlightEventType.bind(null, eventTypeId) if isSelected
-													onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isHighlighted
+													onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isSelected
 												},
 													R.label({},
 														(if isSelected
@@ -388,7 +382,7 @@ load = (win) ->
 												'isHighlighted' if otherEventTypesIsPersistent
 											].join ' '
 											onMouseEnter: @_highlightEventType.bind(null, null) if otherEventTypesIsSelected
-											onMouseLeave: @_unhighlightEventType.bind(null, null) if otherEventTypesIsHighlighted
+											onMouseLeave: @_unhighlightEventType.bind(null, null) if otherEventTypesIsSelected
 										},
 											R.label({},
 												(if otherEventTypesIsSelected
@@ -589,9 +583,9 @@ load = (win) ->
 				starredEventTypeIds = @state.starredEventTypeIds
 
 			# User is still hovering, so make sure it's still transiently-highlighted
-			highlightedEventTypeId = eventTypeId
+			@_highlightEventType(eventTypeId)
 
-			@setState {selectedEventTypeIds, starredEventTypeIds, highlightedEventTypeId}
+			@setState {selectedEventTypeIds, starredEventTypeIds}
 
 		_toggleAllEventTypes: (allEventTypesSelected) ->
 			if not allEventTypesSelected
@@ -609,21 +603,10 @@ load = (win) ->
 			@setState {selectedEventTypeIds, starredEventTypeIds}
 
 		_highlightEventType: (eventTypeId) ->
-			# Ignore persistent eventTypeIds
-			return if @state.highlightedEventTypeId is eventTypeId or
-			@state.starredEventTypeIds.contains eventTypeId
-
-			highlightedEventTypeId = eventTypeId
-			@setState {highlightedEventTypeId}
+			@refs.inlineHighlightStyles.add eventTypeId
 
 		_unhighlightEventType: (eventTypeId) ->
-			# Ignore persistent eventTypeIds
-			return if @state.highlightedEventTypeId isnt eventTypeId or
-			@state.starredEventTypeIds.contains eventTypeId
-
-			highlightedEventTypeId = undefined
-
-			@setState {highlightedEventTypeId}
+			@refs.inlineHighlightStyles.remove eventTypeId
 
 		_toggleStarredEventType: (eventTypeId, event) ->
 			event.preventDefault() # Prevents surrounding <label> from stealing the click
@@ -663,18 +646,37 @@ load = (win) ->
 			@setState {timeSpan}
 
 
-	InlineHighlightStyles = (eventTypeIds) ->
-		return null if eventTypeIds.isEmpty()
+	InlineHighlightStyles = React.createFactory React.createClass
+		displayName: 'InlineHighlightStyles'
+		mixins: [React.addons.PureRenderMixin]
 
-		# Selectively exclude highlighted events from opacity change
-		notStatements = eventTypeIds
-		.map (id) -> ":not(.typeId-#{id})"
-		.toJS().join ''
+		getInitialState: -> {additionalEventTypeId: null}
 
-		fillOpacity = 0.15
-		styles = "g.c3-region#{notStatements} {fill-opacity: #{fillOpacity} !important; stroke-opacity: #{fillOpacity}}"
+		add: (additionalEventTypeId) ->
+			return if @state.additionalEventTypeId is additionalEventTypeId
+			@setState {additionalEventTypeId}
 
-		return R.style({}, styles)
+		remove: (additionalEventTypeId) ->
+			return if @state.additionalEventTypeId isnt additionalEventTypeId
+			@setState {additionalEventTypeId: null}
+
+		render: ->
+			return null if @props.starredEventTypeIds.isEmpty() and not @state.additionalEventTypeId
+
+			eventTypeIds = if @state.additionalEventTypeId
+				@props.starredEventTypeIds.add @state.additionalEventTypeId
+			else
+				@props.starredEventTypeIds
+
+			# Selectively exclude highlighted events from opacity change
+			notStatements = eventTypeIds
+			.map (id) -> ":not(.typeId-#{id})"
+			.toJS().join ''
+
+			fillOpacity = 0.15
+			styles = "g.c3-region#{notStatements} {fill-opacity: #{fillOpacity} !important; stroke-opacity: #{fillOpacity}}"
+
+			return R.style({}, styles)
 
 
 	extractMetricsFromProgNoteHistory = (progNoteHist) ->
