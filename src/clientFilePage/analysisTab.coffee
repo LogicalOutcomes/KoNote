@@ -613,6 +613,8 @@ load = (win) ->
 
 			if @state.starredEventTypeIds.includes eventTypeId
 				starredEventTypeIds = @state.starredEventTypeIds.delete eventTypeId
+				# Make the un-starring look immediate
+				@_unhighlightEventType eventTypeId
 			else
 				starredEventTypeIds = @state.starredEventTypeIds.add eventTypeId
 
