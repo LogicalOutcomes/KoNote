@@ -184,7 +184,7 @@ load = (win) ->
 			#################### Event Types ####################
 
 			# Map out visible progEvents (within timeSpan) by eventTypeId
-			visibleProgEvents = selectedProgEvents.filter (progEvent) ->
+			visibleProgEvents = allEvents.filter (progEvent) ->
 				endTimestamp = progEvent.get('endTimestamp')
 				startMoment = makeMoment progEvent.get('startTimestamp')
 
@@ -342,15 +342,11 @@ load = (win) ->
 													onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isSelected
 												},
 													R.label({},
-														(if isSelected
-															R.span({
-																className: 'colorKeyCount'
-																style:
-																	background: eventType.get('colorKeyHex')
-															},
-																visibleProgEvents.size
-															)
-														)
+														ColorKeyCount({
+															isSelected
+															colorKeyHex: eventType.get('colorKeyHex')
+															count: visibleProgEvents.size
+														})
 
 														(if isSelected
 															FaIcon('star', {
@@ -385,15 +381,11 @@ load = (win) ->
 											onMouseLeave: @_unhighlightEventType.bind(null, null) if otherEventTypesIsSelected
 										},
 											R.label({},
-												(if otherEventTypesIsSelected
-													R.span({
-														className: 'colorKeyCount'
-														style:
-															background: '#cadbe5' # Default (other) eventType color
-													},
-														visibleUntypedProgEvents.size
-													)
-												)
+												ColorKeyCount({
+													isSelected: otherEventTypesIsSelected
+													colorKeyHex: '#cadbe5'
+													count: visibleUntypedProgEvents.size
+												})
 
 												(if otherEventTypesIsSelected
 													FaIcon('star', {
@@ -490,15 +482,12 @@ load = (win) ->
 															className: 'checkbox metric'
 														},
 															R.label({},
-																(if isSelected
-																	R.span({
-																		className: 'colorKeyCount circle'
-																		style:
-																			background: metricColor
-																	},
-																		visibleValues.size
-																	)
-																)
+																ColorKeyCount({
+																	isSelected
+																	className: 'circle'
+																	colorKeyHex: metricColor
+																	count: visibleValues.size
+																})
 																R.input({
 																	type: 'checkbox'
 																	onChange: @_updateSelectedMetrics.bind null, metricId
@@ -529,15 +518,12 @@ load = (win) ->
 												className: 'checkbox metric'
 											},
 												R.label({},
-													(if isSelected
-														R.span({
-															className: 'colorKeyCount circle'
-															style:
-																background: metricColor
-														},
-															visibleValues.size
-														)
-													)
+													ColorKeyCount({
+														isSelected
+														className: 'circle'
+														colorKeyHex: metricColor
+														count: visibleValues.size
+													})
 													R.input({
 														type: 'checkbox'
 														onChange: @_updateSelectedMetrics.bind null, metricId
@@ -679,6 +665,20 @@ load = (win) ->
 			styles = "g.c3-region#{notStatements} {fill-opacity: #{fillOpacity} !important; stroke-opacity: #{fillOpacity}}"
 
 			return R.style({}, styles)
+
+
+	ColorKeyCount = ({isSelected, className, colorKeyHex, count}) ->
+		R.span({
+			className: [
+				'colorKeyCount'
+				className
+				'isSelected' if isSelected
+			].join ' '
+			style:
+				background: colorKeyHex if isSelected
+		},
+			count
+		)
 
 
 	extractMetricsFromProgNoteHistory = (progNoteHist) ->
