@@ -26,8 +26,8 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			startTimestamp: PropTypes.instanceOf(Moment).isRequired
-			endTimestamp: PropTypes.instanceOf(Moment)
+			startTimestamp: PropTypes.string.isRequired
+			endTimestamp: PropTypes.string
 			updateTimestamps: PropTypes.func.isRequired
 			widgetPositioning: PropTypes.object
 		}
