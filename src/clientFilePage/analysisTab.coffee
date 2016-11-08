@@ -215,7 +215,7 @@ load = (win) ->
 			otherEventTypesIsSelected = @state.selectedEventTypeIds.contains null
 			otherEventTypesIsPersistent = @state.starredEventTypeIds.contains null
 			otherEventTypesIsHighlighted = @state.highlightedEventTypeId is null
-			visibleUntypedProgEvents = visibleProgEventsByTypeId.get('')
+			visibleUntypedProgEvents = visibleProgEventsByTypeId.get('') or Imm.List()
 
 
 			#################### ETC ####################
@@ -331,7 +331,7 @@ load = (win) ->
 											# TODO: Make this faster
 											progEventsWithType = allEvents.filter (progEvent) -> progEvent.get('typeId') is eventTypeId
 
-											visibleProgEvents = visibleProgEventsByTypeId.get(eventTypeId)
+											visibleProgEvents = visibleProgEventsByTypeId.get(eventTypeId) or Imm.List()
 
 											isSelected = @state.selectedEventTypeIds.contains eventTypeId
 											isHighlighted = @state.highlightedEventTypeId is eventTypeId
@@ -348,7 +348,7 @@ load = (win) ->
 													onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isHighlighted
 												},
 													R.label({},
-														(if visibleProgEvents?
+														(if isSelected
 															R.span({
 																className: 'colorKeyCount'
 																style:
@@ -391,7 +391,7 @@ load = (win) ->
 											onMouseLeave: @_unhighlightEventType.bind(null, null) if otherEventTypesIsHighlighted
 										},
 											R.label({},
-												(if visibleUntypedProgEvents?
+												(if otherEventTypesIsSelected
 													R.span({
 														className: 'colorKeyCount'
 														style:
@@ -487,7 +487,7 @@ load = (win) ->
 													(target.get('metrics').map (metric) =>
 														metricId = metric.get('id')
 														metricIsInactive = targetIsInactive or metric.get('status') isnt 'default'
-														visibleValues = visibleMetricValuesById.get metricId
+														visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
 														isSelected = @state.selectedMetricIds.contains metricId
 														metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
 
@@ -496,7 +496,7 @@ load = (win) ->
 															className: 'checkbox metric'
 														},
 															R.label({},
-																(if isSelected and visibleValues?
+																(if isSelected
 																	R.span({
 																		className: 'colorKeyCount circle'
 																		style:
@@ -527,7 +527,7 @@ load = (win) ->
 										(unassignedMetricsList.map (metric) =>
 											metricId = metric.get('id')
 											isSelected = @state.selectedMetricIds.contains metricId
-											visibleValues = visibleMetricValuesById.get metricId
+											visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
 											metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
 
 											R.div({
@@ -535,7 +535,7 @@ load = (win) ->
 												className: 'checkbox metric'
 											},
 												R.label({},
-													(if isSelected and visibleValues?
+													(if isSelected
 														R.span({
 															className: 'colorKeyCount circle'
 															style:
