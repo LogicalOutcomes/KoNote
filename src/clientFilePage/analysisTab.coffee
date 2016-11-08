@@ -652,7 +652,7 @@ load = (win) ->
 		displayName: 'InlineHighlightStyles'
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: -> {additionalEventTypeId: null}
+		getInitialState: -> {additionalEventTypeId: undefined}
 
 		add: (additionalEventTypeId) ->
 			return if @state.additionalEventTypeId is additionalEventTypeId
@@ -660,12 +660,12 @@ load = (win) ->
 
 		remove: (additionalEventTypeId) ->
 			return if @state.additionalEventTypeId isnt additionalEventTypeId
-			@setState {additionalEventTypeId: null}
+			@setState {additionalEventTypeId: undefined}
 
 		render: ->
-			return null if @props.starredEventTypeIds.isEmpty() and not @state.additionalEventTypeId
+			return null if @props.starredEventTypeIds.isEmpty() and @state.additionalEventTypeId is undefined
 
-			eventTypeIds = if @state.additionalEventTypeId
+			eventTypeIds = if @state.additionalEventTypeId isnt undefined
 				@props.starredEventTypeIds.add @state.additionalEventTypeId
 			else
 				@props.starredEventTypeIds
