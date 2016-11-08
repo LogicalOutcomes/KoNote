@@ -26,7 +26,10 @@ load = (win) ->
 			eventType.get('status') is 'default'
 
 
-		B.DropdownButton({title},
+		B.DropdownButton({
+			title
+			id: 'eventTypesDropdown'
+		},
 			(if selectedEventType or canSelectNone and not noneIsSelected
 				B.MenuItem({
 					onClick: onSelect.bind null, ''

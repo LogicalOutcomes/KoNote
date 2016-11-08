@@ -179,6 +179,7 @@ load = (win) ->
 										R.td({},
 
 											B.DropdownButton({
+												id: 'birthMonthDropdown'
 												title: if @state.birthMonth? then @state.birthMonth else "Month"
 											},
 												(months.map (month) =>
@@ -195,6 +196,7 @@ load = (win) ->
 												)
 											)
 											B.DropdownButton({
+												id: 'birthDayDropdown'
 												title: if @state.birthDay? then @state.birthDay else "Day"
 											},
 												for day in [1..31]
@@ -211,6 +213,7 @@ load = (win) ->
 											)
 
 											B.DropdownButton({
+												id: 'birthYearDropdown'
 												title: if @state.birthYear? then @state.birthYear else "Year"
 											},
 												for year in [currentYear..earlyYear]
