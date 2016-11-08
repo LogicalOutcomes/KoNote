@@ -135,7 +135,8 @@ load = (win) ->
 							R.div({className: 'responsiveTable animated fadeIn'},
 								DialogLayer({
 									ref: 'dialogLayer'
-									eventTypes
+									eventTypes: @state.eventTypes
+									onSuccess: @_modifyEventType
 								},
 									BootstrapTable({
 										data: eventTypes.toJS()
@@ -145,10 +146,7 @@ load = (win) ->
 											defaultSortName: 'name'
 											defaultSortOrder: 'asc'
 											onRowClick: ({id}) =>
-												@refs.dialogLayer.open ModifyEventTypeDialog, {
-													eventTypeId: id
-													onSuccess: @_modifyEventType
-												}
+												@refs.dialogLayer.open ModifyEventTypeDialog, {eventTypeId: id}
 
 											noDataText: "No #{Term 'event types'} to display"
 										}
@@ -329,7 +327,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
-			return @_getEventType().toJS()
+			return @_getEventType().toObject()
 
 		componentDidMount: ->
 			@refs.eventTypeName.focus()
@@ -432,8 +430,7 @@ load = (win) ->
 			@setState {status: event.target.value}
 
 		_getEventType: ->
-			@props.eventTypes.find (eventType) =>
-				eventType.get('id') is @props.eventTypeId
+			@props.eventTypes.find (eventType) => eventType.get('id') is @props.eventTypeId
 
 		_buildModifiedEventTypeObject: ->
 			originalEventType = @_getEventType()
