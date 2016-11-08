@@ -672,7 +672,7 @@ load = (win) ->
 		.toJS().join ''
 
 		fillOpacity = 0.15
-		styles = "g.c3-region#{notStatements} rect {fill-opacity: #{fillOpacity} !important}"
+		styles = "g.c3-region#{notStatements} {fill-opacity: #{fillOpacity} !important; stroke-opacity: #{fillOpacity}}"
 
 		return R.style({}, styles)
 

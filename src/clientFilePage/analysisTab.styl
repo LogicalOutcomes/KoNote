@@ -215,17 +215,17 @@
 						.c3-region
 							fill-opacity 1
 
+							&:hover
+								stroke-opacity 1 !important
+
 							> rect
-								fill-opacity 1
+								fill-opacity inherit !important
 								// 10% of original height
 								transform scaleY(0.1) !important
 								fill sidebar-borders
 								stroke sidebar-borders
 								stroke-width 2px
-
-								&:hover
-									fill-opacity 1 !important
-									fill sidebar-borders
+								stroke-opacity inherit
 
 							&.singlePoint > rect
 								fill sidebar-borders
