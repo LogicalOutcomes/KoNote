@@ -240,8 +240,14 @@ load = (win, {clientFileId}) ->
 			# Store beginTimestamp as static class variable, since it wont change
 			@beginTimestamp = Moment().format(Persist.TimestampFormat)
 
-		render: ->
+			# Update the window title (TODO: Do this from win.open?)
+			clientName = renderName @props.clientFile.get('clientName')
+			@props.setWindowTitle """
+				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}
+				: New #{Term 'Progress Note'}
+			"""
 
+		render: ->
 			if @props.loadErrorType?
 				return R.div({className: 'newProgNotePage'},
 					R.div({className: 'loadError'},
