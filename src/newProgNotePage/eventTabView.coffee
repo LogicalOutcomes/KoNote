@@ -28,7 +28,7 @@ load = (win) ->
 	TimeSpanSelection = require('../timeSpanSelection').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 
-	{FaIcon, renderName, showWhen, formatTimestamp, renderTimeSpan} = require('../utils').load(win)
+	{FaIcon, renderName, showWhen, formatTimestamp, renderTimeSpan, makeMoment} = require('../utils').load(win)
 
 
 	EventTabView = React.createFactory React.createClass
