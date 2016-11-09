@@ -272,7 +272,7 @@ load = (win, {clientFileId}) ->
 				)
 
 
-			isBackDated = !!@state.progNote.get('backdate')
+			isBackdated = !!@state.progNote.get('backdate')
 
 
 			return R.div({className: 'newProgNotePage animated fadeIn'},
