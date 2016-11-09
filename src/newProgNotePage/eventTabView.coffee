@@ -307,7 +307,7 @@ load = (win) ->
 
 		render: ->
 			flaggedNames = @_generateFlaggedNames()
-			selectedProgram = @props.clientPrograms.find (program) ->
+			selectedProgram = @props.clientPrograms.find (program) =>
 				program.get('id') is @state.programId
 
 
