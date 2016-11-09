@@ -265,11 +265,9 @@ load = (win, {clientFileId}) ->
 					)
 				)
 
-			clientName = renderName @props.clientFile.get('clientName')
-			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName}) - #{clientName}
-				: New #{Term 'Progress Note'}
-			"""
+
+			isBackDated = !!@state.progNote.get('backdate')
+
 
 			return R.div({className: 'newProgNotePage animated fadeIn'},
 
@@ -277,7 +275,7 @@ load = (win, {clientFileId}) ->
 					R.div({className: 'backdateContainer'},
 						BackdateWidget({
 							onChange: @_updateBackdate
-							message: @state.progNote.get('backdate') or false
+							isBackdated
 						})
 					)
 
@@ -552,8 +550,8 @@ load = (win, {clientFileId}) ->
 			}
 
 		_updateBackdate: (event) ->
-			backdate = if event then event.date else ''
-			progNote = @state.progNote.set 'backdate', ''
+			backdate = if event then event.date.format(Persist.TimestampFormat) else ''
+			progNote = @state.progNote.set 'backdate', backdate
 
 			@setState {progNote}
 
@@ -756,17 +754,19 @@ load = (win, {clientFileId}) ->
 					ref: 'backdate'
 					className: 'backdate date btn btn-default'
 				})
-				if @props.message
+
+				(if @props.isBackdated
 					R.span({
 						className: 'text-danger btn'
 						onClick: =>
 							$(@refs.backdate).val(Moment().format('MMM-DD-YYYY h:mm A'))
-							@props.onChange null
+							@props.onChange('')
 						title: 'Remove Backdate'
 					},
 						'Backdated '
 						FaIcon('times')
 					)
+				)
 			)
 
 	return NewProgNotePage
