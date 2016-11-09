@@ -22,6 +22,8 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
+	BirthDateSelector = require('./birthDateSelector').load(win)
+
 
 	{renderName, renderRecordId, FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
 
@@ -115,43 +117,14 @@ load = (win) ->
 							].join ' '
 							onClick: @_resetBirthDate
 						}, "clear")
-						R.div({},
-							B.DropdownButton({
-								title: if @state.birthMonth? then @state.birthMonth else "Month"
-							},
-								(months.map (month) =>
-									B.MenuItem({
-										key: month
-										onClick: @_updateBirthMonth.bind null, month
-									},
-										month
-									)
-								)
-							)
-							B.DropdownButton({
-								title: if @state.birthDay? then @state.birthDay else "Day"
-							},
-								for day in [1..31]
-									B.MenuItem({
-										key: day
-										onClick: @_updateBirthDay.bind null, day
-									},
-										day
-									)
-							)
-
-							B.DropdownButton({
-								title: if @state.birthYear? then @state.birthYear else "Year"
-							},
-								for year in [currentYear..earlyYear]
-									B.MenuItem({
-										key: year
-										onClick: @_updateBirthYear.bind null, year
-									},
-										year
-									)
-							)
-						)
+						BirthDateSelector({
+							birthDay: @state.birthDay
+							birthMonth: @state.birthMonth
+							birthYear: @state.birthYear
+							onSelectMonth: @_updateBirthMonth
+							onSelectDay: @_updateBirthDay
+							onSelectYear: @_updateBirthYear
+						})
 					)
 
 					(unless @props.programs.isEmpty()

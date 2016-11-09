@@ -23,14 +23,13 @@ load = (win) ->
 
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	BirthDateSelector = require('../birthDateSelector').load(win)
 
 	{
 		FaIcon, renderLineBreaks, showWhen, capitalize
 	} = require('../utils').load(win)
 
-	months = Moment.monthsShort()
 	birthDateFormat = 'YYYYMMMDD'
-
 
 	InfoView = React.createFactory React.createClass
 		displayName: 'InfoView'
@@ -177,57 +176,14 @@ load = (win) ->
 									R.tr({},
 										R.td({}, "Birthdate")
 										R.td({},
-
-											B.DropdownButton({
-												id: 'birthMonthDropdown'
-												title: if @state.birthMonth? then @state.birthMonth else "Month"
-											},
-												(months.map (month) =>
-													B.MenuItem({
-														key: month
-														onClick: @_updateBirthMonth.bind null, month
-													},
-														R.div({
-															onclick: @_updateBirthMonth.bind null, month
-														},
-															month
-														)
-													)
-												)
-											)
-											B.DropdownButton({
-												id: 'birthDayDropdown'
-												title: if @state.birthDay? then @state.birthDay else "Day"
-											},
-												for day in [1..31]
-													B.MenuItem({
-														key: day
-														onClick: @_updateBirthDay.bind null, day
-													},
-														R.div({
-															onClick: @_updateBirthDay.bind null, day
-														},
-															day
-														)
-													)
-											)
-
-											B.DropdownButton({
-												id: 'birthYearDropdown'
-												title: if @state.birthYear? then @state.birthYear else "Year"
-											},
-												for year in [currentYear..earlyYear]
-													B.MenuItem({
-														key: year
-														onClick: @_updateBirthYear.bind null, year
-													},
-														R.div({
-															onClick: @_updateBirthYear.bind null, year
-														},
-															year
-														)
-													)
-											)
+											BirthDateSelector({
+												birthDay: @state.birthDay
+												birthMonth: @state.birthMonth
+												birthYear: @state.birthYear
+												onSelectMonth: @_updateBirthMonth
+												onSelectDay: @_updateBirthDay
+												onSelectYear: @_updateBirthYear
+											})
 										)
 									)
 									(if Config.clientFileRecordId.isEnabled
