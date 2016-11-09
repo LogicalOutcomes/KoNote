@@ -226,8 +226,8 @@ load = (win) ->
 			@setState {progEvent}
 
 		_formIsInvalid: ->
-			{title, description, startTimestamp, typeId} = @state.progEvent.toObject()
-			return (not typeId and not title) or not description or not startTimestamp
+			{title, startTimestamp, typeId} = @state.progEvent.toObject()
+			return (not typeId and not title) or not startTimestamp
 
 		_hasChanges: ->
 			return not Imm.is @state.progEvent, @props.data
