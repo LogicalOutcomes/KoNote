@@ -157,18 +157,6 @@ dataModelDefinitions = [
 						)
 					})
 				]
-				children: [
-					{
-						name: 'attachment'
-						collectionName: 'attachments'
-						isMutable: true
-						indexes: [['filename']]
-						schema: Joi.object().keys({
-							filename: Joi.string()
-							encodedData: Joi.string()
-						})
-					}
-				]
 			}
 			{
 				name: 'alert'
@@ -181,6 +169,19 @@ dataModelDefinitions = [
 					status: ['default', 'cancelled']
 					statusReason: Joi.string().optional()
 					authorProgramId: IdSchema.allow('')
+				})
+			}
+			{
+				name: 'attachment'
+				collectionName: 'attachments'
+				isMutable: true
+				indexes: [['filename'], ['status'], ['relatedProgNoteId']]
+				schema: Joi.object().keys({
+					filename: Joi.string()
+					encodedData: Joi.string()
+					status: ['default', 'cancelled']
+					statusReason: Joi.string().optional()
+					relatedProgNoteId: IdSchema
 				})
 			}
 		]
