@@ -135,7 +135,7 @@ load = (win) ->
 
 		for line, lineIndex in lines
 			if lineIndex > 0
-				result.push R.br()
+				result.push R.br({key: lineIndex})
 
 			if line.trim()
 				result.push line
