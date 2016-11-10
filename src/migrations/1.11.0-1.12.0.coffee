@@ -439,6 +439,22 @@ addClientFileBirthDateField = (dataDir, globalEncryptionKey, cb) ->
 
 		finalizeMigrationStep(dataDir, cb)
 
+
+createClientFileAttachmentsDirs = (dataDir, globalEncryptionKey, cb) ->
+	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
+		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
+
+		createEmptyDirectory clientFileDirPath, 'attachments', cb
+
+	, (err) ->
+		if err
+			console.info "Problem with adding attachments dirs"
+			cb err
+			return
+
+		finalizeMigrationStep(dataDir, cb)
+
+
 # ////////////////////// Migration Series //////////////////////
 
 module.exports = {
@@ -453,11 +469,15 @@ module.exports = {
 				console.groupCollapsed "1. Add 'description': ' ' field to plan template objects"
 				addPlanTemplateDescriptionField dataDir, globalEncryptionKey, cb
 
-
 			(cb) ->
 				console.groupEnd()
 				console.groupCollapsed "2. Add 'birthDate': '' field to clientFile objects"
 				addClientFileBirthDateField dataDir, globalEncryptionKey, cb
+
+			(cb) ->
+				console.groupEnd()
+				console.groupCollapsed "3. Create 'attachments' dir in each clientFile"
+				createClientFileAttachmentsDirs dataDir, globalEncryptionKey, cb
 
 		]
 
