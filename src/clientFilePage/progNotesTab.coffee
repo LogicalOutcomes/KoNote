@@ -784,7 +784,8 @@ load = (win) ->
 			# (@props.globalEvents isnt newProps.globalEvents) or
 			(@props.programsById isnt newProps.programsById) or
 			(@props.transientData isnt newProps.transientData) or
-			(@props.isReadOnly isnt newProps.isReadOnly)
+			(@props.isReadOnly isnt newProps.isReadOnly) or
+			(@props.selectedItem isnt newProps.selectedItem )
 
 			return hasChanges
 
