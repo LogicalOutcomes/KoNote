@@ -51,16 +51,18 @@ load = (win) ->
 				transientData: null
 				isLoading: null
 				historyEntries: Imm.List()
+				historyCount: 10
 			}
 
 		componentDidMount: ->
-
-			# TODO: Restore for lazyload feature
-			# progNotesPane = $('.historyEntries')
-			# progNotesPane.on 'scroll', =>
-			# 	if @props.isLoading is false and @props.headerIndex < @props.progNoteTotal
-			# 		if progNotesPane.scrollTop() + (progNotesPane.innerHeight() * 2) >= progNotesPane[0].scrollHeight
-			# 			@props.renewAllData()
+			# infinite scroll
+			leftPane = $('.progNotesList')
+			leftPane.on 'scroll', _.throttle((=>
+				if leftPane.scrollTop() + (leftPane.innerHeight() *2) >= leftPane[0].scrollHeight
+					newCount = @state.historyCount + 10
+					@setState {historyCount: newCount}
+				return
+			), 150)
 
 		hasChanges: ->
 			@_transientDataHasChanges()
@@ -107,6 +109,7 @@ load = (win) ->
 				)
 				.sortBy (entry) -> entry.get('timestamp')
 				.reverse()
+				.slice(-@state.historyCount)
 
 			hasEnoughData = (@props.progNoteHistories.size + @props.globalEvents.size) > 0
 

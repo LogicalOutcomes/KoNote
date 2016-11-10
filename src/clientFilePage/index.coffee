@@ -62,15 +62,12 @@ load = (win, {clientFileId}) ->
 			return {
 				status: 'init' # Either init or ready
 
-				headerIndex: 0
-
 				clientFile: null
 				clientFileLock: null
 				readOnlyData: null
 				lockOperation: null
 
 				progNoteHistories: null
-				progNoteTotal: null
 				progressEvents: null
 				planTargetsById: Imm.Map()
 				programsById: Imm.Map()
@@ -157,9 +154,6 @@ load = (win, {clientFileId}) ->
 				globalEvents
 				alerts: @state.alerts
 
-				headerIndex: @state.headerIndex
-				progNoteTotal: @state.progNoteTotal
-
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
@@ -179,7 +173,6 @@ load = (win, {clientFileId}) ->
 			planTargetHeaders = null
 			progNoteHeaders = null
 			progNoteHistories = null
-			progNoteTotal = null
 			progEventHeaders = null
 			progressEvents = null
 			metricHeaders = null
@@ -260,7 +253,6 @@ load = (win, {clientFileId}) ->
 							return
 
 						# lazyloading
-						progNoteTotal = results.size
 						progNoteHeaders = results
 						# .sortBy (header) ->
 						# 	createdAt = header.get('backdate') or header.get('timestamp')
@@ -569,9 +561,6 @@ load = (win, {clientFileId}) ->
 				else
 					@setState {
 						status: 'ready'
-
-						headerIndex: @state.headerIndex+10
-						progNoteTotal
 
 						clientFile
 						progNoteHistories
@@ -1039,8 +1028,6 @@ load = (win, {clientFileId}) ->
 							progEvents: @props.progressEvents
 							eventTypes: @props.eventTypes
 							metricsById: @props.metricsById
-							headerIndex: @props.headerIndex
-							progNoteTotal: @props.progNoteTotal
 							programsById: @props.programsById
 							attachmentsByProgNoteId: @props.attachmentsByProgNoteId
 
