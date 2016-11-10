@@ -30,11 +30,13 @@ load = (win) ->
 			historyCount: 10
 		}
 
-		componentWillUpdate: (prevProps, prevState) ->
-			# if the counts are the same, update was triggered by clicking a target
-			if prevState.historyCount is @state.historyCount
-				historyPane = $('.history')
-				historyPane.scrollTop(0)
+		componentWillReceiveProps: (nextProps) ->
+			# update was triggered by clicking a target
+			if @props.item?
+				unless Imm.is @props.item.get('targetId'), nextProps.item.get('targetId')
+					historyPane = $('.history')
+					historyPane.scrollTop(0)
+					@setState {historyCount: 0}
 
 		componentDidUpdate: ->
 			# infinite scroll
