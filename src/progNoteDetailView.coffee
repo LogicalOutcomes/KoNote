@@ -3,11 +3,13 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
+_ = require 'underscore'
 
 Term = require './term'
 
 
 load = (win) ->
+	$ = win.jQuery
 	React = win.React
 	R = React.DOM
 
@@ -25,7 +27,24 @@ load = (win) ->
 
 		getInitialState: -> {
 			descriptionIsVisible: true
+			historyCount: 10
 		}
+
+		componentWillUpdate: (prevProps, prevState) ->
+			# if the counts are the same, update was triggered by clicking a target
+			if prevState.historyCount is @state.historyCount
+				historyPane = $('.history')
+				historyPane.scrollTop(0)
+
+		componentDidUpdate: ->
+			# infinite scroll
+			historyPane = $('.history')
+			historyPane.on 'scroll', _.throttle((=>
+				if historyPane.scrollTop() + (historyPane.innerHeight() *2) >= historyPane[0].scrollHeight
+					newCount = @state.historyCount + 10
+					@setState {historyCount: newCount}
+				return
+			), 150)
 
 		render: ->
 			unless @props.item
@@ -179,6 +198,7 @@ load = (win) ->
 			.sortBy (entry) ->
 				entry.get('backdate') or entry.get('timestamp')
 			.reverse()
+			.slice(0, @state.historyCount)
 
 
 			return R.div({className: 'progNoteDetailView'},
