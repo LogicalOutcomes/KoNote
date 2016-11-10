@@ -22,11 +22,9 @@ load = (win) ->
 
 		render: ->
 
-			console.log "RERENDERING!!"
-
 			{birthDay, birthMonth, birthYear, onSelectMonth, onSelectDay, onSelectYear} = @props
 
-			return R.tr({},
+			return R.div({},
 				B.DropdownButton({
 					id: 'birthMonthDropdown'
 					title: if birthMonth? then birthMonth else "Month"
