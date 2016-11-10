@@ -53,12 +53,7 @@ load = (win) ->
 				historyEntries: Imm.List()
 			}
 
-		componentWillReceiveProps: (nextProps) ->
-			unless _.isEqual(@props, nextProps)
-				@_buildHistoryEntries(nextProps)
-
 		componentDidMount: ->
-			@_buildHistoryEntries()
 
 			# TODO: Restore for lazyload feature
 			# progNotesPane = $('.historyEntries')
@@ -70,89 +65,40 @@ load = (win) ->
 		hasChanges: ->
 			@_transientDataHasChanges()
 
-		_buildHistoryEntries: (nextProps) ->
-			if nextProps?
-				progNoteHistories = nextProps.progNoteHistories
-				clientFileId = nextProps.clientFileId
-			else
-				progNoteHistories = @props.progNoteHistories
-				clientFileId = @props.clientFileId
+		_toProgNoteHistoryEntry: (progNoteHistory) ->
+			progNoteId = progNoteHistory.first().get('id')
+			attachments = @props.attachmentsByProgNoteId.get(progNoteId) or Imm.List()
+			timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
 
-			historyEntries = null
-
-			Async.series [
-				(cb) =>
-					Async.map progNoteHistories.toArray(), (progNoteHistory, cb) =>
-						timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
-						progNoteId = progNoteHistory.last().get('id')
-						attachmentFilename = null
-
-						ActiveSession.persist.attachments.list clientFileId, progNoteId, (err, results) =>
-							if err
-								cb err
-								return
-
-							if results.size > 0
-								attachmentFilename = {
-									clientFileId
-									progNoteId
-									attachmentId: results.first().get('id')
-									filename: results.first().get('filename')
-								}
-
-							entry = Imm.fromJS {
-								type: 'progNote'
-								id: progNoteId
-								timestamp
-								attachmentFilename
-								data: progNoteHistory
-							}
-
-							cb null, entry
-
-					, (err, results) ->
-						if err
-							cb err
-							return
-
-						historyEntries = Imm.List(results)
-						cb()
-
-			], (err) =>
-				if err
-					if err instanceof Persist.IOError
-						console.error err
-						Bootbox.alert """
-							Please check your network connection and try again.
-						"""
-						return
-
-					CrashHandler.handle err
-					return
-
-				@setState {historyEntries}
+			return Imm.Map {
+				type: 'progNote'
+				id: progNoteId
+				timestamp
+				data: progNoteHistory
+				attachments
+			}
 
 		render: ->
-			historyEntries = @state.historyEntries
-
 			transientData = @state.transientData
-			hasChanges = @_transientDataHasChanges()
+			hasChanges = @hasChanges
 			isEditing = transientData?
 
 			historyEntries = if isEditing
 				# Only show the single progNote while editing
 				Imm.List [
-					historyEntries.find (entry) => entry.get('id') is transientData.getIn(['progNote', 'id'])
+					@props.progNoteHistories
+					.find (entry) -> entry.get('id') is transientData.getIn(['progNote', 'id'])
+					.map @_toProgNoteHistoryEntry
 				]
 			else
 				# Display all progNotes, tack on any active globalEvents, and sort!
-				historyEntries
+				@props.progNoteHistories
+				.map @_toProgNoteHistoryEntry
 				.concat(
 					@props.globalEvents
-					.filter (globalEvent) ->
-						globalEvent.get('status') is 'default'
+					.filter (globalEvent) -> globalEvent.get('status') is 'default'
 					.map (globalEvent) ->
-						return Imm.fromJS {
+						return Imm.Map {
 							type: 'globalEvent'
 							id: globalEvent.get('id')
 							timestamp: globalEvent.get('startTimestamp')
@@ -256,7 +202,7 @@ load = (win) ->
 												key: entry.get('id')
 
 												progNoteHistory: entry.get('data')
-												attachments: entry.get('attachmentFilename')
+												attachments: entry.get('attachments')
 												eventTypes: @props.eventTypes
 												clientFile: @props.clientFile
 
@@ -671,27 +617,29 @@ load = (win) ->
 			.click()
 
 		_encodeFile: (file) ->
-			if file
-				filename = Path.basename file
-				attachment = Fs.readFileSync(file)
-				filesize = Buffer.byteLength(attachment, 'base64')
-				if filesize < 1048576
-					filesize = (filesize / 1024).toFixed() + " KB"
-				else
-					filesize = (filesize / 1048576).toFixed() + " MB"
+			return unless file
 
-				# convert to base64 encoded string
-				encodedAttachment = new Buffer(attachment).toString 'base64'
+			filename = Path.basename file
+			attachment = Fs.readFileSync(file)
+			filesize = Buffer.byteLength(attachment, 'base64')
 
-				@setState {
-					attachment: {
-						encodedData: encodedAttachment
-						filename: filename
-					}
+			if filesize < 1048576
+				filesize = (filesize / 1024).toFixed() + " KB"
+			else
+				filesize = (filesize / 1048576).toFixed() + " MB"
+
+			# Convert to base64 encoded string
+			encodedAttachment = new Buffer(attachment).toString 'base64'
+
+			@setState {
+				attachment: {
+					encodedData: encodedAttachment
+					filename: filename
 				}
-				$('#attachmentArea').append filename + " (" + filesize + ")"
-				#@_decodeFile encodedAttachment
-			return
+			}
+
+			# TODO: Append for when multiple attachments allowed (#787)
+			$('#attachmentArea').text filename + " (" + filesize + ")"
 
 		_toggleQuickNotePopover: ->
 			# TODO: Refactor to stateful React component
@@ -733,11 +681,6 @@ load = (win) ->
 					event.preventDefault()
 
 					@_createQuickNote popover.find('textarea').val(), @state.backdate, @state.attachment, (err) =>
-
-						if @state.attachment?
-							# refresh if we have an attachment since it is not ready when create:prognote fires in
-							# the parent. TODO: make this more elegant
-							@_buildHistoryEntries()
 
 						@setState {
 							backdate: '',
@@ -810,17 +753,14 @@ load = (win) ->
 					return
 
 				attachmentData = Imm.fromJS {
+					status: 'default'
 					filename: attachment.filename
 					encodedData: attachment.encodedData
 					clientFileId: @props.clientFileId
-					progNoteId: result.get('id')
+					relatedProgNoteId: result.get('id')
 				}
 
-				global.ActiveSession.persist.attachments.create attachmentData, (err) =>
-					if err
-						cb err
-						return
-					cb()
+				global.ActiveSession.persist.attachments.create attachmentData, cb
 
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
@@ -859,6 +799,7 @@ load = (win) ->
 			if progNote.get('status') is 'cancelled'
 				return CancelledProgNoteView({
 					progNoteHistory: @props.progNoteHistory
+					attachments: @props.attachments
 					progEvents
 					globalEvents
 					eventTypes: @props.eventTypes
@@ -975,44 +916,49 @@ load = (win) ->
 							renderLineBreaks progNote.get('notes')
 						)
 					)
-					(if attachmentText?
+					(@props.attachments.map (attachment) =>
+						filename = attachment.get('filename')
+						fileExtension = Path.extname filename
+
 						R.a({
 							className: 'attachment'
-							onClick: @_openAttachment.bind null, @props.attachments
+							onClick: @_openAttachment.bind null, attachment
 						},
-							FaIcon(Path.extname attachmentText)
-							attachmentText
+							FaIcon(fileExtension)
+							' '
+							filename
 						)
 					)
 				)
 			)
 
 		_openAttachment: (attachment) ->
-			if attachment?
-				clientFileId = attachment.get('clientFileId')
-				progNoteId = attachment.get('progNoteId')
-				attachmentId = attachment.get('attachmentId')
+			attachmentId = attachment.get('id')
+			clientFileId = @props.clientFile.get('id')
 
-				global.ActiveSession.persist.attachments.readRevisions clientFileId, progNoteId, attachmentId, (err, object) ->
-					if err
-						if err instanceof Persist.IOError
-							Bootbox.alert """
-								An error occurred.  Please check your network connection and try again.
-							"""
-							return
-
-						CrashHandler.handle err
+			global.ActiveSession.persist.attachments.readLatestRevisions clientFileId, attachmentId, 1, (err, results) ->
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
 						return
 
-					encodedData = object.first().get('encodedData')
-					filename = object.first().get('filename')
-					if filename?
-						# absolute path required for windows
-						filepath = Path.join process.cwd(), Config.backend.dataDirectory, '_tmp', filename
-						file = new Buffer(encodedData, 'base64')
-						# TODO cleanup file...
-						Fs.writeFileSync filepath, file
-						nw.Shell.openItem filepath
+					CrashHandler.handle err
+					return
+
+				attachment = results.first()
+
+				encodedData = attachment.get('encodedData')
+				filename = attachment.get('filename')
+
+				if filename?
+					# Absolute path required for windows
+					filepath = Path.join process.cwd(), Config.backend.dataDirectory, '_tmp', filename
+					file = new Buffer(encodedData, 'base64')
+					# TODO cleanup file...
+					Fs.writeFileSync filepath, file
+					nw.Shell.openItem filepath
 
 		_selectQuickNote: ->
 			@props.setSelectedItem Imm.fromJS {
@@ -1325,6 +1271,7 @@ load = (win) ->
 							QuickNoteView({
 								progNote: @props.progNoteHistory.last()
 								progNoteHistory: @props.progNoteHistory
+								attachments: @props.attachments
 								clientFile: @props.clientFile
 								selectedItem: @props.selectedItem
 								selectProgNote: @props.selectProgNote
