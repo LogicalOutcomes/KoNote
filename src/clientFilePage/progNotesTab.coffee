@@ -80,15 +80,14 @@ load = (win) ->
 
 		render: ->
 			transientData = @state.transientData
-			hasChanges = @hasChanges
+			hasChanges = @hasChanges()
 			isEditing = transientData?
 
 			historyEntries = if isEditing
 				# Only show the single progNote while editing
 				Imm.List [
-					@props.progNoteHistories
-					.find (entry) -> entry.get('id') is transientData.getIn(['progNote', 'id'])
-					.map @_toProgNoteHistoryEntry
+					@_toProgNoteHistoryEntry @props.progNoteHistories.find (progNoteHistory) ->
+						progNoteHistory.getIn([0, 'id']) is transientData.getIn(['progNote', 'id'])
 				]
 			else
 				# Display all progNotes, tack on any active globalEvents, and sort!
@@ -1374,6 +1373,9 @@ load = (win) ->
 		hasRevisions = progNoteHistory.size > 1
 		numberOfRevisions = progNoteHistory.size - 1
 		hasMultipleRevisions = numberOfRevisions > 1
+
+		# Ensure progEvents is defined
+		progEvents = progEvents or Imm.List()
 
 		R.div({
 			className: "progNoteToolbar #{if isViewingRevisions then 'active' else ''}"
