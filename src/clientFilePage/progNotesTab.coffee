@@ -109,7 +109,7 @@ load = (win) ->
 				)
 				.sortBy (entry) -> entry.get('timestamp')
 				.reverse()
-				.slice(-@state.historyCount)
+				.slice(0, @state.historyCount)
 
 			hasEnoughData = (@props.progNoteHistories.size + @props.globalEvents.size) > 0
 
