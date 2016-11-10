@@ -75,6 +75,8 @@ load = (win, {clientFileId}) ->
 				planTargetsById: Imm.Map()
 				programsById: Imm.Map()
 				metricsById: Imm.Map()
+				attachmentHeaders: Imm.List()
+
 				planTemplateHeaders: Imm.List()
 				detailDefinitionGroups: Imm.List()
 
@@ -125,6 +127,10 @@ load = (win, {clientFileId}) ->
 
 				return (isActive or originatesFromClient) and (hasNoProgram or isInClientProgram)
 
+			# Map of attachments for easier access by progNoteId
+			attachmentsByProgNoteId = @state.attachmentHeaders.groupBy (attachment) ->
+				attachment.get('relatedProgNoteId')
+
 
 			return ClientFilePageUi({
 				ref: 'ui'
@@ -147,6 +153,7 @@ load = (win, {clientFileId}) ->
 				programsById: @state.programsById
 				clientFileProgramLinkHeaders: @state.clientFileProgramLinkHeaders
 				eventTypes: @state.eventTypes
+				attachmentsByProgNoteId
 				globalEvents
 				alerts: @state.alerts
 
@@ -191,6 +198,7 @@ load = (win, {clientFileId}) ->
 			groupsArray = null
 			detailDefinitionHeaders = null
 			detailDefinitionGroups = null
+			attachmentHeaders = null
 
 
 			checkFileSync = (newData, oldData) =>
@@ -295,6 +303,15 @@ load = (win, {clientFileId}) ->
 						.map (progEvent) -> stripMetadata progEvent.first()
 
 						checkFileSync progressEvents, @state.progressEvents
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.attachments.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						attachmentHeaders = results
 						cb()
 
 				(cb) =>
@@ -559,6 +576,7 @@ load = (win, {clientFileId}) ->
 						clientFile
 						progNoteHistories
 						progressEvents
+						attachmentHeaders
 						globalEvents
 						metricsById
 						planTargetsById
@@ -745,6 +763,21 @@ load = (win, {clientFileId}) ->
 					progEventIndex = @state.progressEvents.indexOf originalProgEvent
 					progressEvents = @state.progressEvents.set progEventIndex, newProgEventRev
 					@setState {progressEvents}
+
+				'create:attachment': (newAttachment) =>
+					return unless newAttachment.get('clientFileId') is clientFileId
+					attachmentHeaders = @state.attachmentHeaders.push newAttachment
+					@setState {attachmentHeaders}
+
+				'createRevision:attachment': (newAttachmentRev) =>
+					return unless newAttachmentRev.get('clientFileId') is clientFileId
+					originalAttachment = @state.attachmentHeaders
+					.find (attachment) -> attachment.get('id') is newAttachmentRev.get('id')
+					.remove 'encodedData' # Should we keep this in memory, as a convenience?
+
+					attachmentIndex = @state.attachmentHeaders.indexOf originalAttachment
+					attachmentHeaders = @state.attachmentHeaders.set attachmentIndex, newAttachmentRev
+					@setState {attachmentHeaders}
 
 				'create:metric createRevision:metric': (metricDefinition) =>
 					metricsById = @state.metricsById.set metricDefinition.get('id'), metricDefinition
@@ -1009,6 +1042,7 @@ load = (win, {clientFileId}) ->
 							headerIndex: @props.headerIndex
 							progNoteTotal: @props.progNoteTotal
 							programsById: @props.programsById
+							attachmentsByProgNoteId: @props.attachmentsByProgNoteId
 
 							hasChanges: @hasChanges
 							onTabChange: @_changeTab
