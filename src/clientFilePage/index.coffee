@@ -61,6 +61,7 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				status: 'init' # Either init or ready
+				allDataLoaded: false
 
 				clientFile: null
 				clientFileLock: null
@@ -133,6 +134,7 @@ load = (win, {clientFileId}) ->
 				ref: 'ui'
 
 				status: @state.status
+				allDataLoaded: @state.allDataLoaded
 				readOnlyData: @state.readOnlyData
 				loadErrorType: @state.loadErrorType
 
@@ -167,6 +169,7 @@ load = (win, {clientFileId}) ->
 			# Sync check
 			fileIsUnsync = null
 			# File data
+			allDataLoaded = null
 			clientFile = null
 			planTemplateHeaders = null
 			planTargetsById = null
@@ -177,7 +180,6 @@ load = (win, {clientFileId}) ->
 			progressEvents = null
 			metricHeaders = null
 			metricsById = null
-			clientDetailGroupsById = null
 			clientFileProgramLinkHeaders = null
 			programHeaders = null
 			programs = null
@@ -188,7 +190,6 @@ load = (win, {clientFileId}) ->
 			globalEvents = null
 			alertHeaders = null
 			alerts = null
-			groupsArray = null
 			detailDefinitionHeaders = null
 			detailDefinitionGroups = null
 			attachmentHeaders = null
@@ -207,23 +208,135 @@ load = (win, {clientFileId}) ->
 						cb()
 
 				(cb) =>
-					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
+					# load headers in parallel (TODO: confirm whether reading directories can cause EMFILE issues)
+					Async.parallel [
+						(cb) =>
+							ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
+								if err
+									cb err
+									return
+
+								clientFile = stripMetadata revisions.get(0)
+
+								checkFileSync clientFile, @state.clientFile
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
+								if err
+									cb err
+									return
+
+								planTargetHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
+								if err
+									cb err
+									return
+
+								# fast first pass 
+								if @state.status is "init"
+									progNoteHeaders = results
+									.sortBy (header) ->
+										createdAt = header.get('backdate') or header.get('timestamp')
+										return Moment createdAt, Persist.TimestampFormat
+									.slice(-10)
+								else
+									progNoteHeaders = results
+									allDataLoaded = true
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
+								if err
+									cb err
+									return
+
+								progEventHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.attachments.list clientFileId, (err, results) =>
+								if err
+									cb err
+									return
+
+								attachmentHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.globalEvents.list (err, results) =>
+								if err
+									cb err
+									return
+
+								globalEventHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.metrics.list (err, results) =>
+								if err
+									cb err
+									return
+
+								metricHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.clientFileProgramLinks.list (err, results) =>
+								if err
+									cb err
+									return
+
+								clientFileProgramLinkHeaders = results
+								.filter (link) ->
+									link.get('clientFileId') is clientFileId and
+									link.get('status') is "enrolled"
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.programs.list (err, results) =>
+								if err
+									cb err
+									return
+
+								programHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.eventTypes.list (err, result) =>
+								if err
+									cb err
+									return
+
+								eventTypeHeaders = result
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.alerts.list clientFileId, (err, result) =>
+								if err
+									cb err
+									return
+								alertHeaders = result
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.planTemplates.list (err, result) =>
+								if err
+									cb err
+									return
+
+								planTemplateHeaders = result
+								.filter (template) -> template.get('status') is 'default'
+								cb()
+
+					], (err) =>
 						if err
 							cb err
 							return
-
-						clientFile = stripMetadata revisions.get(0)
-
-						checkFileSync clientFile, @state.clientFile
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						planTargetHeaders = results
+						# headers loaded, carry on in series
 						cb()
 
 				(cb) =>
@@ -247,21 +360,6 @@ load = (win, {clientFileId}) ->
 						cb()
 
 				(cb) =>
-					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						# lazyloading
-						progNoteHeaders = results
-						# .sortBy (header) ->
-						# 	createdAt = header.get('backdate') or header.get('timestamp')
-						# 	return Moment createdAt, Persist.TimestampFormat
-						# .reverse()
-						# .slice(@state.headerIndex, @state.headerIndex+10)
-						cb()
-
-				(cb) =>
 					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
 						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
 					, (err, results) =>
@@ -272,15 +370,6 @@ load = (win, {clientFileId}) ->
 						progNoteHistories = Imm.List(results)
 
 						checkFileSync progNoteHistories, @state.progNoteHistories
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						progEventHeaders = results
 						cb()
 
 				(cb) =>
@@ -298,24 +387,6 @@ load = (win, {clientFileId}) ->
 						cb()
 
 				(cb) =>
-					ActiveSession.persist.attachments.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						attachmentHeaders = results
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.globalEvents.list (err, results) =>
-						if err
-							cb err
-							return
-
-						globalEventHeaders = results
-						cb()
-
-				(cb) =>
 					Async.map globalEventHeaders.toArray(), (globalEventHeader, cb) =>
 						ActiveSession.persist.globalEvents.readLatestRevisions globalEventHeader.get('id'), 1, cb
 					, (err, results) =>
@@ -324,15 +395,6 @@ load = (win, {clientFileId}) ->
 							return
 
 						globalEvents = Imm.List(results).map (revisions) -> revisions.first()
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.metrics.list (err, results) =>
-						if err
-							cb err
-							return
-
-						metricHeaders = results
 						cb()
 
 				(cb) =>
@@ -350,29 +412,6 @@ load = (win, {clientFileId}) ->
 						.fromEntrySeq().toMap()
 
 						checkFileSync metricsById, @state.metricsById
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.clientFileProgramLinks.list (err, results) =>
-						if err
-							cb err
-							return
-
-						clientFileProgramLinkHeaders = results
-						.filter (link) ->
-							link.get('clientFileId') is clientFileId and
-							link.get('status') is "enrolled"
-
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.programs.list (err, results) =>
-						if err
-							cb err
-							return
-
-						programHeaders = results
-
 						cb()
 
 				(cb) =>
@@ -394,15 +433,6 @@ load = (win, {clientFileId}) ->
 						cb()
 
 				(cb) =>
-					ActiveSession.persist.eventTypes.list (err, result) =>
-						if err
-							cb err
-							return
-
-						eventTypeHeaders = result
-						cb()
-
-				(cb) =>
 					Async.map eventTypeHeaders.toArray(), (eventTypeheader, cb) =>
 						eventTypeId = eventTypeheader.get('id')
 
@@ -416,14 +446,6 @@ load = (win, {clientFileId}) ->
 						cb()
 
 				(cb) =>
-					ActiveSession.persist.alerts.list clientFileId, (err, result) =>
-						if err
-							cb err
-							return
-						alertHeaders = result
-						cb()
-
-				(cb) =>
 					Async.map alertHeaders.toArray(), (alertHeader, cb) =>
 						alertId = alertHeader.get('id')
 
@@ -434,16 +456,6 @@ load = (win, {clientFileId}) ->
 							return
 
 						alerts = Imm.List(results).map (alert) -> stripMetadata alert.get(0)
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.planTemplates.list (err, result) =>
-						if err
-							cb err
-							return
-
-						planTemplateHeaders = result
-						.filter (template) -> template.get('status') is 'default'
 						cb()
 
 				(cb) =>
@@ -561,6 +573,7 @@ load = (win, {clientFileId}) ->
 				else
 					@setState {
 						status: 'ready'
+						allDataLoaded
 
 						clientFile
 						progNoteHistories
@@ -958,6 +971,8 @@ load = (win, {clientFileId}) ->
 
 			# It's now OK to close the window
 			@hasMounted = true
+			unless @props.allDataLoaded
+				@props.renewAllData()
 
 		render: ->
 			if @props.loadErrorType
