@@ -36,7 +36,7 @@ load = (win) ->
 				unless Imm.is @props.item.get('targetId'), nextProps.item.get('targetId')
 					historyPane = $('.history')
 					historyPane.scrollTop(0)
-					@setState {historyCount: 0}
+					@setState {historyCount: 10}
 
 		componentDidUpdate: ->
 			# infinite scroll
