@@ -68,6 +68,8 @@ load = (win, {clientFileId}) ->
 				readOnlyData: null
 				lockOperation: null
 
+				progNoteTotal: null
+				progNoteIndex: 10
 				progNoteHistories: null
 				progressEvents: null
 				planTargetsById: Imm.Map()
@@ -164,44 +166,67 @@ load = (win, {clientFileId}) ->
 				secondPass: @_secondPass
 			})
 
-		_secondPass: ->
-			progNoteHeaders = null
+		_secondPass: (deadline) ->
+			console.log "second pass start..."
+			progNoteTotal = @state.progNoteTotal
+			progNoteIndex = @state.progNoteIndex
 			progNoteHistories = null
-			
-			Async.series [
-				(cb) =>
-					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-						progNoteHeaders = results
-						cb()
+			progNoteHeaders = null
 
-				(cb) =>
+			console.log "prognotetotal", progNoteTotal
+			console.log "prognoteindex", progNoteIndex
+			console.log deadline.timeRemaining()
+
+			if deadline.timeRemaining() > 0 and progNoteIndex < progNoteTotal
+
+				console.log "in da loop"
+			
+				# lets see what can we do in 100ms
+
+				ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
+					if err
+						if err instanceof Persist.IOError
+							console.error err
+							@setState {loadErrorType: 'io-error'}
+							return
+						CrashHandler.handle err
+						return
+					progNoteHeaders = results
+					# todo confirm we're not off by 1
+					.slice(progNoteIndex, progNoteIndex+10)
+
+					console.log results.toJS()
+
+					progNoteIndex += 10
+
 					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
 						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
 					, (err, results) =>
 						if err
-							cb err
+							if err instanceof Persist.IOError
+								console.error err
+								@setState {loadErrorType: 'io-error'}
+								return
+							CrashHandler.handle err
 							return
+						progNoteHistories = @state.progNoteHistories.concat(results)
+						console.log "loaded a slice"
 
-						progNoteHistories = Imm.List(results)
-						console.log "done data load"
-						cb()
-			], (err) =>
-				if err
-					if err instanceof Persist.IOError
-						console.error err
-						@setState {loadErrorType: 'io-error', status: 'ready'}
-						return
-					CrashHandler.handle err
-					return
+						if progNoteIndex < progNoteTotal
+							console.log "mo to go"
+							@setState {
+								progNoteIndex
+								progNoteHistories
+							}
+							requestIdleCallback @_secondPass
 
-				console.log "done second pass"
-				@setState {
-					allDataLoaded: true
-					progNoteHistories
-				}
+						else
+							console.log "done second pass!"
+							@setState {
+								allDataLoaded: true
+								progNoteIndex
+								progNoteHistories
+							}
 
 		_renewAllData: ->
 			console.log "Renewing all data......"
@@ -214,6 +239,7 @@ load = (win, {clientFileId}) ->
 			planTemplateHeaders = null
 			planTargetsById = null
 			planTargetHeaders = null
+			progNoteTotal = null
 			progNoteHeaders = null
 			progNoteHistories = null
 			progEventHeaders = null
@@ -278,6 +304,8 @@ load = (win, {clientFileId}) ->
 
 								# fast first pass 
 								if @state.status is "init"
+									# need the count for fast second pass
+									progNoteTotal = results.size
 									progNoteHeaders = results
 									.sortBy (header) ->
 										createdAt = header.get('backdate') or header.get('timestamp')
@@ -616,6 +644,7 @@ load = (win, {clientFileId}) ->
 						allDataLoaded
 
 						clientFile
+						progNoteTotal
 						progNoteHistories
 						progressEvents
 						attachmentHeaders
@@ -1015,9 +1044,9 @@ load = (win, {clientFileId}) ->
 			# second pass at data load
 			if @props.status is 'ready'
 				unless @props.allDataLoaded
-					# give the UI a chance to paint before we kick off
+					console.log "shoulllld be callinback"
 					setTimeout(=>
-						@props.secondPass()
+						requestIdleCallback @props.secondPass, timeout: 2000
 					, 2000)
 
 		render: ->
