@@ -161,7 +161,47 @@ load = (win, {clientFileId}) ->
 				updatePlan: @_updatePlan
 
 				renewAllData: @_renewAllData
+				secondPass: @_secondPass
 			})
+
+		_secondPass: ->
+			progNoteHeaders = null
+			progNoteHistories = null
+			
+			Async.series [
+				(cb) =>
+					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+						progNoteHeaders = results
+						cb()
+
+				(cb) =>
+					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
+						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						progNoteHistories = Imm.List(results)
+						console.log "done data load"
+						cb()
+			], (err) =>
+				if err
+					if err instanceof Persist.IOError
+						console.error err
+						@setState {loadErrorType: 'io-error', status: 'ready'}
+						return
+					CrashHandler.handle err
+					return
+
+				console.log "done second pass"
+				@setState {
+					allDataLoaded: true
+					progNoteHistories
+				}
 
 		_renewAllData: ->
 			console.log "Renewing all data......"
@@ -971,8 +1011,14 @@ load = (win, {clientFileId}) ->
 
 			# It's now OK to close the window
 			@hasMounted = true
-			unless @props.allDataLoaded
-				@props.renewAllData()
+			
+			# second pass at data load
+			if @props.status is 'ready'
+				unless @props.allDataLoaded
+					# give the UI a chance to paint before we kick off
+					setTimeout(=>
+						@props.secondPass()
+					, 2000)
 
 		render: ->
 			if @props.loadErrorType
