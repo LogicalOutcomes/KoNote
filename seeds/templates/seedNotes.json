@@ -5,10 +5,10 @@
 	"accounts": 1,
 	"programs": 1,
 	"eventTypes": 3,
-	"metrics": 10,
+	"metrics": 12,
 	"planTemplates": 1,
-	"planTargets": 6,
-	"progNotes": 300,
+	"planTargets": 8,
+	"progNotes": 500,
 	"progEvents": 1
 
 }
