@@ -3,8 +3,10 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Slider input component with range capabilities
+
 _ = require 'underscore'
 Term = require './term'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -12,6 +14,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	# TODO: Switch this out for a proper binding component
 	Slider = React.createFactory React.createClass
 		displayName: 'Slider'
 		mixins: [React.addons.PureRenderMixin]
@@ -25,6 +28,10 @@ load = (win) ->
 			if oldProps.timeSpan isnt @props.timeSpan
 				newValue = @_calculateIndexValues(@props.timeSpan)
 
+				# Low value can't be bigger than the high value
+				if newValue[0] > newValue[1]
+					return console.warn "Tried to make slider's minDate > maxDate, update cancelled"
+
 				# Ensure it's not same value as on the slider before updating
 				# Comparing an array requires underscore
 				if not _(newValue).isEqual @slider.slider('getValue')
@@ -34,7 +41,6 @@ load = (win) ->
 			@_initSlider()
 
 		_calculateIndexValues: (timeSpan) ->
-
 			start = timeSpan.get('start')
 			end = timeSpan.get('end')
 
@@ -47,7 +53,6 @@ load = (win) ->
 			indexValues = [startIndex, endIndex]
 
 			return indexValues
-
 
 		_initSlider: ->
 			# Destroy it if already exists

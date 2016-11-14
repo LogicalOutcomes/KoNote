@@ -7,6 +7,8 @@
 Moment = require 'moment'
 _ = require 'underscore'
 
+Config = require '../config'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -15,10 +17,8 @@ load = (win) ->
 
 	{FaIcon} = require('../utils').load(win)
 
-	dateDisplayFormat = 'MMM Do - YYYY'
-	defaultTimeSpan = {start: Moment(), end: Moment()}
 
-
+	# TODO: Switch this out for a proper binding component
 	TimeSpanDate = React.createFactory React.createClass
 		displayName: 'TimeSpanDate'
 		mixins: [React.addons.PureRenderMixin]
@@ -34,7 +34,7 @@ load = (win) ->
 
 			# Init datetimepicker
 			$(@refs.hiddenDateTimePicker).datetimepicker({
-				format: dateDisplayFormat
+				format: Config.dateFormat
 				useCurrent: false
 				defaultDate: @props.date
 				minDate
@@ -49,35 +49,46 @@ load = (win) ->
 			@dateTimePicker = $(@refs.hiddenDateTimePicker).data('DateTimePicker')
 
 		componentDidUpdate: (oldProps) ->
-			# TODO: Refactor, test Perf
-			# Compare timespans in {start, end} to oldProps
-			if not oldProps.date.get('start').isSame(@props.timeSpan.get('start')) and not @dateTimePicker.date().isSame(@props.timeSpan.get('start'))
+			# TODO: Handle start/end logic in analysis, use generic component
+
+			startPropHasChanged = not oldProps.date.get('start').isSame(@props.timeSpan.get('start'))
+			startDateIsNew = not @dateTimePicker.date().isSame(@props.timeSpan.get('start'))
+
+			if startPropHasChanged and startDateIsNew
 				startDate = @props.timeSpan.get('start')
 
 				if @props.type is 'start'
-					# Update datetimepicker
-					@dateTimePicker.date(startDate)
+					# Update 'start' datetimepicker
+					@dateTimePicker.date startDate
 				else
-					# 'end' TimeSpanDate changed
-					maxDate = @props.xTicks.last()
-					@dateTimePicker.minDate(startDate)
-					@dateTimePicker.maxDate(maxDate)
+					# Catch bad updates
+					if startDate.isAfter @dateTimePicker.maxDate()
+						return console.warn "Tried to make minDate > maxDate, update cancelled"
 
-			if not oldProps.timeSpan.get('end').isSame(@props.timeSpan.get('end')) and not @dateTimePicker.date().isSame(@props.timeSpan.get('end'))
+					# For 'end', just adjust the minDate
+					@dateTimePicker.minDate startDate
+
+
+			endPropHasChanged = not oldProps.timeSpan.get('end').isSame @props.timeSpan.get('end')
+			endDateIsNew = not @dateTimePicker.date().isSame @props.timeSpan.get('end')
+
+			if endPropHasChanged and endDateIsNew
 				endDate = @props.timeSpan.get('end')
 
 				if @props.type is 'end'
-					# Update datetimepicker
-					@dateTimePicker.date(endDate)
+					# Update 'end' datetimepicker
+					@dateTimePicker.date endDate
 				else
-					# 'start' TimeSpanDate changed
-					minDate = @props.xTicks.first()
-					@dateTimePicker.minDate(minDate)
-					@dateTimePicker.maxDate(endDate)
+					# Catch bad updates
+					if endDate.isBefore @dateTimePicker.minDate()
+						return console.warn "Tried to make maxDate < minDate, update cancelled"
+
+					# For 'start', just adjust the maxDate
+					@dateTimePicker.maxDate endDate
 
 		_onChange: (event) ->
 			# Needs to be created in millisecond format to stay consistent
-			newDate = Moment +Moment(event.target.value, dateDisplayFormat)
+			newDate = Moment +Moment(event.target.value, Config.dateFormat)
 			@props.updateTimeSpanDate(newDate, @props.type)
 
 		_toggleDateTimePicker: -> @dateTimePicker.toggle()
@@ -85,7 +96,7 @@ load = (win) ->
 		render: ->
 			return null unless @props.date
 
-			formattedDate = @props.date.format(dateDisplayFormat)
+			formattedDate = @props.date.format(Config.dateFormat)
 
 			return R.div({className: 'timeSpanDate'},
 				R.span({
