@@ -61,7 +61,6 @@ load = (win, {clientFileId}) ->
 		getInitialState: ->
 			return {
 				status: 'init' # Either init or ready
-				allDataLoaded: false
 
 				clientFile: null
 				clientFileLock: null
@@ -70,6 +69,7 @@ load = (win, {clientFileId}) ->
 
 				progNoteTotal: null
 				progNoteIndex: 10
+				allProgNoteHeaders: null
 				progNoteHistories: null
 				progressEvents: null
 				planTargetsById: Imm.Map()
@@ -136,7 +136,6 @@ load = (win, {clientFileId}) ->
 				ref: 'ui'
 
 				status: @state.status
-				allDataLoaded: @state.allDataLoaded
 				readOnlyData: @state.readOnlyData
 				loadErrorType: @state.loadErrorType
 
@@ -171,19 +170,19 @@ load = (win, {clientFileId}) ->
 			progNoteTotal = @state.progNoteTotal
 			progNoteIndex = @state.progNoteIndex
 			progNoteHistories = null
-			progNoteHeaders = null
 
-			console.log "prognotetotal", progNoteTotal
-			console.log "prognoteindex", progNoteIndex
-			console.log deadline.timeRemaining()
-
-			if deadline.timeRemaining() > 0 and progNoteIndex < progNoteTotal
-
-				console.log "in da loop"
-			
+			if (deadline.timeRemaining() > 0 or deadline.didTimout) and (progNoteIndex < progNoteTotal)
 				# lets see what can we do in 100ms
+				if deadline.didTimeout
+					count = 100
+				else
+					count = 10
+				progNoteHeaders = @state.allProgNoteHeaders.slice(progNoteIndex, progNoteIndex + count)
+				progNoteIndex += count
 
-				ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
+				Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
+					ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
+				, (err, results) =>
 					if err
 						if err instanceof Persist.IOError
 							console.error err
@@ -191,42 +190,20 @@ load = (win, {clientFileId}) ->
 							return
 						CrashHandler.handle err
 						return
-					progNoteHeaders = results
-					# todo confirm we're not off by 1
-					.slice(progNoteIndex, progNoteIndex+10)
+					progNoteHistories = @state.progNoteHistories.concat(results)
+					if progNoteIndex < progNoteTotal
+						@setState {
+							progNoteIndex
+							progNoteHistories
+						}
+						requestIdleCallback @_secondPass
 
-					console.log results.toJS()
-
-					progNoteIndex += 10
-
-					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
-						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
-					, (err, results) =>
-						if err
-							if err instanceof Persist.IOError
-								console.error err
-								@setState {loadErrorType: 'io-error'}
-								return
-							CrashHandler.handle err
-							return
-						progNoteHistories = @state.progNoteHistories.concat(results)
-						console.log "loaded a slice"
-
-						if progNoteIndex < progNoteTotal
-							console.log "mo to go"
-							@setState {
-								progNoteIndex
-								progNoteHistories
-							}
-							requestIdleCallback @_secondPass
-
-						else
-							console.log "done second pass!"
-							@setState {
-								allDataLoaded: true
-								progNoteIndex
-								progNoteHistories
-							}
+					else
+						console.log "second pass finished"
+						@setState {
+							progNoteIndex
+							progNoteHistories
+						}
 
 		_renewAllData: ->
 			console.log "Renewing all data......"
@@ -234,13 +211,13 @@ load = (win, {clientFileId}) ->
 			# Sync check
 			fileIsUnsync = null
 			# File data
-			allDataLoaded = null
 			clientFile = null
 			planTemplateHeaders = null
 			planTargetsById = null
 			planTargetHeaders = null
 			progNoteTotal = null
 			progNoteHeaders = null
+			allProgNoteHeaders = null
 			progNoteHistories = null
 			progEventHeaders = null
 			progressEvents = null
@@ -306,6 +283,7 @@ load = (win, {clientFileId}) ->
 								if @state.status is "init"
 									# need the count for fast second pass
 									progNoteTotal = results.size
+									allProgNoteHeaders = results
 									progNoteHeaders = results
 									.sortBy (header) ->
 										createdAt = header.get('backdate') or header.get('timestamp')
@@ -313,7 +291,6 @@ load = (win, {clientFileId}) ->
 									.slice(-10)
 								else
 									progNoteHeaders = results
-									allDataLoaded = true
 								cb()
 
 						(cb) =>
@@ -641,10 +618,10 @@ load = (win, {clientFileId}) ->
 				else
 					@setState {
 						status: 'ready'
-						allDataLoaded
 
 						clientFile
 						progNoteTotal
+						allProgNoteHeaders
 						progNoteHistories
 						progressEvents
 						attachmentHeaders
@@ -1043,11 +1020,7 @@ load = (win, {clientFileId}) ->
 			
 			# second pass at data load
 			if @props.status is 'ready'
-				unless @props.allDataLoaded
-					console.log "shoulllld be callinback"
-					setTimeout(=>
-						requestIdleCallback @props.secondPass, timeout: 2000
-					, 2000)
+				requestIdleCallback @props.secondPass, timeout: 3000
 
 		render: ->
 			if @props.loadErrorType
