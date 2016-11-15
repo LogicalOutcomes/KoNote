@@ -77,134 +77,143 @@ load = (win) ->
 				onClose: @props.onClose
 			},
 				R.div({className: 'createClientFileDialog'},
-					R.div({className: 'form-group'},
-						R.label({}, "First Name"),
-						R.input({
-							ref: 'firstNameField'
-							className: 'form-control'
-							onChange: @_updateFirstName
-							value: @state.firstName
-							onKeyDown: @_onEnterKeyDown
-							maxLength: 35
-						})
-					)
-					R.div({className: 'form-group'},
-						R.label({}, "Middle Name"),
-						R.input({
-							className: 'form-control'
-							onChange: @_updateMiddleName
-							value: @state.middleName
-							placeholder: "(optional)"
-							maxLength: 35
-						})
-					)
-					R.div({className: 'form-group'},
-						R.label({}, "Last Name"),
-						R.input({
-							className: 'form-control'
-							onChange: @_updateLastName
-							value: @state.lastName
-							onKeyDown: @_onEnterKeyDown
-							maxLength: 35
-						})
-					)
-					R.div({},
-						R.label({}, "Birthdate")
-						R.button({
-							className: [
-								'btn btn-link btnReset'
-								showWhen @state.birthDay? or @state.birthMonth? or @state.birthYear?
-							].join ' '
-							onClick: @_resetBirthDate
-						}, "clear")
-						BirthDateSelector({
-							birthDay: @state.birthDay
-							birthMonth: @state.birthMonth
-							birthYear: @state.birthYear
-							onSelectMonth: @_updateBirthMonth
-							onSelectDay: @_updateBirthDay
-							onSelectYear: @_updateBirthYear
-						})
-					)
+					R.div({className: 'panelContainer'},
+						R.div({className: 'panel-left'},
+							R.div({className: 'form-group'},
+								R.label({}, "First Name"),
+								R.input({
+									ref: 'firstNameField'
+									className: 'form-control'
+									onChange: @_updateFirstName
+									value: @state.firstName
+									onKeyDown: @_onEnterKeyDown
+									maxLength: 35
+								})
+							)
+							R.div({className: 'form-group'},
+								R.label({}, "Middle Name"),
+								R.input({
+									className: 'form-control'
+									onChange: @_updateMiddleName
+									value: @state.middleName
+									placeholder: "(optional)"
+									maxLength: 35
+								})
+							)
+							R.div({className: 'form-group'},
+								R.label({}, "Last Name"),
+								R.input({
+									className: 'form-control'
+									onChange: @_updateLastName
+									value: @state.lastName
+									onKeyDown: @_onEnterKeyDown
+									maxLength: 35
+								})
+							)
 
-					(unless @props.programs.isEmpty()
-						R.div({className: 'form-group'},
-							R.label({}, "Assign to #{Term 'Program'}(s)")
-							R.div({id: 'programsContainer'},
-								(@props.programs
-								.filter (program) =>
-									program.get('status') is 'default'
-								.map (program) =>
-									isSelected = @state.programIds.contains(program.get('id'))
-
-									R.button({
-										className: 'btn btn-default programOptionButton'
-										onClick:
-											(if isSelected then @_removeFromPrograms else @_pushToPrograms)
-											.bind null, program.get('id')
-										key: program.get('id')
-									},
-										ColorKeyBubble({
-											colorKeyHex: program.get('colorKeyHex')
-											popover: {
-												title: program.get('name')
-												content: program.get('description')
-											}
-											icon: 'check' if isSelected
-										})
-										program.get('name')
-									)
+							(if Config.clientFileRecordId.isEnabled
+								R.div({className: 'form-group'},
+									R.label({}, Config.clientFileRecordId.label),
+									R.input({
+										className: 'form-control'
+										onChange: @_updateRecordId
+										value: @state.recordId
+										placeholder: "(optional)" unless recordIdIsRequired
+										onKeyDown: @_onEnterKeyDown
+										maxLength: 23
+									})
 								)
 							)
-						)
-					)
+							(unless @state.planTemplateHeaders.isEmpty()
+								R.div({className: 'form-group'},
+									R.label({}, "Select Plan Template"),
+									R.div({className: "template-container"}
 
-					unless @state.planTemplateHeaders.isEmpty()
-						R.div({className: 'form-group'},
-							R.label({}, "Select Plan Template"),
-							R.div({className: "template-container"}
-
-								B.DropdownButton({
-									title: if selectedPlanTemplateHeaders? then selectedPlanTemplateHeaders.get('name') else "No Template"
-								},
-									if selectedPlanTemplateHeaders?
-										[
-											B.MenuItem({
-												onClick: @_updatePlanTemplate.bind null, ''
-											},
-												"None "
-												FaIcon('ban')
-											)
-											B.MenuItem({divider: true})
-										]
-									(@state.planTemplateHeaders.map (planTemplateHeader) =>
-										B.MenuItem({
-											key: planTemplateHeader.get('id')
-											onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+										B.DropdownButton({
+											title: if selectedPlanTemplateHeaders? then selectedPlanTemplateHeaders.get('name') else "No Template"
 										},
-											R.div({
-												onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
-											},
-												planTemplateHeader.get('name')
+											if selectedPlanTemplateHeaders?
+												[
+													B.MenuItem({
+														onClick: @_updatePlanTemplate.bind null, ''
+													},
+														"None "
+														FaIcon('ban')
+													)
+													B.MenuItem({divider: true})
+												]
+											(@state.planTemplateHeaders.map (planTemplateHeader) =>
+												B.MenuItem({
+													key: planTemplateHeader.get('id')
+													onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+												},
+													R.div({
+														onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+													},
+														planTemplateHeader.get('name')
 
+													)
+												)
 											)
 										)
 									)
 								)
 							)
-						)
 
-					(if Config.clientFileRecordId.isEnabled
-						R.div({className: 'form-group'},
-							R.label({}, Config.clientFileRecordId.label),
-							R.input({
-								className: 'form-control'
-								onChange: @_updateRecordId
-								value: @state.recordId
-								placeholder: "(optional)" unless recordIdIsRequired
-								onKeyDown: @_onEnterKeyDown
-								maxLength: 23
-							})
+
+						)
+						R.div({className: 'panel-right'},
+
+							R.div({},
+								R.label({}, "Birthdate")
+								R.button({
+									className: [
+										'btn btn-link btnReset'
+										showWhen @state.birthDay? or @state.birthMonth? or @state.birthYear?
+									].join ' '
+									onClick: @_resetBirthDate
+								}, "clear")
+								BirthDateSelector({
+									birthDay: @state.birthDay
+									birthMonth: @state.birthMonth
+									birthYear: @state.birthYear
+									onSelectMonth: @_updateBirthMonth
+									onSelectDay: @_updateBirthDay
+									onSelectYear: @_updateBirthYear
+								})
+							)
+
+							(unless @props.programs.isEmpty()
+								R.div({className: 'form-group'},
+									R.label({}, "Assign to #{Term 'Program'}(s)")
+									R.div({id: 'programsContainer'},
+										(@props.programs
+										.filter (program) =>
+											program.get('status') is 'default'
+										.map (program) =>
+											isSelected = @state.programIds.contains(program.get('id'))
+
+											R.button({
+												className: 'btn btn-default programOptionButton'
+												onClick:
+													(if isSelected then @_removeFromPrograms else @_pushToPrograms)
+													.bind null, program.get('id')
+												key: program.get('id')
+											},
+												ColorKeyBubble({
+													colorKeyHex: program.get('colorKeyHex')
+													popover: {
+														title: program.get('name')
+														content: program.get('description')
+													}
+													icon: 'check' if isSelected
+												})
+												program.get('name')
+											)
+										)
+									)
+								)
+							)
 						)
 					)
 
