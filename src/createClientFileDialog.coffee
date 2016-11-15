@@ -124,8 +124,29 @@ load = (win) ->
 									})
 								)
 							)
+							R.div({},
+								R.label({}, "Birthdate")
+								R.button({
+									className: [
+										'btn btn-link btnReset'
+										showWhen @state.birthDay? or @state.birthMonth? or @state.birthYear?
+									].join ' '
+									onClick: @_resetBirthDate
+								}, "clear")
+								BirthDateSelector({
+									birthDay: @state.birthDay
+									birthMonth: @state.birthMonth
+									birthYear: @state.birthYear
+									onSelectMonth: @_updateBirthMonth
+									onSelectDay: @_updateBirthDay
+									onSelectYear: @_updateBirthYear
+								})
+							)
+
+						)
+						R.div({className: 'panel-right'},
 							(unless @state.planTemplateHeaders.isEmpty()
-								R.div({className: 'form-group'},
+								R.div({className: 'template-form-group'},
 									R.label({}, "Select Plan Template"),
 									R.div({className: "template-container"}
 
@@ -159,30 +180,6 @@ load = (win) ->
 									)
 								)
 							)
-
-
-						)
-						R.div({className: 'panel-right'},
-
-							R.div({},
-								R.label({}, "Birthdate")
-								R.button({
-									className: [
-										'btn btn-link btnReset'
-										showWhen @state.birthDay? or @state.birthMonth? or @state.birthYear?
-									].join ' '
-									onClick: @_resetBirthDate
-								}, "clear")
-								BirthDateSelector({
-									birthDay: @state.birthDay
-									birthMonth: @state.birthMonth
-									birthYear: @state.birthYear
-									onSelectMonth: @_updateBirthMonth
-									onSelectDay: @_updateBirthDay
-									onSelectYear: @_updateBirthYear
-								})
-							)
-
 							(unless @props.programs.isEmpty()
 								R.div({className: 'form-group'},
 									R.label({}, "Assign to #{Term 'Program'}(s)")
@@ -214,6 +211,7 @@ load = (win) ->
 									)
 								)
 							)
+
 						)
 					)
 
