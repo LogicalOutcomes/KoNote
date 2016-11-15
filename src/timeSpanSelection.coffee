@@ -70,8 +70,23 @@ load = (win) ->
 
 			{startTimestamp, endTimestamp} = @props
 
-			startDate = makeMoment(startTimestamp).toDate()
+			startMoment = makeMoment(startTimestamp)
+			startDate = startMoment.toDate()
 			endDate = if endTimestamp then makeMoment(endTimestamp).toDate() else false
+
+			# Temporary fix to make sure start's maxDate isn't applied for a full-day selection
+			endTimestampExists = !!endTimestamp
+			endMoment = if endTimestampExists then makeMoment(endTimestamp) else null
+
+			isFromStartOfDay = startMoment.isSame startMoment.clone().startOf('day')
+			isToEndOfDay = endTimestampExists and endMoment.clone().isSame endMoment.endOf('day')
+			isFromStartToEndOfDay = isFromStartOfDay and isToEndOfDay
+
+			isSameDay = endTimestampExists and startMoment.clone().isSame endMoment, 'day'
+			isOneFullDay = isSameDay and isFromStartToEndOfDay
+
+			startMaxDate = if isOneFullDay then false else endDate
+
 
 			# Positioning can be overridden to single one
 			widgetPositioning = @props.widgetPositioning
@@ -91,7 +106,7 @@ load = (win) ->
 			# Init all the datetimepickers, link with update functions
 
 			$startDate.datetimepicker({
-				maxDate: endDate
+				maxDate: startMaxDate
 				useCurrent: false
 				format: Config.dateFormat
 				defaultDate: startDate
@@ -325,6 +340,8 @@ load = (win) ->
 					# Reset endTimestamp to end of same day
 					endOfStartDay = startMoment.clone().endOf 'day'
 					@_updateEndDate endMoment, endOfStartDay
+					# maxDate constraint is no longer required
+					@startDate.maxDate false
 
 
 			@setState {isDateSpan}, =>
