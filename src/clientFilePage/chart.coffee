@@ -16,6 +16,8 @@ load = (win) ->
 
 	{TimestampFormat} = require('../persist/utils')
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
+	hiddenId = "--hidden--" # Fake/hidden datapoint's ID
+
 
 	Chart = React.createFactory React.createClass
 		displayName: 'Chart'
@@ -100,7 +102,14 @@ load = (win) ->
 			# Create a Map from metric ID to data series,
 			# where each data series is a sequence of [x, y] pairs
 
-			dataSeries = @props.metricValues
+			# Inject hidden datapoint, with value well outside y-span
+			metricValues = @props.metricValues.push Imm.Map {
+				id: hiddenId
+				timestamp: Moment().format(TimestampFormat)
+				value: -99999
+			}
+
+			dataSeries = metricValues
 			.groupBy (metricValue) -> # group by metric
 				return metricValue.get('id')
 			.map (metricValues) -> # for each data series
@@ -109,7 +118,13 @@ load = (win) ->
 					return [metricValue.get('timestamp'), metricValue.get('value')]
 
 			seriesNamesById = dataSeries.keySeq().map (metricId) =>
-				return [metricId, @props.metricsById.get(metricId).get('name')]
+				# Ignore hidden datapoint
+				metricName = if metricId is hiddenId
+					metricId
+				else
+					@props.metricsById.get(metricId).get('name')
+
+				return [metricId, metricName]
 			.fromEntrySeq().toMap()
 
 			# Create set to show which x maps to which y
@@ -141,6 +156,8 @@ load = (win) ->
 			scaledDataSeries = dataSeries.map (series) ->
 				# Scaling only applies to y series
 				return series if series.first()[0] isnt 'y'
+				# Ignore hidden datapoint
+				return series if series.first() is "y-#{hiddenId}"
 
 				# Filter out id's to figure out min & max
 				values = series.flatten()
@@ -203,17 +220,19 @@ load = (win) ->
 					y: {
 						show: false
 						max: 1
+						min: 0
 					}
 				}
 				data: {
-					#type: 'scatter'
-					#type: 'spline'
 					type: @props.chartType
 					hide: true
 					xFormat: D3TimestampFormat
 					columns: scaledDataSeries.toJS()
 					xs: xsMap.toJS()
 					names: dataSeriesNames.toJS()
+					classes: {
+						hiddenId: 'hiddenId'
+					}
 				}
 				tooltip: {
 					format: {
@@ -229,10 +248,7 @@ load = (win) ->
 					}
 				}
 				legend: {
-					item: {
-						onclick: (id) ->
-							return false
-					}
+					hide: true
 				}
 				padding: {
 					left: 25
@@ -252,6 +268,7 @@ load = (win) ->
 		_refreshSelectedMetrics: ->
 			console.log "Refreshing selected metrics..."
 			@_chart.hide()
+			@_chart.show("y-#{hiddenId}")
 
 			@props.selectedMetricIds.forEach (metricId) =>
 				@_chart.show("y-" + metricId)
