@@ -76,7 +76,12 @@ load = (win) ->
 				title: "Create New #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
-				R.div({className: 'createClientFileDialog'},
+				R.div({
+					className: [
+						'createClientFileDialog'
+						'singlePanel' if @state.planTemplateHeaders.isEmpty() or @props.programs.isEmpty()
+					].join ' '
+				},
 					R.div({className: 'panelContainer'},
 						R.div({className: 'panel-left'},
 							R.div({className: 'form-group'},
@@ -142,37 +147,69 @@ load = (win) ->
 									onSelectYear: @_updateBirthYear
 								})
 							)
+							(if @state.planTemplateHeaders.isEmpty()
+								(unless @props.programs.isEmpty()
+									R.div({className: 'form-group'},
+										R.label({}, "Assign to #{Term 'Program'}(s)")
+										R.div({id: 'programsContainer'},
+											(@props.programs
+											.filter (program) =>
+												program.get('status') is 'default'
+											.map (program) =>
+												isSelected = @state.programIds.contains(program.get('id'))
 
-						)
-						R.div({className: 'panel-right'},
-							(unless @state.planTemplateHeaders.isEmpty()
-								R.div({className: 'template-form-group'},
-									R.label({}, "Select Plan Template"),
-									R.div({className: "template-container"}
-
-										B.DropdownButton({
-											title: if selectedPlanTemplateHeaders? then selectedPlanTemplateHeaders.get('name') else "No Template"
-										},
-											if selectedPlanTemplateHeaders?
-												[
-													B.MenuItem({
-														onClick: @_updatePlanTemplate.bind null, ''
-													},
-														"None "
-														FaIcon('ban')
-													)
-													B.MenuItem({divider: true})
-												]
-											(@state.planTemplateHeaders.map (planTemplateHeader) =>
-												B.MenuItem({
-													key: planTemplateHeader.get('id')
-													onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+												R.button({
+													className: 'btn btn-default programOptionButton'
+													onClick:
+														(if isSelected then @_removeFromPrograms else @_pushToPrograms)
+														.bind null, program.get('id')
+													key: program.get('id')
 												},
-													R.div({
-														onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
-													},
-														planTemplateHeader.get('name')
+													ColorKeyBubble({
+														colorKeyHex: program.get('colorKeyHex')
+														popover: {
+															title: program.get('name')
+															content: program.get('description')
+														}
+														icon: 'check' if isSelected
+													})
+													program.get('name')
+												)
+											)
+										)
+									)
+								)
+							)
+							(if @props.programs.isEmpty()
+								(unless @state.planTemplateHeaders.isEmpty()
+									R.div({className: 'template-form-group'},
+										R.label({}, "Select Plan Template"),
+										R.div({className: "template-container"}
 
+											B.DropdownButton({
+												title: if selectedPlanTemplateHeaders? then selectedPlanTemplateHeaders.get('name') else "No Template"
+											},
+												if selectedPlanTemplateHeaders?
+													[
+														B.MenuItem({
+															onClick: @_updatePlanTemplate.bind null, ''
+														},
+															"None "
+															FaIcon('ban')
+														)
+														B.MenuItem({divider: true})
+													]
+												(@state.planTemplateHeaders.map (planTemplateHeader) =>
+													B.MenuItem({
+														key: planTemplateHeader.get('id')
+														onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+													},
+														R.div({
+															onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+														},
+															planTemplateHeader.get('name')
+
+														)
 													)
 												)
 											)
@@ -180,39 +217,78 @@ load = (win) ->
 									)
 								)
 							)
-							(unless @props.programs.isEmpty()
-								R.div({className: 'form-group'},
-									R.label({}, "Assign to #{Term 'Program'}(s)")
-									R.div({id: 'programsContainer'},
-										(@props.programs
-										.filter (program) =>
-											program.get('status') is 'default'
-										.map (program) =>
-											isSelected = @state.programIds.contains(program.get('id'))
 
-											R.button({
-												className: 'btn btn-default programOptionButton'
-												onClick:
-													(if isSelected then @_removeFromPrograms else @_pushToPrograms)
-													.bind null, program.get('id')
-												key: program.get('id')
+						)
+						unless @state.planTemplateHeaders.isEmpty() or @props.programs.isEmpty()
+							R.div({className: 'panel-right'},
+								(unless @state.planTemplateHeaders.isEmpty()
+									R.div({className: 'template-form-group'},
+										R.label({}, "Select Plan Template"),
+										R.div({className: "template-container"}
+
+											B.DropdownButton({
+												title: if selectedPlanTemplateHeaders? then selectedPlanTemplateHeaders.get('name') else "No Template"
 											},
-												ColorKeyBubble({
-													colorKeyHex: program.get('colorKeyHex')
-													popover: {
-														title: program.get('name')
-														content: program.get('description')
-													}
-													icon: 'check' if isSelected
-												})
-												program.get('name')
+												if selectedPlanTemplateHeaders?
+													[
+														B.MenuItem({
+															onClick: @_updatePlanTemplate.bind null, ''
+														},
+															"None "
+															FaIcon('ban')
+														)
+														B.MenuItem({divider: true})
+													]
+												(@state.planTemplateHeaders.map (planTemplateHeader) =>
+													B.MenuItem({
+														key: planTemplateHeader.get('id')
+														onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+													},
+														R.div({
+															onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+														},
+															planTemplateHeader.get('name')
+
+														)
+													)
+												)
 											)
 										)
 									)
 								)
-							)
+								(unless @props.programs.isEmpty()
+									R.div({className: 'form-group'},
+										R.label({}, "Assign to #{Term 'Program'}(s)")
+										R.div({id: 'programsContainer'},
+											(@props.programs
+											.filter (program) =>
+												program.get('status') is 'default'
+											.map (program) =>
+												isSelected = @state.programIds.contains(program.get('id'))
 
-						)
+												R.button({
+													className: 'btn btn-default programOptionButton'
+													onClick:
+														(if isSelected then @_removeFromPrograms else @_pushToPrograms)
+														.bind null, program.get('id')
+													key: program.get('id')
+												},
+													ColorKeyBubble({
+														colorKeyHex: program.get('colorKeyHex')
+														popover: {
+															title: program.get('name')
+															content: program.get('description')
+														}
+														icon: 'check' if isSelected
+													})
+													program.get('name')
+												)
+											)
+										)
+									)
+								)
+
+							)
 					)
 
 					R.div({className: 'btn-toolbar'},
