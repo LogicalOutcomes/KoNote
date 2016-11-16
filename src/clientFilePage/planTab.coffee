@@ -229,16 +229,6 @@ load = (win) ->
 							]
 							iconOnly: true
 							disabled: hasChanges
-							# tooltip: {
-							# 	show: false
-							# 	placement: 'bottom'
-							# 	title: (
-							# 		if hasChanges
-							# 			"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
-							# 		else
-							# 			"Print plan"
-							# 	)
-							# }
 						})
 					)
 
