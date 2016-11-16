@@ -564,6 +564,7 @@ load = (win) ->
 				selectedEventTypeIds = @state.selectedEventTypeIds.delete eventTypeId
 				# Also remove persistent eventType highlighting if exists
 				starredEventTypeIds = @state.starredEventTypeIds.delete eventTypeId
+				@_unhighlightEventType eventTypeId
 			else
 				selectedEventTypeIds = @state.selectedEventTypeIds.add eventTypeId
 				starredEventTypeIds = @state.starredEventTypeIds
