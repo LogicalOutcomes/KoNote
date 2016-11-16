@@ -290,12 +290,17 @@ load = (win, {clientFileId}) ->
 								if @state.status is "init"
 									# need the count for fast second pass
 									progNoteTotal = results.size
+
 									allProgNoteHeaders = results
+									.sortBy (header) ->
+										createdAt = header.get('backdate') or header.get('timestamp')
+										return Moment createdAt, Persist.TimestampFormat
+
 									progNoteHeaders = results
 									.sortBy (header) ->
 										createdAt = header.get('backdate') or header.get('timestamp')
 										return Moment createdAt, Persist.TimestampFormat
-									.slice(-10)
+									.slice(0, 10)
 								else
 									progNoteHeaders = results
 								cb()
