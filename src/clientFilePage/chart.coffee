@@ -34,8 +34,8 @@ load = (win) ->
 			return R.div({className: 'chartInner'},
 				R.style({},
 					(Imm.List([0..@state.eventRows]).map (rowNumber) =>
-						translateY = rowNumber * 300
-						scaleY = +((0.4 / @state.eventRows).toFixed(2))
+						translateY = rowNumber * 350
+						scaleY = +((0.35 / @state.eventRows).toFixed(2))
 						if scaleY > 0.2 then scaleY = 0.2
 
 						".chart .c3-regions .c3-region.row#{rowNumber} > rect {transform: scaleY(#{scaleY}) translateY(#{translateY}px) !important}"
