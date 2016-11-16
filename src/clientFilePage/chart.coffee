@@ -16,7 +16,7 @@ load = (win) ->
 
 	{TimestampFormat} = require('../persist/utils')
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
-	hiddenId = "--hidden--" # Fake/hidden datapoint's ID
+	hiddenId = "-h-" # Fake/hidden datapoint's ID
 
 
 	Chart = React.createFactory React.createClass
@@ -257,8 +257,8 @@ load = (win) ->
 							return Moment(timestamp).format('MMMM D [at] HH:mm')
 					}
 				}
-				legend: {
-					hide: true
+				item: {
+					onclick: (id) -> return false
 				}
 				padding: {
 					left: 25
