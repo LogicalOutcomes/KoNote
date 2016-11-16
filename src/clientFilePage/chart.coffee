@@ -27,10 +27,20 @@ load = (win) ->
 			return {
 				progEventRegions: Imm.List()
 				metricColors: null
+				eventRows: 0
 			}
 
 		render: ->
 			return R.div({className: 'chartInner'},
+				R.style({},
+					(Imm.List([0..@state.eventRows]).map (rowNumber) =>
+						translateY = rowNumber * 300
+						scaleY = +((0.4 / @state.eventRows).toFixed(2))
+						if scaleY > 0.2 then scaleY = 0.2
+
+						".chart .c3-regions .c3-region.row#{rowNumber} > rect {transform: scaleY(#{scaleY}) translateY(#{translateY}px) !important}"
+					)
+				)
 				R.div({
 					id: 'eventInfo'
 					ref: 'eventInfo'
@@ -364,7 +374,13 @@ load = (win) ->
 
 
 			# Determine regions height
-			chartHeightY = 1 + (eventRows.size * 1/4)
+			chartHeightY = if eventRows.isEmpty() then 1 else 2
+
+			# Metrics can be bigger when only 1 progEvent row
+			if eventRows.size is 1
+				chartHeightY = 1.5
+
+			@setState {eventRows: eventRows.size}
 
 			@_chart.axis.max {
 				y: chartHeightY
