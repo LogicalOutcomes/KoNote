@@ -7,6 +7,9 @@
 Imm = require 'immutable'
 Moment = require 'moment'
 
+Config = require '../config'
+
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -254,7 +257,7 @@ load = (win) ->
 							return actualValue
 
 						title: (timestamp) ->
-							return Moment(timestamp).format('MMMM D [at] HH:mm')
+							return Moment(timestamp).format(Config.timestampFormat)
 					}
 				}
 				item: {
