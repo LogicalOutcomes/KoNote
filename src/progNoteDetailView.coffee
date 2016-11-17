@@ -246,12 +246,10 @@ load = (win) ->
 			), 150)
 
 		resetScroll: ->
-			console.log "Reset scroll!"
 			historyPane = $('.history')
 			historyPane.scrollTop(0)
 
 		render: ->
-			console.log "History render"
 			{entries, eventTypes} = @props
 
 			R.div({className: 'history'},
