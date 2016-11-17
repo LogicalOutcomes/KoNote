@@ -205,7 +205,7 @@ load = (win) ->
 														onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
 													},
 														R.div({
-															onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+															onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
 														},
 															planTemplateHeader.get('name')
 
@@ -219,7 +219,7 @@ load = (win) ->
 							)
 
 						)
-						unless @state.planTemplateHeaders.isEmpty() or @props.programs.isEmpty()
+						(unless @state.planTemplateHeaders.isEmpty() or @props.programs.isEmpty()
 							R.div({className: 'panel-right'},
 								(unless @state.planTemplateHeaders.isEmpty()
 									R.div({className: 'template-form-group'},
@@ -289,6 +289,7 @@ load = (win) ->
 								)
 
 							)
+						)
 					)
 
 					R.div({className: 'btn-toolbar'},
