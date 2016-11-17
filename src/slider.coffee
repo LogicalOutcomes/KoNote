@@ -51,7 +51,7 @@ load = (win) ->
 			@_initSlider()
 
 		componentWillUnmount: ->
-			@slider.slider('destroy')
+			if @slider then @slider.slider('destroy')
 
 		_calculateIndexValues: (timeSpan, xTicks) ->
 			start = timeSpan.get('start')
