@@ -60,6 +60,9 @@ load = (win) ->
 			leftPane = $('.progNotesList')
 			leftPane.on 'scroll', _.throttle((=>
 				if leftPane.scrollTop() + (leftPane.innerHeight() *2) >= leftPane[0].scrollHeight
+					# Disregard if nothing left to load
+					return if @state.historyCount >= @props.progNoteHistories.size
+
 					newCount = @state.historyCount + 10
 					@setState {historyCount: newCount}
 				return

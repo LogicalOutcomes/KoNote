@@ -39,6 +39,9 @@ load = (win) ->
 					if @refs.history? then @refs.history.resetScroll()
 
 		_addHistoryCount: (count) ->
+			# Disregard if nothing left to load
+			return if @state.historyCount >= @props.progNoteHistories.size
+
 			historyCount = @state.historyCount + count
 			@setState {historyCount}
 
