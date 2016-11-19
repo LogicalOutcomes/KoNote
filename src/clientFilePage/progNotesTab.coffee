@@ -14,6 +14,7 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -59,6 +60,9 @@ load = (win) ->
 			leftPane = $('.progNotesList')
 			leftPane.on 'scroll', _.throttle((=>
 				if leftPane.scrollTop() + (leftPane.innerHeight() *2) >= leftPane[0].scrollHeight
+					# Disregard if nothing left to load
+					return if @state.historyCount >= (@props.progNoteHistories.size + @props.globalEvents.size)
+
 					newCount = @state.historyCount + 10
 					@setState {historyCount: newCount}
 				return

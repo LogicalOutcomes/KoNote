@@ -24,7 +24,7 @@ load = (win) ->
 
 			{birthDay, birthMonth, birthYear, onSelectMonth, onSelectDay, onSelectYear} = @props
 
-			return R.div({},
+			return R.div({className: 'birthDateSelector'},
 				B.DropdownButton({
 					id: 'birthMonthDropdown'
 					title: if birthMonth? then birthMonth else "Month"

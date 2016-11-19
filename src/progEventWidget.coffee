@@ -112,9 +112,13 @@ load = (win) ->
 			hasTitle = !!progEvent.get('title')
 			hasDescription = !!progEvent.get('description')
 
-
+			# TODO: Separate to display & isEditing components, for more flexibility
 			return R.div({className: "progEventWidget fullWidget #{format}"},
-				R.div({className: 'eventTypeTitleContainer'},
+				R.div({
+					className: 'eventTypeTitleContainer'
+					style:
+						padding: 0 if not hasEventType and not hasTitle
+				},
 					R.span({
 						className: 'iconContainer'
 						style: {
@@ -141,16 +145,9 @@ load = (win) ->
 					)
 
 					R.div({className: 'title'},
-						(if isEditing and (hasTitle or not hasEventType)
-							R.input({
-								className: 'form-control'
-								value: progEvent.get('title')
-								onChange: updateProperty.bind null, 'title'
-								placeholder: "Title"
-							})
-						else if not isEditing
+						(if not isEditing
 							R.span({},
-								progEvent.get('title') or EventTypeName(eventType)
+								progEvent.get('title') or EventTypeName(eventType) or null
 
 								(if hasTitle and hasEventType
 									R.span({className: 'eventTypeName'},
@@ -165,7 +162,11 @@ load = (win) ->
 				)
 
 				(if hasDescription or isEditing
-					R.div({className: 'description'},
+					R.div({
+						className: 'description'
+						style:
+							marginTop: -10 if not hasEventType and not hasTitle
+					},
 						(if isEditing
 							ExpandingTextArea({
 								value: progEvent.get('description')
@@ -199,8 +200,16 @@ load = (win) ->
 
 	SmallWidget = ({progEvent, eventType, format}) ->
 		eventDate = renderTimeSpan progEvent.get('startTimestamp'), progEvent.get('endTimestamp')
-		title = progEvent.get('title')
 		tooltipText = eventDate
+
+		eventTypeName = if eventType then eventType.get(name) else null
+
+		title = progEvent.get('title') or eventTypeName or (
+			if progEvent.get('description').length > 20
+				progEvent.get('description').substring(0, 20) + "..."
+			else
+				progEvent.get('description')
+		)
 
 		return WithTooltip({
 			title: tooltipText
@@ -220,6 +229,8 @@ load = (win) ->
 
 
 	EventTypeName = (eventType) ->
+		return null unless eventType
+
 		R.span({
 			style:
 				borderBottom: "2px solid #{eventType.get('colorKeyHex')}"

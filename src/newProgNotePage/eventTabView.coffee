@@ -73,8 +73,8 @@ load = (win) ->
 					},
 						FaIcon('times')
 					)
-					R.div({className: 'form-group titleContainer'},
-						(if not @props.eventTypes.isEmpty()
+					(if not @props.eventTypes.isEmpty()
+						R.div({className: 'form-group titleContainer'},
 							R.div({},
 								R.label({}, Term 'Event Type')
 								R.div({},
@@ -82,23 +82,9 @@ load = (win) ->
 										selectedEventType
 										eventTypes: @props.eventTypes
 										onSelect: @_updateTypeId
-										canSelectNone: true
 										typeId
 									})
 								)
-							)
-						)
-						# eventType can be used instead of title (#871)
-						(if typeId is '' or @props.eventTypes.isEmpty()
-							R.div({},
-								R.label({}, "Title")
-								R.input({
-									id: 'titleInput'
-									className: 'form-control'
-									value: progEvent.get('title')
-									onChange: @_updateTitle
-									placeholder: "Title of #{Term 'event'}"
-								})
 							)
 						)
 					)
@@ -226,8 +212,8 @@ load = (win) ->
 			@setState {progEvent}
 
 		_formIsInvalid: ->
-			{title, startTimestamp, typeId} = @state.progEvent.toObject()
-			return (not typeId and not title) or not startTimestamp
+			description = @state.progEvent.get('description').trim()
+			return not description
 
 		_hasChanges: ->
 			return not Imm.is @state.progEvent, @props.data

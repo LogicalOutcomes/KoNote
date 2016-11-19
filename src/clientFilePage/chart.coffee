@@ -7,6 +7,9 @@
 Imm = require 'immutable'
 Moment = require 'moment'
 
+Config = require '../config'
+
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -16,6 +19,8 @@ load = (win) ->
 
 	{TimestampFormat} = require('../persist/utils')
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
+	hiddenId = "-h-" # Fake/hidden datapoint's ID
+
 
 	Chart = React.createFactory React.createClass
 		displayName: 'Chart'
@@ -25,10 +30,20 @@ load = (win) ->
 			return {
 				progEventRegions: Imm.List()
 				metricColors: null
+				eventRows: 0
 			}
 
 		render: ->
 			return R.div({className: 'chartInner'},
+				R.style({},
+					(Imm.List([0..@state.eventRows]).map (rowNumber) =>
+						translateY = rowNumber * 350
+						scaleY = +((0.35 / @state.eventRows).toFixed(2))
+						if scaleY > 0.2 then scaleY = 0.2
+
+						".chart .c3-regions .c3-region.row#{rowNumber} > rect {transform: scaleY(#{scaleY}) translateY(#{translateY}px) !important}"
+					)
+				)
 				R.div({
 					id: 'eventInfo'
 					ref: 'eventInfo'
@@ -100,7 +115,14 @@ load = (win) ->
 			# Create a Map from metric ID to data series,
 			# where each data series is a sequence of [x, y] pairs
 
-			dataSeries = @props.metricValues
+			# Inject hidden datapoint, with value well outside y-span
+			metricValues = @props.metricValues.push Imm.Map {
+				id: hiddenId
+				timestamp: Moment().format(TimestampFormat)
+				value: -99999
+			}
+
+			dataSeries = metricValues
 			.groupBy (metricValue) -> # group by metric
 				return metricValue.get('id')
 			.map (metricValues) -> # for each data series
@@ -109,7 +131,13 @@ load = (win) ->
 					return [metricValue.get('timestamp'), metricValue.get('value')]
 
 			seriesNamesById = dataSeries.keySeq().map (metricId) =>
-				return [metricId, @props.metricsById.get(metricId).get('name')]
+				# Ignore hidden datapoint
+				metricName = if metricId is hiddenId
+					metricId
+				else
+					@props.metricsById.get(metricId).get('name')
+
+				return [metricId, metricName]
 			.fromEntrySeq().toMap()
 
 			# Create set to show which x maps to which y
@@ -141,6 +169,8 @@ load = (win) ->
 			scaledDataSeries = dataSeries.map (series) ->
 				# Scaling only applies to y series
 				return series if series.first()[0] isnt 'y'
+				# Ignore hidden datapoint
+				return series if series.first() is "y-#{hiddenId}"
 
 				# Filter out id's to figure out min & max
 				values = series.flatten()
@@ -203,17 +233,19 @@ load = (win) ->
 					y: {
 						show: false
 						max: 1
+						min: 0
 					}
 				}
 				data: {
-					#type: 'scatter'
-					#type: 'spline'
 					type: @props.chartType
 					hide: true
 					xFormat: D3TimestampFormat
 					columns: scaledDataSeries.toJS()
 					xs: xsMap.toJS()
 					names: dataSeriesNames.toJS()
+					classes: {
+						hiddenId: 'hiddenId'
+					}
 				}
 				tooltip: {
 					format: {
@@ -225,14 +257,11 @@ load = (win) ->
 							return actualValue
 
 						title: (timestamp) ->
-							return Moment(timestamp).format('MMMM D [at] HH:mm')
+							return Moment(timestamp).format(Config.timestampFormat)
 					}
 				}
-				legend: {
-					item: {
-						onclick: (id) ->
-							return false
-					}
+				item: {
+					onclick: (id) -> return false
 				}
 				padding: {
 					left: 25
@@ -252,6 +281,7 @@ load = (win) ->
 		_refreshSelectedMetrics: ->
 			console.log "Refreshing selected metrics..."
 			@_chart.hide()
+			@_chart.show("y-#{hiddenId}")
 
 			@props.selectedMetricIds.forEach (metricId) =>
 				@_chart.show("y-" + metricId)
@@ -347,7 +377,13 @@ load = (win) ->
 
 
 			# Determine regions height
-			chartHeightY = 1 + (eventRows.size * 1/4)
+			chartHeightY = if eventRows.isEmpty() then 1 else 2
+
+			# Metrics can be bigger when only 1 progEvent row
+			if eventRows.size is 1
+				chartHeightY = 1.5
+
+			@setState {eventRows: eventRows.size}
 
 			@_chart.axis.max {
 				y: chartHeightY
@@ -372,10 +408,12 @@ load = (win) ->
 
 					# Tack on eventType to title
 					# TODO: Do this earlier on, to save redundancy
-					if progEvent.get('typeId')
+					if progEvent.get('typeId') and title
 						eventType = @props.eventTypes.find (eventType) -> eventType.get('id') is progEvent.get('typeId')
-						if title then title += ' '
-						title += "(#{eventType.get('name')})"
+						title += " (#{eventType.get('name')})"
+					else if progEvent.get('typeId')
+						title = progEvent.get('typeId')
+
 
 					eventInfo.addClass('show')
 					eventInfo.find('.title').text title

@@ -210,23 +210,37 @@
 					.c3-zoom-rect
 						display none !important
 
+					// Hide hiddenId in legend
+					.c3-legend-item.c3-legend-item-y--h-
+						display none !important
+						width 0 !important
+
+						text, rect
+							display none !important
+							width 0 !important
+
 					.c3-regions
 
 						.c3-region
 							fill-opacity 1
+							min-width 1px !important
 
 							&:hover
 								fill-opacity 0.75 !important
 								stroke-opacity 1 !important
 
 							> rect
+								min-width 1px !important
 								fill-opacity inherit !important
 								// 10% of original height
-								transform scaleY(0.1) !important
+								transform scaleY(0.1)
 								fill sidebar-borders
 								stroke sidebar-borders
 								stroke-width 2px
 								stroke-opacity inherit
+
+								&[width="0"]
+									width 1px !important
 
 							&.singlePoint > rect
 								fill sidebar-borders
@@ -235,21 +249,6 @@
 
 								&:hover
 									stroke #1d6977
-
-							&.row1 > rect
-								transform scaleY(0.1) translateY(350px) !important
-
-							&.row2 > rect
-								transform scaleY(0.1) translateY(700px) !important
-
-							&.row3 > rect
-								transform scaleY(0.1) translateY(1050px) !important
-
-							&.row4 > rect
-								transform scaleY(0.1) translateY(1400px) !important
-
-							&.row5 > rect
-								transform scaleY(0.1) translateY(1750px) !important
 
 
 
