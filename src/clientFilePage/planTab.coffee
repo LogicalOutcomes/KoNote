@@ -1085,7 +1085,7 @@ load = (win) ->
 					disabled: isReadOnly or sectionIsInactive
 				},
 					section.get('name')
-					FaIcon('pencil', {id:'rename'})
+					FaIcon('pencil', {className: 'renameIcon'})
 				)
 				R.div({className: 'btn-group btn-group-sm'},
 					R.button({

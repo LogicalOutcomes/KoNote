@@ -67,7 +67,7 @@
 				> .sectionHeader
 					display flex
 					align-items center
-					justify-content space-between
+					justify-content flex-end
 
 					border-color sidebar-borders
 					border-style none
@@ -79,9 +79,9 @@
 						display flex
 
 						> .statusButton
-							cursor default
-							flex 1
 							display flex
+							flex 1
+							cursor default
 							justify-content center
 							align-items center
 							padding 8px
@@ -101,6 +101,7 @@
 							opacity 0
 
 					> .sectionName
+						flex 1
 						padding 5px 0
 
 						font-size 24px
@@ -108,10 +109,10 @@
 
 						cursor default
 
-						&:hover #rename
+						&:hover .renameIcon
 							opacity 0.8
 
-						#rename
+						.renameIcon
 							opacity 0
 							font-size 0.7em
 							padding-left 10px
