@@ -1108,7 +1108,7 @@ load = (win) ->
 							title: "Create Template from Section"
 							sections: Imm.List([section])
 							currentTargetRevisionsById
-							disabled: isReadOnly
+							disabled: isReadOnly or sectionIsInactive
 						},
 							FaIcon 'wpforms'
 						)
