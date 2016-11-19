@@ -202,8 +202,11 @@ load = (win) ->
 			.sortBy (entry) ->
 				entry.get('backdate') or entry.get('timestamp')
 			.reverse()
+			
+			entriesCount = entries.size
+			
+			entries = entries
 			.slice(0, @state.historyCount)
-
 
 			return R.div({className: 'progNoteDetailView'},
 				R.div({className: 'itemDetails'},
@@ -228,6 +231,7 @@ load = (win) ->
 				History({
 					ref: 'history'
 					entries
+					entriesCount
 					eventTypes
 					historyCount: @state.historyCount
 					addHistoryCount: @_addHistoryCount
@@ -243,9 +247,10 @@ load = (win) ->
 		componentDidMount: ->
 			historyPane = $('.history')
 			historyPane.on 'scroll', _.throttle((=>
-				if historyPane.scrollTop() + (historyPane.innerHeight() *2) >= historyPane[0].scrollHeight
-					@props.addHistoryCount(10)
-				return
+				if @props.historyCount < @props.entriesCount
+					if historyPane.scrollTop() + (historyPane.innerHeight() *2) >= historyPane[0].scrollHeight
+						@props.addHistoryCount(10)
+					return
 			), 150)
 
 		resetScroll: ->
