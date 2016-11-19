@@ -112,12 +112,12 @@ load = (win) ->
 			hasTitle = !!progEvent.get('title')
 			hasDescription = !!progEvent.get('description')
 
-
+			# TODO: Separate to display & isEditing components, for more flexibility
 			return R.div({className: "progEventWidget fullWidget #{format}"},
 				R.div({
 					className: 'eventTypeTitleContainer'
 					style:
-						padding: 0 if not hasEventType and not hasTitle and not isEditing
+						padding: 0 if not hasEventType and not hasTitle
 				},
 					R.span({
 						className: 'iconContainer'
@@ -165,7 +165,7 @@ load = (win) ->
 					R.div({
 						className: 'description'
 						style:
-							marginTop: -10 if not hasEventType and not hasTitle and not isEditing
+							marginTop: -10 if not hasEventType and not hasTitle
 					},
 						(if isEditing
 							ExpandingTextArea({

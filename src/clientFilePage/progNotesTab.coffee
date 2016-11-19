@@ -14,6 +14,7 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
