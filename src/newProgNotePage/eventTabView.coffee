@@ -24,9 +24,11 @@ load = (win) ->
 	WithTooltip = require('../withTooltip').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
 	ProgramsDropdown = require('../programsDropdown').load(win)
+	EventTypesDropdown = require('../eventTypesDropdown').load(win)
+	TimeSpanSelection = require('../timeSpanSelection').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 
-	{FaIcon, renderName, showWhen, formatTimestamp} = require('../utils').load(win)
+	{FaIcon, renderName, showWhen, formatTimestamp, renderTimeSpan, makeMoment} = require('../utils').load(win)
 
 
 	EventTabView = React.createFactory React.createClass
@@ -34,79 +36,29 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
-			# Use backdate instead of current date (if exists)
-			if @props.backdate
-				startDate = Moment(@props.backdate, TimestampFormat)
-			else
-				startDate = Moment()
+			# Use progNote's back/date to start (full-day event)
+			startingDate = if @props.backdate then makeMoment(@props.backdate) else Moment()
+			startTimestamp = startingDate.startOf('day').format(TimestampFormat)
+			endTimestamp = startingDate.endOf('day').format(TimestampFormat)
 
 			return {
-				title: ''
-				description: ''
-				typeId: ''
+				progEvent: Imm.Map {
+					title: ''
+					description: ''
+					typeId: null
+					startTimestamp
+					endTimestamp
+				}
 				isGlobalEvent: null
-
-				startDate
-				startTime: ''
-				endDate: ''
-				endTime: ''
-
-				isDateSpan: false
-				usesTimeOfDay: false
 			}
 
-		componentDidMount: ->
-			# Initialize datepickers, bind to @state
-
-			# Grab jQ contexts
-			$startDate = $(@refs.startDate)
-			$startTime = $(@refs.startTime)
-			$endDate = $(@refs.endDate)
-			$endTime = $(@refs.endTime)
-
-			$startDate.datetimepicker({
-				useCurrent: false
-				format: 'Do MMM, \'YY'
-				defaultDate: @state.startDate.toDate()
-				widgetPositioning: {
-					horizontal: 'right'
-				}
-			}).on 'dp.change', (thisInput) =>
-				$endDate.data('DateTimePicker').minDate(thisInput.date)
-				@setState {startDate: thisInput.date}
-
-			$startTime.datetimepicker({
-				useCurrent: false
-				format: 'hh:mm a'
-				widgetPositioning: {
-					horizontal: 'right'
-				}
-			}).on 'dp.change', (thisInput) =>
-				@setState {startTime: thisInput.date}
-
-
-			$endDate.datetimepicker({
-				minDate: @state.startDate.toDate()
-				useCurrent: false
-				format: 'Do MMM, \'YY'
-				widgetPositioning: {
-					horizontal: 'right'
-				}
-			}).on 'dp.change', (thisInput) =>
-				$startDate.data('DateTimePicker').maxDate(thisInput.date)
-				@setState {endDate: thisInput.date}
-
-			$endTime.datetimepicker({
-				useCurrent: false
-				format: 'hh:mm a'
-				widgetPositioning: {
-					horizontal: 'right'
-				}
-			}).on 'dp.change', (thisInput) =>
-				@setState {endTime: thisInput.date}
-
 		render: ->
-			selectedEventType = @props.eventTypes.find (type) => type.get('id') is @state.typeId
+			progEvent = @state.progEvent
+			typeId = progEvent.get 'typeId'
+			selectedEventType = @props.eventTypes.find (type) => type.get('id') is typeId
+
+			formIsInvalid = @_formIsInvalid()
+			hasChanges = @_hasChanges()
 
 			return R.div({
 				className: [
@@ -121,63 +73,28 @@ load = (win) ->
 					},
 						FaIcon('times')
 					)
-					R.div({className: 'form-group'},
-						R.label({}, "Name")
-						R.input({
-							id: 'nameInput'
-							className: 'form-control'
-							value: @state.title
-							onChange: @_updateTitle
-							placeholder: "Name of #{Term 'event'}"
-						})
+					(if not @props.eventTypes.isEmpty()
+						R.div({className: 'form-group titleContainer'},
+							R.div({},
+								R.label({}, Term 'Event Type')
+								R.div({},
+									EventTypesDropdown({
+										selectedEventType
+										eventTypes: @props.eventTypes
+										onSelect: @_updateTypeId
+										typeId
+									})
+								)
+							)
+						)
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
 						ExpandingTextArea({
-							value: @state.description
+							value: progEvent.get('description')
 							onChange: @_updateDescription
 							placeholder: "Describe details (optional)"
 						})
-					)
-
-					(unless @props.eventTypes.isEmpty()
-						R.div({className: 'form-group eventTypeContainer'},
-							R.label({}, "Select #{Term 'Event Type'}")
-
-							B.DropdownButton({
-								title: if selectedEventType? then selectedEventType.get('name') else "No Type"
-							},
-								if selectedEventType?
-									[
-										B.MenuItem({
-											onClick: @_updateTypeId.bind null, ''
-										},
-											"None "
-											FaIcon('ban')
-										)
-										B.MenuItem({divider: true})
-									]
-
-
-								(@props.eventTypes
-								.filter (eventType) =>
-									eventType.get('status') is 'default'
-								.map (eventType) =>
-									B.MenuItem({
-										key: eventType.get('id')
-										onClick: @_updateTypeId.bind null, eventType.get('id')
-									},
-										R.div({
-											onClick: @_updateTypeId.bind null, eventType.get('id')
-											style:
-												borderRight: "5px solid #{eventType.get('colorKeyHex')}"
-										},
-											eventType.get('name')
-										)
-									)
-								)
-							)
-						)
 					)
 
 					R.div({className: 'globalEventContainer'},
@@ -203,7 +120,8 @@ load = (win) ->
 
 									(unless @props.clientPrograms.isEmpty()
 										WithTooltip({
-											title: "A copy of this #{Term 'event'} will visible to all #{Term 'client files'}"
+											title: "A copy of this #{Term 'event'}
+											will visible to all #{Term 'client files'}"
 										},
 											FaIcon('question-circle')
 										)
@@ -213,98 +131,31 @@ load = (win) ->
 						)
 					)
 
-					R.div({className: "dateGroup"},
-						R.div({className: 'form-group date'},
-							R.label({}, if @state.isDateSpan then "Start Date" else "Date")
-							R.input({
-								ref: 'startDate'
-								className: 'form-control'
-								type: 'text'
-							})
-						)
-						R.div({className: "form-group timeOfDay #{showWhen @state.usesTimeOfDay}"},
-							R.label({},
-								R.span({onClick: @_toggleUsesTimeOfDay},
-									FaIcon('clock-o')
-									FaIcon('times')
-								)
-							)
-							R.input({
-								ref: 'startTime'
-								className: 'form-control'
-								type: 'text'
-								placeholder: "00:00 --"
-							})
-						)
-						R.div({className: "form-group useTimeOfDay #{showWhen not @state.usesTimeOfDay}"}
-							R.button({
-								className: 'btn btn-default'
-								onClick: @_toggleUsesTimeOfDay
-							}, FaIcon('clock-o'))
-						)
-					)
-					R.div({className: "dateGroup #{showWhen @state.isDateSpan}"},
-						R.div({
-							className: 'form-group removeDateSpan'
+					TimeSpanSelection({
+						startTimestamp: progEvent.get('startTimestamp')
+						endTimestamp: progEvent.get('endTimestamp')
+						updateTimestamps: @_updateTimestamps
+						widgetPositioning: {
+							horizontal: 'right'
+							vertical: 'top'
 						}
-							R.span({onClick: @_toggleIsDateSpan},
-								FaIcon('arrow-right')
-								FaIcon('times')
-							)
-						)
-						R.div({className: 'form-group date'},
-							R.label({}, "End Date")
-							R.input({
-								ref: 'endDate'
-								className: 'form-control'
-								type: 'text'
-								placeholder: "Select date"
-							})
-						)
-						R.div({className: "form-group timeOfDay #{showWhen @state.usesTimeOfDay}"},
-							R.label({},
-								R.span({onClick: @_toggleUsesTimeOfDay},
-									FaIcon('clock-o')
-									FaIcon('times')
-								)
-							)
-							R.input({
-								ref: 'endTime'
-								className: 'form-control'
-								type: 'text'
-								placeholder: "00:00 --"
-							})
-						)
-						R.div({className: "form-group useTimeOfDay #{showWhen not @state.usesTimeOfDay}"}
-							R.button({
-								className: 'btn btn-default'
-								onClick: @_toggleUsesTimeOfDay
-							}, FaIcon('clock-o'))
-						)
-					)
-					R.div({
-						className: 'btn-toolbar'
-					},
-						R.button({
-							className: "btn btn-default #{showWhen not @state.isDateSpan}"
-							onClick: @_toggleIsDateSpan
-						},
-							"Add End Date"
-						)
+					})
+
+					R.div({className: 'btn-toolbar'},
 
 						# TODO: Refactor to something more generic
 						(if @state.isGlobalEvent
 							OpenDialogLink({
 								dialog: AmendGlobalEventDialog
-								eventData: @_compiledFormData()
+								progEvent
 								clientFileId: @props.clientFileId
 								clientPrograms: @props.clientPrograms
 								onSuccess: @_saveProgEvent
 							},
 								R.button({
-									className: "btn btn-success #{'fullWidth' if @state.isDateSpan}"
+									className: 'btn btn-success btn-block'
 									type: 'submit'
-									disabled: @_formIsInvalid()
+									disabled: formIsInvalid or not hasChanges
 								},
 									"Save "
 									FaIcon('check')
@@ -312,10 +163,10 @@ load = (win) ->
 							)
 						else
 							R.button({
-								className: "btn btn-success #{'fullWidth' if @state.isDateSpan}"
+								className: 'btn btn-success btn-block'
 								type: 'submit'
 								onClick: @_submit
-								disabled: @_formIsInvalid()
+								disabled: formIsInvalid or not hasChanges
 							},
 								"Save "
 								FaIcon('check')
@@ -325,56 +176,47 @@ load = (win) ->
 				)
 
 				R.div({className: "details #{showWhen not @props.isBeingEdited}"},
-					R.div({className: 'title'}, @props.data.get('title'))
-					R.div({className: 'description'}, @props.data.get('description'))
+					R.div({className: 'title'}, @props.progEvent.get('title'))
+					R.div({className: 'description'}, @props.progEvent.get('description'))
 					R.div({className: 'timeSpan'},
-						R.div({className: 'start'},
-							"From: " if @props.data.get('endTimestamp')
-							@_showTimestamp @props.data.get('startTimestamp')
-						)
-						(if @props.data.get('endTimestamp')
-							R.div({className: 'end'},
-								"Until: "
-								@_showTimestamp @props.data.get('endTimestamp')
-							)
+						renderTimeSpan(
+							@props.progEvent.get('startTimestamp'), @props.progEvent.get('endTimestamp')
 						)
 					)
 				)
 		)
 
-		_toggleUsesTimeOfDay: (event) ->
-			event.preventDefault()
-			@setState {usesTimeOfDay: not @state.usesTimeOfDay}, =>
-
-		_showTimestamp: (timestamp) ->
-			moment = Moment(timestamp, TimestampFormat)
-
-			if moment.isValid
-				return formatTimestamp(timestamp)
-			else
-				return "Invalid Moment"
-
-		_toggleIsDateSpan: (event) ->
-			event.preventDefault()
-			@setState {isDateSpan: not @state.isDateSpan}, =>
-				# Focus endDate if enabling
-				if @state.isDateSpan
-					@refs.endDate.focus()
-
 		_updateTitle: (event) ->
-			@setState {title: event.target.value}
+			progEvent = @state.progEvent.set 'title', event.target.value
+			@setState {progEvent}
 
 		_updateDescription: (event) ->
-			@setState {description: event.target.value}
+			progEvent = @state.progEvent.set 'description', event.target.value
+			@setState {progEvent}
 
 		_updateTypeId: (typeId) ->
-			@setState {typeId}
+			progEvent = @state.progEvent
+			.set 'typeId', typeId
+			.set 'title', '' # EventType takes place of 'title'
+
+			@setState {progEvent}
+
+		_updateTimestamps: ({startTimestamp, endTimestamp}) ->
+			progEvent = @state.progEvent
+
+			if startTimestamp?
+				progEvent = progEvent.set 'startTimestamp', startTimestamp
+			if endTimestamp?
+				progEvent = progEvent.set 'endTimestamp', endTimestamp
+
+			@setState {progEvent}
 
 		_formIsInvalid: ->
-			return not @state.title or not @state.startDate or
-			(@state.isDateSpan and not @state.endDate) or
-			(@state.usesTimeOfDay and not @state.startTime) or
-			(@state.usesTimeOfDay and @state.isDateSpan and not @state.endTime)
+			description = @state.progEvent.get('description').trim()
+			return not description
+
+		_hasChanges: ->
+			return not Imm.is @state.progEvent, @props.data
 
 		_toggleIsGlobalEvent: ->
 			@setState {isGlobalEvent: not @state.isGlobalEvent}
@@ -382,61 +224,30 @@ load = (win) ->
 		_closeForm: (event) ->
 			event.preventDefault()
 
-			if @state.title or @state.endDate or @state.description or @state.typeId
+			if @_hasChanges()
 				Bootbox.confirm "Cancel #{Term 'event'} editing?", (ok) =>
 					if ok
-						# Make sure all states are reset, then cancel
-						@setState @props.data, =>
-							@props.cancel @props.atIndex
+						@_resetProgEvent()
 			else
-				@setState @props.data, =>
-					@props.cancel @props.atIndex
+				@_resetProgEvent()
+
+		_resetProgEvent: ->
+			@setState {progEvent: @props.progEvent}, =>
+				@props.cancel()
 
 		_submit: (event) ->
 			event.preventDefault()
-			progEvent = @_compiledFormData()
-			@_saveProgEvent progEvent
+			@_saveProgEvent @state.progEvent
 
 		_saveProgEvent: (progEvent) ->
-			@props.saveProgEvent progEvent, @props.atIndex
-
-		_compiledFormData: ->
-			isOneFullDay = null
-
-			# Start with dates
-			startTimestamp = @state.startDate
-			endTimestamp = @state.endDate
-
-			# Extract time from start/endTime
-			if @state.usesTimeOfDay
-				startTimestamp = startTimestamp.set('hour', @state.startTime.hour()).set('minute', @state.startTime.minute())
-
-				if @state.isDateSpan
-					endTimestamp = if endTimestamp
-						endTimestamp.set('hour', @state.endTime.hour()).set('minute', @state.endTime.minute())
-					else
-						''
-			# Default to start/end of day for dates
+			# Axe the title if an eventType is being used instead (#871)
+			# Otherwise, make sure typeId isn't null
+			if !!progEvent.get('typeId')
+				progEvent = progEvent.set 'title', ''
 			else
-				startTimestamp = startTimestamp.startOf('day')
+				progEvent = progEvent.set 'typeId', ''
 
-				if @state.isDateSpan
-					endTimestamp = if endTimestamp then endTimestamp.endOf('day') else Moment()
-				else
-					# If only a single date was provided, assume it's an all-day event
-					isOneFullDay = true
-					endTimestamp = Moment(startTimestamp).endOf('day')
-
-
-			progEventObject = Imm.fromJS {
-				title: @state.title
-				description: @state.description
-				typeId: @state.typeId
-				startTimestamp: startTimestamp.format(TimestampFormat)
-				endTimestamp: if @state.isDateSpan or isOneFullDay then endTimestamp.format(TimestampFormat) else ''
-			}
-
-			return progEventObject
+			@props.saveProgEvent progEvent
 
 
 	AmendGlobalEventDialog = React.createFactory React.createClass
@@ -445,46 +256,46 @@ load = (win) ->
 
 		getInitialState: ->
 			# Use client's program if has only 1
-			# Otherwise use the program that matched userProgramId
+			# Otherwise use the program that matches userProgramId
 			# Else, user must select program from list
-			clientHasPrograms = not @props.clientPrograms.isEmpty()
 			userProgramId = global.ActiveSession.programId
 
-			program = Imm.Map()
+			programId = ''
 			@programSelectionRequired = false
+			clientHasPrograms = not @props.clientPrograms.isEmpty()
 
 			if clientHasPrograms
 
 				if @props.clientPrograms.size is 1
-					console.log "Only has one, chose that!"
 					programId = @props.clientPrograms.first()
 
 				else
-					console.log "Testing programs"
-					matchingProgram = @props.clientPrograms.find (program) -> program.get('id') is userProgramId
+					clientIsInUserProgram = @props.clientPrograms.some (program) ->
+						program.get('id') is userProgramId
 
-					if matchingProgram?
-						console.log "Matching!", matchingProgram.toJS()
-						programId = matchingProgram
+					if clientIsInUserProgram
+						programId = userProgramId
 					else
-						console.log "Selection required"
 						@programSelectionRequired = true
 
 
 			return {
-				title: @props.eventData.get('title')
-				description: @props.eventData.get('description')
-				program
+				title: @props.progEvent.get('title')
+				description: @props.progEvent.get('description')
+				programId
 			}
 
 		propTypes: {
-			eventData: React.PropTypes.instanceOf(Imm.Map).isRequired
+			progEvent: React.PropTypes.instanceOf(Imm.Map).isRequired
 			clientFileId: React.PropTypes.string.isRequired
 			clientPrograms: React.PropTypes.instanceOf(Imm.List).isRequired
 		}
 
 		render: ->
 			flaggedNames = @_generateFlaggedNames()
+			selectedProgram = @props.clientPrograms.find (program) =>
+				program.get('id') is @state.programId
+
 
 			return Dialog({
 				ref: 'dialog'
@@ -529,7 +340,7 @@ load = (win) ->
 
 							R.label({}, "Select a program for this #{Term 'global event'}")
 							ProgramsDropdown({
-								selectedProgram: @state.program
+								selectedProgram
 								programs: @props.clientPrograms
 								onSelect: @_updateProgram
 								excludeNone: true
@@ -567,16 +378,16 @@ load = (win) ->
 			@setState {description}
 
 		_updateProgram: (program) ->
-			@setState {program}
+			programId = program.get('id')
+			@setState {programId}
 
 		_formIsInvalid: ->
-			return not @state.title or
-			not @state.description or
-			(@programSelectionRequired and not @state.program.has('name'))
+			return not @state.title or not @state.description or
+			(@programSelectionRequired and not @state.programId)
 
 		_generateFlaggedNames: ->
 			# TODO: Process the title as well?
-			people = nlp.text(@props.eventData.get('description')).people()
+			people = nlp.text(@props.progEvent.get('description')).people()
 			names = []
 
 			for i of people
@@ -587,15 +398,16 @@ load = (win) ->
 		_submit: (event) ->
 			event.preventDefault()
 
-			# Attach globalEvent as a property of the progEvent
-			# which will get extracted during final save process
-			globalEvent = Imm.fromJS(@props.eventData)
-			.set('title', @state.title)
-			.set('description', @state.description)
-			.set('clientFileId', @props.clientFileId)
-			.set('programId', @state.program.get('id') or '')
+			# Set up globalEvent object
+			globalEvent = @props.progEvent
+			.set 'title', @state.title
+			.set 'description', @state.description
+			.set 'clientFileId', @props.clientFileId
+			.set 'programId', @state.programId
 
-			progEvent = @props.eventData.set('globalEvent', globalEvent)
+			# Attach globalEvent as a property of the progEvent,
+			# which will get extracted during final save process
+			progEvent = @props.progEvent.set 'globalEvent', globalEvent
 
 			@props.onSuccess(progEvent)
 

@@ -10,8 +10,6 @@
 # It seems that only code that was included via a <script> tag can rely on
 # `window` being set correctly.
 
-_ = require 'underscore'
-
 defaultPageId = 'login'
 pageModulePathsById = {
 	login: './loginPage'
@@ -37,7 +35,7 @@ init = (win) ->
 	ReactDOM = win.ReactDOM
 
 	CrashHandler = require('./crashHandler').load(win)
-	HotCodeReplace = require('./hotCodeReplace').load(win)
+	if Config.devMode then HotCodeReplace = require('./hotCodeReplace').load(win)
 	{getTimeoutListeners} = require('./timeoutDialog').load(win)
 
 	nwWin = nw.Window.get(win)

@@ -14,13 +14,14 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	C3 = win.c3
 	React = win.React
 	R = React.DOM
-	{FaIcon, renderLineBreaks, showWhen, stripMetadata} = require('../utils').load(win)
+	{FaIcon, renderLineBreaks, showWhen, stripMetadata, makeMoment} = require('../utils').load(win)
 	{TimestampFormat} = require('../persist/utils')
 
 	Slider = require('../slider').load(win)
@@ -30,6 +31,7 @@ load = (win) ->
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 	dateDisplayFormat = 'MMM Do - YYYY'
 
+
 	AnalysisView = React.createFactory React.createClass
 		displayName: 'AnalysisView'
 		mixins: [React.addons.PureRenderMixin]
@@ -38,99 +40,110 @@ load = (win) ->
 			return {
 				hasEnoughData: null
 				daysOfData: null
-				targetMetricsById: Imm.Map()
-				inactiveMetricIds: Imm.List()
-				metricValues: null
 				selectedMetricIds: Imm.Set()
-				filteredProgEvents: Imm.Set()
+				chartType: 'line'
 				selectedEventTypeIds: Imm.Set()
+				starredEventTypeIds: Imm.Set()
 				excludedTargetIds: Imm.Set()
-				xTicks: Imm.List()
-				xDays: Imm.List()
 				timeSpan: null
 			}
 
+		# # Leave this here, need for diff-checking renders/vs/state-props
 		# componentDidUpdate: (oldProps, oldState) ->
 		# 	# Figure out what changed
 		# 	for property of @props
 		# 		# console.log "property", property
 		# 		if @props[property] isnt oldProps[property]
-		# 			console.log "#{property} changed"
+		# 			console.info "#{property} changed"
 
 		# 	for property of @state
 		# 		if @state[property] isnt oldState[property]
-		# 			console.log "#{property} changed"
+		# 			console.info "#{property} changed"
 
 		render: ->
 
-			# Build targets list as targetId:[metricIds]
-			targetMetricsById = @props.plan.get('sections').flatMap (section) =>
-				section.get('targetIds').map (targetId) =>
-					target = @props.planTargetsById.getIn([targetId, 'revisions']).first()
-					return [target.get('id'), target.get('metricIds')]
-				.fromEntrySeq().toMap()
-			.fromEntrySeq().toMap()
-
-			# Flatten to a single list of targets' metric ids
-			targetMetricIdsList = targetMetricsById.toList().flatten(true)
+			#################### Metric Values/Entries ####################
 
 			# All non-empty metric values
 			metricValues = @props.progNoteHistories
-			.filter (progNoteHist) ->
-				# Ignore data from cancelled prognotes
-				switch progNoteHist.last().get('status')
-					when 'default'
-						return true
-					when 'cancelled'
-						return false
-					else
-						throw new Error "unknown progNote status: #{progNoteHist.last().get('status')}"
-			.flatMap (progNoteHist) ->
-				# Extract metrics
-				return extractMetricsFromProgNoteHistory progNoteHist
-			.filter (metricValue) ->
-				# Ignore blank metric values
-				return metricValue.get('value').trim().length > 0
+			.filter (progNoteHist) -> progNoteHist.last().get('status') is 'default'
+			.flatMap (progNoteHist) -> extractMetricsFromProgNoteHistory progNoteHist
+			.filter (metricValue) -> metricValue.get('value').trim().length > 0
 
 			# All metric IDs for which this client file has data
 			metricIdsWithData = metricValues
 			.map (m) -> m.get 'id'
 			.toSet()
 
-			# Build list of inactive metricIds that have data
-			inactiveMetricIds = metricIdsWithData.filterNot (metricId) ->
-				targetMetricIdsList.contains metricId
+
+			#################### Plan Targets & Metrics ####################
+
+			# Replace plan target & metric ids with obj, discard empty / without metric data
+			planSectionsWithData = @props.plan.get('sections').map (section) =>
+
+				targets = section.get('targetIds').map (targetId) =>
+					# Grab latest target & metric objects
+					target = @props.planTargetsById.getIn([targetId, 'revisions']).first()
+
+					metrics = target.get('metricIds')
+					.filter (metricId) -> metricIdsWithData.includes metricId
+					.map (metricId) => @props.metricsById.get(metricId)
+
+					return target.remove('metricIds').set 'metrics', metrics
+
+				.filterNot (target) ->
+					target.get('metrics').isEmpty()
+
+				return section.remove('targetIds').set 'targets', targets
+
+			.filterNot (section) ->
+				section.get('targets').isEmpty()
+
+			# Flat map of plan metrics, as {id: metric}
+			# TODO: Do we even need this?
+			planMetricsById = planSectionsWithData.flatMap (section) ->
+				section.get('targets').flatMap (target) ->
+					target.get('metrics').map (metric) ->
+						return [metric.get('id'), metric]
+					.fromEntrySeq().toMap()
+				.fromEntrySeq().toMap()
+			.fromEntrySeq().toMap()
+
+			# Flat list of unassigned metrics (has data, but since removed from target)
+			unassignedMetricsList = metricIdsWithData
+			.filterNot (metricId) -> planMetricsById.has metricId
+			.map (metricId) => @props.metricsById.get metricId
+			.toList()
 
 
 			#################### ProgEvents ####################
 
-			# Build set list of progEvent Ids
-			progEventIdsWithData = @props.progEvents
-			.map (progEvent) -> progEvent.get 'id'
-			.toSet()
+			# TODO: Filter out cancelled prog/globalEvents @ top-level
 
-			# Filter out progEvents that aren't cancelled or excluded
-			filteredProgEvents = @props.progEvents
-			.concat @props.globalEvents
-			.filter (progEvent) =>
-				switch progEvent.get('status')
-					when 'default'
-						return true
-					when 'cancelled'
-						return false
-					else
-						throw new Error "unkown progEvent status: #{progEvent.get('status')}"
-			.filter (progEvent) =>
-				if progEvent.get('typeId')
-					@state.selectedEventTypeIds.contains progEvent.get('typeId')
-				else
-					@state.selectedEventTypeIds.contains null
+			# Ensure globalEvents aren't cancelled
+			activeGlobalEvents = @props.globalEvents.filter (globalEvent) -> globalEvent.get('status') is 'default'
 
-			# Build list of timestamps from progEvents (start & end) & metrics
+			# Figure out which progEvents don't have a globalEvent, and ignore cancelled ones
+			uniqueProgEvents = @props.progEvents.filterNot (progEvent) ->
+				progEventId = progEvent.get('id')
+				return progEvent.get('status') isnt 'default' or activeGlobalEvents.find (globalEvent) ->
+					globalEvent.get('relatedProgEventId') is progEventId
+
+			allEvents = uniqueProgEvents.concat activeGlobalEvents
+
+			# List of progEvents currently selected
+			# 'null' is used to identify un-typed/other progEvents
+			selectedProgEvents = allEvents.filter (progEvent) =>
+				@state.selectedEventTypeIds.contains (progEvent.get('typeId') or null)
+
+			# We only grab endTimestamp from progEvents that have one
+			spannedProgEvents = allEvents.filter (progEvent) -> !!progEvent.get('endTimestamp')
+
+			# Build list of timestamps from progEvents (start & end) & metrics as Unix Timestamps (ms)
 			daysOfData = Imm.List()
-			.concat filteredProgEvents.map (progEvent) ->
+			.concat allEvents.map (progEvent) ->
 				Moment(progEvent.get('startTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
-			.concat filteredProgEvents.map (progEvent) ->
+			.concat spannedProgEvents.map (progEvent) ->
 				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
 			.concat metricValues.map (metric) ->
 				# Account for backdate, else normal timestamp
@@ -140,8 +153,7 @@ load = (win) ->
 			.sort()
 
 
-
-			#################### Date Range ####################
+			#################### Date Range / TimeSpan ####################
 
 			# Determine earliest & latest days
 			firstDay = Moment daysOfData.first()
@@ -152,14 +164,57 @@ load = (win) ->
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
 
-			# Default timespan to full xTicks
-			timeSpan = if @state.timeSpan then @state.timeSpan else Imm.Map {
+			# Declare default timeSpan
+			@defaultTimeSpan = Imm.Map {
 				start: xTicks.first()
 				end: xTicks.last()
 			}
 
+			# Assign default timespan if null
+			timeSpan = if not @state.timeSpan? then @defaultTimeSpan else @state.timeSpan
+
+			## TODO:
+			## Ensure timeSpan is contained within the actual span of xTicks (days)
+			# if timeSpan.get('end').isAfter xTicks.last()
+			# 	timeSpan = timeSpan.set 'end', xTicks.last()
+			# else if timeSpan.get('start').isBefore xTicks.first()
+			# 	timeSpan = timeSpan.set 'start', xTicks.first()
+
+
+			#################### Event Types ####################
+
+			# Map out visible progEvents (within timeSpan) by eventTypeId
+			visibleProgEvents = allEvents.filter (progEvent) ->
+				endTimestamp = progEvent.get('endTimestamp')
+				startMoment = makeMoment progEvent.get('startTimestamp')
+
+				if endTimestamp
+					endMoment = makeMoment(endTimestamp)
+					return startMoment.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
+					endMoment.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
+					(startMoment.isBefore(timeSpan.get('start')) and endMoment.isAfter(timeSpan.get('end')))
+				else
+					return startMoment.isBetween(timeSpan.get('start'), timeSpan.get('end'))
+
+			visibleProgEventsByTypeId = visibleProgEvents.groupBy (progEvent) -> progEvent.get('typeId')
+
+			# Map out visible metric values (within timeSpan) by metric [definition] id
+			visibleMetricValues = metricValues.filter (value) ->
+				makeMoment(value.get('timestamp')).isBetween timeSpan.get('start'), timeSpan.get('end')
+
+			visibleMetricValuesById = visibleMetricValues.groupBy (value) -> value.get('id')
+
+			# Booleans for the OTHER menu (TODO: Component-alize this stuff!)
+			otherEventTypesIsSelected = @state.selectedEventTypeIds.contains null
+			otherEventTypesIsPersistent = @state.starredEventTypeIds.contains null
+			visibleUntypedProgEvents = visibleProgEventsByTypeId.get('') or Imm.List()
+
+
+			#################### ETC ####################
+
 			hasEnoughData = daysOfData.size > 0
-			untypedEvents = @props.progEvents.filterNot (progEvent) => progEvent.get('typeId')
+			untypedEvents = allEvents.filterNot (progEvent) => !!progEvent.get('typeId')
+
 
 			return R.div({className: "analysisView"},
 				R.div({className: "noData #{showWhen not hasEnoughData}"},
@@ -178,20 +233,7 @@ load = (win) ->
 							isRange: true
 							timeSpan
 							xTicks
-							onChange: (event) =>
-								# Convert event value (string) to JS numerical array
-								timeSpanArray = event.target.value.split(",")
-								# Use index values to fetch moment objects from xTicks
-								start = xTicks.get Number(timeSpanArray[0])
-								end = xTicks.get Number(timeSpanArray[1])
-
-								newTimeSpan = Imm.Map {start, end}
-								@setState {timeSpan: newTimeSpan}
-							formatter: ([start, end]) =>
-								return unless start? and end?
-								startTime = Moment(xTicks.get(start)).format('MMM Do')
-								endTime = Moment(xTicks.get(end)).format('MMM Do')
-								return "#{startTime} - #{endTime}"
+							onChange: @_updateTimeSpanDate
 						})
 						R.div({className: 'dateDisplay'},
 							TimeSpanDate({
@@ -214,20 +256,25 @@ load = (win) ->
 				)
 				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
 					R.div({className: 'chartContainer'},
+
+						# Fade out un-highlighted regions when exists
+						InlineHighlightStyles({
+							ref: 'inlineHighlightStyles'
+							starredEventTypeIds: @state.starredEventTypeIds
+						})
+
 						# Force chart to be re-rendered when tab is opened
-						if not xTicks.isEmpty() and (
-							not filteredProgEvents.isEmpty() or
-							not @state.selectedMetricIds.isEmpty()
-						)
+						(unless @state.selectedEventTypeIds.isEmpty() and @state.selectedMetricIds.isEmpty()
 							Chart({
 								ref: 'mainChart'
 								progNotes: @props.progNotes
-								progEvents: filteredProgEvents
+								progEvents: selectedProgEvents
 								eventTypes: @props.eventTypes
 								metricsById: @props.metricsById
 								metricValues
 								xTicks
 								selectedMetricIds: @state.selectedMetricIds
+								chartType: @state.chartType
 								timeSpan
 								updateMetricColors: @_updateMetricColors
 							})
@@ -242,6 +289,7 @@ load = (win) ->
 									)
 								)
 							)
+						)
 					)
 					R.div({className: 'selectionPanel'},
 						R.div({className: 'dataType progEvents'},
@@ -262,7 +310,7 @@ load = (win) ->
 								Term 'Events'
 							)
 
-							(if @props.progEvents.isEmpty()
+							(if allEvents.isEmpty()
 								R.div({className: 'noData'},
 									"No #{Term 'events'} have been recorded yet."
 								)
@@ -274,16 +322,38 @@ load = (win) ->
 									R.div({className: 'dataOptions'},
 										(@props.eventTypes.map (eventType) =>
 											eventTypeId = eventType.get('id')
-											typeEvents = @props.progEvents.filter (progEvent) => progEvent.get('typeId') is eventTypeId
 
-											if not typeEvents.isEmpty()
+											# TODO: Make this faster
+											progEventsWithType = allEvents.filter (progEvent) -> progEvent.get('typeId') is eventTypeId
+
+											visibleProgEvents = visibleProgEventsByTypeId.get(eventTypeId) or Imm.List()
+
+											isSelected = @state.selectedEventTypeIds.contains eventTypeId
+											isPersistent = @state.starredEventTypeIds.contains eventTypeId
+
+											(unless progEventsWithType.isEmpty()
 												R.div({
-													className: 'checkbox'
 													key: eventTypeId
-													style:
-														borderRight: "5px solid #{eventType.get('colorKeyHex')}"
+													className: [
+														'checkbox'
+														'isHighlighted' if isPersistent
+													].join ' '
+													onMouseEnter: @_highlightEventType.bind(null, eventTypeId) if isSelected
+													onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isSelected
 												},
 													R.label({},
+														ColorKeyCount({
+															isSelected
+															colorKeyHex: eventType.get('colorKeyHex')
+															count: visibleProgEvents.size
+														})
+
+														(if isSelected
+															FaIcon('star', {
+																onClick: @_toggleStarredEventType.bind null, eventTypeId
+															})
+														)
+
 														R.input({
 															type: 'checkbox'
 															checked: @state.selectedEventTypeIds.contains eventTypeId
@@ -292,6 +362,7 @@ load = (win) ->
 														eventType.get('name')
 													)
 												)
+											)
 										)
 									)
 								)
@@ -301,11 +372,30 @@ load = (win) ->
 								R.div({},
 									R.h3({}, "Other")
 									R.div({className: 'dataOptions'},
-										R.div({className: 'checkbox'},
+										R.div({
+											className: [
+												'checkbox'
+												'isHighlighted' if otherEventTypesIsPersistent
+											].join ' '
+											onMouseEnter: @_highlightEventType.bind(null, null) if otherEventTypesIsSelected
+											onMouseLeave: @_unhighlightEventType.bind(null, null) if otherEventTypesIsSelected
+										},
 											R.label({},
+												ColorKeyCount({
+													isSelected: otherEventTypesIsSelected
+													colorKeyHex: '#cadbe5'
+													count: visibleUntypedProgEvents.size
+												})
+
+												(if otherEventTypesIsSelected
+													FaIcon('star', {
+														onClick: @_toggleStarredEventType.bind null, null
+													})
+												)
+
 												R.input({
 													type: 'checkbox'
-													checked: @state.selectedEventTypeIds.contains null
+													checked: otherEventTypesIsSelected
 													onChange: @_updateSelectedEventTypes.bind null, null
 												})
 												untypedEvents.size
@@ -337,12 +427,41 @@ load = (win) ->
 							)
 
 							R.div({className: 'dataOptions'},
-								(@props.plan.get('sections').map (section) =>
+								R.div({className: "chartTypeContainer"},
+									"Chart Type: "
+									R.label({},
+										"Line "
+										R.input({
+											type: 'checkbox'
+											checked: @state.chartType is 'line'
+											onChange: @_updateChartType.bind null, 'line'
+										})
+									)
+									R.label({},
+										"Spline "
+										R.input({
+											type: 'checkbox'
+											checked: @state.chartType is 'spline'
+											onChange: @_updateChartType.bind null, 'spline'
+										})
+									)
+									R.label({},
+										"Scatter "
+										R.input({
+											type: 'checkbox'
+											checked: @state.chartType is 'scatter'
+											onChange: @_updateChartType.bind null, 'scatter'
+										})
+									)
+								)
+								(planSectionsWithData.map (section) =>
 									R.div({key: section.get('id')},
 										R.h3({}, section.get('name'))
 										R.section({key: section.get('id')},
-											(section.get('targetIds').map (targetId) =>
-												target = @props.planTargetsById.getIn([targetId, 'revisions']).first()
+
+											(section.get('targets').map (target) =>
+												targetId = target.get('id')
+												targetIsInactive = target.get('status') isnt 'default'
 
 												R.div({
 													key: targetId
@@ -350,25 +469,29 @@ load = (win) ->
 												},
 													R.h5({}, target.get('name'))
 
-													(targetMetricsById.get(targetId).map (metricId) =>
-
-														metric = @props.metricsById.get(metricId)
+													# TODO: Extract to component
+													(target.get('metrics').map (metric) =>
+														metricId = metric.get('id')
+														metricIsInactive = targetIsInactive or metric.get('status') isnt 'default'
+														visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
+														isSelected = @state.selectedMetricIds.contains metricId
+														metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
 
 														R.div({
 															key: metricId
 															className: 'checkbox metric'
-															style:
-																borderRight: (
-																	if @state.metricColors?
-																		metricColor = @state.metricColors["y-#{metric.get('id')}"]
-																		"5px solid #{metricColor}"
-																)
 														},
 															R.label({},
+																ColorKeyCount({
+																	isSelected
+																	className: 'circle'
+																	colorKeyHex: metricColor
+																	count: visibleValues.size
+																})
 																R.input({
 																	type: 'checkbox'
 																	onChange: @_updateSelectedMetrics.bind null, metricId
-																	checked: @state.selectedMetricIds.contains metricId
+																	checked: isSelected
 																})
 																metric.get('name')
 															)
@@ -380,30 +503,31 @@ load = (win) ->
 									)
 								)
 							)
-
-							(unless @state.inactiveMetricIds.isEmpty()
+							(unless unassignedMetricsList.isEmpty()
 								R.div({},
 									R.h3({}, "Inactive")
 									R.div({className: 'dataOptions'},
-										(@state.inactiveMetricIds.map (metricId) =>
-
-											metric = @props.metricsById.get(metricId)
+										(unassignedMetricsList.map (metric) =>
+											metricId = metric.get('id')
+											isSelected = @state.selectedMetricIds.contains metricId
+											visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
+											metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
 
 											R.div({
-												className: 'checkbox metric'
 												key: metricId
-												style:
-													borderRight: (
-														if @state.metricColors?
-															metricColor = @state.metricColors["y-#{metric.get('id')}"]
-															"5px solid #{metricColor}"
-													)
+												className: 'checkbox metric'
 											},
 												R.label({},
+													ColorKeyCount({
+														isSelected
+														className: 'circle'
+														colorKeyHex: metricColor
+														count: visibleValues.size
+													})
 													R.input({
 														type: 'checkbox'
 														onChange: @_updateSelectedMetrics.bind null, metricId
-														checked: @state.selectedMetricIds.contains metricId
+														checked: isSelected
 													})
 													metric.get('name')
 												)
@@ -436,25 +560,52 @@ load = (win) ->
 				return {excludedTargetIds}
 
 		_updateSelectedEventTypes: (eventTypeId) ->
-			@setState ({selectedEventTypeIds}) =>
-				if selectedEventTypeIds.contains eventTypeId
-					selectedEventTypeIds = selectedEventTypeIds.delete eventTypeId
-				else
-					selectedEventTypeIds = selectedEventTypeIds.add eventTypeId
+			if @state.selectedEventTypeIds.contains eventTypeId
+				selectedEventTypeIds = @state.selectedEventTypeIds.delete eventTypeId
+				# Also remove persistent eventType highlighting if exists
+				starredEventTypeIds = @state.starredEventTypeIds.delete eventTypeId
+				@_unhighlightEventType eventTypeId
+			else
+				selectedEventTypeIds = @state.selectedEventTypeIds.add eventTypeId
+				starredEventTypeIds = @state.starredEventTypeIds
 
-				return {selectedEventTypeIds}
+			# User is still hovering, so make sure it's still transiently-highlighted
+			@_highlightEventType(eventTypeId)
+
+			@setState {selectedEventTypeIds, starredEventTypeIds}
 
 		_toggleAllEventTypes: (allEventTypesSelected) ->
-			@setState ({selectedEventTypeIds}) =>
-				unless allEventTypesSelected
-					selectedEventTypeIds = @props.eventTypes
-					.map (eventType) -> eventType.get('id') # all evenTypes
-					.push(null) # null = progEvents without an eventType
-					.toSet()
-				else
-					selectedEventTypeIds = selectedEventTypeIds.clear()
+			if not allEventTypesSelected
+				selectedEventTypeIds = @props.eventTypes
+				.map (eventType) -> eventType.get('id') # all eventTypes
+				.push(null) # null = progEvents without an eventType
+				.toSet()
 
-				return {selectedEventTypeIds}
+				starredEventTypeIds = @state.starredEventTypeIds
+			else
+				# Clear all
+				selectedEventTypeIds = @state.selectedEventTypeIds.clear()
+				starredEventTypeIds = @state.starredEventTypeIds.clear()
+
+			@setState {selectedEventTypeIds, starredEventTypeIds}
+
+		_highlightEventType: (eventTypeId) ->
+			@refs.inlineHighlightStyles.add eventTypeId
+
+		_unhighlightEventType: (eventTypeId) ->
+			@refs.inlineHighlightStyles.remove eventTypeId
+
+		_toggleStarredEventType: (eventTypeId, event) ->
+			event.preventDefault() # Prevents surrounding <label> from stealing the click
+
+			if @state.starredEventTypeIds.includes eventTypeId
+				starredEventTypeIds = @state.starredEventTypeIds.delete eventTypeId
+				# Make the un-starring look immediate
+				@_unhighlightEventType eventTypeId
+			else
+				starredEventTypeIds = @state.starredEventTypeIds.add eventTypeId
+
+			@setState {starredEventTypeIds}
 
 		_toggleAllMetrics: (allMetricsSelected, metricIdsWithData) ->
 			@setState ({selectedMetricIds}) =>
@@ -464,6 +615,9 @@ load = (win) ->
 					selectedMetricIds = metricIdsWithData
 
 				return {selectedMetricIds}
+
+		_updateChartType: (type) ->
+			@setState {chartType: type}
 
 		_updateSelectedMetrics: (metricId) ->
 			@setState ({selectedMetricIds}) =>
@@ -477,10 +631,56 @@ load = (win) ->
 		_updateMetricColors: (metricColors) ->
 			@setState {metricColors}
 
-		_updateTimeSpanDate: (newDate, type) ->
-			return unless @state.timeSpan
-			timeSpan = @state.timeSpan.set(type, newDate)
+		_updateTimeSpanDate: (timeSpan) ->
 			@setState {timeSpan}
+
+
+	InlineHighlightStyles = React.createFactory React.createClass
+		displayName: 'InlineHighlightStyles'
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: -> {additionalEventTypeId: undefined}
+
+		add: (additionalEventTypeId) ->
+			return if @state.additionalEventTypeId is additionalEventTypeId
+			@setState {additionalEventTypeId}
+
+		remove: (additionalEventTypeId) ->
+			return if @state.additionalEventTypeId isnt additionalEventTypeId
+			@setState {additionalEventTypeId: undefined}
+
+		render: ->
+			return null if @props.starredEventTypeIds.isEmpty() and @state.additionalEventTypeId is undefined
+
+			eventTypeIds = if @state.additionalEventTypeId isnt undefined
+				@props.starredEventTypeIds.add @state.additionalEventTypeId
+			else
+				@props.starredEventTypeIds
+
+			# Selectively exclude highlighted events from opacity change
+			notStatements = eventTypeIds
+			.map (id) -> ":not(.typeId-#{id})"
+			.toJS().join ''
+
+			fillOpacity = 0.15
+			styles = "g.c3-region#{notStatements} {fill-opacity: #{fillOpacity} !important; stroke-opacity: #{fillOpacity}}"
+
+			return R.style({}, styles)
+
+
+	ColorKeyCount = ({isSelected, className, colorKeyHex, count}) ->
+		R.span({
+			className: [
+				'colorKeyCount'
+				className
+				'isSelected' if isSelected
+			].join ' '
+			style:
+				background: colorKeyHex if isSelected
+		},
+			count
+		)
+
 
 	extractMetricsFromProgNoteHistory = (progNoteHist) ->
 		createdAt = progNoteHist.first().get('timestamp')
@@ -497,6 +697,7 @@ load = (win) ->
 					return extractMetricsFromProgNoteSection section, timestamp
 			else
 				throw new Error "unknown progNote type: #{JSON.stringify progNote.get('type')}"
+
 
 	extractMetricsFromProgNoteSection = (section, timestamp) ->
 		switch section.get 'type'
@@ -521,5 +722,6 @@ load = (win) ->
 
 
 	return {AnalysisView}
+
 
 module.exports = {load}

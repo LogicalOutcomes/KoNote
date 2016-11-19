@@ -32,6 +32,7 @@ load = (win) ->
 	OpenDialogLink = require('../openDialogLink').load(win)
 	PrintButton = require('../printButton').load(win)
 	ReorderPlanView = require('./reorderPlanView').load(win)
+	CreatePlanTemplateDialog = require('./createPlanTemplateDialog').load(win)
 
 	{
 		FaIcon, renderLineBreaks, showWhen, stripMetadata, formatTimestamp, capitalize
@@ -39,6 +40,7 @@ load = (win) ->
 
 
 	PlanView = React.createFactory React.createClass
+
 		displayName: 'PlanView'
 		mixins: [React.addons.PureRenderMixin]
 
@@ -86,6 +88,17 @@ load = (win) ->
 			hasChanges = @hasChanges()
 
 			return R.div({className: "planView"},
+
+				OpenDialogLink({
+					ref: 'test'
+					className: ''
+					dialog: CreatePlanTemplateDialog
+					title: "Create Template from Plan"
+					sections: @state.plan.get('sections')
+					currentTargetRevisionsById: @state.currentTargetRevisionsById
+					# disabled: isReadOnly
+				})
+
 				R.div({className: 'targetList'},
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
 						R.div({className: 'message'},
@@ -99,11 +112,12 @@ load = (win) ->
 							FaIcon('plus')
 							"Add #{Term 'section'}"
 						)
-						R.div({className: 'templates'},
+						R.span({className: 'templates'},
 							(unless @props.planTemplateHeaders.isEmpty()
 								B.DropdownButton({
 									className: 'btn btn-lg'
 									title: "Apply #{Term 'Template'}"
+									disabled: @props.isReadOnly
 								},
 									(@props.planTemplateHeaders.map (planTemplateHeader) =>
 										B.MenuItem({
@@ -169,37 +183,34 @@ load = (win) ->
 							"Add #{Term 'Section'}"
 						)
 
-						WithTooltip({
-							title: Term 'Plan Templates'
-							container: '.dropdown.btn-group'
-							placement: 'bottom'
+						B.DropdownButton({
+							id: 'planTemplatesDropdown'
+							title: FaIcon('wpforms')
+							disabled: @props.isReadOnly
 						},
-							B.DropdownButton({
-								id: 'planTemplatesDropdown'
-								title: FaIcon('wpforms')
-							},
-								B.MenuItem({onClick: @_createTemplate},
-									R.h5({},
-										"Generate #{Term 'Plan Template'}"
-									)
-								)
-								(unless @props.planTemplateHeaders.isEmpty()
-									[
-										B.MenuItem({divider: true})
 
-										B.MenuItem({header: true}, R.h5({}, "Apply #{Term 'Template'}"))
 
-										(@props.planTemplateHeaders.map (planTemplateHeader) =>
-											B.MenuItem({
-												key: planTemplateHeader.get('id')
-												onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
-												disabled: @props.isReadOnly
-											},
-												planTemplateHeader.get('name')
-											)
+							B.MenuItem({onClick: @_openCreateTemplateDialog},
+								"Create Plan Template"
+							)
+
+
+							(unless @props.planTemplateHeaders.isEmpty()
+								[
+									B.MenuItem({divider: true})
+
+									B.MenuItem({header: true}, R.h5({}, "Apply #{Term 'Template'}"))
+
+									(@props.planTemplateHeaders.map (planTemplateHeader) =>
+										B.MenuItem({
+											key: planTemplateHeader.get('id')
+											onClick: @_applyPlanTemplate.bind null, planTemplateHeader.get('id')
+											disabled: @props.isReadOnly
+										},
+											planTemplateHeader.get('name')
 										)
-									]
-								)
+									)
+								]
 							)
 						)
 
@@ -218,16 +229,6 @@ load = (win) ->
 							]
 							iconOnly: true
 							disabled: hasChanges
-							tooltip: {
-								show: true
-								placement: 'bottom'
-								title: (
-									if hasChanges
-										"Please save the changes to #{Term 'client'}'s #{Term 'plan'} before printing"
-									else
-										"Print plan"
-								)
-							}
 						})
 					)
 
@@ -439,7 +440,6 @@ load = (win) ->
 				unusedTargetIds = state.plan.get('sections').flatMap (section) =>
 					return section.get('targetIds').filter (targetId) =>
 						currentRev = state.currentTargetRevisionsById.get(targetId)
-
 						emptyName = currentRev.get('name') is ''
 						emptyDescription = currentRev.get('description') is ''
 						noMetrics = currentRev.get('metricIds').size is 0
@@ -489,6 +489,9 @@ load = (win) ->
 				@setState {plan: newPlan}, =>
 					@_addTargetToSection sectionId
 
+		_openCreateTemplateDialog: (event) ->
+			@refs.test.open(event)
+
 		_applyPlanTemplate: (templateId) ->
 			Bootbox.confirm "Are you sure you want to apply this template?", (ok) =>
 				if ok
@@ -513,9 +516,9 @@ load = (win) ->
 								cb()
 
 						(cb) =>
+							newCurrentRevs = @state.currentTargetRevisionsById
 							templateSections = selectedPlanTemplate.get('sections').map (templateSection) =>
 								targetIds = Imm.List()
-								newCurrentRevs = @state.currentTargetRevisionsById
 								templateSection.get('targets').forEach (target) =>
 									target.get('metricIds').forEach (metricId) =>
 
@@ -559,7 +562,7 @@ load = (win) ->
 							@setState {
 								plan: newPlan
 								currentTargetRevisionsById: newCurrentRevs
-							},
+							}
 
 							cb()
 
@@ -579,41 +582,6 @@ load = (win) ->
 							CrashHandler.handle err
 							return
 					return
-
-		_createTemplate: ->
-			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
-				unless templateName
-					return
-
-				templateSections = @state.plan.get('sections').map (section) =>
-					sectionTargets = section.get('targetIds').map (targetId) =>
-						target = @state.currentTargetRevisionsById.get(targetId)
-						# Removing irrelevant data from object
-						return target
-						.remove('status')
-						.remove('statusReason')
-						.remove('clientFileId')
-						.remove('id')
-
-					section = Imm.fromJS {
-						name: section.get('name')
-						targets: sectionTargets
-					}
-
-				planTemplate = Imm.fromJS {
-					name: templateName
-					status: 'default'
-					sections: templateSections
-				}
-
-				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
-					if err instanceof Persist.IOError
-						console.error err
-						Bootbox.alert """
-							Please check your network connection and try again
-						"""
-						return
-					Bootbox.alert "New template: '#{templateName}' created."
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
@@ -1107,24 +1075,30 @@ load = (win) ->
 			allTargetsAreInactive = not targetIdsByStatus.has('default')
 
 			canSetStatus = isExistingSection and allTargetsAreInactive
+			canModify = not isReadOnly and not sectionIsInactive
 
 
 			return R.div({className: 'sectionHeader'},
-				R.div({className: 'sectionName'},
-					section.get('name')
+				R.div({
+					title: "Edit name"
+					className: 'sectionName'
+				},
+					R.span({
+						onClick: renameSection.bind(null, section.get('id')) if canModify
+					},
+						section.get('name')
+
+						(if canModify
+							FaIcon('pencil', {className: 'renameIcon'})
+						)
+					)
 				)
 				R.div({className: 'btn-group btn-group-sm'},
 					R.button({
-						className: 'renameSection btn btn-default'
-						onClick: renameSection.bind null, section.get('id')
-						disabled: isReadOnly or sectionIsInactive
-					},
-						"Rename"
-					)
-					R.button({
+						ref: 'addTarget'
 						className: 'addTarget btn btn-primary'
 						onClick: addTargetToSection.bind null, section.get('id')
-						disabled: isReadOnly or sectionIsInactive
+						disabled: not canModify
 					},
 						FaIcon('plus')
 						"Add #{Term 'target'}"
@@ -1134,14 +1108,17 @@ load = (win) ->
 						placement: 'top'
 						container: 'body'
 					},
-						R.button({
+						OpenDialogLink({
 							className: 'btn btn-default'
-							onClick: @_createSectionTemplate
+							dialog: CreatePlanTemplateDialog
+							title: "Create Template from Section"
+							sections: Imm.List([section])
+							currentTargetRevisionsById
+							disabled: not canModify
 						},
-							FaIcon('wpforms')
+							FaIcon 'wpforms'
 						)
 					)
-
 				)
 				# TODO: Extract to component
 				(if canSetStatus
@@ -1149,7 +1126,7 @@ load = (win) ->
 						(if sectionStatus is 'default'
 							R.div({className: 'statusButtonGroup'},
 								WithTooltip({
-									title: "Deactivate #{Term 'Section'}" unless @props.isReadOnly or @props.hasTargetChanged
+									title: "Deactivate #{Term 'Section'}" unless isReadOnly or @props.hasTargetChanged
 									placement: 'top'
 									container: 'body'
 								},
@@ -1172,7 +1149,7 @@ load = (win) ->
 									)
 								)
 								WithTooltip({
-									title: "Complete #{Term 'Section'}" unless @props.isReadOnly or @props.hasTargetChanged
+									title: "Complete #{Term 'Section'}" unless isReadOnly or @props.hasTargetChanged
 									placement: 'top'
 									container: 'body'
 								},
@@ -1209,7 +1186,7 @@ load = (win) ->
 											#{Term 'plan'}, and future #{Term 'progress notes'}.
 										"""
 										reasonLabel: "Reason for reactivation:"
-										disabled: @props.isReadOnly or @props.hasTargetChanged
+										disabled: isReadOnly or @props.hasTargetChanged
 									},
 										FaIcon 'sign-in'
 									)
@@ -1228,41 +1205,6 @@ load = (win) ->
 					)
 				)
 			)
-
-
-		_createSectionTemplate: ->
-			Bootbox.prompt "Enter a name for the new Template:", (templateName) =>
-				unless templateName
-					return
-
-				sectionTargets = @props.section.get('targetIds').map (targetId) =>
-					target = @props.currentTargetRevisionsById.get(targetId)
-					# Removing irrelevant data from object
-					return target
-					.remove('status')
-					.remove('statusReason')
-					.remove('clientFileId')
-					.remove('id')
-
-				templateSection = Imm.fromJS [{
-					name: @props.section.get('name')
-					targets: sectionTargets
-				}]
-
-				sectionTemplate = Imm.fromJS {
-					name: templateName
-					status: 'default'
-					sections: templateSection
-				}
-
-				global.ActiveSession.persist.planTemplates.create sectionTemplate, (err, obj) =>
-					if err instanceof Persist.IOError
-						console.error err
-						Bootbox.alert """
-							Please check your network connection and try again
-						"""
-						return
-					Bootbox.alert "New template: '#{templateName}' created."
 
 
 	PlanTarget = React.createFactory React.createClass

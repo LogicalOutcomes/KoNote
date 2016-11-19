@@ -6,7 +6,6 @@ Async = require 'async'
 Imm = require 'immutable'
 
 Persist = require './persist'
-Config = require './config'
 Term = require './term'
 {EventTypeColors} = require './colors'
 
@@ -24,9 +23,7 @@ load = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
-	Spinner = require('./spinner').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
-	ExpandingTextArea = require('./expandingTextArea').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 	ColorKeySelection = require('./colorKeySelection').load(win)
 	DialogLayer = require('./dialogLayer').load(win)
@@ -138,7 +135,8 @@ load = (win) ->
 							R.div({className: 'responsiveTable animated fadeIn'},
 								DialogLayer({
 									ref: 'dialogLayer'
-									eventTypes
+									eventTypes: @state.eventTypes
+									onSuccess: @_modifyEventType
 								},
 									BootstrapTable({
 										data: eventTypes.toJS()
@@ -148,10 +146,7 @@ load = (win) ->
 											defaultSortName: 'name'
 											defaultSortOrder: 'asc'
 											onRowClick: ({id}) =>
-												@refs.dialogLayer.open ModifyEventTypeDialog, {
-													eventTypeId: id
-													onSuccess: @_modifyEventType
-												}
+												@refs.dialogLayer.open ModifyEventTypeDialog, {eventTypeId: id}
 
 											noDataText: "No #{Term 'event types'} to display"
 										}
@@ -332,7 +327,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
-			return @_getEventType().toJS()
+			return @_getEventType().toObject()
 
 		componentDidMount: ->
 			@refs.eventTypeName.focus()
@@ -376,12 +371,12 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "#{Term 'Event Type'} Status"),
+						R.label({}, "Status"),
 						R.div({className: 'btn-toolbar'},
 							R.button({
 								className:
 									if @state.status is 'default'
-										'btn btn-success'
+										'btn btn-default active'
 									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'default'
@@ -392,7 +387,7 @@ load = (win) ->
 							R.button({
 								className:
 									'btn btn-' + if @state.status is 'cancelled'
-										'danger'
+										'active'
 									else
 										'default'
 								onClick: @_updateStatus
@@ -403,19 +398,20 @@ load = (win) ->
 							)
 						)
 					)
-					R.div({className: 'btn-toolbar'},
+					R.hr({})
+					R.div({className: 'btn-toolbar pull-right'},
 						R.button({
 							className: 'btn btn-default'
 							onClick: @props.onCancel
 						}, "Cancel")
 						R.button({
-							className: 'btn btn-success'
+							className: 'btn btn-primary'
 							disabled: (
 								not @state.name or not @state.description or not @state.colorKeyHex
 							) or not @_hasChanges()
 							onClick: @_submit
 						},
-							"Finished"
+							"Save Changes"
 						)
 					)
 				)
@@ -434,8 +430,7 @@ load = (win) ->
 			@setState {status: event.target.value}
 
 		_getEventType: ->
-			@props.eventTypes.find (eventType) =>
-				eventType.get('id') is @props.eventTypeId
+			@props.eventTypes.find (eventType) => eventType.get('id') is @props.eventTypeId
 
 		_buildModifiedEventTypeObject: ->
 			originalEventType = @_getEventType()

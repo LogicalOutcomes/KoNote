@@ -19,28 +19,27 @@ load = (win) ->
 		displayName: 'OpenDialogLink'
 		mixins: [React.addons.PureRenderMixin, LayeredComponentMixin]
 
-		getInitialState: ->
-			return {
-				isOpen: false
-			}
+		getInitialState: -> {
+			isOpen: false
+		}
 
-		getDefaultProps: ->
-			return {
+		getDefaultProps: -> {
+				className: ''
 				onClose: ->
 				onCancel: ->
 				onSuccess: ->
-			}
+		}
 
 		render: ->
 			return R.div({
 				className: @props.className
-				onClick: @_openDialog
+				onClick: @open
 				disabled: @props.disabled
 			},
 				@props.children
 			)
 
-		_openDialog: (event) ->
+		open: (event) ->
 			event.preventDefault()
 
 			if @props.disabled is false or @props.disabled is undefined

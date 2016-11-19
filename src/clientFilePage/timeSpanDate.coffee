@@ -24,13 +24,19 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
+			@_init()
+
+		_init: ->
+			if @dateTimePicker? then @dateTimePicker.destroy()
+
 			# Assess min/maxDate based on which TimeSpanDate type
-			if @props.type is 'start'
-				minDate = @props.xTicks.first()
-				maxDate = @props.timeSpan.get('end')
-			else
-				minDate = @props.timeSpan.get('start')
-				maxDate = @props.xTicks.last()
+			if @props.xTicks?
+				if @props.type is 'start'
+					minDate = @props.xTicks.first()
+					maxDate = @props.timeSpan.get('end')
+				else
+					minDate = @props.timeSpan.get('start')
+					maxDate = @props.xTicks.last()
 
 			# Init datetimepicker
 			$(@refs.hiddenDateTimePicker).datetimepicker({
@@ -51,10 +57,22 @@ load = (win) ->
 		componentDidUpdate: (oldProps) ->
 			# TODO: Handle start/end logic in analysis, use generic component
 
-			startPropHasChanged = not oldProps.date.get('start').isSame(@props.timeSpan.get('start'))
-			startDateIsNew = not @dateTimePicker.date().isSame(@props.timeSpan.get('start'))
+			if @props.xTicks and @props.xTicks.size isnt oldProps.xTicks.size
+				firstDay = @props.xTicks.first()
+				lastDay = @props.xTicks.last()
 
-			if startPropHasChanged and startDateIsNew
+				if @props.type is 'start'
+					@dateTimePicker.minDate firstDay
+					@dateTimePicker.maxDate @props.timeSpan.get('end')
+				else
+					@dateTimePicker.minDate @props.timeSpan.get('start')
+					@dateTimePicker.maxDate lastDay
+
+
+			startPropHasChanged = not oldProps.date.get('start').isSame(@props.timeSpan.get('start'))
+			startDateIsNew = not @dateTimePicker.date().isSame(@props.timeSpan.get('start'), 'day')
+
+			if startPropHasChanged
 				startDate = @props.timeSpan.get('start')
 
 				if @props.type is 'start'
@@ -63,7 +81,8 @@ load = (win) ->
 				else
 					# Catch bad updates
 					if startDate.isAfter @dateTimePicker.maxDate()
-						return console.warn "Tried to make minDate > maxDate, update cancelled"
+						console.warn "Tried to make minDate > maxDate, update cancelled"
+						return
 
 					# For 'end', just adjust the minDate
 					@dateTimePicker.minDate startDate
@@ -72,7 +91,7 @@ load = (win) ->
 			endPropHasChanged = not oldProps.timeSpan.get('end').isSame @props.timeSpan.get('end')
 			endDateIsNew = not @dateTimePicker.date().isSame @props.timeSpan.get('end')
 
-			if endPropHasChanged and endDateIsNew
+			if endPropHasChanged
 				endDate = @props.timeSpan.get('end')
 
 				if @props.type is 'end'
@@ -81,15 +100,18 @@ load = (win) ->
 				else
 					# Catch bad updates
 					if endDate.isBefore @dateTimePicker.minDate()
-						return console.warn "Tried to make maxDate < minDate, update cancelled"
+						console.warn "Tried to make maxDate < minDate, update cancelled"
+						return
 
 					# For 'start', just adjust the maxDate
 					@dateTimePicker.maxDate endDate
 
 		_onChange: (event) ->
 			# Needs to be created in millisecond format to stay consistent
-			newDate = Moment +Moment(event.target.value, Config.dateFormat)
-			@props.updateTimeSpanDate(newDate, @props.type)
+			newDate = Moment +Moment(event.target.value, Config.dateFormat).startOf('day')
+			timeSpan = @props.timeSpan.set(@props.type, newDate)
+
+			@props.updateTimeSpanDate timeSpan
 
 		_toggleDateTimePicker: -> @dateTimePicker.toggle()
 
@@ -102,6 +124,8 @@ load = (win) ->
 				R.span({
 					onClick: @_toggleDateTimePicker
 					className: 'date'
+					style:
+						position: 'relative'
 				},
 					R.input({
 						ref: 'hiddenDateTimePicker'

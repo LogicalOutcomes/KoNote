@@ -66,19 +66,27 @@ load = (win) ->
 	openWindow = (params, options = {}, cb=(->)) ->
 		width = 1200
 		height = 700
+		screenWidth = nw.Screen.screens[0].work_area.width
+		screenHeight = nw.Screen.screens[0].work_area.height
 
 		if options instanceof Function then cb = options
 
 		if options.maximize
-			width = nw.Screen.screens[0].work_area.width
-			height = nw.Screen.screens[0].work_area.height
+			width = screenWidth
+			height = screenHeight
 		else
-			if nw.Screen.screens[0].work_area.width < 1200
-				width = nw.Screen.screens[0].work_area.width
-			if nw.Screen.screens[0].work_area.height < 700
-				height = nw.Screen.screens[0].work_area.height
+			if screenWidth < 1200
+				width = screenWidth
+			if screenHeight < 700
+				height = screenHeight
 
-		nw.Window.open 'src/main.html?' + $.param(params), {
+		switch params.page
+			when 'clientSelection'
+				page = 'src/main-clientSelection.html?'
+			else
+				page = 'src/main.html?'
+
+		nw.Window.open page + $.param(params), {
 			focus: false
 			show: false
 			width
@@ -127,7 +135,7 @@ load = (win) ->
 
 		for line, lineIndex in lines
 			if lineIndex > 0
-				result.push R.br()
+				result.push R.br({key: lineIndex})
 
 			if line.trim()
 				result.push line
@@ -140,6 +148,11 @@ load = (win) ->
 			return ''
 
 		return 'hide'
+
+	showWhen3d = (condition) ->
+		if condition
+			return ''
+		return 'shrink'
 
 	# Persistent objects come with metadata that makes it difficult to compare
 	# revisions (e.g. timestamp).  This method removes those attributes.
@@ -165,6 +178,31 @@ load = (win) ->
 		return text[...(maxLength - 1)] + '…'
 
 	makeMoment = (timestamp) -> Moment timestamp, TimestampFormat
+
+	renderTimeSpan = (startTimestamp, endTimestamp) ->
+		startMoment = makeMoment(startTimestamp)
+
+		if not endTimestamp
+			# No endMoment means it's a point-event
+			return startMoment.format(Config.timestampFormat)
+
+		# Must be a span-event
+		endMoment = makeMoment(endTimestamp)
+
+		isFromStartOfDay = startMoment.format('HH:mm') is '00:00'
+		isToEndOfDay = endMoment.format('HH:mm') is '23:59'
+
+		if isFromStartOfDay and isToEndOfDay
+			# Special case to only use date for a full-day event
+			isSameDay = startMoment.isSame endMoment, 'day'
+
+			if isSameDay
+				return startMoment.format(Config.dateFormat)
+			else
+				return "#{startMoment.format(Config.dateFormat)} to #{endMoment.format(Config.dateFormat)}"
+
+		# Otherwise, use default timeSpan format
+		return "#{startMoment.format(Config.timestampFormat)} to #{endMoment.format(Config.timestampFormat)}"
 
 	##### Convenience methods for fetching data from a progNote
 
@@ -207,11 +245,13 @@ load = (win) ->
 		renderName
 		renderRecordId
 		showWhen
+		showWhen3d
 		stripMetadata
 		formatTimestamp
 		capitalize
 		truncateText
 		makeMoment
+		renderTimeSpan
 		getUnitIndex
 		getPlanSectionIndex
 		getPlanTargetIndex

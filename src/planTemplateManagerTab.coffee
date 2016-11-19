@@ -8,7 +8,6 @@ Async = require 'async'
 Imm = require 'immutable'
 
 Persist = require './persist'
-Config = require './config'
 
 
 load = (win) ->
@@ -22,7 +21,6 @@ load = (win) ->
 	BootstrapTable = React.createFactory BootstrapTable
 	TableHeaderColumn = React.createFactory TableHeaderColumn
 
-	Config = require './config'
 	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	DialogLayer = require('./dialogLayer').load(win)
@@ -38,12 +36,13 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				dataIsReady: false
-				planTemplateHeaders: Imm.List()
+				planTemplates: Imm.List()
 				displayInactive: null
 			}
 
 		componentWillMount: ->
 			planTemplateHeaders = null
+			planTemplates = null
 
 			# Putting this in an Async Series since we will expand functionality soon.
 			Async.series [
@@ -55,6 +54,19 @@ load = (win) ->
 
 						planTemplateHeaders = result
 						cb()
+				(cb) =>
+					Async.map planTemplateHeaders.toArray(), (planTemplateHeader, cb) =>
+						planTemplateId = planTemplateHeader.get('id')
+
+						ActiveSession.persist.planTemplates.readLatestRevisions planTemplateId, 1, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						planTemplates = Imm.List(results).map (planTemplate) -> stripMetadata planTemplate.get(0)
+						cb()
+
 
 			], (err) =>
 					if err
@@ -67,27 +79,27 @@ load = (win) ->
 
 					@setState {
 						dataIsReady: true
-						planTemplateHeaders
+						planTemplates
 					}
 
 		render: ->
-			planTemplateHeaders = @state.planTemplateHeaders
+			planTemplates = @state.planTemplates
 
 			# Determine inactive plan templates
-			inactivePlanTemplates = planTemplateHeaders.filter (template) ->
+			inactivePlanTemplates = planTemplates.filter (template) ->
 				template.get('status') isnt 'default'
 
 			hasInactivePlanTemplates = not inactivePlanTemplates.isEmpty()
-			hasData = not @state.planTemplateHeaders.isEmpty()
+			hasData = not @state.planTemplates.isEmpty()
 
 			# UI Filters
 			unless @state.displayInactive
-				planTemplateHeaders = planTemplateHeaders.filter (template) ->
+				planTemplates = planTemplates.filter (template) ->
 					template.get('status') is 'default'
 
 			# Table display formats (TODO: extract to a tableWrapper component)
 			# Convert 'default' -> 'active' for table display (TODO: Term)
-			planTemplateHeaders = planTemplateHeaders.map (template) ->
+			planTemplates = planTemplates.map (template) ->
 				if template.get('status') is 'default'
 					return template.set('status', 'active')
 
@@ -105,7 +117,7 @@ load = (win) ->
 							# 	onSuccess: @_createMetric
 							# },
 							# 	FaIcon('plus')
-							# 	" New #{Term 'Metric'} Definition"
+							# 	" New "
 							# )
 							(if hasInactivePlanTemplates
 								R.div({className: 'toggleInactive'},
@@ -129,22 +141,19 @@ load = (win) ->
 							R.div({className: 'responsiveTable animated fadeIn'},
 								DialogLayer({
 									ref: 'dialogLayer'
-									planTemplateHeaders: @state.planTemplateHeaders
+									planTemplates: @state.planTemplates
 								},
 									BootstrapTable({
-										data: planTemplateHeaders.toJS()
+										data: planTemplates.toJS()
 										keyField: 'id'
 										bordered: false
 										options: {
 											defaultSortName: 'name'
 											defaultSortOrder: 'asc'
 											onRowClick: (row) =>
-												# TODO: Re-activation
-												return unless row.status is 'active'
-
 												@refs.dialogLayer.open ModifyPlanTemplateDialog, {
 													planTemplateId: row.id
-													onSuccess: @_updatePlanTemplateHeaders
+													onSuccess: @_updatePlanTemplates
 												}
 											noDataText: "No #{Term 'plan templates'} to display"
 										}
@@ -167,6 +176,19 @@ load = (win) ->
 											].join ' '
 											dataSort: true
 										}, "Template Name")
+
+										TableHeaderColumn({
+											dataField: 'description'
+											className: [
+												'descriptionColumn'
+												'rightPadding' unless @state.displayInactive
+											].join ' '
+											columnClassName: [
+												'rightPadding' unless @state.displayInactive
+											].join ' '
+											dataSort: false
+										}, "Description")
+
 										TableHeaderColumn({
 											dataField: 'status'
 											className: [
@@ -200,16 +222,16 @@ load = (win) ->
 			displayInactive = not @state.displayInactive
 			@setState {displayInactive}
 
-		_updatePlanTemplateHeaders: (updatedPlanTemplate) ->
-			planTemplateHeaders = @state.planTemplateHeaders
+		_updatePlanTemplates: (updatedPlanTemplate) ->
+			planTemplates = @state.planTemplates
 
-			matchingPlanTemplate = planTemplateHeaders.find (template) ->
+			matchingPlanTemplate = planTemplates.find (template) ->
 				template.get('id') is updatedPlanTemplate.get('id')
 
-			planTemplateIndex = planTemplateHeaders.indexOf matchingPlanTemplate
-			planTemplateHeaders = planTemplateHeaders.set planTemplateIndex, updatedPlanTemplate
+			planTemplateIndex = planTemplates.indexOf matchingPlanTemplate
+			planTemplates = planTemplates.set planTemplateIndex, updatedPlanTemplate
 
-			@setState {planTemplateHeaders}
+			@setState {planTemplates}
 
 
 	ModifyPlanTemplateDialog = React.createFactory React.createClass
@@ -220,29 +242,15 @@ load = (win) ->
 			planTemplateId: React.PropTypes.string.isRequired
 		}
 
-		getInitialState: -> {
-			planTemplate: Imm.Map()
-		}
+		getInitialState: ->
+			return @_getTemplateDescription().toJS()
 
 		componentWillMount: ->
 			# Load the full planTemplate object
 			planTemplateId = @props.planTemplateId
 
-			ActiveSession.persist.planTemplates.readLatestRevisions planTemplateId, 1, (err, result) =>
-				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
-						return
-
-					CrashHandler.handle(err)
-					return
-
-				planTemplate = stripMetadata result.get(0)
-				@setState {planTemplate}
-
 		render: ->
 			planTemplate = @state.planTemplate
-			planTemplateName = planTemplate.get('name')
 
 			return Dialog({
 				ref: 'dialog'
@@ -250,71 +258,119 @@ load = (win) ->
 				onClose: @props.onClose
 			},
 				R.div({id: 'modifyPlanTemplateDialog'},
-					R.h4({}, planTemplateName)
-					R.hr({})
-					R.div({className: 'btn-toolbar'},
-						R.button({
-							className: 'btn btn-danger'
-							onClick: @_handleDeactivate.bind null, planTemplateName
-						},
-							"Deactivate"
-							" "
-							FaIcon('ban')
+					R.div({className: 'form-group'},
+						R.label({}, "Name")
+						R.input({
+							ref: 'nameField'
+							className: 'form-control'
+							onChange: @_updateName
+							value: @state.name
+							maxLength: 128
+						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Description")
+						R.textarea({
+							ref: 'definitionField'
+							rows: 4
+							className: 'templateDescription form-control'
+							onChange: @_updateDescription
+							value: @state.description
+						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Template Status"),
+						R.div({className: 'btn-toolbar'},
+							R.button({
+								className:
+									if @state.status is 'default'
+										'btn btn-success'
+									else 'btn btn-default'
+								onClick: @_updateStatus
+								value: 'default'
+
+								},
+							"Active"
+							)
+							R.button({
+								className:
+									'btn btn-' + if @state.status is 'cancelled'
+										'danger'
+									else
+										'default'
+								onClick: @_updateStatus
+								value: 'cancelled'
+
+								},
+							"Deactivated"
+							)
 						)
+					)
+					R.div({className: 'btn-toolbar pull-right'},
 						R.button({
 							className: 'btn btn-default'
-							onClick: @props.onCancel
-						}, "Cancel")
+							onClick: @_cancel
+						}, "Cancel"),
+						R.button({
+							className: 'btn btn-primary'
+							onClick: @_submit
+						}, "Modify Template")
 					)
 				)
 			)
 
-		_handleDeactivate: (planTemplateName) ->
-			Bootbox.confirm """
-				Permanently deactivate #{Term 'plan template'}: <strong>#{planTemplateName}</strong>?
-			""", (ok) =>
-				if ok then @_updatePlanTemplateStatus('cancelled')
+		_cancel: ->
+			@props.onCancel()
 
-		_updatePlanTemplateStatus: (newStatus) ->
-			planTemplateId = @state.planTemplate.get('id')
+		_updateName: (event) ->
+			@setState {name: event.target.value}
 
-			planTemplate = null
-			updatedPlanTemplate = null
+		_updateDescription: (event) ->
+			@setState {description: event.target.value}
 
-			Async.series [
-				(cb) =>
-					ActiveSession.persist.planTemplates.readLatestRevisions planTemplateId, 1, (err, result) =>
-						if err
-							cb err
-							return
+		_updateStatus: (event) ->
+			@setState {status: event.target.value}
 
-						planTemplate = stripMetadata result.get(0)
-						cb()
+		_getTemplateDescription: ->
+			@props.planTemplates.find (template) =>
+				template.get('id') is @props.planTemplateId
 
-				(cb) =>
-					updatedPlanTemplate = planTemplate.set('status', newStatus)
+		_updateStatus: (event) ->
+			@setState {status: event.target.value}
 
-					ActiveSession.persist.planTemplates.createRevision updatedPlanTemplate, (err, result) =>
-						if err
-							cb err
-							return
+		_submit: ->
+			unless @state.name.trim()
+				Bootbox.alert "Template name is required"
+				return
 
-						updatedPlanTemplate = result
-						cb()
+			unless @state.description.trim()
+				Bootbox.alert "Template description is required"
+				return
 
-			], (err) =>
+			# @refs.dialog.setIsLoading true
+
+			newPlanTemplateRevision = Imm.fromJS {
+				id: @_getTemplateDescription().get('id')
+				name: @state.name.trim()
+				description: @state.description.trim()
+				sections: @state.sections
+				status: @state.status
+			}
+
+			ActiveSession.persist.planTemplates.createRevision newPlanTemplateRevision, (err, result) =>
+				# @refs.dialog.setIsLoading(false) if @refs.dialog?
+
 				if err
 					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
 						return
 
 					CrashHandler.handle err
 					return
 
-
-				# Pass updated planTemplate back to parent
-				# It's ok for now that we're not passing back a header
-				@props.onSuccess(updatedPlanTemplate)
+				@props.onSuccess(result)
 
 
 	return PlanTemplateManagerTab

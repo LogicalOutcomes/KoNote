@@ -3,18 +3,17 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
-Moment = require 'moment'
+_ = require 'underscore'
 
-Config = require './config'
 Term = require './term'
-Persist = require './persist'
 
 
 load = (win) ->
+	$ = win.jQuery
 	React = win.React
 	R = React.DOM
 
-	ProgEventsWidget = require('./progEventsWidget').load(win)
+	ProgEventWidget = require('./progEventWidget').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	RevisionHistory = require('./revisionHistory').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
@@ -28,30 +27,51 @@ load = (win) ->
 
 		getInitialState: -> {
 			descriptionIsVisible: true
+			historyCount: 10
 		}
 
+		componentWillReceiveProps: (nextProps) ->
+			# update was triggered by clicking a target
+			if @props.item?
+				if @props.item.get('targetId') isnt nextProps.item.get('targetId')
+					# Reset history count and scroll
+					@_resetHistoryCount()
+					if @refs.history? then @refs.history.resetScroll()
+
+		_addHistoryCount: (count) ->
+			# Disregard if nothing left to load
+			return if @state.historyCount >= @props.progNoteHistories.size
+
+			historyCount = @state.historyCount + count
+			@setState {historyCount}
+
+		_resetHistoryCount: ->
+			@setState {historyCount: 10}
+
 		render: ->
-			unless @props.item
+			{item, progNoteHistories, programsById, metricsById, progEvents, eventTypes} = @props
+
+			unless item
 				return R.div({className: 'progNoteDetailView'},
-					if @props.progNoteHistories.size > 0
+					if progNoteHistories.size > 0
 						R.div({className: 'noSelection'},
 							"Select an entry on the left to see more information about it here."
 						)
 				)
 
-			switch @props.item.get('type')
+			switch item.get('type')
 				when 'progNote'
 					# First figure out which progNote history to diff through
-					progNoteHistory = @props.progNoteHistories.find (progNoteHistory) =>
-						progNoteHistory.last().get('id') is @props.item.get('progNoteId')
+					progNoteHistory = progNoteHistories.find (progNoteHistory) ->
+						progNoteHistory.last().get('id') is item.get('progNoteId')
 
 					return R.div({className: 'progNoteDetailView'},
 						RevisionHistory({
 							revisions: progNoteHistory.reverse()
 							type: 'progNote'
 							disableSnapshot: true
-							metricsById: @props.metricsById
-							programsById: @props.programsById
+							metricsById
+							programsById
 							dataModelName: Term 'progress note'
 							terms: {
 								metric: Term 'metric'
@@ -61,10 +81,10 @@ load = (win) ->
 					)
 
 				when 'basicUnit'
-					unitId = @props.item.get('unitId')
-					itemName = @props.item.get('unitName')
+					unitId = item.get('unitId')
+					itemName = item.get('unitName')
 
-					entries = @props.progNoteHistories.flatMap (progNoteHistory) =>
+					entries = progNoteHistories.flatMap (progNoteHistory) ->
 						initialAuthor = progNoteHistory.first().get('author')
 						createdTimestamp = progNoteHistory.first().get('timestamp')
 						progNote = progNoteHistory.last()
@@ -77,10 +97,10 @@ load = (win) ->
 								.filter (unit) => # find relevant units
 									return unit.get('id') is unitId
 								.map (unit) => # turn them into entries
-									progEvents = @props.progEvents.filter (progEvent) =>
+									matchingProgEvents = progEvents.filter (progEvent) =>
 										return progEvent.get('relatedProgNoteId') is progNote.get('id')
 
-									authorProgram = @props.programsById.get progNote.get('authorProgramId')
+									authorProgram = programsById.get progNote.get('authorProgramId')
 
 									return Imm.fromJS {
 										status: progNote.get('status')
@@ -90,19 +110,19 @@ load = (win) ->
 										authorProgram
 										backdate: progNote.get('backdate')
 										notes: unit.get('notes')
-										progEvents
+										progEvents: matchingProgEvents
 									}
 							else
 								throw new Error "unknown prognote type: #{progNote.get('type')}"
 
 				when 'planSectionTarget'
-					unitId = @props.item.get('unitId')
-					sectionId = @props.item.get('sectionId')
-					targetId = @props.item.get('targetId')
-					itemName = @props.item.get('targetName')
-					itemDescription = @props.item.get('targetDescription')
+					unitId = item.get('unitId')
+					sectionId = item.get('sectionId')
+					targetId = item.get('targetId')
+					itemName = item.get('targetName')
+					itemDescription = item.get('targetDescription')
 
-					entries = @props.progNoteHistories.flatMap (progNoteHistory) =>
+					entries = progNoteHistories.flatMap (progNoteHistory) =>
 						initialAuthor = progNoteHistory.first().get('author')
 						createdTimestamp = progNoteHistory.first().get('timestamp')
 						progNote = progNoteHistory.last()
@@ -121,13 +141,13 @@ load = (win) ->
 											return target.get('id') is targetId
 										.map (target) =>
 											progNoteId = progNote.get('id')
-											progEvents = @props.progEvents.filter (progEvent) ->
+											matchingProgEvents = progEvents.filter (progEvent) ->
 												progEvent.get('relatedProgNoteId') is progNoteId
 
 											# Metric entry must have a value to display
 											metrics = target.get('metrics').filter (metric) -> metric.get('value')
 
-											authorProgram = @props.programsById.get progNote.get('authorProgramId')
+											authorProgram = programsById.get progNote.get('authorProgramId')
 
 											return Imm.fromJS {
 												progNoteId
@@ -138,7 +158,7 @@ load = (win) ->
 												timestamp: createdTimestamp
 												backdate: progNote.get('backdate')
 												notes: target.get('notes')
-												progEvents
+												progEvents: matchingProgEvents
 												metrics
 											}
 							else
@@ -148,7 +168,7 @@ load = (win) ->
 					itemName = Term 'Quick Notes'
 
 					# Extract all quickNote entries
-					entries = @props.progNoteHistories
+					entries = progNoteHistories
 					.filter (progNoteHistory) -> progNoteHistory.last().get('type') is 'basic'
 					.map (progNoteHistory) =>
 						initialAuthor = progNoteHistory.first().get('author')
@@ -159,7 +179,7 @@ load = (win) ->
 						# TODO: progEvents = @props.progEvents.filter (progEvent) =>
 						# 	return progEvent.get('relatedProgNoteId') is progNoteId
 
-						authorProgram = @props.programsById.get progNote.get('authorProgramId')
+						authorProgram = programsById.get progNote.get('authorProgramId')
 
 						return Imm.fromJS {
 							progNoteId
@@ -172,7 +192,7 @@ load = (win) ->
 						}
 
 				else
-					throw new Error "unknown item type: #{JSON.stringify @props.item?.get('type')}"
+					throw new Error "unknown item type: #{JSON.stringify item?.get('type')}"
 
 			# Filter out blank & cancelled notes, and sort by date/backdate
 			entries = entries
@@ -182,7 +202,11 @@ load = (win) ->
 			.sortBy (entry) ->
 				entry.get('backdate') or entry.get('timestamp')
 			.reverse()
-
+			
+			entriesCount = entries.size
+			
+			entries = entries
+			.slice(0, @state.historyCount)
 
 			return R.div({className: 'progNoteDetailView'},
 				R.div({className: 'itemDetails'},
@@ -204,86 +228,98 @@ load = (win) ->
 						)
 					)
 				)
-				R.div({className: 'history'},
-					(entries.map (entry) =>
-						entryId = entry.get('progNoteId')
+				History({
+					ref: 'history'
+					entries
+					entriesCount
+					eventTypes
+					historyCount: @state.historyCount
+					addHistoryCount: @_addHistoryCount
+					resetHistoryCount: @_resetHistoryCount
+				})
+			)
 
-						isHighlighted = null
-						isHovered = null
 
-						# Figure out highlighting from progNotesTab click/hover data
-						isHighlighted = (entryId is @props.highlightedProgNoteId) and not @props.highlightedQuickNoteId?
+	History = React.createFactory React.createClass
+		displayName: 'History'
+		mixins: [React.addons.PureRenderMixin]
 
-						## TODO: Restore this hover feature
-						# if @props.highlightedQuickNoteId?
-						# 	isHovered = entry.get('progNoteId') is @props.highlightedQuickNoteId
-						# else if @props.highlightedTargetId?
-						# 	isHovered = (entry.get('targetId') is @props.highlightedTargetId) and isHighlighted
+		componentDidMount: ->
+			historyPane = $('.history')
+			historyPane.on 'scroll', _.throttle((=>
+				if @props.historyCount < @props.entriesCount
+					if historyPane.scrollTop() + (historyPane.innerHeight() *2) >= historyPane[0].scrollHeight
+						@props.addHistoryCount(10)
+					return
+			), 150)
 
-						timestamp = entry.get('backdate') or entry.get('timestamp')
+		resetScroll: ->
+			historyPane = $('.history')
+			historyPane.scrollTop(0)
 
-						authorProgram = entry.get('authorProgram') or Imm.Map()
+		render: ->
+			{entries, eventTypes} = @props
 
-						return R.div({
-							key: entryId
-							className: [
-								'entry'
-								## TODO: Restore this hover feature
-								# 'highlighted' if isHighlighted
-								# 'isHovered' if isHovered
-							].join ' '
-						},
-							R.div({className: 'header'},
-								R.div({className: 'timestamp'},
-									formatTimestamp(timestamp)
-									ColorKeyBubble({
-										colorKeyHex: authorProgram.get('colorKeyHex')
-										popover: {
-											title: authorProgram.get('name')
-											content: authorProgram.get('description')
-											placement: 'top'
-										}
-									})
-								)
-								R.div({className: 'author'},
-									FaIcon('user')
-									entry.get('author')
-								)
+			R.div({className: 'history'},
+				(entries.map (entry) =>
+					entryId = entry.get('progNoteId')
+					timestamp = entry.get('backdate') or entry.get('timestamp')
+					authorProgram = entry.get('authorProgram') or Imm.Map()
+
+					return R.div({
+						key: entryId
+						className: 'entry'
+					},
+						R.div({className: 'header'},
+							R.div({className: 'timestamp'},
+								formatTimestamp(timestamp)
+								ColorKeyBubble({
+									colorKeyHex: authorProgram.get('colorKeyHex')
+									popover: {
+										title: authorProgram.get('name')
+										content: authorProgram.get('description')
+										placement: 'top'
+									}
+								})
 							)
-							R.div({className: 'notes'},
-								if entry.get('notes').includes "***"
-									R.span({className: 'starred'},
-										renderLineBreaks entry.get('notes').replace(/\*\*\*/g, '')
-									)
-								else
-									renderLineBreaks entry.get('notes')
+							R.div({className: 'author'},
+								FaIcon('user')
+								entry.get('author')
 							)
-
-							if entry.get('metrics')
-								R.div({className: 'metrics'},
-									entry.get('metrics').map (metric) =>
-										MetricWidget({
-											isEditable: false
-											key: metric.get('id')
-											name: metric.get('name')
-											definition: metric.get('definition')
-											value: metric.get('value')
-										})
-								)
-
-							if entry.get('progEvents')
-								R.div({className: 'progEvents'},
-									entry.get('progEvents').map (progEvent) =>
-										ProgEventsWidget({
-											format: 'small'
-											data: progEvent
-											key: progEvent.get('id')
-											eventTypes: @props.eventTypes
-										})
-								)
 						)
-					).toJS()...
-				)
+						R.div({className: 'notes'},
+							if entry.get('notes').includes "***"
+								R.span({className: 'starred'},
+									renderLineBreaks entry.get('notes').replace(/\*\*\*/g, '')
+								)
+							else
+								renderLineBreaks entry.get('notes')
+						)
+
+						if entry.get('metrics')
+							R.div({className: 'metrics'},
+								entry.get('metrics').map (metric) =>
+									MetricWidget({
+										isEditable: false
+										key: metric.get('id')
+										name: metric.get('name')
+										definition: metric.get('definition')
+										value: metric.get('value')
+									})
+							)
+
+						if entry.get('progEvents')
+							R.div({className: 'progEvents'},
+								entry.get('progEvents').map (progEvent) =>
+									ProgEventWidget({
+										key: progEvent.get('id')
+										format: 'small'
+										progEvent
+										eventTypes
+									})
+							)
+					)
+				).toJS()...
 			)
 
 	return ProgNoteDetailView

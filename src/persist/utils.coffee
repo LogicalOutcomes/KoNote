@@ -14,6 +14,10 @@ Joi = require 'joi'
 generateId = ->
 	return Base64url.encode(Crypto.randomBytes(15))
 
+# generate a temporary ID
+generateFastId = ->
+	return new Date().getTime().toString(36) + Math.random().toString(36).slice(-12)
+
 # All object IDs match this pattern
 IdSchema = Joi.string().regex(/^[a-zA-Z0-9_-]+$/)
 
@@ -121,6 +125,7 @@ module.exports = {
 	extractContextualIds
 	flattenModelDefs
 	generateId
+	generateFastId
 	isValidJSON
 	stripMetadata
 }

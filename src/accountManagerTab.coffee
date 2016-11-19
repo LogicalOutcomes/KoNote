@@ -25,7 +25,6 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
-	Spinner = require('./spinner').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
 	ProgramsDropdown = require('./programsDropdown').load(win)
 	DialogLayer = require('./dialogLayer').load(win)

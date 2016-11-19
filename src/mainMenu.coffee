@@ -13,10 +13,7 @@ load = (win) ->
 
 	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
-	WithTooltip = require('./withTooltip').load(win)
-	ColorKeyBubble = require('./colorKeyBubble').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
-	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	ProgramsDropdown = require('./programsDropdown').load(win)
 
 	{FaIcon, showWhen} = require('./utils').load(win)

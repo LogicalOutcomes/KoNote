@@ -35,11 +35,9 @@ load = (win, {clientFileId}) ->
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
 	InfoTab = require('./infoTab').load(win)
-	OpenDialogLink = require('../openDialogLink').load(win)
-	WithTooltip = require('../withTooltip').load(win)
 	ClientAlerts = require('./clientAlerts').load(win)
 
-	{FaIcon, renderName, renderRecordId, showWhen, stripMetadata} = require('../utils').load(win)
+	{FaIcon, renderName, renderRecordId, showWhen, showWhen3d, stripMetadata} = require('../utils').load(win)
 
 	loadingSpinner = React.createFactory React.createClass
 		displayName: 'loadingSpinner'
@@ -60,23 +58,32 @@ load = (win, {clientFileId}) ->
 
 	ClientFilePage = React.createFactory React.createClass
 		displayName: 'ClientFilePage'
+		
+		shouldComponentUpdate: (nextProps, nextState) ->
+			if nextState.progNoteIndex < @state.progNoteTotal
+				return false
+			else
+				return true
+		
 		getInitialState: ->
 			return {
 				status: 'init' # Either init or ready
-
-				headerIndex: 0
 
 				clientFile: null
 				clientFileLock: null
 				readOnlyData: null
 				lockOperation: null
 
-				progNoteHistories: null
 				progNoteTotal: null
+				progNoteIndex: 10
+				allProgNoteHeaders: null
+				progNoteHistories: null
 				progressEvents: null
 				planTargetsById: Imm.Map()
 				programsById: Imm.Map()
 				metricsById: Imm.Map()
+				attachmentHeaders: Imm.List()
+
 				planTemplateHeaders: Imm.List()
 				detailDefinitionGroups: Imm.List()
 
@@ -116,23 +123,20 @@ load = (win, {clientFileId}) ->
 
 			clientHasPrograms = not clientPrograms.isEmpty()
 
-			# Filter to only global events that fit our criteria:
-			# TODO: Move this up to data-load (issue #735)
+			# Filter down to active global events that belong in this clientFile
 			globalEvents = @state.globalEvents.filter (globalEvent) =>
-				# Originally created from this clientFile
-				return true if globalEvent.get('clientFileId') is clientFileId
+				isActive = globalEvent.get('status') is 'default'
+				originatesFromClient = globalEvent.get('clientFileId') is clientFileId
 
-				# GlobalEvent is fully global (no program)
 				programId = globalEvent.get('programId')
-				return true if not programId
+				hasNoProgram = not programId
+				isInClientProgram = clientPrograms.contains @state.programsById.get(programId)
 
-				# globalEvent program matches up with one of clientFile's programs
-				# TODO: This is one example of where we need to search clientPrograms by ID
-				matchingProgram = clientPrograms.contains @state.programsById.get(programId)
-				return true if matchingProgram
+				return (isActive or originatesFromClient) and (hasNoProgram or isInClientProgram)
 
-				# Failed criteria tests, so discard this globalEvent
-				return false
+			# Map of attachments for easier access by progNoteId
+			attachmentsByProgNoteId = @state.attachmentHeaders.groupBy (attachment) ->
+				attachment.get('relatedProgNoteId')
 
 
 			return ClientFilePageUi({
@@ -156,18 +160,57 @@ load = (win, {clientFileId}) ->
 				programsById: @state.programsById
 				clientFileProgramLinkHeaders: @state.clientFileProgramLinkHeaders
 				eventTypes: @state.eventTypes
+				attachmentsByProgNoteId
 				globalEvents
 				alerts: @state.alerts
-
-				headerIndex: @state.headerIndex
-				progNoteTotal: @state.progNoteTotal
 
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
 
 				renewAllData: @_renewAllData
+				secondPass: @_secondPass
 			})
+
+		_secondPass: (deadline) ->
+			console.log "second pass start..."
+			progNoteTotal = @state.progNoteTotal
+			progNoteIndex = @state.progNoteIndex
+			progNoteHistories = null
+
+			if (deadline.timeRemaining() > 0 or deadline.didTimout) and (progNoteIndex < progNoteTotal)
+				# lets see what can we do in 100ms
+				if deadline.didTimeout
+					count = 100
+				else
+					count = 10
+				progNoteHeaders = @state.allProgNoteHeaders.slice(progNoteIndex, progNoteIndex + count)
+				progNoteIndex += count
+
+				Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
+					ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
+				, (err, results) =>
+					if err
+						if err instanceof Persist.IOError
+							console.error err
+							@setState {loadErrorType: 'io-error'}
+							return
+						CrashHandler.handle err
+						return
+					progNoteHistories = @state.progNoteHistories.concat(results)
+					if progNoteIndex < progNoteTotal
+						@setState {
+							progNoteIndex
+							progNoteHistories
+						}
+						requestIdleCallback @_secondPass
+
+					else
+						console.log "second pass finished"
+						@setState {
+							progNoteIndex
+							progNoteHistories
+						}
 
 		_renewAllData: ->
 			console.log "Renewing all data......"
@@ -179,14 +222,14 @@ load = (win, {clientFileId}) ->
 			planTemplateHeaders = null
 			planTargetsById = null
 			planTargetHeaders = null
-			progNoteHeaders = null
-			progNoteHistories = null
 			progNoteTotal = null
+			progNoteHeaders = null
+			allProgNoteHeaders = null
+			progNoteHistories = null
 			progEventHeaders = null
 			progressEvents = null
 			metricHeaders = null
 			metricsById = null
-			clientDetailGroupsById = null
 			clientFileProgramLinkHeaders = null
 			programHeaders = null
 			programs = null
@@ -197,9 +240,9 @@ load = (win, {clientFileId}) ->
 			globalEvents = null
 			alertHeaders = null
 			alerts = null
-			groupsArray = null
 			detailDefinitionHeaders = null
 			detailDefinitionGroups = null
+			attachmentHeaders = null
 
 
 			checkFileSync = (newData, oldData) =>
@@ -215,23 +258,142 @@ load = (win, {clientFileId}) ->
 						cb()
 
 				(cb) =>
-					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
+					# load headers in parallel (TODO: confirm whether reading directories can cause EMFILE issues)
+					Async.parallel [
+						(cb) =>
+							ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
+								if err
+									cb err
+									return
+
+								clientFile = stripMetadata revisions.get(0)
+
+								checkFileSync clientFile, @state.clientFile
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
+								if err
+									cb err
+									return
+
+								planTargetHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
+								if err
+									cb err
+									return
+
+								# fast first pass 
+								if @state.status is "init"
+									# need the count for fast second pass
+									progNoteTotal = results.size
+
+									allProgNoteHeaders = results
+									.sortBy (header) ->
+										createdAt = header.get('backdate') or header.get('timestamp')
+										return Moment createdAt, Persist.TimestampFormat
+
+									progNoteHeaders = results
+									.sortBy (header) ->
+										createdAt = header.get('backdate') or header.get('timestamp')
+										return Moment createdAt, Persist.TimestampFormat
+									.slice(0, 10)
+								else
+									progNoteHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
+								if err
+									cb err
+									return
+
+								progEventHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.attachments.list clientFileId, (err, results) =>
+								if err
+									cb err
+									return
+
+								attachmentHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.globalEvents.list (err, results) =>
+								if err
+									cb err
+									return
+
+								globalEventHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.metrics.list (err, results) =>
+								if err
+									cb err
+									return
+
+								metricHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.clientFileProgramLinks.list (err, results) =>
+								if err
+									cb err
+									return
+
+								clientFileProgramLinkHeaders = results
+								.filter (link) ->
+									link.get('clientFileId') is clientFileId and
+									link.get('status') is "enrolled"
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.programs.list (err, results) =>
+								if err
+									cb err
+									return
+
+								programHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.eventTypes.list (err, result) =>
+								if err
+									cb err
+									return
+
+								eventTypeHeaders = result
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.alerts.list clientFileId, (err, result) =>
+								if err
+									cb err
+									return
+								alertHeaders = result
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.planTemplates.list (err, result) =>
+								if err
+									cb err
+									return
+
+								planTemplateHeaders = result
+								.filter (template) -> template.get('status') is 'default'
+								cb()
+
+					], (err) =>
 						if err
 							cb err
 							return
-
-						clientFile = stripMetadata revisions.get(0)
-
-						checkFileSync clientFile, @state.clientFile
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						planTargetHeaders = results
+						# headers loaded, carry on in series
 						cb()
 
 				(cb) =>
@@ -255,22 +417,6 @@ load = (win, {clientFileId}) ->
 						cb()
 
 				(cb) =>
-					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						# lazyloading
-						progNoteTotal = results.size
-						progNoteHeaders = results
-						# .sortBy (header) ->
-						# 	createdAt = header.get('backdate') or header.get('timestamp')
-						# 	return Moment createdAt, Persist.TimestampFormat
-						# .reverse()
-						# .slice(@state.headerIndex, @state.headerIndex+10)
-						cb()
-
-				(cb) =>
 					Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
 						ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
 					, (err, results) =>
@@ -281,15 +427,6 @@ load = (win, {clientFileId}) ->
 						progNoteHistories = Imm.List(results)
 
 						checkFileSync progNoteHistories, @state.progNoteHistories
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
-						if err
-							cb err
-							return
-
-						progEventHeaders = results
 						cb()
 
 				(cb) =>
@@ -307,15 +444,6 @@ load = (win, {clientFileId}) ->
 						cb()
 
 				(cb) =>
-					ActiveSession.persist.globalEvents.list (err, results) =>
-						if err
-							cb err
-							return
-
-						globalEventHeaders = results
-						cb()
-
-				(cb) =>
 					Async.map globalEventHeaders.toArray(), (globalEventHeader, cb) =>
 						ActiveSession.persist.globalEvents.readLatestRevisions globalEventHeader.get('id'), 1, cb
 					, (err, results) =>
@@ -324,15 +452,6 @@ load = (win, {clientFileId}) ->
 							return
 
 						globalEvents = Imm.List(results).map (revisions) -> revisions.first()
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.metrics.list (err, results) =>
-						if err
-							cb err
-							return
-
-						metricHeaders = results
 						cb()
 
 				(cb) =>
@@ -350,29 +469,6 @@ load = (win, {clientFileId}) ->
 						.fromEntrySeq().toMap()
 
 						checkFileSync metricsById, @state.metricsById
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.clientFileProgramLinks.list (err, results) =>
-						if err
-							cb err
-							return
-
-						clientFileProgramLinkHeaders = results
-						.filter (link) ->
-							link.get('clientFileId') is clientFileId and
-							link.get('status') is "enrolled"
-
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.programs.list (err, results) =>
-						if err
-							cb err
-							return
-
-						programHeaders = results
-
 						cb()
 
 				(cb) =>
@@ -394,15 +490,6 @@ load = (win, {clientFileId}) ->
 						cb()
 
 				(cb) =>
-					ActiveSession.persist.eventTypes.list (err, result) =>
-						if err
-							cb err
-							return
-
-						eventTypeHeaders = result
-						cb()
-
-				(cb) =>
 					Async.map eventTypeHeaders.toArray(), (eventTypeheader, cb) =>
 						eventTypeId = eventTypeheader.get('id')
 
@@ -416,14 +503,6 @@ load = (win, {clientFileId}) ->
 						cb()
 
 				(cb) =>
-					ActiveSession.persist.alerts.list clientFileId, (err, result) =>
-						if err
-							cb err
-							return
-						alertHeaders = result
-						cb()
-
-				(cb) =>
 					Async.map alertHeaders.toArray(), (alertHeader, cb) =>
 						alertId = alertHeader.get('id')
 
@@ -434,16 +513,6 @@ load = (win, {clientFileId}) ->
 							return
 
 						alerts = Imm.List(results).map (alert) -> stripMetadata alert.get(0)
-						cb()
-
-				(cb) =>
-					ActiveSession.persist.planTemplates.list (err, result) =>
-						if err
-							cb err
-							return
-
-						planTemplateHeaders = result
-						.filter (template) -> template.get('status') is 'default'
 						cb()
 
 				(cb) =>
@@ -562,12 +631,12 @@ load = (win, {clientFileId}) ->
 					@setState {
 						status: 'ready'
 
-						headerIndex: @state.headerIndex+10
-						progNoteTotal
-
 						clientFile
+						progNoteTotal
+						allProgNoteHeaders
 						progNoteHistories
 						progressEvents
+						attachmentHeaders
 						globalEvents
 						metricsById
 						planTargetsById
@@ -700,6 +769,8 @@ load = (win, {clientFileId}) ->
 				# that update the UI.
 
 		getPageListeners: ->
+			# TODO: Refactor these to be more consistent & performant
+
 			return {
 				'createRevision:clientFile': (newRev) =>
 					return unless newRev.get('id') is clientFileId
@@ -753,6 +824,21 @@ load = (win, {clientFileId}) ->
 					progressEvents = @state.progressEvents.set progEventIndex, newProgEventRev
 					@setState {progressEvents}
 
+				'create:attachment': (newAttachment) =>
+					return unless newAttachment.get('clientFileId') is clientFileId
+					attachmentHeaders = @state.attachmentHeaders.push newAttachment
+					@setState {attachmentHeaders}
+
+				'createRevision:attachment': (newAttachmentRev) =>
+					return unless newAttachmentRev.get('clientFileId') is clientFileId
+					originalAttachment = @state.attachmentHeaders
+					.find (attachment) -> attachment.get('id') is newAttachmentRev.get('id')
+					.remove 'encodedData' # Should we keep this in memory, as a convenience?
+
+					attachmentIndex = @state.attachmentHeaders.indexOf originalAttachment
+					attachmentHeaders = @state.attachmentHeaders.set attachmentIndex, newAttachmentRev
+					@setState {attachmentHeaders}
+
 				'create:metric createRevision:metric': (metricDefinition) =>
 					metricsById = @state.metricsById.set metricDefinition.get('id'), metricDefinition
 					@setState {metricsById}
@@ -795,6 +881,14 @@ load = (win, {clientFileId}) ->
 
 				'create:globalEvent': (globalEvent) =>
 					globalEvents = @state.globalEvents.push globalEvent
+					@setState {globalEvents}
+
+				'createRevision:globalEvent': (newGlobalEventRev) =>
+					originalGlobalEvent = @state.globalEvents
+					.find (globalEvent) -> globalEvent.get('id') is newGlobalEventRev.get('id')
+
+					globalEventIndex = @state.globalEvents.indexOf originalGlobalEvent
+					globalEvents = @state.globalEvents.set globalEventIndex, newGlobalEventRev
 					@setState {globalEvents}
 
 				# TODO: Update to allow for multiple alerts
@@ -935,6 +1029,10 @@ load = (win, {clientFileId}) ->
 
 			# It's now OK to close the window
 			@hasMounted = true
+			
+			# second pass at data load
+			if @props.status is 'ready'
+				requestIdleCallback @props.secondPass, timeout: 3000
 
 		render: ->
 			if @props.loadErrorType
@@ -971,6 +1069,7 @@ load = (win, {clientFileId}) ->
 					R.div({
 						className: [
 							'view'
+							'plan'
 							showWhen(activeTabId is 'plan')
 						].join ' '
 					},
@@ -990,7 +1089,7 @@ load = (win, {clientFileId}) ->
 					R.div({
 						className: [
 							'view'
-							showWhen(activeTabId is 'progressNotes')
+							showWhen3d(activeTabId is 'progressNotes')
 						].join ' '
 					},
 						ProgNotesTab({
@@ -1004,9 +1103,8 @@ load = (win, {clientFileId}) ->
 							progEvents: @props.progressEvents
 							eventTypes: @props.eventTypes
 							metricsById: @props.metricsById
-							headerIndex: @props.headerIndex
-							progNoteTotal: @props.progNoteTotal
 							programsById: @props.programsById
+							attachmentsByProgNoteId: @props.attachmentsByProgNoteId
 
 							hasChanges: @hasChanges
 							onTabChange: @_changeTab
@@ -1019,6 +1117,7 @@ load = (win, {clientFileId}) ->
 					R.div({
 						className: [
 							'view'
+							'analysis'
 							showWhen(activeTabId is 'analysis')
 						].join ' '
 					},
@@ -1039,6 +1138,7 @@ load = (win, {clientFileId}) ->
 					R.div({
 						className: [
 							'view'
+							'info'
 							showWhen(activeTabId is 'info')
 						].join ' '
 					},

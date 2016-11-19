@@ -173,7 +173,7 @@ load = (win) ->
 
 		timeoutComponent = ReactDOM.render TimeoutDialog({}), timeoutContainer
 
-		$('body').bind "mousemove mousedown keypress scroll", ->
+		$('body').on "mousemove mousedown keypress scroll", ->
 			global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 
 		return {
@@ -220,13 +220,13 @@ load = (win) ->
 
 				global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 
-				$('body').bind "mousemove mousedown keypress scroll", (event) ->
+				$('body').on "mousemove mousedown keypress scroll", (event) ->
 					global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 
 			'timeout:timedOut': =>
 				console.log "TIMEOUT: Timed out, disabling windows"
 
-				$('body').unbind "mousemove mousedown keypress scroll"
+				$('body').off "mousemove mousedown keypress scroll"
 
 				timeoutComponent.showTimeoutMessage()
 

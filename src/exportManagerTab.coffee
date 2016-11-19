@@ -9,8 +9,6 @@ Persist = require './persist'
 Fs = require 'graceful-fs'
 Path = require 'path'
 Term = require './term'
-Archiver = require 'archiver'
-CSVConverter = require 'json-2-csv'
 
 load = (win) ->
 	$ = win.jQuery
@@ -118,6 +116,7 @@ load = (win) ->
 			.click()
 
 		_saveEvents: (path) ->
+			CSVConverter = require 'json-2-csv'
 			isConfirmClosed = false
 			# Map over client files
 
@@ -264,6 +263,7 @@ load = (win) ->
 
 
 		_saveMetrics: (path) ->
+			CSVConverter = require 'json-2-csv'
 			isConfirmClosed = false
 			metrics = null
 			@_updateProgress 0, "Saving #{Term 'Metrics'} to CSV..."
@@ -465,7 +465,7 @@ load = (win) ->
 
 
 		_saveBackup: (savepath) ->
-
+			Archiver = require 'archiver'
 			totalFiles = 0
 
 			@setState {

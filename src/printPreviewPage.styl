@@ -1,10 +1,20 @@
 @media print
 	.printPreview
-		margin 0.4in
+		padding 25px
+	.noPrint
+		display none !important
 
 .printPreview
 	background white
 	min-height 100%
+
+	.print
+		margin-left 0
+		margin-right 8px
+	.noPrint
+		margin-left auto
+		margin-right auto
+		margin-bottom 8px
 
 	.printObj
 		padding 25px
@@ -12,7 +22,7 @@
 		> header
 			display flex
 			width 100%
-			padding-bottom 15px
+			padding-bottom 4px
 			border-bottom 3px dotted #eee
 
 			> .basicInfo
@@ -32,12 +42,12 @@
 					font-weight 500
 
 			> .authorInfo
-				flex 1
+				flex 0.75
 				text-align right
 
 				> ul
 					list-style none
-					font-size 16px
+					font-size 14px
 					margin 0
 					padding 0
 					margin-top 5px
@@ -48,6 +58,7 @@
 						> .fa
 							float right
 							margin-left 5px
+							margin-top 3px
 
 						> .author
 							font-weight bold
@@ -60,7 +71,7 @@
 							text-decoration underline
 
 			> .brandLogo
-				width 150px
+				width 115px
 				display flex
 				justify-content center
 				align-items center
@@ -83,11 +94,13 @@
 		h2
 			font-size 20px
 			font-weight 100
+			margin 5px 0 5px 0
 
 		h3
 			color #666
 			font-size 18px
 			font-weight 600
+			margin 5px 0 5px 0
 
 
 		> .progNote.basic
@@ -133,6 +146,7 @@
 
 				section
 					page-break-inside avoid
+					padding-bottom 4px
 
 					.target
 						display block
@@ -144,6 +158,12 @@
 							padding 0 2px
 
 							color #888
+
+						> .cheatMetrics
+							display flex
+							margin -5px
+
+							padding-top 5px
 
 						> .metrics
 							display flex

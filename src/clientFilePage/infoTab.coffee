@@ -13,21 +13,23 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
-
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
 	ReactDOM = win.ReactDOM
+	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	BirthDateSelector = require('../birthDateSelector').load(win)
 
 	{
 		FaIcon, renderLineBreaks, showWhen, capitalize
 	} = require('../utils').load(win)
 
+	birthDateFormat = 'YYYYMMMDD'
 
 	InfoView = React.createFactory React.createClass
 		displayName: 'InfoView'
@@ -35,6 +37,15 @@ load = (win) ->
 
 		getInitialState: ->
 			detailUnitsById = @_getDetailUnitsById()
+
+			if @props.clientFile.get('birthDate') isnt ''
+				birthMonth = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('MMM')
+				birthDay = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('DD')
+				birthYear = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('YYYY')
+			else
+				birthMonth = null
+				birthDay = null
+				birthYear = null
 
 			return {
 				firstName: @props.clientFile.getIn(['clientName', 'first'])
@@ -44,10 +55,19 @@ load = (win) ->
 				status: @props.clientFile.get('status')
 				detailUnitsById
 				selectedGroupId: null
+				birthDay
+				birthMonth
+				birthYear
 			}
+
+		componentDidMount: ->
+			if Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('YYYYMMMDD') is "Invalid Date"
+				Bootbox.alert "Warning! Invalid birthdate detected. Please update and save."
 
 		render: ->
 			hasChanges = @hasChanges()
+			currentYear = Moment().year()
+			earlyYear = currentYear - 100
 
 			return R.div({className: 'infoView'},
 
@@ -98,7 +118,7 @@ load = (win) ->
 							'detailUnitGroup'
 							'isSelected' if @_isSelected('basic')
 						].join ' '
-						onClick: @_updateSelectedGroupId.bind null, 'basic'
+						onBlur: @_updateSelectedGroupId.bind null, null
 					},
 						(if Config.features.clientAvatar.isEnabled
 							# TODO: Client photo/avatar feature
@@ -119,6 +139,7 @@ load = (win) ->
 												ref: 'firstNameField'
 												className: 'form-control'
 												onChange: @_updateFirstName
+												onClick: @_updateSelectedGroupId.bind null, 'basic'
 												value: @state.firstName
 												disabled: @props.isReadOnly
 												maxLength: 35
@@ -131,6 +152,7 @@ load = (win) ->
 											R.input({
 												className: 'form-control'
 												onChange: @_updateMiddleName
+												onClick: @_updateSelectedGroupId.bind null, 'basic'
 												value: @state.middleName
 												placeholder: "(optional)"
 												disabled: @props.isReadOnly
@@ -144,9 +166,23 @@ load = (win) ->
 											R.input({
 												className: 'form-control'
 												onChange: @_updateLastName
+												onClick: @_updateSelectedGroupId.bind null, 'basic'
 												value: @state.lastName
 												disabled: @props.isReadOnly
 												maxLength: 35
+											})
+										)
+									)
+									R.tr({},
+										R.td({}, "Birthdate")
+										R.td({},
+											BirthDateSelector({
+												birthDay: @state.birthDay
+												birthMonth: @state.birthMonth
+												birthYear: @state.birthYear
+												onSelectMonth: @_updateBirthMonth
+												onSelectDay: @_updateBirthDay
+												onSelectYear: @_updateBirthYear
 											})
 										)
 									)
@@ -157,6 +193,7 @@ load = (win) ->
 												R.input({
 													className: 'form-control'
 													onChange: @_updateRecordId
+													onClick: @_updateSelectedGroupId.bind null, 'basic'
 													value: @state.recordId
 													placeholder: "(optional)"
 													disabled: @props.isReadOnly
@@ -223,7 +260,7 @@ load = (win) ->
 									'detailUnitGroup'
 									'isSelected' if isSelected
 								].join ' '
-								onClick: @_updateSelectedGroupId.bind null, groupId
+								onBlur: @_updateSelectedGroupId.bind null, null
 							},
 								R.h4({}, definitionGroup.get('title'))
 
@@ -249,6 +286,7 @@ load = (win) ->
 														value
 														onChange: @_updateDetailUnit.bind null, fieldId
 														disabled: @props.isReadOnly
+														onClick: @_updateSelectedGroupId.bind null, groupId
 													})
 												)
 											)
@@ -274,13 +312,25 @@ load = (win) ->
 			middleNameHasChanges = @props.clientFile.getIn(['clientName', 'middle']) isnt @state.middleName
 			lastNameHasChanges = @props.clientFile.getIn(['clientName', 'last']) isnt @state.lastName
 			recordIdHasChanges = @props.clientFile.get('recordId') isnt @state.recordId
+			# if there was a valid date in props, check state and props. if date props is empty, check state and null
+			if @props.clientFile.get('birthDate') isnt ''
+				birthMonthHasChanges = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('MMM') isnt @state.birthMonth
+				birthDayHasChanges = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('DD') isnt @state.birthDay
+				birthYearHasChanges = Moment(@props.clientFile.get('birthDate'), birthDateFormat, true).format('YYYY') isnt @state.birthYear
+			else
+				birthMonthHasChanges = @state.birthMonth isnt null
+				birthDayHasChanges = @state.birthDay isnt null
+				birthYearHasChanges = @state.birthYear isnt null
 
 			return detailUnitsHasChanges or
 			statusHasChanges or
 			firstNameHasChanges or
 			middleNameHasChanges or
 			lastNameHasChanges or
-			recordIdHasChanges
+			recordIdHasChanges or
+			birthYearHasChanges or
+			birthDayHasChanges or
+			birthMonthHasChanges
 
 		_updateSelectedGroupId: (groupId, event) ->
 			selectedGroupId = groupId
@@ -298,6 +348,18 @@ load = (win) ->
 
 		_updateLastName: (event) ->
 			@setState {lastName: event.target.value}
+
+		_updateBirthMonth: (birthMonth) ->
+			birthMonth = Moment(birthMonth, 'MMM', true).format('MMM')
+			@setState {birthMonth}
+
+		_updateBirthDay: (birthDay) ->
+			birthDay = Moment(birthDay, 'D', true).format('DD')
+			@setState {birthDay}
+
+		_updateBirthYear: (birthYear) ->
+			birthYear = Moment(birthYear, 'YYYY', true).format('YYYY')
+			@setState {birthYear}
 
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
@@ -341,9 +403,18 @@ load = (win) ->
 				Bootbox.alert "Cannot save the #{Term 'client file'} without a last name"
 				return
 
+			else if (@state.birthDay? or @state.birthMonth? or @state.birthYear?) and not (@state.birthDay? and @state.birthMonth? and @state.birthYear?)
+				Bootbox.alert "Cannot save the #{Term 'client file'} without a valid birthdate"
+				return
+
 			else
 				updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
 					detailUnit.toJS()
+
+				if @state.birthYear? and @state.birthMonth? and @state.birthDay?
+					updatedBirthDate = Moment(@state.birthYear + @state.birthMonth + @state.birthDay, birthDateFormat, true).format(birthDateFormat)
+				else
+					updatedBirthDate = ''
 
 				updatedClientFile = @props.clientFile
 				.setIn(['clientName', 'first'], @state.firstName)
@@ -352,6 +423,8 @@ load = (win) ->
 				.set('recordId', @state.recordId)
 				.set('status', @state.status)
 				.set('detailUnits', updatedDetailUnits)
+				.set('birthDate', updatedBirthDate)
+
 
 				global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
 					@refs.dialog.setIsLoading(false) if @refs.dialog?

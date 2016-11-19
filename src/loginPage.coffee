@@ -3,8 +3,6 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Async = require 'async'
-Imm = require 'immutable'
-Assert = require 'assert'
 
 Config = require './config'
 Term = require './term'
@@ -18,11 +16,8 @@ load = (win) ->
 	R = React.DOM
 	Window = nw.Window.get(win)
 
-	NewInstallationPage = require('./newInstallationPage').load(win)
-
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
-	Dialog = require('./dialog').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
 
 	LoginPage = React.createFactory React.createClass
@@ -33,7 +28,6 @@ load = (win) ->
 			return {
 				isSetUp: null
 				isNewSetUp: null
-
 				isLoading: false
 			}
 
@@ -53,15 +47,12 @@ load = (win) ->
 
 		render: ->
 			unless @state.isSetUp
-				return R.div({})
+				return null
 
 			LoginPageUi({
 				ref: 'ui'
-
 				isLoading: @state.isLoading
 				loadingMessage: @state.loadingMessage
-
-				isSetUp: @state.isSetUp
 				isNewSetUp: @state.isNewSetUp
 				activateWindow: @_activateWindow
 				login: @_login
@@ -70,15 +61,12 @@ load = (win) ->
 		_checkSetUp: ->
 			# Check to make sure the dataDir exists and has an account system
 			Persist.Users.isAccountSystemSetUp Config.backend, (err, isSetUp) =>
-				@setState {isLoading: false}
-
 				if err
 					CrashHandler.handle err
 					return
 
 				if isSetUp
 					# Already set up, no need to continue here
-					console.log "Set up confirmed..."
 					@setState {isSetUp: true}
 					return
 

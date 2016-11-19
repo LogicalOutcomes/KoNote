@@ -7,6 +7,9 @@
 Imm = require 'immutable'
 Moment = require 'moment'
 
+Config = require '../config'
+
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -16,6 +19,8 @@ load = (win) ->
 
 	{TimestampFormat} = require('../persist/utils')
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
+	hiddenId = "-h-" # Fake/hidden datapoint's ID
+
 
 	Chart = React.createFactory React.createClass
 		displayName: 'Chart'
@@ -25,10 +30,20 @@ load = (win) ->
 			return {
 				progEventRegions: Imm.List()
 				metricColors: null
+				eventRows: 0
 			}
 
 		render: ->
 			return R.div({className: 'chartInner'},
+				R.style({},
+					(Imm.List([0..@state.eventRows]).map (rowNumber) =>
+						translateY = rowNumber * 350
+						scaleY = +((0.35 / @state.eventRows).toFixed(2))
+						if scaleY > 0.2 then scaleY = 0.2
+
+						".chart .c3-regions .c3-region.row#{rowNumber} > rect {transform: scaleY(#{scaleY}) translateY(#{translateY}px) !important}"
+					)
+				)
 				R.div({
 					id: 'eventInfo'
 					ref: 'eventInfo'
@@ -56,6 +71,14 @@ load = (win) ->
 			unless sameSelectedMetrics
 				@_refreshSelectedMetrics()
 
+			# Destroy and re-mount chart when values changed
+			# TODO: Make this more efficient
+			sameMetricValues = Imm.is @props.metricValues, oldProps.metricValues
+			if not sameMetricValues and @_chart?
+				console.info "Re-drawing chart..."
+				@_chart.destroy()
+				@componentDidMount()
+
 			# Update selected progEvents?
 			sameProgEvents = Imm.is @props.progEvents, oldProps.progEvents
 			unless sameProgEvents
@@ -74,6 +97,13 @@ load = (win) ->
 				@_chart.axis.min {x: newMin}
 				@_chart.axis.max {x: newMax}
 
+			# Update chart type?
+			sameChartType = Imm.is @props.chartType, oldProps.chartType
+			unless sameChartType
+				@_generateChart()
+				@_refreshSelectedMetrics()
+				@_refreshProgEvents()
+
 
 		componentDidMount: ->
 			@_generateChart()
@@ -85,7 +115,14 @@ load = (win) ->
 			# Create a Map from metric ID to data series,
 			# where each data series is a sequence of [x, y] pairs
 
-			dataSeries = @props.metricValues
+			# Inject hidden datapoint, with value well outside y-span
+			metricValues = @props.metricValues.push Imm.Map {
+				id: hiddenId
+				timestamp: Moment().format(TimestampFormat)
+				value: -99999
+			}
+
+			dataSeries = metricValues
 			.groupBy (metricValue) -> # group by metric
 				return metricValue.get('id')
 			.map (metricValues) -> # for each data series
@@ -94,7 +131,13 @@ load = (win) ->
 					return [metricValue.get('timestamp'), metricValue.get('value')]
 
 			seriesNamesById = dataSeries.keySeq().map (metricId) =>
-				return [metricId, @props.metricsById.get(metricId).get('name')]
+				# Ignore hidden datapoint
+				metricName = if metricId is hiddenId
+					metricId
+				else
+					@props.metricsById.get(metricId).get('name')
+
+				return [metricId, metricName]
 			.fromEntrySeq().toMap()
 
 			# Create set to show which x maps to which y
@@ -126,6 +169,8 @@ load = (win) ->
 			scaledDataSeries = dataSeries.map (series) ->
 				# Scaling only applies to y series
 				return series if series.first()[0] isnt 'y'
+				# Ignore hidden datapoint
+				return series if series.first() is "y-#{hiddenId}"
 
 				# Filter out id's to figure out min & max
 				values = series.flatten()
@@ -188,14 +233,19 @@ load = (win) ->
 					y: {
 						show: false
 						max: 1
+						min: 0
 					}
 				}
 				data: {
+					type: @props.chartType
 					hide: true
 					xFormat: D3TimestampFormat
 					columns: scaledDataSeries.toJS()
 					xs: xsMap.toJS()
 					names: dataSeriesNames.toJS()
+					classes: {
+						hiddenId: 'hiddenId'
+					}
 				}
 				tooltip: {
 					format: {
@@ -207,14 +257,11 @@ load = (win) ->
 							return actualValue
 
 						title: (timestamp) ->
-							return Moment(timestamp).format('MMMM D [at] HH:mm')
+							return Moment(timestamp).format(Config.timestampFormat)
 					}
 				}
-				legend: {
-					item: {
-						onclick: (id) ->
-							return false
-					}
+				item: {
+					onclick: (id) -> return false
 				}
 				padding: {
 					left: 25
@@ -234,6 +281,7 @@ load = (win) ->
 		_refreshSelectedMetrics: ->
 			console.log "Refreshing selected metrics..."
 			@_chart.hide()
+			@_chart.show("y-#{hiddenId}")
 
 			@props.selectedMetricIds.forEach (metricId) =>
 				@_chart.show("y-" + metricId)
@@ -262,8 +310,14 @@ load = (win) ->
 			.map (progEvent) =>
 				eventRegion = {
 					start: @_toUnixMs progEvent.get('startTimestamp')
-					class: "progEventRange #{progEvent.get('id')}"
+					class: "progEventRange #{progEvent.get('id')} typeId-"
 				}
+
+				eventRegion['class'] += if progEvent.get('typeId')
+					progEvent.get('typeId')
+				else
+					"null" # typeId-null is how we know it doesn't have an eventType
+
 				if Moment(progEvent.get('endTimestamp'), TimestampFormat).isValid()
 					eventRegion.end = @_toUnixMs progEvent.get('endTimestamp')
 
@@ -299,7 +353,7 @@ load = (win) ->
 					)
 						# Append class with row number
 						progEvent = Imm.fromJS(thisEvent)
-						newClass = progEvent.get('class') + " row#{rowIndex}"
+						newClass = "#{progEvent.get('class')} row#{rowIndex}"
 
 						# Convert single-point event date to a short span
 						if not progEvent.get('end')
@@ -307,7 +361,7 @@ load = (win) ->
 							progEvent = progEvent.set 'end', startDate.clone().add(6, 'hours')
 							newClass = newClass + " singlePoint"
 
-						# Update class
+						# Update class (needs to be 'class' for C3js)
 						progEvent = progEvent.set('class', newClass)
 
 						# Update eventRows, remove from remainingEvents
@@ -323,7 +377,13 @@ load = (win) ->
 
 
 			# Determine regions height
-			chartHeightY = 1 + (eventRows.size * 1/4)
+			chartHeightY = if eventRows.isEmpty() then 1 else 2
+
+			# Metrics can be bigger when only 1 progEvent row
+			if eventRows.size is 1
+				chartHeightY = 1.5
+
+			@setState {eventRows: eventRows.size}
 
 			@_chart.axis.max {
 				y: chartHeightY
@@ -344,8 +404,19 @@ load = (win) ->
 					if description.length > 1000
 						description = description.substring(0, 2000) + " . . ."
 
+					title = progEvent.get('title')
+
+					# Tack on eventType to title
+					# TODO: Do this earlier on, to save redundancy
+					if progEvent.get('typeId') and title
+						eventType = @props.eventTypes.find (eventType) -> eventType.get('id') is progEvent.get('typeId')
+						title += " (#{eventType.get('name')})"
+					else if progEvent.get('typeId')
+						title = progEvent.get('typeId')
+
+
 					eventInfo.addClass('show')
-					eventInfo.find('.title').text progEvent.get('title')
+					eventInfo.find('.title').text title
 					eventInfo.find('.description').text(description)
 
 					startTimestamp = new Moment(progEvent.get('startTimestamp'), TimestampFormat)
@@ -372,17 +443,22 @@ load = (win) ->
 					$(win.document).off('mousemove')
 				)
 
+
+				rect = $('.' + progEvent.get('id')).find('rect')[0]
+
 				# Fill progEvent region with eventType color if exists
 				if progEvent.get('typeId') and not @props.eventTypes.isEmpty()
 					eventType = @props.eventTypes
 					.find (type) -> type.get('id') is progEvent.get('typeId')
 
-					rect = $('.' + progEvent.get('id')).find('rect')[0]
 					$(rect).attr({
 						style:
 							"fill: #{eventType.get('colorKeyHex')} !important;
 							stroke: #{eventType.get('colorKeyHex')} !important;"
 					})
+				else
+					# At least clear it for non-typed events
+					$(rect).attr({style: ''})
 
 		_toUnixMs: (timestamp) ->
 			# Converts to unix ms

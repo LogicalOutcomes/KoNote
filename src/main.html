@@ -26,6 +26,10 @@ that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 				display: flex;
 				justify-content: center;
 				align-items: center;
+				animation-name: showEffect;
+				animation-iteration-count: 1;
+				animation-timing-function: ease-in;
+				animation-duration: 2s;
 			}
 			.spinner {
 				margin: 100px auto;
@@ -56,6 +60,11 @@ that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 			@keyframes sk-stretchdelay {
 				0%, 40%, 100% { transform: scaleY(0.4); }
 				20% { transform: scaleY(1.0); }
+			}
+			@keyframes showEffect {
+				0%  {  opacity: 0; }
+				25%  {  opacity: 0; }
+				100% {  opacity: 1; }
 			}
 		</style>
 		<style id="main-css">/* see start.js */</style>

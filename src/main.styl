@@ -21,17 +21,9 @@
 	max-width 400px
 
 // Override cursor actions for app-like feel
-a, button, label, th, .btn
+a, button, input[disabled], label, th, .btn
 	cursor default !important
 	-webkit-user-select none !important
-
-	&[disabled]
-		cursor not-allowed !important
-
-
-div[disabled]
-	cursor not-allowed !important
-
 
 html, body
 	min-height 500px
@@ -44,6 +36,9 @@ html, body
 	display block !important
 	height 100%
 
+.shrink
+	transform scale3d(0, 0, 0)
+
 textarea
 	// Allowing resizing usually messes up the layout.
 	// See also: ExpandingTextArea
@@ -54,6 +49,7 @@ textarea
 @require dialog
 @require metricLookupField
 @require metricWidget
+@require expandedMetricWidget
 @require progNoteDetailView
 @require revisionHistory
 @require spinner
@@ -64,10 +60,12 @@ textarea
 @require colorKeySelection
 @require programBubbles
 @require managerLayer
-@require progEventsWidget
+@require progEventWidget
 @require printPreviewPage
 @require programsDropdown
+@require timeSpanSelection
 @require responsiveTable
+@require birthDateSelector
 
 // Pages and Child Components
 @require loginPage

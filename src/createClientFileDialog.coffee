@@ -8,6 +8,7 @@ Async = require 'async'
 Persist = require './persist'
 Imm = require 'immutable'
 Config = require './config'
+Moment = require 'moment'
 Term = require './term'
 
 load = (win) ->
@@ -20,11 +21,13 @@ load = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
-	Spinner = require('./spinner').load(win)
-	ProgramBubbles = require('./programBubbles').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
+	BirthDateSelector = require('./birthDateSelector').load(win)
 
-	{renderName, renderRecordId, FaIcon, stripMetadata} = require('./utils').load(win)
+
+	{renderName, renderRecordId, FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
+
+	months = Moment.monthsShort()
 
 	CreateClientFileDialog = React.createFactory React.createClass
 		displayName: 'CreateClientFileDialog'
@@ -36,6 +39,9 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
+				birthDay: null
+				birthMonth: null
+				birthYear: null
 				firstName: ''
 				middleName: ''
 				lastName: ''
@@ -59,6 +65,8 @@ load = (win) ->
 				@setState {planTemplateHeaders}
 
 		render: ->
+			currentYear = Moment().year()
+			earlyYear = currentYear - 100
 			formIsValid = @_formIsValid()
 			selectedPlanTemplateHeaders = @state.planTemplateHeaders.find (template) => template.get('id') is @state.templateId
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
@@ -68,117 +76,219 @@ load = (win) ->
 				title: "Create New #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
-				R.div({className: 'createClientFileDialog'},
-					R.div({className: 'form-group'},
-						R.label({}, "First Name"),
-						R.input({
-							ref: 'firstNameField'
-							className: 'form-control'
-							onChange: @_updateFirstName
-							value: @state.firstName
-							onKeyDown: @_onEnterKeyDown
-							maxLength: 35
-						})
-					)
-					R.div({className: 'form-group'},
-						R.label({}, "Middle Name"),
-						R.input({
-							className: 'form-control'
-							onChange: @_updateMiddleName
-							value: @state.middleName
-							placeholder: "(optional)"
-							maxLength: 35
-						})
-					)
-					R.div({className: 'form-group'},
-						R.label({}, "Last Name"),
-						R.input({
-							className: 'form-control'
-							onChange: @_updateLastName
-							value: @state.lastName
-							onKeyDown: @_onEnterKeyDown
-							maxLength: 35
-						})
-					)
+				R.div({
+					className: [
+						'createClientFileDialog'
+						'singlePanel' if @state.planTemplateHeaders.isEmpty() or @props.programs.isEmpty()
+					].join ' '
+				},
+					R.div({className: 'panelContainer'},
+						R.div({className: 'panel-left'},
+							R.div({className: 'form-group'},
+								R.label({}, "First Name"),
+								R.input({
+									ref: 'firstNameField'
+									className: 'form-control'
+									onChange: @_updateFirstName
+									value: @state.firstName
+									onKeyDown: @_onEnterKeyDown
+									maxLength: 35
+								})
+							)
+							R.div({className: 'form-group'},
+								R.label({}, "Middle Name"),
+								R.input({
+									className: 'form-control'
+									onChange: @_updateMiddleName
+									value: @state.middleName
+									placeholder: "(optional)"
+									maxLength: 35
+								})
+							)
+							R.div({className: 'form-group'},
+								R.label({}, "Last Name"),
+								R.input({
+									className: 'form-control'
+									onChange: @_updateLastName
+									value: @state.lastName
+									onKeyDown: @_onEnterKeyDown
+									maxLength: 35
+								})
+							)
 
-					(unless @props.programs.isEmpty()
-						R.div({className: 'form-group'},
-							R.label({}, "Assign to #{Term 'Program'}(s)")
-							R.div({id: 'programsContainer'},
-								(@props.programs
-								.filter (program) =>
-									program.get('status') is 'default'
-								.map (program) =>
-									isSelected = @state.programIds.contains(program.get('id'))
-
-									R.button({
-										className: 'btn btn-default programOptionButton'
-										onClick:
-											(if isSelected then @_removeFromPrograms else @_pushToPrograms)
-											.bind null, program.get('id')
-										key: program.get('id')
-									},
-										ColorKeyBubble({
-											colorKeyHex: program.get('colorKeyHex')
-											popover: {
-												title: program.get('name')
-												content: program.get('description')
-											}
-											icon: 'check' if isSelected
-										})
-										program.get('name')
-									)
+							(if Config.clientFileRecordId.isEnabled
+								R.div({className: 'form-group'},
+									R.label({}, Config.clientFileRecordId.label),
+									R.input({
+										className: 'form-control'
+										onChange: @_updateRecordId
+										value: @state.recordId
+										placeholder: "(optional)" unless recordIdIsRequired
+										onKeyDown: @_onEnterKeyDown
+										maxLength: 23
+									})
 								)
 							)
-						)
-					)
+							R.div({},
+								R.label({}, "Birthdate")
+								R.button({
+									className: [
+										'btn btn-link btnReset'
+										showWhen @state.birthDay? or @state.birthMonth? or @state.birthYear?
+									].join ' '
+									onClick: @_resetBirthDate
+								}, "clear")
+								BirthDateSelector({
+									birthDay: @state.birthDay
+									birthMonth: @state.birthMonth
+									birthYear: @state.birthYear
+									onSelectMonth: @_updateBirthMonth
+									onSelectDay: @_updateBirthDay
+									onSelectYear: @_updateBirthYear
+								})
+							)
+							(if @state.planTemplateHeaders.isEmpty()
+								(unless @props.programs.isEmpty()
+									R.div({className: 'form-group'},
+										R.label({}, "Assign to #{Term 'Program'}(s)")
+										R.div({id: 'programsContainer'},
+											(@props.programs
+											.filter (program) =>
+												program.get('status') is 'default'
+											.map (program) =>
+												isSelected = @state.programIds.contains(program.get('id'))
 
-					unless @state.planTemplateHeaders.isEmpty()
-						R.div({className: 'form-group'},
-							R.label({}, "Select Plan Template"),
-							R.div({className: "template-container"}
-
-								B.DropdownButton({
-									title: if selectedPlanTemplateHeaders? then selectedPlanTemplateHeaders.get('name') else "No Template"
-								},
-									if selectedPlanTemplateHeaders?
-										[
-											B.MenuItem({
-												onClick: @_updatePlanTemplate.bind null, ''
-											},
-												"None "
-												FaIcon('ban')
-											)
-											B.MenuItem({divider: true})
-										]
-									(@state.planTemplateHeaders.map (planTemplateHeader) =>
-										B.MenuItem({
-											key: planTemplateHeader.get('id')
-											onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
-										},
-											R.div({
-												onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
-											},
-												planTemplateHeader.get('name')
-
+												R.button({
+													className: 'btn btn-default programOptionButton'
+													onClick:
+														(if isSelected then @_removeFromPrograms else @_pushToPrograms)
+														.bind null, program.get('id')
+													key: program.get('id')
+												},
+													ColorKeyBubble({
+														colorKeyHex: program.get('colorKeyHex')
+														popover: {
+															title: program.get('name')
+															content: program.get('description')
+														}
+														icon: 'check' if isSelected
+													})
+													program.get('name')
+												)
 											)
 										)
 									)
 								)
 							)
-						)
+							(if @props.programs.isEmpty()
+								(unless @state.planTemplateHeaders.isEmpty()
+									R.div({className: 'template-form-group'},
+										R.label({}, "Select Plan Template"),
+										R.div({className: "template-container"}
 
-					(if Config.clientFileRecordId.isEnabled
-						R.div({className: 'form-group'},
-							R.label({}, Config.clientFileRecordId.label),
-							R.input({
-								className: 'form-control'
-								onChange: @_updateRecordId
-								value: @state.recordId
-								placeholder: "(optional)" unless recordIdIsRequired
-								onKeyDown: @_onEnterKeyDown
-								maxLength: 23
-							})
+											B.DropdownButton({
+												title: if selectedPlanTemplateHeaders? then selectedPlanTemplateHeaders.get('name') else "No Template"
+											},
+												if selectedPlanTemplateHeaders?
+													[
+														B.MenuItem({
+															onClick: @_updatePlanTemplate.bind null, ''
+														},
+															"None "
+															FaIcon('ban')
+														)
+														B.MenuItem({divider: true})
+													]
+												(@state.planTemplateHeaders.map (planTemplateHeader) =>
+													B.MenuItem({
+														key: planTemplateHeader.get('id')
+														onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+													},
+														R.div({
+															onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+														},
+															planTemplateHeader.get('name')
+
+														)
+													)
+												)
+											)
+										)
+									)
+								)
+							)
+
+						)
+						(unless @state.planTemplateHeaders.isEmpty() or @props.programs.isEmpty()
+							R.div({className: 'panel-right'},
+								(unless @state.planTemplateHeaders.isEmpty()
+									R.div({className: 'template-form-group'},
+										R.label({}, "Select Plan Template"),
+										R.div({className: "template-container"}
+
+											B.DropdownButton({
+												title: if selectedPlanTemplateHeaders? then selectedPlanTemplateHeaders.get('name') else "No Template"
+											},
+												if selectedPlanTemplateHeaders?
+													[
+														B.MenuItem({
+															onClick: @_updatePlanTemplate.bind null, ''
+														},
+															"None "
+															FaIcon('ban')
+														)
+														B.MenuItem({divider: true})
+													]
+												(@state.planTemplateHeaders.map (planTemplateHeader) =>
+													B.MenuItem({
+														key: planTemplateHeader.get('id')
+														onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+													},
+														R.div({
+															onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
+														},
+															planTemplateHeader.get('name')
+
+														)
+													)
+												)
+											)
+										)
+									)
+								)
+								(unless @props.programs.isEmpty()
+									R.div({className: 'form-group'},
+										R.label({}, "Assign to #{Term 'Program'}(s)")
+										R.div({className: 'programsContainer'},
+											(@props.programs
+											.filter (program) =>
+												program.get('status') is 'default'
+											.map (program) =>
+												isSelected = @state.programIds.contains(program.get('id'))
+
+												R.button({
+													className: 'btn btn-default programOptionButton'
+													onClick:
+														(if isSelected then @_removeFromPrograms else @_pushToPrograms)
+														.bind null, program.get('id')
+													key: program.get('id')
+												},
+													ColorKeyBubble({
+														colorKeyHex: program.get('colorKeyHex')
+														popover: {
+															title: program.get('name')
+															content: program.get('description')
+														}
+														icon: 'check' if isSelected
+													})
+													program.get('name')
+												)
+											)
+										)
+									)
+								)
+
+							)
 						)
 					)
 
@@ -197,13 +307,26 @@ load = (win) ->
 			)
 
 		_formIsValid: ->
+			# dob field must be all or none
+			birthday = true
+			if @state.birthDay? or @state.birthMonth? or @state.birthYear?
+				unless @state.birthDay? and @state.birthMonth? and @state.birthYear?
+					birthday = false
+
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
 			if recordIdIsRequired
-				return @state.firstName and @state.lastName and @state.recordId
+				return birthday and @state.firstName and @state.lastName and @state.recordId
 			else
-				return @state.firstName and @state.lastName
+				return birthday and @state.firstName and @state.lastName
 		_cancel: ->
 			@props.onCancel()
+
+		_resetBirthDate: ->
+			@setState {
+				birthDay: null
+				birthMonth: null
+				birthYear: null
+			}
 
 		_updateFirstName: (event) ->
 			@setState {firstName: event.target.value}
@@ -213,6 +336,15 @@ load = (win) ->
 
 		_updateLastName: (event) ->
 			@setState {lastName: event.target.value}
+
+		_updateBirthMonth: (birthMonth) ->
+			@setState {birthMonth}
+
+		_updateBirthDay: (birthDay) ->
+			@setState {birthDay}
+
+		_updateBirthYear: (birthYear) ->
+			@setState {birthYear}
 
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
@@ -241,10 +373,16 @@ load = (win) ->
 			last = @state.lastName
 			recordId = @state.recordId
 
+			if @state.birthYear? and @state.birthMonth? and @state.birthDay?
+				birthDate = Moment(@state.birthYear + @state.birthMonth + @state.birthDay, 'YYYYMMMD', true).format('YYYYMMMDD')
+			else
+				birthDate = ''
+
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
 			  recordId: recordId
 			  status: 'active'
+			  birthDate
 			  plan: {
 			    sections: []
 			  }

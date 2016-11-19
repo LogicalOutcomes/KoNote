@@ -30,8 +30,9 @@
 		"label": "ID#"
 	},
 
-	"timestampFormat": "Do MMM, YYYY [-] h:mma",
-	"dateFormat": "Do MMM, YYYY",
+	"timestampFormat": "MMM Do, YYYY [-] h:mma",
+	"dateFormat": "MMM Do, YYYY",
+	"timeFormat": "h:mma",
 
 	"timeout": {
 		"duration": 25,
@@ -104,19 +105,19 @@
 			"title": "Basic Information",
 			"fields": [
 				{
-					"name": "Email Address",
+					"name": "Primary Phone",
+					"inputType": "input",
+					"placeholder": "Primary Phone"
+				},
+				{
+					"name": "Other Phone",
+					"inputType": "input",
+					"placeholder": "Other Phone"
+				},
+				{
+					"name": "Email",
 					"inputType": "input",
 					"placeholder": "Email"
-				},
-				{
-					"name": "Home Phone",
-					"inputType": "input",
-					"placeholder": "Home Phone"
-				},
-				{
-					"name": "Mobile Phone",
-					"inputType": "input",
-					"placeholder": "Mobile Phone"
 				},
 				{
 					"name": "Address",
@@ -124,7 +125,7 @@
 					"placeholder": "Address"
 				},
 				{
-					"name": "Additional Comments",
+					"name": "Comments",
 					"inputType": "textarea",
 					"placeholder": "Additional Comments"
 				}

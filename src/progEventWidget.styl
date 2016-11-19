@@ -1,0 +1,78 @@
+.progEventWidget
+
+	&.large, &.print
+		margin-top 15px
+		padding-left 35px
+
+		> div
+			padding-bottom 5px
+
+		.eventTypeTitleContainer
+			display flex
+			position relative
+			align-items center
+
+			.iconContainer
+				position absolute
+				left -35px
+				font-size 15px
+				background none
+				border-radius 12.5px
+				width 25px
+				height 25px
+				display flex
+				align-items center
+				justify-content center
+				padding-bottom 1px // Better v-centering
+
+				.fa
+					color black
+
+			.eventType
+				padding-right 8px
+
+				span
+					border-bottom 2px solid transparent
+
+			.title
+				flex 1
+				font-weight 500
+
+				.eventTypeName
+					font-weight 300 !important
+
+		.description
+			color #000
+			margin-top 15px // Ensures padding while isEditing
+
+		.date > span
+			color #888
+
+	// Black & White printing
+	&.print
+		.iconContainer
+			background none !important
+
+		.fa
+			color #000 !important
+
+	&.small
+		cursor default
+		display inline-block
+		align-items center
+		height 30px
+		background #848484
+		border-radius 3px
+		color white
+		padding 5px 10px
+		margin 8px
+		margin-left 0px
+
+		font-size 14px
+
+		> .fa
+			margin-right 6px
+
+	// Hover Tooltip
+	.tooltip-inner
+		max-width 300px

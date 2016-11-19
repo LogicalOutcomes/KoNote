@@ -1,9 +1,10 @@
 .createClientFileDialog
-	min-width 300px
+	min-width 580px
+	max-width 600px
 
-	#programsContainer
-		width 350px
-		max-height 150px
+	.programsContainer
+		width 100%
+		max-height 280px
 		overflow-y auto
 		overflow-x hidden
 
@@ -23,3 +24,50 @@
 
 				> .bubbleContents
 					font-size 1.5em
+
+
+	&.singlePanel
+		min-width 280px
+		max-width 365px
+
+		#programsContainer
+			max-height 89px
+
+
+
+	.btn-toolbar
+		float right
+
+	.panelContainer
+		display flex
+
+		&.singlePanel
+			min-width 280px
+
+		.panel-left
+			flex 1
+
+		.panel-right
+			padding-left 20px
+			flex 1
+
+			.template-form-group
+				.dropdown .dropdown-menu
+					max-height 162px
+					overflow-y auto
+
+	.birthdateLabel
+		vertical-align middle
+
+	.btnReset
+		margin 0px 0px 5px 5px
+		padding 0px
+		outline none
+		text-decoration none
+		&:focus
+			outline none
+
+	.dropdown
+		margin 0px 15px 15px 0px
+
+

@@ -5,7 +5,6 @@
 # Node libs
 Imm = require 'immutable'
 Async = require 'async'
-_ = require 'underscore'
 
 Config = require './config'
 Term = require './term'
@@ -28,13 +27,12 @@ load = (win) ->
 	Window = nw.Window.get(win)
 
 	MainMenu = require('./mainMenu').load(win)
-	BrandWidget = require('./brandWidget').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ProgramBubbles = require('./programBubbles').load(win)
 
 	ManagerLayer = require('./managerLayer').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
-	GenerateSummariesDialog = require('./generateSummariesDialog').load(win)
+	if Config.features.shiftSummaries.isEnabled then GenerateSummariesDialog = require('./generateSummariesDialog').load(win)
 
 	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
@@ -57,7 +55,7 @@ load = (win) ->
 			@props.setWindowTitle """
 				#{Config.productName} (#{global.ActiveSession.userName})
 			"""
-			@_loadData()
+			@_loadInitialData()
 
 		deinit: (cb=(->)) ->
 			# Nothing to deinit
@@ -67,7 +65,7 @@ load = (win) ->
 			@props.closeWindow()
 
 		render: ->
-			unless @state.status is 'ready' then return R.div({})
+			unless @state.status is 'ready' then return null
 
 			userProgram = @_getUserProgram()
 
@@ -122,8 +120,27 @@ load = (win) ->
 		_setStatus: (status) ->
 			@setState {status}
 
-		_loadData: ->
-			clientFileHeaders = null
+		_loadInitialData: ->
+			ActiveSession.persist.clientFiles.list (err, result) =>
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+
+					CrashHandler.handle err
+					return
+
+				clientFileHeaders = result
+
+				@setState {
+					status: 'ready'
+					clientFileHeaders
+				}
+
+				@_loadAllData()
+
+		_loadAllData: ->
+			clientFileHeaders = @state.clientFileHeaders
 			programHeaders = null
 			programs = null
 			programsById = null
@@ -132,14 +149,6 @@ load = (win) ->
 			clientFileProgramLinks = null
 
 			Async.parallel [
-				(cb) =>
-					ActiveSession.persist.clientFiles.list (err, result) =>
-						if err
-							cb err
-							return
-
-						clientFileHeaders = result
-						cb()
 				(cb) =>
 					# TODO: Lazy load this
 					Async.series [
@@ -596,11 +605,13 @@ load = (win) ->
 			tableData = queryResults.map (clientFile) =>
 				clientFileId = clientFile.get('id')
 
-				programMemberships = @props.clientFileProgramLinks
-				.filter (link) =>
-					link.get('clientFileId') is clientFileId and link.get('status') is "enrolled"
-				.map (link) =>
-					@props.programs.find (program) -> program.get('id') is link.get('programId')
+				programMemberships = null
+				if @props.clientFileProgramLinks?
+					programMemberships = @props.clientFileProgramLinks
+					.filter (link) =>
+						link.get('clientFileId') is clientFileId and link.get('status') is "enrolled"
+					.map (link) =>
+						@props.programs.find (program) -> program.get('id') is link.get('programId')
 
 				givenNames = clientFile.getIn(['clientName', 'first'])
 				middleName = clientFile.getIn(['clientName', 'middle'])

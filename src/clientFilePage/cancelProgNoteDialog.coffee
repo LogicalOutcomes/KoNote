@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Imm = require 'immutable'
@@ -9,6 +9,7 @@ Config = require '../config'
 Persist = require '../persist'
 Term = require '../term'
 
+
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
@@ -17,7 +18,8 @@ load = (win) ->
 
 	CrashHandler = require('../crashHandler').load(win)
 	Dialog = require('../dialog').load(win)
-	Spinner = require('../spinner').load(win)
+	{formatTimestamp} = require('../utils').load(win)
+
 
 	CancelProgNoteDialog = React.createFactory React.createClass
 		displayName: 'CancelProgNoteDialog'
@@ -34,6 +36,7 @@ load = (win) ->
 		getDefaultProps: ->
 			return {
 				progEvents: Imm.List()
+				globalEvents: Imm.List()
 			}
 
 		render: ->
@@ -44,7 +47,7 @@ load = (win) ->
 			},
 				R.div({className: 'cancelProgNoteDialog'},
 					R.div({className: 'alert alert-warning'},
-						"This will cancel the #{Term 'progress note'} entry, 
+						"This will cancel the #{Term 'progress note'} entry,
 						including any recorded #{Term 'metrics'}/#{Term 'events'}."
 					)
 					R.div({className: 'form-group'},
@@ -61,7 +64,7 @@ load = (win) ->
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
-							onClick: @_cancel							
+							onClick: @_cancel
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-primary'
@@ -82,36 +85,79 @@ load = (win) ->
 			if event.which is 13 and @state.firstName and @state.lastName
 				@_submit()
 
-		_submit: ->
-			# @refs.dialog.setIsLoading true
-
-			# Cancel progNote with reason
-			cancelledProgNote = @props.progNote
-			.set('status', 'cancelled')
-			.set('statusReason', @state.reason)
-
-			# Cancel progEvents that aren't already cancelled
-			# Attach same reason
-			cancelledProgEvents = @props.progEvents
-			.filter (progEvent) =>
-				progEvent.get('status') is 'default'
+		_cancelEvents: (events) ->
+			return events
+			.filter (progEvent) -> progEvent.get('status') is 'default'
 			.map (progEvent) =>
 				progEvent
 				.set('status', 'cancelled')
 				.set('statusReason', @state.reason)
 
-			console.log "cancelledProgEvents", cancelledProgEvents.toJS()
+		_submit: ->
+			# Cancel progNote with reason
+			cancelledProgNote = @props.progNote
+			.set('status', 'cancelled')
+			.set('statusReason', @state.reason)
 
+			# Cancel only active/default events, with same reason
+			cancelledProgEvents = @_cancelEvents @props.progEvents
+			cancelledGlobalEvents = @_cancelEvents @props.globalEvents
+
+			cancelledEvents = cancelledProgEvents
+			.concat(cancelledGlobalEvents)
+			.sortBy (event) -> event.get('startTimestamp')
+
+			# Build HTML for each event entry
+			eventsList = cancelledEvents.toJS().map ({title, startTimestamp, endTimestamp, relatedProgEventId}) ->
+				# relatedProgEventId indicates this is a globalEvent
+				if relatedProgEventId?
+					title += " (#{Term 'global event'})"
+
+				return """
+					<li>
+						<strong>#{title}</strong>\n
+						<div>From: <em>#{formatTimestamp startTimestamp}</em></div>
+						<div>Until: <em>#{formatTimestamp endTimestamp}</em></div>
+					</li>
+				"""
+			.join('')
+
+			# Build HTML for events warning
+			eventsMessage = """
+				<br><br>
+				The following #{Term 'events'} will also be cancelled:
+				<ul>
+					#{eventsList}
+				</ul>
+			"""
+
+			eventsMessage = if cancelledEvents.isEmpty() then '' else eventsMessage
+
+			# Prompt the user, include eventsMessage if any to show
+			Bootbox.confirm """
+				Are you sure you want to cancel this #{Term 'progress note'}?
+				#{eventsMessage}
+			""", (ok) =>
+				if ok
+					@_cancelProgNote cancelledProgNote, cancelledProgEvents, cancelledGlobalEvents
+
+
+		_cancelProgNote: (progNote, progEvents, globalEvents) ->
 			Async.series [
 				(cb) =>
-					ActiveSession.persist.progNotes.createRevision cancelledProgNote, cb
+					ActiveSession.persist.progNotes.createRevision progNote, cb
+
 				(cb) =>
-					Async.map cancelledProgEvents.toArray(), (progEvent) =>
+					Async.map progEvents.toArray(), (progEvent, cb) ->
 						ActiveSession.persist.progEvents.createRevision progEvent, cb
 					, cb
-			], (err) =>
-				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
+				(cb) =>
+					Async.map globalEvents.toArray(), (globalEvent, cb) ->
+						ActiveSession.persist.globalEvents.createRevision globalEvent, cb
+					, cb
+
+			], (err) =>
 				if err
 					if err instanceof Persist.IOError
 						Bootbox.alert """
@@ -123,7 +169,7 @@ load = (win) ->
 					return
 
 				# Persist will trigger an event to update the UI
-				
+
 
 	return CancelProgNoteDialog
 

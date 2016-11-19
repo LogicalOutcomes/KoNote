@@ -19,8 +19,8 @@
 				color #888
 				font-size 16px
 
-			> .templates
-				padding-top 20px
+			> .btn, .templates
+				margin 5px
 
 			> .btn > .fa
 				padding-right 10px
@@ -67,7 +67,7 @@
 				> .sectionHeader
 					display flex
 					align-items center
-					justify-content space-between
+					justify-content flex-end
 
 					border-color sidebar-borders
 					border-style none
@@ -79,9 +79,9 @@
 						display flex
 
 						> .statusButton
-							cursor default
-							flex 1
 							display flex
+							flex 1
+							cursor default
 							justify-content center
 							align-items center
 							padding 8px
@@ -100,23 +100,23 @@
 						&.invisible
 							opacity 0
 
-					&.sticky
-						position absolute
-						top 0
-						left 0
-						right 0
-
-						background hsla(0, 0%, 100%, 0.8)
-
-						&.invisible
-							display none
-
 					> .sectionName
 						flex 1
 						padding 5px 0
 
 						font-size 24px
 						font-weight 300
+
+						cursor default
+
+						&:hover .renameIcon
+							opacity 0.8
+
+						.renameIcon
+							opacity 0
+							font-size 0.7em
+							padding-left 10px
+							transition opacity .3s ease
 
 					> .btn-group > .btn.addTarget > .fa
 						padding-right 6px
@@ -211,7 +211,7 @@
 
 							input, textarea
 								padding 2px 5px
-								border none
+								border-color transparent
 								box-shadow none
 								transition none
 

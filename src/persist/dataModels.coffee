@@ -26,6 +26,7 @@ dataModelDefinitions = [
 				middle: Joi.string().allow('')
 				last: Joi.string()
 			})
+			birthDate: Joi.date().format('YYYYMMMDD').raw().allow('')
 			status: ['active', 'inactive', 'discharged']
 			statusReason: Joi.string().optional()
 			recordId: [Joi.string(), '']
@@ -57,7 +58,7 @@ dataModelDefinitions = [
 				isMutable: true
 				indexes: [['status'], ['relatedProgNoteId']]
 				schema: Joi.object().keys({
-					title: Joi.string()
+					title: Joi.string().allow('')
 					description: Joi.string().allow('')
 					startTimestamp: Joi.date().format(TimestampFormat).raw()
 					endTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
@@ -156,18 +157,6 @@ dataModelDefinitions = [
 						)
 					})
 				]
-				children: [
-					{
-						name: 'attachment'
-						collectionName: 'attachments'
-						isMutable: true
-						indexes: [['filename']]
-						schema: Joi.object().keys({
-							filename: Joi.string()
-							encodedData: Joi.string()
-						})
-					}
-				]
 			}
 			{
 				name: 'alert'
@@ -180,6 +169,19 @@ dataModelDefinitions = [
 					status: ['default', 'cancelled']
 					statusReason: Joi.string().optional()
 					authorProgramId: IdSchema.allow('')
+				})
+			}
+			{
+				name: 'attachment'
+				collectionName: 'attachments'
+				isMutable: true
+				indexes: [['filename'], ['status'], ['relatedProgNoteId']]
+				schema: Joi.object().keys({
+					filename: Joi.string()
+					encodedData: Joi.string()
+					status: ['default', 'cancelled']
+					statusReason: Joi.string().optional()
+					relatedProgNoteId: IdSchema
 				})
 			}
 		]
@@ -234,6 +236,7 @@ dataModelDefinitions = [
 		indexes: [['status'], ['name']]
 		schema: Joi.object().keys({
 			name: Joi.string()
+			description: Joi.string()
 			status: ['default', 'cancelled']
 			sections: Joi.array().items(
 				[
