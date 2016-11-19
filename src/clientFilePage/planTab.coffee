@@ -1075,17 +1075,22 @@ load = (win) ->
 			allTargetsAreInactive = not targetIdsByStatus.has('default')
 
 			canSetStatus = isExistingSection and allTargetsAreInactive
+			canModify = not isReadOnly and not sectionIsInactive
 
 
 			return R.div({className: 'sectionHeader'},
 				R.div({
 					title: "Edit name"
 					className: 'sectionName'
-					disabled: isReadOnly or sectionIsInactive
 				},
-					R.span({onClick: renameSection.bind null, section.get('id')},
+					R.span({
+						onClick: renameSection.bind(null, section.get('id')) if canModify
+					},
 						section.get('name')
-						FaIcon('pencil', {className: 'renameIcon'})
+
+						(if canModify
+							FaIcon('pencil', {className: 'renameIcon'})
+						)
 					)
 				)
 				R.div({className: 'btn-group btn-group-sm'},
@@ -1093,7 +1098,7 @@ load = (win) ->
 						ref: 'addTarget'
 						className: 'addTarget btn btn-primary'
 						onClick: addTargetToSection.bind null, section.get('id')
-						disabled: isReadOnly or sectionIsInactive
+						disabled: not canModify
 					},
 						FaIcon('plus')
 						"Add #{Term 'target'}"
@@ -1109,7 +1114,7 @@ load = (win) ->
 							title: "Create Template from Section"
 							sections: Imm.List([section])
 							currentTargetRevisionsById
-							disabled: isReadOnly or sectionIsInactive
+							disabled: not canModify
 						},
 							FaIcon 'wpforms'
 						)
@@ -1121,7 +1126,7 @@ load = (win) ->
 						(if sectionStatus is 'default'
 							R.div({className: 'statusButtonGroup'},
 								WithTooltip({
-									title: "Deactivate #{Term 'Section'}" unless @props.isReadOnly or @props.hasTargetChanged
+									title: "Deactivate #{Term 'Section'}" unless isReadOnly or @props.hasTargetChanged
 									placement: 'top'
 									container: 'body'
 								},
@@ -1144,7 +1149,7 @@ load = (win) ->
 									)
 								)
 								WithTooltip({
-									title: "Complete #{Term 'Section'}" unless @props.isReadOnly or @props.hasTargetChanged
+									title: "Complete #{Term 'Section'}" unless isReadOnly or @props.hasTargetChanged
 									placement: 'top'
 									container: 'body'
 								},
@@ -1181,7 +1186,7 @@ load = (win) ->
 											#{Term 'plan'}, and future #{Term 'progress notes'}.
 										"""
 										reasonLabel: "Reason for reactivation:"
-										disabled: @props.isReadOnly or @props.hasTargetChanged
+										disabled: isReadOnly or @props.hasTargetChanged
 									},
 										FaIcon 'sign-in'
 									)
