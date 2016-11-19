@@ -88,6 +88,7 @@ load = (win, {dataSet}) ->
 								onClick: win.print
 							},
 								FaIcon('print')
+								" "
 								"Print"
 							)
 
