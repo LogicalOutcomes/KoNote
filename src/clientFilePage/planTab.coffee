@@ -1081,11 +1081,12 @@ load = (win) ->
 				R.div({
 					title: "Edit name"
 					className: 'sectionName'
-					onClick: renameSection.bind null, section.get('id')
 					disabled: isReadOnly or sectionIsInactive
 				},
-					section.get('name')
-					FaIcon('pencil', {className: 'renameIcon'})
+					R.span({onClick: renameSection.bind null, section.get('id')},
+						section.get('name')
+						FaIcon('pencil', {className: 'renameIcon'})
+					)
 				)
 				R.div({className: 'btn-group btn-group-sm'},
 					R.button({
