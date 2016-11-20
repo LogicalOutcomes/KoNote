@@ -212,8 +212,10 @@ load = (win) ->
 			@setState {progEvent}
 
 		_formIsInvalid: ->
-			description = @state.progEvent.get('description').trim()
-			return not description
+			description = @state.progEvent.get('description')
+			hasDescription = if !!description then description.trim() else description
+
+			return not hasDescription
 
 		_hasChanges: ->
 			return not Imm.is @state.progEvent, @props.data
