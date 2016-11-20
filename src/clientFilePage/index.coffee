@@ -58,13 +58,8 @@ load = (win, {clientFileId}) ->
 
 	ClientFilePage = React.createFactory React.createClass
 		displayName: 'ClientFilePage'
-		
-		shouldComponentUpdate: (nextProps, nextState) ->
-			if nextState.progNoteIndex < @state.progNoteTotal
-				return false
-			else
-				return true
-		
+		mixins: [React.addons.PureRenderMixin]
+
 		getInitialState: ->
 			return {
 				status: 'init' # Either init or ready
