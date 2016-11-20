@@ -114,22 +114,24 @@ load = (win) ->
 
 			# TODO: Separate to display & isEditing components, for more flexibility
 			return R.div({className: "progEventWidget fullWidget #{format}"},
+				R.span({
+					className: 'iconContainer'
+					style: {
+						background: (eventType.get('colorKeyHex') if hasEventType)
+						top: ('-2px' unless isEditing)
+					}
+				},
+					FaIcon('calendar', {
+						style:
+							color: 'white' if hasEventType
+					})
+				)
+
 				R.div({
 					className: 'eventTypeTitleContainer'
 					style:
-						padding: 0 if not hasEventType and not hasTitle
+						paddingBottom: if not isEditing and not hasEventType and not hasTitle then '0px'
 				},
-					R.span({
-						className: 'iconContainer'
-						style: {
-							background: eventType.get('colorKeyHex') if hasEventType
-						}
-					},
-						FaIcon('calendar', {
-							style:
-								color: 'white' if hasEventType
-						})
-					)
 
 					(if canEditEventTypes
 						R.div({className: 'eventType'},
@@ -164,8 +166,6 @@ load = (win) ->
 				(if hasDescription or isEditing
 					R.div({
 						className: 'description'
-						style:
-							marginTop: -10 if not hasEventType and not hasTitle
 					},
 						(if isEditing
 							ExpandingTextArea({
