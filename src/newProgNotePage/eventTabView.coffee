@@ -57,7 +57,7 @@ load = (win) ->
 			typeId = progEvent.get 'typeId'
 			selectedEventType = @props.eventTypes.find (type) => type.get('id') is typeId
 
-			formIsInvalid = @_formIsInvalid()
+			formIsValid = @_formIsValid()
 			hasChanges = @_hasChanges()
 
 			return R.div({
@@ -155,7 +155,7 @@ load = (win) ->
 								R.button({
 									className: 'btn btn-success btn-block'
 									type: 'submit'
-									disabled: formIsInvalid or not hasChanges
+									disabled: not formIsValid or not hasChanges
 								},
 									"Save "
 									FaIcon('check')
@@ -166,7 +166,7 @@ load = (win) ->
 								className: 'btn btn-success btn-block'
 								type: 'submit'
 								onClick: @_submit
-								disabled: formIsInvalid or not hasChanges
+								disabled: not formIsValid or not hasChanges
 							},
 								"Save "
 								FaIcon('check')
@@ -211,14 +211,17 @@ load = (win) ->
 
 			@setState {progEvent}
 
-		_formIsInvalid: ->
+		_formIsValid: ->
 			description = @state.progEvent.get('description')
-			hasDescription = if !!description then description.trim() else description
+			hasDescription = if description then description.trim() else description
+			hasEventTypeId = @state.progEvent.get('typeId')
 
-			return not hasDescription
+			# Needs to have a description or eventType
+			return !!(hasDescription or hasEventTypeId)
 
 		_hasChanges: ->
-			return not Imm.is @state.progEvent, @props.data
+			if not @initialState then return false # Make sure initialState is mounted
+			return !!@state.isGlobalEvent or not Imm.is @state.progEvent, @initialState.progEvent
 
 		_toggleIsGlobalEvent: ->
 			@setState {isGlobalEvent: not @state.isGlobalEvent}
