@@ -24,3 +24,21 @@ This release generally improves performance. Startup time is 50% faster and clie
 - Datepicker better supports years / decades (#851)
 - Events can be edited when editing a progress note (#248)
 - Cancelling a progress note cancels associated events (#813)
+
+
+### 1.11.0
+
+#### Improvements
+
+- Add client information page (#114)
+- Support for file attachments in quick notes (#721)
+- New UI for plan view (#767, #780)
+- Allow reordering of plan sections and targets (#80)
+- Nicer formating of printed pages (#808)
+
+#### Fixes
+
+- Fix input latency on new progress note page (#783)
+- Apply template without requiring a section (#785)
+- Programs can be deactivated (#760)
+- Various other fixes and stability improvements
