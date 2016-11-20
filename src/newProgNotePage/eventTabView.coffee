@@ -41,7 +41,7 @@ load = (win) ->
 			startTimestamp = startingDate.startOf('day').format(TimestampFormat)
 			endTimestamp = startingDate.endOf('day').format(TimestampFormat)
 
-			return {
+			state = {
 				progEvent: Imm.Map {
 					title: ''
 					description: ''
@@ -51,6 +51,9 @@ load = (win) ->
 				}
 				isGlobalEvent: null
 			}
+
+			@initialState = state # Cache for later comparisons
+			return state
 
 		render: ->
 			progEvent = @state.progEvent
@@ -69,7 +72,7 @@ load = (win) ->
 				R.form({className: showWhen @props.isBeingEdited},
 					R.button({
 						className: 'btn btn-danger closeButton'
-						onClick: @_closeForm
+						onClick: @_closeForm.bind null, hasChanges
 					},
 						FaIcon('times')
 					)
@@ -226,10 +229,10 @@ load = (win) ->
 		_toggleIsGlobalEvent: ->
 			@setState {isGlobalEvent: not @state.isGlobalEvent}
 
-		_closeForm: (event) ->
+		_closeForm: (hasChanges, event) ->
 			event.preventDefault()
 
-			if @_hasChanges()
+			if hasChanges
 				Bootbox.confirm "Cancel #{Term 'event'} editing?", (ok) =>
 					if ok
 						@_resetProgEvent()
