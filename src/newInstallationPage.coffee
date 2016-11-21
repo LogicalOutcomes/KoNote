@@ -617,7 +617,8 @@ load = (win) ->
 				(cb) =>
 					@_updateProgress 75, "Creating \"admin\" user..."
 					# Create admin user account using systemAccount
-					Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
+					displayName = 'admin'
+					Persist.Users.Account.create systemAccount, displayName, 'admin', adminPassword, 'admin', (err) =>
 						if err
 							if err instanceof Persist.Users.UserNameTakenError
 								Bootbox.alert "An admin #{Term 'user account'} already exists."
