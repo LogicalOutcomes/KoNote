@@ -1369,7 +1369,7 @@ load = (win) ->
 				)
 				R.div({className: 'author'},
 					' by '
-					firstRevision.get('author')
+					firstRevision.get('authorDisplayName')
 				)
 			)
 

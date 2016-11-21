@@ -279,7 +279,7 @@ load = (win) ->
 				R.div({className: 'header'},
 					R.div({className: 'author'},
 						FaIcon('user')
-						revision.get('author')
+						revision.get('authorDisplayName')
 					)
 					R.div({className: 'timestamp'},
 						if @props.isFirstRevision and revision.get('backdate')
