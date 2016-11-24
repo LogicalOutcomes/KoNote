@@ -80,7 +80,6 @@ createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 		.set 'id', generateId()
 		.set 'revisionId', generateId()
 		.set 'author', obj.get('author') or session.userName
-		.set 'authorDisplayName', session.account.publicInfo.displayName
 		.set 'timestamp', obj.get('timestamp') or Moment().format(TimestampFormat)
 
 		# Validate object before passing to backend
@@ -153,7 +152,6 @@ createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 		obj = obj
 		.set 'revisionId', generateId()
 		.set 'author', session.userName
-		.set 'authorDisplayName', session.account.publicInfo.displayName
 		.set 'timestamp', Moment().format(TimestampFormat)
 
 		# Validate object before passing to backend
@@ -308,7 +306,6 @@ prepareSchema = (schema, context) ->
 		revisionId: IdSchema
 		timestamp: Joi.date().format(TimestampFormat).raw()
 		author: Joi.string().regex(/^[a-zA-Z0-9_-]+$/)
-		authorDisplayName: Joi.string().regex(/^[a-zA-Z0-9_-]+$/)
 	}
 
 	# Each context type needs its own ID field
