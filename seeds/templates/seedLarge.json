@@ -1,5 +1,5 @@
 {
-	
+
 	"clientFiles": 100,
 	"clientFileSections": 5,
 	"accounts": 20,
@@ -9,6 +9,7 @@
 
 	"planTargets": 100,
 	"progNotes": 40,
+	"quickNotes": 40,
 	"progEvents": 40
 
 }

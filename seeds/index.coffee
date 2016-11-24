@@ -91,7 +91,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 					cb()
 
 
-		# Write a progNote, write a note and random metric for each target, in each section
+		# Write full a progNote, write a note and random metric for each target, in each section
 		(cb) ->
 			Create.progNotes template.progNotes, {clientFile, sections, planTargets, metrics}, (err, results) ->
 				if err
@@ -100,6 +100,17 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 
 				progNotes = results
 				console.log "Created #{progNotes.size} progNotes"
+				cb()
+
+		# Write a quickNote
+		(cb) ->
+			Create.quickNotes template.quickNotes, {clientFile}, (err, results) ->
+				if err
+					cb err
+					return
+
+				quickNotes = results
+				console.log "Created #{quickNotes.size} quickNotes"
 				cb()
 
 		# Create a # of progEvents for each progNote in the clientFile
@@ -197,7 +208,6 @@ runSeries = (templateFileName = 'seedSmall') ->
 				if err
 					if err.code is "ENOENT"
 						cb new Error "Template \"#{templateFileName}.json\" does not exist in /templates"
-
 					cb err
 					return
 

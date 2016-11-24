@@ -94,7 +94,7 @@ Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 
 	createData 'progEvents', progEvent, cb
 
-Create.quickNote = (clientFile, cb) ->
+Create.quickNote = ({clientFile}, cb) ->
 	earliestDate = Moment().subtract(2, 'months')
 	daySpan = Moment().diff(earliestDate, 'days')
 	randomDay = Math.floor(Math.random() * daySpan) + 1
@@ -144,7 +144,6 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 					value: randomNumber.toString()
 				}
 
-
 			# Construct the target note
 			return {
 				id: planTarget.get('id')
@@ -153,7 +152,6 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 				notes: Faker.lorem.paragraph()
 				metrics: metricNotes.toJS()
 			}
-
 
 		# Construct the section as a whole
 		return {
@@ -312,18 +310,16 @@ Create.progEvents = (quantity, props, cb) ->
 			cb err
 			return
 
-		# console.log "Created #{quantity} progEvents"
 		cb null, Imm.List(results)
 
-Create.quickNotes = (clientFile, numberOfNotes, cb) ->
-	Async.times numberOfNotes, (index, cb) ->
-		Create.quickNote(clientFile, cb)
+Create.quickNotes = (quantity, props, cb) ->
+	Async.times quantity, (index, cb) ->
+		Create.quickNote(props, cb)
 	, (err, results) ->
 		if err
 			cb err
 			return
 
-		console.log "Created #{quantity} quickNotes"
 		cb null, Imm.List(results)
 
 Create.progNotes = (quantity, props, cb) ->
