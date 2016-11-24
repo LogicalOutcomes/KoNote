@@ -24,9 +24,11 @@ Create.clientFile = (cb) ->
 	middle = Faker.name.firstName()
 	last = Faker.name.lastName()
 	recordId = Faker.random.number().toString()
-	birthDate = Moment().subtract(2, 'months').format('YYYYMMMDD')
 
-	console.log "birthdate", birthDate
+	earliestDate = Moment().subtract(29000, 'days')
+	daySpan = Moment().diff(earliestDate, 'days')
+	randomDay = Math.floor(Math.random() * daySpan) + 1
+	birthDate = Moment().subtract(randomDay, 'days').format('YYYYMMMDD')
 
 	clientFile = Imm.fromJS {
 		clientName: {first, middle, last}
