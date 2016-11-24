@@ -187,6 +187,16 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 
 	createData 'progNotes', progNote, cb
 
+Create.alert = (clientFile, cb) ->
+	alert = Imm.fromJS {
+		content: Faker.lorem.paragraph()
+		status: 'default'
+		statusReason: ''
+		authorProgramId: ''
+	}
+
+	createData 'alerts', alert, cb
+
 
 Create.planTarget = (clientFile, metrics, cb) ->
 	metricIds = metrics
