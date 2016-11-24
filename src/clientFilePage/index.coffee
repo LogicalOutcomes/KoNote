@@ -58,13 +58,7 @@ load = (win, {clientFileId}) ->
 
 	ClientFilePage = React.createFactory React.createClass
 		displayName: 'ClientFilePage'
-		
-		shouldComponentUpdate: (nextProps, nextState) ->
-			if nextState.progNoteIndex < @state.progNoteTotal
-				return false
-			else
-				return true
-		
+
 		getInitialState: ->
 			return {
 				status: 'init' # Either init or ready
@@ -91,6 +85,11 @@ load = (win, {clientFileId}) ->
 				loadErrorData: null
 			}
 
+		componentWillMount: ->
+			# Set up secondPass vars
+			@progNoteIndex = 0
+			@progNoteTotal = 0
+			@secondPassProgNoteHistories = Imm.List()
 
 		init: ->
 			@_renewAllData()
@@ -172,46 +171,6 @@ load = (win, {clientFileId}) ->
 				secondPass: @_secondPass
 			})
 
-		_secondPass: (deadline) ->
-			console.log "second pass start..."
-			progNoteTotal = @state.progNoteTotal
-			progNoteIndex = @state.progNoteIndex
-			progNoteHistories = null
-
-			if (deadline.timeRemaining() > 0 or deadline.didTimout) and (progNoteIndex < progNoteTotal)
-				# lets see what can we do in 100ms
-				if deadline.didTimeout
-					count = 100
-				else
-					count = 10
-				progNoteHeaders = @state.allProgNoteHeaders.slice(progNoteIndex, progNoteIndex + count)
-				progNoteIndex += count
-
-				Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
-					ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
-				, (err, results) =>
-					if err
-						if err instanceof Persist.IOError
-							console.error err
-							@setState {loadErrorType: 'io-error'}
-							return
-						CrashHandler.handle err
-						return
-					progNoteHistories = @state.progNoteHistories.concat(results)
-					if progNoteIndex < progNoteTotal
-						@setState {
-							progNoteIndex
-							progNoteHistories
-						}
-						requestIdleCallback @_secondPass
-
-					else
-						console.log "second pass finished"
-						@setState {
-							progNoteIndex
-							progNoteHistories
-						}
-
 		_renewAllData: ->
 			console.log "Renewing all data......"
 
@@ -286,23 +245,20 @@ load = (win, {clientFileId}) ->
 									cb err
 									return
 
-								# fast first pass 
+								# fast first pass
 								if @state.status is "init"
 									# need the count for fast second pass
-									progNoteTotal = results.size
+									@progNoteTotal = results.size
 
 									allProgNoteHeaders = results
 									.sortBy (header) ->
 										createdAt = header.get('backdate') or header.get('timestamp')
 										return Moment createdAt, Persist.TimestampFormat
 
-									progNoteHeaders = results
-									.sortBy (header) ->
-										createdAt = header.get('backdate') or header.get('timestamp')
-										return Moment createdAt, Persist.TimestampFormat
-									.slice(0, 10)
+									progNoteHeaders = results.slice(0, 10)
 								else
 									progNoteHeaders = results
+
 								cb()
 
 						(cb) =>
@@ -632,7 +588,6 @@ load = (win, {clientFileId}) ->
 						status: 'ready'
 
 						clientFile
-						progNoteTotal
 						allProgNoteHeaders
 						progNoteHistories
 						progressEvents
@@ -648,6 +603,38 @@ load = (win, {clientFileId}) ->
 						eventTypes
 						alerts
 					}
+
+		_secondPass: (deadline) ->
+			console.log "second pass start..."
+			progNoteHistories = null
+
+			if (deadline.timeRemaining() > 0 or deadline.didTimout) and (@progNoteIndex < @progNoteTotal)
+				# lets see what can we do in 100ms
+				count = if deadline.didTimeout then 100 else 10
+
+				progNoteHeaders = @state.allProgNoteHeaders.slice(@progNoteIndex, @progNoteIndex + count)
+				@progNoteIndex += count
+
+				Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) =>
+					ActiveSession.persist.progNotes.readRevisions clientFileId, progNoteHeader.get('id'), cb
+				, (err, results) =>
+					if err
+						if err instanceof Persist.IOError
+							console.error err
+							@setState {loadErrorType: 'io-error'}
+							return
+
+						CrashHandler.handle err
+						return
+
+					if @progNoteIndex < @progNoteTotal
+						# Add to temp store, run another batch
+						@secondPassProgNoteHistories = @secondPassProgNoteHistories.concat results
+						requestIdleCallback @_secondPass
+					else
+						console.log "second pass finished"
+						progNoteHistories = @state.progNoteHistories.concat @secondPassProgNoteHistories
+						@setState {progNoteHistories}
 
 		_acquireLock: (cb=(->)) ->
 			lockFormat = "clientFile-#{clientFileId}"
@@ -1029,7 +1016,7 @@ load = (win, {clientFileId}) ->
 
 			# It's now OK to close the window
 			@hasMounted = true
-			
+
 			# second pass at data load
 			if @props.status is 'ready'
 				requestIdleCallback @props.secondPass, timeout: 3000
