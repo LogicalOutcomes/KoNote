@@ -285,15 +285,24 @@ load = (win) ->
 
 			if not userAccount
 				console.warn "No userAccount found for \"#{@props.userName}\" in:", @props.userAccounts.toJS()
-			else
-				return userAccount
+				return
+
+			return userAccount
 
 		render: ->
 			userAccount = @_getUserAccount()
-			userProgram = userAccount.get('program')
+
+			# Figure out user's program
+			# TODO: Get this direct from props
+			programLink = @props.userProgramLinks.find (link) ->
+				userAccount.get('userName') is link.get('userName') and link.get('status') is 'assigned'
+
+			userProgram = if not programLink then null else @props.programs.find (program) ->
+				program.get('id') is programLink.get('programId')
 
 			isAdmin = userAccount.getIn(['publicInfo', 'accountType']) is 'admin'
 			isDeactivated = not userAccount.getIn(['publicInfo', 'isActive'])
+
 
 			# Append viewTitle to the dialog title if exists
 			title = R.span({},
