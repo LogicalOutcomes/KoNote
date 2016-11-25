@@ -132,7 +132,6 @@ load = (win) ->
 				return userAccount
 				.set 'isActive', isActive
 				.set 'accountType', publicInfo.get('accountType')
-				.set 'displayName', publicInfo.get('displayName')
 
 
 			return R.div({className: 'accountManagerTab'},
@@ -738,6 +737,7 @@ load = (win) ->
 							return
 
 						newAccount = result
+						console.log 'userAccount >>>>>>', newAccount
 						cb()
 
 				(cb) =>
