@@ -1,3 +1,16 @@
+### 1.12.1 (Nov 24 2016)
+
+This maintenance release improves the stability of 1.12.
+
+#### Fixes
+
+- Fix crash when closing new prognote window prematurely (#907)
+- Fix crash cancelling an event (#904)
+- Fix event tooltip title in analysis (#906)
+- Fix client file loading delay in read-only mode (#902)
+- Fix client info save/discard buttons persisting after save (#903)
+- Nicer event formatting in prognote tab (#905)
+
 ### 1.12.0 (Nov 18 2016)
 
 This release generally improves performance. Startup time is 50% faster and client file loading times are also significantly faster. Responsiveness has been improved throughout, and we've tried to eliminate most sources of latency (such as when navigating between tabs or highlighting items on a chart). We've also made performance more consistent when dealing with very large databases.
