@@ -590,10 +590,11 @@ load = (win) ->
 						clientPrograms: @props.clientPrograms
 					}
 
-					openWindow {
-						page: 'newProgNote'
-						clientFileId: @props.clientFileId
-					}
+					openWindow {page: 'newProgNote', clientFileId: @props.clientFileId}, (newProgNoteWindow) =>
+						# prevent window from closing before its ready
+						# todo a more elegant way to do this?
+						newProgNoteWindow.on 'close', =>
+							newProgNoteWindow = null
 
 					global.ActiveSession.persist.eventBus.once 'newProgNotePage:loaded', cb
 

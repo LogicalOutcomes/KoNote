@@ -408,11 +408,10 @@ load = (win) ->
 
 					# Tack on eventType to title
 					# TODO: Do this earlier on, to save redundancy
-					if progEvent.get('typeId') and title
+					if progEvent.get('typeId')
 						eventType = @props.eventTypes.find (eventType) -> eventType.get('id') is progEvent.get('typeId')
-						title += " (#{eventType.get('name')})"
-					else if progEvent.get('typeId')
-						title = progEvent.get('typeId')
+						eventTypeName = eventType.get('name')
+						title = if title then "#{title} (#{eventTypeName})" else eventTypeName
 
 
 					eventInfo.addClass('show')

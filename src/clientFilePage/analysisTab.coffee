@@ -438,14 +438,6 @@ load = (win) ->
 										})
 									)
 									R.label({},
-										"Spline "
-										R.input({
-											type: 'checkbox'
-											checked: @state.chartType is 'spline'
-											onChange: @_updateChartType.bind null, 'spline'
-										})
-									)
-									R.label({},
 										"Scatter "
 										R.input({
 											type: 'checkbox'

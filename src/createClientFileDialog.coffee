@@ -151,7 +151,7 @@ load = (win) ->
 								(unless @props.programs.isEmpty()
 									R.div({className: 'form-group'},
 										R.label({}, "Assign to #{Term 'Program'}(s)")
-										R.div({id: 'programsContainer'},
+										R.div({className: 'programsContainer'},
 											(@props.programs
 											.filter (program) =>
 												program.get('status') is 'default'

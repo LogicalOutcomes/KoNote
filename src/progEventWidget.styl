@@ -1,8 +1,26 @@
 .progEventWidget
+	position relative
 
 	&.large, &.print
 		margin-top 15px
 		padding-left 35px
+
+		.iconContainer
+			position absolute
+			left 0px
+			top 3px
+			font-size 15px
+			background none
+			border-radius 12.5px
+			width 25px
+			height 25px
+			display flex
+			align-items center
+			justify-content center
+			padding-bottom 1px // Better v-centering
+
+			.fa
+				color black
 
 		> div
 			padding-bottom 5px
@@ -11,22 +29,6 @@
 			display flex
 			position relative
 			align-items center
-
-			.iconContainer
-				position absolute
-				left -35px
-				font-size 15px
-				background none
-				border-radius 12.5px
-				width 25px
-				height 25px
-				display flex
-				align-items center
-				justify-content center
-				padding-bottom 1px // Better v-centering
-
-				.fa
-					color black
 
 			.eventType
 				padding-right 8px
@@ -38,15 +40,16 @@
 				flex 1
 				font-weight 500
 
+
 				.eventTypeName
 					font-weight 300 !important
 
 		.description
 			color #000
-			margin-top 15px // Ensures padding while isEditing
 
 		.date > span
 			color #888
+
 
 	// Black & White printing
 	&.print
