@@ -16,7 +16,6 @@ load = (win) ->
 	nwWin = nw.Window.get(win)
 
 	Dialog = require('./dialog').load(win)
-	Spinner = require('./spinner').load(win)
 	CrashHandler = require('./crashHandler').load(win)
 
 	Moment = require('moment')
