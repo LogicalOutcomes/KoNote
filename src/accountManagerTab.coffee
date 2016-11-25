@@ -209,12 +209,6 @@ load = (win) ->
 										dataSort: true
 									}, "User Name")
 									TableHeaderColumn({
-										dataField: 'displayName'
-										className: 'nameColumn'
-										columnClassName: 'nameColumn'
-										dataSort: true
-									}, "Display Name")
-									TableHeaderColumn({
 										dataField: 'accountType'
 										dataSort: true
 										className: 'rightPadding' unless @state.displayInactive
@@ -597,7 +591,6 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				userName: ''
-				displayName: ''
 				password: ''
 				passwordConfirm: ''
 				programId: ''
@@ -621,15 +614,6 @@ load = (win) ->
 							className: 'form-control'
 							onChange: @_updateUserName
 							value: @state.userName
-						})
-					)
-					R.div({className: 'form-group'},
-						R.label({}, "Display name"),
-						R.input({
-							ref: 'displayNameField'
-							className: 'form-control'
-							onChange: @_updateDisplayName
-							value: @state.displayName
 						})
 					)
 					R.div({
@@ -718,9 +702,6 @@ load = (win) ->
 		_updateUserName: (event) ->
 			@setState {userName: event.target.value}
 
-		_updateDisplayName: (event) ->
-			@setState {displayName: event.target.value}
-
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
 
@@ -741,7 +722,6 @@ load = (win) ->
 			@refs.dialog.setIsLoading true
 
 			userName = @state.userName
-			displayName = @state.displayName
 			password = @state.password
 			programId = @state.programId
 			accountType = if @state.isAdmin then 'admin' else 'normal'
@@ -752,7 +732,7 @@ load = (win) ->
 			Async.series [
 				(cb) =>
 					# Create the account
-					Persist.Users.Account.create adminAccount, userName, displayName, password, accountType, (err, result) =>
+					Persist.Users.Account.create adminAccount, userName, password, accountType, (err, result) =>
 						if err
 							cb err
 							return
