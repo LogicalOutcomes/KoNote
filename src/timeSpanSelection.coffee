@@ -368,6 +368,14 @@ load = (win) ->
 			@startDate.date startTimestamp
 			@endDate.minDate startTimestamp
 
+			# When full day, make sure to update endTimestamp as well
+			if not @state.usesTimeOfDay and not @state.isDateSpan
+				@props.updateTimestamps {
+					startTimestamp: startTimestamp.clone().startOf('day').format(TimestampFormat)
+					endTimestamp: startTimestamp.clone().endOf('day').format(TimestampFormat)
+				}
+				return
+
 			@props.updateTimestamps {startTimestamp: startTimestamp.clone().format(TimestampFormat)}
 
 		_updateEndTime: (endMoment, endTime) ->

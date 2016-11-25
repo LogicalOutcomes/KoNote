@@ -41,7 +41,7 @@ load = (win) ->
 			startTimestamp = startingDate.startOf('day').format(TimestampFormat)
 			endTimestamp = startingDate.endOf('day').format(TimestampFormat)
 
-			return {
+			state = {
 				progEvent: Imm.Map {
 					title: ''
 					description: ''
@@ -52,12 +52,15 @@ load = (win) ->
 				isGlobalEvent: null
 			}
 
+			@initialState = state # Cache for later comparisons
+			return state
+
 		render: ->
 			progEvent = @state.progEvent
 			typeId = progEvent.get 'typeId'
 			selectedEventType = @props.eventTypes.find (type) => type.get('id') is typeId
 
-			formIsInvalid = @_formIsInvalid()
+			formIsValid = @_formIsValid()
 			hasChanges = @_hasChanges()
 
 			return R.div({
@@ -69,7 +72,7 @@ load = (win) ->
 				R.form({className: showWhen @props.isBeingEdited},
 					R.button({
 						className: 'btn btn-danger closeButton'
-						onClick: @_closeForm
+						onClick: @_closeForm.bind null, hasChanges
 					},
 						FaIcon('times')
 					)
@@ -155,7 +158,7 @@ load = (win) ->
 								R.button({
 									className: 'btn btn-success btn-block'
 									type: 'submit'
-									disabled: formIsInvalid or not hasChanges
+									disabled: not formIsValid or not hasChanges
 								},
 									"Save "
 									FaIcon('check')
@@ -166,7 +169,7 @@ load = (win) ->
 								className: 'btn btn-success btn-block'
 								type: 'submit'
 								onClick: @_submit
-								disabled: formIsInvalid or not hasChanges
+								disabled: not formIsValid or not hasChanges
 							},
 								"Save "
 								FaIcon('check')
@@ -211,20 +214,25 @@ load = (win) ->
 
 			@setState {progEvent}
 
-		_formIsInvalid: ->
-			description = @state.progEvent.get('description').trim()
-			return not description
+		_formIsValid: ->
+			description = @state.progEvent.get('description')
+			hasDescription = if description then description.trim() else description
+			hasEventTypeId = @state.progEvent.get('typeId')
+
+			# Needs to have a description or eventType
+			return !!(hasDescription or hasEventTypeId)
 
 		_hasChanges: ->
-			return not Imm.is @state.progEvent, @props.data
+			if not @initialState then return false # Make sure initialState is mounted
+			return !!@state.isGlobalEvent or not Imm.is @state.progEvent, @initialState.progEvent
 
 		_toggleIsGlobalEvent: ->
 			@setState {isGlobalEvent: not @state.isGlobalEvent}
 
-		_closeForm: (event) ->
+		_closeForm: (hasChanges, event) ->
 			event.preventDefault()
 
-			if @_hasChanges()
+			if hasChanges
 				Bootbox.confirm "Cancel #{Term 'event'} editing?", (ok) =>
 					if ok
 						@_resetProgEvent()
