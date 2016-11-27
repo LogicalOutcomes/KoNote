@@ -22,6 +22,7 @@ load = (win) ->
 	R = React.DOM
 	{findDOMNode} = win.ReactDOM
 	ReactDOMServer = win.ReactDOMServer
+	Mark = win.Mark
 
 	CancelProgNoteDialog = require('./cancelProgNoteDialog').load(win)
 	ColorKeyBubble = require('../colorKeyBubble').load(win)
@@ -34,9 +35,18 @@ load = (win) ->
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	PrintButton = require('../printButton').load(win)
 	WithTooltip = require('../withTooltip').load(win)
+	FilterBar = require('./filterBar').load(win)
 
 	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName, makeMoment
 	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
+
+	# List of fields we exclude from keyword search
+	excludedSearchFields = Imm.fromJS [
+		'id', 'revisionId', 'templateId', 'typeId', 'relatedProgNoteId',
+		'relatedProgEventId', 'authorProgramId', 'clientFileId',
+		'timestamp', 'backdate', 'startTimestamp', 'endTimestamp',
+		'type', 'status'
+	]
 
 
 	ProgNotesTab = React.createFactory React.createClass
@@ -53,6 +63,7 @@ load = (win) ->
 				isLoading: null
 				historyEntries: Imm.List()
 				historyCount: 10
+				searchQuery: ''
 			}
 
 		componentDidMount: ->
@@ -67,6 +78,12 @@ load = (win) ->
 					@setState {historyCount: newCount}
 				return
 			), 150)
+
+		componentDidUpdate: (oldProps, oldState) ->
+			# Re-apply mark highlighting every time searchQuery changes
+			if @state.searchQuery isnt oldState.searchQuery
+				markInstance = new Mark findDOMNode @refs.progNotesList
+				markInstance.unmark().mark(@state.searchQuery)
 
 		hasChanges: ->
 			@_transientDataHasChanges()
@@ -113,14 +130,26 @@ load = (win) ->
 				)
 				.sortBy (entry) -> entry.get('timestamp')
 				.reverse()
-				.slice(0, @state.historyCount)
 
 			hasEnoughData = (@props.progNoteHistories.size + @props.globalEvents.size) > 0
+
+			# Filtering based on search query
+			if @state.searchQuery.trim().length > 0
+				historyEntries = @_filterProgNotes(historyEntries)
+			# Otherwise, we utilize historyCount
+			else if not isEditing
+				historyEntries = historyEntries.slice(0, @state.historyCount)
 
 
 			return R.div({className: 'progNotesView'},
 				R.div({className: 'panes'},
 					R.section({className: 'leftPane'},
+
+						(unless isEditing
+							FilterBar({
+								updateSearchQuery: @_updateSearchQuery
+							})
+						)
 
 						(if hasEnoughData
 
@@ -199,51 +228,55 @@ load = (win) ->
 							)
 						)
 
-						(unless historyEntries.isEmpty()
-							R.div({className: 'progNotesList'},
-								(historyEntries.map (entry) =>
-									switch entry.get('type')
-										when 'progNote'
-											ProgNoteContainer({
-												key: entry.get('id')
+						R.div({
+							ref: 'progNotesList'
+							className: [
+								'progNotesList'
+								showWhen not historyEntries.isEmpty()
+							].join ' '
+						},
+							(historyEntries.map (entry) =>
+								switch entry.get('type')
+									when 'progNote'
+										ProgNoteContainer({
+											key: entry.get('id')
 
-												progNoteHistory: entry.get('data')
-												attachments: entry.get('attachments')
-												eventTypes: @props.eventTypes
-												clientFile: @props.clientFile
+											progNoteHistory: entry.get('data')
+											attachments: entry.get('attachments')
+											eventTypes: @props.eventTypes
+											clientFile: @props.clientFile
 
-												progEvents: @props.progEvents
-												globalEvents: @props.globalEvents
-												programsById: @props.programsById
+											progEvents: @props.progEvents
+											globalEvents: @props.globalEvents
+											programsById: @props.programsById
 
-												isReadOnly: @props.isReadOnly
+											isReadOnly: @props.isReadOnly
 
-												setSelectedItem: @_setSelectedItem
-												selectProgNote: @_selectProgNote
-												selectedItem: @state.selectedItem
+											setSelectedItem: @_setSelectedItem
+											selectProgNote: @_selectProgNote
+											selectedItem: @state.selectedItem
 
-												transientData
-												isEditing
+											transientData
+											isEditing
 
-												startRevisingProgNote: @_startRevisingProgNote
-												cancelRevisingProgNote: @_cancelRevisingProgNote
+											startRevisingProgNote: @_startRevisingProgNote
+											cancelRevisingProgNote: @_cancelRevisingProgNote
 
-												updatePlanTargetNotes: @_updatePlanTargetNotes
-												updateBasicUnitNotes: @_updateBasicUnitNotes
-												updateBasicMetric: @_updateBasicMetric
-												updatePlanTargetMetric: @_updatePlanTargetMetric
-												updateProgEvent: @_updateProgEvent
-												updateQuickNotes: @_updateQuickNotes
-											})
-										when 'globalEvent'
-											GlobalEventView({
-												key: entry.get('id')
-												globalEvent: entry.get('data')
-												programsById: @props.programsById
-											})
-										else
-											throw new Error "Unknown historyEntry type #{entry.get('type')}"
-								)
+											updatePlanTargetNotes: @_updatePlanTargetNotes
+											updateBasicUnitNotes: @_updateBasicUnitNotes
+											updateBasicMetric: @_updateBasicMetric
+											updatePlanTargetMetric: @_updatePlanTargetMetric
+											updateProgEvent: @_updateProgEvent
+											updateQuickNotes: @_updateQuickNotes
+										})
+									when 'globalEvent'
+										GlobalEventView({
+											key: entry.get('id')
+											globalEvent: entry.get('data')
+											programsById: @props.programsById
+										})
+									else
+										throw new Error "Unknown historyEntry type #{entry.get('type')}"
 							)
 						)
 					)
@@ -777,6 +810,39 @@ load = (win) ->
 				type: 'progNote'
 				progNoteId: progNote.get('id')
 			}
+
+		_updateSearchQuery: (searchQuery) ->
+			console.info "Updating search query..."
+			@setState {searchQuery}
+
+		_filterProgNotes: (progNotes) ->
+			searchQuery = @state.searchQuery
+
+			if searchQuery.trim().length is 0
+				return progNotes
+
+			# Split into query parts
+			queryParts = Imm.fromJS(searchQuery.split(' ')).map (p) -> p.toLowerCase()
+
+			containsSearchQuery = (data) ->
+				data.some (value, property) ->
+					# Skip excluded field
+					if excludedSearchFields.includes property
+						return false
+
+					# TODO: Handle numbers
+					# TODO: Ignore cases like where target has title but no contents
+					if typeof value is 'string'
+						value = value.toLowerCase()
+						includesAllParts = queryParts.every (part) -> value.includes(part)
+						return includesAllParts
+
+					# When not a string, it must be an Imm.List / Map
+					# so we'll loop through this same method on it
+					return containsSearchQuery(value)
+
+			# Only keep progNotes that contain all query parts
+			return progNotes.filter containsSearchQuery
 
 
 	ProgNoteContainer = React.createFactory React.createClass
@@ -1492,6 +1558,7 @@ load = (win) ->
 					formatTimestamp timestamp
 				)
 			)
+
 
 
 	return ProgNotesTab
