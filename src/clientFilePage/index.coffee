@@ -629,11 +629,10 @@ load = (win, {clientFileId}) ->
 
 					if @progNoteIndex < @progNoteTotal
 						# Add to temp store, run another batch
-						@secondPassProgNoteHistories = @secondPassProgNoteHistories.concat results
+						@secondPassProgNoteHistories = @secondPassProgNoteHistories.mergeWith results
 						requestIdleCallback @_secondPass
 					else
-						console.log "second pass finished"
-						progNoteHistories = @state.progNoteHistories.concat @secondPassProgNoteHistories
+						progNoteHistories = @state.progNoteHistories.mergeWith @secondPassProgNoteHistories
 						@setState {progNoteHistories}
 
 		_acquireLock: (cb=(->)) ->
