@@ -208,9 +208,9 @@ Create.planTarget = (clientFile, metrics, cb) ->
 	# randomly chooses a status, with a higher probability of 'default'
 	randomNumber = Math.floor(Math.random() * 10) + 1
 
-	if randomNumber > 7
+	if randomNumber > 8
 		status = 'deactivated'
-	else if randomNumber < 3
+	else if randomNumber < 2
 		status = 'completed'
 	else
 		status = 'default'
