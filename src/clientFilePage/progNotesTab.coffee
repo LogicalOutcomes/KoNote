@@ -132,19 +132,14 @@ load = (win) ->
 		render: ->
 			transientData = @state.transientData
 			hasChanges = @hasChanges()
+			hasEnoughData = @props.historyEntries.size > 0
 			isEditing = transientData?
 
-			historyEntries = if isEditing
-				# Only show the single progNote while editing
-				Imm.List [
-					@props.historyEntries.find (entry) ->
-						entry.get('id') is transientData.getIn(['progNote', 'id'])
-				]
-			else
-				# Display all progNoteEntries
-				@props.historyEntries
-
-			hasEnoughData = historyEntries.size > 0
+			# Only show the single progNote while editing
+			historyEntries = if not isEditing then @props.historyEntries else Imm.List [
+				@props.historyEntries.find (entry) ->
+					entry.get('id') is transientData.getIn(['progNote', 'id'])
+			]
 
 			# Filtering based on search query
 			if @state.searchQuery.trim().length > 0
