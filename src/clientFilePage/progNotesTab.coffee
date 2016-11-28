@@ -86,15 +86,13 @@ load = (win) ->
 			.sortBy (entry) -> entry.get('timestamp')
 			.reverse()
 
-			props = _.extendOwn {}, @props, {historyEntries}
-
-			console.log "props", props
+			props = _.extend {}, @props, {historyEntries}
 
 			return ProgNotesTabUi(props)
 
 
 	ProgNotesTabUi = React.createFactory React.createClass
-		displayName: 'ProgNotesView'
+		displayName: 'ProgNotesTabUi'
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
