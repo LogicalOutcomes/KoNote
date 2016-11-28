@@ -7,13 +7,12 @@ Mkdirp = require 'mkdirp'
 Path = require 'path'
 Fs = require 'fs'
 
-Config = require '../config'
 {dataModelDefinitions} = require './dataModels'
 
 createVersionMetadataFile = (dataDir, cb) ->
 	versionPath = Path.join(dataDir, 'version.json')
 	versionData = {
-		dataVersion: Config.version
+		dataVersion: nw.App.manifest.version
 		lastMigrationStep: 0
 	}
 

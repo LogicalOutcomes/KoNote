@@ -110,10 +110,10 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password, cb=(->)) ->
 				# Ensure srcVersion (package.json) matches toVersion
 				# In other words, the files are ready for the new DB version
 				# This is OK in 'development' mode, for interim partial migrations
-				if Config.version isnt toVersion
+				if nw.App.manifest.version isnt toVersion
 					if process.env.NODE_ENV isnt 'development'
 						console.error """
-							Your current src/package files are v#{Config.version},
+							Your current src/package files are v#{nw.App.manifest.version},
 							which doesn't match the destination data version v#{toVersion}.
 						"""
 						cb err
