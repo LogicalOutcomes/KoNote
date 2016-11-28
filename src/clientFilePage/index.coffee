@@ -101,18 +101,14 @@ load = (win, {clientFileId}) ->
 			@refs.ui.suggestClose()
 
 		render: ->
-			if @state.status isnt 'ready' then return loadingSpinner({})
+			if @state.status isnt 'ready'
+				return loadingSpinner({})
 
-			clientName = renderName(@state.clientFile.get('clientName'))
+			clientName = renderName @state.clientFile.get('clientName')
 
-			# Order each individual progNoteHistory, then the overall histories
-			progNoteHistories = @state.progNoteHistories
-			.map (history) ->
+			# Ensure revisions of each progNote are in chronological order (of creation)
+			progNoteHistories = @state.progNoteHistories.map (history) ->
 				return history.sortBy (revision) -> revision.get('timestamp')
-			.sortBy (history) ->
-				createdAt = history.last().get('backdate') or history.first().get('timestamp')
-				return Moment createdAt, Persist.TimestampFormat
-			.reverse()
 
 			# Use programLinks to determine program membership(s)
 			# TODO: Refactor to clientProgramsById for faster searching by ID
