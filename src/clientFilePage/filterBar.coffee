@@ -36,6 +36,7 @@ load = (win) ->
 					className: 'form-control'
 					value: @state.searchText
 					onChange: @_updateSearchText
+					placeholder: "Search by keywords . . ."
 				})
 			)
 

@@ -50,6 +50,50 @@ load = (win) ->
 
 
 	ProgNotesTab = React.createFactory React.createClass
+		displayName: 'ProgNotesTab'
+		mixins: [React.addons.PureRenderMixin]
+
+		_toProgNoteHistoryEntry: (progNoteHistory) ->
+			progNoteId = progNoteHistory.first().get('id')
+			attachments = @props.attachmentsByProgNoteId.get(progNoteId) or Imm.List()
+			timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
+
+			return Imm.Map {
+				type: 'progNote'
+				id: progNoteId
+				timestamp
+				data: progNoteHistory
+				attachments
+			}
+
+		_toGlobalEventEntry: (globalEvent) ->
+			return Imm.Map {
+				type: 'globalEvent'
+				id: globalEvent.get('id')
+				timestamp: globalEvent.get('startTimestamp')
+				programId: globalEvent.get('programId')
+				data: globalEvent
+			}
+
+		render: ->
+			globalEventEntries = @props.globalEvents
+			.filter (globalEvent) -> globalEvent.get('status') is 'default'
+			.map @_toGlobalEventEntry
+
+			historyEntries = @props.progNoteHistories
+			.map @_toProgNoteHistoryEntry
+			.concat globalEventEntries
+			.sortBy (entry) -> entry.get('timestamp')
+			.reverse()
+
+			props = _.extendOwn {}, @props, {historyEntries}
+
+			console.log "props", props
+
+			return ProgNotesTabUi(props)
+
+
+	ProgNotesTabUi = React.createFactory React.createClass
 		displayName: 'ProgNotesView'
 		mixins: [React.addons.PureRenderMixin]
 
@@ -61,7 +105,6 @@ load = (win) ->
 				backdate: ''
 				transientData: null
 				isLoading: null
-				historyEntries: Imm.List()
 				historyCount: 10
 				searchQuery: ''
 			}
@@ -88,19 +131,6 @@ load = (win) ->
 		hasChanges: ->
 			@_transientDataHasChanges()
 
-		_toProgNoteHistoryEntry: (progNoteHistory) ->
-			progNoteId = progNoteHistory.first().get('id')
-			attachments = @props.attachmentsByProgNoteId.get(progNoteId) or Imm.List()
-			timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
-
-			return Imm.Map {
-				type: 'progNote'
-				id: progNoteId
-				timestamp
-				data: progNoteHistory
-				attachments
-			}
-
 		render: ->
 			transientData = @state.transientData
 			hasChanges = @hasChanges()
@@ -109,29 +139,14 @@ load = (win) ->
 			historyEntries = if isEditing
 				# Only show the single progNote while editing
 				Imm.List [
-					@_toProgNoteHistoryEntry @props.progNoteHistories.find (progNoteHistory) ->
-						progNoteHistory.getIn([0, 'id']) is transientData.getIn(['progNote', 'id'])
+					@props.historyEntries.find (entry) ->
+						entry.get('id') is transientData.getIn(['progNote', 'id'])
 				]
 			else
-				# Display all progNotes, tack on any active globalEvents, and sort!
-				@props.progNoteHistories
-				.map @_toProgNoteHistoryEntry
-				.concat(
-					@props.globalEvents
-					.filter (globalEvent) -> globalEvent.get('status') is 'default'
-					.map (globalEvent) ->
-						return Imm.Map {
-							type: 'globalEvent'
-							id: globalEvent.get('id')
-							timestamp: globalEvent.get('startTimestamp')
-							programId: globalEvent.get('programId')
-							data: globalEvent
-						}
-				)
-				.sortBy (entry) -> entry.get('timestamp')
-				.reverse()
+				# Display all progNoteEntries
+				@props.historyEntries
 
-			hasEnoughData = (@props.progNoteHistories.size + @props.globalEvents.size) > 0
+			hasEnoughData = historyEntries.size > 0
 
 			# Filtering based on search query
 			if @state.searchQuery.trim().length > 0
@@ -144,12 +159,6 @@ load = (win) ->
 			return R.div({className: 'progNotesView'},
 				R.div({className: 'panes'},
 					R.section({className: 'leftPane'},
-
-						(unless isEditing
-							FilterBar({
-								updateSearchQuery: @_updateSearchQuery
-							})
-						)
 
 						(if hasEnoughData
 
@@ -226,6 +235,10 @@ load = (win) ->
 									"Add #{Term 'quick note'}"
 								)
 							)
+						)
+
+						(unless isEditing
+							FilterBar({updateSearchQuery: @_updateSearchQuery})
 						)
 
 						R.div({
