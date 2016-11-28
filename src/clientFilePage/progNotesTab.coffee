@@ -54,34 +54,46 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		_toProgNoteHistoryEntry: (progNoteHistory) ->
-			progNoteId = progNoteHistory.first().get('id')
+			latestRevision = 	progNoteHistory.last()
+			# Revisions all have same 'id', just different revisionIds
+			progNoteId = latestRevision.get('id')
+			timestamp = latestRevision.get('backdate') or latestRevision.get('timestamp')
+
+			# Mix in all other related data from other clientFile collections
+			progEvents = @props.progEvents.filter (progEvent) ->
+				return progEvent.get('relatedProgNoteId') is progNoteId
+
+			globalEvents = @props.globalEvents.filter (globalEvent) ->
+				return globalEvent.get('relatedProgNoteId') is progNoteId
+
 			attachments = @props.attachmentsByProgNoteId.get(progNoteId) or Imm.List()
-			timestamp = progNoteHistory.last().get('backdate') or progNoteHistory.first().get('timestamp')
 
 			return Imm.Map {
 				type: 'progNote'
 				id: progNoteId
 				timestamp
 				data: progNoteHistory
+				progEvents
+				globalEvents
 				attachments
 			}
 
 		_toGlobalEventEntry: (globalEvent) ->
+			timestamp = globalEvent.get('startTimestamp') # Order by startTimestamp
+
 			return Imm.Map {
 				type: 'globalEvent'
 				id: globalEvent.get('id')
-				timestamp: globalEvent.get('startTimestamp')
+				timestamp
 				programId: globalEvent.get('programId')
 				data: globalEvent
 			}
 
 		render: ->
-			globalEventEntries = @props.globalEvents
-			.filter (globalEvent) -> globalEvent.get('status') is 'default'
-			.map @_toGlobalEventEntry
+			globalEventEntries = @props.globalEvents.map @_toGlobalEventEntry
+			progNoteEntries = @props.progNoteHistories.map @_toProgNoteHistoryEntry
 
-			historyEntries = @props.progNoteHistories
-			.map @_toProgNoteHistoryEntry
+			historyEntries = progNoteEntries
 			.concat globalEventEntries
 			.sortBy (entry) -> entry.get('timestamp')
 			.reverse()
@@ -252,8 +264,8 @@ load = (win) ->
 											eventTypes: @props.eventTypes
 											clientFile: @props.clientFile
 
-											progEvents: @props.progEvents
-											globalEvents: @props.globalEvents
+											progEvents: entry.get('progEvents')
+											globalEvents: entry.get('@props.globalEvents')
 											programsById: @props.programsById
 
 											isReadOnly: @props.isReadOnly
@@ -856,21 +868,20 @@ load = (win) ->
 
 		shouldComponentUpdate: (newProps) ->
 			# TODO: Refactor to something a bit simpler, this will get hairy...
-
 			hasChanges = (@props.progNoteHistory.size > newProps.progNoteHistory.size) or
 			(not Imm.is @props.attachments, newProps.attachments) or
 			(not Imm.is @props.progEvents, newProps.progEvents) or
 			(@props.eventTypes isnt newProps.eventTypes) or
-			# (@props.globalEvents isnt newProps.globalEvents) or
+			(@props.globalEvents isnt newProps.globalEvents) or
 			(@props.programsById isnt newProps.programsById) or
 			(@props.transientData isnt newProps.transientData) or
 			(@props.isReadOnly isnt newProps.isReadOnly) or
-			(@props.selectedItem isnt newProps.selectedItem )
+			(@props.selectedItem isnt newProps.selectedItem)
 
 			return hasChanges
 
 		render: ->
-			{isEditing} = @props
+			{isEditing, progEvents, globalEvents} = @props
 
 			progNote = @props.progNoteHistory.last()
 			progNoteId = progNote.get('id')
@@ -878,13 +889,6 @@ load = (win) ->
 			firstProgNoteRev = @props.progNoteHistory.first()
 			userProgramId = firstProgNoteRev.get('authorProgramId')
 			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
-
-			# Filter out only events for this progNote
-			progEvents = @props.progEvents.filter (progEvent) ->
-				return progEvent.get('relatedProgNoteId') is progNote.get('id')
-
-			globalEvents = @props.globalEvents.filter (globalEvent) ->
-				return globalEvent.get('relatedProgNoteId') is progNoteId
 
 
 			# TODO: Pass props down in a more efficient manner, maybe by grouping them together
@@ -1064,6 +1068,8 @@ load = (win) ->
 		displayName: 'ProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
 
+		# TODO: We might need to move this more top-level, so the search ignores empty data
+		# ex: {title: "targetA", content: ""} with search term "targetA"
 		_filterEmptyValues: (progNote) ->
 			progNoteUnits = progNote.get('units')
 			.map (unit) ->
