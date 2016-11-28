@@ -1036,7 +1036,7 @@ load = (win, {clientFileId}) ->
 			return R.div({className: 'clientFilePage animated fadeIn'},
 
 				(if isReadOnly
-					ReadOnlyNotice {data: @props.readOnlyData}
+					ReadOnlyNotice({data: @props.readOnlyData})
 				)
 				R.div({className: 'wrapper'},
 					Sidebar({
@@ -1054,9 +1054,8 @@ load = (win, {clientFileId}) ->
 					})
 					R.div({
 						className: [
-							'view'
-							'plan'
-							showWhen(activeTabId is 'plan')
+							'view plan'
+							showWhen activeTabId is 'plan'
 						].join ' '
 					},
 						PlanTab.PlanView({
@@ -1075,7 +1074,7 @@ load = (win, {clientFileId}) ->
 					R.div({
 						className: [
 							'view'
-							showWhen3d(activeTabId is 'progressNotes')
+							showWhen3d activeTabId is 'progressNotes'
 						].join ' '
 					},
 						ProgNotesTab({
@@ -1102,9 +1101,8 @@ load = (win, {clientFileId}) ->
 					)
 					R.div({
 						className: [
-							'view'
-							'analysis'
-							showWhen(activeTabId is 'analysis')
+							'view analysis'
+							showWhen activeTabId is 'analysis'
 						].join ' '
 					},
 						AnalysisTab.AnalysisView({
@@ -1123,9 +1121,8 @@ load = (win, {clientFileId}) ->
 					)
 					R.div({
 						className: [
-							'view'
-							'info'
-							showWhen(activeTabId is 'info')
+							'view info'
+							showWhen activeTabId is 'info'
 						].join ' '
 					},
 						InfoTab.InfoView({
