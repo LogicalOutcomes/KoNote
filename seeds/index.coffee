@@ -113,6 +113,17 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 				console.log "Created #{quickNotes.size} quickNotes"
 				cb()
 
+		# Write an alert
+		(cb) ->
+			Create.alert clientFile, (err, result) ->
+				if err
+					cb err
+					return
+
+				alert = result
+				console.log "Created alert"
+				cb()
+
 		# Create a # of progEvents for each progNote in the clientFile
 		(cb) ->
 			Async.map progNotes.toArray(), (progNote, cb) ->
@@ -233,6 +244,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 
 		# 		planTemplates = results
 		# 		cb()
+
 
 		(cb) ->
 			Create.programs template.programs, (err, results) ->
