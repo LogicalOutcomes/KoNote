@@ -605,10 +605,11 @@ load = (win, {clientFileId}) ->
 					}
 
 		_secondPass: (deadline) ->
-			console.log "second pass start..."
 			progNoteHistories = null
 
 			if (deadline.timeRemaining() > 0 or deadline.didTimout) and (@progNoteIndex < @progNoteTotal)
+				console.info "Second pass start..."
+
 				# lets see what can we do in 100ms
 				count = if deadline.didTimeout then 100 else 10
 
@@ -629,10 +630,15 @@ load = (win, {clientFileId}) ->
 
 					if @progNoteIndex < @progNoteTotal
 						# Add to temp store, run another batch
-						@secondPassProgNoteHistories = @secondPassProgNoteHistories.mergeWith results
+						@secondPassProgNoteHistories = @secondPassProgNoteHistories.concat results
 						requestIdleCallback @_secondPass
 					else
-						progNoteHistories = @state.progNoteHistories.mergeWith @secondPassProgNoteHistories
+						console.info "Second pass complete!"
+						# Temporary attempt at ensuring all progNotes loaded in are unique
+						progNoteHistories = @state.progNoteHistories
+						.concat @secondPassProgNoteHistories
+						.toSet().toList()
+
 						@setState {progNoteHistories}
 
 		_acquireLock: (cb=(->)) ->
