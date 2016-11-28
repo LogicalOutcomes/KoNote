@@ -225,6 +225,12 @@ Create.planTarget = (clientFile, metrics, cb) ->
 
 	createData 'planTargets', target, cb
 
+Create.planTargetRevision = (target, cb) ->
+	newDescription = Faker.lorem.paragraph()
+	updatedPlanTarget = target.set 'description', newDescription
+
+	global.ActiveSession.persist.planTargets.createRevision updatedPlanTarget, cb
+
 Create.program = (index, cb) ->
 	program = Imm.fromJS({
 		name: Faker.company.bsBuzz()
@@ -357,6 +363,15 @@ Create.planTargets = (quantity, clientFile, metrics, cb) ->
 			return
 
 		console.log "Created #{quantity} planTargets"
+		cb null, Imm.List(results)
+
+Create.planTargetRevisions = (quantity, planTarget, cb) ->
+	Async.times quantity, (index, cb) =>
+		Create.planTargetRevision(planTarget, cb)
+	, (err, results) ->
+		if err
+			cb err
+			return
 		cb null, Imm.List(results)
 
 Create.programs = (quantity, cb) ->
