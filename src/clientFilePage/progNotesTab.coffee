@@ -143,6 +143,7 @@ load = (win) ->
 			# Re-apply mark highlighting every time searchQuery changes
 			if @state.searchQuery isnt oldState.searchQuery
 				markInstance = new Mark findDOMNode @refs.progNotesList
+				# TODO: Figure out how to highlight metric input
 				markInstance.unmark().mark(@state.searchQuery)
 
 		hasChanges: ->
@@ -857,7 +858,6 @@ load = (win) ->
 						return false
 
 					# Run all keywords against string contents
-					# TODO: Handle numbers
 					if typeof value is 'string'
 						value = value.toLowerCase()
 						includesAllParts = queryParts.every (part) -> value.includes(part)
