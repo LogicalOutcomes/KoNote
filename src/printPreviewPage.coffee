@@ -58,19 +58,6 @@ load = (win, {dataSet}) ->
 				previewType: 'default'
 			}
 
-
-		# componentDidMount: ->
-		# 	# Without timeout, print() triggers before DOM renders
-		# 	setTimeout(->
-		# 		Window.show()
-		# 		Window.focus()
-
-		# 		setTimeout(->
-		# 			win.print()
-		# 		, 250)
-
-		# 	, 250)
-
 		render: ->
 			R.div({className: 'printPreview'},
 				(@props.printDataSet.map (printObj) =>
