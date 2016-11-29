@@ -48,18 +48,24 @@ load = (win) ->
 				className: "filterBar #{showWhen @props.isVisible}"
 				onClick: @_focusInput
 			},
-				R.input({
-					ref: 'searchText'
-					className: 'form-control'
-					value: @state.searchText
-					onChange: @_updateSearchText
-					placeholder: "Search by keywords . . ."
-				})
-				R.div({
-					className: 'closeButton'
-					onClick: @props.onClose
-				},
-					FaIcon('times-circle')
+				R.section({},
+					R.input({
+						ref: 'searchText'
+						className: 'form-control'
+						value: @state.searchText
+						onChange: @_updateSearchText
+						placeholder: "Search by keywords . . ."
+					})
+				)
+				R.section({},
+					R.div({}, "Select v")
+					R.div({}, "Select v")
+					R.div({
+						className: 'closeButton'
+						onClick: @props.onClose
+					},
+						FaIcon('times-circle')
+					)
 				)
 			)
 
