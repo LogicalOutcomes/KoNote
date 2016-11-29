@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 _ = require 'underscore'
+Term = require '../term'
 
 
 load = (win) ->
@@ -58,8 +59,20 @@ load = (win) ->
 					})
 				)
 				R.section({},
-					R.div({}, "Select v")
-					R.div({}, "Select v")
+					R.div({},
+						R.div({},
+							"All Data"
+							' '
+							FaIcon('caret-down')
+						)
+					)
+					R.div({},
+						R.div({},
+							"All #{Term 'Programs'}"
+							' '
+							FaIcon('caret-down')
+						)
+					)
 					R.div({
 						className: 'closeButton'
 						onClick: @props.onClose
