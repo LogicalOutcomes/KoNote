@@ -122,6 +122,7 @@ load = (win) ->
 				backdate: ''
 				transientData: null
 				isLoading: null
+				isFiltering: null
 				historyCount: 10
 				searchQuery: ''
 			}
@@ -143,7 +144,7 @@ load = (win) ->
 			# Re-apply mark highlighting every time searchQuery changes
 			if @state.searchQuery isnt oldState.searchQuery
 				markInstance = new Mark findDOMNode @refs.progNotesList
-				# TODO: Figure out how to highlight metric input
+				# TODO: Figure out how to highlight metric input (value)
 				markInstance.unmark().mark(@state.searchQuery)
 
 		hasChanges: ->
@@ -223,6 +224,17 @@ load = (win) ->
 									FaIcon('plus')
 									"Add #{Term 'Quick Note'}"
 								)
+
+								R.button({
+									ref: 'openFilterBarButton'
+									className: [
+										'openFilterBarButton'
+										'collapsed' if isEditing or @state.isFiltering
+									].join ' '
+									onClick: @_toggleIsFiltering
+								},
+									FaIcon('search')
+								)
 							)
 
 						else
@@ -235,7 +247,7 @@ load = (win) ->
 									onClick: @_openNewProgNote
 									disabled: @state.isLoading or @props.isReadOnly
 								},
-									FaIcon 'file'
+									FaIcon('file')
 									"New #{Term 'progress note'}"
 								)
 								R.button({
@@ -244,14 +256,17 @@ load = (win) ->
 									onClick: @_openNewQuickNote
 									disabled: @props.isReadOnly
 								},
-									FaIcon 'plus'
+									FaIcon('plus')
 									"Add #{Term 'quick note'}"
 								)
 							)
 						)
 
-						(unless isEditing
-							FilterBar({updateSearchQuery: @_updateSearchQuery})
+						(if @state.isFiltering and not isEditing
+							FilterBar({
+								onClose: @_toggleIsFiltering
+								updateSearchQuery: @_updateSearchQuery
+							})
 						)
 
 						R.div({
@@ -841,6 +856,10 @@ load = (win) ->
 		_updateSearchQuery: (searchQuery) ->
 			console.info "Updating search query..."
 			@setState {searchQuery}
+
+		_toggleIsFiltering: ->
+			isFiltering = not @state.isFiltering
+			@setState {isFiltering}
 
 		_filterEntries: (entries) ->
 			if @state.searchQuery.trim().length is 0

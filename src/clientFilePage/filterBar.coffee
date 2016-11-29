@@ -9,6 +9,8 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	{FaIcon} = require('../utils').load(win)
+
 
 	FilterBar = React.createFactory React.createClass
 		displayName: 'FilterBar'
@@ -21,6 +23,12 @@ load = (win) ->
 			# Sparingly update the parent progNotesTab UI
 			@_updateSearchQuery = _.debounce(@_updateSearchQuery, 350)
 
+		componentDidMount: ->
+			@_focusInput()
+
+		_focusInput: ->
+			@refs.searchText.focus()
+
 		_updateSearchText: (event) ->
 			searchText = event.target.value
 
@@ -31,13 +39,23 @@ load = (win) ->
 			@props.updateSearchQuery searchText
 
 		render: ->
-			R.div({className: 'filterBar'},
+			R.div({
+				className: 'filterBar'
+				onClick: @_focusInput
+			},
 				R.input({
+					ref: 'searchText'
 					className: 'form-control'
 					value: @state.searchText
 					onChange: @_updateSearchText
 					placeholder: "Search by keywords . . ."
 				})
+				R.div({
+					className: 'closeButton'
+					onClick: @props.onClose
+				},
+					FaIcon('times-circle')
+				)
 			)
 
 	return FilterBar
