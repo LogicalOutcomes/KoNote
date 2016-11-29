@@ -1269,7 +1269,7 @@ load = (win) ->
 						)
 					)
 
-					(if progNote.get('summary') or isEditing
+					(if progNote.get('summary')
 						R.div({className: 'basic unit'},
 							R.h3({}, "Shift Summary")
 							R.div({className: 'notes'},
