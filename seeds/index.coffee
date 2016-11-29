@@ -159,9 +159,9 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 				console.log "Created #{template.progEvents} progEvents for each progNote"
 				cb()
 
-		# 1/10 chance that a globalEvent is created from a progEvent
+		# 1/25 chance that a globalEvent is created from a progEvent
 		(cb) ->
-			chanceOfGlobalEvent = 1/10
+			chanceOfGlobalEvent = 1/25
 
 			Async.map progEventsSet.toArray(), (progEvents, cb) ->
 				Async.map progEvents.toArray(), (progEvent, cb) ->
