@@ -19,7 +19,7 @@ load = (win) ->
 
 		componentWillMount: ->
 			# Sparingly update the parent progNotesTab UI
-			@_updateSearchQuery = _.debounce(@_updateSearchQuery, 500)
+			@_updateSearchQuery = _.debounce(@_updateSearchQuery, 350)
 
 		_updateSearchText: (event) ->
 			searchText = event.target.value
