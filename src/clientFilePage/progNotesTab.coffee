@@ -240,24 +240,26 @@ load = (win) ->
 						else
 							R.div({className: 'empty'},
 								R.div({className: 'message'},
-									"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
-								)
-								R.button({
-									className: 'btn btn-primary btn-lg newProgNoteButton'
-									onClick: @_openNewProgNote
-									disabled: @state.isLoading or @props.isReadOnly
-								},
-									FaIcon('file')
-									"New #{Term 'progress note'}"
-								)
-								R.button({
-									ref: 'addQuickNoteButton'
-									className: 'btn btn-default btn-lg addQuickNoteButton'
-									onClick: @_openNewQuickNote
-									disabled: @props.isReadOnly
-								},
-									FaIcon('plus')
-									"Add #{Term 'quick note'}"
+									R.div({},
+										"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
+									)
+									R.button({
+										className: 'btn btn-primary btn-lg newProgNoteButton'
+										onClick: @_openNewProgNote
+										disabled: @state.isLoading or @props.isReadOnly
+									},
+										FaIcon('file')
+										"New #{Term 'progress note'}"
+									)
+									R.button({
+										ref: 'addQuickNoteButton'
+										className: 'btn btn-default btn-lg addQuickNoteButton'
+										onClick: @_openNewQuickNote
+										disabled: @props.isReadOnly
+									},
+										FaIcon('plus')
+										"Add #{Term 'quick note'}"
+									)
 								)
 							)
 						)
@@ -267,6 +269,19 @@ load = (win) ->
 							onClose: @_toggleIsFiltering
 							updateSearchQuery: @_updateSearchQuery
 						})
+
+						R.div({
+							className: [
+								'empty'
+								showWhen @state.isFiltering and historyEntries.isEmpty()
+							].join ' '
+						},
+							R.div({className: 'message'},
+								"No results found"
+								R.br()
+								"matching: \"#{@state.searchQuery}\""
+							)
+						)
 
 						R.div({
 							ref: 'progNotesList'
