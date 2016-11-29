@@ -142,10 +142,13 @@ load = (win) ->
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Re-apply mark highlighting every time searchQuery or isFiltering changes
-			if @state.searchQuery isnt oldState.searchQuery or @state.isFiltering isnt oldState.isFiltering
+			if (@state.searchQuery isnt oldState.searchQuery) or (@state.isFiltering isnt oldState.isFiltering)
 				markInstance = new Mark findDOMNode @refs.progNotesList
 				# TODO: Figure out how to highlight metric input (value)
-				markInstance.unmark().mark(@state.searchQuery)
+				if @state.isFiltering
+					markInstance.unmark().mark(@state.searchQuery)
+				else
+					markInstance.unmark()
 
 		hasChanges: ->
 			@_transientDataHasChanges()
