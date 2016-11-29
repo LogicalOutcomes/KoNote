@@ -42,10 +42,10 @@ load = (win) ->
 
 	# List of fields we exclude from keyword search
 	excludedSearchFields = Imm.fromJS [
-		'id', 'revisionId', 'templateId', 'typeId', 'relatedProgNoteId',
-		'relatedProgEventId', 'authorProgramId', 'clientFileId',
-		'timestamp', 'backdate', 'startTimestamp', 'endTimestamp',
-		'type', 'status'
+		'id', 'revisionId', 'templateId', 'typeId', 'relatedProgNoteId', 'programId'
+		'relatedProgEventId', 'authorProgramId', 'clientFileId'
+		'timestamp', 'backdate', 'startTimestamp', 'endTimestamp'
+		'data', 'type', 'status'
 	]
 
 
@@ -54,12 +54,18 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		_toProgNoteHistoryEntry: (progNoteHistory) ->
-			latestRevision = 	progNoteHistory.last()
+			latestRevision = progNoteHistory.last()
+			firstRevision = progNoteHistory.first()
+
+			# We pass down a pre-filtered version of the progNote
+			# because the search-by-keyword feature relies on this data
+			filteredProgNote = filterEmptyProgNoteValues(latestRevision)
+
 			# Revisions all have same 'id', just different revisionIds
 			progNoteId = latestRevision.get('id')
-			timestamp = latestRevision.get('backdate') or latestRevision.get('timestamp')
+			timestamp = firstRevision.get('backdate') or firstRevision.get('timestamp')
 
-			# Mix in all other related data from other clientFile collections
+			# Mix in all other related data from clientFile's other collections
 			progEvents = @props.progEvents.filter (progEvent) ->
 				return progEvent.get('relatedProgNoteId') is progNoteId
 
@@ -73,6 +79,7 @@ load = (win) ->
 				id: progNoteId
 				timestamp
 				data: progNoteHistory
+				filteredProgNote
 				progEvents
 				globalEvents
 				attachments
@@ -90,8 +97,8 @@ load = (win) ->
 			}
 
 		render: ->
-			globalEventEntries = @props.globalEvents.map @_toGlobalEventEntry
 			progNoteEntries = @props.progNoteHistories.map @_toProgNoteHistoryEntry
+			globalEventEntries = @props.globalEvents.map @_toGlobalEventEntry
 
 			historyEntries = progNoteEntries
 			.concat globalEventEntries
@@ -155,7 +162,7 @@ load = (win) ->
 
 			# Filtering based on search query
 			if @state.searchQuery.trim().length > 0
-				historyEntries = @_filterProgNotes(historyEntries)
+				historyEntries = @_filterEntries historyEntries
 			# Otherwise, we utilize historyCount
 			else if not isEditing
 				historyEntries = historyEntries.slice(0, @state.historyCount)
@@ -260,6 +267,7 @@ load = (win) ->
 											key: entry.get('id')
 
 											progNoteHistory: entry.get('data')
+											filteredProgNote: entry.get('filteredProgNote')
 											attachments: entry.get('attachments')
 											eventTypes: @props.eventTypes
 											clientFile: @props.clientFile
@@ -833,23 +841,23 @@ load = (win) ->
 			console.info "Updating search query..."
 			@setState {searchQuery}
 
-		_filterProgNotes: (progNotes) ->
-			searchQuery = @state.searchQuery
+		_filterEntries: (entries) ->
+			if @state.searchQuery.trim().length is 0
+				return entries
 
-			if searchQuery.trim().length is 0
-				return progNotes
+			console.log "Filtering entries matching \"#{@state.searchQuery}\"..."
 
 			# Split into query parts
-			queryParts = Imm.fromJS(searchQuery.split(' ')).map (p) -> p.toLowerCase()
+			queryParts = Imm.fromJS(@state.searchQuery.split(' ')).map (p) -> p.toLowerCase()
 
 			containsSearchQuery = (data) ->
-				data.some (value, property) ->
+				return data.some (value, property) ->
 					# Skip excluded field
 					if excludedSearchFields.includes property
 						return false
 
+					# Run all keywords against string contents
 					# TODO: Handle numbers
-					# TODO: Ignore cases like where target has title but no contents
 					if typeof value is 'string'
 						value = value.toLowerCase()
 						includesAllParts = queryParts.every (part) -> value.includes(part)
@@ -859,8 +867,8 @@ load = (win) ->
 					# so we'll loop through this same method on it
 					return containsSearchQuery(value)
 
-			# Only keep progNotes that contain all query parts
-			return progNotes.filter containsSearchQuery
+			# Only keep entries that contain all query parts
+			return entries.filter containsSearchQuery
 
 
 	ProgNoteContainer = React.createFactory React.createClass
@@ -881,7 +889,7 @@ load = (win) ->
 			return hasChanges
 
 		render: ->
-			{isEditing, progEvents, globalEvents} = @props
+			{isEditing, filteredProgNote, progEvents, globalEvents} = @props
 
 			progNote = @props.progNoteHistory.last()
 			progNoteId = progNote.get('id')
@@ -896,6 +904,7 @@ load = (win) ->
 			if progNote.get('status') is 'cancelled'
 				return CancelledProgNoteView({
 					progNoteHistory: @props.progNoteHistory
+					filteredProgNote
 					attachments: @props.attachments
 					progEvents
 					globalEvents
@@ -944,6 +953,7 @@ load = (win) ->
 				when 'full'
 					ProgNoteView({
 						progNote
+						filteredProgNote
 						progNoteHistory: @props.progNoteHistory
 						progEvents
 						globalEvents
@@ -1068,56 +1078,11 @@ load = (win) ->
 		displayName: 'ProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
 
-		# TODO: We might need to move this more top-level, so the search ignores empty data
-		# ex: {title: "targetA", content: ""} with search term "targetA"
-		_filterEmptyValues: (progNote) ->
-			progNoteUnits = progNote.get('units')
-			.map (unit) ->
-				if unit.get('type') is 'basic'
-					# Strip empty metric values
-					unitMetrics = unit.get('metrics').filterNot (metric) -> not metric.get('value')
-					return unit.set('metrics', unitMetrics)
-
-				else if unit.get('type') is 'plan'
-					unitSections = unit.get('sections')
-					.map (section) ->
-						sectionTargets = section.get('targets')
-						# Strip empty metric values
-						.map (target) ->
-							targetMetrics = target.get('metrics').filterNot (metric) ->
-								return not metric.get('value')
-							return target.set('metrics', targetMetrics)
-						# Strip empty targets
-						.filterNot (target) ->
-							not target.get('notes') and target.get('metrics').isEmpty()
-
-						return section.set('targets', sectionTargets)
-
-					.filterNot (section) ->
-						section.get('targets').isEmpty()
-
-					return unit.set('sections', unitSections)
-
-				else
-					throw new Error "Unknown progNote unit type: #{unit.get('type')}"
-
-			.filterNot (unit) ->
-				# Finally, strip any empty 'basic' units, or 'plan' units with 0 sections
-				if unit.get('type') is 'basic'
-					return not unit.get('notes') and unit.get('metrics').isEmpty()
-				else if unit.get('type') is 'plan'
-					return unit.get('sections').isEmpty()
-				else
-					throw new Error "Unknown progNote unit type: #{unit.get('type')}"
-
-
-			return progNote.set('units', progNoteUnits)
-
 		render: ->
 			{isEditing} = @props
 
 			# Use transient data when isEditing
-			progNote = if isEditing then @props.transientData.get('progNote') else @_filterEmptyValues(@props.progNote)
+			progNote = if isEditing then @props.transientData.get('progNote') else @props.filteredProgNote
 			progEvents = if isEditing then @props.transientData.get('progEvents') else @props.progEvents
 
 
@@ -1130,7 +1095,7 @@ load = (win) ->
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
 						ProgNoteToolbar({
 							isReadOnly: @props.isReadOnly
-							progNote: @props.progNote
+							progNote: @props.progNote # Pass original (unfiltered)
 							progNoteHistory: @props.progNoteHistory
 							progEvents: @props.progEvents
 							globalEvents: @props.globalEvents
@@ -1268,7 +1233,7 @@ load = (win) ->
 						)
 					)
 
-					(if progNote.get('summary')
+					(if progNote.get('summary') or isEditing
 						R.div({className: 'basic unit'},
 							R.h3({}, "Shift Summary")
 							R.div({className: 'notes'},
@@ -1387,6 +1352,7 @@ load = (win) ->
 						when 'full'
 							ProgNoteView({
 								progNote: @props.progNoteHistory.last()
+								filteredProgNote: @props.filteredProgNote
 								progNoteHistory: @props.progNoteHistory
 								progEvents: @props.progEvents
 								globalEvents: @props.globalEvents
@@ -1571,6 +1537,50 @@ load = (win) ->
 				)
 			)
 
+
+
+	filterEmptyProgNoteValues = (progNote) ->
+		progNoteUnits = progNote.get('units')
+		.map (unit) ->
+			if unit.get('type') is 'basic'
+				# Strip empty metric values
+				unitMetrics = unit.get('metrics').filterNot (metric) -> not metric.get('value')
+				return unit.set('metrics', unitMetrics)
+
+			else if unit.get('type') is 'plan'
+				unitSections = unit.get('sections')
+				.map (section) ->
+					sectionTargets = section.get('targets')
+					# Strip empty metric values
+					.map (target) ->
+						targetMetrics = target.get('metrics').filterNot (metric) ->
+							return not metric.get('value')
+						return target.set('metrics', targetMetrics)
+					# Strip empty targets
+					.filterNot (target) ->
+						not target.get('notes') and target.get('metrics').isEmpty()
+
+					return section.set('targets', sectionTargets)
+
+				.filterNot (section) ->
+					section.get('targets').isEmpty()
+
+				return unit.set('sections', unitSections)
+
+			else
+				throw new Error "Unknown progNote unit type: #{unit.get('type')}"
+
+		.filterNot (unit) ->
+			# Finally, strip any empty 'basic' units, or 'plan' units with 0 sections
+			if unit.get('type') is 'basic'
+				return not unit.get('notes') and unit.get('metrics').isEmpty()
+			else if unit.get('type') is 'plan'
+				return unit.get('sections').isEmpty()
+			else
+				throw new Error "Unknown progNote unit type: #{unit.get('type')}"
+
+
+		return progNote.set('units', progNoteUnits)
 
 
 	return ProgNotesTab
