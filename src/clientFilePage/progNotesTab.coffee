@@ -262,12 +262,11 @@ load = (win) ->
 							)
 						)
 
-						(if @state.isFiltering and not isEditing
-							FilterBar({
-								onClose: @_toggleIsFiltering
-								updateSearchQuery: @_updateSearchQuery
-							})
-						)
+						FilterBar({
+							isVisible: @state.isFiltering and not isEditing
+							onClose: @_toggleIsFiltering
+							updateSearchQuery: @_updateSearchQuery
+						})
 
 						R.div({
 							ref: 'progNotesList'

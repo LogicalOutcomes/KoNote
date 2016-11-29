@@ -9,7 +9,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
-	{FaIcon} = require('../utils').load(win)
+	{FaIcon, showWhen} = require('../utils').load(win)
 
 
 	FilterBar = React.createFactory React.createClass
@@ -26,21 +26,26 @@ load = (win) ->
 		componentDidMount: ->
 			@_focusInput()
 
+		componentDidUpdate: (oldProps, oldState) ->
+			# Focus input when made visible
+			if @props.isVisible isnt oldProps.isVisible and @props.isVisible
+				@_focusInput()
+
 		_focusInput: ->
 			@refs.searchText.focus()
 
 		_updateSearchText: (event) ->
 			searchText = event.target.value
 
-			@_updateSearchQuery(searchText)
 			@setState {searchText}
+			@_updateSearchQuery(searchText)
 
 		_updateSearchQuery: (searchText) ->
 			@props.updateSearchQuery searchText
 
 		render: ->
 			R.div({
-				className: 'filterBar'
+				className: "filterBar #{showWhen @props.isVisible}"
 				onClick: @_focusInput
 			},
 				R.input({
