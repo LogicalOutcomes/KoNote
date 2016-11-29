@@ -45,7 +45,7 @@ load = (win) ->
 		'id', 'revisionId', 'templateId', 'typeId', 'relatedProgNoteId', 'programId'
 		'relatedProgEventId', 'authorProgramId', 'clientFileId'
 		'timestamp', 'backdate', 'startTimestamp', 'endTimestamp'
-		'data', 'type', 'status'
+		'type', 'status', 'progNoteHistory'
 	]
 
 
@@ -78,7 +78,7 @@ load = (win) ->
 				type: 'progNote'
 				id: progNoteId
 				timestamp
-				data: progNoteHistory
+				progNoteHistory
 				filteredProgNote
 				progEvents
 				globalEvents
@@ -93,7 +93,7 @@ load = (win) ->
 				id: globalEvent.get('id')
 				timestamp
 				programId: globalEvent.get('programId')
-				data: globalEvent
+				globalEvent
 			}
 
 		render: ->
@@ -266,7 +266,7 @@ load = (win) ->
 										ProgNoteContainer({
 											key: entry.get('id')
 
-											progNoteHistory: entry.get('data')
+											progNoteHistory: entry.get('progNoteHistory')
 											filteredProgNote: entry.get('filteredProgNote')
 											attachments: entry.get('attachments')
 											eventTypes: @props.eventTypes
@@ -298,7 +298,7 @@ load = (win) ->
 									when 'globalEvent'
 										GlobalEventView({
 											key: entry.get('id')
-											globalEvent: entry.get('data')
+											globalEvent: entry.get('globalEvent')
 											programsById: @props.programsById
 										})
 									else
