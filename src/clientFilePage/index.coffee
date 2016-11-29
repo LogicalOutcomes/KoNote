@@ -1110,6 +1110,7 @@ load = (win, {clientFileId}) ->
 					},
 						AnalysisTab.AnalysisView({
 							ref: 'analysisTab'
+							isVisible: activeTabId is 'analysis'
 							clientFileId
 							clientName: @props.clientName
 							plan: @props.clientFile.get('plan')

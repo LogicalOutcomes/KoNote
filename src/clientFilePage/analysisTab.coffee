@@ -34,7 +34,13 @@ load = (win) ->
 
 	AnalysisView = React.createFactory React.createClass
 		displayName: 'AnalysisView'
-		mixins: [React.addons.PureRenderMixin]
+
+		shouldComponentUpdate: (newProps, newState) ->
+			# Only run shallowCompare when the tab is visible
+			if not newProps.isVisible
+				return false
+
+			React.addons.shallowCompare @, newProps, newState
 
 		getInitialState: ->
 			return {
