@@ -66,7 +66,7 @@ load = (win) ->
 
 			# Revisions all have same 'id', just different revisionIds
 			progNoteId = latestRevision.get('id')
-			timestamp = firstRevision.get('backdate') or firstRevision.get('timestamp')
+			timestamp = latestRevision.get('backdate') or firstRevision.get('timestamp')
 
 			# Mix in all other related data from clientFile's other collections
 			progEvents = @props.progEvents.filter (progEvent) ->
