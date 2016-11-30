@@ -2,6 +2,7 @@
   "main": "index.html",
   "name": "uninstall",
   "displayName": "uninstall",
+  "description": "Cleanup utility to remove konote data directory on Windows",
   "license": "MPL-2.0",
   "dependencies": {
     "rimraf": "^2.5.4"
