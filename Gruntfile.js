@@ -55,18 +55,19 @@ module.exports = function(grunt) {
 				cwd: '/'
 			},
 			uninstaller: {
-				files: [
-					{
-						src: [
-							'package.json',
-							'index.html'
-						],
-						dest: 'build/releases/temp/<%= grunt.task.current.args[0] %>/uninstaller',
-						filter: 'isFile',
-						expand: true
-					}
+				expand: true,
+				cwd: 'build/uninstaller/',
+				src: [
+					'package.json',
+					'index.html'
 				],
-				cwd: 'build/uninstaller'
+				dest: 'build/releases/temp/uninstaller/'
+			},
+			uninstallerbinary: {
+				expand: true,
+				cwd: 'build/releases/temp/nwjs-<%= grunt.task.current.args[0] %>/uninstall-win-ia32/',
+				src: 'uninstall.exe',
+				dest: 'build/releases/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-ia32/'
 			},
 			nodemodules: {
 				expand: true,
@@ -196,7 +197,7 @@ module.exports = function(grunt) {
 				cmd: 'npm install --production --no-optional'
 			},
 			npmUninstaller: {
-				cwd: 'build/releases/temp/<%= grunt.task.current.args[0] %>/uninstaller',
+				cwd: 'build/releases/temp/uninstaller',
 				cmd: 'npm install --production --no-optional'
 			},
 			renamemodules: {
@@ -208,7 +209,7 @@ module.exports = function(grunt) {
 			},
 			nwjsuninstaller: {
 				cwd: 'build/releases/temp/',
-				cmd: 'nwb nwbuild -v 0.17.6 -p win32 -o ./nwjs-<%= grunt.task.current.args[0] %>/ ./<%= grunt.task.current.args[0] %>/uninstaller'
+				cmd: 'nwb nwbuild -v 0.17.6 -p win32 -o ./nwjs-<%= grunt.task.current.args[0] %>/ ./uninstaller'
 			},
 			nwjswin: {
 				cwd: 'build/releases/temp/',
@@ -313,14 +314,14 @@ module.exports = function(grunt) {
 
 	grunt.registerTask('release', function() {
 		grunt.task.run('clean:temp');
-		grunt.task.run('exec:test');
+		//grunt.task.run('exec:test');
 		release.forEach(function(entry) {
 			grunt.task.run('copy:main:'+entry);
 			grunt.task.run('replace:main:'+entry);
 			grunt.task.run('replace:config:'+entry);
 			grunt.task.run('copy:production:'+entry);
 			if (entry == "generic-win") {
-				grunt.task.run('copy:generic:'+entry);
+				//grunt.task.run('copy:generic:'+entry);
 				grunt.task.run('copy:uninstaller:'+entry);
 				grunt.task.run('exec:npmUninstaller:'+entry);
 				grunt.task.run('exec:nwjsuninstaller:'+entry);
@@ -341,6 +342,7 @@ module.exports = function(grunt) {
 			grunt.task.run('clean:styl:'+entry);
 			if (entry.includes("win")) {
 				grunt.task.run('exec:nwjswin:'+entry);
+				grunt.task.run('copy:uninstallerbinary:'+entry);
 				grunt.task.run('exec:zip:'+entry);
 			}
 			if (entry.includes("mac")) {
@@ -351,6 +353,6 @@ module.exports = function(grunt) {
 				}
 			}
 		});
-		grunt.task.run('clean:temp');
+		//grunt.task.run('clean:temp');
 	});
 };
