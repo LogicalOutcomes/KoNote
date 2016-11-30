@@ -1,8 +1,9 @@
 {
   "main": "index.html",
-  "name": "konote-uninstaller",
+  "name": "uninstall",
+  "displayName": "uninstall",
   "license": "MPL-2.0",
   "dependencies": {
-    "rimraf": "^2.4.4"
+    "rimraf": "^2.5.4"
   }
 }
