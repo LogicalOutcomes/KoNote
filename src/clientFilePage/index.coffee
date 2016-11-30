@@ -633,7 +633,6 @@ load = (win, {clientFileId}) ->
 						# Temporary attempt at ensuring all progNotes loaded in are unique
 						progNoteHistories = @state.progNoteHistories
 						.concat @secondPassProgNoteHistories
-						.toSet().toList()
 
 						@setState {progNoteHistories}
 
