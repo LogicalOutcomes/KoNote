@@ -135,60 +135,55 @@ load = (win) ->
 						R.button({
 							className: [
 								'saveButton'
-								'collapsed' unless hasChanges
+								#'collapsed' unless hasChanges
 							].join ' '
 							disabled: @props.isReadOnly
 							onClick: @_save
 						},
-							FaIcon('save')
-							' '
-							"Save Changes"
+							FaIcon('save', {className:'menuItemIcon'})
+							R.span({className: 'menuItemText'},
+								"Save"
+							)
 						)
 
 						R.button({
 							className: [
 								'discardButton'
-								'collapsed' unless hasChanges
+								#'collapsed' unless hasChanges
 							].join ' '
 							disabled: @props.isReadOnly
 							onClick: @_resetChanges
 						},
-							FaIcon('undo')
-							"Discard"
+							FaIcon('undo', {className:'menuItemIcon'})
+							R.span({className: 'menuItemText'},
+								"Discard"
+							)
 						)
 
-						R.button({
-							className: 'reorderButton'
-							onClick: @_toggleReorderPlan
-							disabled: @props.isReadOnly
-						},
-							if @state.isReorderingPlan
-								R.div({},
-									FaIcon('sitemap')
-									"Edit Plan"
-								)
-							else
-								R.div({},
-									FaIcon('sort-amount-asc')
-									"Edit Order"
-								)
-						)
-
-						R.button({
-							className: 'addSectionButton'
-							onClick: @_addSection
-							disabled: @props.isReadOnly
-						},
-							FaIcon('plus')
-							"Add #{Term 'Section'}"
-						)
+						PrintButton({
+							#className: 'collapsed' if hasChanges
+							dataSet: [
+								{
+									format: 'plan'
+									data: {
+										sections: plan.get('sections')
+										targets: @state.currentTargetRevisionsById
+										metrics: @props.metricsById
+									}
+									clientFile: @props.clientFile
+								}
+							]
+							iconOnly: true
+							disabled: hasChanges
+						})
 
 						B.DropdownButton({
 							id: 'planTemplatesDropdown'
+							key: 'planTemplatesDropdownButton'
 							title: FaIcon('wpforms')
 							disabled: @props.isReadOnly
+							noCaret: true
 						},
-
 
 							B.MenuItem({onClick: @_openCreateTemplateDialog},
 								"Create Plan Template"
@@ -214,22 +209,41 @@ load = (win) ->
 							)
 						)
 
-						PrintButton({
-							className: 'collapsed' if hasChanges
-							dataSet: [
-								{
-									format: 'plan'
-									data: {
-										sections: plan.get('sections')
-										targets: @state.currentTargetRevisionsById
-										metrics: @props.metricsById
-									}
-									clientFile: @props.clientFile
-								}
-							]
-							iconOnly: true
-							disabled: hasChanges
-						})
+						R.button({
+							className: 'reorderButton'
+							onClick: @_toggleReorderPlan
+							disabled: @props.isReadOnly
+						},
+							if @state.isReorderingPlan
+								R.div({},
+									FaIcon('sitemap', {className:'menuItemIcon'})
+									R.span({className: 'menuItemText'},
+										"Edit Plan"
+									)
+								)
+							else
+								R.div({},
+									FaIcon('sort-amount-asc', {className:'menuItemIcon'})
+									R.span({className: 'menuItemText'},
+										"Reorder"
+									)
+								)
+						)
+
+						R.button({
+							className: 'addSectionButton'
+							onClick: @_addSection
+							disabled: @props.isReadOnly
+						},
+							FaIcon('plus', {className:'menuItemIcon'})
+							R.span({className: 'menuItemText'},
+								"Add #{Term 'Section'}"
+							)
+						)
+
+						
+
+						
 					)
 
 					(if @state.isReorderingPlan
