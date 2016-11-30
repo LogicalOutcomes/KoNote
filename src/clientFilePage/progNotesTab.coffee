@@ -53,6 +53,9 @@ load = (win) ->
 		displayName: 'ProgNotesTab'
 		mixins: [React.addons.PureRenderMixin]
 
+		hasChanges: ->
+			@refs.ui.hasChanges()
+
 		_toProgNoteHistoryEntry: (progNoteHistory) ->
 			latestRevision = progNoteHistory.last()
 			firstRevision = progNoteHistory.first()
@@ -105,7 +108,10 @@ load = (win) ->
 			.sortBy (entry) -> entry.get('timestamp')
 			.reverse()
 
-			props = _.extend {}, @props, {historyEntries}
+			props = _.extend {}, @props, {
+				ref: 'ui'
+				historyEntries
+			}
 
 			return ProgNotesTabUi(props)
 
