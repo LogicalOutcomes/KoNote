@@ -630,10 +630,8 @@ load = (win, {clientFileId}) ->
 						requestIdleCallback @_secondPass
 					else
 						console.info "Second pass complete!"
-						# Temporary attempt at ensuring all progNotes loaded in are unique
-						progNoteHistories = @state.progNoteHistories
-						.concat @secondPassProgNoteHistories
 
+						progNoteHistories = @state.progNoteHistories.concat @secondPassProgNoteHistories
 						@setState {progNoteHistories}
 
 		_acquireLock: (cb=(->)) ->
