@@ -1576,6 +1576,10 @@ load = (win) ->
 
 
 	filterEmptyProgNoteValues = (progNote) ->
+		# Don't bother filtering a quickNote (doesn't have units)
+		unless progNote.has 'units'
+			return progNote
+
 		progNoteUnits = progNote.get('units')
 		.map (unit) ->
 			if unit.get('type') is 'basic'
