@@ -3,18 +3,32 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 _ = require 'underscore'
+Imm = require 'immutable'
+
 Term = require '../term'
 
 
 load = (win) ->
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
 
+	ColorKeyBubble = require('../colorKeyBubble').load(win)
 	{FaIcon, showWhen} = require('../utils').load(win)
+
+	dataTypeOptions = Imm.fromJS [
+		{name: 'Progress Notes'}
+		{name: 'Targets'}
+		{name: 'Events'}
+	]
 
 
 	FilterBar = React.createFactory React.createClass
 		displayName: 'FilterBar'
+
+		propTypes: {
+			programsById: PropTypes.instanceOf Imm.List()
+		}
 
 		getInitialState: -> {
 			searchText: '' # Stays internal for perf reasons
@@ -59,20 +73,14 @@ load = (win) ->
 					})
 				)
 				R.section({},
-					R.div({},
-						R.div({},
-							"All Data"
-							' '
-							FaIcon('caret-down')
-						)
-					)
-					R.div({},
-						R.div({},
-							"All #{Term 'Programs'}"
-							' '
-							FaIcon('caret-down')
-						)
-					)
+					FilterDropdownMenu({
+						title: 'Data'
+						dataOptions: dataTypeOptions
+					})
+					FilterDropdownMenu({
+						title: Term 'Programs'
+						dataOptions: @props.programsById
+					})
 					R.div({
 						className: 'closeButton'
 						onClick: @props.onClose
@@ -81,6 +89,31 @@ load = (win) ->
 					)
 				)
 			)
+
+	FilterDropdownMenu = ({title, dataOptions, onSelect, selectedValue}) ->
+		R.div({className: 'filterDropdownMenu'},
+			R.ul({className: 'filterOptions'},
+				(if selectedValue
+					R.li({}, "All #{title}")
+				)
+				(dataOptions.toSeq().map (option) ->
+					R.li({},
+						(if option.has 'colorKeyHex'
+							ColorKeyBubble({
+								colorKeyHex: option.get('colorKeyHex')
+							})
+						)
+						option.get('name')
+					)
+				)
+			)
+			R.div({},
+				"All #{title}"
+				' '
+				FaIcon('caret-down')
+			)
+		)
+
 
 	return FilterBar
 

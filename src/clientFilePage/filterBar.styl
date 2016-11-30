@@ -50,3 +50,37 @@
 
 				&:hover
 					opacity 0.75
+
+
+	.filterDropdownMenu
+		position relative
+		z-index 9999
+
+		ul.filterOptions
+			margin 0
+			padding 0
+			list-style none
+			position absolute
+			top 100%
+			left 0
+			display none
+			transition opacity .25s ease
+			min-width 100%
+
+			li
+				background #eaf1f5
+				border-bottom 1px solid #cadbe5
+				padding 8px 12px
+
+				&:hover
+					background #cadbe5
+
+				&:last-child
+					border-bottom none
+
+				.colorKeyBubble
+					margin-right 10px
+
+		&:hover
+			ul.filterOptions
+				display block

@@ -279,6 +279,7 @@ load = (win) ->
 							isVisible: @state.isFiltering and not isEditing
 							onClose: @_toggleIsFiltering
 							updateSearchQuery: @_updateSearchQuery
+							programsById: @props.programsById
 						})
 
 						R.div({
