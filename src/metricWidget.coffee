@@ -35,17 +35,18 @@ load = (win) ->
 				].join ' '
 			},
 				(if @props.value?
-					if typeof @props.value in ['string', 'number']
+					if @props.isEditable
 						R.input({
 							className: 'value circle'
 							onFocus: @props.onFocus
 							value: @props.value
 							onChange: @_onChange
-							placeholder: if @props.isEditable then '__' else '--'
-							disabled: not @props.isEditable
+							placeholder: '__'
 						})
 					else
-						R.div({className: 'value circle'}, @props.value)
+						R.div({className: 'value circle'},
+							@props.value or '--'
+						)
 				else
 					R.div({className: 'icon circle'},
 						FaIcon 'line-chart'

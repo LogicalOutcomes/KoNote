@@ -101,18 +101,14 @@ load = (win, {clientFileId}) ->
 			@refs.ui.suggestClose()
 
 		render: ->
-			if @state.status isnt 'ready' then return loadingSpinner({})
+			if @state.status isnt 'ready'
+				return loadingSpinner({})
 
-			clientName = renderName(@state.clientFile.get('clientName'))
+			clientName = renderName @state.clientFile.get('clientName')
 
-			# Order each individual progNoteHistory, then the overall histories
-			progNoteHistories = @state.progNoteHistories
-			.map (history) ->
+			# Ensure revisions of each progNote are in chronological order (of creation)
+			progNoteHistories = @state.progNoteHistories.map (history) ->
 				return history.sortBy (revision) -> revision.get('timestamp')
-			.sortBy (history) ->
-				createdAt = history.last().get('backdate') or history.first().get('timestamp')
-				return Moment createdAt, Persist.TimestampFormat
-			.reverse()
 
 			# Use programLinks to determine program membership(s)
 			# TODO: Refactor to clientProgramsById for faster searching by ID
@@ -605,10 +601,11 @@ load = (win, {clientFileId}) ->
 					}
 
 		_secondPass: (deadline) ->
-			console.log "second pass start..."
 			progNoteHistories = null
 
 			if (deadline.timeRemaining() > 0 or deadline.didTimout) and (@progNoteIndex < @progNoteTotal)
+				console.info "Second pass start..."
+
 				# lets see what can we do in 100ms
 				count = if deadline.didTimeout then 100 else 10
 
@@ -632,8 +629,12 @@ load = (win, {clientFileId}) ->
 						@secondPassProgNoteHistories = @secondPassProgNoteHistories.concat results
 						requestIdleCallback @_secondPass
 					else
-						console.log "second pass finished"
-						progNoteHistories = @state.progNoteHistories.concat @secondPassProgNoteHistories
+						console.info "Second pass complete!"
+						# Temporary attempt at ensuring all progNotes loaded in are unique
+						progNoteHistories = @state.progNoteHistories
+						.concat @secondPassProgNoteHistories
+						.toSet().toList()
+
 						@setState {progNoteHistories}
 
 		_acquireLock: (cb=(->)) ->
@@ -1037,7 +1038,7 @@ load = (win, {clientFileId}) ->
 			return R.div({className: 'clientFilePage animated fadeIn'},
 
 				(if isReadOnly
-					ReadOnlyNotice {data: @props.readOnlyData}
+					ReadOnlyNotice({data: @props.readOnlyData})
 				)
 				R.div({className: 'wrapper'},
 					Sidebar({
@@ -1055,9 +1056,8 @@ load = (win, {clientFileId}) ->
 					})
 					R.div({
 						className: [
-							'view'
-							'plan'
-							showWhen(activeTabId is 'plan')
+							'view plan'
+							showWhen activeTabId is 'plan'
 						].join ' '
 					},
 						PlanTab.PlanView({
@@ -1076,7 +1076,7 @@ load = (win, {clientFileId}) ->
 					R.div({
 						className: [
 							'view'
-							showWhen3d(activeTabId is 'progressNotes')
+							showWhen3d activeTabId is 'progressNotes'
 						].join ' '
 					},
 						ProgNotesTab({
@@ -1103,9 +1103,8 @@ load = (win, {clientFileId}) ->
 					)
 					R.div({
 						className: [
-							'view'
-							'analysis'
-							showWhen(activeTabId is 'analysis')
+							'view analysis'
+							showWhen activeTabId is 'analysis'
 						].join ' '
 					},
 						AnalysisTab.AnalysisView({
@@ -1125,9 +1124,8 @@ load = (win, {clientFileId}) ->
 					)
 					R.div({
 						className: [
-							'view'
-							'info'
-							showWhen(activeTabId is 'info')
+							'view info'
+							showWhen activeTabId is 'info'
 						].join ' '
 					},
 						InfoTab.InfoView({

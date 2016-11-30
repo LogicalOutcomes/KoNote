@@ -62,6 +62,7 @@
 
 	// Button customizations
 	> button
+		color rgb(76, 93, 103)
 
 		&[disabled]
 			opacity 0.5
@@ -116,3 +117,7 @@
 
 			&:not([disabled]):hover
 				background lighten($bgColor, 25%)
+
+		&.openFilterBarButton
+			flex 0.25
+			font-size 1.3em

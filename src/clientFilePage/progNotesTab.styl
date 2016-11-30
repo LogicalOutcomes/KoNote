@@ -4,6 +4,10 @@
 	display flex
 	flex-direction column
 
+	mark
+		background yellow
+		padding 0
+
 		.popover
 			z-index 1001
 			max-width none
@@ -35,20 +39,25 @@
 			&.leftPane
 
 				> .empty
+					flex 1
+					display flex
 					text-align center
 
 					> .message
-						padding 100px 80px 50px
+						flex 1
+						padding 100px 15% 50px 15%
 
 						color #888
 						font-size 16px
 
-					> .btn
-						clear both
-						margin 15px
+						> .btn
+							margin-top 50px
 
-						> .fa
-							padding-right 10px
+							&:last-child
+								margin-left 5px
+
+							> .fa
+								padding-right 10px
 
 
 				// quickNote popover styles
