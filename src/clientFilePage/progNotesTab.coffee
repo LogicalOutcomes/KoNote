@@ -62,7 +62,8 @@ load = (win) ->
 			filteredProgNote = filterEmptyProgNoteValues(latestRevision)
 
 			# Revisions all have same 'id', just different revisionIds
-			progNoteId = latestRevision.get('id')
+			progNoteId = firstRevision.get('id')
+			programId = firstRevision.get('authorProgramId')
 			timestamp = firstRevision.get('backdate') or firstRevision.get('timestamp')
 
 			# Mix in all other related data from clientFile's other collections
@@ -77,6 +78,7 @@ load = (win) ->
 			return Imm.Map {
 				type: 'progNote'
 				id: progNoteId
+				programId
 				timestamp
 				progNoteHistory
 				filteredProgNote
@@ -91,8 +93,8 @@ load = (win) ->
 			return Imm.Map {
 				type: 'globalEvent'
 				id: globalEvent.get('id')
-				timestamp
 				programId: globalEvent.get('programId')
+				timestamp
 				globalEvent
 			}
 
