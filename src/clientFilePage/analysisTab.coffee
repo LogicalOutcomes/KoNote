@@ -34,7 +34,13 @@ load = (win) ->
 
 	AnalysisView = React.createFactory React.createClass
 		displayName: 'AnalysisView'
-		mixins: [React.addons.PureRenderMixin]
+
+		shouldComponentUpdate: (newProps, newState) ->
+			# Only run shallowCompare when the tab is visible
+			if not newProps.isVisible
+				return false
+
+			React.addons.shallowCompare @, newProps, newState
 
 		getInitialState: ->
 			return {
@@ -215,6 +221,7 @@ load = (win) ->
 			hasEnoughData = daysOfData.size > 0
 			untypedEvents = allEvents.filterNot (progEvent) => !!progEvent.get('typeId')
 
+			eventTypesAlphabetized = @props.eventTypes.sortBy (eventType) -> eventType.get('name')
 
 			return R.div({className: "analysisView"},
 				R.div({className: "noData #{showWhen not hasEnoughData}"},
@@ -320,7 +327,7 @@ load = (win) ->
 								R.div({},
 									R.h3({}, Term 'Event Types')
 									R.div({className: 'dataOptions'},
-										(@props.eventTypes.map (eventType) =>
+										(eventTypesAlphabetized.map (eventType) =>
 											eventTypeId = eventType.get('id')
 
 											# TODO: Make this faster

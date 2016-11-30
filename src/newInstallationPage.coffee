@@ -179,7 +179,7 @@ load = (win) ->
 								id: 'logoImage'
 								src: 'customer-logo-lg.png'
 							})
-							R.div({id: 'version'}, "v#{Config.version}")
+							R.div({id: 'version'}, "v#{nw.App.manifest.version}")
 						)
 					)
 					R.div({
@@ -397,17 +397,14 @@ load = (win) ->
 
 						zipfile.on 'close', =>
 							# zip extracted; check metadata
-							unless Fs.existsSync(path.join(tmpDir, 'version.json')) and Fs.existsSync('./package.json')
+							unless Fs.existsSync(path.join(tmpDir, 'version.json'))
 								cb new Error 'Invalid Data Version'
 								return
 							cb()
 
 				(cb) =>
-					Fs.readFile './package.json', (err, result) =>
-						if err
-							cb err
-						appVersion = JSON.parse(result).version
-						cb()
+					appVersion = nw.App.manifest.version
+					cb()
 
 				(cb) =>
 					Fs.readFile path.join(tmpDir, 'version.json'), (err, result) =>

@@ -7,6 +7,7 @@
 	"metrics": 100,
 	"planTemplates": 1,
 	"planTargets": 60,
+	"planTargetRevisions": 2,
 	"progNotes": 300,
 	"quickNotes": 300,
 	"progEvents": 1

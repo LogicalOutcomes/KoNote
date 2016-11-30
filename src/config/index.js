@@ -18,8 +18,4 @@ configFileNames.forEach(function (fileName) {
 	}
 });
 
-// Read src version from package.json
-var packageJson = JSON.parse(Fs.readFileSync('./package.json'));
-Config = Config.set('version', packageJson.version);
-
 module.exports = Config.toJS();

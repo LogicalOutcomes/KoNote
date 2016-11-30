@@ -188,15 +188,17 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 	createData 'progNotes', progNote, cb
 
 Create.alert = (clientFile, cb) ->
+	clientFileId = clientFile.get('id')
 	alert = Imm.fromJS {
 		content: Faker.lorem.paragraph()
+		clientFileId
 		status: 'default'
-		statusReason: ''
+		statusReason: 'Seeded'
+		updateReason: 'Seeded'
 		authorProgramId: ''
 	}
 
 	createData 'alerts', alert, cb
-
 
 Create.planTarget = (clientFile, metrics, cb) ->
 	metricIds = metrics
@@ -206,9 +208,9 @@ Create.planTarget = (clientFile, metrics, cb) ->
 	# randomly chooses a status, with a higher probability of 'default'
 	randomNumber = Math.floor(Math.random() * 10) + 1
 
-	if randomNumber > 7
+	if randomNumber > 8
 		status = 'deactivated'
-	else if randomNumber < 3
+	else if randomNumber < 2
 		status = 'completed'
 	else
 		status = 'default'
@@ -222,6 +224,12 @@ Create.planTarget = (clientFile, metrics, cb) ->
 	}
 
 	createData 'planTargets', target, cb
+
+Create.planTargetRevision = (target, cb) ->
+	newDescription = Faker.lorem.paragraph()
+	updatedPlanTarget = target.set 'description', newDescription
+
+	global.ActiveSession.persist.planTargets.createRevision updatedPlanTarget, cb
 
 Create.program = (index, cb) ->
 	program = Imm.fromJS({
@@ -355,6 +363,15 @@ Create.planTargets = (quantity, clientFile, metrics, cb) ->
 			return
 
 		console.log "Created #{quantity} planTargets"
+		cb null, Imm.List(results)
+
+Create.planTargetRevisions = (quantity, planTarget, cb) ->
+	Async.times quantity, (index, cb) =>
+		Create.planTargetRevision(planTarget, cb)
+	, (err, results) ->
+		if err
+			cb err
+			return
 		cb null, Imm.List(results)
 
 Create.programs = (quantity, cb) ->

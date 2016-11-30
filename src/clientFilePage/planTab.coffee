@@ -1093,7 +1093,7 @@ load = (win) ->
 						)
 					)
 				)
-				R.div({className: 'btn-group btn-group-sm'},
+				R.div({className: "btn-group btn-group-sm #{showWhen(not sectionIsInactive)}"},
 					R.button({
 						ref: 'addTarget'
 						className: 'addTarget btn btn-primary'

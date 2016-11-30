@@ -43,6 +43,23 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 				console.log "Created planTargets", planTargets.toJS()
 				cb()
 
+		# Create target revisions
+		(cb) ->
+			Async.map planTargets.toArray(), (planTarget, cb) ->
+				Create.planTargetRevisions template.planTargetRevisions, planTarget, (err, results) ->
+					if err
+						cb err
+						return
+					cb(null, results)
+
+			, (err, results) ->
+				if err
+					cb err
+					return
+
+				console.log "Created #{template.planTargetRevisions} revisions for each Target"
+				cb()
+
 		# Apply the target to a section, apply to clientFile, save
 		(cb) ->
 			sliceSize = Math.floor(planTargets.size / template.clientFileSections)
@@ -90,7 +107,6 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 					console.log "Modified clientFile with plan sections:", clientFile.toJS()
 					cb()
 
-
 		# Write full a progNote, write a note and random metric for each target, in each section
 		(cb) ->
 			Create.progNotes template.progNotes, {clientFile, sections, planTargets, metrics}, (err, results) ->
@@ -113,6 +129,17 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 				console.log "Created #{quickNotes.size} quickNotes"
 				cb()
 
+		# Write an alert
+		(cb) ->
+			Create.alert clientFile, (err, result) ->
+				if err
+					cb err
+					return
+
+				alert = result
+				console.log "Created alert"
+				cb()
+
 		# Create a # of progEvents for each progNote in the clientFile
 		(cb) ->
 			Async.map progNotes.toArray(), (progNote, cb) ->
@@ -132,9 +159,9 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 				console.log "Created #{template.progEvents} progEvents for each progNote"
 				cb()
 
-		# 1/10 chance that a globalEvent is created from a progEvent
+		# 1/25 chance that a globalEvent is created from a progEvent
 		(cb) ->
-			chanceOfGlobalEvent = 1/10
+			chanceOfGlobalEvent = 1/25
 
 			Async.map progEventsSet.toArray(), (progEvents, cb) ->
 				Async.map progEvents.toArray(), (progEvent, cb) ->
@@ -233,6 +260,7 @@ runSeries = (templateFileName = 'seedSmall') ->
 
 		# 		planTemplates = results
 		# 		cb()
+
 
 		(cb) ->
 			Create.programs template.programs, (err, results) ->

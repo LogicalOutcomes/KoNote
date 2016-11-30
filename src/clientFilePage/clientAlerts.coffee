@@ -103,7 +103,7 @@ load = (win) ->
 						WithTooltip({
 							title: "Click here to add/update alerts" if @state.content
 							placement: 'right'
-							container: 'body'
+							container: '#container'
 						},
 							R.div({id: 'staticContent'},
 								renderLineBreaks(@state.content or "Click here to add an alert")

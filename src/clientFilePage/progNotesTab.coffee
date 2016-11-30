@@ -53,6 +53,9 @@ load = (win) ->
 		displayName: 'ProgNotesTab'
 		mixins: [React.addons.PureRenderMixin]
 
+		hasChanges: ->
+			@refs.ui.hasChanges()
+
 		_toProgNoteHistoryEntry: (progNoteHistory) ->
 			latestRevision = progNoteHistory.last()
 			firstRevision = progNoteHistory.first()
@@ -64,7 +67,7 @@ load = (win) ->
 			# Revisions all have same 'id', just different revisionIds
 			progNoteId = firstRevision.get('id')
 			programId = firstRevision.get('authorProgramId')
-			timestamp = firstRevision.get('backdate') or firstRevision.get('timestamp')
+			timestamp = latestRevision.get('backdate') or firstRevision.get('timestamp')
 
 			# Mix in all other related data from clientFile's other collections
 			progEvents = @props.progEvents.filter (progEvent) ->
@@ -107,7 +110,10 @@ load = (win) ->
 			.sortBy (entry) -> entry.get('timestamp')
 			.reverse()
 
-			props = _.extend {}, @props, {historyEntries}
+			props = _.extend {}, @props, {
+				ref: 'ui'
+				historyEntries
+			}
 
 			return ProgNotesTabUi(props)
 
@@ -1578,6 +1584,10 @@ load = (win) ->
 
 
 	filterEmptyProgNoteValues = (progNote) ->
+		# Don't bother filtering a quickNote (doesn't have units)
+		unless progNote.has 'units'
+			return progNote
+
 		progNoteUnits = progNote.get('units')
 		.map (unit) ->
 			if unit.get('type') is 'basic'
