@@ -142,6 +142,11 @@ load = (win, {dataSet}) ->
 
 							else
 								throw new Error "Unknown print-data type: #{setType}"
+						R.footer({className: 'footer'},
+							R.div({className: 'content'}
+								"LOREM IPSUM"
+							)
+						)
 					)
 				).toJS()...
 			)
