@@ -631,7 +631,10 @@ load = (win, {clientFileId}) ->
 					else
 						console.info "Second pass complete!"
 
-						progNoteHistories = @state.progNoteHistories.concat @secondPassProgNoteHistories
+						progNoteHistories = @state.progNoteHistories
+						.concat @secondPassProgNoteHistories
+						.toSet().toList()
+
 						@setState {progNoteHistories}
 
 		_acquireLock: (cb=(->)) ->
