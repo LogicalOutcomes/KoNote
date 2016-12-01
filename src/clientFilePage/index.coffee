@@ -255,7 +255,7 @@ load = (win, {clientFileId}) ->
 										createdAt = header.get('backdate') or header.get('timestamp')
 										return Moment createdAt, Persist.TimestampFormat
 
-									progNoteHeaders = allProgNoteHeaders.slice(0, 10)
+									progNoteHeaders = allProgNoteHeaders.slice(-10)
 								else
 									progNoteHeaders = results
 
