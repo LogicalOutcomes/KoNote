@@ -915,21 +915,7 @@ load = (win) ->
 
 	ProgNoteContainer = React.createFactory React.createClass
 		displayName: 'ProgNoteContainer'
-
-		shouldComponentUpdate: (newProps) ->
-			# TODO: Refactor to something a bit simpler, this will get hairy...
-			hasChanges = (@props.progNoteHistory.size > newProps.progNoteHistory.size) or
-			(not Imm.is @props.attachments, newProps.attachments) or
-			(not Imm.is @props.progEvents, newProps.progEvents) or
-			(@props.eventTypes isnt newProps.eventTypes) or
-			(@props.globalEvents isnt newProps.globalEvents) or
-			(@props.programsById isnt newProps.programsById) or
-			(@props.transientData isnt newProps.transientData) or
-			(@props.isReadOnly isnt newProps.isReadOnly) or
-			(@props.selectedItem isnt newProps.selectedItem) or
-			(@props.filteredProgNote.get('status') isnt newProps.filteredProgNote.get('status'))
-
-			return hasChanges
+		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
 			{isEditing, filteredProgNote, progEvents, globalEvents} = @props
