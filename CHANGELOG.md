@@ -1,3 +1,8 @@
+### 1.12.3 (Dec 1 2016)
+
+This maintenance release fixes a crash inadvertently introduced by (#923) in 1.12.2
+
+
 ### 1.12.2 (Dec 1 2016)
 
 This maintenance release addresses several sorting and display issues in the progress notes tab.
@@ -8,6 +13,7 @@ This maintenance release addresses several sorting and display issues in the pro
 - Progress note history includes blank entries if they have a metric value (#922)
 - Fix prognote cancellation dialog not closing (#923)
 - Add uniqueness check to second pass prognote histories (0f46893)
+
 
 ### 1.12.1 (Nov 24 2016)
 
@@ -21,6 +27,7 @@ This maintenance release improves the stability of 1.12.
 - Fix client file loading delay in read-only mode (#902)
 - Fix client info save/discard buttons persisting after save (#903)
 - Nicer event formatting in prognote tab (#905)
+
 
 ### 1.12.0 (Nov 18 2016)
 
