@@ -169,6 +169,7 @@ load = (win) ->
 					return
 
 				# Persist will trigger an event to update the UI
+				@props.onSuccess()
 
 
 	return CancelProgNoteDialog
