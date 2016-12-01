@@ -1,4 +1,4 @@
-### 1.12.2 (Dev 1 2016)
+### 1.12.2 (Dec 1 2016)
 
 This maintenance release addresses several sorting and display issues in the progress notes tab.
 
