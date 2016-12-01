@@ -1,3 +1,14 @@
+### 1.12.2 (Dev 1 2016)
+
+This maintenance release addresses several sorting and display issues in the progress notes tab.
+
+#### Fixes
+
+- Ensure most recent notes are displayed after initial data load (6fe61a8)
+- Progress note history includes blank entries if they have a metric value (#922)
+- Fix prognote cancellation dialog not closing (#923)
+- Add uniqueness check to second pass prognote histories (0f46893)
+
 ### 1.12.1 (Nov 24 2016)
 
 This maintenance release improves the stability of 1.12.
