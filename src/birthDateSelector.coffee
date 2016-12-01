@@ -25,55 +25,60 @@ load = (win) ->
 			{birthDay, birthMonth, birthYear, onSelectMonth, onSelectDay, onSelectYear} = @props
 
 			return R.div({className: 'birthDateSelector'},
-				B.DropdownButton({
-					id: 'birthMonthDropdown'
-					title: if birthMonth? then birthMonth else "Month"
-				},
-					(months.map (month) =>
-						B.MenuItem({
-							key: month
-							onClick: onSelectMonth.bind null, month
-						},
-							R.div({
-								onclick: onSelectMonth.bind null, month
+
+				R.div({className: 'btn-group btn-group-dropdowns'},
+					B.DropdownButton({
+						id: 'birthMonthDropdown'
+						title: if birthMonth? then birthMonth else "Month"
+					},
+						(months.map (month) =>
+							B.MenuItem({
+								key: month
+								onClick: onSelectMonth.bind null, month
 							},
-								month
+								R.div({
+									onclick: onSelectMonth.bind null, month
+								},
+									month
+								)
 							)
 						)
 					)
-				)
-				B.DropdownButton({
-					id: 'birthDayDropdown'
-					title: if birthDay? then birthDay else "Day"
-				},
-					for day in [1..31]
-						B.MenuItem({
-							key: day
-							onClick: onSelectDay.bind null, day
-						},
-							R.div({
+					B.DropdownButton({
+						id: 'birthDayDropdown'
+						title: if birthDay? then birthDay else "Day"
+					},
+						(for day in [1..31]
+							B.MenuItem({
+								key: day
 								onClick: onSelectDay.bind null, day
 							},
-								day
+								R.div({
+									onClick: onSelectDay.bind null, day
+								},
+									day
+								)
 							)
 						)
-				)
+					)
 
-				B.DropdownButton({
-					id: 'birthYearDropdown'
-					title: if birthYear? then birthYear else "Year"
-				},
-					for year in [currentYear..earlyYear]
-						B.MenuItem({
-							key: year
-							onClick: onSelectYear.bind null, year
-						},
-							R.div({
+					B.DropdownButton({
+						id: 'birthYearDropdown'
+						title: if birthYear? then birthYear else "Year"
+					},
+						(for year in [currentYear..earlyYear]
+							B.MenuItem({
+								key: year
 								onClick: onSelectYear.bind null, year
 							},
-								year
+								R.div({
+									onClick: onSelectYear.bind null, year
+								},
+									year
+								)
 							)
 						)
+					)
 				)
 			)
 	return BirthDateSelector
