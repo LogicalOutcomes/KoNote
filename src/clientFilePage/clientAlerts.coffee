@@ -70,8 +70,6 @@ load = (win) ->
 				onClick: @_beginEditing unless @state.isEditing
 			},
 				R.h3({className: 'animated fadeInUp'},
-					# FaIcon('exclamation-triangle')
-					# ' '
 					"No " unless @state.content
 					"Alerts"
 				)

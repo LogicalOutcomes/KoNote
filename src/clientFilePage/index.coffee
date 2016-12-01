@@ -30,7 +30,6 @@ load = (win, {clientFileId}) ->
 	Window = nw.Window.get(win)
 
 	CrashHandler = require('../crashHandler').load(win)
-	BrandWidget = require('../brandWidget').load(win)
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
@@ -1226,8 +1225,6 @@ load = (win, {clientFileId}) ->
 					clientFileId
 					isDisabled: @props.isReadOnly
 				})
-
-				BrandWidget()
 			)
 
 
