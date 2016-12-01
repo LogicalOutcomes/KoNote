@@ -793,7 +793,8 @@ load = (win) ->
 			(@props.programsById isnt newProps.programsById) or
 			(@props.transientData isnt newProps.transientData) or
 			(@props.isReadOnly isnt newProps.isReadOnly) or
-			(@props.selectedItem isnt newProps.selectedItem )
+			(@props.selectedItem isnt newProps.selectedItem) or
+			(@props.filteredProgNote.get('status') isnt newProps.filteredProgNote.get('status'))
 
 			return hasChanges
 

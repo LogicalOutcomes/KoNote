@@ -255,7 +255,7 @@ load = (win, {clientFileId}) ->
 										createdAt = header.get('backdate') or header.get('timestamp')
 										return Moment createdAt, Persist.TimestampFormat
 
-									progNoteHeaders = allProgNoteHeaders.slice(0, 10)
+									progNoteHeaders = allProgNoteHeaders.slice(-10)
 								else
 									progNoteHeaders = results
 
@@ -632,8 +632,12 @@ load = (win, {clientFileId}) ->
 						@secondPassProgNoteHistories = @secondPassProgNoteHistories.concat results
 						requestIdleCallback @_secondPass
 					else
-						console.log "second pass finished"
-						progNoteHistories = @state.progNoteHistories.concat @secondPassProgNoteHistories
+						console.info "Second pass complete!"
+
+						progNoteHistories = @state.progNoteHistories
+						.concat @secondPassProgNoteHistories
+						.toSet().toList()
+
 						@setState {progNoteHistories}
 
 		_acquireLock: (cb=(->)) ->
