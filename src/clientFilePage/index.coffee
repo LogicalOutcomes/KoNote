@@ -661,7 +661,7 @@ load = (win, {clientFileId}) ->
 
 								if newLock
 									# Alert user about lock acquisition
-									clientName = renderName @state.clientFile.get('clientName')
+									clientName = if @state.clientFile then renderName(@state.clientFile.get('clientName')) else Term 'Client File'
 									new Notification "#{clientName} file unlocked", {
 										body: "You now have the read/write permissions for this #{Term 'client file'}"
 										icon: Config.iconNotification
