@@ -632,8 +632,12 @@ load = (win, {clientFileId}) ->
 						@secondPassProgNoteHistories = @secondPassProgNoteHistories.concat results
 						requestIdleCallback @_secondPass
 					else
-						console.log "second pass finished"
-						progNoteHistories = @state.progNoteHistories.concat @secondPassProgNoteHistories
+						console.info "Second pass complete!"
+
+						progNoteHistories = @state.progNoteHistories
+						.concat @secondPassProgNoteHistories
+						.toSet().toList()
+
 						@setState {progNoteHistories}
 
 		_acquireLock: (cb=(->)) ->
