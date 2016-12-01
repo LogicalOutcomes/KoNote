@@ -137,7 +137,7 @@ load = (win) ->
 								'saveButton'
 								#'collapsed' unless hasChanges
 							].join ' '
-							disabled: @props.isReadOnly
+							disabled: @props.isReadOnly or not hasChanges
 							onClick: @_save
 						},
 							FaIcon('save', {className:'menuItemIcon'})
@@ -151,7 +151,7 @@ load = (win) ->
 								'discardButton'
 								#'collapsed' unless hasChanges
 							].join ' '
-							disabled: @props.isReadOnly
+							disabled: @props.isReadOnly or not hasChanges
 							onClick: @_resetChanges
 						},
 							FaIcon('undo', {className:'menuItemIcon'})
@@ -173,14 +173,21 @@ load = (win) ->
 									clientFile: @props.clientFile
 								}
 							]
-							iconOnly: true
+							iconOnly: false
+							iconClassName: 'menuItemIcon'
+							labelClassName: 'menuItemText'
 							disabled: hasChanges
 						})
 
 						B.DropdownButton({
 							id: 'planTemplatesDropdown'
 							key: 'planTemplatesDropdownButton'
-							title: FaIcon('wpforms')
+							title: R.span({},
+								FaIcon('wpforms', {className:'menuItemIcon'})
+								R.span({className: 'menuItemText'},
+									"Templates"
+								)
+							)
 							disabled: @props.isReadOnly
 							noCaret: true
 						},
@@ -237,7 +244,7 @@ load = (win) ->
 						},
 							FaIcon('plus', {className:'menuItemIcon'})
 							R.span({className: 'menuItemText'},
-								"Add #{Term 'Section'}"
+								"#{Term 'Section'}"
 							)
 						)
 
