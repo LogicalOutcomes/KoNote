@@ -132,6 +132,7 @@ load = (win) ->
 				isLoading: null
 				isFiltering: null
 				historyCount: 10
+				filterCount: 10
 				searchQuery: ''
 			}
 
@@ -143,20 +144,29 @@ load = (win) ->
 					# Disregard if nothing left to load
 					return if @state.historyCount >= (@props.progNoteHistories.size + @props.globalEvents.size)
 
-					newCount = @state.historyCount + 10
-					@setState {historyCount: newCount}
+					# Update seperate result count while filtering
+					if @state.isFiltering
+						filterCount = @state.filterCount + 10
+						@setState {filterCount}
+					else
+						historyCount = @state.historyCount + 10
+						@setState {historyCount}
+
 				return
 			), 150)
 
 		componentDidUpdate: (oldProps, oldState) ->
-			# Re-apply mark highlighting every time searchQuery or isFiltering changes
-			if (@state.searchQuery isnt oldState.searchQuery) or (@state.isFiltering isnt oldState.isFiltering)
-				markInstance = new Mark findDOMNode @refs.progNotesList
-				# TODO: Figure out how to highlight metric input (value)
-				if @state.isFiltering
-					markInstance.unmark().mark(@state.searchQuery)
-				else
-					markInstance.unmark()
+			# Fully redraw highlighting when filter results changes
+			# TODO: Only apply when filtered entries change
+			if (@state.searchQuery isnt oldState.searchQuery) or
+			(@state.isFiltering isnt oldState.isFiltering) or
+			(@state.filterCount isnt oldState.filterCount)
+				@_redrawSearchHighlighting()
+
+			# Reset filterCount when FilterBar opens
+			if (@state.isFiltering isnt oldState.isFiltering) and @state.isFiltering
+				@setState {filterCount: 10}
+
 
 		hasChanges: ->
 			@_transientDataHasChanges()
@@ -173,10 +183,16 @@ load = (win) ->
 					entry.get('id') is transientData.getIn(['progNote', 'id'])
 			]
 
-			# Filtering based on search query
-			if @state.isFiltering and @state.searchQuery.trim().length > 0
-				historyEntries = @_filterEntries historyEntries
-			# Otherwise, we utilize historyCount
+			# Filtering options
+			if @state.isFiltering
+				# By search Query?
+				if @state.searchQuery.trim().length > 0
+					historyEntries = @_filterEntries(historyEntries)
+
+				# Limit results to filterCount
+				historyEntries = historyEntries.slice(0, @state.filterCount)
+
+			# Otherwise, just limit results to historyCount
 			else if not isEditing
 				historyEntries = historyEntries.slice(0, @state.historyCount)
 
@@ -914,6 +930,14 @@ load = (win) ->
 
 			# Only keep entries that contain all query parts
 			return entries.filter containsSearchQuery
+
+		_redrawSearchHighlighting: ->
+			markInstance = new Mark findDOMNode @refs.progNotesList
+			# TODO: Figure out how to highlight metric input (value)
+			if @state.isFiltering
+				markInstance.unmark().mark(@state.searchQuery)
+			else
+				markInstance.unmark()
 
 
 	ProgNoteContainer = React.createFactory React.createClass
