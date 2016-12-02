@@ -38,7 +38,7 @@ load = (win) ->
 	FilterBar = require('./filterBar').load(win)
 
 	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName, makeMoment
-	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
+	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex, blockedExtensions} = require('../utils').load(win)
 
 	# List of fields we exclude from keyword search
 	excludedSearchFields = Imm.fromJS [
@@ -725,6 +725,15 @@ load = (win) ->
 			return unless file
 
 			filename = Path.basename file
+			fileExtension = (Path.extname file).toLowerCase()
+
+			if blockedExtensions.indexOf(fileExtension) > -1
+				Bootbox.alert {
+					title: "Warning: File Blocked"
+					message: "#{filename} is potentially unsafe and cannot be attached."
+				}
+				return
+
 			attachment = Fs.readFileSync(file)
 			filesize = Buffer.byteLength(attachment, 'base64')
 
