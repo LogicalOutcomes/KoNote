@@ -30,7 +30,6 @@ load = (win, {clientFileId}) ->
 	Window = nw.Window.get(win)
 
 	CrashHandler = require('../crashHandler').load(win)
-	BrandWidget = require('../brandWidget').load(win)
 	PlanTab = require('./planTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
@@ -251,7 +250,7 @@ load = (win, {clientFileId}) ->
 										createdAt = header.get('backdate') or header.get('timestamp')
 										return Moment createdAt, Persist.TimestampFormat
 
-									progNoteHeaders = allProgNoteHeaders.reverse().slice(0, 10)
+									progNoteHeaders = allProgNoteHeaders.slice(-10)
 								else
 									progNoteHeaders = results
 
@@ -630,9 +629,10 @@ load = (win, {clientFileId}) ->
 						requestIdleCallback @_secondPass
 					else
 						console.info "Second pass complete!"
-						# Temporary attempt at ensuring all progNotes loaded in are unique
+
 						progNoteHistories = @state.progNoteHistories
 						.concat @secondPassProgNoteHistories
+						.toSet().toList()
 
 						@setState {progNoteHistories}
 
@@ -663,7 +663,7 @@ load = (win, {clientFileId}) ->
 
 								if newLock
 									# Alert user about lock acquisition
-									clientName = renderName @state.clientFile.get('clientName')
+									clientName = if @state.clientFile then renderName(@state.clientFile.get('clientName')) else Term 'Client File'
 									new Notification "#{clientName} file unlocked", {
 										body: "You now have the read/write permissions for this #{Term 'client file'}"
 										icon: Config.iconNotification
@@ -1225,8 +1225,6 @@ load = (win, {clientFileId}) ->
 					clientFileId
 					isDisabled: @props.isReadOnly
 				})
-
-				BrandWidget()
 			)
 
 
