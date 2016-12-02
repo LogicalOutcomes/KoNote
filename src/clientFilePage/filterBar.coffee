@@ -19,12 +19,13 @@ load = (win) ->
 	dataTypeOptions = Imm.fromJS [
 		{name: 'Progress Notes', id: 'progNotes'}
 		{name: 'Targets', id: 'targets'}
-		{name: 'Events', id: 'event'}
+		{name: 'Events', id: 'events'}
 	]
 
 
 	FilterBar = React.createFactory React.createClass
 		displayName: 'FilterBar'
+		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
 			onUpdateSearchQuery: PropTypes.func
@@ -80,11 +81,13 @@ load = (win) ->
 				R.section({},
 					FilterDropdownMenu({
 						title: 'Data'
+						selectedValue: @props.dataTypeFilter
 						dataOptions: dataTypeOptions
 						onSelect: @props.onSelectDataType
 					})
 					FilterDropdownMenu({
 						title: Term 'Programs'
+						selectedValue: @props.programIdFilter
 						dataOptions: @props.programsById
 						onSelect: @props.onSelectProgramId
 					})
@@ -97,35 +100,81 @@ load = (win) ->
 				)
 			)
 
-	FilterDropdownMenu = ({title, dataOptions, onSelect, selectedValue}) ->
-		R.div({className: 'filterDropdownMenu'},
-			R.ul({className: 'filterOptions'},
-				(if selectedValue
-					R.li({
-						onClick: onSelect.bind null, null
-					},
+	FilterDropdownMenu = React.createFactory React.createClass
+		displayName: 'FilterDropdownMenu'
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: -> {isOpen: false}
+
+		_toggleIsOpen: ->
+			@setState {isOpen: not @state.isOpen}
+
+		_onSelect: (value) ->
+			@props.onSelect(value)
+			@_toggleIsOpen()
+
+		_renderOption: (option) ->
+			selectedOption = option or @props.dataOptions.find (o) =>
+				o.get('id') is @props.selectedValue
+
+			return R.span({},
+				(if selectedOption.has 'colorKeyHex'
+					ColorKeyBubble({
+						colorKeyHex: selectedOption.get('colorKeyHex')
+					})
+				)
+				R.span({className: 'value'},
+					selectedOption.get('name')
+				)
+			)
+
+		render: ->
+			{title, dataOptions, selectedValue} = @props
+			hasSelection = !!selectedValue
+
+			filteredDataOptions = if hasSelection
+				# Filter out selected type
+				dataOptions.filterNot (o) -> o.get('id') is selectedValue
+			else
+				dataOptions
+
+
+			R.div({
+				className: [
+					'filterDropdownMenu'
+					'isOpen' if @state.isOpen
+				].join ' '
+				onMouseEnter: @_toggleIsOpen unless @state.isOpen
+				onMouseLeave: @_toggleIsOpen if @state.isOpen
+			},
+				R.ul({className: 'filterOptions'},
+					(if hasSelection
+						R.li({
+							className: 'selectAllOption'
+							onClick: @_onSelect.bind null, null
+						},
+							"All #{title}"
+						)
+					)
+
+					(filteredDataOptions.toSeq().map (option) =>
+						R.li({
+							onClick: @_onSelect.bind null, option.get('id')
+						},
+							@_renderOption(option)
+						)
+					)
+				)
+				R.div({className: 'selectedValue'},
+					(if hasSelection
+						@_renderOption()
+					else
 						"All #{title}"
 					)
-				)
-				(dataOptions.toSeq().map (option) ->
-					R.li({
-						onClick: onSelect.bind null, option.get('id')
-					},
-						(if option.has 'colorKeyHex'
-							ColorKeyBubble({
-								colorKeyHex: option.get('colorKeyHex')
-							})
-						)
-						option.get('name')
-					)
+					' '
+					FaIcon('caret-down')
 				)
 			)
-			R.div({},
-				"All #{title}"
-				' '
-				FaIcon('caret-down')
-			)
-		)
 
 
 	return FilterBar

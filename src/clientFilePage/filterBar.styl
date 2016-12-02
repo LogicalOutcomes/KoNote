@@ -20,8 +20,6 @@
 			align-items center
 			justify-content center
 			font-weight 500 !important
-			opacity .75
-			transition opacity .2s ease
 			cursor default
 
 			&:hover
@@ -56,6 +54,18 @@
 		position relative
 		z-index 9999
 
+		.selectedValue
+			font-weight 600
+
+			.value
+				opacity 75%
+
+			&:hover .value
+				opacity 100%
+
+		.colorKeyBubble
+			margin-right 7px
+
 		ul.filterOptions
 			margin 0
 			padding 0
@@ -68,6 +78,7 @@
 			min-width 100%
 
 			li
+				font-weight 400
 				background #eaf1f5
 				border-bottom 1px solid #cadbe5
 				padding 8px 12px
@@ -78,9 +89,10 @@
 				&:last-child
 					border-bottom none
 
-				.colorKeyBubble
-					margin-right 10px
+				&.selectAllOption
+					font-weight 600
+					border-bottom-style dashed
 
-		&:hover
+		&.isOpen
 			ul.filterOptions
 				display block

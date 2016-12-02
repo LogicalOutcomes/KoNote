@@ -199,9 +199,9 @@ load = (win) ->
 					historyEntries = switch @state.dataTypeFilter
 						when 'progNotes'
 							historyEntries.filter (entry) -> entry.get('type') is 'progNote'
-						when 'events'
+						when 'targets'
 							historyEntries
-						when 'metrics'
+						when 'events'
 							historyEntries
 						else
 							throw new Error "Unknown dataTypeFilter: #{@state.dataTypeFilter}"
