@@ -27,10 +27,15 @@ load = (win) ->
 		displayName: 'FilterBar'
 
 		propTypes: {
+			onUpdateSearchQuery: PropTypes.func
+			programIdFilter: PropTypes.string
+			dataTypeFilter: PropTypes.oneOf ['progNotes', 'targets', 'events']
 			programsById: PropTypes.instanceOf Imm.List()
 
 			onClose: PropTypes.func
 			onUpdateSearchQuery: PropTypes.func
+			onSelectProgramId: PropTypes.func
+			onSelectDataType: PropTypes.func
 		}
 
 		getInitialState: -> {

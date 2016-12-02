@@ -310,6 +310,8 @@ load = (win) ->
 
 						FilterBar({
 							isVisible: @state.isFiltering and not isEditing
+							programIdFilter: @state.programIdFilter
+							dataTypeFilter: @state.dataTypeFilter
 							programsById: @props.programsById
 
 							onClose: @_toggleIsFiltering
