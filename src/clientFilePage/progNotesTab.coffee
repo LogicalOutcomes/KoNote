@@ -14,6 +14,12 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+dataTypeOptions = Imm.fromJS [
+	{name: 'Progress Notes', id: 'progNotes'}
+	{name: 'Targets', id: 'targets'}
+	{name: 'Events', id: 'events'}
+]
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -313,6 +319,7 @@ load = (win) ->
 							programIdFilter: @state.programIdFilter
 							dataTypeFilter: @state.dataTypeFilter
 							programsById: @props.programsById
+							dataTypeOptions
 
 							onClose: @_toggleIsFiltering
 							onUpdateSearchQuery: @_updateSearchQuery
@@ -320,6 +327,7 @@ load = (win) ->
 							onSelectDataType: @_updateDataTypeFilter
 						})
 
+						# TODO: Make component
 						R.div({
 							className: [
 								'empty'
@@ -327,9 +335,36 @@ load = (win) ->
 							].join ' '
 						},
 							R.div({className: 'message'},
-								"No results found"
-								R.br()
-								"matching: \"#{@state.searchQuery}\""
+								R.div({},
+									"No results found"
+									(if @state.dataTypeFilter
+										R.span({},
+											" for "
+											R.strong({},
+												dataTypeOptions.find((t) => t.get('id') is @state.dataTypeFilter).get('name')
+											)
+										)
+									)
+								)
+
+								(if @state.searchQuery.trim().length > 0
+									R.div({},
+										"matching: \""
+										R.strong({}, @state.searchQuery)
+										"\""
+									)
+								)
+								(if @state.programIdFilter
+									R.div({className: 'emptyProgramIdFilter'},
+										"in: "
+										R.strong({},
+											@props.programsById.getIn [@state.programIdFilter, 'name']
+										)
+										ColorKeyBubble({
+											colorKeyHex: @props.programsById.getIn [@state.programIdFilter, 'colorKeyHex']
+										})
+									)
+								)
 							)
 						)
 

@@ -16,12 +16,6 @@ load = (win) ->
 	ColorKeyBubble = require('../colorKeyBubble').load(win)
 	{FaIcon, showWhen} = require('../utils').load(win)
 
-	dataTypeOptions = Imm.fromJS [
-		{name: 'Progress Notes', id: 'progNotes'}
-		{name: 'Targets', id: 'targets'}
-		{name: 'Events', id: 'events'}
-	]
-
 
 	FilterBar = React.createFactory React.createClass
 		displayName: 'FilterBar'
@@ -32,6 +26,7 @@ load = (win) ->
 			programIdFilter: PropTypes.string
 			dataTypeFilter: PropTypes.oneOf ['progNotes', 'targets', 'events']
 			programsById: PropTypes.instanceOf Imm.List()
+			dataTypeOptions: PropTypes.instanceOf Imm.List()
 
 			onClose: PropTypes.func
 			onUpdateSearchQuery: PropTypes.func
@@ -82,7 +77,7 @@ load = (win) ->
 					FilterDropdownMenu({
 						title: 'Data'
 						selectedValue: @props.dataTypeFilter
-						dataOptions: dataTypeOptions
+						dataOptions: @props.dataTypeOptions
 						onSelect: @props.onSelectDataType
 					})
 					FilterDropdownMenu({
@@ -159,6 +154,7 @@ load = (win) ->
 
 					(filteredDataOptions.toSeq().map (option) =>
 						R.li({
+							key: option.get('id')
 							onClick: @_onSelect.bind null, option.get('id')
 						},
 							@_renderOption(option)
