@@ -17,9 +17,9 @@ load = (win) ->
 	{FaIcon, showWhen} = require('../utils').load(win)
 
 	dataTypeOptions = Imm.fromJS [
-		{name: 'Progress Notes'}
-		{name: 'Targets'}
-		{name: 'Events'}
+		{name: 'Progress Notes', id: 'progNotes'}
+		{name: 'Targets', id: 'targets'}
+		{name: 'Events', id: 'event'}
 	]
 
 
@@ -28,6 +28,9 @@ load = (win) ->
 
 		propTypes: {
 			programsById: PropTypes.instanceOf Imm.List()
+
+			onClose: PropTypes.func
+			onUpdateSearchQuery: PropTypes.func
 		}
 
 		getInitialState: -> {
@@ -36,7 +39,7 @@ load = (win) ->
 
 		componentWillMount: ->
 			# Sparingly update the parent progNotesTab UI
-			@_updateSearchQuery = _.debounce(@_updateSearchQuery, 350)
+			@_updateSearchQuery = _.debounce(@props.onUpdateSearchQuery, 350)
 
 		componentDidMount: ->
 			@_focusInput()
@@ -54,9 +57,6 @@ load = (win) ->
 
 			@setState {searchText}
 			@_updateSearchQuery(searchText)
-
-		_updateSearchQuery: (searchText) ->
-			@props.updateSearchQuery searchText
 
 		render: ->
 			R.div({
@@ -76,10 +76,12 @@ load = (win) ->
 					FilterDropdownMenu({
 						title: 'Data'
 						dataOptions: dataTypeOptions
+						onSelect: @props.onSelectDataType
 					})
 					FilterDropdownMenu({
 						title: Term 'Programs'
 						dataOptions: @props.programsById
+						onSelect: @props.onSelectProgramId
 					})
 					R.div({
 						className: 'closeButton'
@@ -94,10 +96,16 @@ load = (win) ->
 		R.div({className: 'filterDropdownMenu'},
 			R.ul({className: 'filterOptions'},
 				(if selectedValue
-					R.li({}, "All #{title}")
+					R.li({
+						onClick: onSelect.bind null, null
+					},
+						"All #{title}"
+					)
 				)
 				(dataOptions.toSeq().map (option) ->
-					R.li({},
+					R.li({
+						onClick: onSelect.bind null, option.get('id')
+					},
 						(if option.has 'colorKeyHex'
 							ColorKeyBubble({
 								colorKeyHex: option.get('colorKeyHex')

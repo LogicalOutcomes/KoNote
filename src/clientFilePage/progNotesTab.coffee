@@ -133,7 +133,10 @@ load = (win) ->
 				isFiltering: null
 				historyCount: 10
 				filterCount: 10
+
 				searchQuery: ''
+				programIdFilter: null
+				dataTypeFilter: null
 			}
 
 		componentDidMount: ->
@@ -188,6 +191,20 @@ load = (win) ->
 				# By search Query?
 				if @state.searchQuery.trim().length > 0
 					historyEntries = @_filterEntries(historyEntries)
+
+				if @state.programIdFilter
+					historyEntries = historyEntries.filter (entry) => entry.get('programId') is @state.programIdFilter
+
+				if @state.dataTypeFilter
+					historyEntries = switch @state.dataTypeFilter
+						when 'progNotes'
+							historyEntries.filter (entry) -> entry.get('type') is 'progNote'
+						when 'events'
+							historyEntries
+						when 'metrics'
+							historyEntries
+						else
+							throw new Error "Unknown dataTypeFilter: #{@state.dataTypeFilter}"
 
 				# Limit results to filterCount
 				historyEntries = historyEntries.slice(0, @state.filterCount)
@@ -293,9 +310,12 @@ load = (win) ->
 
 						FilterBar({
 							isVisible: @state.isFiltering and not isEditing
-							onClose: @_toggleIsFiltering
-							updateSearchQuery: @_updateSearchQuery
 							programsById: @props.programsById
+
+							onClose: @_toggleIsFiltering
+							onUpdateSearchQuery: @_updateSearchQuery
+							onSelectProgramId: @_updateProgramIdFilter
+							onSelectDataType: @_updateDataTypeFilter
 						})
 
 						R.div({
@@ -895,19 +915,9 @@ load = (win) ->
 				progNoteId: progNote.get('id')
 			}
 
-		_updateSearchQuery: (searchQuery) ->
-			console.info "Updating search query..."
-			@setState {searchQuery}
-
-		_toggleIsFiltering: ->
-			isFiltering = not @state.isFiltering
-			@setState {isFiltering}
-
 		_filterEntries: (entries) ->
 			if @state.searchQuery.trim().length is 0
 				return entries
-
-			console.log "Filtering entries matching \"#{@state.searchQuery}\"..."
 
 			# Split into query parts
 			queryParts = Imm.fromJS(@state.searchQuery.split(' ')).map (p) -> p.toLowerCase()
@@ -938,6 +948,19 @@ load = (win) ->
 				markInstance.unmark().mark(@state.searchQuery)
 			else
 				markInstance.unmark()
+
+		_updateSearchQuery: (searchQuery) ->
+			@setState {searchQuery}
+
+		_toggleIsFiltering: ->
+			isFiltering = not @state.isFiltering
+			@setState {isFiltering}
+
+		_updateProgramIdFilter: (programIdFilter) ->
+			@setState {programIdFilter}
+
+		_updateDataTypeFilter: (dataTypeFilter) ->
+			@setState {dataTypeFilter}
 
 
 	ProgNoteContainer = React.createFactory React.createClass
