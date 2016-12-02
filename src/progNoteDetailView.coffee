@@ -197,7 +197,7 @@ load = (win) ->
 			# Filter out blank & cancelled notes, and sort by date/backdate
 			entries = entries
 			.filter (entry) ->
-				(entry.get('notes').trim().length > 0 or entry.get('metrics').size > 0) and
+				(entry.get('notes').trim().length > 0 or entry.get('metrics')) and
 				entry.get('status') isnt 'cancelled'
 			.sortBy (entry) ->
 				entry.get('backdate') or entry.get('timestamp')
