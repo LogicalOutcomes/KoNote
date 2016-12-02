@@ -1,3 +1,9 @@
+### 1.12.4 (Dec 1 2016)
+
+This maintenance release fixes a crash inadvertently introduced by (#922) in 1.12.2.
+It will be the last release for today :)
+
+
 ### 1.12.3 (Dec 1 2016)
 
 This maintenance release fixes a crash inadvertently introduced by (#923) in 1.12.2
