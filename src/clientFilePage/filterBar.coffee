@@ -127,11 +127,9 @@ load = (win) ->
 			{title, dataOptions, selectedValue} = @props
 			hasSelection = !!selectedValue
 
-			filteredDataOptions = if hasSelection
+			if hasSelection
 				# Filter out selected type
-				dataOptions.filterNot (o) -> o.get('id') is selectedValue
-			else
-				dataOptions
+				dataOptions = dataOptions.filterNot (o) -> o.get('id') is selectedValue
 
 
 			R.div({
@@ -152,7 +150,7 @@ load = (win) ->
 						)
 					)
 
-					(filteredDataOptions.toSeq().map (option) =>
+					(dataOptions.toSeq().map (option) =>
 						R.li({
 							key: option.get('id')
 							onClick: @_onSelect.bind null, option.get('id')
