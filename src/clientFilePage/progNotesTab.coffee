@@ -169,7 +169,9 @@ load = (win) ->
 			# TODO: Only apply when filtered entries change
 			if (@state.searchQuery isnt oldState.searchQuery) or
 			(@state.isFiltering isnt oldState.isFiltering) or
-			(@state.filterCount isnt oldState.filterCount)
+			(@state.filterCount isnt oldState.filterCount) or
+			(@state.programIdFilter isnt oldState.programIdFilter) or
+			(@state.dataTypeFilter isnt oldState.dataTypeFilter)
 				@_redrawSearchHighlighting()
 
 			# Reset filterCount when FilterBar opens
