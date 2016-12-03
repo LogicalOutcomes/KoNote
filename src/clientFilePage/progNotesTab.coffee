@@ -51,7 +51,9 @@ load = (win) ->
 		'id', 'revisionId', 'templateId', 'typeId', 'relatedProgNoteId', 'programId'
 		'relatedProgEventId', 'authorProgramId', 'clientFileId'
 		'timestamp', 'backdate', 'startTimestamp', 'endTimestamp'
-		'type', 'status', 'progNoteHistory'
+		'type', 'entryType', 'status', 'definition'
+		# 'filteredProgNote' and {entryType: globalEvent} used instead
+		'progNoteHistory', 'globalEvents'
 	]
 
 
@@ -85,7 +87,7 @@ load = (win) ->
 			attachments = @props.attachmentsByProgNoteId.get(progNoteId) or Imm.List()
 
 			return Imm.Map {
-				type: 'progNote'
+				entryType: 'progNote'
 				id: progNoteId
 				programId
 				timestamp
@@ -100,7 +102,7 @@ load = (win) ->
 			timestamp = globalEvent.get('startTimestamp') # Order by startTimestamp
 
 			return Imm.Map {
-				type: 'globalEvent'
+				entryType: 'globalEvent'
 				id: globalEvent.get('id')
 				programId: globalEvent.get('programId')
 				timestamp
@@ -378,7 +380,7 @@ load = (win) ->
 							].join ' '
 						},
 							(historyEntries.map (entry) =>
-								switch entry.get('type')
+								switch entry.get('entryType')
 									when 'progNote'
 										ProgNoteContainer({
 											key: entry.get('id')
@@ -419,7 +421,7 @@ load = (win) ->
 											programsById: @props.programsById
 										})
 									else
-										throw new Error "Unknown historyEntry type #{entry.get('type')}"
+										throw new Error "Unknown historyEntries entryType: \"#{entry.get('entryType')}\""
 							)
 						)
 					)
