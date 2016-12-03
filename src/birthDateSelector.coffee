@@ -36,11 +36,7 @@ load = (win) ->
 								key: month
 								onClick: onSelectMonth.bind null, month
 							},
-								R.div({
-									onclick: onSelectMonth.bind null, month
-								},
-									month
-								)
+								month
 							)
 						)
 					)
@@ -53,11 +49,7 @@ load = (win) ->
 								key: day
 								onClick: onSelectDay.bind null, day
 							},
-								R.div({
-									onClick: onSelectDay.bind null, day
-								},
-									day
-								)
+								day
 							)
 						)
 					)
@@ -71,11 +63,7 @@ load = (win) ->
 								key: year
 								onClick: onSelectYear.bind null, year
 							},
-								R.div({
-									onClick: onSelectYear.bind null, year
-								},
-									year
-								)
+								year
 							)
 						)
 					)

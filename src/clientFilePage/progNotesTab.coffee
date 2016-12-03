@@ -44,7 +44,7 @@ load = (win) ->
 	FilterBar = require('./filterBar').load(win)
 
 	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName, makeMoment
-	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
+	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex, blockedExtensions} = require('../utils').load(win)
 
 	# List of fields we exclude from keyword search
 	excludedSearchFields = Imm.fromJS [
@@ -796,6 +796,15 @@ load = (win) ->
 			return unless file
 
 			filename = Path.basename file
+			fileExtension = (Path.extname file).toLowerCase()
+
+			if blockedExtensions.indexOf(fileExtension) > -1
+				Bootbox.alert {
+					title: "Warning: File Blocked"
+					message: "#{filename} is potentially unsafe and cannot be attached."
+				}
+				return
+
 			attachment = Fs.readFileSync(file)
 			filesize = Buffer.byteLength(attachment, 'base64')
 
@@ -1018,21 +1027,7 @@ load = (win) ->
 
 	ProgNoteContainer = React.createFactory React.createClass
 		displayName: 'ProgNoteContainer'
-
-		shouldComponentUpdate: (newProps) ->
-			# TODO: Refactor to something a bit simpler, this will get hairy...
-			hasChanges = (@props.progNoteHistory.size > newProps.progNoteHistory.size) or
-			(not Imm.is @props.attachments, newProps.attachments) or
-			(not Imm.is @props.progEvents, newProps.progEvents) or
-			(@props.eventTypes isnt newProps.eventTypes) or
-			(@props.globalEvents isnt newProps.globalEvents) or
-			(@props.programsById isnt newProps.programsById) or
-			(@props.transientData isnt newProps.transientData) or
-			(@props.isReadOnly isnt newProps.isReadOnly) or
-			(@props.selectedItem isnt newProps.selectedItem) or
-			(@props.filteredProgNote.get('status') isnt newProps.filteredProgNote.get('status'))
-
-			return hasChanges
+		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
 			{isEditing, filteredProgNote, progEvents, globalEvents} = @props
