@@ -198,23 +198,14 @@ load = (win) ->
 
 			# Filtering options
 			if @state.isFiltering
-				# By search Query?
-				if @state.searchQuery.trim().length > 0
-					historyEntries = @_filterEntries(historyEntries)
 
+				# By program?
 				if @state.programIdFilter
 					historyEntries = historyEntries.filter (entry) => entry.get('programId') is @state.programIdFilter
 
-				if @state.dataTypeFilter
-					historyEntries = switch @state.dataTypeFilter
-						when 'progNotes'
-							historyEntries.filter (entry) -> entry.get('type') is 'progNote'
-						when 'targets'
-							historyEntries
-						when 'events'
-							historyEntries
-						else
-							throw new Error "Unknown dataTypeFilter: #{@state.dataTypeFilter}"
+				# By search query? Pass dataTypeFilter for conditional property checks
+				if @state.searchQuery.trim().length > 0
+					historyEntries = @_filterEntries(historyEntries, @state.dataTypeFilter)
 
 				# Limit results to filterCount
 				historyEntries = historyEntries.slice(0, @state.filterCount)
@@ -956,7 +947,7 @@ load = (win) ->
 				progNoteId: progNote.get('id')
 			}
 
-		_filterEntries: (entries) ->
+		_filterEntries: (entries, dataTypeFilter) ->
 			if @state.searchQuery.trim().length is 0
 				return entries
 
@@ -964,6 +955,25 @@ load = (win) ->
 			queryParts = Imm.fromJS(@state.searchQuery.split(' ')).map (p) -> p.toLowerCase()
 
 			containsSearchQuery = (data) ->
+
+				if dataTypeFilter
+					# Only search through 'progNote' types for progNotes and targets
+					if dataTypeFilter in ['progNotes', 'targets'] and data.has('entryType') and data.get('entryType') isnt 'progNote'
+						return false
+
+					# Favour 'filteredProgNote' - since it only contains targets with data
+					else if dataTypeFilter is 'targets'
+						data = data.get('filteredProgNote') or data
+
+					else if dataTypeFilter is 'events'
+						# Ignore progNote entries without progEvents
+						if data.has('entryType') and data.get('entryType') isnt 'globalEvent' and data.get('progEvents').isEmpty()
+							return false
+						# Favor 'progEvents' for progNote entries
+						else
+							data = data.get('progEvents') or data
+
+
 				return data.some (value, property) ->
 					# Skip excluded field
 					if excludedSearchFields.includes property
@@ -973,6 +983,8 @@ load = (win) ->
 					if typeof value is 'string'
 						value = value.toLowerCase()
 						includesAllParts = queryParts.every (part) -> value.includes(part)
+						if includesAllParts
+							console.log "Match:", "#{property}:", value
 						return includesAllParts
 
 					# When not a string, it must be an Imm.List / Map
@@ -1691,9 +1703,12 @@ load = (win) ->
 					sectionTargets = section.get('targets')
 					# Strip empty metric values
 					.map (target) ->
-						targetMetrics = target.get('metrics').filterNot (metric) ->
-							return not metric.get('value')
-						return target.set('metrics', targetMetrics)
+						targetMetrics = target.get('metrics').filterNot (metric) -> not metric.get('value')
+
+						return target
+						.set('metrics', targetMetrics)
+						.remove('description') # We don't need target description snapshot displayed/searched
+
 					# Strip empty targets
 					.filterNot (target) ->
 						not target.get('notes') and target.get('metrics').isEmpty()
