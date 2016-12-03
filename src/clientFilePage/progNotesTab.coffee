@@ -391,6 +391,7 @@ load = (win) ->
 											setSelectedItem: @_setSelectedItem
 											selectProgNote: @_selectProgNote
 											selectedItem: @state.selectedItem
+											dataTypeFilter: @state.dataTypeFilter
 
 											transientData
 											isEditing
@@ -1000,6 +1001,7 @@ load = (win) ->
 					# so we'll loop through this same method on it
 					return containsSearchQuery(value)
 
+
 			# Only keep entries that contain all query parts
 			return entries.filter containsSearchQuery
 
@@ -1030,7 +1032,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			{isEditing, filteredProgNote, progEvents, globalEvents} = @props
+			{isEditing, filteredProgNote, progEvents, globalEvents, dataTypeFilter} = @props
 
 			progNote = @props.progNoteHistory.last()
 			progNoteId = progNote.get('id')
@@ -1046,6 +1048,7 @@ load = (win) ->
 				return CancelledProgNoteView({
 					progNoteHistory: @props.progNoteHistory
 					filteredProgNote
+					dataTypeFilter
 					attachments: @props.attachments
 					progEvents
 					globalEvents
@@ -1080,6 +1083,7 @@ load = (win) ->
 						userProgram
 						clientFile: @props.clientFile
 						selectedItem: @props.selectedItem
+						dataTypeFilter
 						setSelectedItem: @props.setSelectedItem
 						selectProgNote: @props.selectProgNote
 						isReadOnly: @props.isReadOnly
@@ -1095,6 +1099,7 @@ load = (win) ->
 					ProgNoteView({
 						progNote
 						filteredProgNote
+						dataTypeFilter
 						progNoteHistory: @props.progNoteHistory
 						progEvents
 						globalEvents
@@ -1127,7 +1132,11 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			isEditing = @props.isEditing
+			{isEditing, dataTypeFilter} = @props
+
+			# Don't render anything if only events are shown
+			if dataTypeFilter is 'events' and not isEditing
+				return null
 
 			progNote = if isEditing then @props.transientData.get('progNote') else @props.progNote
 
@@ -1220,7 +1229,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			{isEditing} = @props
+			{isEditing, dataTypeFilter} = @props
 
 			# Use transient data when isEditing
 			progNote = if isEditing then @props.transientData.get('progNote') else @props.filteredProgNote
@@ -1258,6 +1267,7 @@ load = (win) ->
 										className: [
 											'basic unit'
 											'selected' if @props.selectedItem? and @props.selectedItem.get('unitId') is unitId
+											showWhen dataTypeFilter isnt 'events' or isEditing
 										].join ' '
 										key: unitId
 										onClick: @_selectBasicUnit.bind null, unit
@@ -1297,7 +1307,10 @@ load = (win) ->
 									)
 							when 'plan'
 								R.div({
-									className: 'plan unit'
+									className: [
+										'plan unit'
+										showWhen dataTypeFilter isnt 'events' or isEditing
+									].join ' '
 									key: unitId
 								},
 									(unit.get('sections').map (section) =>
@@ -1375,7 +1388,12 @@ load = (win) ->
 					)
 
 					(if progNote.get('summary')
-						R.div({className: 'basic unit'},
+						R.div({
+							className: [
+								'basic unit'
+								showWhen dataTypeFilter isnt 'events'
+							].join ' '
+						},
 							R.h3({}, "Shift Summary")
 							R.div({className: 'notes'},
 								renderLineBreaks progNote.get('summary')
@@ -1384,8 +1402,16 @@ load = (win) ->
 					)
 
 					(unless progEvents.isEmpty()
-						R.div({className: 'progEvents'}
-							R.h3({}, Term 'Events')
+						R.div({
+							className: [
+								'progEvents'
+								showWhen not dataTypeFilter or dataTypeFilter is 'events' or isEditing
+							].join ' '
+						},
+							# Don't need to show the Events header when we're only looking at events
+							(if dataTypeFilter isnt 'events' or isEditing
+								R.h3({}, Term 'Events')
+							)
 
 							(progEvents.map (progEvent, index) =>
 								ProgEventWidget({
@@ -1494,6 +1520,7 @@ load = (win) ->
 							ProgNoteView({
 								progNote: @props.progNoteHistory.last()
 								filteredProgNote: @props.filteredProgNote
+								dataTypeFilter: @props.dataTypeFilter
 								progNoteHistory: @props.progNoteHistory
 								progEvents: @props.progEvents
 								globalEvents: @props.globalEvents
