@@ -16,10 +16,14 @@ load = (win) ->
 
 	# return a list of unsafe file extensions
 	blockedExtensions = [
+		'.action',
+		'.app',
 		'.application',
 		'.bat',
+		'.bin',
 		'.cmd',
 		'.com',
+		'.command',
 		'.cpl',
 		'.csh',
 		'.esf',
@@ -34,6 +38,7 @@ load = (win) ->
 		'.msc',
 		'.msi',
 		'.msp',
+		'.osx',
 		'.ps1',
 		'.ps2',
 		'.psc1',
@@ -43,6 +48,8 @@ load = (win) ->
 		'.scr',
 		'.vb',
 		'.vbs',
+		'.vbscript',
+		'.workflow',
 		'.ws'
 	]
 
