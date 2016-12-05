@@ -1456,7 +1456,10 @@ load = (win) ->
 						}
 					})
 					formatTimestamp(timestamp, @props.dateFormat)
-					" (late entry)" if firstRevision.get('backdate')
+					if firstRevision.get('backdate')
+						R.span({className: 'lateTimestamp'},
+							"(late entry)" 
+						)
 				)
 				R.div({className: 'author'},
 					' by '
