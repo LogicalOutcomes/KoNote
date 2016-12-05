@@ -724,6 +724,9 @@ load = (win) ->
 		_encodeFile: (file) ->
 			return unless file
 
+			# clear input value so onchange can still fire if user tries same file again
+			$('#nwBrowse').val(null)
+
 			filename = Path.basename file
 			fileExtension = (Path.extname file).toLowerCase()
 
@@ -753,7 +756,12 @@ load = (win) ->
 			}
 
 			# TODO: Append for when multiple attachments allowed (#787)
-			$('#attachmentArea').text filename + " (" + filesize + ")"
+			$('#attachmentArea').html filename + " (" + filesize + ") <i class='fa fa-times' id='removeBtn'></i>"
+
+			removeFile = $('#removeBtn')
+			removeFile.on 'click', (event) =>
+				$('#attachmentArea').html ''
+				@setState {attachment: null}
 
 		_toggleQuickNotePopover: ->
 			# TODO: Refactor to stateful React component
@@ -766,7 +774,7 @@ load = (win) ->
 				trigger: 'manual'
 				content: '''
 					<textarea class="form-control"></textarea>
-					<div id="attachmentArea"></div>
+					<div id="attachmentArea" style="padding-top:10px; color:#3176aa;"></div>
 					<div class="buttonBar form-inline">
 						<label>Date: </label> <input type="text" class="form-control backdate date"></input>
 						<button class="btn btn-default" id="attachBtn"><i class="fa fa-paperclip"></i> Attach</button>
