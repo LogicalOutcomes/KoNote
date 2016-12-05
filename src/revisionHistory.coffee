@@ -4,7 +4,7 @@
 
 Imm = require 'immutable'
 Term = require './term'
-{diffSentences, diffWordsWithSpace} = require 'diff'
+{diffSentences, diffTrimmedLines, diffWordsWithSpace} = require 'diff'
 DiffMatchPatch = require 'diff-match-patch'
 
 load = (win) ->
@@ -44,7 +44,26 @@ load = (win) ->
 			lev = dmp.diff_levenshtein(diffs)
 			# second pass
 			if lev > 20
-				diffs = diffSentences(oldString, newString)
+				# compare the diff by sentences and diff by lines
+				# use the output that produces the cleanest output (shortest sum of removals)
+				diffsSentences = diffSentences(oldString, newString)
+				diffsLines = diffTrimmedLines(oldString, newString, {newlineIsToken:true})
+				diffsSentencesTotal = 0
+				diffsLinesTotal = 0
+
+				for diff in diffsSentences
+					if diff.removed?
+						diffsSentencesTotal += diff.value.length
+
+				for diff in diffsLines
+					if diff.removed?
+						diffsLinesTotal += diff.value.length
+
+				if diffsLinesTotal < diffsSentencesTotal
+					diffs = diffsLines
+				else
+					diffs = diffsSentences
+
 			else
 				diffs = diffWordsWithSpace(oldString, newString)
 
