@@ -84,7 +84,7 @@ load = (win) ->
 						placeholder: "Search by keywords . . ."
 					})
 				)
-				R.section({},
+				R.section({className: 'filters'},
 					FilterDropdownMenu({
 						title: 'Data'
 						selectedValue: @props.dataTypeFilter
@@ -97,14 +97,15 @@ load = (win) ->
 						dataOptions: @props.programsById
 						onSelect: @props.onSelectProgramId
 					})
-					R.div({
-						className: 'closeButton'
-						onClick: @props.onClose
-					},
-						FaIcon('times-circle')
-					)
+				)
+				R.section({
+					className: 'closeButton'
+					onClick: @props.onClose
+				},
+					FaIcon('times-circle')
 				)
 			)
+
 
 	FilterDropdownMenu = React.createFactory React.createClass
 		displayName: 'FilterDropdownMenu'
@@ -123,16 +124,25 @@ load = (win) ->
 			selectedOption = option or @props.dataOptions.find (o) =>
 				o.get('id') is @props.selectedValue
 
-			return R.span({},
+			name = selectedOption.get('name')
+			# Specific logic for userProgram icon to appear
+			isUserProgram = selectedOption.get('id') is global.ActiveSession.programId
+
+			[
 				(if selectedOption.has 'colorKeyHex'
-					ColorKeyBubble({
+					ColorKeyBubble {
+						key: 'bubble'
 						colorKeyHex: selectedOption.get('colorKeyHex')
-					})
+						icon: 'check' if isUserProgram
+					}
 				)
-				R.span({className: 'value'},
-					selectedOption.get('name')
+				R.span({
+					key: 'value'
+					className: 'value'
+				},
+					name
 				)
-			)
+			]
 
 		render: ->
 			{title, dataOptions, selectedValue} = @props
@@ -157,24 +167,29 @@ load = (win) ->
 							className: 'selectAllOption'
 							onClick: @_onSelect.bind null, null
 						},
-							"All #{title}"
+							R.span({className: 'value'},
+								"All #{title}"
+							)
 						)
 					)
 
 					(dataOptions.toSeq().map (option) =>
 						R.li({
 							key: option.get('id')
+							className: 'option'
 							onClick: @_onSelect.bind null, option.get('id')
 						},
 							@_renderOption(option)
 						)
 					)
 				)
-				R.div({className: 'selectedValue'},
+				R.div({className: 'option selectedValue'},
 					(if hasSelection
 						@_renderOption()
 					else
-						"All #{title}"
+						R.span({className: 'value'},
+							"All #{title}"
+						)
 					)
 					' '
 					FaIcon('caret-down')

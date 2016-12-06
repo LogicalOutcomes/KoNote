@@ -1,41 +1,40 @@
 .filterBar
 	display flex
+	position relative
 	background #eaf1f5
 	color rgb(76, 93, 103)
 	height 50px
+	padding 0px 3%
 
 	section
 		display flex
-		flex 1
 
 		&:first-child
-			padding-left 20px
+			flex 5
 
-		&:last-child
-			padding-right 20px
-
-		> div
-			flex 1
+		&.filters
+			flex 4
 			display flex
-			align-items center
-			justify-content center
-			font-weight 500 !important
-			cursor default
 
-			&:hover
-				opacity 1
+			> div
+				flex 1
+				display flex
+				align-items center
+				justify-content center
+				padding 10px 3%
 
-		input.form-control
-			border none
-			box-shadow none
-			background none
-			padding 10px 0
-			height 100%
-			font-size 1.1em
+				font-weight 500 !important
+				cursor default
 
-		.closeButton
-			width 30px
-			flex none
+				&:first-child
+					padding-right 10px
+
+				&:hover
+					opacity 1
+
+		&.closeButton
+			flex 1
+			max-width 30px
 			display flex
 			justify-content center
 			align-items center
@@ -49,22 +48,49 @@
 				&:hover
 					opacity 0.75
 
+		input
+			font-size 1em
+			border none
+			box-shadow none
+			background none
+			padding 10px 2%
+			height 100%
+
+
 
 	.filterDropdownMenu
+		font-size 1em
 		position relative
 		z-index 9999
 
-		.selectedValue
-			font-weight 600
+		.option
+			display flex
+			align-items center
 
-			.value
-				opacity 75%
+			> .value
+				// Limit width with ...
+				max-width 115px
+				overflow hidden
+				white-space nowrap
+				text-overflow ellipsis
+
+			> .fa
+				color #eaf1f5
+				padding-left 5px
+
+		.selectedValue
+			flex 1
+			font-weight 600
 
 			&:hover .value
 				opacity 100%
 
 		.colorKeyBubble
-			margin-right 7px
+			margin-right 5px
+			text-align center
+
+			.fa
+				font-size 10px
 
 		ul.filterOptions
 			margin 0
@@ -75,13 +101,15 @@
 			left 0
 			display none
 			transition opacity .25s ease
-			min-width 100%
+			min-width 125px
 
 			li
 				font-weight 400
+				font-size 0.95em
 				background #eaf1f5
 				border-bottom 1px solid #cadbe5
-				padding 8px 12px
+				padding 7px 7px
+				width 100%
 
 				&:hover
 					background #cadbe5
@@ -96,3 +124,32 @@
 		&.isOpen
 			ul.filterOptions
 				display block
+
+
+	@media screen and (max-width: 1200px)
+		font-size 0.9em
+
+	// 2-row display
+	@media screen and (max-width: 1024px)
+		font-size 1em
+		display block
+		height auto
+
+		section
+			display block
+
+		section.filters > div
+			padding-top 5px
+			justify-content flex-start
+
+			ul
+				width 100%
+
+		input
+			padding 0px inherit !important
+			padding-right 30px !important
+
+		.closeButton
+			position absolute
+			top 5px
+			right 5px
