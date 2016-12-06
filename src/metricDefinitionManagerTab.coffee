@@ -149,9 +149,11 @@ load = (win) ->
 										data: tableData.toJS()
 										keyField: 'id'
 										bordered: false
+										search: true
 										options: {
 											defaultSortName: 'name'
 											defaultSortOrder: 'asc'
+											searchPosition: 'right'
 											onRowClick: ({id}) =>
 												@refs.dialogLayer.open ModifyMetricDialog, {
 													metricId: id
