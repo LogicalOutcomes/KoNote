@@ -196,12 +196,22 @@ load = (win) ->
 					entry.get('id') is transientData.getIn(['progNote', 'id'])
 			]
 
-			# Filtering options
+
+			####### Filtering / Search Logic #######
+
 			if @state.isFiltering
 
 				# By program?
 				if @state.programIdFilter
-					historyEntries = historyEntries.filter (entry) => entry.get('programId') is @state.programIdFilter
+					historyEntries = historyEntries.filter (e) => e.get('programId') is @state.programIdFilter
+
+				# By type of progNote?
+				if @state.dataTypeFilter in ['targets', 'progNotes']
+					historyEntries = historyEntries.filter (e) => e.get('entryType') is 'progNote'
+
+					# When searching 'targets', only check 'full' progNotes
+					if @state.dataTypeFilter is 'targets'
+						historyEntries = historyEntries.filter (e) => e.getIn(['filteredProgNote', 'type']) is 'full'
 
 				# By search query? Pass dataTypeFilter for conditional property checks
 				if @state.searchQuery.trim().length > 0
@@ -986,7 +996,7 @@ load = (win) ->
 					if dataTypeFilter in ['progNotes', 'targets'] and data.has('entryType') and data.get('entryType') isnt 'progNote'
 						return false
 
-					# Favour 'filteredProgNote' - since it only contains targets with data
+					# For 'targets', favour 'filteredProgNote' with 'type: full' - since it only contains targets with data
 					else if dataTypeFilter is 'targets'
 						data = data.get('filteredProgNote') or data
 
