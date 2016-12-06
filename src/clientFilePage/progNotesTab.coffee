@@ -38,7 +38,7 @@ load = (win) ->
 	FilterBar = require('./filterBar').load(win)
 
 	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName, makeMoment
-	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex, blockedExtensions} = require('../utils').load(win)
+	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex, blockedExtensions, stripMetadata} = require('../utils').load(win)
 
 	# List of fields we exclude from keyword search
 	excludedSearchFields = Imm.fromJS [
@@ -310,6 +310,7 @@ load = (win) ->
 											attachments: entry.get('attachments')
 											eventTypes: @props.eventTypes
 											clientFile: @props.clientFile
+											planTargetsById: @props.planTargetsById
 
 											progEvents: entry.get('progEvents')
 											globalEvents: entry.get('@props.globalEvents')
@@ -1004,6 +1005,7 @@ load = (win) ->
 						progEvents
 						globalEvents
 						userProgram
+						planTargetsById: @props.planTargetsById
 						eventTypes: @props.eventTypes
 						clientFile: @props.clientFile
 						setSelectedItem: @props.setSelectedItem
@@ -1220,7 +1222,11 @@ load = (win) ->
 												the #{Term 'client'} has no #{Term 'plan targets'}."
 											)
 											(section.get('targets').map (target) =>
+												planTargetsById = @props.planTargetsById.map (target) -> target.get('revisions').first()
+
 												targetId = target.get('id')
+												mostRecentTargetRevision = planTargetsById.get targetId
+												targetDescription = mostRecentTargetRevision.get('description')
 
 												R.div({
 													key: targetId
@@ -1228,7 +1234,7 @@ load = (win) ->
 														'target'
 														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is targetId
 													].join ' '
-													onClick: @_selectPlanSectionTarget.bind(null, unit, section, target)
+													onClick: @_selectPlanSectionTarget.bind(null, unit, section, target, targetDescription)
 												},
 													R.h3({}, target.get('name'))
 													R.div({className: "empty #{showWhen target.get('notes') is '' and not isEditing}"},
@@ -1263,7 +1269,7 @@ load = (win) ->
 																	null,
 																	unitId, sectionId, targetId, metricId
 																)
-																onFocus: @_selectPlanSectionTarget.bind(null, unit, section, target)
+																onFocus: @_selectPlanSectionTarget.bind(null, unit, section, target, targetDescription)
 																key: metric.get('id')
 																name: metric.get('name')
 																definition: metric.get('definition')
@@ -1315,14 +1321,14 @@ load = (win) ->
 				progNoteId: @props.progNote.get('id')
 			}
 
-		_selectPlanSectionTarget: (unit, section, target) ->
+		_selectPlanSectionTarget: (unit, section, target, targetDescription) ->
 			@props.setSelectedItem Imm.fromJS {
 				type: 'planSectionTarget'
 				unitId: unit.get('id')
 				sectionId: section.get('id')
 				targetId: target.get('id')
 				targetName: target.get('name')
-				targetDescription: target.get('description')
+				targetDescription
 				progNoteId: @props.progNote.get('id')
 			}
 
