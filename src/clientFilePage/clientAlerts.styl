@@ -11,10 +11,8 @@
 	&:hover
 		background darken(sidebar-bg, 5%)
 
-	h3, #alertsContainer
-		padding 15px 20px
-
 	h3
+		padding 15px 20px
 		font-size 18px
 		margin 0
 
@@ -25,16 +23,22 @@
 		padding-top 0
 
 		#staticContent
+			padding 0px 10px 15px 20px
 			word-wrap break-word
-			max-height 150px
+			max-height 175px
 			overflow auto
 			transition opacity .25s ease
 
 			&:hover
 				opacity .75
 
+		.alertsTextarea
+			padding 5px
+			width 100%
+			border 0
+
 		.btn-toolbar
-			padding 15px 0
+			padding 15px 5px
 
 		.expandingTextAreaComponent
 			max-height 150px !important
