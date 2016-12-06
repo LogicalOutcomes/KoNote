@@ -152,14 +152,16 @@ load = (win) ->
 			leftPane = $('.progNotesList')
 			leftPane.on 'scroll', _.throttle((=>
 				if leftPane.scrollTop() + (leftPane.innerHeight() *2) >= leftPane[0].scrollHeight
-					# Disregard if nothing left to load
-					return if @state.historyCount >= (@props.progNoteHistories.size + @props.globalEvents.size)
 
 					# Update seperate result count while filtering
 					if @state.isFiltering
 						filterCount = @state.filterCount + 10
 						@setState {filterCount}
+
 					else
+						# Disregard if nothing left to load
+						return if @state.historyCount >= (@props.progNoteHistories.size + @props.globalEvents.size)
+
 						historyCount = @state.historyCount + 10
 						@setState {historyCount}
 
