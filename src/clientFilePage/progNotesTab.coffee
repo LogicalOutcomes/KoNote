@@ -310,6 +310,7 @@ load = (win) ->
 						)
 
 						FilterBar({
+							ref: 'filterBar'
 							isVisible: @state.isFiltering and not isEditing
 							programIdFilter: @state.programIdFilter
 							dataTypeFilter: @state.dataTypeFilter
@@ -358,6 +359,18 @@ load = (win) ->
 										ColorKeyBubble({
 											colorKeyHex: @props.programsById.getIn [@state.programIdFilter, 'colorKeyHex']
 										})
+									)
+								)
+								R.div({},
+									R.button({
+										id: 'resetFilterButton'
+										className: 'btn btn-link'
+										onClick: =>
+
+											@refs.filterBar.clear()
+									},
+										FaIcon('refresh')
+										"Reset"
 									)
 								)
 							)

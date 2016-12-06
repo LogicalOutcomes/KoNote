@@ -50,6 +50,12 @@ load = (win) ->
 			if @props.isVisible isnt oldProps.isVisible and @props.isVisible
 				@_focusInput()
 
+		clear: ->
+			@_updateSearchText {target: {value: ''}}
+			@props.onSelectProgramId null
+			@props.onSelectDataType null
+			@_focusInput()
+
 		_focusInput: ->
 			@refs.searchText.focus()
 
