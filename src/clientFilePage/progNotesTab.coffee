@@ -1322,6 +1322,7 @@ load = (win) ->
 				sectionId: section.get('id')
 				targetId: target.get('id')
 				targetName: target.get('name')
+				targetDescription: target.get('description')
 				progNoteId: @props.progNote.get('id')
 			}
 
@@ -1458,7 +1459,7 @@ load = (win) ->
 					formatTimestamp(timestamp, @props.dateFormat)
 					if firstRevision.get('backdate')
 						R.span({className: 'lateTimestamp'},
-							"(late entry)" 
+							"(late entry)"
 						)
 				)
 				R.div({className: 'author'},
