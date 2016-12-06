@@ -1008,8 +1008,7 @@ load = (win) ->
 					if typeof value is 'string'
 						value = value.toLowerCase()
 						includesAllParts = queryParts.every (part) -> value.includes(part)
-						if includesAllParts
-							console.log "Match:", "#{property}:", value
+						# if includesAllParts then console.log "Match:", "#{property}:", value
 						return includesAllParts
 
 					# When not a string, it must be an Imm.List / Map
