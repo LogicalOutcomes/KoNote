@@ -259,10 +259,12 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Definition")
-						ExpandingTextArea({
-							ref: 'definitionField'
-							onChange: @_updateDefinition
+						R.textarea({
+							className: 'form-control'
+							placeholder: "Define the #{Term 'metric'}"
 							value: @state.definition
+							onChange: @_updateDefinition
+							rows: 5
 						})
 					)
 					R.div({className: 'form-group'},
