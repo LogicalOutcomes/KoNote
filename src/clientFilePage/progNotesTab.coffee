@@ -330,12 +330,13 @@ load = (win) ->
 								showWhen @state.isFiltering and historyEntries.isEmpty()
 							].join ' '
 						},
-							R.div({className: 'message'},
+							R.div({className: 'message animated fadeIn'},
 								R.div({},
 									"No results found"
+
 									(if @state.dataTypeFilter
 										R.span({},
-											" for "
+											" in "
 											R.strong({},
 												dataTypeOptions.find((t) => t.get('id') is @state.dataTypeFilter).get('name')
 											)
@@ -351,8 +352,9 @@ load = (win) ->
 									)
 								)
 								(if @state.programIdFilter
-									R.div({className: 'emptyProgramIdFilter'},
-										"in: "
+									R.div({},
+										"for: "
+
 										R.strong({},
 											@props.programsById.getIn [@state.programIdFilter, 'name']
 										)
