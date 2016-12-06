@@ -200,6 +200,7 @@ load = (win) ->
 			####### Filtering / Search Logic #######
 
 			if @state.isFiltering
+				# TODO: Make this filtering faster
 
 				# By program?
 				if @state.programIdFilter
@@ -1440,7 +1441,7 @@ load = (win) ->
 						R.div({
 							className: [
 								'progEvents'
-								showWhen not dataTypeFilter or dataTypeFilter is 'events' or isEditing
+								showWhen not dataTypeFilter or (dataTypeFilter isnt 'targets') or isEditing
 							].join ' '
 						},
 							# Don't need to show the Events header when we're only looking at events
