@@ -45,6 +45,11 @@ load = (win) ->
 		componentDidMount: ->
 			@_focusInput()
 
+		componentWillUpdate: (nextProps, nextState) ->
+			# Reset searchText when opening
+			if nextProps.isVisible isnt @props.isVisible and nextProps.isVisible
+				@setState @getInitialState
+
 		componentDidUpdate: (oldProps, oldState) ->
 			# Focus input when made visible
 			if @props.isVisible isnt oldProps.isVisible and @props.isVisible
