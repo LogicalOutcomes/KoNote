@@ -1033,6 +1033,17 @@ load = (win) ->
 
 		_toggleIsFiltering: ->
 			isFiltering = not @state.isFiltering
+
+			# Clear filter values when toggling off filterBar
+			if not isFiltering
+				@setState {
+					isFiltering
+					searchQuery: ''
+					dataTypeFilter: null
+					programIdFilter: null
+				}
+				return
+
 			@setState {isFiltering}
 
 		_updateProgramIdFilter: (programIdFilter) ->
