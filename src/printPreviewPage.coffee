@@ -66,7 +66,6 @@ load = (win, {dataSet}) ->
 					progEvents = printObj.get('progEvents')
 					title = null
 
-
 					R.div({className: 'printObj'},
 						R.div({className: 'noPrint'},
 							R.button({
@@ -138,14 +137,11 @@ load = (win, {dataSet}) ->
 										clientFile
 										progEvents
 									})
-
-
 							else
 								throw new Error "Unknown print-data type: #{setType}"
-						R.footer({className: 'footer'},
-							R.div({className: 'content'}
-								"LOREM IPSUM"
-							)
+
+						R.div({className: 'print-footer'},
+							"#{Config.printFooter}"
 						)
 					)
 				).toJS()...
