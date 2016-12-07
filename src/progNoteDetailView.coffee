@@ -32,11 +32,11 @@ load = (win) ->
 
 		componentWillReceiveProps: (nextProps) ->
 			# update was triggered by clicking a target
-			if @props.item?
-				if @props.item.get('targetId') isnt nextProps.item.get('targetId')
-					# Reset history count and scroll
-					@_resetHistoryCount()
-					if @refs.history? then @refs.history.resetScroll()
+			if not Imm.is nextProps.item, @props.item
+				# Reset history count and scroll
+				@_resetHistoryCount()
+
+				if @refs.history? then @refs.history.resetScroll()
 
 		_addHistoryCount: (count) ->
 			# Disregard if nothing left to load
@@ -202,9 +202,9 @@ load = (win) ->
 			.sortBy (entry) ->
 				entry.get('backdate') or entry.get('timestamp')
 			.reverse()
-			
+
 			entriesCount = entries.size
-			
+
 			entries = entries
 			.slice(0, @state.historyCount)
 
