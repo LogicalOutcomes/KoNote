@@ -958,6 +958,7 @@ load = (win) ->
 					eventTypes: @props.eventTypes
 					clientFile: @props.clientFile
 					userProgram
+					planTargetsById: @props.planTargetsById
 					setSelectedItem: @props.setSelectedItem
 					selectedItem: @props.selectedItem
 					selectProgNote: @props.selectProgNote
@@ -984,6 +985,7 @@ load = (win) ->
 						progNoteHistory: @props.progNoteHistory
 						attachments: @props.attachments
 						userProgram
+						planTargetsById: @props.plan
 						clientFile: @props.clientFile
 						selectedItem: @props.selectedItem
 						setSelectedItem: @props.setSelectedItem
@@ -1223,10 +1225,11 @@ load = (win) ->
 											)
 											(section.get('targets').map (target) =>
 												planTargetsById = @props.planTargetsById.map (target) -> target.get('revisions').first()
-
 												targetId = target.get('id')
+
+												# Here we get the most reent revision to show an up to date name & description
+												# in the progNoteDetailView component's header
 												mostRecentTargetRevision = planTargetsById.get targetId
-												targetDescription = mostRecentTargetRevision.get('description')
 
 												R.div({
 													key: targetId
@@ -1234,7 +1237,7 @@ load = (win) ->
 														'target'
 														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is targetId
 													].join ' '
-													onClick: @_selectPlanSectionTarget.bind(null, unit, section, target, targetDescription)
+													onClick: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
 												},
 													R.h3({}, target.get('name'))
 													R.div({className: "empty #{showWhen target.get('notes') is '' and not isEditing}"},
@@ -1269,7 +1272,7 @@ load = (win) ->
 																	null,
 																	unitId, sectionId, targetId, metricId
 																)
-																onFocus: @_selectPlanSectionTarget.bind(null, unit, section, target, targetDescription)
+																onFocus: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
 																key: metric.get('id')
 																name: metric.get('name')
 																definition: metric.get('definition')
@@ -1321,14 +1324,14 @@ load = (win) ->
 				progNoteId: @props.progNote.get('id')
 			}
 
-		_selectPlanSectionTarget: (unit, section, target, targetDescription) ->
+		_selectPlanSectionTarget: (unit, section, mostRecentTargetRevision) ->
 			@props.setSelectedItem Imm.fromJS {
 				type: 'planSectionTarget'
 				unitId: unit.get('id')
 				sectionId: section.get('id')
-				targetId: target.get('id')
-				targetName: target.get('name')
-				targetDescription
+				targetId: mostRecentTargetRevision.get('id')
+				targetName: mostRecentTargetRevision.get('name')
+				targetDescription: mostRecentTargetRevision.get('description')
 				progNoteId: @props.progNote.get('id')
 			}
 
@@ -1386,6 +1389,7 @@ load = (win) ->
 					switch latestRev.get('type')
 						when 'basic'
 							QuickNoteView({
+								planTargetsById: @props.planTargetsById
 								progNote: @props.progNoteHistory.last()
 								progNoteHistory: @props.progNoteHistory
 								attachments: @props.attachments
@@ -1404,6 +1408,7 @@ load = (win) ->
 							})
 						when 'full'
 							ProgNoteView({
+								planTargetsById: @props.planTargetsById
 								progNote: @props.progNoteHistory.last()
 								filteredProgNote: @props.filteredProgNote
 								progNoteHistory: @props.progNoteHistory
