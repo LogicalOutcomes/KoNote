@@ -15,8 +15,8 @@ Term = require '../term'
 Persist = require '../persist'
 
 dataTypeOptions = Imm.fromJS [
-	{name: 'Progress Notes', id: 'progNotes'}
-	{name: 'Targets', id: 'targets'}
+	# {name: 'Progress Notes', id: 'progNotes'}
+	# {name: 'Targets', id: 'targets'}
 	{name: 'Events', id: 'events'}
 ]
 
@@ -219,12 +219,13 @@ load = (win) ->
 					historyEntries = historyEntries.filter (e) => e.get('programId') is @state.programIdFilter
 
 				# By type of progNote?
-				if @state.dataTypeFilter in ['targets', 'progNotes']
+				if @state.dataTypeFilter in ['progNotes', 'targets']
 					historyEntries = historyEntries.filter (e) => e.get('entryType') is 'progNote'
 
 					# When searching 'targets', only check 'full' progNotes
-					if @state.dataTypeFilter is 'targets'
-						historyEntries = historyEntries.filter (e) => e.getIn(['filteredProgNote', 'type']) is 'full'
+					# TODO: Restore this dataType at some point
+					# if @state.dataTypeFilter is 'targets'
+					# 	historyEntries = historyEntries.filter (e) => e.getIn(['filteredProgNote', 'type']) is 'full'
 
 				# By search query? Pass dataTypeFilter for conditional property checks
 				if @state.searchQuery.trim().length > 0
@@ -1011,8 +1012,9 @@ load = (win) ->
 						return false
 
 					# For 'targets', favour 'filteredProgNote' with 'type: full' - since it only contains targets with data
-					else if dataTypeFilter is 'targets'
-						data = data.get('filteredProgNote') or data
+					# TODO: Restore this dataType at some point
+					# else if dataTypeFilter is 'targets'
+					# 	data = data.get('filteredProgNote') or data
 
 					else if dataTypeFilter is 'events'
 						# Ignore progNote entries without progEvents
