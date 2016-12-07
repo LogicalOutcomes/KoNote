@@ -178,10 +178,20 @@ load = (win) ->
 			(@state.dataTypeFilter isnt oldState.dataTypeFilter)
 				@_redrawSearchHighlighting()
 
-			# Reset filterCount when FilterBar opens
-			if (@state.isFiltering isnt oldState.isFiltering) and @state.isFiltering
-				@setState {filterCount: 10}
+			# Re-highlight when searchQuery or selectedItem changes
+			if @state.isFiltering
+				if @state.searchQuery isnt oldState.searchQuery or not Imm.is @state.selectedItem, oldState.selectedItem
+					@_redrawSearchHighlighting()
 
+			# Reset filterCount and selectedItem when FilterBar opens
+			if @state.isFiltering isnt oldState.isFiltering
+				if @state.isFiltering
+					@setState {
+						filterCount: 10
+						selectedItem: null
+					}
+				else
+					@setState {selectedItem: null}
 
 		hasChanges: ->
 			@_transientDataHasChanges()
@@ -447,6 +457,7 @@ load = (win) ->
 					)
 					R.section({className: 'rightPane'},
 						ProgNoteDetailView({
+							ref: 'progNoteDetailView'
 							item: @state.selectedItem
 							progNoteHistories: @props.progNoteHistories
 							progEvents: @props.progEvents
@@ -1033,12 +1044,17 @@ load = (win) ->
 			return entries.filter containsSearchQuery
 
 		_redrawSearchHighlighting: ->
-			markInstance = new Mark findDOMNode @refs.progNotesList
-			# TODO: Figure out how to highlight metric input (value)
+			# TODO: Keep Mark instance in @memory?
+			leftPane = new Mark findDOMNode @refs.progNotesList
+			rightPane = new Mark findDOMNode @refs.progNoteDetailView
+
 			if @state.isFiltering
-				markInstance.unmark().mark(@state.searchQuery)
+				leftPane.unmark().mark(@state.searchQuery)
+				# Only update right pane highlighting when something's selected
+				if @state.selectedItem then rightPane.unmark().mark(@state.searchQuery)
 			else
-				markInstance.unmark()
+				leftPane.unmark()
+				if @state.selectedItem then rightPane.unmark()
 
 		_updateSearchQuery: (searchQuery) ->
 			@setState {searchQuery}
