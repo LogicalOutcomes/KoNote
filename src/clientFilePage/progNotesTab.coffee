@@ -178,9 +178,12 @@ load = (win) ->
 			(@state.dataTypeFilter isnt oldState.dataTypeFilter)
 				@_redrawSearchHighlighting()
 
-			# Re-highlight when searchQuery or selectedItem changes
+			# Re-highlight when filtering options or selectedItem changed
+			# TODO: Only apply when filtered entries change
 			if @state.isFiltering
-				if @state.searchQuery isnt oldState.searchQuery or not Imm.is @state.selectedItem, oldState.selectedItem
+				if (@state.searchQuery isnt oldState.searchQuery) or
+				(@state.programIdFilter isnt oldState.programIdFilter) or
+				(@state.dataTypeFilter isnt oldState.dataTypeFilter)
 					@_redrawSearchHighlighting()
 
 			# Reset filterCount and selectedItem when FilterBar opens
@@ -459,6 +462,8 @@ load = (win) ->
 					R.section({className: 'rightPane'},
 						ProgNoteDetailView({
 							ref: 'progNoteDetailView'
+							isFiltering: @state.isFiltering
+							searchQuery: @state.searchQuery
 							item: @state.selectedItem
 							progNoteHistories: @props.progNoteHistories
 							progEvents: @props.progEvents
@@ -1047,16 +1052,12 @@ load = (win) ->
 
 		_redrawSearchHighlighting: ->
 			# TODO: Keep Mark instance in @memory?
-			leftPane = new Mark findDOMNode @refs.progNotesList
-			rightPane = new Mark findDOMNode @refs.progNoteDetailView
+			$progNotesList = new Mark findDOMNode @refs.progNotesList
 
 			if @state.isFiltering
-				leftPane.unmark().mark(@state.searchQuery)
-				# Only update right pane highlighting when something's selected
-				if @state.selectedItem then rightPane.unmark().mark(@state.searchQuery)
+				$progNotesList.unmark().mark(@state.searchQuery)
 			else
-				leftPane.unmark()
-				if @state.selectedItem then rightPane.unmark()
+				$progNotesList.unmark()
 
 		_updateSearchQuery: (searchQuery) ->
 			@setState {searchQuery}
