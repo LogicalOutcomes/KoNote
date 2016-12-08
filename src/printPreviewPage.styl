@@ -4,18 +4,20 @@
 		position fixed
 		bottom 0
 		font-size 13px
-		padding-bottom 20px
 
 	.printPreview
 		padding 25px
 	.noPrint
 		display none !important
-	.printObj
-		padding 25px
+
+	@page
+		margin-bottom 10mm
+		margin-top 10mm
 
 .printPreview
 	background white
 	min-height 100%
+	padding-bottom 300px
 
 	.print
 		margin-left 0
@@ -23,12 +25,13 @@
 	.noPrint
 		margin-left auto
 		margin-right auto
-		margin-bottom 8px
+		margin-bottom 120px
 
 	.printObj
-		padding 25px
+		padding 25px 25px 25px 25px
 
 		> header
+			margin-top -80px
 			display flex
 			width 100%
 			padding-bottom 4px
@@ -111,7 +114,6 @@
 			font-weight 600
 			margin 5px 0 5px 0
 
-
 		> .progNote.basic
 			> .notes
 				padding 20px 0
@@ -120,6 +122,7 @@
 					display block
 
 		> .progNote.full
+			padding-bottom 200px
 
 		.unit
 			padding-bottom 15px
