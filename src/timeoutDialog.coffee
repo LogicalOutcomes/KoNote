@@ -191,7 +191,6 @@ load = (win) ->
 		return {
 
 			'timeout:reset': =>
-				console.log "Resetting!"
 				# Reset both timeout component and session
 				timeoutComponent.reset()
 				global.ActiveSession.resetTimeout()
