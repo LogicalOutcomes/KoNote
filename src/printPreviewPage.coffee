@@ -58,6 +58,10 @@ load = (win, {dataSet}) ->
 				previewType: 'default'
 			}
 
+		_printPage :->
+			Window.print
+				headerFooterEnabled: false
+
 		render: ->
 			R.div({className: 'printPreview'},
 				(@props.printDataSet.map (printObj) =>
@@ -71,7 +75,7 @@ load = (win, {dataSet}) ->
 							R.button({
 								ref: 'print'
 								className: 'print btn btn-primary'
-								onClick: win.print
+								onClick: @_printPage
 							},
 								FaIcon('print')
 								" "
