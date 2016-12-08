@@ -50,7 +50,7 @@ load = (win) ->
 							className: 'form-control'
 							onChange: @_updateName
 							value: @state.name
-							maxLength: 128
+							maxLength: 50
 						})
 					)
 					R.div({className: 'form-group'},

@@ -104,7 +104,7 @@ load = (win) ->
 					ref: 'lookupField'
 					placeholder: @props.placeholder
 					onBlur: @props.onBlur
-					maxLength: 128
+					maxLength: 50
 				})
 			)
 
