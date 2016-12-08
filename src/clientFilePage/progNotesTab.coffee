@@ -139,68 +139,18 @@ load = (win) ->
 				transientData: null
 				isLoading: null
 				isFiltering: null
-				historyCount: 10
-				filterCount: 10
 
 				searchQuery: ''
 				programIdFilter: null
 				dataTypeFilter: null
 			}
 
-		componentDidMount: ->
-			# infinite scroll
-			leftPane = $('.progNotesList')
-			leftPane.on 'scroll', _.throttle((=>
-				if leftPane.scrollTop() + (leftPane.innerHeight() *2) >= leftPane[0].scrollHeight
-
-					# Update seperate result count while filtering
-					if @state.isFiltering
-						filterCount = @state.filterCount + 10
-						@setState {filterCount}
-
-					else
-						# Disregard if nothing left to load
-						return if @state.historyCount >= (@props.progNoteHistories.size + @props.globalEvents.size)
-
-						historyCount = @state.historyCount + 10
-						@setState {historyCount}
-
-				return
-			), 150)
-
-		componentDidUpdate: (oldProps, oldState) ->
-			# Fully redraw highlighting when filter results changes
-			# TODO: Only apply when filtered entries change
-			if (@state.searchQuery isnt oldState.searchQuery) or
-			(@state.isFiltering isnt oldState.isFiltering) or
-			(@state.filterCount isnt oldState.filterCount) or
-			(@state.programIdFilter isnt oldState.programIdFilter) or
-			(@state.dataTypeFilter isnt oldState.dataTypeFilter)
-				@_redrawSearchHighlighting()
-
-			# Re-highlight when filtering options or selectedItem changed
-			# TODO: Only apply when filtered entries change
-			if @state.isFiltering
-				if (@state.searchQuery isnt oldState.searchQuery) or
-				(@state.programIdFilter isnt oldState.programIdFilter) or
-				(@state.dataTypeFilter isnt oldState.dataTypeFilter)
-					@_redrawSearchHighlighting()
-
-			# Reset filterCount and selectedItem when FilterBar opens
-			if @state.isFiltering isnt oldState.isFiltering
-				if @state.isFiltering
-					@setState {
-						filterCount: 10
-						selectedItem: null
-					}
-				else
-					@setState {selectedItem: null}
-
 		hasChanges: ->
 			@_transientDataHasChanges()
 
 		render: ->
-			transientData = @state.transientData
+			{transientData} = @state
+
 			hasChanges = @hasChanges()
 			hasEnoughData = @props.historyEntries.size > 0
 			isEditing = transientData?
@@ -233,13 +183,6 @@ load = (win) ->
 				# By search query? Pass dataTypeFilter for conditional property checks
 				if @state.searchQuery.trim().length > 0
 					historyEntries = @_filterEntries(historyEntries, @state.dataTypeFilter)
-
-				# Limit results to filterCount
-				historyEntries = historyEntries.slice(0, @state.filterCount)
-
-			# Otherwise, just limit results to historyCount
-			else if not isEditing
-				historyEntries = historyEntries.slice(0, @state.historyCount)
 
 
 			return R.div({className: 'progNotesView'},
@@ -405,59 +348,35 @@ load = (win) ->
 							)
 						)
 
-						R.div({
-							ref: 'progNotesList'
-							className: [
-								'progNotesList'
-								showWhen not historyEntries.isEmpty()
-							].join ' '
-						},
-							(historyEntries.map (entry) =>
-								switch entry.get('entryType')
-									when 'progNote'
-										ProgNoteContainer({
-											key: entry.get('id')
+						EntriesListView({
+							historyEntries
+							transientData
 
-											progNoteHistory: entry.get('progNoteHistory')
-											filteredProgNote: entry.get('filteredProgNote')
-											attachments: entry.get('attachments')
-											eventTypes: @props.eventTypes
-											clientFile: @props.clientFile
+							eventTypes: @props.eventTypes
+							clientFile: @props.clientFile
+							programsById: @props.programsById
 
-											progEvents: entry.get('progEvents')
-											globalEvents: entry.get('@props.globalEvents')
-											programsById: @props.programsById
+							dataTypeFilter: @state.dataTypeFilter
+							searchQuery: @state.searchQuery
+							programIdFilter: @state.programIdFilter
 
-											isReadOnly: @props.isReadOnly
+							isFiltering: @state.isFiltering
+							isReadOnly: @props.isReadOnly
+							isEditing
 
-											setSelectedItem: @_setSelectedItem
-											selectProgNote: @_selectProgNote
-											selectedItem: @state.selectedItem
-											dataTypeFilter: @state.dataTypeFilter
+							selectedItem: @state.selectedItem
+							setSelectedItem: @_setSelectedItem
+							selectProgNote: @_selectProgNote
+							startRevisingProgNote: @_startRevisingProgNote
+							cancelRevisingProgNote: @_cancelRevisingProgNote
 
-											transientData
-											isEditing
-
-											startRevisingProgNote: @_startRevisingProgNote
-											cancelRevisingProgNote: @_cancelRevisingProgNote
-
-											updatePlanTargetNotes: @_updatePlanTargetNotes
-											updateBasicUnitNotes: @_updateBasicUnitNotes
-											updateBasicMetric: @_updateBasicMetric
-											updatePlanTargetMetric: @_updatePlanTargetMetric
-											updateProgEvent: @_updateProgEvent
-											updateQuickNotes: @_updateQuickNotes
-										})
-									when 'globalEvent'
-										GlobalEventView({
-											key: entry.get('id')
-											globalEvent: entry.get('globalEvent')
-											programsById: @props.programsById
-										})
-									else
-										throw new Error "Unknown historyEntries entryType: \"#{entry.get('entryType')}\""
-							)
-						)
+							updatePlanTargetNotes: @_updatePlanTargetNotes
+							updateBasicUnitNotes: @_updateBasicUnitNotes
+							updateBasicMetric: @_updateBasicMetric
+							updatePlanTargetMetric: @_updatePlanTargetMetric
+							updateProgEvent: @_updateProgEvent
+							updateQuickNotes: @_updateQuickNotes
+						})
 					)
 					R.section({className: 'rightPane'},
 						ProgNoteDetailView({
@@ -1050,15 +969,6 @@ load = (win) ->
 			# Only keep entries that contain all query parts
 			return entries.filter containsSearchQuery
 
-		_redrawSearchHighlighting: ->
-			# TODO: Keep Mark instance in @memory?
-			$progNotesList = new Mark findDOMNode @refs.progNotesList
-
-			if @state.isFiltering
-				$progNotesList.unmark().mark(@state.searchQuery)
-			else
-				$progNotesList.unmark()
-
 		_updateSearchQuery: (searchQuery) ->
 			@setState {searchQuery}
 
@@ -1084,6 +994,98 @@ load = (win) ->
 			@setState {dataTypeFilter}
 
 
+	EntriesListView = React.createFactory React.createClass
+		displayName: 'EntriesListView'
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: -> {
+			historyCount: 10
+			filterCount: 10
+		}
+
+		componentDidMount: ->
+			# Infinite scroll behaviour
+			leftPane = $('.progNotesList')
+
+			leftPane.on 'scroll', _.throttle((=>
+				if leftPane.scrollTop() + (leftPane.innerHeight() *2) >= leftPane[0].scrollHeight
+
+					# Update seperate result count while filtering
+					# TODO: Refactor redundancy
+					if @props.isFiltering
+						# Disregard if nothing left to load
+						return if @state.filterCount >= @props.historyEntries.size
+
+						filterCount = @state.filterCount + 10
+						@setState {filterCount}
+
+					else
+						# Disregard if nothing left to load
+						return if @state.historyCount >= @props.historyEntries.size
+
+						historyCount = @state.historyCount + 10
+						@setState {historyCount}
+
+				return
+			), 150)
+
+		componentDidUpdate: (oldProps, oldState) ->
+			# Re-draw highlighting if anything changes while filtering
+			if @props.isFiltering and @props.searchQuery
+				# TODO: Better perf for unlimited scroll,
+				# only highlight new entries in list
+				@_redrawSearchHighlighting()
+
+			# Reset filterCount and selectedItem when FilterBar opens
+			if @props.isFiltering isnt oldProps.isFiltering
+				if @props.isFiltering
+					@setState {filterCount: 10}
+
+				@props.setSelectedItem(null)
+
+		_redrawSearchHighlighting: ->
+			# TODO: Keep Mark instance in @memory?
+			entriesHighlighting = new Mark findDOMNode @refs.progNotesList
+
+			if @props.isFiltering
+				entriesHighlighting.unmark().mark(@props.searchQuery)
+			else
+				entriesHighlighting.unmark()
+
+		render: ->
+			{historyEntries, isFiltering} = @props
+
+			# Limit number of entries by filter/historyCount
+			sliceCount = if isFiltering then @state.filterCount else @state.historyCount
+			historyEntries = historyEntries.slice 0, sliceCount
+
+
+			R.div({
+				ref: 'progNotesList'
+				className: [
+					'progNotesList'
+					showWhen not historyEntries.isEmpty()
+				].join ' '
+			},
+				(historyEntries.map (entry) =>
+					switch entry.get('entryType')
+						when 'progNote'
+							# Combine entry (shallow toJS) & @props
+							ProgNoteContainer(_.extend entry.toObject(), @props)
+
+						when 'globalEvent'
+							GlobalEventView({
+								key: entry.get('id')
+								globalEvent: entry.get('globalEvent')
+								programsById: @props.programsById
+							})
+
+						else
+							throw new Error "Unknown historyEntries entryType: \"#{entry.get('entryType')}\""
+				)
+			)
+
+
 	ProgNoteContainer = React.createFactory React.createClass
 		displayName: 'ProgNoteContainer'
 		mixins: [React.addons.PureRenderMixin]
@@ -1099,7 +1101,7 @@ load = (win) ->
 			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
 
 
-			# TODO: Pass props down in a more efficient manner, maybe by grouping them together
+			# TODO: Refactor to extended props
 
 			if progNote.get('status') is 'cancelled'
 				return CancelledProgNoteView({
