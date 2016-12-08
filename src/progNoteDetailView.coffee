@@ -217,8 +217,16 @@ load = (win) ->
 						R.h3({}, itemName)
 						(if itemDescription?
 							R.div({className: 'toggleDescriptionButton'},
-								if @state.descriptionIsVisible then "Hide" else "View"
-								" description"
+								if @state.descriptionIsVisible
+									[
+										'Hide Description '
+										FaIcon 'chevron-up', {className:'up'}
+									]
+								else
+									[
+										'View Description '
+										FaIcon 'chevron-up', {className:'down'}
+									]
 							)
 						)
 					)
