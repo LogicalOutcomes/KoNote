@@ -81,6 +81,7 @@ load = (win) ->
 			progEvents = @props.progEvents.filter (progEvent) ->
 				return progEvent.get('relatedProgNoteId') is progNoteId
 
+			# progNote still gets any cancelled globalEvents
 			globalEvents = @props.globalEvents.filter (globalEvent) ->
 				return globalEvent.get('relatedProgNoteId') is progNoteId
 
@@ -111,7 +112,10 @@ load = (win) ->
 
 		render: ->
 			progNoteEntries = @props.progNoteHistories.map @_toProgNoteHistoryEntry
-			globalEventEntries = @props.globalEvents.map @_toGlobalEventEntry
+
+			globalEventEntries = @props.globalEvents
+			.filter (e) -> e.get('status') is 'default'
+			.map @_toGlobalEventEntry
 
 			historyEntries = progNoteEntries
 			.concat globalEventEntries
@@ -1667,8 +1671,10 @@ load = (win) ->
 		numberOfRevisions = progNoteHistory.size - 1
 		hasMultipleRevisions = numberOfRevisions > 1
 
-		# Ensure progEvents is defined
-		progEvents = progEvents or Imm.List()
+		# Ensure events are defined (aka: quickNote)
+		progEvents ||= Imm.List()
+		globalEvents ||= Imm.List()
+
 
 		R.div({
 			className: "progNoteToolbar #{if isViewingRevisions then 'active' else ''}"
