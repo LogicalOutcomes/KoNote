@@ -1071,7 +1071,7 @@ load = (win) ->
 					switch entry.get('entryType')
 						when 'progNote'
 							# Combine entry (shallow toJS) & @props
-							ProgNoteContainer(_.extend entry.toObject(), @props)
+							ProgNoteContainer(_.extend entry.toObject(), @props, {key: entry.get('id')})
 
 						when 'globalEvent'
 							GlobalEventView({
