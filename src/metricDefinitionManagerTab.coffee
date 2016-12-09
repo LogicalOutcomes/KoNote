@@ -108,11 +108,16 @@ load = (win) ->
 
 				return metric
 
-
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
 						R.div({className: 'optionsMenu'},
+							R.input({
+								className: 'form-control'
+								id: 'searchBar'
+								placeholder: 'Search Metrics'
+								onChange: @_handleTableSearch
+							})
 							OpenDialogLink({
 								className: 'btn btn-primary'
 								dialog: DefineMetricDialog
@@ -146,10 +151,10 @@ load = (win) ->
 									metricDefinitions: @state.metricDefinitions
 								},
 									BootstrapTable({
+										ref: 'metricTable'
 										data: tableData.toJS()
 										keyField: 'id'
 										bordered: false
-										search: true
 										options: {
 											defaultSortName: 'name'
 											defaultSortOrder: 'asc'
@@ -214,6 +219,9 @@ load = (win) ->
 					)
 				)
 			)
+
+		_handleTableSearch: (event) ->
+			@refs.metricTable.handleSearch(event.target.value)
 
 		_modifyMetric: (revisedMetric) ->
 			originalMetric = @state.metricDefinitions.find (metric) ->
