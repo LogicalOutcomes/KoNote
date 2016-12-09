@@ -71,7 +71,7 @@ class Session
 
 		# Initiate timeout countdowns
 		@finalWarning = setTimeout(=>
-			@_triggerEvent('timeout:finalWarning')
+			@persist.eventBus.trigger 'timeout:finalWarning'
 		, @warnDurations.final)
 
 		@timeout = setTimeout(=>
