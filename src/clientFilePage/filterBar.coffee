@@ -91,12 +91,14 @@ load = (win) ->
 						dataOptions: @props.dataTypeOptions
 						onSelect: @props.onSelectDataType
 					})
-					FilterDropdownMenu({
-						title: Term 'Programs'
-						selectedValue: @props.programIdFilter
-						dataOptions: @props.programsById
-						onSelect: @props.onSelectProgramId
-					})
+					(unless @props.programsById.isEmpty()
+						FilterDropdownMenu({
+							title: Term 'Programs'
+							selectedValue: @props.programIdFilter
+							dataOptions: @props.programsById
+							onSelect: @props.onSelectProgramId
+						})
+					)
 				)
 				R.section({
 					className: 'closeButton'
