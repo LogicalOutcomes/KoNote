@@ -286,7 +286,7 @@ load = (win) ->
 			changeLog = revision.get('changeLog')
 
 			userProgramId = revision.get('authorProgramId')
-			userProgram = @props.programsById.get(userProgramId) or Imm.Map()
+			userProgram = @props.programsById.get(userProgramId)
 
 			# Special cases made for planTarget types
 			isPlanTarget = @props.type is 'planTarget'
@@ -306,14 +306,16 @@ load = (win) ->
 						else
 							formatTimestamp revision.get('timestamp')
 
-						ColorKeyBubble({
-							colorKeyHex: userProgram.get('colorKeyHex')
-							popup: {
-								title: userProgram.get('name')
-								content: userProgram.get('description')
-								placement: 'left'
-							}
-						})
+						(if userProgram
+							ColorKeyBubble({
+								colorKeyHex: userProgram.get('colorKeyHex')
+								popup: {
+									title: userProgram.get('name')
+									content: userProgram.get('description')
+									placement: 'left'
+								}
+							})
+						)
 					)
 				)
 

@@ -202,9 +202,9 @@ load = (win) ->
 			.sortBy (entry) ->
 				entry.get('backdate') or entry.get('timestamp')
 			.reverse()
-			
+
 			entriesCount = entries.size
-			
+
 			entries = entries
 			.slice(0, @state.historyCount)
 
@@ -272,7 +272,7 @@ load = (win) ->
 				(entries.map (entry) =>
 					entryId = entry.get('progNoteId')
 					timestamp = entry.get('backdate') or entry.get('timestamp')
-					authorProgram = entry.get('authorProgram') or Imm.Map()
+					authorProgram = entry.get('authorProgram')
 
 					return R.div({
 						key: entryId
@@ -281,14 +281,17 @@ load = (win) ->
 						R.div({className: 'header'},
 							R.div({className: 'timestamp'},
 								formatTimestamp(timestamp)
-								ColorKeyBubble({
-									colorKeyHex: authorProgram.get('colorKeyHex')
-									popover: {
-										title: authorProgram.get('name')
-										content: authorProgram.get('description')
-										placement: 'top'
-									}
-								})
+
+								(if authorProgram
+									ColorKeyBubble({
+										colorKeyHex: authorProgram.get('colorKeyHex')
+										popover: {
+											title: authorProgram.get('name')
+											content: authorProgram.get('description')
+											placement: 'left'
+										}
+									})
+								)
 							)
 							R.div({className: 'author'},
 								FaIcon('user')

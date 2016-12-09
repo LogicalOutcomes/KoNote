@@ -1459,14 +1459,6 @@ load = (win) ->
 
 			R.div({className: 'entryHeader'},
 				R.div({className: 'timestamp'},
-					ColorKeyBubble({
-						colorKeyHex: userProgram.get('colorKeyHex')
-						popover: {
-							title: userProgram.get('name')
-							content: userProgram.get('description')
-							placement: 'left'
-						}
-					})
 					formatTimestamp(timestamp, @props.dateFormat)
 					if firstRevision.get('backdate')
 						R.span({className: 'lateTimestamp'},
@@ -1474,8 +1466,19 @@ load = (win) ->
 						)
 				)
 				R.div({className: 'author'},
-					' by '
+					"by "
 					firstRevision.get('author')
+
+					(if userProgram and not userProgram.isEmpty()
+						ColorKeyBubble({
+							colorKeyHex: userProgram.get('colorKeyHex')
+							popover: {
+								title: userProgram.get('name')
+								content: userProgram.get('description')
+								placement: 'left'
+							}
+						})
+					)
 				)
 			)
 
