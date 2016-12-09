@@ -160,7 +160,7 @@ load = (win) ->
 					'filterDropdownMenu'
 					'isOpen' if @state.isOpen
 				].join ' '
-				onMouseEnter: @_toggleIsOpen unless @state.isOpen
+				onClick: @_toggleIsOpen
 				onMouseLeave: @_toggleIsOpen if @state.isOpen
 			},
 				R.ul({className: 'filterOptions'},
