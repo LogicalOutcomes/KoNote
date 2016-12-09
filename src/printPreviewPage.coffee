@@ -334,7 +334,9 @@ load = (win, {dataSet}) ->
 
 									R.div({className: 'target'},
 										R.h3({className: 'name'}, thisTarget.get('name'))
-										R.div({className: 'description'}, thisTarget.get('description'))
+										R.div({className: 'description'}, 
+											renderLineBreaks thisTarget.get('description')
+										)
 										R.div({className: 'metrics'},
 											(thisTarget.get('metricIds').map (metricId) =>
 												metric = @props.data.get('metrics').get(metricId)
@@ -384,7 +386,9 @@ load = (win, {dataSet}) ->
 
 									R.div({className: 'target'},
 										R.h3({className: 'name'}, thisTarget.get('name'))
-										R.div({className: 'description'}, thisTarget.get('description'))
+										R.div({className: 'description'},
+											renderLineBreaks thisTarget.get('description')
+										)
 										R.div({className: 'cheatMetrics'},
 											(thisTarget.get('metricIds').map (metricId) =>
 												metric = @props.data.get('metrics').get(metricId)
