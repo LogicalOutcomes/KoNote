@@ -33,8 +33,10 @@ load = (win) ->
 		}
 
 		componentWillReceiveProps: (nextProps) ->
-			# Reset history count and scroll when selectedItem changes
-			if nextProps.item and not Imm.is nextProps.item, @props.item
+			# Reset history count and scroll when targetId (or type) changes
+			oldTargetId = if @props.item then @props.item.get('targetId')
+
+			if nextProps.item and (nextProps.item.get('targetId') isnt oldTargetId)
 				@_resetHistoryCount()
 
 				if @refs.history? then @refs.history.resetScroll()
