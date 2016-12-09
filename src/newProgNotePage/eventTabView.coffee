@@ -290,6 +290,7 @@ load = (win) ->
 			return {
 				title: @props.progEvent.get('title')
 				description: @props.progEvent.get('description')
+				typeId: @props.progEvent.get('typeId') or ''
 				programId
 			}
 
