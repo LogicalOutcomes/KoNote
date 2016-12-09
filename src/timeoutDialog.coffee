@@ -69,17 +69,14 @@ load = (win) ->
 			}
 
 		_focusPasswordField: ->
-			setTimeout(=>
-				@refs.passwordField.focus()
-			, 50)
+			@refs.passwordField.focus() if @refs.passwordField?
 
 		showTimeoutMessage: ->
 			@setState {
 				isTimedOut: true
+				isOpen: true
 				password: ''
-			}
-
-			@_focusPasswordField()
+			}, @_focusPasswordField
 
 		_confirmPassword: (event) ->
 			event.preventDefault()
@@ -121,6 +118,7 @@ load = (win) ->
 
 			countMoment = Moment.utc(@state.countSeconds * 1000)
 
+
 			return Dialog({
 				ref: 'dialog'
 				title: if @state.isTimedOut then "Your Session Has Timed Out" else "Inactivity Warning"
@@ -135,6 +133,7 @@ load = (win) ->
 						R.div({className: 'message'},
 							"Please confirm your password for user \"#{global.ActiveSession.userName}\"
 							to restore all windows."
+
 							R.form({className: 'form-group'},
 								R.input({
 									value: @state.password
@@ -222,7 +221,7 @@ load = (win) ->
 					setTimeout(->
 						global.ActiveSession.timeoutMessage.close()
 						delete global.ActiveSession.timeoutMessage
-					, 5000)
+					, 6000)
 
 			'timeout:reactivateWindows': =>
 				console.log "TIMEOUT: Confirmed password, reactivating windows"
