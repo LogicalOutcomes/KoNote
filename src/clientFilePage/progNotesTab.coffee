@@ -358,6 +358,7 @@ load = (win) ->
 							eventTypes: @props.eventTypes
 							clientFile: @props.clientFile
 							programsById: @props.programsById
+							planTargetsById: @props.planTargetsById
 
 							dataTypeFilter: @state.dataTypeFilter
 							searchQuery: @state.searchQuery
@@ -1152,7 +1153,6 @@ load = (win) ->
 						progNoteHistory: @props.progNoteHistory
 						attachments: @props.attachments
 						userProgram
-						planTargetsById: @props.plan
 						clientFile: @props.clientFile
 						selectedItem: @props.selectedItem
 						dataTypeFilter
