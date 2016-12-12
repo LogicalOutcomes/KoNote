@@ -9,6 +9,7 @@
 .DS_Store
 
 /data*
+/dist/
 /node_modules/
 /build/releases/
 
