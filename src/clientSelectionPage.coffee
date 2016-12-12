@@ -736,15 +736,16 @@ load = (win) ->
 						dataFormat: (programs) ->
 							return null unless programs
 							ProgramBubbles({programs: Imm.fromJS(programs)})
-						className: 'visibleColumn'
-						columnClassName: 'visibleColumn'
+						className: 'leftPadding'
+						columnClassName: 'leftPadding'
 						width: '150px'
+						hidden: not @props.hasProgramLinks
 					})
 					TableHeaderColumn({
 						dataField: 'lastName'
 						dataSort: true
-						className: 'visibleColumn'
-						columnClassName: 'visibleColumn'
+						className: 'leftPadding' if not @props.hasProgramLinks
+						columnClassName: 'leftPadding' if not @props.hasProgramLinks
 					}, "Last Name")
 					TableHeaderColumn({
 						dataField: 'givenNames'

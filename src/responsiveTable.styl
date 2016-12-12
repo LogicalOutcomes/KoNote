@@ -26,14 +26,16 @@
 
 				// Add padding to first & last VISIBLE column
 				td, th
-					&:first-child
-						padding-left 5%
+					//&:first-child
+						//padding-left 5%
+					&.leftPadding
+						padding-left 30px !important
 
 					// Since last-child won't work in this case,
 					// we assign .rightPadding to the furthest-right column
 					// Issue: https://github.com/AllenFang/react-bootstrap-table/issues/628
 					&.rightPadding
-						padding-right 5% !important
+						padding-right 30px !important
 
 			// TODO: Avoid setting this manually
 			// (column headers hide completely without it for some reason...)
