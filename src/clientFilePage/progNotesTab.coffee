@@ -181,7 +181,7 @@ load = (win) ->
 					historyEntries = historyEntries.filter (e) => e.get('entryType') is 'progNote'
 
 				# by event without a query (suppress notes)
-				if @state.dataTypeFilter is 'events' and @state.searchQuery.trim().length > 0
+				if @state.dataTypeFilter is 'events' and not @state.searchQuery.trim().length > 0
 					historyEntries = historyEntries.filter (e) => e.get('entryType') is 'globalEvent' or not e.get('progEvents').isEmpty()
 
 					# When searching 'targets', only check 'full' progNotes
