@@ -746,6 +746,7 @@ load = (win) ->
 							return
 
 						newAccount = result
+						console.log 'userAccount >>>>>>', newAccount
 						cb()
 
 				(cb) =>

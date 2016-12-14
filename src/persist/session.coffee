@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # This module handles all logic related to login sessions, including logging
@@ -14,11 +14,11 @@ Config = require '../config'
 DataModels = require './dataModels'
 {
 	Account, DecryptedAccount
-	
+
 	UnknownUserNameError
 	InvalidUserNameError
 	IncorrectPasswordError
-	DeactivatedAccountError	
+	DeactivatedAccountError
 } = require './users'
 
 login = (userName, password, backend, cb) ->
@@ -39,7 +39,7 @@ createBackend = (backendConfig) ->
 class Session
 	constructor: (@account, @backend) ->
 		unless @account instanceof DecryptedAccount
-			throw new Error "invalid account object"
+			throw new Error "Invalid account object"
 
 		@userName = @account.userName
 		@accountType = @account.publicInfo.accountType
@@ -51,8 +51,8 @@ class Session
 		timeoutSpec = Config.timeout
 
 		@timeoutMs = timeoutSpec.duration * 60000
+
 		@warnDurations = {
-			initial: @timeoutMs - (timeoutSpec.warnings.initial * 60000)
 			final: @timeoutMs - (timeoutSpec.warnings.final * 60000)
 		}
 
@@ -61,31 +61,22 @@ class Session
 	resetTimeout: ->
 		# Clear all traces of timeouts
 		if @timeout then clearTimeout @timeout
-		if @initialWarning then clearTimeout @initialWarning
 		if @finalWarning then clearTimeout @finalWarning
 
 		@timeout = null
-		@initialWarning = null
-		@finalWarning = null		
+		@finalWarning = null
 
 		# Keeping track of notification delivery to prevent duplicates
-		@initialWarningDelivered = null
 		@finalWarningDelivered = null
 
-		# Initiate timeouts
-		@initialWarning = setTimeout(=> 
-			@_triggerEvent('timeout:initialWarning')
-		, @warnDurations.initial)
-
+		# Initiate timeout countdowns
 		@finalWarning = setTimeout(=>
-			@_triggerEvent('timeout:finalWarning')
+			@persist.eventBus.trigger 'timeout:finalWarning'
 		, @warnDurations.final)
 
 		@timeout = setTimeout(=>
-			@_triggerEvent('timeout:timedOut')
+			@persist.eventBus.trigger 'timeout:timedOut'
 		, @timeoutMs)
-
-	_triggerEvent: (eventName) => @persist.eventBus.trigger eventName
 
 	isAdmin: ->
 		return @accountType is 'admin'
@@ -95,7 +86,7 @@ class Session
 
 	logout: ->
 		if @_ended
-			throw new Error "session has already ended"
+			throw new Error "Session has already ended"
 
 		@_ended = true
 

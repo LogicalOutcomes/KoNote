@@ -25,13 +25,21 @@
 				cursor default
 				float right
 				opacity 0.5
-				transition opacity .15s ease
+				transition all .15s ease
 
 				text-align right
 				color #666
 
 				&:hover
-					text-decoration underline
+					//text-decoration underline
+
+				.up
+					transition all 0.5s ease
+					transform rotate(0deg)
+
+				.down
+					transition all 0.5s ease
+					transform rotate(180deg)
 
 			&:hover .toggleDescriptionButton
 				opacity 1
@@ -47,6 +55,7 @@
 			padding-top 0
 			max-height 130px
 			overflow auto
+			color grey
 
 	> .history
 		flex 1
@@ -101,3 +110,5 @@
 
 					.colorKeyBubble > .bubbleContents
 						margin-left 0.5em
+						width 10px
+						height 10px

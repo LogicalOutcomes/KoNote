@@ -4,6 +4,10 @@
 	display flex
 	flex-direction column
 
+	mark
+		background yellow
+		padding 0
+
 		.popover
 			z-index 1001
 			max-width none
@@ -35,20 +39,41 @@
 			&.leftPane
 
 				> .empty
+					flex 1
+					display flex
 					text-align center
 
 					> .message
-						padding 100px 80px 50px
+						flex 1
+						padding 100px 15% 50px 15%
 
 						color #888
 						font-size 16px
 
-					> .btn
-						clear both
-						margin 15px
+						> div
+							padding 5px 0
 
-						> .fa
-							padding-right 10px
+						#resetFilterButton
+							outline none
+
+							> .fa
+								margin-right 5px
+
+						.colorKeyBubble
+							margin-left 6px
+
+							.bubbleContents
+								width 1.3rem
+								height 1.3rem
+
+						> .btn
+							margin-top 50px
+
+							&:last-child
+								margin-left 5px
+
+							> .fa
+								padding-right 10px
 
 
 				// quickNote popover styles
@@ -73,17 +98,15 @@
 
 		.progNotesList
 			flex 1
-			overflow auto
+			overflow-y auto
+			overflow-x hidden
+			overflow-wrap break-word
 			padding 10px 20px
 			padding-top 22px
 
 			.attachment
-				transition all .15s ease
 				color #337ab7
 				font-weight 500
-				&:hover
-					text-decoration none
-					color #024e90
 
 			.entryHeader
 				display flex
@@ -102,10 +125,16 @@
 				> .timestamp
 					flex 1
 
-					.colorKeyBubble > .bubbleContents
-						width 0.5em
-						height 0.5em
-						margin-right 0.5em
+					.lateTimestamp
+						color darkRed
+						font-size 0.8 em
+						display inline-block
+						padding-left 4px
+
+				.colorKeyBubble > .bubbleContents
+					width 10px
+					height 10px
+					margin-left 0.5em
 
 				.selectProgNoteButton
 					color sidebar-borders
@@ -187,7 +216,7 @@
 					transition all .15s ease
 					z-index 1000
 
-					background none
+					background white
 					position absolute
 					top 0
 					right 0
@@ -195,7 +224,7 @@
 					border-bottom-left-radius 10px
 
 					&.active // Solid background for revisions if viewing
-						background sidebar-borders
+						background sidebar-borders !important
 
 						.revisions a
 							text-decoration none !important
@@ -210,10 +239,6 @@
 					.actions
 						display flex
 						background white
-
-						border-bottom 2px solid sidebar-borders
-						border-left 2px solid sidebar-borders
-						border-bottom-left-radius 10px
 
 					a, button
 						cursor default
@@ -242,7 +267,6 @@
 							padding-bottom 5px
 
 					> .unit
-						padding-bottom 20px
 
 						&:last-child
 							padding-bottom 0px
@@ -271,13 +295,25 @@
 
 						&.basic
 							cursor default
+							border-left 2px solid rgba(255,255,255, 0) // avoid reflow when added on select
+							transition all .25s ease
+							padding-left 0px
+							padding-right 20px
+
+							&:hover
+								//border-left 2px solid grey
+								//padding-left 20px
+								//padding-right 0px
 
 							&.selected
 								color #3176aa
+								padding-left 20px
+								padding-right 0px
+								border-left 2px solid #3176aa
 
 							h3
-								transition all .15s ease
-								padding 20px 0 10px 0
+								//transition all .15s ease
+								//padding 10px 0 10px 0
 								margin 0
 								font-size 14px
 
@@ -309,7 +345,9 @@
 									padding-right 20px
 
 									&:hover
-										//border-left 2px solid #3176aa
+										//border-left 2px solid grey
+										//padding-left 20px
+										//padding-right 0px
 										.notes
 											opacity 0.7
 
@@ -320,9 +358,8 @@
 										color #3176aa
 										h3
 											opacity 1
-										&:hover
-											.notes
-												opacity 1
+										.notes
+											opacity 1
 
 									> .empty
 										padding 0 2px

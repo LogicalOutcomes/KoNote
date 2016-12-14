@@ -70,16 +70,16 @@ load = (win) ->
 				onClick: @_beginEditing unless @state.isEditing
 			},
 				R.h3({className: 'animated fadeInUp'},
-					# FaIcon('exclamation-triangle')
-					# ' '
-					"No " unless @state.content
 					"Alerts"
 				)
 				R.div({id: 'alertsContainer'},
 					(if @state.isEditing
 						R.div({id: 'isEditingContent'},
-							ExpandingTextArea({
+							R.textarea({
+								className: 'alertsTextarea'
 								ref: 'textarea'
+								rows: 7
+								maxLength: 150
 								value: @state.content
 								onChange: @_updateContent
 							})
@@ -103,7 +103,7 @@ load = (win) ->
 						WithTooltip({
 							title: "Click here to add/update alerts" if @state.content
 							placement: 'right'
-							container: 'body'
+							container: '#container'
 						},
 							R.div({id: 'staticContent'},
 								renderLineBreaks(@state.content or "Click here to add an alert")

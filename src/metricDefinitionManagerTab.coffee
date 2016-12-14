@@ -108,11 +108,16 @@ load = (win) ->
 
 				return metric
 
-
 			return R.div({className: 'metricDefinitionManagerTab'},
 				R.div({className: 'header'},
 					R.h1({},
 						R.div({className: 'optionsMenu'},
+							R.input({
+								className: 'form-control'
+								id: 'searchBar'
+								placeholder: 'Search Metrics'
+								onChange: @_handleTableSearch
+							})
 							OpenDialogLink({
 								className: 'btn btn-primary'
 								dialog: DefineMetricDialog
@@ -146,12 +151,14 @@ load = (win) ->
 									metricDefinitions: @state.metricDefinitions
 								},
 									BootstrapTable({
+										ref: 'metricTable'
 										data: tableData.toJS()
 										keyField: 'id'
 										bordered: false
 										options: {
 											defaultSortName: 'name'
 											defaultSortOrder: 'asc'
+											searchPosition: 'right'
 											onRowClick: ({id}) =>
 												@refs.dialogLayer.open ModifyMetricDialog, {
 													metricId: id
@@ -213,6 +220,9 @@ load = (win) ->
 				)
 			)
 
+		_handleTableSearch: (event) ->
+			@refs.metricTable.handleSearch(event.target.value)
+
 		_modifyMetric: (revisedMetric) ->
 			originalMetric = @state.metricDefinitions.find (metric) ->
 				metric.get('id') is revisedMetric.get('id')
@@ -259,10 +269,12 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Definition")
-						ExpandingTextArea({
-							ref: 'definitionField'
-							onChange: @_updateDefinition
+						R.textarea({
+							className: 'form-control'
+							placeholder: "Define the #{Term 'metric'}"
 							value: @state.definition
+							onChange: @_updateDefinition
+							rows: 5
 						})
 					)
 					R.div({className: 'form-group'},

@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Standardized color hex definitions
@@ -40,8 +40,8 @@ EventTypeColors = Imm.List [
 	"#67ebf0"
 	"#67f0cb"
 	"#67f06d"
-	"#c1f067"
-	"#f0eb67"
+	"#97b45f"
+	"#d6d13f"
 	"#f0c867"
 	"#f0a167"
 	"#f08467"

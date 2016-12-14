@@ -8,7 +8,9 @@
 	"metrics": 8,
 	"planTemplates": 3,
 	"planTargets": 4,
+	"planTargetRevisions": 2,
 	"progNotes": 2,
+	"quickNotes": 2,
 	"progEvents": 1
 
 }

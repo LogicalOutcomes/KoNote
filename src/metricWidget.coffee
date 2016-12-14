@@ -26,26 +26,38 @@ load = (win) ->
 				title: ReactDOMServer.renderToString tooltipContent
 				viewport: {"selector": viewport, "padding": 0 }
 			}
-		render: ->
 
-			return R.span({
+		render: ->
+			# Here we calculate the width needed for the widget's input and set inline below
+			# Note: the added space directly correlates to the padding on .innerValue
+			if @props.value?
+				inputWidth = (@props.value.length * 9.5) + 10
+
+
+			return R.div({
 				className: [
 					'metricWidget'
 					@props.styleClass or ''
 				].join ' '
 			},
 				(if @props.value?
-					if typeof @props.value in ['string', 'number']
-						R.input({
-							className: 'value circle'
-							onFocus: @props.onFocus
-							value: @props.value
-							onChange: @_onChange
-							placeholder: if @props.isEditable then '__' else '--'
-							disabled: not @props.isEditable
-						})
-					else
-						R.div({className: 'value circle'}, @props.value)
+					R.div({className: 'value circle'},
+						(if @props.isEditable
+							R.input({
+								className: 'innerValue'
+								style: {width: "#{inputWidth}px"}
+								onFocus: @props.onFocus
+								value: @props.value
+								onChange: @_onChange
+								placeholder: '__'
+								maxLength: 20
+							})
+						else
+							R.div({className: 'innerValue'},
+								@props.value or '--'
+							)
+						)
+					)
 				else
 					R.div({className: 'icon circle'},
 						FaIcon 'line-chart'

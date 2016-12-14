@@ -12,6 +12,8 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+	{findDOMNode} = win.ReactDOM
+	Mark = win.Mark
 
 	ProgEventWidget = require('./progEventWidget').load(win)
 	MetricWidget = require('./metricWidget').load(win)
@@ -31,12 +33,13 @@ load = (win) ->
 		}
 
 		componentWillReceiveProps: (nextProps) ->
-			# update was triggered by clicking a target
-			if @props.item?
-				if @props.item.get('targetId') isnt nextProps.item.get('targetId')
-					# Reset history count and scroll
-					@_resetHistoryCount()
-					if @refs.history? then @refs.history.resetScroll()
+			# Reset history count and scroll when targetId (or type) changes
+			oldTargetId = if @props.item then @props.item.get('targetId')
+
+			if nextProps.item and (nextProps.item.get('targetId') isnt oldTargetId)
+				@_resetHistoryCount()
+
+				if @refs.history? then @refs.history.resetScroll()
 
 		_addHistoryCount: (count) ->
 			# Disregard if nothing left to load
@@ -202,9 +205,9 @@ load = (win) ->
 			.sortBy (entry) ->
 				entry.get('backdate') or entry.get('timestamp')
 			.reverse()
-			
+
 			entriesCount = entries.size
-			
+
 			entries = entries
 			.slice(0, @state.historyCount)
 
@@ -217,8 +220,16 @@ load = (win) ->
 						R.h3({}, itemName)
 						(if itemDescription?
 							R.div({className: 'toggleDescriptionButton'},
-								if @state.descriptionIsVisible then "Hide" else "View"
-								" description"
+								if @state.descriptionIsVisible
+									[
+										'Hide Description '
+										FaIcon 'chevron-up', {className:'up'}
+									]
+								else
+									[
+										'View Description '
+										FaIcon 'chevron-up', {className:'down'}
+									]
 							)
 						)
 					)
@@ -236,6 +247,8 @@ load = (win) ->
 					historyCount: @state.historyCount
 					addHistoryCount: @_addHistoryCount
 					resetHistoryCount: @_resetHistoryCount
+					isFiltering: @props.isFiltering
+					searchQuery: @props.searchQuery
 				})
 			)
 
@@ -248,10 +261,28 @@ load = (win) ->
 			historyPane = $('.history')
 			historyPane.on 'scroll', _.throttle((=>
 				if @props.historyCount < @props.entriesCount
-					if historyPane.scrollTop() + (historyPane.innerHeight() *2) >= historyPane[0].scrollHeight
+					if historyPane.scrollTop() + (historyPane.innerHeight() * 2) >= historyPane[0].scrollHeight
 						@props.addHistoryCount(10)
 					return
 			), 150)
+
+			# Draw highlighting first time if searchQuery exists
+			if @props.isFiltering and @props.searchQuery
+				$historyPane = new Mark findDOMNode @refs.history
+				$historyPane.unmark().mark @props.searchQuery
+
+		componentDidUpdate: (oldProps, oldState) ->
+			# Check to see if we need to redraw highlighting while in filter-mode
+			if @props.isFiltering
+				$historyPane = new Mark findDOMNode @refs.history
+
+				searchQueryChanged = @props.searchQuery isnt oldProps.searchQuery
+
+				if @props.searchQuery and (searchQueryChanged or @props.historyCount isnt oldProps.historyCount)
+					$historyPane.unmark().mark @props.searchQuery
+				else if not @props.searchQuery and searchQueryChanged
+					$historyPane.unmark()
+
 
 		resetScroll: ->
 			historyPane = $('.history')
@@ -260,11 +291,14 @@ load = (win) ->
 		render: ->
 			{entries, eventTypes} = @props
 
-			R.div({className: 'history'},
+			R.div({
+				ref: 'history'
+				className: 'history'
+			},
 				(entries.map (entry) =>
 					entryId = entry.get('progNoteId')
 					timestamp = entry.get('backdate') or entry.get('timestamp')
-					authorProgram = entry.get('authorProgram') or Imm.Map()
+					authorProgram = entry.get('authorProgram')
 
 					return R.div({
 						key: entryId
@@ -273,14 +307,17 @@ load = (win) ->
 						R.div({className: 'header'},
 							R.div({className: 'timestamp'},
 								formatTimestamp(timestamp)
-								ColorKeyBubble({
-									colorKeyHex: authorProgram.get('colorKeyHex')
-									popover: {
-										title: authorProgram.get('name')
-										content: authorProgram.get('description')
-										placement: 'top'
-									}
-								})
+
+								(if authorProgram
+									ColorKeyBubble({
+										colorKeyHex: authorProgram.get('colorKeyHex')
+										popover: {
+											title: authorProgram.get('name')
+											content: authorProgram.get('description')
+											placement: 'left'
+										}
+									})
+								)
 							)
 							R.div({className: 'author'},
 								FaIcon('user')

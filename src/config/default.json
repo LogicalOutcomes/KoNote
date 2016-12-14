@@ -37,7 +37,6 @@
 	"timeout": {
 		"duration": 25,
 		"warnings": {
-			"initial": 10,
 			"final": 1
 		}
 	},

@@ -4,8 +4,11 @@
 
 # Load in Timeout listeners and trigger warning dialogs
 
+_ = require 'underscore'
+
 Config = require './config'
 Persist = require './persist'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -16,7 +19,6 @@ load = (win) ->
 	nwWin = nw.Window.get(win)
 
 	Dialog = require('./dialog').load(win)
-	Spinner = require('./spinner').load(win)
 	CrashHandler = require('./crashHandler').load(win)
 
 	Moment = require('moment')
@@ -29,19 +31,23 @@ load = (win) ->
 				countSeconds: null
 				expiration: null
 				isOpen: false
+				password: ''
+
 				isFinalWarning: false
 				isTimedOut: false
-				password: ''
 			}
 
 		_recalculateSeconds: ->
-			@setState => countSeconds: Moment(@state.expiration).diff(Moment(), 'seconds')
+			@setState {
+				countSeconds: Moment(@state.expiration).diff(Moment(), 'seconds')
+			}
 
 		show: ->
-			@setState =>
+			@setState {
 				password: ''
 				isOpen: true
 				expiration: Moment().add(Config.timeout.warnings.initial, 'minutes')
+			}
 
 			@_recalculateSeconds()
 
@@ -59,20 +65,18 @@ load = (win) ->
 
 			@setState {
 				isOpen: false
-				isFinalWarning: false
 				isTimedOut: false
 			}
 
 		_focusPasswordField: ->
-			setTimeout(=>
-				@refs.passwordField.focus()
-			, 50)
+			@refs.passwordField.focus() if @refs.passwordField?
 
 		showTimeoutMessage: ->
-			@setState =>
+			@setState {
 				isTimedOut: true
+				isOpen: true
 				password: ''
-			@_focusPasswordField()
+			}, @_focusPasswordField
 
 		_confirmPassword: (event) ->
 			event.preventDefault()
@@ -114,6 +118,7 @@ load = (win) ->
 
 			countMoment = Moment.utc(@state.countSeconds * 1000)
 
+
 			return Dialog({
 				ref: 'dialog'
 				title: if @state.isTimedOut then "Your Session Has Timed Out" else "Inactivity Warning"
@@ -128,6 +133,7 @@ load = (win) ->
 						R.div({className: 'message'},
 							"Please confirm your password for user \"#{global.ActiveSession.userName}\"
 							to restore all windows."
+
 							R.form({className: 'form-group'},
 								R.input({
 									value: @state.password
@@ -165,46 +171,23 @@ load = (win) ->
 			)
 
 	getTimeoutListeners = ->
-		# Fires 'resetTimeout' event upon any user interaction (move, click, typing, scroll)
-
+		# TODO: Make sure this doesn't execute again after HCR (#611)
+		# This might be causing all the perf problems after too many HCR's
 		timeoutContainer = win.document.createElement('div')
 		timeoutContainer.id = 'timeoutContainer'
 		win.document.body.appendChild timeoutContainer
 
 		timeoutComponent = ReactDOM.render TimeoutDialog({}), timeoutContainer
 
-		$('body').on "mousemove mousedown keypress scroll", ->
+		# Fires 'resetTimeout' event upon any user interaction (move, click, typing, scroll)
+		resetTimeout = _.throttle(->
 			global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
+		, 350)
+
+		$('body').on "mousemove mousedown keypress scroll", resetTimeout
+
 
 		return {
-			'timeout:initialWarning': =>
-				timeoutComponent.show()
-
-				unless global.ActiveSession.initialWarningDelivered
-					console.log "TIMEOUT: Initial Warning issued"
-
-					global.ActiveSession.initialWarningDelivered = new Notification "Inactivity Warning", {
-						body: """
-							Your session will expire in #{Config.timeout.warnings.initial}
-							minute#{if Config.timeout.warnings.initial > 1 then 's' else ''}
-						"""
-						icon: Config.iconNotification
-					}
-
-			'timeout:finalWarning': =>
-				timeoutComponent.showFinalWarning()
-
-				unless global.ActiveSession.finalWarningDelivered
-					console.log "TIMEOUT: Final Warning issued"
-
-					global.ActiveSession.finalWarningDelivered = new Notification "Final Warning", {
-						body: """
-							Your session will expire in #{Config.timeout.warnings.final}
-							minute#{if Config.timeout.warnings.final > 1 then 's' else ''}.
-						"""
-						icon: Config.iconNotification
-					}
-					nwWin.requestAttention(1)
 
 			'timeout:reset': =>
 				# Reset both timeout component and session
@@ -212,23 +195,40 @@ load = (win) ->
 				global.ActiveSession.resetTimeout()
 
 				# Reset knowledge of warnings been delivered
-				global.ActiveSession.initialWarningDelivered = null
-				global.ActiveSession.finalWarningDelivered = null
+				delete global.ActiveSession.initialWarningDelivered
+
+			'timeout:finalWarning': =>
+				timeoutComponent.showFinalWarning()
+
+			'timeout:timedOut': =>
+				# Remove all timeout-resetting listeners
+				$('body').off "mousemove mousedown keypress scroll"
+
+				timeoutComponent.showTimeoutMessage()
+
+				# Ensure only 1 instance of notifications across multiple windows
+				unless global.ActiveSession.timeoutMessage
+					console.log "TIMEOUT: Session timed out, disabling windows..."
+
+					global.ActiveSession.timeoutMessage = new Notification "Session Timed Out", {
+						body: "Enter your password to continue the #{Config.productName} session."
+						icon: Config.iconNotification
+					}
+
+					nwWin.requestAttention(1)
+
+					# Close and remove notification instance after 5s
+					setTimeout(->
+						global.ActiveSession.timeoutMessage.close()
+						delete global.ActiveSession.timeoutMessage
+					, 6000)
 
 			'timeout:reactivateWindows': =>
 				console.log "TIMEOUT: Confirmed password, reactivating windows"
 
 				global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
 
-				$('body').on "mousemove mousedown keypress scroll", (event) ->
-					global.ActiveSession.persist.eventBus.trigger 'timeout:reset'
-
-			'timeout:timedOut': =>
-				console.log "TIMEOUT: Timed out, disabling windows"
-
-				$('body').off "mousemove mousedown keypress scroll"
-
-				timeoutComponent.showTimeoutMessage()
+				$('body').on "mousemove mousedown keypress scroll", resetTimeout
 
 		}
 

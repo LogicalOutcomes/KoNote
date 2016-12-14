@@ -134,7 +134,7 @@ load = (win) ->
 								R.button({
 									className: [
 										'btn btn-link btnReset'
-										showWhen @state.birthDay? or @state.birthMonth? or @state.birthYear?
+										'invisible' unless @state.birthDay? or @state.birthMonth? or @state.birthYear?
 									].join ' '
 									onClick: @_resetBirthDate
 								}, "clear")
@@ -217,7 +217,6 @@ load = (win) ->
 									)
 								)
 							)
-
 						)
 						(unless @state.planTemplateHeaders.isEmpty() or @props.programs.isEmpty()
 							R.div({className: 'panel-right'},
@@ -287,7 +286,6 @@ load = (win) ->
 										)
 									)
 								)
-
 							)
 						)
 					)

@@ -282,7 +282,8 @@ init = (win) ->
 			# Sometimes pageComponent will be undefined during a crash
 			pageComponent.suggestClose()
 		catch err
-			console.warn "Force-closing window..."
+			console.error "Force-closing window!"
+			console.error "Couldn't call suggestClose() on pageComponent, Error: ", err
 			nwWin.close(true)
 
 module.exports = {init}

@@ -45,7 +45,7 @@ load = (win) ->
 				progEvent: Imm.Map {
 					title: ''
 					description: ''
-					typeId: null
+					typeId: ''
 					startTimestamp
 					endTimestamp
 				}
@@ -290,6 +290,7 @@ load = (win) ->
 			return {
 				title: @props.progEvent.get('title')
 				description: @props.progEvent.get('description')
+				typeId: @props.progEvent.get('typeId') or ''
 				programId
 			}
 

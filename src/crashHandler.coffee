@@ -46,6 +46,7 @@ load = (win) ->
 					platform: process.platform
 					arch: process.arch
 					userAgent: win.navigator.userAgent
+					appVersion: nw.App.manifest.version
 					nwVersion: process.versions["node-webkit"]
 					cwd: process.cwd()
 					url: win.location.href

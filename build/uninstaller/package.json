@@ -1,8 +1,10 @@
 {
   "main": "index.html",
-  "name": "konote-uninstaller",
+  "name": "uninstall",
+  "displayName": "uninstall",
+  "description": "Cleanup utility to remove konote data directory on Windows",
   "license": "MPL-2.0",
   "dependencies": {
-    "rimraf": "^2.4.4"
+    "rimraf": "^2.5.4"
   }
 }

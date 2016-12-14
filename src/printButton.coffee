@@ -22,6 +22,8 @@ load = (win) ->
 				}
 				disabled: false
 				className: ''
+				iconClassName: ''
+				labelClassName: ''
 			}
 
 		render: ->
@@ -38,8 +40,8 @@ load = (win) ->
 					ref: 'printButton'
 					disabled: @props.disabled
 				},
-					R.span({}, if not @props.iconOnly then "Print")
-					FaIcon('print')
+					FaIcon('print', {className:@props.iconClassName})
+					R.span({className:@props.labelClassName}, if not @props.iconOnly then "Print")
 				)
 			)
 

@@ -24,9 +24,11 @@ Create.clientFile = (cb) ->
 	middle = Faker.name.firstName()
 	last = Faker.name.lastName()
 	recordId = Faker.random.number().toString()
-	birthDate = Moment().subtract(2, 'months').format('YYYYMMMDD')
 
-	console.log "birthdate", birthDate
+	earliestDate = Moment().subtract(29000, 'days')
+	daySpan = Moment().diff(earliestDate, 'days')
+	randomDay = Math.floor(Math.random() * daySpan) + 1
+	birthDate = Moment().subtract(randomDay, 'days').format('YYYYMMMDD')
 
 	clientFile = Imm.fromJS {
 		clientName: {first, middle, last}
@@ -92,7 +94,7 @@ Create.progEvent = ({clientFile, progNote, eventTypes}, cb) ->
 
 	createData 'progEvents', progEvent, cb
 
-Create.quickNote = (clientFile, cb) ->
+Create.quickNote = ({clientFile}, cb) ->
 	earliestDate = Moment().subtract(2, 'months')
 	daySpan = Moment().diff(earliestDate, 'days')
 	randomDay = Math.floor(Math.random() * daySpan) + 1
@@ -142,7 +144,6 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 					value: randomNumber.toString()
 				}
 
-
 			# Construct the target note
 			return {
 				id: planTarget.get('id')
@@ -151,7 +152,6 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 				notes: Faker.lorem.paragraph()
 				metrics: metricNotes.toJS()
 			}
-
 
 		# Construct the section as a whole
 		return {
@@ -187,6 +187,18 @@ Create.progNote = ({clientFile, sections, planTargets, metrics}, cb) ->
 
 	createData 'progNotes', progNote, cb
 
+Create.alert = (clientFile, cb) ->
+	clientFileId = clientFile.get('id')
+	alert = Imm.fromJS {
+		content: Faker.lorem.paragraph()
+		clientFileId
+		status: 'default'
+		statusReason: 'Seeded'
+		updateReason: 'Seeded'
+		authorProgramId: ''
+	}
+
+	createData 'alerts', alert, cb
 
 Create.planTarget = (clientFile, metrics, cb) ->
 	metricIds = metrics
@@ -196,9 +208,9 @@ Create.planTarget = (clientFile, metrics, cb) ->
 	# randomly chooses a status, with a higher probability of 'default'
 	randomNumber = Math.floor(Math.random() * 10) + 1
 
-	if randomNumber > 7
+	if randomNumber > 8
 		status = 'deactivated'
-	else if randomNumber < 3
+	else if randomNumber < 2
 		status = 'completed'
 	else
 		status = 'default'
@@ -212,6 +224,12 @@ Create.planTarget = (clientFile, metrics, cb) ->
 	}
 
 	createData 'planTargets', target, cb
+
+Create.planTargetRevision = (target, cb) ->
+	newDescription = Faker.lorem.paragraph()
+	updatedPlanTarget = target.set 'description', newDescription
+
+	global.ActiveSession.persist.planTargets.createRevision updatedPlanTarget, cb
 
 Create.program = (index, cb) ->
 	program = Imm.fromJS({
@@ -309,18 +327,16 @@ Create.progEvents = (quantity, props, cb) ->
 			cb err
 			return
 
-		# console.log "Created #{quantity} progEvents"
 		cb null, Imm.List(results)
 
-Create.quickNotes = (clientFile, numberOfNotes, cb) ->
-	Async.times numberOfNotes, (index, cb) ->
-		Create.quickNote(clientFile, cb)
+Create.quickNotes = (quantity, props, cb) ->
+	Async.times quantity, (index, cb) ->
+		Create.quickNote(props, cb)
 	, (err, results) ->
 		if err
 			cb err
 			return
 
-		console.log "Created #{quantity} quickNotes"
 		cb null, Imm.List(results)
 
 Create.progNotes = (quantity, props, cb) ->
@@ -347,6 +363,15 @@ Create.planTargets = (quantity, clientFile, metrics, cb) ->
 			return
 
 		console.log "Created #{quantity} planTargets"
+		cb null, Imm.List(results)
+
+Create.planTargetRevisions = (quantity, planTarget, cb) ->
+	Async.times quantity, (index, cb) =>
+		Create.planTargetRevision(planTarget, cb)
+	, (err, results) ->
+		if err
+			cb err
+			return
 		cb null, Imm.List(results)
 
 Create.programs = (quantity, cb) ->

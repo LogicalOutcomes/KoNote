@@ -45,10 +45,32 @@ load = (win) ->
 
 		componentDidMount: ->
 			win.addEventListener 'resize', @_resize
-			@_resize()
+			@_initialSize()
 
 		componentWillUnmount: ->
 			win.removeEventListener 'resize', @_windowResizeListener
+
+		_initialSize: ->
+			textareaDom = @refs.textarea
+			outerDom = @refs.outer
+			return unless textareaDom? and outerDom?
+
+			# Hold outer div to current height
+			# This presents the scroll position from being lost when the textarea is set to zero
+			outerDom.style.height = outerDom.clientHeight + 'px'
+
+			# Reset height to 0
+			textareaDom.style.height = '0px'
+
+			# Calculate new height
+			minimumHeight = 54 # pixels
+			scrollableAreaHeight = textareaDom.scrollHeight
+			scrollableAreaHeight += 2 # to prevent scrollbar
+			newHeight = Math.max minimumHeight, scrollableAreaHeight
+			textareaDom.style.height = newHeight + 'px'
+
+			# Allow outer div to resize to new height
+			outerDom.style.height = 'auto'
 
 		_resize: _.throttle(->
 			textareaDom = @refs.textarea

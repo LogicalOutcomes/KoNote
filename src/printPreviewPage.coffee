@@ -58,18 +58,9 @@ load = (win, {dataSet}) ->
 				previewType: 'default'
 			}
 
-
-		# componentDidMount: ->
-		# 	# Without timeout, print() triggers before DOM renders
-		# 	setTimeout(->
-		# 		Window.show()
-		# 		Window.focus()
-
-		# 		setTimeout(->
-		# 			win.print()
-		# 		, 250)
-
-		# 	, 250)
+		_printPage :->
+			Window.print
+				headerFooterEnabled: false
 
 		render: ->
 			R.div({className: 'printPreview'},
@@ -343,7 +334,9 @@ load = (win, {dataSet}) ->
 
 									R.div({className: 'target'},
 										R.h3({className: 'name'}, thisTarget.get('name'))
-										R.div({className: 'description'}, thisTarget.get('description'))
+										R.div({className: 'description'}, 
+											renderLineBreaks thisTarget.get('description')
+										)
 										R.div({className: 'metrics'},
 											(thisTarget.get('metricIds').map (metricId) =>
 												metric = @props.data.get('metrics').get(metricId)
@@ -393,7 +386,9 @@ load = (win, {dataSet}) ->
 
 									R.div({className: 'target'},
 										R.h3({className: 'name'}, thisTarget.get('name'))
-										R.div({className: 'description'}, thisTarget.get('description'))
+										R.div({className: 'description'},
+											renderLineBreaks thisTarget.get('description')
+										)
 										R.div({className: 'cheatMetrics'},
 											(thisTarget.get('metricIds').map (metricId) =>
 												metric = @props.data.get('metrics').get(metricId)

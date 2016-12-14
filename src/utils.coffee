@@ -14,6 +14,45 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	# return a list of unsafe file extensions
+	blockedExtensions = [
+		'.action',
+		'.app',
+		'.application',
+		'.bat',
+		'.bin',
+		'.cmd',
+		'.com',
+		'.command',
+		'.cpl',
+		'.csh',
+		'.esf',
+		'.exe',
+		'.gadget',
+		'.hta',
+		'.inf',
+		'.jar',
+		'.js',
+		'.jse',
+		'.lnk',
+		'.msc',
+		'.msi',
+		'.msp',
+		'.osx',
+		'.ps1',
+		'.ps2',
+		'.psc1',
+		'.psc2',
+		'.reg',
+		'.scf',
+		'.scr',
+		'.vb',
+		'.vbs',
+		'.vbscript',
+		'.workflow',
+		'.ws'
+	]
+
 	# Execute variable as a function if it is one
 	executeIfFunction = (variable, arg) ->
 		if typeof variable is 'function'
@@ -237,6 +276,7 @@ load = (win) ->
 		return result
 
 	return {
+		blockedExtensions
 		CustomError
 		executeIfFunction
 		FaIcon
