@@ -1744,19 +1744,9 @@ load = (win) ->
 							},
 								"Edit Note"
 							)
-							B.MenuItem({},
-								PrintButton({
-									dataSet: [
-										{
-											format: 'progNote'
-											data: progNote
-											progEvents
-											clientFile
-										}
-									]
-									isVisible: false
-									iconOnly: true
-								})
+
+							B.MenuItem({onClick: @_print.bind null, progNote, progEvents, clientFile
+							},
 								"Print Note"
 							)
 							B.MenuItem({onClick: @_openCancelProgNoteDialog},
@@ -1770,6 +1760,19 @@ load = (win) ->
 
 		_openCancelProgNoteDialog: (event) ->
 			@refs.cancelButton.open(event)
+
+		_print: (progNote, progEvents, clientFile) ->
+			openWindow {
+				page: 'printPreview'
+				dataSet: JSON.stringify([
+					{
+						format: 'progNote'
+						data: progNote
+						progEvents
+						clientFile
+					}
+				])
+			}
 
 
 	GlobalEventView = React.createFactory React.createClass
