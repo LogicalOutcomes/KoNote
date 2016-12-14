@@ -123,6 +123,9 @@
 					margin 0
 
 				.options
+					.dropdown-menu
+						min-width 120px
+
 					.entryHeaderDropdown
 						border none
 						margin-top -1px
@@ -131,6 +134,12 @@
 
 				.revisions
 					margin-right 10px
+
+					&.active // Solid background for revisions if viewing
+						background sidebar-borders !important
+
+						.revisions a
+							text-decoration none !important
 
 				> .timestamp
 					flex 1
@@ -219,50 +228,6 @@
 
 					.revisions
 						margin-right 0
-
-				.progNoteToolbar
-					display flex
-					opacity 0
-					transition all .15s ease
-					z-index 1000
-
-					background white
-					position absolute
-					top 0
-					right 0
-
-					border-bottom-left-radius 10px
-
-					&.active // Solid background for revisions if viewing
-						background sidebar-borders !important
-
-						.revisions a
-							text-decoration none !important
-
-					> div
-						padding 5px
-
-					.revisions
-						transition margin-right .25s cubic-bezier(0, 0, 0.2, 1) // Linear out, slow in
-						margin-right -20px
-
-					.actions
-						display flex
-						background white
-
-					a, button
-						cursor default
-						color #274B6B
-						opacity 0.75
-						transition all .15s ease
-						display inline-block
-
-						padding 2px 8px
-
-						&:hover
-							opacity 1
-							color black
-
 
 				.progNoteList
 					position relative

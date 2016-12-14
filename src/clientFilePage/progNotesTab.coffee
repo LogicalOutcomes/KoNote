@@ -1753,6 +1753,7 @@ load = (win) ->
 							},
 								"Print Note"
 							)
+
 							B.MenuItem({onClick: @_openCancelProgNoteDialog},
 								"Discard Note"
 							)
