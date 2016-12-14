@@ -1223,7 +1223,6 @@ load = (win) ->
 					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
 
-					isProgNote: true
 					isReadOnly: @props.isReadOnly
 					progNote
 					progNoteHistory: @props.progNoteHistory
@@ -1231,25 +1230,12 @@ load = (win) ->
 					globalEvents: @props.globalEvents
 					clientFile: @props.clientFile
 					selectedItem: @props.selectedItem
+					isEditing
 
 					startRevisingProgNote: @props.startRevisingProgNote
 					selectProgNote: @props.selectProgNote
 				})
 				R.div({className: 'notes'},
-					(if not isEditing and progNote.get('status') isnt 'cancelled'
-						ProgNoteToolbar({
-							isReadOnly: @props.isReadOnly
-							progNote
-							progNoteHistory: @props.progNoteHistory
-							progEvents: @props.progEvents
-							globalEvents: @props.globalEvents
-							clientFile: @props.clientFile
-							selectedItem: @props.selectedItem
-
-							startRevisingProgNote: @props.startRevisingProgNote
-							selectProgNote: @props.selectProgNote
-						})
-					)
 					R.div({onClick: @_selectQuickNote},
 						(if isEditing
 							ExpandingTextArea({
@@ -1328,7 +1314,6 @@ load = (win) ->
 					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
 
-					isProgNote: true
 					isReadOnly: @props.isReadOnly
 					progNote: @props.progNote # Pass original (unfiltered)
 					progNoteHistory: @props.progNoteHistory
@@ -1336,25 +1321,12 @@ load = (win) ->
 					globalEvents: @props.globalEvents
 					clientFile: @props.clientFile
 					selectedItem: @props.selectedItem
+					isEditing
 
 					startRevisingProgNote: @props.startRevisingProgNote
 					selectProgNote: @props.selectProgNote
 				})
 				R.div({className: 'progNoteList'},
-					(if not isEditing and progNote.get('status') isnt 'cancelled'
-						ProgNoteToolbar({
-							isReadOnly: @props.isReadOnly
-							progNote: @props.progNote # Pass original (unfiltered)
-							progNoteHistory: @props.progNoteHistory
-							progEvents: @props.progEvents
-							globalEvents: @props.globalEvents
-							clientFile: @props.clientFile
-							selectedItem: @props.selectedItem
-
-							startRevisingProgNote: @props.startRevisingProgNote
-							selectProgNote: @props.selectProgNote
-						})
-					)
 					(progNote.get('units').map (unit) =>
 						unitId = unit.get 'id'
 
@@ -1666,7 +1638,7 @@ load = (win) ->
 				userProgram
 				revisionHistory
 
-				isProgNote
+				isEditing
 				isReadOnly
 				progNote
 				progNoteHistory
@@ -1679,7 +1651,14 @@ load = (win) ->
 
 			} = @props
 
-			(if isProgNote
+			# probably a better way to set up this variable:
+			(if progNote? and not isEditing and progNote.get('status') isnt 'cancelled'
+				displayOptionsDropDown = true
+			else
+				displayOptionsDropDown = false
+			)
+
+			(if progNote?
 				selectedItemIsProgNote = selectedItem? and selectedItem.get('progNoteId') is progNote.get('id')
 				userIsAuthor = progNote.get('author') is global.ActiveSession.userName
 
@@ -1702,7 +1681,8 @@ load = (win) ->
 			)
 
 			R.div({className: 'entryHeader'},
-				(if isProgNote
+				# This just sets up the opendialoglink with ref so it can be called below in menu
+				(if displayOptionsDropDown
 					OpenDialogLink({
 						ref: 'cancelButton'
 						className: "cancelNote #{showWhen not isReadOnly}"
@@ -1720,6 +1700,18 @@ load = (win) ->
 							"(late entry)"
 						)
 				)
+
+				(if progNote?
+					R.div({className: "revisions #{showWhen hasRevisions}"},
+						R.a({
+							className: 'selectProgNoteButton'
+							onClick: selectProgNote.bind null, progNote
+						},
+							"#{numberOfRevisions} revision#{if hasMultipleRevisions then 's' else ''}"
+						)
+					)
+				)
+
 				R.div({className: 'author'},
 					"by "
 					firstRevision.get('author')
@@ -1735,7 +1727,7 @@ load = (win) ->
 						})
 					)
 				)
-				(if isProgNote
+				(if displayOptionsDropDown
 					R.div({className: 'options'},
 						B.DropdownButton({
 							className: 'entryHeaderDropdown'
@@ -1778,78 +1770,6 @@ load = (win) ->
 
 		_openCancelProgNoteDialog: (event) ->
 			@refs.cancelButton.open(event)
-
-	ProgNoteToolbar = (props) ->
-		{
-			isReadOnly
-			progNote
-			progNoteHistory
-			progEvents
-			globalEvents
-			clientFile
-			selectedItem
-
-			startRevisingProgNote
-			selectProgNote
-		} = props
-
-		selectedItemIsProgNote = selectedItem? and selectedItem.get('progNoteId') is progNote.get('id')
-		userIsAuthor = progNote.get('author') is global.ActiveSession.userName
-
-		isViewingRevisions = selectedItemIsProgNote and selectedItem.get('type') is 'progNote'
-		hasRevisions = progNoteHistory.size > 1
-		numberOfRevisions = progNoteHistory.size - 1
-		hasMultipleRevisions = numberOfRevisions > 1
-
-		# Ensure events are defined (aka: quickNote)
-		progEvents ||= Imm.List()
-		globalEvents ||= Imm.List()
-
-
-		R.div({
-			className: "progNoteToolbar #{if isViewingRevisions then 'active' else ''}"
-		},
-			R.div({className: "revisions #{showWhen hasRevisions}"},
-				R.a({
-					className: 'selectProgNoteButton'
-					onClick: selectProgNote.bind null, progNote
-				},
-					"#{numberOfRevisions} revision#{if hasMultipleRevisions then 's' else ''}"
-				)
-			)
-			# R.div({className: 'actions'},
-			# 	PrintButton({
-			# 		dataSet: [
-			# 			{
-			# 				format: 'progNote'
-			# 				data: progNote
-			# 				progEvents
-			# 				clientFile
-			# 			}
-			# 		]
-			# 		isVisible: true
-			# 		iconOnly: true
-			# 		tooltip: {show: true}
-			# 	})
-			# 	(if userIsAuthor
-			# 		R.a({
-			# 			className: "editNote #{showWhen not isReadOnly}"
-			# 			onClick: startRevisingProgNote.bind null, progNote, progEvents
-			# 		},
-			# 			"Edit"
-			# 		)
-			# 	)
-			# 	OpenDialogLink({
-			# 		className: "cancelNote #{showWhen not isReadOnly}"
-			# 		dialog: CancelProgNoteDialog
-			# 		progNote
-			# 		progEvents
-			# 		globalEvents
-			# 	},
-			# 		R.a({}, "Cancel")
-			# 	)
-			# )
-		)
 
 
 	GlobalEventView = React.createFactory React.createClass
