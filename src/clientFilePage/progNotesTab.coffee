@@ -1315,6 +1315,18 @@ load = (win) ->
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
+
+					isProgNote: true
+					isReadOnly: @props.isReadOnly
+					progNote: @props.progNote # Pass original (unfiltered)
+					progNoteHistory: @props.progNoteHistory
+					progEvents: @props.progEvents
+					globalEvents: @props.globalEvents
+					clientFile: @props.clientFile
+					selectedItem: @props.selectedItem
+
+					startRevisingProgNote: @props.startRevisingProgNote
+					selectProgNote: @props.selectProgNote
 				})
 				R.div({className: 'progNoteList'},
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
@@ -1638,7 +1650,22 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			{userProgram, revisionHistory} = @props
+			{
+				isProgNote
+				userProgram
+				revisionHistory
+				isReadOnly
+				progNote
+				progNoteHistory
+				progEvents
+				globalEvents
+				clientFile
+				selectedItem
+
+				startRevisingProgNote
+				selectProgNote
+
+			} = @props
 
 			hasRevisions = revisionHistory.size > 1
 			numberOfRevisions = revisionHistory.size - 1
