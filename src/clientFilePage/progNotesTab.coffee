@@ -1706,7 +1706,7 @@ load = (win) ->
 				)
 
 				(if progNote?
-					R.div({className: "revisions #{showWhen hasRevisions}"},
+					R.div({className: "revisions #{showWhen hasRevisions} #{if isViewingRevisions then 'active' else ''}"},
 						R.a({
 							className: 'selectProgNoteButton'
 							onClick: selectProgNote.bind null, progNote

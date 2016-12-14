@@ -128,18 +128,21 @@
 
 					.entryHeaderDropdown
 						border none
+						border-radius 15px
 						margin-top -1px
 						margin-left 5px
-						padding 2px 6px 2px 6px
+						padding 2px 10px 2px 10px
 
 				.revisions
 					margin-right 10px
 
-					&.active // Solid background for revisions if viewing
-						background sidebar-borders !important
+					&.active
+						border-left 2px solid #3176aa
 
-						.revisions a
-							text-decoration none !important
+						a
+							// text-decoration none !important
+							font-style bold
+							color #3176aa !important
 
 				> .timestamp
 					flex 1
