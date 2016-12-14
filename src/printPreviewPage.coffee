@@ -76,7 +76,7 @@ load = (win, {dataSet}) ->
 							R.button({
 								ref: 'print'
 								className: 'print btn btn-primary'
-								onClick: @_printPage
+								onClick: win.print
 							},
 								FaIcon('print')
 								" "
