@@ -11,6 +11,7 @@ Term = require '../term'
 load = (win) ->
 	React = win.React
 	{PropTypes} = React
+	{findDOMNode} = win.ReactDOM
 	R = React.DOM
 
 	ColorKeyBubble = require('../colorKeyBubble').load(win)
@@ -72,7 +73,7 @@ load = (win) ->
 
 		render: ->
 			R.div({
-				className: "filterBar #{showWhen @props.isVisible}"
+				className: 'filterBar'
 				onClick: @_focusInput
 			},
 				R.section({},
@@ -115,12 +116,27 @@ load = (win) ->
 
 		getInitialState: -> {isOpen: false}
 
+		componentDidMount: ->
+			win.document.addEventListener 'click', @_onDocumentClick
+
+		componentWillUnmount: ->
+			win.document.removeEventListener 'click', @_onDocumentClick
+
+		_onDocumentClick: (event) ->
+			button = findDOMNode @refs.menuButton
+			optionsList = findDOMNode @refs.optionsList
+
+			# Check for inside/outside click
+			if button.contains event.target
+				@_toggleIsOpen()
+			else if not optionsList.contains event.target
+				@setState {isOpen: false}
+
 		_toggleIsOpen: ->
 			@setState {isOpen: not @state.isOpen}
 
 		_onSelect: (value) ->
 			@props.onSelect(value)
-			@_toggleIsOpen()
 
 		_renderOption: (option) ->
 			selectedOption = option or @props.dataOptions.find (o) =>
@@ -160,10 +176,11 @@ load = (win) ->
 					'filterDropdownMenu'
 					'isOpen' if @state.isOpen
 				].join ' '
-				onClick: @_toggleIsOpen
-				onMouseLeave: @_toggleIsOpen if @state.isOpen
 			},
-				R.ul({className: 'filterOptions'},
+				R.ul({
+					ref: 'optionsList'
+					className: 'filterOptions'
+				},
 					(if hasSelection
 						R.li({
 							className: 'selectAllOption'
@@ -185,7 +202,10 @@ load = (win) ->
 						)
 					)
 				)
-				R.div({className: 'option selectedValue'},
+				R.div({
+					ref: 'menuButton'
+					className: 'option selectedValue'
+				},
 					(if hasSelection
 						@_renderOption()
 					else

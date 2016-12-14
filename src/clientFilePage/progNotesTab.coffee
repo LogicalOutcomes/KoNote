@@ -283,19 +283,20 @@ load = (win) ->
 							)
 						)
 
-						FilterBar({
-							ref: 'filterBar'
-							isVisible: @state.isFiltering and not isEditing
-							programIdFilter: @state.programIdFilter
-							dataTypeFilter: @state.dataTypeFilter
-							programsById: @props.programsById
-							dataTypeOptions
+						(if @state.isFiltering and not isEditing
+							FilterBar({
+								ref: 'filterBar'
+								programIdFilter: @state.programIdFilter
+								dataTypeFilter: @state.dataTypeFilter
+								programsById: @props.programsById
+								dataTypeOptions
 
-							onClose: @_toggleIsFiltering
-							onUpdateSearchQuery: @_updateSearchQuery
-							onSelectProgramId: @_updateProgramIdFilter
-							onSelectDataType: @_updateDataTypeFilter
-						})
+								onClose: @_toggleIsFiltering
+								onUpdateSearchQuery: @_updateSearchQuery
+								onSelectProgramId: @_updateProgramIdFilter
+								onSelectDataType: @_updateDataTypeFilter
+							})
+						)
 
 						# TODO: Make component
 						R.div({
@@ -956,7 +957,7 @@ load = (win) ->
 						# Ignore progNote entries without progEvents
 						if data.has('entryType') and data.get('entryType') isnt 'globalEvent' and data.get('progEvents').isEmpty()
 							return false
-						# Favor 'progEvents' for progNote entries
+						# Favor 'progEvents' in progNote entries
 						else
 							data = data.get('progEvents') or data
 
