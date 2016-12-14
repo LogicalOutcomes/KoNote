@@ -29,6 +29,7 @@ load = (win) ->
 	{findDOMNode} = win.ReactDOM
 	ReactDOMServer = win.ReactDOMServer
 	Mark = win.Mark
+	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	CancelProgNoteDialog = require('./cancelProgNoteDialog').load(win)
 	ColorKeyBubble = require('../colorKeyBubble').load(win)
@@ -1671,6 +1672,29 @@ load = (win) ->
 							}
 						})
 					)
+				)
+				R.div({className: 'options'},
+					B.DropdownButton({
+						className: 'entryHeaderDropdown'
+						pullRight: true
+						noCaret: true
+						container: 'body'
+						title: R.span({},
+							FaIcon('ellipsis-v', {className:'menuItemIcon'})
+						)
+						# disabled: @props.isReadOnly
+					},
+						B.MenuItem({},
+							"Edit"
+						)
+						B.MenuItem({},
+							"Print"
+						)
+						B.MenuItem({},
+							"Cancel"
+						)
+					)
+
 				)
 			)
 
