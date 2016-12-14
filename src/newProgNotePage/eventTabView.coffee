@@ -45,7 +45,7 @@ load = (win) ->
 				progEvent: Imm.Map {
 					title: ''
 					description: ''
-					typeId: null
+					typeId: ''
 					startTimestamp
 					endTimestamp
 				}
