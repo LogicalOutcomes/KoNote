@@ -1565,19 +1565,19 @@ load = (win) ->
 				)
 
 				R.h3({},
-					"Cancelled: "
+					"Discarded: "
 					formatTimestamp(firstRev.get('backdate') or firstRev.get('timestamp'))
 					" (late entry)" if firstRev.get('backdate')
 				),
 
 				R.div({className: "details #{showWhen @state.isExpanded}"},
 					R.h4({},
-						"Cancelled by "
+						"Discarded by "
 						statusChangeRev.get('author')
 						" on "
 						formatTimestamp statusChangeRev.get('timestamp')
 					),
-					R.h4({}, "Reason for cancellation:")
+					R.h4({}, "Reason for discarding:")
 					R.div({className: 'reason'},
 						renderLineBreaks latestRev.get('statusReason')
 					)
