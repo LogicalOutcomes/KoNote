@@ -1222,6 +1222,18 @@ load = (win) ->
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
+
+					isProgNote: true
+					isReadOnly: @props.isReadOnly
+					progNote
+					progNoteHistory: @props.progNoteHistory
+					progEvents: @props.progEvents
+					globalEvents: @props.globalEvents
+					clientFile: @props.clientFile
+					selectedItem: @props.selectedItem
+
+					startRevisingProgNote: @props.startRevisingProgNote
+					selectProgNote: @props.selectProgNote
 				})
 				R.div({className: 'notes'},
 					(if not isEditing and progNote.get('status') isnt 'cancelled'
@@ -1651,9 +1663,10 @@ load = (win) ->
 
 		render: ->
 			{
-				isProgNote
 				userProgram
 				revisionHistory
+
+				isProgNote
 				isReadOnly
 				progNote
 				progNoteHistory
@@ -1661,14 +1674,25 @@ load = (win) ->
 				globalEvents
 				clientFile
 				selectedItem
-
 				startRevisingProgNote
 				selectProgNote
 
 			} = @props
 
+			(if isProgNote
+				selectedItemIsProgNote = selectedItem? and selectedItem.get('progNoteId') is progNote.get('id')
+				userIsAuthor = progNote.get('author') is global.ActiveSession.userName
+
+				isViewingRevisions = selectedItemIsProgNote and selectedItem.get('type') is 'progNote'
+
+				# Ensure events are defined (aka: quickNote)
+				progEvents ||= Imm.List()
+				globalEvents ||= Imm.List()
+			)
+
 			hasRevisions = revisionHistory.size > 1
 			numberOfRevisions = revisionHistory.size - 1
+			hasMultipleRevisions = numberOfRevisions > 1
 
 			firstRevision = revisionHistory.first() # Use original revision's data
 			timestamp = (
@@ -1678,6 +1702,17 @@ load = (win) ->
 			)
 
 			R.div({className: 'entryHeader'},
+				(if isProgNote
+					OpenDialogLink({
+						ref: 'cancelButton'
+						className: "cancelNote #{showWhen not isReadOnly}"
+						dialog: CancelProgNoteDialog
+						progNote
+						progEvents
+						globalEvents
+					})
+				)
+
 				R.div({className: 'timestamp'},
 					formatTimestamp(timestamp, @props.dateFormat)
 					if firstRevision.get('backdate')
@@ -1700,30 +1735,49 @@ load = (win) ->
 						})
 					)
 				)
-				R.div({className: 'options'},
-					B.DropdownButton({
-						className: 'entryHeaderDropdown'
-						pullRight: true
-						noCaret: true
-						container: 'body'
-						title: R.span({},
-							FaIcon('ellipsis-v', {className:'menuItemIcon'})
+				(if isProgNote
+					R.div({className: 'options'},
+						B.DropdownButton({
+							className: 'entryHeaderDropdown'
+							pullRight: true
+							noCaret: true
+							container: 'body'
+							title: R.span({},
+								FaIcon('ellipsis-v', {className:'menuItemIcon'})
+							)
+							# disabled: @props.isReadOnly
+						},
+							B.MenuItem({
+								onClick: startRevisingProgNote.bind null, progNote, progEvents
+							},
+								"Edit Note"
+							)
+							B.MenuItem({},
+								PrintButton({
+									dataSet: [
+										{
+											format: 'progNote'
+											data: progNote
+											progEvents
+											clientFile
+										}
+									]
+									isVisible: false
+									iconOnly: true
+								})
+								"Print Note"
+							)
+							B.MenuItem({onClick: @_openCancelProgNoteDialog},
+								"Discard Note"
+							)
 						)
-						# disabled: @props.isReadOnly
-					},
-						B.MenuItem({},
-							"Edit"
-						)
-						B.MenuItem({},
-							"Print"
-						)
-						B.MenuItem({},
-							"Cancel"
-						)
-					)
 
+					)
 				)
 			)
+
+		_openCancelProgNoteDialog: (event) ->
+			@refs.cancelButton.open(event)
 
 	ProgNoteToolbar = (props) ->
 		{
@@ -1763,38 +1817,38 @@ load = (win) ->
 					"#{numberOfRevisions} revision#{if hasMultipleRevisions then 's' else ''}"
 				)
 			)
-			R.div({className: 'actions'},
-				PrintButton({
-					dataSet: [
-						{
-							format: 'progNote'
-							data: progNote
-							progEvents
-							clientFile
-						}
-					]
-					isVisible: true
-					iconOnly: true
-					tooltip: {show: true}
-				})
-				(if userIsAuthor
-					R.a({
-						className: "editNote #{showWhen not isReadOnly}"
-						onClick: startRevisingProgNote.bind null, progNote, progEvents
-					},
-						"Edit"
-					)
-				)
-				OpenDialogLink({
-					className: "cancelNote #{showWhen not isReadOnly}"
-					dialog: CancelProgNoteDialog
-					progNote
-					progEvents
-					globalEvents
-				},
-					R.a({}, "Cancel")
-				)
-			)
+			# R.div({className: 'actions'},
+			# 	PrintButton({
+			# 		dataSet: [
+			# 			{
+			# 				format: 'progNote'
+			# 				data: progNote
+			# 				progEvents
+			# 				clientFile
+			# 			}
+			# 		]
+			# 		isVisible: true
+			# 		iconOnly: true
+			# 		tooltip: {show: true}
+			# 	})
+			# 	(if userIsAuthor
+			# 		R.a({
+			# 			className: "editNote #{showWhen not isReadOnly}"
+			# 			onClick: startRevisingProgNote.bind null, progNote, progEvents
+			# 		},
+			# 			"Edit"
+			# 		)
+			# 	)
+			# 	OpenDialogLink({
+			# 		className: "cancelNote #{showWhen not isReadOnly}"
+			# 		dialog: CancelProgNoteDialog
+			# 		progNote
+			# 		progEvents
+			# 		globalEvents
+			# 	},
+			# 		R.a({}, "Cancel")
+			# 	)
+			# )
 		)
 
 
