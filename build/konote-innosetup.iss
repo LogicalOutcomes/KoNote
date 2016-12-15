@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "KoNote"
-#define MyAppVersion "1.4.0"
+#define MyAppVersion "1.13.1"
 #define MyAppPublisher "Konode"
 #define MyAppURL "http://www.konode.ca"
 #define MyAppExeName "KoNote.exe"
@@ -22,8 +22,9 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={userappdata}\{#MyAppName}
 DisableDirPage=yes
 DefaultGroupName={#MyAppName}
-OutputBaseFilename=konote-setup
-SetupIconFile=C:\konote-1.4.0-win-generic\icon.ico
+OutputBaseFilename=konote-{#MyAppVersion}-win-setup
+OutputDir=..\dist
+SetupIconFile=..\dist\temp\nwjs-win\KoNote-win-ia32\src\icon.ico
 Compression=lzma
 SolidCompression=yes
 PrivilegesRequired=lowest
@@ -35,8 +36,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 
 [Files]
-Source: "C:\konote-1.4.0-win-generic\KoNote.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\konote-1.4.0-win-generic\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\temp\nwjs-win\KoNote-win-ia32\KoNote.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\temp\nwjs-win\KoNote-win-ia32\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

@@ -188,6 +188,10 @@ module.exports = function(grunt) {
 				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-ia32',
 				cmd: 'zip -r --quiet ../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
 			},
+			setup :{
+				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-ia32',
+				cmd: '../../../../build/innosetup.sh ../../../../build/konote-innosetup.iss'
+			},
 			codesign: {
 				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-osx-x64',
 				cmd: '../../../../build/codesign-osx.sh'
@@ -343,6 +347,8 @@ module.exports = function(grunt) {
 			if (entry.includes("win")) {
 				grunt.task.run('exec:nwjswin:'+entry);
 				grunt.task.run('copy:uninstallerbinary:'+entry);
+				// codesign and create setup file
+				grunt.task.run('exec:setup:'+entry)
 				grunt.task.run('exec:zip:'+entry);
 			}
 			if (entry.includes("mac")) {
