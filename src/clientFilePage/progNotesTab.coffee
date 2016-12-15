@@ -359,6 +359,7 @@ load = (win) ->
 
 						EntriesListView({
 							historyEntries
+							entryIds: historyEntries.map (e) -> e.get('id')
 							transientData
 
 							eventTypes: @props.eventTypes
@@ -1023,7 +1024,7 @@ load = (win) ->
 
 		componentDidMount: ->
 			# Infinite scroll behaviour
-			leftPane = $('.progNotesList')
+			leftPane = $('.entriesListView')
 
 			leftPane.on 'scroll', _.throttle((=>
 				if leftPane.scrollTop() + (leftPane.innerHeight() *2) >= leftPane[0].scrollHeight
@@ -1048,16 +1049,28 @@ load = (win) ->
 			), 150)
 
 		componentDidUpdate: (oldProps, oldState) ->
-			# Re-draw highlighting if anything changes while filtering
+			# Update highlighting when anything changes while searching
 			if @props.isFiltering and @props.searchQuery
-				# TODO: Better perf for unlimited scroll,
-				# only highlight new entries in list
-				@_redrawSearchHighlighting()
+
+				if @state.filterCount > oldState.filterCount
+					# Only highlight new entries added from unlimited-scroll
+					newEntriesCount = @state.filterCount - oldState.filterCount
+
+					entryNodes = @props.entryIds
+					.slice 0, @state.filterCount
+					.takeLast newEntriesCount
+					.map (id) -> win.document.getElementById(id)
+					.toArray()
+
+					new Mark(entryNodes).mark(@props.searchQuery)
+
+				else
+					@_redrawSearchHighlighting()
 
 			# Toggle FilterBar, resets selectedItem
 			if @props.isFiltering isnt oldProps.isFiltering
 				if @props.isFiltering
-					# Reset filterCount FilterBar opens
+					# Reset filterCount when FilterBar opens
 					@setState {filterCount: 10}
 				else
 					# Clear search highlighting when FilterBar closes
@@ -1066,8 +1079,8 @@ load = (win) ->
 				@props.setSelectedItem(null)
 
 		_redrawSearchHighlighting: ->
-			# TODO: Keep Mark instance in @memory?
-			entriesHighlighting = new Mark findDOMNode @refs.progNotesList
+			# Performs a complete (expensive) mark/unmark of the entire EntriesListView
+			entriesHighlighting = new Mark findDOMNode @refs.entriesListView
 
 			if @props.isFiltering
 				entriesHighlighting.unmark().mark(@props.searchQuery)
@@ -1083,9 +1096,9 @@ load = (win) ->
 
 
 			R.div({
-				ref: 'progNotesList'
+				ref: 'entriesListView'
 				className: [
-					'progNotesList'
+					'entriesListView'
 					showWhen not historyEntries.isEmpty()
 				].join ' '
 			},
@@ -1226,7 +1239,10 @@ load = (win) ->
 			if @props.attachments?
 				attachmentText = " " + @props.attachments.get('filename')
 
-			R.div({className: 'basic progNote'},
+			R.div({
+				id: progNote.get('id')
+				className: 'basic progNote'
+			},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
@@ -1317,7 +1333,10 @@ load = (win) ->
 			progEvents = if isEditing then @props.transientData.get('progEvents') else @props.progEvents
 
 
-			R.div({className: 'full progNote'},
+			R.div({
+				id: progNote.get('id')
+				className: 'full progNote'
+			},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
@@ -1450,7 +1469,7 @@ load = (win) ->
 
 															MetricWidget({
 																isEditable: isEditing
-																tooltipViewport: '.progNotesList'
+																tooltipViewport: '.entriesListView'
 																onChange: @props.updatePlanTargetMetric.bind(
 																	null,
 																	unitId, sectionId, targetId, metricId
@@ -1549,7 +1568,10 @@ load = (win) ->
 			firstRev = @props.progNoteHistory.first()
 			statusChangeRev = latestRev
 
-			return R.div({className: 'cancelStub'},
+			return R.div({
+				id: firstRev.get('id')
+				className: 'cancelStub'
+			},
 				R.button({
 					className: 'toggleDetails btn btn-xs btn-default'
 					onClick: @_toggleDetails
@@ -1656,7 +1678,6 @@ load = (win) ->
 				selectedItem
 				startRevisingProgNote
 				selectProgNote
-
 			} = @props
 
 			# probably a better way to set up this variable:
@@ -1804,7 +1825,10 @@ load = (win) ->
 				endTimestamp.isSame(endTimestamp.endOf 'day')
 			)
 
-			return R.div({className: 'globalEventView'},
+			return R.div({
+				id: globalEvent.get('id')
+				className: 'globalEventView'
+			},
 				EntryHeader({
 					revisionHistory: Imm.List [globalEvent]
 					userProgram: program
