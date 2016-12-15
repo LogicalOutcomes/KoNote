@@ -324,7 +324,7 @@ module.exports = function(grunt) {
 			grunt.task.run('replace:main:'+entry);
 			grunt.task.run('replace:config:'+entry);
 			grunt.task.run('copy:production:'+entry);
-			if (entry == "generic-win") {
+			if (entry == "win") {
 				//grunt.task.run('copy:generic:'+entry);
 				grunt.task.run('copy:uninstaller:'+entry);
 				grunt.task.run('exec:npmUninstaller:'+entry);
