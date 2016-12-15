@@ -1054,10 +1054,14 @@ load = (win) ->
 				# only highlight new entries in list
 				@_redrawSearchHighlighting()
 
-			# Reset filterCount and selectedItem when FilterBar opens
+			# Toggle FilterBar, resets selectedItem
 			if @props.isFiltering isnt oldProps.isFiltering
 				if @props.isFiltering
+					# Reset filterCount FilterBar opens
 					@setState {filterCount: 10}
+				else
+					# Clear search highlighting when FilterBar closes
+					@_redrawSearchHighlighting()
 
 				@props.setSelectedItem(null)
 
