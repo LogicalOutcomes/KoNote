@@ -1,3 +1,19 @@
+### 1.13.1 (Dec 15 2016)
+
+This maintenance release improves search performance and fixes a crash which could occur when closing a client file in certain cases.
+
+#### Improvements
+
+- Improved options menu (edit/print/discard) in progress note header (#934)
+
+#### Fixes
+
+- Fix crash when closing a client file before it has fully loaded (#745)
+- Events search filter now excludes all non-event data (#953)
+- Search results cleared when search bar closed (#955)
+- Improve search performance (#956)
+
+
 ### 1.13.0 (Dec 14 2016)
 
 This release brings the ability to search and filter data within a client file. It further refines the style of 1.12, with data more intelligently displayed throughout, including some important fixes for metric values. Additionally, the file size of the Windows release has been reduced by 20%.
