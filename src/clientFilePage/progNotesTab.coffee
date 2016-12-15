@@ -1750,16 +1750,16 @@ load = (win) ->
 							B.MenuItem({
 								onClick: startRevisingProgNote.bind null, progNote, progEvents
 							},
-								"Edit Note"
+								"Edit"
 							)
 
 							B.MenuItem({onClick: @_print.bind null, progNote, progEvents, clientFile
 							},
-								"Print Note"
+								"Print"
 							)
 
 							B.MenuItem({onClick: @_openCancelProgNoteDialog},
-								"Discard Note"
+								"Discard"
 							)
 						)
 
