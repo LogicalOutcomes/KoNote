@@ -97,6 +97,8 @@ load = (win, {clientFileId}) ->
 			@_killLocks cb
 
 		suggestClose: ->
+			unless @refs.ui
+				return
 			@refs.ui.suggestClose()
 
 		render: ->

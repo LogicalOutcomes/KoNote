@@ -96,7 +96,7 @@
 			&.rightPane
 				border-left 2px solid sidebar-borders
 
-		.progNotesList
+		.entriesListView
 			flex 1
 			overflow-y auto
 			overflow-x hidden
@@ -121,6 +121,29 @@
 				h1
 					padding 20px 0 10px 0
 					margin 0
+
+				.options
+					.dropdown-menu
+						min-width 90px
+						text-align right
+
+					.entryHeaderDropdown
+						border none
+						border-radius 15px
+						margin-top -1px
+						margin-left 5px
+						padding 2px 10px 2px 10px
+
+				.revisions
+					margin-right 10px
+
+					&.active
+						border-left 2px solid #3176aa
+
+						a
+							// text-decoration none !important
+							font-style bold
+							color #3176aa !important
 
 				> .timestamp
 					flex 1
@@ -209,50 +232,6 @@
 
 					.revisions
 						margin-right 0
-
-				.progNoteToolbar
-					display flex
-					opacity 0
-					transition all .15s ease
-					z-index 1000
-
-					background white
-					position absolute
-					top 0
-					right 0
-
-					border-bottom-left-radius 10px
-
-					&.active // Solid background for revisions if viewing
-						background sidebar-borders !important
-
-						.revisions a
-							text-decoration none !important
-
-					> div
-						padding 5px
-
-					.revisions
-						transition margin-right .25s cubic-bezier(0, 0, 0.2, 1) // Linear out, slow in
-						margin-right -20px
-
-					.actions
-						display flex
-						background white
-
-					a, button
-						cursor default
-						color #274B6B
-						opacity 0.75
-						transition all .15s ease
-						display inline-block
-
-						padding 2px 8px
-
-						&:hover
-							opacity 1
-							color black
-
 
 				.progNoteList
 					position relative

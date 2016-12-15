@@ -1,3 +1,45 @@
+### 1.13.1 (Dec 15 2016)
+
+This maintenance release improves search performance and fixes a crash which could occur when closing a client file in certain cases.
+
+#### Improvements
+
+- Improved options menu (edit/print/discard) in progress note header (#934)
+
+#### Fixes
+
+- Fix crash when closing a client file before it has fully loaded (#745)
+- Events search filter now excludes all non-event data (#953)
+- Search results cleared when search bar closed (#955)
+- Improve search performance (#956)
+
+
+### 1.13.0 (Dec 14 2016)
+
+This release brings the ability to search and filter data within a client file. It further refines the style of 1.12, with data more intelligently displayed throughout, including some important fixes for metric values. Additionally, the file size of the Windows release has been reduced by 20%.
+
+#### Improvements
+
+- Progress notes can be searched / filtered (#135, #512)
+- Metrics can be searched in manager tab (#685)
+- Plan details are shown in progress note history (#846)
+- New toolbar in plan tab (fd23448)
+- Removed timeout notification (#749)
+
+#### Fixes
+
+- Long metric values stretch input (#803)
+- Printed pages render line breaks (#948)
+- Metric name length limited to 50 characters (#937)
+- Fix Windows uninstall utility (#920)
+- Cancelling a progress note cancels associated global events (#841)
+- Executable files not permitted in attachments (#788)
+- KoNote version included in crash log (#820)
+- Events listed alphabetically in analysis (#895)
+- Scrollbars always visible (#926, #861)
+- Various other style, performance, and UI improvements
+
+
 ### 1.12.4 (Dec 1 2016)
 
 This maintenance release fixes a crash inadvertently introduced by (#922) in 1.12.2.

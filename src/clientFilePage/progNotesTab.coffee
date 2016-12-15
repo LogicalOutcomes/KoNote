@@ -29,6 +29,7 @@ load = (win) ->
 	{findDOMNode} = win.ReactDOM
 	ReactDOMServer = win.ReactDOMServer
 	Mark = win.Mark
+	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	CancelProgNoteDialog = require('./cancelProgNoteDialog').load(win)
 	ColorKeyBubble = require('../colorKeyBubble').load(win)
@@ -179,6 +180,10 @@ load = (win) ->
 				if @state.dataTypeFilter in ['progNotes', 'targets']
 					historyEntries = historyEntries.filter (e) => e.get('entryType') is 'progNote'
 
+				# by event without a query (suppress notes)
+				if @state.dataTypeFilter is 'events'
+					historyEntries = historyEntries.filter (e) => e.get('entryType') is 'globalEvent' or not e.get('progEvents').isEmpty()
+
 					# When searching 'targets', only check 'full' progNotes
 					# TODO: Restore this dataType at some point
 					# if @state.dataTypeFilter is 'targets'
@@ -283,19 +288,20 @@ load = (win) ->
 							)
 						)
 
-						FilterBar({
-							ref: 'filterBar'
-							isVisible: @state.isFiltering and not isEditing
-							programIdFilter: @state.programIdFilter
-							dataTypeFilter: @state.dataTypeFilter
-							programsById: @props.programsById
-							dataTypeOptions
+						(if @state.isFiltering and not isEditing
+							FilterBar({
+								ref: 'filterBar'
+								programIdFilter: @state.programIdFilter
+								dataTypeFilter: @state.dataTypeFilter
+								programsById: @props.programsById
+								dataTypeOptions
 
-							onClose: @_toggleIsFiltering
-							onUpdateSearchQuery: @_updateSearchQuery
-							onSelectProgramId: @_updateProgramIdFilter
-							onSelectDataType: @_updateDataTypeFilter
-						})
+								onClose: @_toggleIsFiltering
+								onUpdateSearchQuery: @_updateSearchQuery
+								onSelectProgramId: @_updateProgramIdFilter
+								onSelectDataType: @_updateDataTypeFilter
+							})
+						)
 
 						# TODO: Make component
 						R.div({
@@ -353,6 +359,7 @@ load = (win) ->
 
 						EntriesListView({
 							historyEntries
+							entryIds: historyEntries.map (e) -> e.get('id')
 							transientData
 
 							eventTypes: @props.eventTypes
@@ -956,7 +963,7 @@ load = (win) ->
 						# Ignore progNote entries without progEvents
 						if data.has('entryType') and data.get('entryType') isnt 'globalEvent' and data.get('progEvents').isEmpty()
 							return false
-						# Favor 'progEvents' for progNote entries
+						# Favor 'progEvents' in progNote entries
 						else
 							data = data.get('progEvents') or data
 
@@ -1017,7 +1024,7 @@ load = (win) ->
 
 		componentDidMount: ->
 			# Infinite scroll behaviour
-			leftPane = $('.progNotesList')
+			leftPane = $('.entriesListView')
 
 			leftPane.on 'scroll', _.throttle((=>
 				if leftPane.scrollTop() + (leftPane.innerHeight() *2) >= leftPane[0].scrollHeight
@@ -1042,22 +1049,49 @@ load = (win) ->
 			), 150)
 
 		componentDidUpdate: (oldProps, oldState) ->
-			# Re-draw highlighting if anything changes while filtering
-			if @props.isFiltering and @props.searchQuery
-				# TODO: Better perf for unlimited scroll,
-				# only highlight new entries in list
-				@_redrawSearchHighlighting()
+			# Update highlighting when anything changes while searching
+			if @props.isFiltering
 
-			# Reset filterCount and selectedItem when FilterBar opens
+				filterParametersChanged = @props.searchQuery isnt oldProps.searchQuery or
+				@props.dataTypeFilter isnt oldProps.dataTypeFilter or
+				@props.programIdFilter isnt oldProps.programIdFilter
+
+				# Reset filterCount and scroll to top anytime filter parameters change
+				if filterParametersChanged
+					@setState @getInitialState, => findDOMNode(@).scrollTop = 0
+
+
+				if @props.searchQuery
+
+					if @state.filterCount > oldState.filterCount
+						# Only highlight new entries added from unlimited-scroll
+						newEntriesCount = @state.filterCount - oldState.filterCount
+
+						entryNodes = @props.entryIds
+						.slice 0, @state.filterCount
+						.takeLast newEntriesCount
+						.map (id) -> win.document.getElementById(id)
+						.toArray()
+
+						new Mark(entryNodes).mark(@props.searchQuery)
+
+					else
+						@_redrawSearchHighlighting()
+
+			# Toggle FilterBar, resets selectedItem
 			if @props.isFiltering isnt oldProps.isFiltering
 				if @props.isFiltering
+					# Reset filterCount when FilterBar opens
 					@setState {filterCount: 10}
+				else
+					# Clear search highlighting when FilterBar closes
+					@_redrawSearchHighlighting()
 
 				@props.setSelectedItem(null)
 
 		_redrawSearchHighlighting: ->
-			# TODO: Keep Mark instance in @memory?
-			entriesHighlighting = new Mark findDOMNode @refs.progNotesList
+			# Performs a complete (expensive) mark/unmark of the entire EntriesListView
+			entriesHighlighting = new Mark findDOMNode @refs.entriesListView
 
 			if @props.isFiltering
 				entriesHighlighting.unmark().mark(@props.searchQuery)
@@ -1073,9 +1107,9 @@ load = (win) ->
 
 
 			R.div({
-				ref: 'progNotesList'
+				ref: 'entriesListView'
 				className: [
-					'progNotesList'
+					'entriesListView'
 					showWhen not historyEntries.isEmpty()
 				].join ' '
 			},
@@ -1216,26 +1250,27 @@ load = (win) ->
 			if @props.attachments?
 				attachmentText = " " + @props.attachments.get('filename')
 
-			R.div({className: 'basic progNote'},
+			R.div({
+				id: progNote.get('id')
+				className: 'basic progNote'
+			},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
+
+					isReadOnly: @props.isReadOnly
+					progNote
+					progNoteHistory: @props.progNoteHistory
+					progEvents: @props.progEvents
+					globalEvents: @props.globalEvents
+					clientFile: @props.clientFile
+					selectedItem: @props.selectedItem
+					isEditing
+
+					startRevisingProgNote: @props.startRevisingProgNote
+					selectProgNote: @props.selectProgNote
 				})
 				R.div({className: 'notes'},
-					(if not isEditing and progNote.get('status') isnt 'cancelled'
-						ProgNoteToolbar({
-							isReadOnly: @props.isReadOnly
-							progNote
-							progNoteHistory: @props.progNoteHistory
-							progEvents: @props.progEvents
-							globalEvents: @props.globalEvents
-							clientFile: @props.clientFile
-							selectedItem: @props.selectedItem
-
-							startRevisingProgNote: @props.startRevisingProgNote
-							selectProgNote: @props.selectProgNote
-						})
-					)
 					R.div({onClick: @_selectQuickNote},
 						(if isEditing
 							ExpandingTextArea({
@@ -1309,26 +1344,27 @@ load = (win) ->
 			progEvents = if isEditing then @props.transientData.get('progEvents') else @props.progEvents
 
 
-			R.div({className: 'full progNote'},
+			R.div({
+				id: progNote.get('id')
+				className: 'full progNote'
+			},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
+
+					isReadOnly: @props.isReadOnly
+					progNote: @props.progNote # Pass original (unfiltered)
+					progNoteHistory: @props.progNoteHistory
+					progEvents: @props.progEvents
+					globalEvents: @props.globalEvents
+					clientFile: @props.clientFile
+					selectedItem: @props.selectedItem
+					isEditing
+
+					startRevisingProgNote: @props.startRevisingProgNote
+					selectProgNote: @props.selectProgNote
 				})
 				R.div({className: 'progNoteList'},
-					(if not isEditing and progNote.get('status') isnt 'cancelled'
-						ProgNoteToolbar({
-							isReadOnly: @props.isReadOnly
-							progNote: @props.progNote # Pass original (unfiltered)
-							progNoteHistory: @props.progNoteHistory
-							progEvents: @props.progEvents
-							globalEvents: @props.globalEvents
-							clientFile: @props.clientFile
-							selectedItem: @props.selectedItem
-
-							startRevisingProgNote: @props.startRevisingProgNote
-							selectProgNote: @props.selectProgNote
-						})
-					)
 					(progNote.get('units').map (unit) =>
 						unitId = unit.get 'id'
 
@@ -1444,7 +1480,7 @@ load = (win) ->
 
 															MetricWidget({
 																isEditable: isEditing
-																tooltipViewport: '.progNotesList'
+																tooltipViewport: '.entriesListView'
 																onChange: @props.updatePlanTargetMetric.bind(
 																	null,
 																	unitId, sectionId, targetId, metricId
@@ -1543,7 +1579,10 @@ load = (win) ->
 			firstRev = @props.progNoteHistory.first()
 			statusChangeRev = latestRev
 
-			return R.div({className: 'cancelStub'},
+			return R.div({
+				id: firstRev.get('id')
+				className: 'cancelStub'
+			},
 				R.button({
 					className: 'toggleDetails btn btn-xs btn-default'
 					onClick: @_toggleDetails
@@ -1559,19 +1598,19 @@ load = (win) ->
 				)
 
 				R.h3({},
-					"Cancelled: "
+					"Discarded: "
 					formatTimestamp(firstRev.get('backdate') or firstRev.get('timestamp'))
 					" (late entry)" if firstRev.get('backdate')
 				),
 
 				R.div({className: "details #{showWhen @state.isExpanded}"},
 					R.h4({},
-						"Cancelled by "
+						"Discarded by "
 						statusChangeRev.get('author')
 						" on "
 						formatTimestamp statusChangeRev.get('timestamp')
 					),
-					R.h4({}, "Reason for cancellation:")
+					R.h4({}, "Reason for discarding:")
 					R.div({className: 'reason'},
 						renderLineBreaks latestRev.get('statusReason')
 					)
@@ -1636,10 +1675,43 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			{userProgram, revisionHistory} = @props
+			{
+				userProgram
+				revisionHistory
+
+				isEditing
+				isReadOnly
+				progNote
+				progNoteHistory
+				progEvents
+				globalEvents
+				clientFile
+				selectedItem
+				startRevisingProgNote
+				selectProgNote
+			} = @props
+
+			# probably a better way to set up this variable:
+			(if progNote? and not isEditing and progNote.get('status') isnt 'cancelled'
+				displayOptionsDropDown = true
+			else
+				displayOptionsDropDown = false
+			)
+
+			(if progNote?
+				selectedItemIsProgNote = selectedItem? and selectedItem.get('progNoteId') is progNote.get('id')
+				userIsAuthor = progNote.get('author') is global.ActiveSession.userName
+
+				isViewingRevisions = selectedItemIsProgNote and selectedItem.get('type') is 'progNote'
+
+				# Ensure events are defined (aka: quickNote)
+				progEvents ||= Imm.List()
+				globalEvents ||= Imm.List()
+			)
 
 			hasRevisions = revisionHistory.size > 1
 			numberOfRevisions = revisionHistory.size - 1
+			hasMultipleRevisions = numberOfRevisions > 1
 
 			firstRevision = revisionHistory.first() # Use original revision's data
 			timestamp = (
@@ -1649,6 +1721,18 @@ load = (win) ->
 			)
 
 			R.div({className: 'entryHeader'},
+				# This just sets up the opendialoglink with ref so it can be called below in menu
+				(if displayOptionsDropDown
+					OpenDialogLink({
+						ref: 'cancelButton'
+						className: "cancelNote #{showWhen not isReadOnly}"
+						dialog: CancelProgNoteDialog
+						progNote
+						progEvents
+						globalEvents
+					})
+				)
+
 				R.div({className: 'timestamp'},
 					formatTimestamp(timestamp, @props.dateFormat)
 					if firstRevision.get('backdate')
@@ -1656,6 +1740,18 @@ load = (win) ->
 							"(late entry)"
 						)
 				)
+
+				(if progNote?
+					R.div({className: "revisions #{showWhen hasRevisions} #{if isViewingRevisions then 'active' else ''}"},
+						R.a({
+							className: 'selectProgNoteButton'
+							onClick: selectProgNote.bind null, progNote
+						},
+							"#{numberOfRevisions} revision#{if hasMultipleRevisions then 's' else ''}"
+						)
+					)
+				)
+
 				R.div({className: 'author'},
 					"by "
 					firstRevision.get('author')
@@ -1671,79 +1767,53 @@ load = (win) ->
 						})
 					)
 				)
-			)
+				(if displayOptionsDropDown
+					R.div({className: 'options'},
+						B.DropdownButton({
+							className: 'entryHeaderDropdown'
+							pullRight: true
+							noCaret: true
+							container: 'body'
+							title: R.span({},
+								FaIcon('ellipsis-v', {className:'menuItemIcon'})
+							)
+							# disabled: @props.isReadOnly
+						},
+							B.MenuItem({
+								onClick: startRevisingProgNote.bind null, progNote, progEvents
+							},
+								"Edit"
+							)
 
-	ProgNoteToolbar = (props) ->
-		{
-			isReadOnly
-			progNote
-			progNoteHistory
-			progEvents
-			globalEvents
-			clientFile
-			selectedItem
+							B.MenuItem({onClick: @_print.bind null, progNote, progEvents, clientFile
+							},
+								"Print"
+							)
 
-			startRevisingProgNote
-			selectProgNote
-		} = props
+							B.MenuItem({onClick: @_openCancelProgNoteDialog},
+								"Discard"
+							)
+						)
 
-		selectedItemIsProgNote = selectedItem? and selectedItem.get('progNoteId') is progNote.get('id')
-		userIsAuthor = progNote.get('author') is global.ActiveSession.userName
-
-		isViewingRevisions = selectedItemIsProgNote and selectedItem.get('type') is 'progNote'
-		hasRevisions = progNoteHistory.size > 1
-		numberOfRevisions = progNoteHistory.size - 1
-		hasMultipleRevisions = numberOfRevisions > 1
-
-		# Ensure events are defined (aka: quickNote)
-		progEvents ||= Imm.List()
-		globalEvents ||= Imm.List()
-
-
-		R.div({
-			className: "progNoteToolbar #{if isViewingRevisions then 'active' else ''}"
-		},
-			R.div({className: "revisions #{showWhen hasRevisions}"},
-				R.a({
-					className: 'selectProgNoteButton'
-					onClick: selectProgNote.bind null, progNote
-				},
-					"#{numberOfRevisions} revision#{if hasMultipleRevisions then 's' else ''}"
-				)
-			)
-			R.div({className: 'actions'},
-				PrintButton({
-					dataSet: [
-						{
-							format: 'progNote'
-							data: progNote
-							progEvents
-							clientFile
-						}
-					]
-					isVisible: true
-					iconOnly: true
-					tooltip: {show: true}
-				})
-				(if userIsAuthor
-					R.a({
-						className: "editNote #{showWhen not isReadOnly}"
-						onClick: startRevisingProgNote.bind null, progNote, progEvents
-					},
-						"Edit"
 					)
 				)
-				OpenDialogLink({
-					className: "cancelNote #{showWhen not isReadOnly}"
-					dialog: CancelProgNoteDialog
-					progNote
-					progEvents
-					globalEvents
-				},
-					R.a({}, "Cancel")
-				)
 			)
-		)
+
+		_openCancelProgNoteDialog: (event) ->
+			@refs.cancelButton.open(event)
+
+		_print: (progNote, progEvents, clientFile) ->
+			openWindow {
+				page: 'printPreview'
+				dataSet: JSON.stringify([
+					{
+						format: 'progNote'
+						data: progNote
+						progEvents
+						clientFile
+					}
+				])
+			}
 
 
 	GlobalEventView = React.createFactory React.createClass
@@ -1766,7 +1836,10 @@ load = (win) ->
 				endTimestamp.isSame(endTimestamp.endOf 'day')
 			)
 
-			return R.div({className: 'globalEventView'},
+			return R.div({
+				id: globalEvent.get('id')
+				className: 'globalEventView'
+			},
 				EntryHeader({
 					revisionHistory: Imm.List [globalEvent]
 					userProgram: program

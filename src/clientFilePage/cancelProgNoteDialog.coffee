@@ -42,16 +42,16 @@ load = (win) ->
 		render: ->
 			Dialog({
 				ref: 'dialog'
-				title: "Cancel #{Term 'Progress Note'}"
+				title: "Discard #{Term 'Progress Note'}"
 				onClose: @props.onClose
 			},
 				R.div({className: 'cancelProgNoteDialog'},
 					R.div({className: 'alert alert-warning'},
-						"This will cancel the #{Term 'progress note'} entry,
+						"This will discard the #{Term 'progress note'} entry,
 						including any recorded #{Term 'metrics'}/#{Term 'events'}."
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Reason for cancelling this entry:"),
+						R.label({}, "Reason for discarding this entry:"),
 						R.textarea({
 							className: 'form-control'
 							style: {minWidth: 350, minHeight: 100}
@@ -70,7 +70,7 @@ load = (win) ->
 							className: 'btn btn-primary'
 							onClick: @_submit
 							disabled: not @state.reason
-						}, "Cancel entry")
+						}, "Discard entry")
 					)
 				)
 			)
