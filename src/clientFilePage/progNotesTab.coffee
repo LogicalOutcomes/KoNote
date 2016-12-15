@@ -1050,22 +1050,33 @@ load = (win) ->
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Update highlighting when anything changes while searching
-			if @props.isFiltering and @props.searchQuery
+			if @props.isFiltering
 
-				if @state.filterCount > oldState.filterCount
-					# Only highlight new entries added from unlimited-scroll
-					newEntriesCount = @state.filterCount - oldState.filterCount
+				filterParametersChanged = @props.searchQuery isnt oldProps.searchQuery or
+				@props.dataTypeFilter isnt oldProps.dataTypeFilter or
+				@props.programIdFilter isnt oldProps.programIdFilter
 
-					entryNodes = @props.entryIds
-					.slice 0, @state.filterCount
-					.takeLast newEntriesCount
-					.map (id) -> win.document.getElementById(id)
-					.toArray()
+				# Reset filterCount and scroll to top anytime filter parameters change
+				if filterParametersChanged
+					@setState @getInitialState, => findDOMNode(@).scrollTop = 0
 
-					new Mark(entryNodes).mark(@props.searchQuery)
 
-				else
-					@_redrawSearchHighlighting()
+				if @props.searchQuery
+
+					if @state.filterCount > oldState.filterCount
+						# Only highlight new entries added from unlimited-scroll
+						newEntriesCount = @state.filterCount - oldState.filterCount
+
+						entryNodes = @props.entryIds
+						.slice 0, @state.filterCount
+						.takeLast newEntriesCount
+						.map (id) -> win.document.getElementById(id)
+						.toArray()
+
+						new Mark(entryNodes).mark(@props.searchQuery)
+
+					else
+						@_redrawSearchHighlighting()
 
 			# Toggle FilterBar, resets selectedItem
 			if @props.isFiltering isnt oldProps.isFiltering
