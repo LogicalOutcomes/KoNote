@@ -340,13 +340,6 @@ load = (win) ->
 			appVersion = null
 
 			Async.series [
-				(cb) =>
-					unless Fs.existsSync(Config.backend.dataDirectory)
-						mkdirp Config.backend.dataDirectory, (err) =>
-							if err
-								cb err
-								return
-							cb()
 
 				(cb) =>
 					Atomic.writeDirectoryNormally dataDir, tmpDir, (err, op) =>
@@ -421,7 +414,6 @@ load = (win) ->
 						console.log "versions match"
 						@setState {isLoading: false}
 						atomicOp.commit cb
-						cb()
 					else
 						@setState {isLoading: false}
 						Bootbox.dialog {
