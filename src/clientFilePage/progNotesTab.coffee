@@ -1062,7 +1062,7 @@ load = (win) ->
 
 				# Reset filterCount and scroll to top anytime filter parameters change
 				if filterParametersChanged
-					@setState @getInitialState, => findDOMNode(@).scrollTop = 0
+					@setState @getInitialState, @_resetScroll
 
 
 				if @props.searchQuery
@@ -1092,6 +1092,13 @@ load = (win) ->
 					@_redrawSearchHighlighting()
 
 				@props.setSelectedItem(null)
+
+			# Reset scroll when opens edit view for progNote
+			if @props.isEditing isnt oldProps.isEditing and @props.isEditing
+				@_resetScroll()
+
+		_resetScroll: ->
+			findDOMNode(@).scrollTop = 0
 
 		_redrawSearchHighlighting: ->
 			# Performs a complete (expensive) mark/unmark of the entire EntriesListView
