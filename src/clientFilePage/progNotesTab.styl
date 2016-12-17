@@ -137,14 +137,6 @@
 				.revisions
 					margin-right 10px
 
-					&.active
-						border-left 2px solid #3176aa
-
-						a
-							// text-decoration none !important
-							font-style bold
-							color #3176aa !important
-
 				> .timestamp
 					flex 1
 
@@ -230,7 +222,7 @@
 				&:hover .progNoteToolbar
 					opacity 1
 
-					.revisions
+					.revisions // selectedItem styling applied inline (InlineSelectedItemStyles)
 						margin-right 0
 
 				.progNoteList
@@ -279,20 +271,7 @@
 							padding-left 0px
 							padding-right 20px
 
-							&:hover
-								//border-left 2px solid grey
-								//padding-left 20px
-								//padding-right 0px
-
-							&.selected
-								color #3176aa
-								padding-left 20px
-								padding-right 0px
-								border-left 2px solid #3176aa
-
 							h3
-								//transition all .15s ease
-								//padding 10px 0 10px 0
 								margin 0
 								font-size 14px
 
@@ -315,30 +294,16 @@
 								&:first-child
 									padding-top 10px
 
-								> .target
+								> .target // selectedItem styling applied inline (InlineSelectedItemStyles)
 									cursor default
 									margin-bottom 15px
-									border-left 2px solid rgba(255,255,255, 0) // avoid reflow when added on select
+									border-left 2px solid rgba(255,255,255, 0) // Avoid reflow when selectedItem
 									transition all .25s ease
 									padding-left 0px
 									padding-right 20px
 
-									&:hover
-										//border-left 2px solid grey
-										//padding-left 20px
-										//padding-right 0px
-										.notes
-											opacity 0.7
-
-									&.selected
-										padding-left 20px
-										padding-right 0px
-										border-left 2px solid #3176aa
-										color #3176aa
-										h3
-											opacity 1
-										.notes
-											opacity 1
+									&:hover .notes
+										opacity 0.75
 
 									> .empty
 										padding 0 2px

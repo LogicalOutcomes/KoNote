@@ -357,6 +357,13 @@ load = (win) ->
 							)
 						)
 
+						# Apply selectedItem styles as inline <style>
+						(if @state.selectedItem?
+							InlineSelectedItemStyles({
+								selectedItem: @state.selectedItem
+							})
+						)
+
 						EntriesListView({
 							historyEntries
 							entryIds: historyEntries.map (e) -> e.get('id')
@@ -375,7 +382,6 @@ load = (win) ->
 							isReadOnly: @props.isReadOnly
 							isEditing
 
-							selectedItem: @state.selectedItem
 							setSelectedItem: @_setSelectedItem
 							selectProgNote: @_selectProgNote
 							startRevisingProgNote: @_startRevisingProgNote
@@ -1162,7 +1168,6 @@ load = (win) ->
 					userProgram
 					planTargetsById: @props.planTargetsById
 					setSelectedItem: @props.setSelectedItem
-					selectedItem: @props.selectedItem
 					selectProgNote: @props.selectProgNote
 					isReadOnly: @props.isReadOnly
 
@@ -1188,7 +1193,6 @@ load = (win) ->
 						attachments: @props.attachments
 						userProgram
 						clientFile: @props.clientFile
-						selectedItem: @props.selectedItem
 						dataTypeFilter
 						setSelectedItem: @props.setSelectedItem
 						selectProgNote: @props.selectProgNote
@@ -1217,7 +1221,6 @@ load = (win) ->
 						selectProgNote: @props.selectProgNote
 						setEditingProgNoteId: @props.setEditingProgNoteId
 						updatePlanTargetNotes: @props.updatePlanTargetNotes
-						selectedItem: @props.selectedItem
 						isReadOnly: @props.isReadOnly
 
 						isEditing
@@ -1264,7 +1267,6 @@ load = (win) ->
 					progEvents: @props.progEvents
 					globalEvents: @props.globalEvents
 					clientFile: @props.clientFile
-					selectedItem: @props.selectedItem
 					isEditing
 
 					startRevisingProgNote: @props.startRevisingProgNote
@@ -1358,7 +1360,6 @@ load = (win) ->
 					progEvents: @props.progEvents
 					globalEvents: @props.globalEvents
 					clientFile: @props.clientFile
-					selectedItem: @props.selectedItem
 					isEditing
 
 					startRevisingProgNote: @props.startRevisingProgNote
@@ -1375,7 +1376,6 @@ load = (win) ->
 									R.div({
 										className: [
 											'basic unit'
-											'selected' if @props.selectedItem? and @props.selectedItem.get('unitId') is unitId
 											showWhen dataTypeFilter isnt 'events' or isEditing
 										].join ' '
 										key: unitId
@@ -1446,10 +1446,7 @@ load = (win) ->
 
 												R.div({
 													key: targetId
-													className: [
-														'target'
-														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is targetId
-													].join ' '
+													className: "target targetId-#{targetId}"
 													onClick: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
 												},
 													R.h3({}, target.get('name'))
@@ -1623,7 +1620,6 @@ load = (win) ->
 								progNoteHistory: @props.progNoteHistory
 								attachments: @props.attachments
 								clientFile: @props.clientFile
-								selectedItem: @props.selectedItem
 								selectProgNote: @props.selectProgNote
 								userProgram: @props.userProgram
 								isReadOnly: true
@@ -1648,7 +1644,6 @@ load = (win) ->
 								userProgram: @props.userProgram
 								clientFile: @props.clientFile
 								setSelectedItem: @props.setSelectedItem
-								selectedItem: @props.selectedItem
 								selectProgNote: @props.selectProgNote
 								isReadOnly: true
 
@@ -1686,7 +1681,6 @@ load = (win) ->
 				progEvents
 				globalEvents
 				clientFile
-				selectedItem
 				startRevisingProgNote
 				selectProgNote
 			} = @props
@@ -1742,7 +1736,7 @@ load = (win) ->
 				)
 
 				(if progNote?
-					R.div({className: "revisions #{showWhen hasRevisions} #{if isViewingRevisions then 'active' else ''}"},
+					R.div({className: "revisions #{showWhen hasRevisions}"},
 						R.a({
 							className: 'selectProgNoteButton'
 							onClick: selectProgNote.bind null, progNote
@@ -1867,6 +1861,40 @@ load = (win) ->
 				)
 			)
 
+
+	# Applies selected styles without having to re-render entire EntriesListView tree
+	InlineSelectedItemStyles = ({selectedItem}) ->
+		R.style({},
+			(if selectedItem.has('targetId') # Target entry history
+				"""
+					div.target.targetId-#{selectedItem.get('targetId')} {
+						padding-left: 20px !important;
+						padding-right: 0px !important;
+						border-left: 2px solid #3176aa !important;
+						color: #3176aa !important;
+					}
+
+					div.target.targetId-#{selectedItem.get('targetId')} h3 {
+						opacity: 1 !important;
+					}
+
+					div.target.targetId-#{selectedItem.get('targetId')} .notes {
+						opacity: 1 !important;
+					}
+				"""
+
+			else if selectedItem.has('progNoteId') # ProgNote revisions
+				"""
+					div.progNote##{selectedItem.get('progNoteId')} .revisions {
+						border-left: 2px solid #3176aa !important;
+					}
+
+					div.progNote##{selectedItem.get('progNoteId')} .revisions a {
+						color: #3176aa !important;
+					}
+				"""
+			)
+		)
 
 
 	filterEmptyProgNoteValues = (progNote) ->
