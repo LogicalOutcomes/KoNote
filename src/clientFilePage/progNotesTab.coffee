@@ -1374,6 +1374,7 @@ load = (win) ->
 									R.div({
 										className: [
 											'basic unit'
+											"unitId-#{unitId}"
 											showWhen dataTypeFilter isnt 'events' or isEditing
 										].join ' '
 										key: unitId
@@ -1883,7 +1884,7 @@ load = (win) ->
 
 				when 'basicUnit' # General 'Notes' entry history (TODO: what > 1 basic unit?)
 					"""
-						div.basic.unit {
+						div.basic.unit.unitId-#{selectedItem.get('unitId')} {
 							padding-left: 20px !important;
 							padding-right: 0px !important;
 							border-left: 2px solid #3176aa !important;
