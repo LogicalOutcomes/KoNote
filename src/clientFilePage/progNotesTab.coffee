@@ -1743,6 +1743,7 @@ load = (win) ->
 				(if canViewOptions
 					R.div({className: 'options'},
 						B.DropdownButton({
+							id: "entryHeaderDropdown-#{progNote.get('id')}"
 							className: 'entryHeaderDropdown'
 							pullRight: true
 							noCaret: true
