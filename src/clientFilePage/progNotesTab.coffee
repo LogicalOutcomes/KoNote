@@ -1850,34 +1850,62 @@ load = (win) ->
 	# Applies selected styles without having to re-render entire EntriesListView tree
 	InlineSelectedItemStyles = ({selectedItem}) ->
 		R.style({},
-			(if selectedItem.has('targetId') # Target entry history
-				"""
-					div.target.targetId-#{selectedItem.get('targetId')} {
-						padding-left: 20px !important;
-						padding-right: 0px !important;
-						border-left: 2px solid #3176aa !important;
-						color: #3176aa !important;
-					}
+			(switch selectedItem.get('type')
+				when 'planSectionTarget' # Target entry history
+					"""
+						div.target.targetId-#{selectedItem.get('targetId')} {
+							padding-left: 20px !important;
+							padding-right: 0px !important;
+							border-left: 2px solid #3176aa !important;
+							color: #3176aa !important;
+						}
 
-					div.target.targetId-#{selectedItem.get('targetId')} h3 {
-						opacity: 1 !important;
-					}
+						div.target.targetId-#{selectedItem.get('targetId')} h3 {
+							opacity: 1 !important;
+						}
 
-					div.target.targetId-#{selectedItem.get('targetId')} .notes {
-						opacity: 1 !important;
-					}
-				"""
+						div.target.targetId-#{selectedItem.get('targetId')} .notes {
+							opacity: 1 !important;
+						}
+					"""
 
-			else if selectedItem.has('progNoteId') # ProgNote revisions
-				"""
-					div.progNote##{selectedItem.get('progNoteId')} .revisions {
-						border-left: 2px solid #3176aa !important;
-					}
+				when 'quickNote' # QuickNote entry history
+					"""
+						div.basic.progNote .notes > div {
+							padding-left: 20px !important;
+							padding-right: 0px !important;
+							border-left: 2px solid #3176aa !important;
+							color: #3176aa !important;
 
-					div.progNote##{selectedItem.get('progNoteId')} .revisions a {
-						color: #3176aa !important;
-					}
-				"""
+							opacity: 1 !important;
+						}
+					"""
+
+				when 'basicUnit' # General 'Notes' entry history (TODO: what > 1 basic unit?)
+					"""
+						div.basic.unit {
+							padding-left: 20px !important;
+							padding-right: 0px !important;
+							border-left: 2px solid #3176aa !important;
+							color: #3176aa !important;
+
+							opacity: 1 !important;
+						}
+					"""
+
+				when 'progNote' # ProgNote revisions
+					"""
+						div.progNote##{selectedItem.get('progNoteId')} .revisions {
+							border-left: 2px solid #3176aa !important;
+						}
+
+						div.progNote##{selectedItem.get('progNoteId')} .revisions a {
+							color: #3176aa !important;
+						}
+					"""
+
+				else
+					throw new Error "Unknown selectedItem type #{selectedItem.get('type')} for InlineSelectedItemStyles"
 			)
 		)
 

@@ -215,9 +215,19 @@
 
 				padding-bottom 30px
 
-				> .notes // Quick Note
-					position relative
+				> .notes
 					padding-top 15px
+
+					> div // Quick Note
+						position relative
+						cursor default
+						border-left 2px solid rgba(255,255,255, 0) // avoid reflow when added on select
+						transition all .25s ease
+						padding-left 0px
+						padding-right 20px
+
+						&:hover
+							opacity 0.75
 
 				&:hover .progNoteToolbar
 					opacity 1
@@ -264,12 +274,16 @@
 								font-weight 600
 								background-color yellow
 
-						&.basic
+						&.basic // selectedItem styling applied inline (InlineSelectedItemStyles)
+							margin-top 10px
 							cursor default
 							border-left 2px solid rgba(255,255,255, 0) // avoid reflow when added on select
 							transition all .25s ease
 							padding-left 0px
 							padding-right 20px
+
+							&:hover
+								opacity 0.75
 
 							h3
 								margin 0
