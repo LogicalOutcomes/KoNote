@@ -1260,7 +1260,10 @@ load = (win) ->
 
 			R.div({
 				id: progNote.get('id')
-				className: 'basic progNote'
+				className: [
+					'basic progNote'
+					'isEditing' if isEditing
+				].join ' '
 			},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
@@ -1382,6 +1385,7 @@ load = (win) ->
 										className: [
 											'basic unit'
 											"unitId-#{unitId}"
+											'isEditing' if isEditing
 											showWhen dataTypeFilter isnt 'events' or isEditing
 										].join ' '
 										key: unitId
@@ -1452,7 +1456,11 @@ load = (win) ->
 
 												R.div({
 													key: targetId
-													className: "target targetId-#{targetId}"
+													className: [
+														'target'
+														"targetId-#{targetId}"
+														'isEditing' if isEditing
+													].join ' '
 													onClick: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
 												},
 													R.h3({}, target.get('name'))
@@ -1861,25 +1869,25 @@ load = (win) ->
 			(switch selectedItem.get('type')
 				when 'planSectionTarget' # Target entry history
 					"""
-						div.target.targetId-#{selectedItem.get('targetId')} {
+						div.target.targetId-#{selectedItem.get('targetId')}:not(.isEditing) {
 							padding-left: 20px !important;
 							padding-right: 0px !important;
 							border-left: 2px solid #3176aa !important;
 							color: #3176aa !important;
 						}
 
-						div.target.targetId-#{selectedItem.get('targetId')} h3 {
+						div.target.targetId-#{selectedItem.get('targetId')}:not(.isEditing) h3 {
 							opacity: 1 !important;
 						}
 
-						div.target.targetId-#{selectedItem.get('targetId')} .notes {
+						div.target.targetId-#{selectedItem.get('targetId')}:not(.isEditing) .notes {
 							opacity: 1 !important;
 						}
 					"""
 
 				when 'quickNote' # QuickNote entry history
 					"""
-						div.basic.progNote .notes > div {
+						div.basic.progNote:not(.isEditing) .notes > div {
 							padding-left: 20px !important;
 							padding-right: 0px !important;
 							border-left: 2px solid #3176aa !important;
@@ -1891,7 +1899,7 @@ load = (win) ->
 
 				when 'basicUnit' # General 'Notes' entry history (TODO: what > 1 basic unit?)
 					"""
-						div.basic.unit.unitId-#{selectedItem.get('unitId')} {
+						div.basic.unit.unitId-#{selectedItem.get('unitId')}:not(.isEditing) {
 							padding-left: 20px !important;
 							padding-right: 0px !important;
 							border-left: 2px solid #3176aa !important;
@@ -1903,11 +1911,11 @@ load = (win) ->
 
 				when 'progNote' # ProgNote revisions
 					"""
-						div.progNote##{selectedItem.get('progNoteId')} .revisions {
+						div.progNote##{selectedItem.get('progNoteId')}:not(.isEditing) .revisions {
 							border-left: 2px solid #3176aa !important;
 						}
 
-						div.progNote##{selectedItem.get('progNoteId')} .revisions a {
+						div.progNote##{selectedItem.get('progNoteId')}:not(.isEditing) .revisions a {
 							color: #3176aa !important;
 						}
 					"""
