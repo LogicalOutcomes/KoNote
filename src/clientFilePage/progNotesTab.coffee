@@ -1353,7 +1353,7 @@ load = (win) ->
 					userProgram: @props.userProgram
 
 					isReadOnly: @props.isReadOnly
-					progNote: @props.progNote # Pass original (unfiltered)
+					progNote
 					progNoteHistory: @props.progNoteHistory
 					progEvents: @props.progEvents
 					globalEvents: @props.globalEvents
