@@ -199,7 +199,7 @@ load = (win) ->
 					R.section({className: 'leftPane'},
 
 						(if hasEnoughData
-
+							# TODO: Make component
 							R.div({className: 'flexButtonToolbar'},
 								R.button({
 									className: [
@@ -346,9 +346,7 @@ load = (win) ->
 									R.button({
 										id: 'resetFilterButton'
 										className: 'btn btn-link'
-										onClick: =>
-
-											@refs.filterBar.clear()
+										onClick: => @refs.filterBar.clear()
 									},
 										FaIcon('refresh')
 										"Reset"
@@ -1669,6 +1667,11 @@ load = (win) ->
 		displayName: 'EntryHeader'
 		mixins: [React.addons.PureRenderMixin]
 
+		getDefaultProps: -> {
+			progEvents: Imm.List()
+			globalEvents: Imm.List()
+		}
+
 		render: ->
 			{
 				userProgram
@@ -1685,23 +1688,9 @@ load = (win) ->
 				selectProgNote
 			} = @props
 
-			# probably a better way to set up this variable:
-			(if progNote? and not isEditing and progNote.get('status') isnt 'cancelled'
-				displayOptionsDropDown = true
-			else
-				displayOptionsDropDown = false
-			)
-
-			(if progNote?
-				selectedItemIsProgNote = selectedItem? and selectedItem.get('progNoteId') is progNote.get('id')
-				userIsAuthor = progNote.get('author') is global.ActiveSession.userName
-
-				isViewingRevisions = selectedItemIsProgNote and selectedItem.get('type') is 'progNote'
-
-				# Ensure events are defined (aka: quickNote)
-				progEvents ||= Imm.List()
-				globalEvents ||= Imm.List()
-			)
+			userIsAuthor = progNote? and (progNote.get('author') is global.ActiveSession.userName)
+			canViewOptions = progNote? and not isEditing
+			canModify = userIsAuthor
 
 			hasRevisions = revisionHistory.size > 1
 			numberOfRevisions = revisionHistory.size - 1
@@ -1714,19 +1703,8 @@ load = (win) ->
 				firstRevision.get('timestamp')
 			)
 
-			R.div({className: 'entryHeader'},
-				# This just sets up the opendialoglink with ref so it can be called below in menu
-				(if displayOptionsDropDown
-					OpenDialogLink({
-						ref: 'cancelButton'
-						className: "cancelNote #{showWhen not isReadOnly}"
-						dialog: CancelProgNoteDialog
-						progNote
-						progEvents
-						globalEvents
-					})
-				)
 
+			R.div({className: 'entryHeader'},
 				R.div({className: 'timestamp'},
 					formatTimestamp(timestamp, @props.dateFormat)
 					if firstRevision.get('backdate')
@@ -1761,36 +1739,42 @@ load = (win) ->
 						})
 					)
 				)
-				(if displayOptionsDropDown
+
+				(if canViewOptions
 					R.div({className: 'options'},
 						B.DropdownButton({
 							className: 'entryHeaderDropdown'
 							pullRight: true
 							noCaret: true
 							container: 'body'
-							title: R.span({},
-								FaIcon('ellipsis-v', {className:'menuItemIcon'})
-							)
-							# disabled: @props.isReadOnly
+							title: FaIcon('ellipsis-v', {className:'menuItemIcon'})
 						},
-							B.MenuItem({
-								onClick: startRevisingProgNote.bind null, progNote, progEvents
-							},
-								"Edit"
+							(if canModify
+								B.MenuItem({onClick: startRevisingProgNote.bind null, progNote, progEvents},
+									"Edit"
+								)
 							)
 
-							B.MenuItem({onClick: @_print.bind null, progNote, progEvents, clientFile
-							},
+							B.MenuItem({onClick: @_print.bind null, progNote, progEvents, clientFile},
 								"Print"
 							)
 
-							B.MenuItem({onClick: @_openCancelProgNoteDialog},
-								"Discard"
+							(if canModify
+								B.MenuItem({onClick: @_openCancelProgNoteDialog},
+									OpenDialogLink({
+										ref: 'cancelButton'
+										className: 'cancelNote'
+										dialog: CancelProgNoteDialog
+										progNote
+										progEvents
+										globalEvents
+									}, "Discard")
+								)
 							)
 						)
-
 					)
 				)
+
 			)
 
 		_openCancelProgNoteDialog: (event) ->
