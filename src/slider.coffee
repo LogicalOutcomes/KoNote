@@ -23,7 +23,6 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidUpdate: (oldProps, oldState) ->
-
 			# Manually set slider value when @props.timeSpan changes
 			newTimeSpan = @props.timeSpan
 			xTicks = @props.xTicks
@@ -31,8 +30,8 @@ load = (win) ->
 			if oldProps.xTicks.size isnt @props.xTicks.size
 				@_initSlider()
 
-			startChanged = not oldProps.timeSpan.get('start').isSame(newTimeSpan.get('start'))
-			endChanged = not oldProps.timeSpan.get('end').isSame(newTimeSpan.get('end'))
+			startChanged = not oldProps.timeSpan.get('start').isSame newTimeSpan.get('start'), 'day'
+			endChanged = not oldProps.timeSpan.get('end').isSame newTimeSpan.get('end'), 'day'
 
 			if startChanged or endChanged
 				newValue = @_calculateIndexValues(newTimeSpan, xTicks)
@@ -57,10 +56,10 @@ load = (win) ->
 			start = timeSpan.get('start')
 			end = timeSpan.get('end')
 
-			matchingStartValue = xTicks.find (date) -> date.isSame(start)
+			matchingStartValue = xTicks.find (date) -> date.isSame start, 'day'
 			startIndex = xTicks.indexOf matchingStartValue
 
-			matchingEndValue = xTicks.find (date) -> date.isSame(end)
+			matchingEndValue = xTicks.find (date) -> date.isSame end, 'day'
 			endIndex = xTicks.indexOf matchingEndValue
 
 			indexValues = [startIndex, endIndex]
