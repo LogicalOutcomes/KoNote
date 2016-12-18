@@ -96,6 +96,9 @@ load = (win) ->
 			start = @props.xTicks.get Number(timeSpanArray[0])
 			end = @props.xTicks.get Number(timeSpanArray[1])
 
+			if start.isSame end, 'day'
+				end = start.clone().endOf 'day'
+
 			newTimeSpan = Imm.Map {start, end}
 			@props.onChange newTimeSpan
 
