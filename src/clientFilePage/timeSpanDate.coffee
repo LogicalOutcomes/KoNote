@@ -109,8 +109,12 @@ load = (win) ->
 		_onChange: (event) ->
 			# Needs to be created in millisecond format to stay consistent
 			newDate = Moment +Moment(event.target.value, Config.dateFormat).startOf('day')
-			timeSpan = @props.timeSpan.set(@props.type, newDate)
 
+			# Prevent redundant update when new day is same as before
+			if newDate.isSame @props.timeSpan.get(@props.type), 'day'
+				return
+
+			timeSpan = @props.timeSpan.set(@props.type, newDate)
 			@props.updateTimeSpanDate timeSpan
 
 		_toggleDateTimePicker: -> @dateTimePicker.toggle()
