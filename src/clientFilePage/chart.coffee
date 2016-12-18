@@ -64,7 +64,16 @@ load = (win) ->
 			)
 
 		componentDidUpdate: (oldProps, oldState) ->
-			# TODO: Sort out repetition here, like parent component
+			# Update chart zoom from changed timeSpan?
+			sameTimeSpan = Imm.is @props.timeSpan, oldProps.timeSpan
+			unless sameTimeSpan
+				{start, end} = @props.timeSpan.toObject()
+				[chartStart, chartEnd] = @_chart.zoom()
+
+				# Compare starts & ends by Ms (one is Moment, other is JS.date)
+				if +start isnt +chartStart or +end isnt +chartEnd
+					console.log "Updating zoom..."
+					@_chart.zoom [start, end]
 
 			# Update selected metrics?
 			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
@@ -84,18 +93,13 @@ load = (win) ->
 			unless sameProgEvents
 				@_refreshProgEvents()
 
-			# Update timeSpan?
-			sameTimeSpan = Imm.is @props.timeSpan, oldProps.timeSpan
-			unless sameTimeSpan
-				newMin = @props.timeSpan.get('start')
-				newMax = @props.timeSpan.get('end')
-
-				# C3 requires there's some kind of span (even if it's 1ms)
-				if newMin is newMax
-					newMax = newMax.clone().endOf 'day'
-
-				@_chart.axis.min {x: newMin}
-				@_chart.axis.max {x: newMax}
+			# Update chart min/max range from changed xTicks?
+			sameXTicks = Imm.is @props.xTicks, oldProps.xTicks
+			unless sameXTicks
+				@_chart.axis.range {
+					min: {x: @props.xTicks.first()}
+					max: {x: @props.xTicks.last()}
+				}
 
 			# Update chart type?
 			sameChartType = Imm.is @props.chartType, oldProps.chartType
@@ -109,6 +113,18 @@ load = (win) ->
 			@_generateChart()
 			@_refreshSelectedMetrics()
 			@_refreshProgEvents()
+
+		_onZoomEnd: (domain) ->
+			# Ensure chart has the new zoom saved
+			# TODO: Create c3js issue upstream
+			@_chart.zoom(domain)
+
+			[start, end] = domain
+
+			@props.updateTimeSpan Imm.Map {
+				start: Moment(start)
+				end: Moment(end)
+			}
 
 		_generateChart: ->
 			console.log "Generating Chart...."
@@ -195,11 +211,15 @@ load = (win) ->
 					else
 						dataPoint
 
+			# Min/Max x dates
+			minDate = @props.xTicks.first()
+			maxDate = @props.xTicks.last()
+
 			# YEAR LINES
 			# Build Imm.List of years and timestamps to matching
 			newYearLines = Imm.List()
-			firstYear = @props.xTicks.first().year()
-			lastYear = @props.xTicks.last().year()
+			firstYear = minDate.year()
+			lastYear = maxDate.year()
 
 			# Don't bother if only 1 year (doesn't go past calendar year)
 			unless firstYear is lastYear
@@ -222,13 +242,13 @@ load = (win) ->
 				}
 				axis: {
 					x: {
+						min: minDate
+						max: maxDate
 						type: 'timeseries'
 						tick: {
 							fit: false
 							format: '%b %d'
 						}
-						min: @props.timeSpan.get('start')
-						max: @props.timeSpan.get('end')
 					}
 					y: {
 						show: false
@@ -263,12 +283,22 @@ load = (win) ->
 				item: {
 					onclick: (id) -> return false
 				}
+				zoom: {
+					enabled: true
+					onzoomend: @_onZoomEnd
+				}
 				padding: {
 					left: 25
 					right: 25
 				}
 				onrendered: @_chartHasRendered
 			}
+
+			# Set up initial zoom (might not be full range)
+			# Using zoom.extent in init wasn't working as expected
+			minZoom = @props.timeSpan.get('start')
+			maxZoom = @props.timeSpan.get('end')
+			@_chart.zoom [minZoom, maxZoom]
 
 		_chartHasRendered: ->
 			@_attachKeyBindings()

@@ -115,7 +115,7 @@ load = (win) ->
 				return
 
 			timeSpan = @props.timeSpan.set(@props.type, newDate)
-			@props.updateTimeSpanDate timeSpan
+			@props.updateTimeSpan(timeSpan)
 
 		_toggleDateTimePicker: -> @dateTimePicker.toggle()
 

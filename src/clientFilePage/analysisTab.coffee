@@ -223,6 +223,7 @@ load = (win) ->
 
 			eventTypesAlphabetized = @props.eventTypes.sortBy (eventType) -> eventType.get('name')
 
+
 			return R.div({className: "analysisView"},
 				R.div({className: "noData #{showWhen not hasEnoughData}"},
 					R.div({},
@@ -240,7 +241,7 @@ load = (win) ->
 							isRange: true
 							timeSpan
 							xTicks
-							onChange: @_updateTimeSpanDate
+							onChange: @_updateTimeSpan
 						})
 						R.div({className: 'dateDisplay'},
 							TimeSpanDate({
@@ -248,14 +249,14 @@ load = (win) ->
 								type: 'start'
 								timeSpan
 								xTicks
-								updateTimeSpanDate: @_updateTimeSpanDate
+								updateTimeSpan: @_updateTimeSpan
 							})
 							TimeSpanDate({
 								date: timeSpan.get('end')
 								type: 'end'
 								timeSpan
 								xTicks
-								updateTimeSpanDate: @_updateTimeSpanDate
+								updateTimeSpan: @_updateTimeSpan
 							})
 						)
 					)
@@ -284,6 +285,7 @@ load = (win) ->
 								chartType: @state.chartType
 								timeSpan
 								updateMetricColors: @_updateMetricColors
+								updateTimeSpan: @_updateTimeSpan
 							})
 						else
 							# Don't render Chart until data points selected
@@ -630,7 +632,7 @@ load = (win) ->
 		_updateMetricColors: (metricColors) ->
 			@setState {metricColors}
 
-		_updateTimeSpanDate: (timeSpan) ->
+		_updateTimeSpan: (timeSpan) ->
 			@setState {timeSpan}
 
 
