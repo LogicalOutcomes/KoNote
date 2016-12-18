@@ -29,7 +29,6 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				progEventRegions: Imm.List()
-				metricColors: null
 				eventRows: 0
 			}
 
@@ -291,7 +290,6 @@ load = (win) ->
 					left: 25
 					right: 25
 				}
-				onrendered: @_chartHasRendered
 			}
 
 			# Set up initial zoom (might not be full range)
@@ -300,13 +298,9 @@ load = (win) ->
 			maxZoom = @props.timeSpan.get('end')
 			@_chart.zoom [minZoom, maxZoom]
 
-		_chartHasRendered: ->
-			@_attachKeyBindings()
-
-			# Fire metric colors up to analysisTab first render
-			if @_chart? and not @state.metricColors?
-				@setState {metricColors: @_chart.data.colors()}, =>
-					@props.updateMetricColors @state.metricColors
+			# Fire metric colors up to analysisTab
+			# TODO: Define these manually/explicitly, to avoid extra analysisTab render
+			@props.updateMetricColors @_chart.data.colors()
 
 		_refreshSelectedMetrics: ->
 			console.log "Refreshing selected metrics..."
@@ -330,9 +324,6 @@ load = (win) ->
 				@_chart.regions progEventRegions.toJS()
 				@_attachKeyBindings()
 			, 500)
-
-			# Bind user interaction events
-			# @_attachKeyBindings()
 
 		_generateProgEventRegions: ->
 			# Build Imm.List of region objects
