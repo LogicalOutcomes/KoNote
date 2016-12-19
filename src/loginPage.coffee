@@ -52,8 +52,7 @@ load = (win) ->
 		render: ->
 			unless @state.isSetUp
 				return null
-			dataMatch = @_checkVersionsMatch()
-			console.log "dataMatch", dataMatch
+			@_checkVersionsMatch()
 
 			LoginPageUi({
 				ref: 'ui'
