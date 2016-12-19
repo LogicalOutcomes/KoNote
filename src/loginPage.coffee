@@ -3,10 +3,14 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Async = require 'async'
+Fs = require 'fs'
+path = require 'path'
 
 Config = require './config'
 Term = require './term'
 Persist = require './persist'
+Atomic = require './persist/atomic'
+Migration = require './migrations'
 
 load = (win) ->
 	# Libraries from browser context
@@ -48,6 +52,8 @@ load = (win) ->
 		render: ->
 			unless @state.isSetUp
 				return null
+			dataMatch = @_checkVersionsMatch()
+			console.log "dataMatch", dataMatch
 
 			LoginPageUi({
 				ref: 'ui'
@@ -91,8 +97,59 @@ load = (win) ->
 							@props.closeWindow()
 							Window.quit()
 
-		_login: (userName, password) ->
+		_checkVersionsMatch: ->
+			dataDir = Config.backend.dataDirectory
+			dataVersion = null
+			appVersion = null
 
+			# check that appVersion = dataVersion, if not, prompt migration
+			Async.series [
+				(cb) =>
+					appVersion = nw.App.manifest.version
+					console.log "app version", appVersion
+					cb()
+
+				(cb) =>
+					Fs.readFile path.join(dataDir, 'version.json'), (err, result) =>
+						if err
+							cb err
+						dataVersion = JSON.parse(result).dataVersion
+						console.log "dataVersion", dataVersion
+						cb()
+				(cb) =>
+					if appVersion is dataVersion
+						console.log "App & data versions match"
+						cb()
+
+					else
+						console.log "App & data versions do not match"
+						# prompt password etc to run migration
+						Bootbox.dialog {
+							title: "Migration Required"
+							message: "The application version and data version do not match. A migration is advised before continuing. " +
+								"The data will be migrated to the current version. To continue, please log in with an administrator account: <br><br>" +
+								'<input id="username" name="username" type="text" placeholder="username" class="form-control input-md"> <br>' +
+								'<input id="password" name="password" type="password" placeholder="password" class="form-control input-md"> <br>'
+							buttons: {
+								continue: {
+									label: "Continue"
+									className: 'btn-primary'
+									callback: =>
+										username = $('#username').val()
+										password = $('#password').val()
+										Migration.runMigration dataDir, dataVersion, appVersion, username, password, (err) =>
+											if err
+												cb err
+											# atomicOp.commit cb
+											cb()
+								}
+							}
+						}
+			], (err) =>
+				if err
+					console.error err
+
+		_login: (userName, password) ->
 			Async.series [
 				(cb) =>
 					@setState {isLoading: true, loadingMessage: "Authenticating..."}
@@ -112,7 +169,7 @@ load = (win) ->
 						clientSelectionPageWindow = newWindow
 
 						Window.hide()
-						
+
 						clientSelectionPageWindow.on 'closed', =>
 							@props.closeWindow()
 							Window.quit()
