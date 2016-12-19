@@ -52,7 +52,7 @@ load = (win) ->
 		render: ->
 			unless @state.isSetUp
 				return null
-			# @_checkVersionsMatch()
+			@_checkVersionsMatch()
 
 			LoginPageUi({
 				ref: 'ui'
