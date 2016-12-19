@@ -443,7 +443,7 @@ load = (win) ->
 											if err
 												cb err
 											atomicOp.commit cb
-											cb()
+											# cb()
 								}
 							}
 						}

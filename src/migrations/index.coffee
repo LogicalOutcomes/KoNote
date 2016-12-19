@@ -206,10 +206,6 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password, cb=(->)) ->
 
 
 migrate = (dataDir, fromVersion, toVersion, userName, password, lastMigrationStep, cb) ->
-	console.log "migration!!"
-	console.log "fromVersion", fromVersion
-	console.log "toVersion", toVersion
-	console.log "lastMigrationStep", lastMigrationStep
 
 	# how to generate this programatically?
 	# this is an array of all versions to iterate over, my test dataFile is 1.12.1 so i
@@ -234,31 +230,39 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, lastMigrationSte
 					cb err
 					return
 
-				fromVersion = null
-
-				Async.series [
-					(cb) =>
-						migrationStep.run dataDir, userName, password, lastMigrationStep, (err) ->
-							if err
-								cb new Error "Could not run migration #{appVersions[i]}-#{appVersions[i+1]}"
-								return
-							console.log "updating fromVersion"
-							fromVersion = appVersions[i+1]
-							cb()
-					(cb) =>
-						writeDataVersion dataDir, (appVersions[i+1]), ->
-							console.log "Done migrating v#{appVersions[i]} -> v#{appVersions[i+1]}"
-							cb()
-				], (err) =>
+				migrationStep.run dataDir, userName, password, lastMigrationStep, (err) ->
 					if err
-						console.error err
+						cb new Error "Could not run migration #{appVersions[i]}-#{appVersions[i+1]}"
+						return
+					fromVersion = appVersions[i+1]
 	, (err) =>
 		if err
 			console.error err
+
+		# why is this not being called??
+		console.log "HELLO???"
+		writeDataVersion dataDir, toVersion, ->
+			console.log "Done migrating -> v#{toVersion}"
+			cb()
 	cb()
 
 
-
+	# Async.series [
+	# 	(cb) =>
+			# migrationStep.run dataDir, userName, password, lastMigrationStep, (err) ->
+			# 	if err
+			# 		cb new Error "Could not run migration #{appVersions[i]}-#{appVersions[i+1]}"
+			# 		return
+			# 	console.log "updating fromVersion"
+			# 	fromVersion = appVersions[i+1]
+				# cb()
+		# (cb) =>
+		# 	writeDataVersion dataDir, (appVersions[i+1]), ->
+		# 		console.log "Done migrating v#{appVersions[i]} -> v#{appVersions[i+1]}"
+		# 		cb()
+	# ], (err) =>
+	# 	if err
+	# 		console.error err
 
 	# for i in [0...appVersions.length]
 	# 	console.log "appVersion in array: ", appVersions[i]
