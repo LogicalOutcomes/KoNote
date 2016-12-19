@@ -211,40 +211,81 @@ migrate = (dataDir, fromVersion, toVersion, userName, password, lastMigrationSte
 	console.log "toVersion", toVersion
 	console.log "lastMigrationStep", lastMigrationStep
 
-	# Eventually, this could be expanded to support migrating across many
-	# versions (e.g. v1 -> v5).
-
-	# TODO: Grab full list of migrations, handle multi-step migrations
-
-	# how to genarete this programatically?
+	# how to generate this programatically?
+	# this is an array of all versions to iterate over, my test dataFile is 1.12.1 so i
+	# only included a small range
 	appVersions = ['1.12.0', '1.12.1', '1.12.2', '1.12.3', '1.12.4', '1.13.0', '1.13.1']
+	iterableArray = [0...appVersions.length]
 
-	for i in [0...appVersions.length]
-		console.log "appVersion in array: ", appVersions[i]
+	# iterating over array of integers so i can get appVersion[i], and [i+1] to create migrationStep
+
+	Async.each iterableArray, (i, cb) =>
+		console.log "appVersion in async each: ", appVersions[i]
 
 		# unless we're already at the desired version
 		unless appVersions[i] is toVersion
-			# find spot in array where we need to begin migrating
+
+			# finds spot in array where we need to begin migrating
 			if appVersions[i] is fromVersion
 				console.log "Running migration step #{appVersions[i]} -> #{appVersions[i+1]}..."
-
 				try
 					migrationStep = require("./#{appVersions[i]}-#{appVersions[i+1]}")
 				catch err
 					cb err
 					return
 
-				migrationStep.run dataDir, userName, password, lastMigrationStep, (err) ->
+				fromVersion = null
+
+				Async.series [
+					(cb) =>
+						migrationStep.run dataDir, userName, password, lastMigrationStep, (err) ->
+							if err
+								cb new Error "Could not run migration #{appVersions[i]}-#{appVersions[i+1]}"
+								return
+							console.log "updating fromVersion"
+							fromVersion = appVersions[i+1]
+							cb()
+					(cb) =>
+						writeDataVersion dataDir, (appVersions[i+1]), ->
+							console.log "Done migrating v#{appVersions[i]} -> v#{appVersions[i+1]}"
+							cb()
+				], (err) =>
 					if err
-						cb new Error "Could not run migration #{appVersions[i]}-#{appVersions[i+1]}"
-						return
+						console.error err
+	, (err) =>
+		if err
+			console.error err
+	cb()
 
-					writeDataVersion dataDir, (appVersions[i+1]), ->
-						console.log "Done migrating v#{appVersions[i]} -> v#{appVersions[i+1]}."
-						cb()
 
-				# update fromVersion so we can move on to next migration
-				fromVersion = appVersions[i+1]
+
+
+	# for i in [0...appVersions.length]
+	# 	console.log "appVersion in array: ", appVersions[i]
+
+	# 	# unless we're already at the desired version
+	# 	unless appVersions[i] is toVersion
+	# 		# find spot in array where we need to begin migrating
+	# 		if appVersions[i] is fromVersion
+	# 			console.log "Running migration step #{appVersions[i]} -> #{appVersions[i+1]}..."
+
+	# 			try
+	# 				migrationStep = require("./#{appVersions[i]}-#{appVersions[i+1]}")
+	# 			catch err
+	# 				cb err
+	# 				return
+
+	# 			migrationStep.run dataDir, userName, password, lastMigrationStep, (err) ->
+	# 				if err
+	# 					cb new Error "Could not run migration #{appVersions[i]}-#{appVersions[i+1]}"
+	# 					return
+
+	# 				writeDataVersion dataDir, (appVersions[i+1]), ->
+	# 					console.log "Done migrating v#{appVersions[i]} -> v#{appVersions[i+1]}."
+	# 					cb()
+
+	# 			# update fromVersion so we can move on to next migration
+	# 			fromVersion = appVersions[i+1]
 
 
 module.exports = {runMigration, migrate}
