@@ -33,7 +33,10 @@ load = (win) ->
 			}
 
 		render: ->
-			return R.div({className: 'chartInner'},
+			return R.div({
+				className: 'chartInner'
+				ref: 'chartInner'
+			},
 				R.style({},
 					(Imm.List([0..@state.eventRows]).map (rowNumber) =>
 						translateY = rowNumber * 350
@@ -289,6 +292,10 @@ load = (win) ->
 				padding: {
 					left: 25
 					right: 25
+				}
+				size: {
+					#width: $(@refs.chartInner).width()
+					height: $(@refs.chartInner).height() - 20
 				}
 			}
 
