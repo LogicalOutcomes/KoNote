@@ -39,7 +39,7 @@ load = (win) ->
 			},
 				R.style({},
 					(Imm.List([0..@state.eventRows]).map (rowNumber) =>
-						translateY = rowNumber * 350
+						translateY = rowNumber * $(@refs.chartInner).height()
 						scaleY = +((0.35 / @state.eventRows).toFixed(2))
 						if scaleY > 0.2 then scaleY = 0.2
 
