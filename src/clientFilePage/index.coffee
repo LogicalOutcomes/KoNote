@@ -604,8 +604,11 @@ load = (win, {clientFileId}) ->
 		_secondPass: (deadline) ->
 			progNoteHistories = null
 
-			if (deadline.timeRemaining() > 0 or deadline.didTimout) and (@progNoteIndex < @progNoteTotal)
-				console.info "Second pass start..."
+			if @progNoteIndex < @progNoteTotal
+				# console.info "Second pass start..."
+				unless deadline.timeRemaining() > 0 and not deadline.didTimeout
+					requestIdleCallback @_secondPass, timeout: 3000
+					return
 
 				# lets see what can we do in 100ms
 				count = if deadline.didTimeout then 100 else 10
@@ -628,7 +631,7 @@ load = (win, {clientFileId}) ->
 					if @progNoteIndex < @progNoteTotal
 						# Add to temp store, run another batch
 						@secondPassProgNoteHistories = @secondPassProgNoteHistories.concat results
-						requestIdleCallback @_secondPass
+						requestIdleCallback @_secondPass, timeout: 3000
 					else
 						console.info "Second pass complete!"
 
