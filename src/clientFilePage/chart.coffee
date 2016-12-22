@@ -269,6 +269,9 @@ load = (win) ->
 						hiddenId: 'hiddenId'
 					}
 				}
+				point: {
+					r: if @props.chartType is 'scatter' then 5 else 3
+				}
 				tooltip: {
 					format: {
 						value: (value, ratio, id, index) ->
