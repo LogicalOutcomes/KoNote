@@ -36,9 +36,8 @@ load = (win) ->
 		displayName: 'AnalysisView'
 
 		shouldComponentUpdate: (newProps, newState) ->
-			# Only run shallowCompare when the tab is visible
-			if not newProps.isVisible
-				return false
+			# Only run shallowCompare/PureRenderMixin when the tab is visible
+			return false unless newProps.isVisible
 
 			React.addons.shallowCompare @, newProps, newState
 
