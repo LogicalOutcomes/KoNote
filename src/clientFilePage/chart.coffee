@@ -6,6 +6,7 @@
 
 Imm = require 'immutable'
 Moment = require 'moment'
+_ = require 'underscore'
 
 Config = require '../config'
 
@@ -112,6 +113,9 @@ load = (win) ->
 
 
 		componentDidMount: ->
+			# Wait for end of zoom operations before changing timeSpan upstream
+			@_onZoomEnd = _.debounce @_onZoomEnd, 500
+
 			@_generateChart()
 			@_refreshSelectedMetrics()
 			@_refreshProgEvents()
