@@ -297,9 +297,10 @@ load = (win) ->
 					right: 25
 				}
 				size: {
-					#width: $(@refs.chartInner).width()
 					height: $(@refs.chartInner).height() - 20
 				}
+				onresize: =>
+					@_chart.resize {height: $(@refs.chartInner).height() - 20}
 			}
 
 			# Set up initial zoom (might not be full range)
