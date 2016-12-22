@@ -18,246 +18,248 @@
 		font-weight 700
 		text-align center
 
-	.timeScaleToolbar
-		flex none
-		flex-basis 85px
-		display flex
-		flex-direction row
-
-		// Default styling for slider
-		.slider
-			width 100%
-
-			.slider-track
-				border-radius 15px
-				height 16px
-
-				.slider-track-low, .slider-track-high
-					border-radius 15px
-					background #e4eff5
-
-				.slider-selection
-					border-radius 0px
-					box-shadow none
-					background #c8dae4
-
-			.slider-handle
-				transition opacity 0.2s ease
-				opacity 0.8
-				background #3b4e59 !important
-				margin-top 3px
-				border 3px solid white
-
-				&:hover
-					opacity 1
-
-			.tooltip
-				margin-top -33px
-
-				.tooltip-inner
-					background sidebar-borders
-					color #4c5d67
-					font-size 13px
-					padding 4px 10px
-
-				.tooltip-arrow
-					border-top-color sidebar-borders
-
-			.slider-tick-label-container
-				margin-left -15% !important
-				margin-right -15% !important
-
-				> .slider-tick-label
-					width 25% !important
-					text-align center !important
-
-		> .timeSpanContainer
-			flex 4
-			display block
-			position relative
-			padding 35px 3% 0px 3%
-
-			> .dateDisplay
-				position absolute
-				left 0
-				right 0
-
-				display flex
-				width 100%
-				padding 20px
-
-				> .timeSpanDate
-					flex 1
-
-					&:first-child
-						text-align left
-
-					&:last-child
-						text-align right
-
-					> .date
-						position relative
-						transition background .25s ease
-						cursor default
-						background #fff
-						padding 6px
-
-						border-radius 5px
-						border 1px solid sidebar-borders
-
-						font-weight 400
-						color #5c5c5c
-
-						&:hover
-							background #f9f9f9
-
-							.fa
-								margin 0 2px
-
-						> input // Hidden so span below can represent the date
-							position absolute
-							bottom 0
-							left 0
-							width 2px
-							border 0
-							height 100%
-							padding 0
-							outline none
-							opacity 0
-
-						> span
-							padding 3px 5px
-
-							.fa
-								transition margin .25s ease
-								color #8CA6B5
-								margin 0
-
-
-
-		> .granularContainer
-			flex 2
-
 	.mainWrapper
 		flex 1
 		display flex
 		flex-direction row
 		align-items stetch
 
-		.chartContainer
+		.leftPanel
 			flex 5
 			display flex
-
-			padding 20px 5px
-			border-top 2px solid sidebar-borders
+			flex-direction column
 			border-right 2px solid sidebar-borders
-			border-top-right-radius 25px
 
-			> .chartInner
+			.timeScaleToolbar
 				flex 1
+				flex-basis 85px
+				padding 0 20px 0 20px
 
-				display flex
-				align-items center
-				justify-content center
+				.slider
+					width 100%
 
-				> #eventInfo
-					display none
-					z-index 9999
-					position absolute
-					min-width 150px
-					max-width 500px
-					margin-right 10px
+					.slider-track
+						border-radius 15px
+						height 16px
 
-					background #fff
-					border 1px solid sidebar-borders
+						.slider-track-low, .slider-track-high
+							border-radius 15px
+							background #e4eff5
 
-					> .title
-						font-weight 600 !important
-						background sidebar-borders
-						padding 5px
+						.slider-selection
+							border-radius 0px
+							box-shadow none
+							background #c8dae4
 
-						color #4c5d67
-						font-size 14px
+					.slider-handle
+						transition opacity 0.2s ease
+						opacity 0.8
+						background #3b4e59 !important
+						margin-top 3px
+						border 3px solid white
 
-					> .info
+						&:hover
+							opacity 1
 
-						> .description
-							font-weight normal
-							padding 5px
-							font-size 12px
+					.tooltip
+						margin-top -33px
 
-						> .timeSpan
-							font-size 10px
+						.tooltip-inner
+							background sidebar-borders
+							color #4c5d67
+							font-size 13px
+							padding 4px 10px
 
-							> div
+						.tooltip-arrow
+							border-top-color sidebar-borders
+
+					.slider-tick-label-container
+						margin-left -15% !important
+						margin-right -15% !important
+
+						> .slider-tick-label
+							width 25% !important
+							text-align center !important
+
+				> .timeSpanContainer
+					flex 4
+					display block
+					position relative
+					padding 35px 3% 0px 3%
+
+					> .dateDisplay
+						position absolute
+						left 0
+						right 0
+
+						display flex
+						width 100%
+						padding 20px
+
+						> .timeSpanDate
+							flex 1
+
+							&:first-child
+								text-align left
+
+							&:last-child
 								text-align right
-								background #eee
-								padding 5px
 
-				.yearLine
-					font-weight bold
-					opacity 0.7
+							> .date
+								position relative
+								transition background .25s ease
+								cursor default
+								background #fff
+								padding 6px
 
-					text
-						// Moves year value to right side of yearLine
-						transform rotate(-90deg) translateY(17px)
+								border-radius 5px
+								border 1px solid sidebar-borders
 
-				.chart
+								font-weight 400
+								color #5c5c5c
+
+								&:hover
+									background #f9f9f9
+
+									.fa
+										margin 0 2px
+
+								> input // Hidden so span below can represent the date
+									position absolute
+									bottom 0
+									left 0
+									width 2px
+									border 0
+									height 100%
+									padding 0
+									outline none
+									opacity 0
+
+								> span
+									padding 3px 5px
+
+									.fa
+										transition margin .25s ease
+										color #8CA6B5
+										margin 0
+
+
+
+				> .granularContainer
+					flex 2
+
+			.chartContainer
+				flex 50
+				display flex
+				height 80%
+
+				padding 20px 5px
+
+				> .chartInner
 					flex 1
 
-					svg
-						width 100%
+					display flex
+					align-items center
+					justify-content center
 
-					.c3-zoom-rect
-						display none !important
+					> #eventInfo
+						display none
+						z-index 9999
+						position absolute
+						min-width 150px
+						max-width 500px
+						margin-right 10px
 
-					// Hide hiddenId in legend
-					.c3-legend-item.c3-legend-item-y--h-
-						display none !important
-						width 0 !important
+						background #fff
+						border 1px solid sidebar-borders
 
-						text, rect
+						> .title
+							font-weight 600 !important
+							background sidebar-borders
+							padding 5px
+
+							color #4c5d67
+							font-size 14px
+
+						> .info
+
+							> .description
+								font-weight normal
+								padding 5px
+								font-size 12px
+
+							> .timeSpan
+								font-size 10px
+
+								> div
+									text-align right
+									background #eee
+									padding 5px
+
+					.yearLine
+						font-weight bold
+						opacity 0.7
+
+						text
+							// Moves year value to right side of yearLine
+							transform rotate(-90deg) translateY(17px)
+
+					.chart
+						flex 1
+
+						svg
+							width 100%
+
+						.c3-zoom-rect
+							display none !important
+
+						// Hide hiddenId in legend
+						.c3-legend-item.c3-legend-item-y--h-
 							display none !important
 							width 0 !important
 
-					.c3-regions
+							text, rect
+								display none !important
+								width 0 !important
 
-						.c3-region
-							fill-opacity 1
-							min-width 1px !important
+						.c3-regions
 
-							&:hover
-								fill-opacity 0.75 !important
-								stroke-opacity 1 !important
-
-							> rect
+							.c3-region
+								fill-opacity 1
 								min-width 1px !important
-								fill-opacity inherit !important
-								// 10% of original height
-								transform scaleY(0.1)
-								fill sidebar-borders
-								stroke sidebar-borders
-								stroke-width 2px
-								stroke-opacity inherit
-
-								&[width="0"]
-									width 1px !important
-
-							&.singlePoint > rect
-								fill sidebar-borders
-								stroke sidebar-borders
-								stroke-width 2
 
 								&:hover
-									stroke #1d6977
+									fill-opacity 0.75 !important
+									stroke-opacity 1 !important
+
+								> rect
+									min-width 1px !important
+									fill-opacity inherit !important
+									// 10% of original height
+									transform scaleY(0.1)
+									fill sidebar-borders
+									stroke sidebar-borders
+									stroke-width 2px
+									stroke-opacity inherit
+
+									&[width="0"]
+										width 1px !important
+
+								&.singlePoint > rect
+									fill sidebar-borders
+									stroke sidebar-borders
+									stroke-width 2
+
+									&:hover
+										stroke #1d6977
 
 
 
 		.selectionPanel
 			flex 2
-			// display flex
+			display flex
 			flex-direction column
-			padding-top 25px
+			padding-top 10px
 			overflow-y auto
 			overflow-x hidden
 

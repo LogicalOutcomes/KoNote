@@ -227,67 +227,69 @@ load = (win) ->
 						)
 					)
 				)
-				R.div({className: "timeScaleToolbar #{showWhen hasEnoughData}"},
-					R.div({className: 'timeSpanContainer'},
-						Slider({
-							ref: 'timeSpanSlider'
-							isRange: true
-							timeSpan
-							xTicks
-							onChange: @_updateTimeSpan
-						})
-						R.div({className: 'dateDisplay'},
-							TimeSpanDate({
-								date: timeSpan.get('start')
-								type: 'start'
-								timeSpan
-								xTicks
-								updateTimeSpan: @_updateTimeSpan
-							})
-							TimeSpanDate({
-								date: timeSpan.get('end')
-								type: 'end'
-								timeSpan
-								xTicks
-								updateTimeSpan: @_updateTimeSpan
-							})
-						)
-					)
-					R.div({className: 'granularContainer'}) # TODO: Make use of this space
-				)
 				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
-					R.div({className: 'chartContainer'},
+					R.div({className: "leftPanel"},
+						R.div({className: "timeScaleToolbar #{showWhen hasEnoughData}"},
+							R.div({className: 'timeSpanContainer'},
+								Slider({
+									ref: 'timeSpanSlider'
+									isRange: true
+									timeSpan
+									xTicks
+									onChange: @_updateTimeSpan
+								})
+								R.div({className: 'dateDisplay'},
+									TimeSpanDate({
+										date: timeSpan.get('start')
+										type: 'start'
+										timeSpan
+										xTicks
+										updateTimeSpan: @_updateTimeSpan
+									})
+									TimeSpanDate({
+										date: timeSpan.get('end')
+										type: 'end'
+										timeSpan
+										xTicks
+										updateTimeSpan: @_updateTimeSpan
+									})
+								)
+							)
+							R.div({className: 'granularContainer'}) # TODO: Make use of this space
+						)
+						R.div({className: 'chartContainer'},
 
-						# Fade out un-highlighted regions when exists
-						InlineHighlightStyles({
-							ref: 'inlineHighlightStyles'
-							starredEventTypeIds: @state.starredEventTypeIds
-						})
-
-						# Force chart to be re-rendered when tab is opened
-						(unless @state.selectedEventTypeIds.isEmpty() and @state.selectedMetricIds.isEmpty()
-							Chart({
-								ref: 'mainChart'
-								progNotes: @props.progNotes
-								progEvents: selectedProgEvents
-								eventTypes: @props.eventTypes
-								metricsById: @props.metricsById
-								metricValues
-								xTicks
-								selectedMetricIds: @state.selectedMetricIds
-								chartType: @state.chartType
-								timeSpan
-								updateMetricColors: @_updateMetricColors
-								updateTimeSpan: @_updateTimeSpan
+							# Fade out un-highlighted regions when exists
+							InlineHighlightStyles({
+								ref: 'inlineHighlightStyles'
+								starredEventTypeIds: @state.starredEventTypeIds
 							})
-						else
-							# Don't render Chart until data points selected
-							R.div({className: 'noData'},
-								R.div({},
-									R.h1({}, "Select Data")
+
+							# Force chart to be re-rendered when tab is opened
+							(unless @state.selectedEventTypeIds.isEmpty() and @state.selectedMetricIds.isEmpty()
+								Chart({
+									ref: 'mainChart'
+									progNotes: @props.progNotes
+									progEvents: selectedProgEvents
+									eventTypes: @props.eventTypes
+									metricsById: @props.metricsById
+									metricValues
+									xTicks
+									selectedMetricIds: @state.selectedMetricIds
+									chartType: @state.chartType
+									timeSpan
+									updateMetricColors: @_updateMetricColors
+									updateTimeSpan: @_updateTimeSpan
+								})
+							else
+								# Don't render Chart until data points selected
+								R.div({className: 'noData'},
 									R.div({},
-										"Begin your #{Term 'analysis'} by selecting
-										one or more data points from the right panel."
+										R.h1({}, "Select Data")
+										R.div({},
+											"Begin your #{Term 'analysis'} by selecting
+											one or more data points from the right panel."
+										)
 									)
 								)
 							)
