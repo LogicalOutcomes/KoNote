@@ -295,6 +295,7 @@ load = (win) ->
 				zoom: {
 					enabled: true
 					onzoomend: @_onZoomEnd
+					extent: [1, @props.xTicks.size * 4] # Zoom up to 6h timespan
 				}
 				padding: {
 					left: 25
