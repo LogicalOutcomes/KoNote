@@ -100,6 +100,16 @@ load = (win) ->
 			.filterNot (section) ->
 				section.get('targets').isEmpty()
 
+			# Flat map of plan metrics, as {id: metric}
+			# TODO: Do we even need this?
+			planMetricsById = planSectionsWithData.flatMap (section) ->
+				section.get('targets').flatMap (target) ->
+					target.get('metrics').map (metric) ->
+						return [metric.get('id'), metric]
+					.fromEntrySeq().toMap()
+				.fromEntrySeq().toMap()
+			.fromEntrySeq().toMap()
+
 			# Flat list of unassigned metrics (has data, but since removed from target)
 			unassignedMetricsList = metricIdsWithData
 			.filterNot (metricId) -> planMetricsById.has metricId
