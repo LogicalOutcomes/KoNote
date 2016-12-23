@@ -114,7 +114,7 @@ load = (win) ->
 
 		componentDidMount: ->
 			# Wait for end of zoom operations before changing timeSpan upstream
-			@_onZoomEnd = _.debounce @_onZoomEnd, 500
+			@_onZoomEnd = _.debounce @_onZoomEnd, 250
 
 			@_generateChart()
 			@_refreshSelectedMetrics()
