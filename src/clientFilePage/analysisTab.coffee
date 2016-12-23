@@ -23,14 +23,10 @@ load = (win) ->
 	R = React.DOM
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata, makeMoment} = require('../utils').load(win)
 	{TimestampFormat} = require('../persist/utils')
-
-	Slider = require('../slider').load(win)
 	TimeSpanDate = require('./timeSpanDate').load(win)
 	Chart = require('./chart').load(win)
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
-	dateDisplayFormat = 'MMM Do - YYYY'
-
 
 	AnalysisView = React.createFactory React.createClass
 		displayName: 'AnalysisView'
@@ -104,16 +100,6 @@ load = (win) ->
 			.filterNot (section) ->
 				section.get('targets').isEmpty()
 
-			# Flat map of plan metrics, as {id: metric}
-			# TODO: Do we even need this?
-			planMetricsById = planSectionsWithData.flatMap (section) ->
-				section.get('targets').flatMap (target) ->
-					target.get('metrics').map (metric) ->
-						return [metric.get('id'), metric]
-					.fromEntrySeq().toMap()
-				.fromEntrySeq().toMap()
-			.fromEntrySeq().toMap()
-
 			# Flat list of unassigned metrics (has data, but since removed from target)
 			unassignedMetricsList = metricIdsWithData
 			.filterNot (metricId) -> planMetricsById.has metricId
@@ -145,6 +131,7 @@ load = (win) ->
 			spannedProgEvents = allEvents.filter (progEvent) -> !!progEvent.get('endTimestamp')
 
 			# Build list of timestamps from progEvents (start & end) & metrics as Unix Timestamps (ms)
+			# todo: why as unix timestamps?
 			daysOfData = Imm.List()
 			.concat allEvents.map (progEvent) ->
 				Moment(progEvent.get('startTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
@@ -170,10 +157,17 @@ load = (win) ->
 				firstDay.clone().add(n, 'days')
 
 			# Declare default timeSpan
-			@defaultTimeSpan = Imm.Map {
-				start: xTicks.first()
-				end: xTicks.last()
-			}
+			# confirm we have enough data and set to 1 month
+			if xTicks.last.subtract(1, "month").isSameOrAfter(xTicks.first)
+				@defaultTimeSpan = Imm.Map {
+					start: xTicks.last.subtract(1, "month")
+					end: xTicks.last()
+				}
+			else
+				@defaultTimeSpan = Imm.Map {
+					start: xTicks.first()
+					end: xTicks.last()
+				}
 
 			# Assign default timespan if null
 			timeSpan = if not @state.timeSpan? then @defaultTimeSpan else @state.timeSpan
@@ -184,6 +178,7 @@ load = (win) ->
 			# Map out visible progEvents (within timeSpan) by eventTypeId
 			visibleProgEvents = allEvents.filter (progEvent) ->
 				endTimestamp = progEvent.get('endTimestamp')
+				# todo: do we need this? what if we use persist format above at :137?
 				startMoment = makeMoment progEvent.get('startTimestamp')
 
 				if endTimestamp
@@ -230,13 +225,6 @@ load = (win) ->
 					R.div({className: "leftPanel"},
 						R.div({className: "timeScaleToolbar #{showWhen hasEnoughData}"},
 							R.div({className: 'timeSpanContainer'},
-								Slider({
-									ref: 'timeSpanSlider'
-									isRange: true
-									timeSpan
-									xTicks
-									onChange: @_updateTimeSpan
-								})
 								R.div({className: 'dateDisplay'},
 									TimeSpanDate({
 										date: timeSpan.get('start')
