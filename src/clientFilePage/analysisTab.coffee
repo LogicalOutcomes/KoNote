@@ -39,7 +39,6 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				hasEnoughData: null
 				daysOfData: null
 				selectedMetricIds: Imm.Set()
 				chartType: 'line'
@@ -215,25 +214,23 @@ load = (win) ->
 
 			#################### ETC ####################
 
-			hasEnoughData = daysOfData.size > 0
 			untypedEvents = allEvents.filterNot (progEvent) => !!progEvent.get('typeId')
-
 			eventTypesAlphabetized = @props.eventTypes.sortBy (eventType) -> eventType.get('name')
 
 
 			return R.div({className: "analysisView"},
-				R.div({className: "noData #{showWhen not hasEnoughData}"},
+				R.div({className: "noData #{showWhen not daysOfData.size > 0}"},
 					R.div({},
 						R.h1({}, "More Data Needed")
 						R.div({},
 							"Analytics will show up here once #{Term 'metrics'} or #{Term 'events'}
-							have been recorded in a #{Term 'progress note'} for #{@props.clientName}."
+							have been recorded in a #{Term 'progress note'}."
 						)
 					)
 				)
-				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
+				R.div({className: "mainWrapper #{showWhen daysOfData.size > 0}"},
 					R.div({className: "leftPanel"},
-						R.div({className: "timeScaleToolbar #{showWhen hasEnoughData}"},
+						R.div({className: "timeScaleToolbar #{showWhen daysOfData.size > 0}"},
 							R.div({className: 'timeSpanContainer'},
 								R.div({className: 'dateDisplay'},
 									TimeSpanDate({
