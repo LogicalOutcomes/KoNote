@@ -29,14 +29,10 @@ load = (win) ->
 		_init: ->
 			if @dateTimePicker? then @dateTimePicker.destroy()
 
-			# Assess min/maxDate based on which TimeSpanDate type
+			# Assess min/maxDate
 			if @props.xTicks?
-				if @props.type is 'start'
-					minDate = @props.xTicks.first()
-					maxDate = @props.timeSpan.get('end')
-				else
-					minDate = @props.timeSpan.get('start')
-					maxDate = @props.xTicks.last()
+				minDate = @props.xTicks.first()
+				maxDate = @props.xTicks.last()
 
 			# Init datetimepicker
 			$(@refs.hiddenDateTimePicker).datetimepicker({
