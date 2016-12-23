@@ -158,9 +158,9 @@ load = (win) ->
 
 			# Declare default timeSpan
 			# confirm we have enough data and set to 1 month
-			if xTicks.last.subtract(1, "month").isSameOrAfter(xTicks.first)
+			if xTicks.last().subtract(1, "month").isSameOrAfter(xTicks.first)
 				@defaultTimeSpan = Imm.Map {
-					start: xTicks.last.subtract(1, "month")
+					start: xTicks.last().subtract(1, "month")
 					end: xTicks.last()
 				}
 			else
