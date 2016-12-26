@@ -31,6 +31,7 @@ load = (win) ->
 			return {
 				progEventRegions: Imm.List()
 				eventRows: 0
+				hoveredMetric: null
 			}
 
 		render: ->
@@ -272,6 +273,9 @@ load = (win) ->
 					classes: {
 						hiddenId: 'hiddenId'
 					}
+					# Get/destroy hovered metric point data in local memory
+					onmouseover: (d) => @hoveredMetric = d
+					onmouseout: (d) => @hoveredMetric = null if @hoveredMetric? and @hoveredMetric.id is d.id
 				}
 				point: {
 					r: if @props.chartType is 'scatter' then 5 else 3
@@ -288,6 +292,64 @@ load = (win) ->
 						title: (timestamp) ->
 							return Moment(timestamp).format(Config.timestampFormat)
 					}
+
+					# Customization from original c3 tooltip DOM code: http://stackoverflow.com/a/25750639
+					contents: (d, defaultTitleFormat, defaultValueFormat, color) =>
+						# Lets us distinguish @_chart's local `this` (->) methods from Chart's `this` (=>)
+						# http://stackoverflow.com/a/15422322
+						$$ = ` this `
+
+						config = $$.config
+						titleFormat = config.tooltip_format_title or defaultTitleFormat
+						nameFormat = config.tooltip_format_name or (name) -> name
+
+						valueFormat = config.tooltip_format_value or defaultValueFormat
+						text = undefined
+						i = undefined
+						title = undefined
+						value = undefined
+						name = undefined
+						bgcolor = undefined
+						i = 0
+
+						while i < d.length
+							currentMetric = d[i]
+
+							# TODO: Check and see if 0 values actually get ignored
+							if !(currentMetric and (currentMetric.value or currentMetric.value == 0))
+								i++
+								continue
+
+							if !text
+								title = if titleFormat then titleFormat(currentMetric.x) else currentMetric.x
+								text = '<table class=\'' + $$.CLASS.tooltip + '\'>' + (if title or title == 0 then '<tr><th colspan=\'2\'>' + title + '</th></tr>' else '')
+
+							name = nameFormat(currentMetric.name)
+							value = valueFormat(currentMetric.value, currentMetric.ratio, currentMetric.id, currentMetric.index)
+
+							bgcolor = if $$.levelColor then $$.levelColor(currentMetric.value) else color(currentMetric.id)
+							text += '<tr class=\'' + $$.CLASS.tooltipName + '-' + currentMetric.id + '\'>'
+							text += '<td class=\'name\'><span style=\'background-color:' + bgcolor + '\'></span>' + name + '</td>'
+							text += '<td class=\'value\'>' + value + '</td>'
+							text += '</tr>'
+
+							# Pull in and add a new row for metric definition of hovered metric
+							isHoveredMetric = @hoveredMetric? and @hoveredMetric.id is currentMetric.id
+
+							# TODO: Show definitions for other metrics w/ overlapping regular or scaled values (#TODO)
+							if @hoveredMetric? and @hoveredMetric.id is currentMetric.id
+								metricId = currentMetric.id.substr(2) # Cut out "y-" for raw ID
+								metricDefinition = @props.metricsById.getIn [metricId, 'definition']
+
+								text += '<tr class=\'' + $$.CLASS.tooltipName + '-' + currentMetric.id + ' + \'>'
+								# text += '<td class=\'name\'><span style=\'background-color:' + bgcolor + '\'></span>' + name + '</td>'
+								text += '<td class=\'definition\' colspan=\'2\'>' + metricDefinition + '</td>'
+								text += '</tr>'
+
+							i++
+
+						text + '</table>'
+
 				}
 				item: {
 					onclick: (id) -> return false
