@@ -23,8 +23,8 @@ load = (win) ->
 	hiddenId = "-h-" # Fake/hidden datapoint's ID
 
 
-	Chart = React.createFactory React.createClass
-		displayName: 'Chart'
+	C3Chart = React.createFactory React.createClass
+		displayName: 'C3Chart'
 		mixins: [React.addons.PureRenderMixin]
 		# TODO: propTypes
 
@@ -36,12 +36,12 @@ load = (win) ->
 
 		render: ->
 			return R.div({
-				className: 'chartInner'
-				ref: 'chartInner'
+				className: 'c3Chart'
+				ref: 'chart'
 			},
 				R.style({},
 					(Imm.List([0..@state.eventRows]).map (rowNumber) =>
-						translateY = rowNumber * $(@refs.chartInner).height()
+						translateY = rowNumber * $(@refs.chart).height()
 						scaleY = +((0.35 / @state.eventRows).toFixed(2))
 						if scaleY > 0.2 then scaleY = 0.2
 
@@ -294,10 +294,10 @@ load = (win) ->
 					right: 25
 				}
 				size: {
-					height: $(@refs.chartInner).height() - 20
+					height: $(@refs.chart).height() - 20
 				}
 				onresize: =>
-					@_chart.resize {height: $(@refs.chartInner).height() - 20}
+					@_chart.resize {height: $(@refs.chart).height() - 20}
 			}
 
 			# Fire metric colors up to analysisTab
@@ -487,6 +487,6 @@ load = (win) ->
 			return Moment(timestamp, TimestampFormat).valueOf()
 
 
-	return Chart
+	return C3Chart
 
 module.exports = {load}
