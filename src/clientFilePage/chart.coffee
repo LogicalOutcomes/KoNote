@@ -311,6 +311,8 @@ load = (win) ->
 
 						while i < d.length
 							currentMetric = d[i]
+							# Pull in and add a new row for metric definition of hovered metric
+							isHoveredMetric = @hoveredMetric? and @hoveredMetric.id is currentMetric.id
 
 							# TODO: Check and see if 0 values actually get ignored
 							if !(currentMetric and (currentMetric.value or currentMetric.value == 0))
@@ -323,15 +325,13 @@ load = (win) ->
 
 							name = nameFormat(currentMetric.name)
 							value = valueFormat(currentMetric.value, currentMetric.ratio, currentMetric.id, currentMetric.index)
+							hoverClass = if isHoveredMetric then 'isHovered' else ''
 
 							bgcolor = if $$.levelColor then $$.levelColor(currentMetric.value) else color(currentMetric.id)
-							text += '<tr class=\'' + $$.CLASS.tooltipName + '-' + currentMetric.id + '\'>'
+							text += '<tr class=\'' + $$.CLASS.tooltipName + '-' + currentMetric.id + ' ' + hoverClass + '\'>'
 							text += '<td class=\'name\'><span style=\'background-color:' + bgcolor + '\'></span>' + name + '</td>'
 							text += '<td class=\'value\'>' + value + '</td>'
 							text += '</tr>'
-
-							# Pull in and add a new row for metric definition of hovered metric
-							isHoveredMetric = @hoveredMetric? and @hoveredMetric.id is currentMetric.id
 
 							# TODO: Show definitions for other metrics w/ overlapping regular or scaled values (#TODO)
 							if @hoveredMetric? and @hoveredMetric.id is currentMetric.id
