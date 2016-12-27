@@ -338,8 +338,11 @@ load = (win) ->
 								metricId = currentMetric.id.substr(2) # Cut out "y-" for raw ID
 								metricDefinition = @props.metricsById.getIn [metricId, 'definition']
 
+								# Truncate definition to 100ch + ...
+								if metricDefinition.length > 100
+									metricDefinition = metricDefinition.substring(0, 100) + "..."
+
 								text += '<tr class=\'' + $$.CLASS.tooltipName + '-' + currentMetric.id + ' + \'>'
-								# text += '<td class=\'name\'><span style=\'background-color:' + bgcolor + '\'></span>' + name + '</td>'
 								text += '<td class=\'definition\' colspan=\'2\'>' + metricDefinition + '</td>'
 								text += '</tr>'
 
