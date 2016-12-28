@@ -36,6 +36,7 @@ load = (win) ->
 		}
 
 		_diffStrings: (oldString, newString) ->
+		_diffStrings: (oldString = "", newString = "") ->
 			dmp = new DiffMatchPatch()
 			# first pass; can lower timeout if too slow
 			# dmp.Diff_Timeout = 0.5
@@ -47,7 +48,9 @@ load = (win) ->
 				# compare the diff by sentences and diff by lines
 				# use the output that produces the cleanest output (shortest sum of removals)
 				diffsSentences = diffSentences(oldString, newString)
-				diffsLines = diffTrimmedLines(oldString, newString, {newlineIsToken:true})
+				# TODO: newlineIsToken would remove all line-breaks for renderLineBreaks, but might be needed
+				# diffsLines = diffTrimmedLines(oldString, newString, {newlineIsToken:true})
+				diffsLines = diffTrimmedLines(oldString, newString)
 				diffsSentencesTotal = 0
 				diffsLinesTotal = 0
 
@@ -70,10 +73,13 @@ load = (win) ->
 			return R.span({className: 'value'},
 				# Iterate over diffs and assign a diff-span or plain string
 				for diff, key in diffs
+
 					if diff.added?
 						R.span({className: 'added', key}, diff.value)
+						R.span({className: 'added', key}, value)
 					else if diff.removed?
 						R.span({className: 'removed', key}, diff.value)
+						R.span({className: 'removed', key}, value)
 					else
 						diff.value
 			)
