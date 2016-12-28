@@ -1451,9 +1451,7 @@ load = (win) ->
 											(section.get('targets').map (target) =>
 												planTargetsById = @props.planTargetsById.map (target) -> target.get('revisions').first()
 												targetId = target.get('id')
-
-												# Here we get the most reent revision to show an up to date name & description
-												# in the progNoteDetailView component's header
+												# Use the up-to-date name & description for header display
 												mostRecentTargetRevision = planTargetsById.get targetId
 
 												R.div({
