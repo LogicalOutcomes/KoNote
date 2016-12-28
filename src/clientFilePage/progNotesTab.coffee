@@ -1270,7 +1270,8 @@ load = (win) ->
 					userProgram: @props.userProgram
 
 					isReadOnly: @props.isReadOnly
-					progNote
+					progNote: @props.progNote
+					filteredProgNote: @props.filteredProgNote
 					progNoteHistory: @props.progNoteHistory
 					progEvents: @props.progEvents
 					globalEvents: @props.globalEvents
@@ -1363,7 +1364,8 @@ load = (win) ->
 					userProgram: @props.userProgram
 
 					isReadOnly: @props.isReadOnly
-					progNote
+					progNote: @props.progNote
+					filteredProgNote: @props.filteredProgNote
 					progNoteHistory: @props.progNoteHistory
 					progEvents: @props.progEvents
 					globalEvents: @props.globalEvents
@@ -1696,6 +1698,7 @@ load = (win) ->
 				isEditing
 				isReadOnly
 				progNote
+				filteredProgNote
 				progNoteHistory
 				progEvents
 				globalEvents
@@ -1772,7 +1775,7 @@ load = (win) ->
 								)
 							)
 
-							B.MenuItem({onClick: @_print.bind null, progNote, progEvents, clientFile},
+							B.MenuItem({onClick: @_print.bind null, filteredProgNote, progEvents, clientFile},
 								"Print"
 							)
 
