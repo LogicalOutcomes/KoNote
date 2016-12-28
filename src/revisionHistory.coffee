@@ -35,7 +35,6 @@ load = (win) ->
 			programsById: React.PropTypes.instanceOf(Imm.Map).isRequired()
 		}
 
-		_diffStrings: (oldString, newString) ->
 		_diffStrings: (oldString = "", newString = "") ->
 			dmp = new DiffMatchPatch()
 			# first pass; can lower timeout if too slow
@@ -71,17 +70,16 @@ load = (win) ->
 				diffs = diffWordsWithSpace(oldString, newString)
 
 			return R.span({className: 'value'},
-				# Iterate over diffs and assign a diff-span or plain string
-				for diff, key in diffs
+				# Iterate over diffs and assign a surrounding span, or just the plain string
+				diffs.map (diff, key) ->
+					value = renderLineBreaks(diff.value)
 
 					if diff.added?
-						R.span({className: 'added', key}, diff.value)
 						R.span({className: 'added', key}, value)
 					else if diff.removed?
-						R.span({className: 'removed', key}, diff.value)
 						R.span({className: 'removed', key}, value)
 					else
-						diff.value
+						value
 			)
 
 		_generateChangeLogEntries: (revision, index) ->
