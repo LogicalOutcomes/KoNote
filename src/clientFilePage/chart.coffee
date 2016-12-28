@@ -66,6 +66,7 @@ load = (win) ->
 				})
 			)
 
+		# TODO: Use componentWillReceiveProps here?
 		componentDidUpdate: (oldProps, oldState) ->
 			# Update chart zoom from changed timeSpan?
 			sameTimeSpan = Imm.is @props.timeSpan, oldProps.timeSpan
@@ -114,19 +115,13 @@ load = (win) ->
 
 		componentDidMount: ->
 			# Wait for end of zoom operations before changing timeSpan upstream
-			@_onZoomEnd = _.debounce @_onZoomEnd, 250
+			@_onZoomEnd = _.debounce @_onZoomEnd, 400
 
 			@_generateChart()
 			@_refreshSelectedMetrics()
 			@_refreshProgEvents()
 
-		_onZoomEnd: (domain) ->
-			# Ensure chart has the new zoom saved
-			# TODO: Create c3js issue upstream
-			@_chart.zoom(domain)
-
-			[start, end] = domain
-
+		_onZoomEnd: ([start, end]) ->
 			@props.updateTimeSpan Imm.Map {
 				start: Moment(start)
 				end: Moment(end)
@@ -294,7 +289,10 @@ load = (win) ->
 				}
 				zoom: {
 					enabled: true
-					onzoomend: @_onZoomEnd
+					onzoomend: (domain) =>
+						@_chart.zoom(domain)
+						@_onZoomEnd(domain)
+
 					extent: [1, @props.xTicks.size * 4] # Zoom up to 6h timespan
 				}
 				padding: {
