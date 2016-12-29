@@ -165,6 +165,10 @@ load = (win) ->
 			console.warn "renderLineBreaks received no input: ", text
 			return ""
 
+		if typeof text isnt 'string'
+			console.error "Tried to call renderLineBreaks on a non-string:", text
+			return result
+
 		lines = text.trim()
 		.replace(/\r\n/g, '\n') # Windows -> Unix
 		.replace(/\r/g, '\n') # old Mac -> Unix
