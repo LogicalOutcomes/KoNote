@@ -567,7 +567,7 @@ load = (win) ->
 				)
 			)
 		_setTimeSpanRange: (lastDay, unit) ->
-			end = lastDay.add(1, 'days')
+			end = lastDay.clone().add(1, 'days')
 			start = lastDay.clone().subtract(1, unit)
 			timeSpan = Imm.Map {
 				start
@@ -577,8 +577,8 @@ load = (win) ->
 			@setState {timeSpan}
 
 		_shiftTimeSpanRange: (lastDay, firstDay, direction) ->
-			start = @state.timeSpan.get('start')
-			end = @state.timeSpan.get('end')
+			start = @state.timeSpan.get('start').clone()
+			end = @state.timeSpan.get('end').clone()
 			difference = end.diff(start, 'days') + 1
 
 			if direction is 'future'
@@ -589,7 +589,7 @@ load = (win) ->
 				end.subtract(difference, 'days')
 
 			# unless end date is after lastDay or start is before first day
-			unless end.isAfter(lastDay.add(1, 'days')) or start.isBefore(firstDay)
+			unless end.isAfter(lastDay.add(1, 'day')) or start.isBefore(firstDay)
 				timeSpan = Imm.Map {
 					start
 					end
