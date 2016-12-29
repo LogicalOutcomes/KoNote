@@ -270,7 +270,7 @@ load = (win) ->
 
 									R.div({className: 'btn-group'},
 										R.button({
-											onClick: @_shiftTimeSpanRange.bind(null, lastDay, 'past')
+											onClick: @_shiftTimeSpanRange.bind(null, lastDay, firstDay, 'past')
 										},
 											FaIcon('caret-left')
 										)
@@ -290,7 +290,7 @@ load = (win) ->
 											"1y"
 										)
 										R.button({
-											onClick: @_shiftTimeSpanRange.bind(null, lastDay, 'future')
+											onClick: @_shiftTimeSpanRange.bind(null, lastDay, firstDay, 'future')
 										},
 											FaIcon('caret-right')										)
 									)
@@ -567,7 +567,7 @@ load = (win) ->
 				)
 			)
 		_setTimeSpanRange: (lastDay, unit) ->
-			end = lastDay
+			end = lastDay.add(1, 'days')
 			start = lastDay.clone().subtract(1, unit)
 			timeSpan = Imm.Map {
 				start
@@ -576,7 +576,7 @@ load = (win) ->
 
 			@setState {timeSpan}
 
-		_shiftTimeSpanRange: (lastDay, direction) ->
+		_shiftTimeSpanRange: (lastDay, firstDay, direction) ->
 			start = @state.timeSpan.get('start')
 			end = @state.timeSpan.get('end')
 			difference = end.diff(start, 'days') + 1
@@ -588,13 +588,14 @@ load = (win) ->
 				start.subtract(difference, 'days')
 				end.subtract(difference, 'days')
 
-			# unless end date is after lastDay
-			timeSpan = Imm.Map {
-				start
-				end
-			}
+			# unless end date is after lastDay or start is before first day
+			unless end.isAfter(lastDay.add(1, 'days')) or start.isBefore(firstDay)
+				timeSpan = Imm.Map {
+					start
+					end
+				}
 
-			@setState {timeSpan}
+				@setState {timeSpan}
 
 		_toggleTargetExclusionById: (targetId) ->
 			@setState ({excludedTargetIds}) =>
