@@ -566,6 +566,25 @@ load = (win) ->
 					)
 				)
 			)
+		_shiftTimeSpanRange: (lastDay, direction) ->
+			start = @state.timeSpan.get('start')
+			end = @state.timeSpan.get('end')
+			difference = end.diff(start, 'days') + 1
+
+			if direction is 'future'
+				start.add(difference, 'days')
+				end.add(difference, 'days')
+			else if direction is 'past'
+				start.subtract(difference, 'days')
+				end.subtract(difference, 'days')
+
+			# unless end date is after lastDay
+			timeSpan = Imm.Map {
+				start
+				end
+			}
+
+			@setState {timeSpan}
 
 		_toggleTargetExclusionById: (targetId) ->
 			@setState ({excludedTargetIds}) =>
