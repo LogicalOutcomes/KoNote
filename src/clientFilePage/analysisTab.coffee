@@ -240,6 +240,32 @@ load = (win) ->
 										xTicks
 										updateTimeSpan: @_updateTimeSpan
 									})
+
+									# AnalysisToolbar({
+									# 	updateTimeSpan: @_updateTimeSpan
+									# 	timeSpan
+
+									# })
+									R.div({className: 'dataOptions'},
+										R.div({className: "chartTypeContainer"},
+											"Chart Type: "
+											R.label({},
+												"Line "
+												R.input({
+													type: 'checkbox'
+													checked: @state.chartType is 'line'
+													onChange: @_updateChartType.bind null, 'line'
+												})
+											)
+											R.label({},
+												"Scatter "
+												R.input({
+													type: 'checkbox'
+													checked: @state.chartType is 'scatter'
+													onChange: @_updateChartType.bind null, 'scatter'
+												})
+											)
+										)
 									)
 
 									R.div({className: 'btn-group'},
