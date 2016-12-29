@@ -571,6 +571,16 @@ load = (win) ->
 					)
 				)
 			)
+		_setTimeSpanRange: (lastDay, unit) ->
+			end = lastDay
+			start = lastDay.clone().subtract(1, unit)
+			timeSpan = Imm.Map {
+				start
+				end
+			}
+
+			@setState {timeSpan}
+
 		_shiftTimeSpanRange: (lastDay, direction) ->
 			start = @state.timeSpan.get('start')
 			end = @state.timeSpan.get('end')
