@@ -25,6 +25,7 @@ load = (win) ->
 	{TimestampFormat} = require('../persist/utils')
 
 	TimeSpanDate = require('./timeSpanDate').load(win)
+	TimeSpanToolbar = require('./timeSpanToolbar').load(win)
 	Chart = require('./chart').load(win)
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
@@ -238,59 +239,12 @@ load = (win) ->
 										updateTimeSpan: @_updateTimeSpan
 									})
 
-									# AnalysisToolbar({
-									# 	updateTimeSpan: @_updateTimeSpan
-									# 	timeSpan
-
-									# })
-									R.div({className: 'dataOptions'},
-										R.div({className: "chartTypeContainer"},
-											"Chart Type: "
-											R.label({},
-												"Line "
-												R.input({
-													type: 'checkbox'
-													checked: @state.chartType is 'line'
-													onChange: @_updateChartType.bind null, 'line'
-												})
-											)
-											R.label({},
-												"Scatter "
-												R.input({
-													type: 'checkbox'
-													checked: @state.chartType is 'scatter'
-													onChange: @_updateChartType.bind null, 'scatter'
-												})
-											)
-										)
-									)
-
-									R.div({className: 'btn-group'},
-										R.button({
-											onClick: @_shiftTimeSpanRange.bind(null, lastDay, firstDay, 'past')
-										},
-											FaIcon('caret-left')
-										)
-										R.button({
-											onClick: @_setTimeSpanRange.bind(null, lastDay, 'days')
-										},
-											"1d"
-										)
-										R.button({
-											onClick: @_setTimeSpanRange.bind(null, lastDay, 'months')
-										},
-											"1m"
-										)
-										R.button({
-											onClick: @_setTimeSpanRange.bind(null, lastDay, 'years')
-										},
-											"1y"
-										)
-										R.button({
-											onClick: @_shiftTimeSpanRange.bind(null, lastDay, firstDay, 'future')
-										},
-											FaIcon('caret-right')										)
-									)
+									TimeSpanToolbar({
+										updateTimeSpan: @_updateTimeSpan
+										timeSpan
+										lastDay
+										firstDay
+									})
 
 									TimeSpanDate({
 										date: timeSpan.get('end')
@@ -563,36 +517,6 @@ load = (win) ->
 					)
 				)
 			)
-		_setTimeSpanRange: (lastDay, unit) ->
-			end = lastDay.clone().add(1, 'days')
-			start = lastDay.clone().subtract(1, unit)
-			timeSpan = Imm.Map {
-				start
-				end
-			}
-
-			@setState {timeSpan}
-
-		_shiftTimeSpanRange: (lastDay, firstDay, direction) ->
-			start = @state.timeSpan.get('start').clone()
-			end = @state.timeSpan.get('end').clone()
-			difference = end.diff(start, 'days') + 1
-
-			if direction is 'future'
-				start.add(difference, 'days')
-				end.add(difference, 'days')
-			else if direction is 'past'
-				start.subtract(difference, 'days')
-				end.subtract(difference, 'days')
-
-			# unless end date is after lastDay or start is before first day
-			unless end.isAfter(lastDay.add(1, 'day')) or start.isBefore(firstDay)
-				timeSpan = Imm.Map {
-					start
-					end
-				}
-
-				@setState {timeSpan}
 
 		_toggleTargetExclusionById: (targetId) ->
 			@setState ({excludedTargetIds}) =>
