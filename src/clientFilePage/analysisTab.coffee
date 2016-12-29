@@ -24,7 +24,6 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata, makeMoment} = require('../utils').load(win)
 	{TimestampFormat} = require('../persist/utils')
 
-	Slider = require('../slider').load(win)
 	TimeSpanDate = require('./timeSpanDate').load(win)
 	Chart = require('./chart').load(win)
 
