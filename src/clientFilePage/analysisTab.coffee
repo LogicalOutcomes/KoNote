@@ -230,13 +230,13 @@ load = (win) ->
 					R.div({className: "leftPanel"},
 						R.div({className: "timeScaleToolbar #{showWhen hasEnoughData}"},
 							R.div({className: 'timeSpanContainer'},
-								Slider({
-									ref: 'timeSpanSlider'
-									isRange: true
-									timeSpan
-									xTicks
-									onChange: @_updateTimeSpan
-								})
+								# Slider({
+								# 	ref: 'timeSpanSlider'
+								# 	isRange: true
+								# 	timeSpan
+								# 	xTicks
+								# 	onChange: @_updateTimeSpan
+								# })
 								R.div({className: 'dateDisplay'},
 									TimeSpanDate({
 										date: timeSpan.get('start')
@@ -245,6 +245,35 @@ load = (win) ->
 										xTicks
 										updateTimeSpan: @_updateTimeSpan
 									})
+									)
+
+									R.div({className: 'btn-group'},
+										R.button({
+											onClick: @_shiftTimeSpanRange.bind(null, lastDay, 'past')
+										},
+											FaIcon('caret-left')
+										)
+										R.button({
+											onClick: @_setTimeSpanRange.bind(null, lastDay, 'days')
+										},
+											"1d"
+										)
+										R.button({
+											onClick: @_setTimeSpanRange.bind(null, lastDay, 'months')
+										},
+											"1m"
+										)
+										R.button({
+											onClick: @_setTimeSpanRange.bind(null, lastDay, 'years')
+										},
+											"1y"
+										)
+										R.button({
+											onClick: @_shiftTimeSpanRange.bind(null, lastDay, 'future')
+										},
+											FaIcon('caret-right')										)
+									)
+
 									TimeSpanDate({
 										date: timeSpan.get('end')
 										type: 'end'
@@ -430,25 +459,6 @@ load = (win) ->
 							)
 
 							R.div({className: 'dataOptions'},
-								R.div({className: "chartTypeContainer"},
-									"Chart Type: "
-									R.label({},
-										"Line "
-										R.input({
-											type: 'checkbox'
-											checked: @state.chartType is 'line'
-											onChange: @_updateChartType.bind null, 'line'
-										})
-									)
-									R.label({},
-										"Scatter "
-										R.input({
-											type: 'checkbox'
-											checked: @state.chartType is 'scatter'
-											onChange: @_updateChartType.bind null, 'scatter'
-										})
-									)
-								)
 								(planSectionsWithData.map (section) =>
 									R.div({key: section.get('id')},
 										R.h3({}, section.get('name'))
