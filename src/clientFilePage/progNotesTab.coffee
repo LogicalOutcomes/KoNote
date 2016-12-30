@@ -1724,14 +1724,16 @@ load = (win) ->
 			R.div({className: 'entryHeader'},
 				R.div({className: 'timestamp'},
 					formatTimestamp(timestamp, @props.dateFormat)
-					if firstRevision.get('backdate')
+
+					(if firstRevision.get('backdate')
 						R.span({className: 'lateTimestamp'},
 							"(late entry)"
 						)
+					)
 				)
 
-				(if progNote?
-					R.div({className: "revisions #{showWhen hasRevisions}"},
+				(if progNote? and hasRevisions
+					R.div({className: 'revisions'},
 						R.a({
 							className: 'selectProgNoteButton'
 							onClick: selectProgNote.bind null, progNote
@@ -1918,6 +1920,7 @@ load = (win) ->
 
 						div.progNote##{selectedItem.get('progNoteId')}:not(.isEditing) .revisions a {
 							color: #3176aa !important;
+							opacity: 1 !important;
 						}
 					"""
 
