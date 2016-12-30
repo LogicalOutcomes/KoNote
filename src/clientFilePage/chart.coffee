@@ -289,7 +289,7 @@ load = (win) ->
 					}
 
 					# Customization from original c3 tooltip DOM code: http://stackoverflow.com/a/25750639
-					contents: (d, defaultTitleFormat, defaultValueFormat, color) =>
+					contents: (metrics, defaultTitleFormat, defaultValueFormat, color) =>
 						# Lets us distinguish @_chart's local `this` (->) methods from Chart's `this` (=>)
 						# http://stackoverflow.com/a/15422322
 						$$ = ` this `
@@ -300,22 +300,20 @@ load = (win) ->
 
 						valueFormat = config.tooltip_format_value or defaultValueFormat
 						text = undefined
-						i = undefined
 						title = undefined
 						value = undefined
 						name = undefined
 						bgcolor = undefined
-						i = 0
 
-						while i < d.length
-							currentMetric = d[i]
+						tableContents = metrics
+						.sort (a, b) -> b.value - a.value # Sort by scaled value (desc)
+						.forEach (currentMetric) =>
 							# Pull in and add a new row for metric definition of hovered metric
 							isHoveredMetric = @hoveredMetric? and @hoveredMetric.id is currentMetric.id
 
-							# TODO: Check and see if 0 values actually get ignored
+							# Ignore empty values? TODO: Check this
 							if !(currentMetric and (currentMetric.value or currentMetric.value == 0))
-								i++
-								continue
+								return
 
 							if !text
 								title = if titleFormat then titleFormat(currentMetric.x) else currentMetric.x
@@ -331,7 +329,7 @@ load = (win) ->
 							text += '<td class=\'value\'>' + value + '</td>'
 							text += '</tr>'
 
-							# TODO: Show definitions for other metrics w/ overlapping regular or scaled values (#TODO)
+							# TODO: Show definitions for other metrics w/ overlapping regular or scaled values
 							if @hoveredMetric? and @hoveredMetric.id is currentMetric.id
 								metricId = currentMetric.id.substr(2) # Cut out "y-" for raw ID
 								metricDefinition = @props.metricsById.getIn [metricId, 'definition']
@@ -344,9 +342,11 @@ load = (win) ->
 								text += '<td class=\'definition\' colspan=\'2\'>' + metricDefinition + '</td>'
 								text += '</tr>'
 
-							i++
+							return text
 
-						text + '</table>'
+
+						text += '</table>'
+						return text
 
 				}
 				item: {
