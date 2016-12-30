@@ -38,7 +38,7 @@
 					padding-left 10px
 					padding-right 2px
 
-			.timeScaleToolbar
+			.timeScaleMenu
 				flex 1
 				flex-basis 85px
 				padding 0 20px 0 20px
@@ -58,6 +58,30 @@
 						width 100%
 						padding 20px
 
+						.timeSpanToolbar
+							flex 2
+							margin -7px 0 0 0
+							color #5c5c5c
+							.btn-group
+								with 100%
+
+								.btn
+									font-size 14px
+									width 55px
+									transition background .25s ease
+									cursor default
+									background #fff
+									padding 4.5px
+
+									border 1px solid sidebar-borders
+
+									font-weight 400
+									color #5c5c5c
+
+									&.selected
+										background #eaf1f5
+
+
 						> .timeSpanDate
 							flex 1
 
@@ -74,7 +98,7 @@
 								background #fff
 								padding 6px
 
-								border-radius 5px
+								border-radius 3px
 								border 1px solid sidebar-borders
 
 								font-weight 400

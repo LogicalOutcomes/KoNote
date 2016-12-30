@@ -161,6 +161,7 @@ load = (win) ->
 			lastDay = Moment daysOfData.last(), TimestampFormat
 			dayRange = lastDay.diff(firstDay, 'days') + 1
 
+
 			# Create list of all days as moments
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
@@ -180,6 +181,9 @@ load = (win) ->
 
 			# Assign default timespan if null
 			timeSpan = if not @state.timeSpan? then @defaultTimeSpan else @state.timeSpan
+
+			# Number of days charted
+			spanSize = timeSpan.get('end').diff(timeSpan.get('start'), 'days')
 
 
 			#################### Event Types ####################
@@ -219,6 +223,7 @@ load = (win) ->
 			eventTypesAlphabetized = @props.eventTypes.sortBy (eventType) -> eventType.get('name')
 
 
+
 			return R.div({className: "analysisView"},
 				R.div({className: "noData #{showWhen not daysOfData.size > 0}"},
 					R.div({},
@@ -231,7 +236,11 @@ load = (win) ->
 				)
 				R.div({className: "mainWrapper #{showWhen daysOfData.size > 0}"},
 					R.div({className: "leftPanel"},
+<<<<<<< HEAD
 						R.div({className: "timeScaleToolbar #{showWhen daysOfData.size > 0}"},
+=======
+						R.div({className: "timeScaleMenu #{showWhen hasEnoughData}"},
+>>>>>>> 12f6129... added conditionally styling based on spanSize
 							R.div({className: 'timeSpanContainer'},
 								R.div({className: 'dateDisplay'},
 									TimeSpanDate({
@@ -247,6 +256,8 @@ load = (win) ->
 										timeSpan
 										lastDay
 										firstDay
+										spanSize
+										dayRange
 									})
 
 									TimeSpanDate({
