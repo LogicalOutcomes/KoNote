@@ -25,33 +25,61 @@ load = (win) ->
 
 		render: ->
 			return R.div({className: 'timeSpanToolbar'},
-				R.div({className: 'btn-group'},
-					R.button({
+				R.div({className: 'btn-group btn-group-sm'},
+					R.div({
+						className: 'btn btn-default'
 						onClick: @_shiftTimeSpanRange.bind(null, @props.lastDay, @props.firstDay, 'past')
 					},
 						FaIcon('caret-left')
 					)
-					R.button({
+					R.div({
+						className: [
+							'btn'
+							'selected' if @props.spanSize is 1
+						].join ' '
 						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 'day')
 					},
 						"Day"
 					)
-					R.button({
+					R.div({
+						className: [
+							'btn'
+							'selected' if @props.spanSize is 7
+						].join ' '
 						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 'week')
 					},
 						"Week"
 					)
-					R.button({
+					R.div({
+						className: [
+							'btn'
+							'selected' if @props.spanSize is 30 or @props.spanSize is 31
+						].join ' '
 						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 'month')
 					},
 						"Month"
 					)
-					R.button({
+					R.div({
+						className: [
+							'btn'
+							'selected' if @props.spanSize is 365 or @props.spanSize is 366
+						].join ' '
 						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 'year')
 					},
 						"Year"
 					)
-					R.button({
+					R.div({
+						className: [
+							'btn'
+							'selected' if @props.spanSize is @props.dayRange
+						].join ' '
+						onClick: @_showAllData.bind(null, @props.lastDay, @props.firstDay)
+					},
+						"All"
+					)
+
+					R.div({
+						className: 'btn btn-default'
 						onClick: @_shiftTimeSpanRange.bind(null, @props.lastDay, @props.firstDay, 'future')
 					},
 						FaIcon('caret-right')
@@ -59,9 +87,17 @@ load = (win) ->
 				)
 			)
 
+		_showAllData: (lastDay, firstDay) ->
+			timeSpan = Imm.Map {
+				start: firstDay
+				end: lastDay.clone().add(1, 'day')
+			}
+
+			@props.updateTimeSpan(timeSpan)
+
 		_setTimeSpanRange: (lastDay, unit) ->
 			end = lastDay.clone().add(1, 'days')
-			start = lastDay.clone().subtract(1, unit)
+			start = lastDay.clone().subtract(1, unit).add(1,'days')
 			timeSpan = Imm.Map {
 				start
 				end
