@@ -308,8 +308,11 @@ load = (win) ->
 						tableContents = metrics
 						.sort (a, b) -> b.value - a.value # Sort by scaled value (desc)
 						.forEach (currentMetric) =>
-							# Pull in and add a new row for metric definition of hovered metric
-							isHoveredMetric = @hoveredMetric? and @hoveredMetric.id is currentMetric.id
+							# Is this metric is currently being hovered over?
+							isHoveredMetric = @hoveredMetric? and (
+								@hoveredMetric.id is currentMetric.id or # Is currently hovered (top layer)
+								Math.abs(@hoveredMetric.value - currentMetric.value) < 0.025 # Is hiding behind hovered metric
+							)
 
 							# Ignore empty values? TODO: Check this
 							if !(currentMetric and (currentMetric.value or currentMetric.value == 0))
@@ -329,8 +332,10 @@ load = (win) ->
 							text += '<td class=\'value\'>' + value + '</td>'
 							text += '</tr>'
 
+
+
 							# TODO: Show definitions for other metrics w/ overlapping regular or scaled values
-							if @hoveredMetric? and @hoveredMetric.id is currentMetric.id
+							if isHoveredMetric
 								metricId = currentMetric.id.substr(2) # Cut out "y-" for raw ID
 								metricDefinition = @props.metricsById.getIn [metricId, 'definition']
 
