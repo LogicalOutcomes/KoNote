@@ -68,17 +68,6 @@ load = (win) ->
 
 		# TODO: Use componentWillReceiveProps here?
 		componentDidUpdate: (oldProps, oldState) ->
-			# Update chart zoom from changed timeSpan?
-			sameTimeSpan = Imm.is @props.timeSpan, oldProps.timeSpan
-			unless sameTimeSpan
-				{start, end} = @props.timeSpan.toObject()
-				[chartStart, chartEnd] = @_chart.zoom()
-
-				# Compare starts & ends by Ms (one is Moment, other is JS.date)
-				if +start isnt +chartStart or +end isnt +chartEnd
-					console.log "Updating zoom..."
-					@_chart.zoom [start, end]
-
 			# Update selected metrics?
 			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 			unless sameSelectedMetrics
@@ -114,18 +103,9 @@ load = (win) ->
 
 
 		componentDidMount: ->
-			# Wait for end of zoom operations before changing timeSpan upstream
-			@_onZoomEnd = _.debounce @_onZoomEnd, 400
-
 			@_generateChart()
 			@_refreshSelectedMetrics()
 			@_refreshProgEvents()
-
-		_onZoomEnd: ([start, end]) ->
-			@props.updateTimeSpan Imm.Map {
-				start: Moment(start)
-				end: Moment(end)
-			}
 
 		_generateChart: ->
 			console.log "Generating Chart...."
@@ -287,14 +267,6 @@ load = (win) ->
 				item: {
 					onclick: (id) -> return false
 				}
-				zoom: {
-					enabled: true
-					onzoomend: (domain) =>
-						@_chart.zoom(domain)
-						@_onZoomEnd(domain)
-
-					extent: [1, @props.xTicks.size * 4] # Zoom up to 6h timespan
-				}
 				padding: {
 					left: 25
 					right: 25
@@ -305,12 +277,6 @@ load = (win) ->
 				onresize: =>
 					@_chart.resize {height: $(@refs.chartInner).height() - 20}
 			}
-
-			# Set up initial zoom (might not be full range)
-			# Using zoom.extent in init wasn't working as expected
-			minZoom = @props.timeSpan.get('start')
-			maxZoom = @props.timeSpan.get('end')
-			@_chart.zoom [minZoom, maxZoom]
 
 			# Fire metric colors up to analysisTab
 			# TODO: Define these manually/explicitly, to avoid extra analysisTab render

@@ -29,8 +29,6 @@ load = (win) ->
 	Chart = require('./chart').load(win)
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
-	dateDisplayFormat = 'MMM Do - YYYY'
-
 
 	AnalysisView = React.createFactory React.createClass
 		displayName: 'AnalysisView'
@@ -43,7 +41,6 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				hasEnoughData: null
 				daysOfData: null
 				selectedMetricIds: Imm.Set()
 				chartType: 'line'
@@ -145,6 +142,7 @@ load = (win) ->
 			spannedProgEvents = allEvents.filter (progEvent) -> !!progEvent.get('endTimestamp')
 
 			# Build list of timestamps from progEvents (start & end) & metrics as Unix Timestamps (ms)
+			# todo: why as unix timestamps?
 			daysOfData = Imm.List()
 			.concat allEvents.map (progEvent) ->
 				Moment(progEvent.get('startTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
@@ -171,10 +169,17 @@ load = (win) ->
 				firstDay.clone().add(n, 'days')
 
 			# Declare default timeSpan
-			@defaultTimeSpan = Imm.Map {
-				start: xTicks.first()
-				end: xTicks.last()
-			}
+			# confirm we have enough data and set to 1 month
+			if xTicks.last().subtract(1, "month").isSameOrAfter(xTicks.first())
+				@defaultTimeSpan = Imm.Map {
+					start: xTicks.last().subtract(1, "month")
+					end: xTicks.last()
+				}
+			else
+				@defaultTimeSpan = Imm.Map {
+					start: xTicks.first()
+					end: xTicks.last()
+				}
 
 			# Assign default timespan if null
 			timeSpan = if not @state.timeSpan? then @defaultTimeSpan else @state.timeSpan
@@ -188,6 +193,7 @@ load = (win) ->
 			# Map out visible progEvents (within timeSpan) by eventTypeId
 			visibleProgEvents = allEvents.filter (progEvent) ->
 				endTimestamp = progEvent.get('endTimestamp')
+				# todo: do we need this? what if we use persist format above at :137?
 				startMoment = makeMoment progEvent.get('startTimestamp')
 
 				if endTimestamp
@@ -214,26 +220,24 @@ load = (win) ->
 
 			#################### ETC ####################
 
-			hasEnoughData = daysOfData.size > 0
 			untypedEvents = allEvents.filterNot (progEvent) => !!progEvent.get('typeId')
-
 			eventTypesAlphabetized = @props.eventTypes.sortBy (eventType) -> eventType.get('name')
 
 
 
 			return R.div({className: "analysisView"},
-				R.div({className: "noData #{showWhen not hasEnoughData}"},
+				R.div({className: "noData #{showWhen not daysOfData.size > 0}"},
 					R.div({},
 						R.h1({}, "More Data Needed")
 						R.div({},
 							"Analytics will show up here once #{Term 'metrics'} or #{Term 'events'}
-							have been recorded in a #{Term 'progress note'} for #{@props.clientName}."
+							have been recorded in a #{Term 'progress note'}."
 						)
 					)
 				)
-				R.div({className: "mainWrapper #{showWhen hasEnoughData}"},
+				R.div({className: "mainWrapper #{showWhen daysOfData.size > 0}"},
 					R.div({className: "leftPanel"},
-						R.div({className: "timeScaleMenu #{showWhen hasEnoughData}"},
+						R.div({className: "timeScaleMenu #{showWhen daysOfData.size > 0}"},
 							R.div({className: 'timeSpanContainer'},
 								R.div({className: 'dateDisplay'},
 									TimeSpanDate({
