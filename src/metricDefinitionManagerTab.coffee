@@ -2,12 +2,15 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Tab layer for adding/defining or managing existing metric definitions
+
 Async = require 'async'
 Imm = require 'immutable'
 
 Persist = require './persist'
 Config = require './config'
 Term = require './term'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -33,6 +36,7 @@ load = (win) ->
 	MetricDefinitionManagerTab = React.createFactory React.createClass
 		displayName: 'MetricDefinitionManagerTab'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: -> {
 			dataIsReady: false

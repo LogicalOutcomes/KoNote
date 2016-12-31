@@ -12,9 +12,11 @@ load = (win) ->
 
 	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
+
 	MetricWidget = React.createFactory React.createClass
 		displayName: 'MetricWidget'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		componentDidMount: ->
 			tooltipContent = R.div({className: 'tooltipContent'},
@@ -70,14 +72,15 @@ load = (win) ->
 					R.div({className: 'delete', onClick: @props.onDelete},
 						FaIcon 'times'
 					)
-				else
-					null
 				)
 			)
+
 		_onChange: (event) ->
 			if @props.onChange
 				@props.onChange event.target.value
 
+
 	return MetricWidget
+
 
 module.exports = {load}

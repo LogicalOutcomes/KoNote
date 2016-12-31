@@ -1,16 +1,14 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-Imm = require 'immutable'
-Async = require 'async'
+# Dialog to change the status of a section within the client's plan (default/deactivated/completed)
+# TODO: Consolidate with ModifyTargetStatusDialog
 
-Config = require '../config'
 Persist = require '../persist'
-Term = require '../term'
+
 
 load = (win) ->
-	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
@@ -19,14 +17,16 @@ load = (win) ->
 	Dialog = require('../dialog').load(win)
 	Spinner = require('../spinner').load(win)
 
+
 	ModifySectionStatusDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
 			@refs.statusReasonField.focus()
 
-		getInitialState: ->
-			return {statusReason: ''}
+		getInitialState: -> {
+			statusReason: ''
+		}
 
 		render: ->
 			Dialog({
@@ -67,7 +67,6 @@ load = (win) ->
 		_submit: ->
 			@refs.dialog.setIsLoading true
 
-
 			revisedPlan = @props.clientFile.get('plan')
 			.setIn(['sections', @props.sectionIndex, 'status'], @props.newStatus)
 			.setIn(['sections', @props.sectionIndex, 'statusReason'], @state.statusReason)
@@ -87,7 +86,7 @@ load = (win) ->
 
 					CrashHandler.handle err
 					return
-				
+
 				@props.onSuccess()
 
 

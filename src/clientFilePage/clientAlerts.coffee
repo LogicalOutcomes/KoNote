@@ -254,5 +254,4 @@ load = (win) ->
 
 	return ClientAlerts
 
-
 module.exports = {load}

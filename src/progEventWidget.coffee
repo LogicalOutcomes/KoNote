@@ -2,8 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# React widget to drop in wherever events should be displayed
-# Formats: 'small', 'large', and 'print'
+# Event display component with 3 different formats: 'small', 'large', and 'print'
 
 Moment = require 'moment'
 Imm = require 'immutable'
@@ -30,7 +29,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			format: PropTypes.string
+			format: PropTypes.oneOf ['small', 'large', 'print']
 			isEditing: PropTypes.bool
 			onChange: PropTypes.func
 			progEvent: PropTypes.instanceOf(Imm.Map).isRequired
@@ -102,6 +101,7 @@ load = (win) ->
 	FullWidget = React.createFactory React.createClass
 		displayName: 'FullWidget'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		render: ->
 			{progEvent, eventType, eventTypes, format, isEditing, updateProperty, updateTimestamps} = @props
@@ -196,8 +196,6 @@ load = (win) ->
 			)
 
 
-
-
 	SmallWidget = ({progEvent, eventType, format}) ->
 		eventDate = renderTimeSpan progEvent.get('startTimestamp'), progEvent.get('endTimestamp')
 		tooltipText = eventDate
@@ -237,7 +235,6 @@ load = (win) ->
 		},
 			eventType.get('name')
 		)
-
 
 
 	return ProgEventWidget

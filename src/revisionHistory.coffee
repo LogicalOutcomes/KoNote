@@ -2,10 +2,14 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Lists entries of revisions from provided rev-history, with add/removed diffing
+
 Imm = require 'immutable'
-Term = require './term'
-{diffSentences, diffTrimmedLines, diffWordsWithSpace} = require 'diff'
 DiffMatchPatch = require 'diff-match-patch'
+{diffSentences, diffTrimmedLines, diffWordsWithSpace} = require 'diff'
+
+Term = require './term'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -15,9 +19,9 @@ load = (win) ->
 
 	MetricWidget = require('./metricWidget').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
-
 	{FaIcon, renderLineBreaks, showWhen,
 	stripMetadata, formatTimestamp, capitalize} = require('./utils').load(win)
+
 
 	RevisionHistory = React.createFactory React.createClass
 		displayName: 'RevisionHistory'
@@ -275,15 +279,18 @@ load = (win) ->
 				)
 			)
 
+
 	RevisionChangeLog = React.createFactory React.createClass
 		displayName: 'RevisionChangeLog'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: -> {
 			isSnapshotVisible: null
 		}
 
-		_toggleSnapshot: -> @setState {isSnapshotVisible: not @state.isSnapshotVisible}
+		_toggleSnapshot: ->
+			@setState {isSnapshotVisible: not @state.isSnapshotVisible}
 
 		render: ->
 			revision = @props.revision
@@ -434,6 +441,7 @@ load = (win) ->
 
 			)
 
+
 	RevisionSnapshot = ({revision, metricsById, isRenameEntry}) ->
 		hasMetrics = revision.get('metricIds')?
 
@@ -464,6 +472,7 @@ load = (win) ->
 				)
 			)
 		)
+
 
 	return RevisionHistory
 

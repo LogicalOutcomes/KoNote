@@ -2,7 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Node libs
+
 Imm = require 'immutable'
 Async = require 'async'
 
@@ -12,30 +12,28 @@ Persist = require './persist'
 
 
 load = (win) ->
-	# Window libs
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
 	ReactDOM = win.ReactDOM
 	R = React.DOM
+	Window = nw.Window.get(win)
 
 	# TODO: Refactor to single require
 	{BootstrapTable, TableHeaderColumn} = win.ReactBootstrapTable
 	BootstrapTable = React.createFactory BootstrapTable
 	TableHeaderColumn = React.createFactory TableHeaderColumn
 
-	Window = nw.Window.get(win)
-
 	MainMenu = require('./mainMenu').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ProgramBubbles = require('./programBubbles').load(win)
-
 	ManagerLayer = require('./managerLayer').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
-	if Config.features.shiftSummaries.isEnabled then GenerateSummariesDialog = require('./generateSummariesDialog').load(win)
-
 	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
+
+	if Config.features.shiftSummaries.isEnabled
+		GenerateSummariesDialog = require('./generateSummariesDialog').load(win)
 
 
 	ClientSelectionPage = React.createFactory React.createClass

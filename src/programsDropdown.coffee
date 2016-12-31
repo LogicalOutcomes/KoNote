@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Dropdown component for program selection, minus selected program
+
 Imm = require 'immutable'
 Term = require './term'
 
@@ -29,17 +31,15 @@ load = (win) ->
 			onSelect: React.PropTypes.func.isRequired
 		}
 
-		getDefaultProps: ->
-			return {
-				selectedProgram: Imm.Map()
-				placeholder: "No #{Term 'Program'}"
-				excludeNone: false
-			}
+		getDefaultProps: -> {
+			selectedProgram: Imm.Map()
+			placeholder: "No #{Term 'Program'}"
+			excludeNone: false
+		}
 
-		getInitialState: ->
-			return {
-				isOpen: null
-			}
+		getInitialState: -> {
+			isOpen: null
+		}
 
 		toggle: ->
 			@setState {isOpen: not @state.isOpen}

@@ -2,6 +2,9 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Toolbar for handling search query (via props and internal copy),
+# and a dropdown menu handling selection for options within each filter type
+
 _ = require 'underscore'
 Imm = require 'immutable'
 

@@ -4,7 +4,9 @@
 # Link that manages layering for opening up a custom dialog.
 # This component wraps around whatever you want to be clickable.
 # See also: openDialogButton
+
 _ = require 'underscore'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -15,19 +17,21 @@ load = (win) ->
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	{FaIcon} = require('./utils').load(win)
 
+
 	OpenDialogLink = React.createFactory React.createClass
 		displayName: 'OpenDialogLink'
 		mixins: [React.addons.PureRenderMixin, LayeredComponentMixin]
+		# TODO: propTypes
 
 		getInitialState: -> {
 			isOpen: false
 		}
 
 		getDefaultProps: -> {
-				className: ''
-				onClose: ->
-				onCancel: ->
-				onSuccess: ->
+			className: ''
+			onClose: ->
+			onCancel: ->
+			onSuccess: ->
 		}
 
 		render: ->
@@ -66,6 +70,8 @@ load = (win) ->
 
 			return @props.dialog(props)
 
+
 	return OpenDialogLink
+
 
 module.exports = {load}

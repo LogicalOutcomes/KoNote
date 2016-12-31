@@ -2,14 +2,16 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Window for user login -> account validation, with detection for setup/migrations
+
 Async = require 'async'
 
 Config = require './config'
 Term = require './term'
 Persist = require './persist'
 
+
 load = (win) ->
-	# Libraries from browser context
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
@@ -19,6 +21,7 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
 	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
+
 
 	LoginPage = React.createFactory React.createClass
 		displayName: 'LoginPage'
@@ -112,7 +115,7 @@ load = (win) ->
 						clientSelectionPageWindow = newWindow
 
 						Window.hide()
-						
+
 						clientSelectionPageWindow.on 'closed', =>
 							@props.closeWindow()
 							Window.quit()
@@ -280,5 +283,6 @@ load = (win) ->
 
 
 	return LoginPage
+
 
 module.exports = {load}

@@ -2,19 +2,20 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Menu component to display MenuOptions
 
 Imm = require 'immutable'
 Term = require './term'
+
 
 load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
 
-	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
-
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ProgramsDropdown = require('./programsDropdown').load(win)
+	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	{FaIcon, showWhen} = require('./utils').load(win)
 
@@ -153,7 +154,7 @@ load = (win) ->
 				onClick: @props.onClick
 			},
 				if @props.dialog?
-					OpenDialogLink(@props,
+					OpenDialogLink(@props, # Why @props here? Doesn't look right...
 						FaIcon(@props.icon)
 						@props.title
 					)

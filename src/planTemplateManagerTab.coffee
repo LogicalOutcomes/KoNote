@@ -2,12 +2,13 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# The Plan tab on the client file page.
+# Tab layer for creating/managing system-wide plan templates
 
 Async = require 'async'
 Imm = require 'immutable'
 
 Persist = require './persist'
+Term = require './term'
 
 
 load = (win) ->
@@ -21,17 +22,16 @@ load = (win) ->
 	BootstrapTable = React.createFactory BootstrapTable
 	TableHeaderColumn = React.createFactory TableHeaderColumn
 
-	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	DialogLayer = require('./dialogLayer').load(win)
 	Dialog = require('./dialog').load(win)
-
 	{stripMetadata, FaIcon} = require('./utils').load(win)
 
 
 	PlanTemplateManagerTab = React.createFactory React.createClass
 		displayName: 'PlanTemplateManagerTab'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: ->
 			return {
@@ -54,6 +54,7 @@ load = (win) ->
 
 						planTemplateHeaders = result
 						cb()
+
 				(cb) =>
 					Async.map planTemplateHeaders.toArray(), (planTemplateHeader, cb) =>
 						planTemplateId = planTemplateHeader.get('id')
@@ -66,7 +67,6 @@ load = (win) ->
 
 						planTemplates = Imm.List(results).map (planTemplate) -> stripMetadata planTemplate.get(0)
 						cb()
-
 
 			], (err) =>
 					if err
@@ -374,5 +374,6 @@ load = (win) ->
 
 
 	return PlanTemplateManagerTab
+
 
 module.exports = {load}

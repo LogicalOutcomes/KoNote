@@ -2,7 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# PROTOTYPE FEATURE
+# Prototyped Griffin feature that generates a string/list of today's shift summaries
 
 Async = require 'async'
 Imm = require 'immutable'
@@ -31,6 +31,7 @@ load = (win) ->
 	GenerateSummariesDialog = React.createFactory React.createClass
 		displayName: 'GenerateSummariesDialog'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: -> {
 			isBuilding: true

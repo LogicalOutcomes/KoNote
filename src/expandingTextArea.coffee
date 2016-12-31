@@ -8,6 +8,7 @@
 
 _ = require 'underscore'
 
+
 load = (win) ->
 	React = win.React
 	R = React.DOM
@@ -104,5 +105,6 @@ load = (win) ->
 			@refs.textarea.focus()
 
 	return ExpandingTextArea
+
 
 module.exports = {load}

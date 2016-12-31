@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Generic bubble component to show color/details for programs, eventTypes, etc
+
 load = (win) ->
 	# Libraries from browser context
 	$ = win.jQuery
@@ -9,6 +11,7 @@ load = (win) ->
 	R = React.DOM
 
 	{FaIcon} = require('./utils').load(win)
+
 
 	ColorKeyBubble = React.createFactory React.createClass
 		displayName: 'ColorKeyBubble'
@@ -26,10 +29,9 @@ load = (win) ->
 			onClick: React.PropTypes.func
 		}
 
-		getDefaultProps: ->
-			return {
-				onClick: ->
-			}
+		getDefaultProps: -> {
+			onClick: ->
+		}
 
 		componentDidMount: ->
 			popoverOptions = @props.popover
@@ -51,9 +53,7 @@ load = (win) ->
 		render: ->
 			{onClick, colorKeyHex, icon} = @props
 
-			R.div({
-				className: 'colorKeyBubble'
-			},
+			R.div({className: 'colorKeyBubble'},
 				R.div({
 					ref: 'bubble'
 					className: [

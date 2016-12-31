@@ -2,11 +2,13 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Wrapper component for ColorKeyBubble to toggle selection, and detect duplicate selection
+
 Imm = require 'immutable'
 Term = require './term'
 
+
 load = (win) ->
-	# Libraries from browser context
 	React = win.React
 	Bootbox = win.bootbox
 	R = React.DOM

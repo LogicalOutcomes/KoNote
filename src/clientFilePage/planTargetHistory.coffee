@@ -1,10 +1,13 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
+
+# TODO: Check whether we still need this, I think it was generalized into RevisionHistory?
 
 Imm = require 'immutable'
 Term = require '../term'
 {diffWordsWithSpace} = require 'diff'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -13,8 +16,9 @@ load = (win) ->
 
 	MetricWidget = require('../metricWidget').load(win)
 
-	{FaIcon, renderLineBreaks, showWhen, 
+	{FaIcon, renderLineBreaks, showWhen,
 	stripMetadata, formatTimestamp, capitalize} = require('../utils').load(win)
+
 
 	PlanTargetHistory = React.createFactory React.createClass
 		displayName: 'PlanTargetHistory'
@@ -61,7 +65,7 @@ load = (win) ->
 
 			# TODO: Generalize these diffs for arrays & strings,
 			# so we (hopefully) don't need to update this as the dataModel changes
-				
+
 			# Diff the metricIds
 			previousMetricIds = previousRevision.get('metricIds')
 			currentMetricIds = revision.get('metricIds')
@@ -94,9 +98,9 @@ load = (win) ->
 
 			# Diff the name
 			previousName = previousRevision.get('name')
-			currentName = revision.get('name')			
+			currentName = revision.get('name')
 
-			unless previousName is currentName				
+			unless previousName is currentName
 				diffedName = @_diffStrings(previousName, currentName)
 
 				revisedName = Imm.fromJS {
@@ -146,7 +150,7 @@ load = (win) ->
 				changeLog = revision.get('changeLog').push revisedStatus
 				revision = revision.set('changeLog', changeLog)
 
-			return revision		
+			return revision
 
 		render: ->
 			# Process revision history to devise change logs
@@ -186,7 +190,7 @@ load = (win) ->
 
 		render: ->
 			revision = @props.revision
-			changeLog = revision.get('changeLog')	
+			changeLog = revision.get('changeLog')
 
 			return R.section({className: 'revision animated fadeIn'},
 				R.div({className: 'header'},
@@ -198,7 +202,7 @@ load = (win) ->
 						formatTimestamp revision.get('timestamp')
 					)
 				)
-				R.div({className: 'changeLog'},					
+				R.div({className: 'changeLog'},
 					(changeLog.map (entry, index) =>
 						ChangeLogEntry({
 							key: index
@@ -220,9 +224,11 @@ load = (win) ->
 				)
 			)
 
+
 	ChangeLogEntry = React.createFactory React.createClass
 		displayName: 'ChangeLogEntry'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		render: ->
 			entry = @props.entry
@@ -233,7 +239,7 @@ load = (win) ->
 					R.button({
 						className: 'btn btn-default btn-xs snapshotButton'
 						onClick: @props.onToggleSnapshot
-					}, 
+					},
 						if not @props.isSnapshotVisible then "view" else "hide"
 						" full revision"
 					)
@@ -244,7 +250,7 @@ load = (win) ->
 				R.span({className: 'action'},
 					# Different display cases for indication of change
 					(if entry.get('action') is 'created'
-						"#{capitalize entry.get('action')} #{entry.get('property')} as: "						
+						"#{capitalize entry.get('action')} #{entry.get('property')} as: "
 					else if entry.get('statusReason')
 						"#{capitalize entry.get('value')} #{Term 'target'} because: "
 					else
@@ -280,6 +286,8 @@ load = (win) ->
 				)
 			)
 
+
+	# TODO: Make view/func
 	RevisionSnapshot = React.createFactory React.createClass
 		render: ->
 			revision = @props.revision
@@ -310,6 +318,7 @@ load = (win) ->
 					)
 				)
 			)
+
 
 	return PlanTargetHistory
 

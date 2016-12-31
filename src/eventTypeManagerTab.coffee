@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Tab layer component for creating/managing event types
+
 Async = require 'async'
 Imm = require 'immutable'
 
@@ -34,6 +36,7 @@ load = (win) ->
 	EventTypeManagerTab = React.createFactory React.createClass
 		displayName: 'EventTypeManagerTab'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: ->
 			return {

@@ -12,6 +12,7 @@ Config = require './config'
 Term = require './term'
 Persist = require './persist'
 
+
 load = (win, {dataSet}) ->
 	$ = win.jQuery
 	React = win.React
@@ -24,6 +25,7 @@ load = (win, {dataSet}) ->
 	ExpandedMetricWidget = require('./expandedMetricWidget').load(win)
 	{FaIcon,renderLineBreaks, renderName,
 	renderRecordId, showWhen, formatTimestamp} = require('./utils').load(win)
+
 
 	PrintPreviewPage = React.createFactory React.createClass
 		displayName: 'PrintPreviewPage'
@@ -49,9 +51,11 @@ load = (win, {dataSet}) ->
 				printDataSet: @state.printDataSet
 			}
 
+
 	PrintPreviewPageUi = React.createFactory React.createClass
 		displayName: 'PrintPreviewPageUi'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: ->
 			return {
@@ -157,10 +161,11 @@ load = (win, {dataSet}) ->
 			@setState {previewType: 'cheatSheet'}
 
 
-
 	PrintHeader = React.createFactory React.createClass
 		displayName: 'PrintHeader'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes, or make this a view
+
 		render: ->
 			# Calculate timestamp for backdate if exists
 			timestamp = formatTimestamp(@props.data.get('backdate') or @props.data.get('timestamp'))
@@ -216,9 +221,12 @@ load = (win, {dataSet}) ->
 				)
 			)
 
+
 	BasicProgNoteView = React.createFactory React.createClass
 		displayName: 'BasicProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes, or make this a view
+
 		render: ->
 			R.div({className: 'basic progNote'},
 				R.div({className: 'notes'},
@@ -226,9 +234,12 @@ load = (win, {dataSet}) ->
 				)
 			)
 
+
 	FullProgNoteView = React.createFactory React.createClass
 		displayName: 'FullProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes, or make this a view
+
 		render: ->
 			R.div({className: 'full progNote'},
 				R.div({className: 'units'},
@@ -308,9 +319,12 @@ load = (win, {dataSet}) ->
 				)
 			)
 
+
 	SinglePlanView = React.createFactory React.createClass
 		displayName: 'SinglePlanView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes, or make this a view
+
 		render: ->
 			R.div({className: 'plan unit'},
 				R.div({className: 'sections'},
@@ -334,7 +348,7 @@ load = (win, {dataSet}) ->
 
 									R.div({className: 'target'},
 										R.h3({className: 'name'}, thisTarget.get('name'))
-										R.div({className: 'description'}, 
+										R.div({className: 'description'},
 											renderLineBreaks thisTarget.get('description')
 										)
 										R.div({className: 'metrics'},
@@ -356,9 +370,12 @@ load = (win, {dataSet}) ->
 				)
 			)
 
+
 	CheatSheetPlanView = React.createFactory React.createClass
 		displayName: 'SinglePlanView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes, or make this a view
+
 		render: ->
 			R.div({className: 'plan unit'},
 				R.div({className: 'sections'},
@@ -408,6 +425,8 @@ load = (win, {dataSet}) ->
 				)
 			)
 
+
 	return PrintPreviewPage
+
 
 module.exports = {load}
