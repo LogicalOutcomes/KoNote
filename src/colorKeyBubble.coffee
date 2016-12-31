@@ -37,15 +37,10 @@ load = (win) ->
 			popoverOptions = @props.popover
 			return unless popoverOptions?
 
-			defaultOptions = {
-				placement: 'right'
-				container: 'body'
-			}
-
 			$(@refs.bubble).popover {
 				trigger: 'hover'
-				placement: popoverOptions.placement or defaultOptions.placement
-				container: popoverOptions.container or defaultOptions.container
+				placement: popoverOptions.placement or 'right'
+				container: popoverOptions.container or 'body'
 				title: popoverOptions.title
 				content: popoverOptions.content
 			}
