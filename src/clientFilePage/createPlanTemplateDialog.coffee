@@ -107,13 +107,14 @@ load = (win) ->
 
 			global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
 				if err
-					console.log "ERROR", err
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again
+						"""
+						return
 
-				if err instanceof Persist.IOError
-					console.error err
-					Bootbox.alert """
-						Please check your network connection and try again
-					"""
+					CrashHandler.handle(err)
 					return
 
 				Bootbox.alert "New template: '#{@state.templateName}' created."
