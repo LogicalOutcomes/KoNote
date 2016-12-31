@@ -262,6 +262,11 @@ load = (win) ->
 						hiddenId: 'hiddenId'
 					}
 				}
+				spline: {
+					interpolation: {
+						type: 'catmullRom'
+					}
+				}
 				point: {
 					r: if @props.chartType is 'scatter' then 5 else 3
 				}
