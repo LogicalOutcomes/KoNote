@@ -167,7 +167,7 @@ load = (win) ->
 
 		if typeof text isnt 'string'
 			console.error "Tried to call renderLineBreaks on a non-string:", text
-			return result
+			return text
 
 		lines = text.trim()
 		.replace(/\r\n/g, '\n') # Windows -> Unix
