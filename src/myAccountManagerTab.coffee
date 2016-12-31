@@ -59,7 +59,6 @@ load = (win) ->
 									type: 'password'
 									onChange: @_updateCurrentPassword
 									value: @state.currentPassword
-									onKeyDown: @_onEnterKeyDown
 									placeholder: "Enter password"
 									disabled: @state.passwordIsVerified
 								})
@@ -224,12 +223,6 @@ load = (win) ->
 				@setState @getInitialState
 
 
-		_onEnterKeyDown: (event) ->
-			# if event.which is 13 and @state.firstName and @state.lastName
-			# 	@_submit()
-
-
 	return MyAccountManagerTab
-
 
 module.exports = {load}
