@@ -22,11 +22,14 @@ load = (win) ->
 			tooltipContent = R.div({className: 'tooltipContent'},
 				renderLineBreaks @props.definition
 			)
-			viewport = @props.tooltipViewport || 'body'
+
 			$(@refs.name).tooltip {
 				html: true
 				title: ReactDOMServer.renderToString tooltipContent
-				viewport: {"selector": viewport, "padding": 0 }
+				viewport: {
+					selector: @props.tooltipViewport or 'body'
+					padding: 0
+				}
 			}
 
 		render: ->
