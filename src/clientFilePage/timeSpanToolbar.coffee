@@ -15,6 +15,7 @@ Config = require '../config'
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
 
 	{FaIcon} = require('../utils').load(win)
@@ -23,8 +24,15 @@ load = (win) ->
 		displayName: 'TimeSpanDate'
 		mixins: [React.addons.PureRenderMixin]
 
-		render: ->
+		propTypes: {
+			updateTimeSpan: PropTypes.func
+			timeSpan: PropTypes.instanceOf Imm.Map()
+			lastDay: PropTypes.objectOf Moment()
+			firstDay: PropTypes.objectOf Moment()
+			dayRange: PropTypes.number
+		}
 
+		render: ->
 			spanSize = @props.timeSpan.get('end').diff(@props.timeSpan.get('start'), 'days')
 
 			return R.div({className: 'timeSpanToolbar'},
