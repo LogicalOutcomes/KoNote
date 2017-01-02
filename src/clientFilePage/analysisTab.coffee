@@ -182,9 +182,6 @@ load = (win) ->
 			# Assign default timespan if null
 			timeSpan = if not @state.timeSpan? then @defaultTimeSpan else @state.timeSpan
 
-			# Number of days charted
-			spanSize = timeSpan.get('end').diff(timeSpan.get('start'), 'days')
-
 
 			#################### Event Types ####################
 
@@ -256,7 +253,6 @@ load = (win) ->
 										timeSpan
 										lastDay
 										firstDay
-										spanSize
 										dayRange
 									})
 
