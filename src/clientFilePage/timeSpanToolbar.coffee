@@ -119,6 +119,9 @@ load = (win) ->
 			else if direction is 'past'
 				start.subtract(difference, 'days')
 				end.subtract(difference, 'days')
+			else
+				console.warn "Unknown span shift direction"
+				return
 
 			# unless end date is after lastDay or start is before first day
 			if end.isAfter(lastDay.add(1, 'day')) or start.isBefore(firstDay)
