@@ -24,6 +24,9 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
+
+			spanSize = @props.timeSpan.get('end').diff(@props.timeSpan.get('start'), 'days')
+
 			return R.div({className: 'timeSpanToolbar'},
 				R.div({className: 'btn-group btn-group-sm'},
 					R.div({
@@ -35,7 +38,7 @@ load = (win) ->
 					R.div({
 						className: [
 							'btn'
-							'selected' if @props.spanSize is 1
+							'selected' if spanSize is 1
 						].join ' '
 						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 'day')
 					},
@@ -44,7 +47,7 @@ load = (win) ->
 					R.div({
 						className: [
 							'btn'
-							'selected' if @props.spanSize is 7
+							'selected' if spanSize is 7
 						].join ' '
 						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 'week')
 					},
@@ -53,7 +56,7 @@ load = (win) ->
 					R.div({
 						className: [
 							'btn'
-							'selected' if @props.spanSize is 30 or @props.spanSize is 31
+							'selected' if spanSize is 30 or spanSize is 31
 						].join ' '
 						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 'month')
 					},
@@ -62,7 +65,7 @@ load = (win) ->
 					R.div({
 						className: [
 							'btn'
-							'selected' if @props.spanSize is 365 or @props.spanSize is 366
+							'selected' if spanSize is 365 or spanSize is 366
 						].join ' '
 						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 'year')
 					},
@@ -71,7 +74,7 @@ load = (win) ->
 					R.div({
 						className: [
 							'btn'
-							'selected' if @props.spanSize is @props.dayRange
+							'selected' if spanSize is @props.dayRange
 						].join ' '
 						onClick: @_showAllData.bind(null, @props.lastDay, @props.firstDay)
 					},
