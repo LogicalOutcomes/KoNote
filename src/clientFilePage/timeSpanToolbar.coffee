@@ -121,13 +121,15 @@ load = (win) ->
 				end.subtract(difference, 'days')
 
 			# unless end date is after lastDay or start is before first day
-			unless end.isAfter(lastDay.add(1, 'day')) or start.isBefore(firstDay)
-				timeSpan = Imm.Map {
-					start
-					end
-				}
+			if end.isAfter(lastDay.add(1, 'day')) or start.isBefore(firstDay)
+				console.warn "Attempting to shift spanRange outside of data limits."
+				return
+			timeSpan = Imm.Map {
+				start
+				end
+			}
 
-				@props.updateTimeSpan(timeSpan)
+			@props.updateTimeSpan(timeSpan)
 
 	return TimeSpanToolbar
 
