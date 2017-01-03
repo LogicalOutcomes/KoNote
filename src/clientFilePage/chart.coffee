@@ -69,6 +69,20 @@ load = (win) ->
 
 		# TODO: Use componentWillReceiveProps here?
 		componentDidUpdate: (oldProps, oldState) ->
+			# Update timeSpan?
+			sameTimeSpan = Imm.is @props.timeSpan, oldProps.timeSpan
+			unless sameTimeSpan
+				newMin = @props.timeSpan.get('start')
+				newMax = @props.timeSpan.get('end')
+
+				# C3 requires there's some kind of span (even if it's 1ms)
+				# todo check this
+				if newMin is newMax
+					newMax = newMax.clone().endOf 'day'
+
+				@_chart.axis.min {x: newMin}
+				@_chart.axis.max {x: newMax}
+			
 			# Update selected metrics?
 			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 			unless sameSelectedMetrics
@@ -194,8 +208,10 @@ load = (win) ->
 						dataPoint
 
 			# Min/Max x dates
-			minDate = @props.xTicks.first()
-			maxDate = @props.xTicks.last()
+			#minDate = @props.xTicks.first()
+			#maxDate = @props.xTicks.last()
+			minDate = @props.timeSpan.get('start')
+			maxDate = @props.timeSpan.get('end')
 
 			# YEAR LINES
 			# Build Imm.List of years and timestamps to matching
@@ -247,6 +263,11 @@ load = (win) ->
 					names: dataSeriesNames.toJS()
 					classes: {
 						hiddenId: 'hiddenId'
+					}
+				}
+				spline: {
+					interpolation: {
+						type: 'catmullRom'
 					}
 				}
 				point: {
