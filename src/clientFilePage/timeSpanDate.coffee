@@ -57,8 +57,8 @@ load = (win) ->
 				@dateTimePicker.minDate @props.xTicks.first()
 				@dateTimePicker.maxDate @props.xTicks.last()
 
-			# update the start or end date
-			@dateTimePicker.date @props.timeSpan.get(@props.type)
+				# update the start or end date
+				@dateTimePicker.date @props.timeSpan.get(@props.type)
 
 		_onChange: (event) ->
 			newDate = Moment(event.date)
