@@ -2,10 +2,11 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Page overlay for managing client files
+# Tab layer for managing own user account
 
 Persist = require './persist'
 Term = require './term'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -17,9 +18,11 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 	{FaIcon, renderName, showWhen} = require('./utils').load(win)
 
+
 	MyAccountManagerTab = React.createFactory React.createClass
 		displayName: 'MyAccountManagerTab'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		componentDidMount: ->
 			@refs.currentPasswordField.focus()
@@ -56,7 +59,6 @@ load = (win) ->
 									type: 'password'
 									onChange: @_updateCurrentPassword
 									value: @state.currentPassword
-									onKeyDown: @_onEnterKeyDown
 									placeholder: "Enter password"
 									disabled: @state.passwordIsVerified
 								})
@@ -219,11 +221,6 @@ load = (win) ->
 
 				Bootbox.alert "Your password was successfully reset!"
 				@setState @getInitialState
-
-
-		_onEnterKeyDown: (event) ->
-			# if event.which is 13 and @state.firstName and @state.lastName
-			# 	@_submit()
 
 
 	return MyAccountManagerTab

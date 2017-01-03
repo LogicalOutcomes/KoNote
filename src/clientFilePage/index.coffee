@@ -38,6 +38,7 @@ load = (win, {clientFileId}) ->
 
 	{FaIcon, renderName, renderRecordId, showWhen, showWhen3d, stripMetadata} = require('../utils').load(win)
 
+	# TODO: Consolidate with spinner.coffee
 	loadingSpinner = React.createFactory React.createClass
 		displayName: 'loadingSpinner'
 		mixins: [React.addons.PureRenderMixin]
@@ -896,7 +897,6 @@ load = (win, {clientFileId}) ->
 			}
 
 
-
 	ClientFilePageUi = React.createFactory React.createClass
 		displayName: 'ClientFilePageUi'
 		mixins: [React.addons.PureRenderMixin]
@@ -1232,7 +1232,7 @@ load = (win, {clientFileId}) ->
 				})
 			)
 
-
+	# TODO: Change to view/func
 	SidebarTab = React.createFactory React.createClass
 		displayName: 'SidebarTab'
 
@@ -1246,7 +1246,7 @@ load = (win, {clientFileId}) ->
 				@props.name
 			)
 
-
+	# TODO: Change to view/func
 	LoadError = React.createFactory React.createClass
 		displayName: 'LoadError'
 
@@ -1267,7 +1267,7 @@ load = (win, {clientFileId}) ->
 		render: ->
 			return R.div({className: 'clientFilePage'})
 
-
+	# TODO: Change to view/func
 	ReadOnlyNotice = React.createFactory React.createClass
 		displayName: 'ReadOnlyNotice'
 
@@ -1286,6 +1286,7 @@ load = (win, {clientFileId}) ->
 					@props.data.mode or "Read-Only Mode"
 				)
 			)
+
 
 	return ClientFilePage
 

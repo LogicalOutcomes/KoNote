@@ -24,6 +24,7 @@ load = (win) ->
 	DialogLayer = React.createFactory React.createClass
 		displayName: 'DialogLayer'
 		mixins: [React.addons.PureRenderMixin, LayeredComponentMixin]
+		# TODO: propTypes
 
 		getInitialState: ->
 			return {
@@ -76,6 +77,8 @@ load = (win) ->
 
 			return @state.dialogComponent(props)
 
+
 	return DialogLayer
+
 
 module.exports = {load}

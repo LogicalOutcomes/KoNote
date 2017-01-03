@@ -2,11 +2,11 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# A dialog for allowing the user to define (i.e. create) a new metric
+# Dialog to define (i.e. create) a new metric
 
 Imm = require 'immutable'
-
 Persist = require './persist'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -21,14 +21,16 @@ load = (win) ->
 	ExpandingTextArea = require('./expandingTextArea').load(win)
 	{FaIcon, showWhen} = require('./utils').load(win)
 
+
 	DefineMetricDialog = React.createFactory React.createClass
 		displayName: 'DefineMetricDialog'
 		mixins: [React.addons.PureRenderMixin]
-		getInitialState: ->
-			return {
-				name: @props.metricQuery or ''
-				definition: ''
-			}
+		# TODO: propTypes
+
+		getInitialState: -> {
+			name: @props.metricQuery or ''
+			definition: ''
+		}
 
 		componentDidMount: ->
 			if @props.metricQuery?

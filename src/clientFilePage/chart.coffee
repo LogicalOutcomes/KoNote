@@ -2,7 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Chart component for analysis tab
+# Chart component that generates and interacts with C3 API from prop changes
 
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -26,6 +26,7 @@ load = (win) ->
 	Chart = React.createFactory React.createClass
 		displayName: 'Chart'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: ->
 			return {

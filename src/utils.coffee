@@ -2,12 +2,15 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Set of frequently-used utilities used all around the app
+
 _ = require 'underscore'
 Moment = require 'moment'
 
 {TimestampFormat} = require './persist'
 {CustomError} = require './persist/utils'
 Config = require './config'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -167,7 +170,7 @@ load = (win) ->
 
 		if typeof text isnt 'string'
 			console.error "Tried to call renderLineBreaks on a non-string:", text
-			return result
+			return text
 
 		lines = text.trim()
 		.replace(/\r\n/g, '\n') # Windows -> Unix

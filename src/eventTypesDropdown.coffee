@@ -2,6 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# View component for displaying event types in a dropdown
 
 load = (win) ->
 	React = win.React

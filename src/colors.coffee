@@ -47,6 +47,8 @@ EventTypeColors = Imm.List [
 	"#f08467"
 ]
 
+# TODO: Metrics colors (#975)
+
 module.exports = {
 	ProgramColors
 	EventTypeColors

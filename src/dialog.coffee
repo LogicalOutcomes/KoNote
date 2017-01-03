@@ -2,7 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# A generic dialog component
+# A generic bootstrap dialog component
 
 # Props:
 # 	containerClasses: []
@@ -20,6 +20,7 @@ load = (win) ->
 	Dialog = React.createFactory React.createClass
 		displayName: 'Dialog'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: ->
 			return {
@@ -28,7 +29,7 @@ load = (win) ->
 
 		getDefaultProps: ->
 			return {
-				containerClasses: []
+				containerClasses: [] # TODO: Change for pre-joined string
 				onClose: ->
 				disableCancel: false
 			}

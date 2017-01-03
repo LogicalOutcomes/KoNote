@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Client file view for displaying, searching, and updating progress notes
+
 Fs = require 'fs'
 Path = require 'path'
 Assert = require 'assert'
@@ -61,6 +63,7 @@ load = (win) ->
 	ProgNotesTab = React.createFactory React.createClass
 		displayName: 'ProgNotesTab'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		hasChanges: ->
 			@refs.ui.hasChanges()
@@ -1245,6 +1248,7 @@ load = (win) ->
 	QuickNoteView = React.createFactory React.createClass
 		displayName: 'QuickNoteView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		render: ->
 			{isEditing, dataTypeFilter} = @props
@@ -1346,6 +1350,7 @@ load = (win) ->
 	ProgNoteView = React.createFactory React.createClass
 		displayName: 'ProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		render: ->
 			{isEditing, dataTypeFilter} = @props
@@ -1576,6 +1581,7 @@ load = (win) ->
 	CancelledProgNoteView = React.createFactory React.createClass
 		displayName: 'CancelledProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: ->
 			return {
@@ -1682,6 +1688,7 @@ load = (win) ->
 	EntryHeader = React.createFactory React.createClass
 		displayName: 'EntryHeader'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getDefaultProps: -> {
 			progEvents: Imm.List()
@@ -1724,14 +1731,16 @@ load = (win) ->
 			R.div({className: 'entryHeader'},
 				R.div({className: 'timestamp'},
 					formatTimestamp(timestamp, @props.dateFormat)
-					if firstRevision.get('backdate')
+
+					(if firstRevision.get('backdate')
 						R.span({className: 'lateTimestamp'},
 							"(late entry)"
 						)
+					)
 				)
 
-				(if progNote?
-					R.div({className: "revisions #{showWhen hasRevisions}"},
+				(if progNote? and hasRevisions
+					R.div({className: 'revisions'},
 						R.a({
 							className: 'selectProgNoteButton'
 							onClick: selectProgNote.bind null, progNote
@@ -1815,6 +1824,7 @@ load = (win) ->
 	GlobalEventView = React.createFactory React.createClass
 		displayName: 'GlobalEventView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		render: ->
 			{globalEvent} = @props
@@ -1918,6 +1928,7 @@ load = (win) ->
 
 						div.progNote##{selectedItem.get('progNoteId')}:not(.isEditing) .revisions a {
 							color: #3176aa !important;
+							opacity: 1 !important;
 						}
 					"""
 

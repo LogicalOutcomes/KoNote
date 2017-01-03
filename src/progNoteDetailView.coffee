@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# List component for historical entries (desc), concerning targets and data-revisions
+
 Imm = require 'immutable'
 _ = require 'underscore'
 
@@ -26,6 +28,7 @@ load = (win) ->
 	ProgNoteDetailView = React.createFactory React.createClass
 		displayName: 'ProgNoteDetailView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: -> {
 			descriptionIsVisible: true
@@ -358,6 +361,7 @@ load = (win) ->
 					)
 				).toJS()...
 			)
+
 
 	return ProgNoteDetailView
 

@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Date component for analysisTab which opens a bootbox datetimepicker
+# TODO: Replace with simpler react datetimepicker component
 
 Moment = require 'moment'
 _ = require 'underscore'
@@ -18,7 +19,6 @@ load = (win) ->
 	{FaIcon} = require('../utils').load(win)
 
 
-	# TODO: Switch this out for a proper binding component
 	TimeSpanDate = React.createFactory React.createClass
 		displayName: 'TimeSpanDate'
 		mixins: [React.addons.PureRenderMixin]
