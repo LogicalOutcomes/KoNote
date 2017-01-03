@@ -58,6 +58,7 @@ load = (win) ->
 									className: 'form-control'
 									type: 'password'
 									onChange: @_updateCurrentPassword
+									onKeyDown: @_onEnterKeydown
 									value: @state.currentPassword
 									placeholder: "Enter password"
 									disabled: @state.passwordIsVerified
@@ -75,7 +76,7 @@ load = (win) ->
 										)
 										onClick: @_verifyCurrentPassword
 									},
-										if not @state.passwordIsVerified
+										(if not @state.passwordIsVerified
 											[
 												"Verify "
 												FaIcon('lock')
@@ -85,6 +86,7 @@ load = (win) ->
 												"Verified "
 												FaIcon('unlock')
 											]
+										)
 									)
 								)
 							)
@@ -157,6 +159,10 @@ load = (win) ->
 		_updateNewPasswordConfirm: (event) ->
 			@setState {newPasswordConfirm: event.target.value}
 
+		_onEnterKeydown: (event) ->
+			if event.which is 13 and @state.currentPassword
+				@_verifyCurrentPassword()
+
 		_newPasswordIsInvalid: ->
 			return (
 				not @state.newPasswordConfirm or
@@ -192,7 +198,9 @@ load = (win) ->
 
 					if err.name is 'IncorrectPasswordError'
 						Bootbox.alert "Incorrect password. Please try again.", =>
-							@refs.currentPasswordField.focus()
+							setTimeout(=>
+								@refs.currentPasswordField.focus
+							, 250)
 						return
 
 					CrashHandler.handle err
