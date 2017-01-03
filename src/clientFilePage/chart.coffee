@@ -207,8 +207,10 @@ load = (win) ->
 						dataPoint
 
 			# Min/Max x dates
-			minDate = @props.xTicks.first()
-			maxDate = @props.xTicks.last()
+			#minDate = @props.xTicks.first()
+			#maxDate = @props.xTicks.last()
+			minDate = @props.timeSpan.get('start')
+			maxDate = @props.timeSpan.get('end')
 
 			# YEAR LINES
 			# Build Imm.List of years and timestamps to matching
