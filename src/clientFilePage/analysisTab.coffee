@@ -141,17 +141,16 @@ load = (win) ->
 			# We only grab endTimestamp from progEvents that have one
 			spannedProgEvents = allEvents.filter (progEvent) -> !!progEvent.get('endTimestamp')
 
-			# Build list of timestamps from progEvents (start & end) & metrics as Unix Timestamps (ms)
-			# todo: why as unix timestamps?
+			# Build list of timestamps from progEvents (start & end) & metrics
 			daysOfData = Imm.List()
 			.concat allEvents.map (progEvent) ->
-				Moment(progEvent.get('startTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
+				progEvent.get('startTimestamp')
 			.concat spannedProgEvents.map (progEvent) ->
-				Moment(progEvent.get('endTimestamp'), Persist.TimestampFormat).startOf('day').valueOf()
+				progEvent.get('endTimestamp')
 			.concat metricValues.map (metric) ->
 				# Account for backdate, else normal timestamp
 				metricTimestamp = metric.get('backdate') or metric.get('timestamp')
-				return Moment(metricTimestamp, Persist.TimestampFormat).startOf('day').valueOf()
+				return metricTimestamp
 			.toOrderedSet()
 			.sort()
 
@@ -159,8 +158,8 @@ load = (win) ->
 			#################### Date Range / TimeSpan ####################
 
 			# Determine earliest & latest days
-			firstDay = Moment daysOfData.first()
-			lastDay = Moment daysOfData.last()
+			firstDay = Moment daysOfData.first(), TimestampFormat
+			lastDay = Moment daysOfData.last(), TimestampFormat
 			dayRange = lastDay.diff(firstDay, 'days') + 1
 
 
@@ -170,9 +169,9 @@ load = (win) ->
 
 			# Declare default timeSpan
 			# confirm we have enough data and set to 1 month
-			if xTicks.last().subtract(1, "month").isSameOrAfter(xTicks.first())
+			if xTicks.size > 0 and xTicks.last().clone().subtract(1, "month").isSameOrAfter(xTicks.first())
 				@defaultTimeSpan = Imm.Map {
-					start: xTicks.last().subtract(1, "month")
+					start: xTicks.last().clone().subtract(1, "month")
 					end: xTicks.last()
 				}
 			else
@@ -189,23 +188,24 @@ load = (win) ->
 
 			# Map out visible progEvents (within timeSpan) by eventTypeId
 			visibleProgEvents = allEvents.filter (progEvent) ->
-				endTimestamp = progEvent.get('endTimestamp')
-				# todo: do we need this? what if we use persist format above at :137?
-				startMoment = makeMoment progEvent.get('startTimestamp')
+				startTimestamp = Moment progEvent.get('startTimestamp'), TimestampFormat
+				endTimestamp = Moment progEvent.get('endTimestamp'), TimestampFormat
 
 				if endTimestamp
-					endMoment = makeMoment(endTimestamp)
-					return startMoment.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
-					endMoment.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
-					(startMoment.isBefore(timeSpan.get('start')) and endMoment.isAfter(timeSpan.get('end')))
+					# start of event is visible
+					return startTimestamp.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
+					# end of event is visible
+					endTimestamp.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
+					# middle of event is visible
+					(startTimestamp.isBefore(timeSpan.get('start')) and endTimestamp.isAfter(timeSpan.get('end')))
 				else
-					return startMoment.isBetween(timeSpan.get('start'), timeSpan.get('end'))
+					return startTimestamp.isBetween(timeSpan.get('start'), timeSpan.get('end'))
 
 			visibleProgEventsByTypeId = visibleProgEvents.groupBy (progEvent) -> progEvent.get('typeId')
 
 			# Map out visible metric values (within timeSpan) by metric [definition] id
 			visibleMetricValues = metricValues.filter (value) ->
-				makeMoment(value.get('timestamp')).isBetween timeSpan.get('start'), timeSpan.get('end')
+				Moment(value.get('timestamp'), TimestampFormat).isBetween timeSpan.get('start'), timeSpan.get('end')
 
 			visibleMetricValuesById = visibleMetricValues.groupBy (value) -> value.get('id')
 
