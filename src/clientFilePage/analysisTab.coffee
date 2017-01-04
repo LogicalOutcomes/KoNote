@@ -23,7 +23,9 @@ load = (win) ->
 	R = React.DOM
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata, makeMoment} = require('../utils').load(win)
 	{TimestampFormat} = require('../persist/utils')
+
 	TimeSpanDate = require('./timeSpanDate').load(win)
+	TimeSpanToolbar = require('./timeSpanToolbar').load(win)
 	Chart = require('./chart').load(win)
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
@@ -160,6 +162,7 @@ load = (win) ->
 			lastDay = Moment daysOfData.last(), TimestampFormat
 			dayRange = lastDay.diff(firstDay, 'days') + 1
 
+
 			# Create list of all days as moments
 			xTicks = Imm.List([0..dayRange]).map (n) ->
 				firstDay.clone().add(n, 'days')
@@ -218,6 +221,7 @@ load = (win) ->
 			eventTypesAlphabetized = @props.eventTypes.sortBy (eventType) -> eventType.get('name')
 
 
+
 			return R.div({className: "analysisView"},
 				R.div({className: "noData #{showWhen not daysOfData.size > 0}"},
 					R.div({},
@@ -230,7 +234,7 @@ load = (win) ->
 				)
 				R.div({className: "mainWrapper #{showWhen daysOfData.size > 0}"},
 					R.div({className: "leftPanel"},
-						R.div({className: "timeScaleToolbar #{showWhen daysOfData.size > 0}"},
+						R.div({className: "timeScaleMenu #{showWhen daysOfData.size > 0}"},
 							R.div({className: 'timeSpanContainer'},
 								R.div({className: 'dateDisplay'},
 									TimeSpanDate({
@@ -240,6 +244,15 @@ load = (win) ->
 										xTicks
 										updateTimeSpan: @_updateTimeSpan
 									})
+
+									TimeSpanToolbar({
+										updateTimeSpan: @_updateTimeSpan
+										timeSpan
+										lastDay
+										firstDay
+										dayRange
+									})
+
 									TimeSpanDate({
 										date: timeSpan.get('end')
 										type: 'end'
@@ -285,6 +298,27 @@ load = (win) ->
 											one or more data points from the right panel."
 										)
 									)
+								)
+							)
+						)
+						R.div({className: 'dataOptions'},
+							R.div({className: "chartTypeContainer"},
+								"Chart Type: "
+								R.label({},
+									"Line "
+									R.input({
+										type: 'checkbox'
+										checked: @state.chartType is 'line'
+										onChange: @_updateChartType.bind null, 'line'
+									})
+								)
+								R.label({},
+									"Scatter "
+									R.input({
+										type: 'checkbox'
+										checked: @state.chartType is 'scatter'
+										onChange: @_updateChartType.bind null, 'scatter'
+									})
 								)
 							)
 						)
@@ -425,25 +459,6 @@ load = (win) ->
 							)
 
 							R.div({className: 'dataOptions'},
-								R.div({className: "chartTypeContainer"},
-									"Chart Type: "
-									R.label({},
-										"Line "
-										R.input({
-											type: 'checkbox'
-											checked: @state.chartType is 'line'
-											onChange: @_updateChartType.bind null, 'line'
-										})
-									)
-									R.label({},
-										"Scatter "
-										R.input({
-											type: 'checkbox'
-											checked: @state.chartType is 'scatter'
-											onChange: @_updateChartType.bind null, 'scatter'
-										})
-									)
-								)
 								(planSectionsWithData.map (section) =>
 									R.div({key: section.get('id')},
 										R.h3({}, section.get('name'))

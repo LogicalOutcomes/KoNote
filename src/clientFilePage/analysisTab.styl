@@ -30,62 +30,24 @@
 			flex-direction column
 			border-right 2px solid sidebar-borders
 
-			.timeScaleToolbar
+			.chartTypeContainer
+				float right
+				padding 0 5px 10px 10px
+
+				> label
+					padding-left 10px
+					padding-right 2px
+
+			.timeScaleMenu
 				flex 1
 				flex-basis 85px
 				padding 0 20px 0 20px
-
-				.slider
-					width 100%
-
-					.slider-track
-						border-radius 15px
-						height 16px
-
-						.slider-track-low, .slider-track-high
-							border-radius 15px
-							background #e4eff5
-
-						.slider-selection
-							border-radius 0px
-							box-shadow none
-							background #c8dae4
-
-					.slider-handle
-						transition opacity 0.2s ease
-						opacity 0.8
-						background #3b4e59 !important
-						margin-top 3px
-						border 3px solid white
-
-						&:hover
-							opacity 1
-
-					.tooltip
-						margin-top -33px
-
-						.tooltip-inner
-							background sidebar-borders
-							color #4c5d67
-							font-size 13px
-							padding 4px 10px
-
-						.tooltip-arrow
-							border-top-color sidebar-borders
-
-					.slider-tick-label-container
-						margin-left -15% !important
-						margin-right -15% !important
-
-						> .slider-tick-label
-							width 25% !important
-							text-align center !important
 
 				> .timeSpanContainer
 					flex 4
 					display block
 					position relative
-					padding 35px 3% 0px 3%
+					padding 5px 3% 0px 3%
 
 					> .dateDisplay
 						position absolute
@@ -95,6 +57,30 @@
 						display flex
 						width 100%
 						padding 20px
+
+						.timeSpanToolbar
+							flex 2
+							margin -7px 0 0 0
+							color #5c5c5c
+							.btn-group
+								width 100%
+
+								.btn
+									font-size 14px
+									width 55px
+									transition background .25s ease
+									cursor default
+									background #fff
+									padding 4.5px
+
+									border 1px solid sidebar-borders
+
+									font-weight 400
+									color #5c5c5c
+
+									&.selected
+										background #eaf1f5
+
 
 						> .timeSpanDate
 							flex 1
@@ -112,7 +98,7 @@
 								background #fff
 								padding 6px
 
-								border-radius 5px
+								border-radius 3px
 								border 1px solid sidebar-borders
 
 								font-weight 400
