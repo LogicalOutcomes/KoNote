@@ -282,7 +282,7 @@ load = (win) ->
 					}
 				}
 				point: {
-					r: if @props.chartType is 'scatter' then 5 else 3
+					r: 4.5
 				}
 				tooltip: {
 					format: {
