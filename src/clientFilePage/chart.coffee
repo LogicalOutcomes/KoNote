@@ -80,7 +80,7 @@ load = (win) ->
 				# Compare starts & ends by Ms (one is Moment, other is JS.date)
 				if +start isnt +chartStart or +end isnt +chartEnd
 					console.log "Updating zoom..."
-					@_chart.zoom [+start, +end]
+					@_chart.zoom [start, end]
 
 			# Update selected metrics?
 			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
@@ -104,8 +104,8 @@ load = (win) ->
 			sameXTicks = Imm.is @props.xTicks, oldProps.xTicks
 			unless sameXTicks
 				@_chart.axis.range {
-					min: {x: +@props.xTicks.first()}
-					max: {x: +@props.xTicks.last()}
+					min: {x: @props.xTicks.first()}
+					max: {x: @props.xTicks.last()}
 				}
 
 			# Update chart type?
@@ -231,7 +231,7 @@ load = (win) ->
 			unless firstYear is lastYear
 				newYearLines = Imm.List([firstYear..lastYear]).map (year) =>
 					return {
-						value: +Moment().year(year).startOf('year')
+						value: Moment().year(year).startOf('year')
 						text: year
 						position: 'middle'
 						class: 'yearLine'
@@ -248,8 +248,8 @@ load = (win) ->
 				}
 				axis: {
 					x: {
-						min: +minDate
-						max: +maxDate
+						min: minDate
+						max: maxDate
 						type: 'timeseries'
 						tick: {
 							fit: false
@@ -389,7 +389,7 @@ load = (win) ->
 			# Using zoom.extent in init wasn't working as expected
 			minZoom = @props.timeSpan.get('start')
 			maxZoom = @props.timeSpan.get('end')
-			@_chart.zoom [+minZoom, +maxZoom]
+			@_chart.zoom [minZoom, maxZoom]
 
 			# Fire metric colors up to analysisTab
 			# TODO: Define these manually/explicitly, to avoid extra analysisTab render
