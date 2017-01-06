@@ -1,0 +1,109 @@
+.c3Chart
+	display flex
+	align-items center
+	justify-content center
+
+	> #eventInfo
+		display none
+		z-index 9999
+		position absolute
+		min-width 150px
+		max-width 500px
+		margin-right 10px
+
+		background #fff
+		border 1px solid sidebar-borders
+
+		> .title
+			font-weight 600 !important
+			background sidebar-borders
+			padding 5px
+
+			color #4c5d67
+			font-size 14px
+
+		> .info
+
+			> .description
+				font-weight normal
+				padding 5px
+				font-size 12px
+
+			> .timeSpan
+				font-size 10px
+
+				> div
+					text-align right
+					background #eee
+					padding 5px
+
+	.yearLine
+		font-weight bold
+		opacity 0.7
+
+		text
+			// Moves year value to right side of yearLine
+			transform rotate(-90deg) translateY(17px)
+
+	.chart
+		flex 1
+
+		.c3-tooltip-container
+			max-width 200px
+			overflow hidden
+
+			table
+				tr.isHovered > td
+					font-weight bold
+
+				td.definition
+					background #eee
+					max-height 50px !important
+					text-overflow ellipsis
+
+		svg
+			width 100%
+
+		.c3-zoom-rect
+			display none !important
+
+		// Hide hiddenId in legend
+		.c3-legend-item.c3-legend-item-y--h-
+			display none !important
+			width 0 !important
+
+			text, rect
+				display none !important
+				width 0 !important
+
+		.c3-regions
+
+			.c3-region
+				fill-opacity 1
+				min-width 1px !important
+
+				&:hover
+					fill-opacity 0.75 !important
+					stroke-opacity 1 !important
+
+				> rect
+					min-width 1px !important
+					fill-opacity inherit !important
+					// 10% of original height
+					transform scaleY(0.1)
+					fill sidebar-borders
+					stroke sidebar-borders
+					stroke-width 2px
+					stroke-opacity inherit
+
+					&[width="0"]
+						width 1px !important
+
+				&.singlePoint > rect
+					fill sidebar-borders
+					stroke sidebar-borders
+					stroke-width 2
+
+					&:hover
+						stroke #1d6977
+
