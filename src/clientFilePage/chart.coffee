@@ -81,9 +81,9 @@ load = (win) ->
 				if newMin is newMax
 					newMax = newMax.clone().endOf 'day'
 
-				@_chart.axis.min {x: newMin}
-				@_chart.axis.max {x: newMax}
-			
+				@_chart.axis.min {x: +newMin}
+				@_chart.axis.max {x: +newMax}
+
 			# Update selected metrics?
 			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 			unless sameSelectedMetrics
@@ -106,8 +106,8 @@ load = (win) ->
 			sameXTicks = Imm.is @props.xTicks, oldProps.xTicks
 			unless sameXTicks
 				@_chart.axis.range {
-					min: {x: @props.xTicks.first()}
-					max: {x: @props.xTicks.last()}
+					min: {x: +@props.xTicks.first()}
+					max: {x: +@props.xTicks.last()}
 				}
 
 			# Update chart type?
@@ -241,8 +241,8 @@ load = (win) ->
 				}
 				axis: {
 					x: {
-						min: minDate
-						max: maxDate
+						min: +minDate
+						max: +maxDate
 						type: 'timeseries'
 						tick: {
 							fit: false
