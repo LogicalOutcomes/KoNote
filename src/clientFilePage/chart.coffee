@@ -231,7 +231,7 @@ load = (win) ->
 			unless firstYear is lastYear
 				newYearLines = Imm.List([firstYear..lastYear]).map (year) =>
 					return {
-						value: Moment().year(year).startOf('year')
+						value: +Moment().year(year).startOf('year')
 						text: year
 						position: 'middle'
 						class: 'yearLine'
