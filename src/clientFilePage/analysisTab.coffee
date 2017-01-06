@@ -233,11 +233,7 @@ load = (win) ->
 				)
 				R.div({className: "mainWrapper #{showWhen daysOfData.size > 0}"},
 					R.div({className: "leftPanel"},
-<<<<<<< HEAD
-						R.div({className: "timeScaleToolbar #{showWhen daysOfData.size > 0}"},
-=======
-						R.div({className: "timeScaleMenu #{showWhen hasEnoughData}"},
->>>>>>> 12f6129... added conditionally styling based on spanSize
+						R.div({className: "timeScaleMenu #{showWhen daysOfData.size > 0}"},
 							R.div({className: 'timeSpanContainer'},
 								R.div({className: 'dateDisplay'},
 									TimeSpanDate({
