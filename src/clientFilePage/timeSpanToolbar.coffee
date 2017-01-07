@@ -24,14 +24,6 @@ load = (win) ->
 		displayName: 'TimeSpanDate'
 		mixins: [React.addons.PureRenderMixin]
 
-		propTypes: {
-			updateTimeSpan: PropTypes.func
-			timeSpan: PropTypes.instanceOf Imm.Map()
-			lastDay: PropTypes.objectOf Moment()
-			firstDay: PropTypes.objectOf Moment()
-			dayRange: PropTypes.number
-		}
-
 		render: ->
 			spanSize = @props.timeSpan.get('end').diff(@props.timeSpan.get('start'), 'days')
 
