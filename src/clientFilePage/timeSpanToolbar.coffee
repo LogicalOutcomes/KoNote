@@ -99,8 +99,8 @@ load = (win) ->
 			@props.updateTimeSpan(timeSpan)
 
 		_setTimeSpanRange: (lastDay, unit) ->
-			end = lastDay.clone().add(1, 'days')
-			start = lastDay.clone().subtract(1, unit).add(1,'days')
+			end = lastDay.clone()
+			start = lastDay.clone().subtract(1, unit)
 			timeSpan = Imm.Map {
 				start
 				end
