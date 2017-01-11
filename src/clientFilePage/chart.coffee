@@ -82,7 +82,7 @@ load = (win) ->
 
 				@_chart.axis.min {x: newMin}
 				@_chart.axis.max {x: newMax}
-			
+
 			# Update selected metrics?
 			sameSelectedMetrics = Imm.is @props.selectedMetricIds, oldProps.selectedMetricIds
 			unless sameSelectedMetrics
@@ -271,7 +271,7 @@ load = (win) ->
 					}
 				}
 				point: {
-					r: if @props.chartType is 'scatter' then 5 else 3
+					r: 4.5
 				}
 				tooltip: {
 					format: {
