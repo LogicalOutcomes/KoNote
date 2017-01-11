@@ -271,6 +271,7 @@ load = (win) ->
 										metricValues
 										xTicks
 										selectedMetricIds: @state.selectedMetricIds
+										updateSelectedMetrics: @_updateSelectedMetrics
 										chartType: @state.chartType
 										timeSpan
 										updateMetricColors: @_updateMetricColors

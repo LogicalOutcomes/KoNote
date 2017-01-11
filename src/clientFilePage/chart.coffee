@@ -304,6 +304,12 @@ load = (win) ->
 				size: {
 					height: @_calculateChartHeight()
 				}
+				legend: {
+					item: {
+						onclick: (itemId) =>
+							metricId = itemId.substr(2) # Cut out 'y-'
+							@props.updateSelectedMetrics(metricId)
+					}
 				}
 				onresize: @_refreshChartHeight
 			}
