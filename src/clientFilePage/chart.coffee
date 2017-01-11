@@ -40,13 +40,16 @@ load = (win) ->
 				className: 'chartInner'
 				ref: 'chartInner'
 			},
+				# Inline-CSS styles for highlighted events
 				R.style({},
 					(Imm.List([0..@state.eventRows]).map (rowNumber) =>
 						translateY = rowNumber * $(@refs.chartInner).height()
 						scaleY = +((0.35 / @state.eventRows).toFixed(2))
 						if scaleY > 0.2 then scaleY = 0.2
 
-						".chart .c3-regions .c3-region.row#{rowNumber} > rect {transform: scaleY(#{scaleY}) translateY(#{translateY}px) !important}"
+						return ".chart .c3-regions .c3-region.row#{rowNumber} > rect {
+							transform: scaleY(#{scaleY}) translateY(#{translateY}px) !important
+						}"
 					)
 				)
 				R.div({
@@ -439,6 +442,8 @@ load = (win) ->
 			return progEvents
 
 		_attachKeyBindings: ->
+			# TODO: Make sure listeners are removed when componentWillUnmount
+
 			# Find our hidden eventInfo box
 			eventInfo = $('#eventInfo')
 			dateFormat = 'Do MMM [at] h:mm A'
