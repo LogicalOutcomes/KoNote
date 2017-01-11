@@ -21,6 +21,7 @@ load = (win) ->
 	{TimestampFormat} = require('../persist/utils')
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 	hiddenId = "-h-" # Fake/hidden datapoint's ID
+	minChartHeight = 400
 
 
 	Chart = React.createFactory React.createClass
@@ -69,6 +70,9 @@ load = (win) ->
 
 		# TODO: Use componentWillReceiveProps here?
 		componentDidUpdate: (oldProps, oldState) ->
+			# Perform resize first so chart renders new data properly
+			@_refreshChartHeight()
+
 			# Update timeSpan?
 			sameTimeSpan = Imm.is @props.timeSpan, oldProps.timeSpan
 			unless sameTimeSpan
@@ -121,6 +125,7 @@ load = (win) ->
 			@_generateChart()
 			@_refreshSelectedMetrics()
 			@_refreshProgEvents()
+			@_refreshChartHeight()
 
 		_generateChart: ->
 			console.log "Generating Chart...."
@@ -294,15 +299,34 @@ load = (win) ->
 					right: 25
 				}
 				size: {
-					height: $(@refs.chartInner).height() - 20
+					height: @_calculateChartHeight()
 				}
-				onresize: =>
-					@_chart.resize {height: $(@refs.chartInner).height() - 20}
+				}
+				onresize: @_refreshChartHeight
 			}
 
 			# Fire metric colors up to analysisTab
 			# TODO: Define these manually/explicitly, to avoid extra analysisTab render
 			@props.updateMetricColors @_chart.data.colors()
+
+		_calculateChartHeight: ->
+			fullHeight = $(@refs.chartInner).height() - 20
+
+			# Half-height for only metrics/events
+			if @props.selectedMetricIds.isEmpty() or @props.progEvents.isEmpty()
+				# Can return minimum height instead
+				halfHeight = if halfHeight > minChartHeight then fullHeight / 2 else minChartHeight
+				return halfHeight
+
+			return fullHeight
+
+		_refreshChartHeight: ->
+			return unless @_chart?
+
+			height = @_calculateChartHeight()
+			return if height is $(@refs.chartDiv).height() # Skip update if is current height
+
+			@_chart.resize {height}
 
 		_refreshSelectedMetrics: ->
 			console.log "Refreshing selected metrics..."
@@ -325,7 +349,7 @@ load = (win) ->
 			setTimeout(=>
 				@_chart.regions progEventRegions.toJS()
 				@_attachKeyBindings()
-			, 500)
+			, 250)
 
 		_generateProgEventRegions: ->
 			# Build Imm.List of region objects
