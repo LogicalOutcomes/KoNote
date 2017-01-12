@@ -189,20 +189,20 @@ load = (win) ->
 				endTimestamp = Moment progEvent.get('endTimestamp'), TimestampFormat
 
 				if endTimestamp
-					# start of event is visible
-					return startTimestamp.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
-					# end of event is visible
-					endTimestamp.isBetween(timeSpan.get('start'), timeSpan.get('end')) or
-					# middle of event is visible
-					(startTimestamp.isBefore(timeSpan.get('start')) and endTimestamp.isAfter(timeSpan.get('end')))
+					# Start of event is visible [--]----
+					return startTimestamp.isBetween(timeSpan.get('start'), timeSpan.get('end'), null, '[]') or # Inclusive
+					# End of event is visible ----[--]
+					endTimestamp.isBetween(timeSpan.get('start'), timeSpan.get('end'), null, '[]') or # Inclusive
+					# Middle of event is visible --[--]--
+					(startTimestamp.isSameOrBefore(timeSpan.get('start')) and endTimestamp.isSameOrAfter(timeSpan.get('end')))
 				else
-					return startTimestamp.isBetween(timeSpan.get('start'), timeSpan.get('end'))
+					return startTimestamp.isBetween(timeSpan.get('start'), timeSpan.get('end'), null, '[]') # Inclusive
 
 			visibleProgEventsByTypeId = visibleProgEvents.groupBy (progEvent) -> progEvent.get('typeId')
 
 			# Map out visible metric values (within timeSpan) by metric [definition] id
 			visibleMetricValues = metricValues.filter (value) ->
-				Moment(value.get('timestamp'), TimestampFormat).isBetween timeSpan.get('start'), timeSpan.get('end')
+				Moment(value.get('timestamp'), TimestampFormat).isBetween(timeSpan.get('start'), timeSpan.get('end'), null, '[]') # Inclusive
 
 			visibleMetricValuesById = visibleMetricValues.groupBy (value) -> value.get('id')
 
