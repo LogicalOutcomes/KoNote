@@ -198,7 +198,12 @@ load = (win) ->
 				.map (val) -> return Number(val)
 
 				# Figure out min and max series values
-				min = values.min()
+				# Min is enforced as 0 for better visual proportions
+				# unless lowest value is negative
+				lowestValue = values.min()
+				hasNegativeValue = lowestValue < 0
+
+				min = if hasNegativeValue then lowestValue else 0
 				max = values.max()
 
 				# Center the line vertically if constant value
