@@ -16,6 +16,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	C3 = win.c3
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
 
 	{TimestampFormat} = require('../persist/utils')
@@ -27,31 +28,24 @@ load = (win) ->
 	Chart = React.createFactory React.createClass
 		displayName: 'Chart'
 		mixins: [React.addons.PureRenderMixin]
-		# TODO: propTypes
 
-		getInitialState: ->
-			return {
-				progEventRegions: Imm.List()
-				eventRows: 0
-			}
+		getInitialState: -> {
+			eventRows: 0
+		}
+
+		# TODO: propTypes
 
 		render: ->
 			return R.div({
 				className: 'chartInner'
 				ref: 'chartInner'
 			},
-				# Inline-CSS styles for highlighted events
-				R.style({},
-					(Imm.List([0..@state.eventRows]).map (rowNumber) =>
-						translateY = rowNumber * $(@refs.chartInner).height()
-						scaleY = +((0.35 / @state.eventRows).toFixed(2))
-						if scaleY > 0.2 then scaleY = 0.2
+				ChartEventsStyling({
+					ref: 'chartEventsStyling'
+					progEvents: @props.progEvents
+					eventRows: @state.eventRows
+				})
 
-						return ".chart .c3-regions .c3-region.row#{rowNumber} > rect {
-							transform: scaleY(#{scaleY}) translateY(#{translateY}px) !important
-						}"
-					)
-				)
 				R.div({
 					id: 'eventInfo'
 					ref: 'eventInfo'
@@ -316,7 +310,7 @@ load = (win) ->
 							@props.updateSelectedMetrics(metricId)
 					}
 				}
-				onresize: @_refreshChartHeight
+				onresize: @_refreshChartHeight # Manually calculate chart height
 			}
 
 			# Fire metric colors up to analysisTab
@@ -340,7 +334,9 @@ load = (win) ->
 			height = @_calculateChartHeight()
 			return if height is $(@refs.chartDiv).height() # Skip update if is current height
 
+			# Proceed with resizing the chart
 			@_chart.resize {height}
+			@refs.chartEventsStyling.updateChartHeight(height) # and event regions' v-positioning
 
 		_refreshSelectedMetrics: ->
 			console.log "Refreshing selected metrics..."
@@ -363,7 +359,7 @@ load = (win) ->
 			setTimeout(=>
 				@_chart.regions progEventRegions.toJS()
 				@_attachKeyBindings()
-			, 250)
+			, 500)
 
 		_generateProgEventRegions: ->
 			# Build Imm.List of region objects
@@ -400,7 +396,7 @@ load = (win) ->
 				# Init new eventRow
 				eventRows = eventRows.push Imm.List()
 
-				# Loop through events, pluck any with non-conflicting dates
+				# Loop through events, pluck any for the given row with non-conflicting dates
 				remainingEvents.forEach (thisEvent) =>
 
 					thisRow = eventRows.get(rowIndex)
@@ -525,6 +521,37 @@ load = (win) ->
 		_toUnixMs: (timestamp) ->
 			# Converts to unix ms
 			return Moment(timestamp, TimestampFormat).valueOf()
+
+
+	ChartEventsStyling = React.createFactory React.createClass
+		displayName: 'ChartEventsStyling'
+
+		propTypes: {
+			eventRows: PropTypes.number.isRequired
+			progEvents: PropTypes.instanceOf(Imm.List()).isRequired
+		}
+
+		getInitialState: -> {
+			chartHeight: null
+		}
+
+		updateChartHeight: (chartHeight) ->
+			# This gets called alongside @_chart.resize
+			@setState {chartHeight}
+
+		render: ->
+			scaleY = +((0.375 / @props.eventRows).toFixed(2)) # Calculate scaled height of each region, 2 dec pl.
+
+
+			R.style({},
+				(Imm.List([0..@props.eventRows]).map (rowNumber) =>
+					translateY = rowNumber * @state.chartHeight
+
+					return ".chart .c3-regions .c3-region.row#{rowNumber} > rect {
+						transform: scaleY(#{scaleY}) translateY(#{translateY}px) !important
+					}"
+				)
+			)
 
 
 	return Chart
