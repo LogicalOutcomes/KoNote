@@ -152,6 +152,9 @@ load = (win) ->
 								(unless @props.programs.isEmpty()
 									R.div({className: 'form-group'},
 										R.label({}, "Assign to #{Term 'Program'}(s)")
+										if @state.programIds.isEmpty()
+											R.span({className: 'noneSelected'}, "(None Selected)")
+
 										R.div({className: 'programsContainer'},
 											(@props.programs
 											.filter (program) =>
@@ -259,6 +262,8 @@ load = (win) ->
 								(unless @props.programs.isEmpty()
 									R.div({className: 'form-group'},
 										R.label({}, "Assign to #{Term 'Program'}(s)")
+										if @state.programIds.isEmpty()
+											R.span({className: 'noneSelected'}, "(None Selected)")
 										R.div({className: 'programsContainer'},
 											(@props.programs
 											.filter (program) =>
