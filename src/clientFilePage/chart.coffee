@@ -42,6 +42,7 @@ load = (win) ->
 			},
 				ChartEventsStyling({
 					ref: (comp) => @chartEventsStyling = comp
+					selectedMetricIds: @props.selectedMetricIds
 					progEvents: @props.progEvents
 					eventRows: @state.eventRows
 				})
@@ -535,6 +536,7 @@ load = (win) ->
 		propTypes: {
 			eventRows: PropTypes.number.isRequired
 			progEvents: PropTypes.instanceOf(Imm.List()).isRequired
+			selectedMetricIds: PropTypes.instanceOf(Imm.List()).isRequired
 		}
 
 		getInitialState: -> {
@@ -546,7 +548,9 @@ load = (win) ->
 			@setState {chartHeight}
 
 		render: ->
-			scaleY = +((0.375 / @props.eventRows).toFixed(2)) # Calculate scaled height of each region, 2 dec pl.
+			# Calculate scaled height of each region (larger if no metrics)
+			scaleFactor = if @props.selectedMetricIds.isEmpty() then 0.65 else 0.375
+			scaleY = (scaleFactor / @props.eventRows).toFixed(2)
 
 
 			R.style({},
