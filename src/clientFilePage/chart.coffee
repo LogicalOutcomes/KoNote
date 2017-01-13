@@ -41,7 +41,7 @@ load = (win) ->
 				ref: 'chartInner'
 			},
 				ChartEventsStyling({
-					ref: 'chartEventsStyling'
+					ref: (comp) => @chartEventsStyling = comp
 					progEvents: @props.progEvents
 					eventRows: @state.eventRows
 				})
@@ -122,7 +122,7 @@ load = (win) ->
 			@_generateChart()
 			@_refreshSelectedMetrics()
 			@_refreshProgEvents()
-			@_refreshChartHeight()
+			@_refreshChartHeight(true)
 
 		_generateChart: ->
 			console.log "Generating Chart...."
@@ -328,15 +328,20 @@ load = (win) ->
 
 			return fullHeight
 
-		_refreshChartHeight: ->
+		_refreshChartHeight: (isForced = false) ->
 			return unless @_chart?
 
 			height = @_calculateChartHeight()
-			return if height is $(@refs.chartDiv).height() # Skip update if is current height
+
+			if not isForced and height is $(@refs.chartDiv).height()
+				return  # Skip c3 update if is current height
+
+			# Update event regions' v-positioning if necessary
+			unless @props.progEvents.isEmpty()
+				@chartEventsStyling.updateChartHeight(height)
 
 			# Proceed with resizing the chart
 			@_chart.resize {height}
-			@refs.chartEventsStyling.updateChartHeight(height) # and event regions' v-positioning
 
 		_refreshSelectedMetrics: ->
 			console.log "Refreshing selected metrics..."
