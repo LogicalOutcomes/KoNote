@@ -333,14 +333,15 @@ load = (win) ->
 
 			height = @_calculateChartHeight()
 
+			# Skip c3 update if is current height
 			if not isForced and height is $(@refs.chartDiv).height()
-				return  # Skip c3 update if is current height
+				return
 
 			# Update event regions' v-positioning if necessary
-			unless @props.progEvents.isEmpty()
+			if not @props.progEvents.isEmpty() and @chartEventsStyling?
 				@chartEventsStyling.updateChartHeight(height)
 
-			# Proceed with resizing the chart
+			# Proceed with resizing the chart itself
 			@_chart.resize {height}
 
 		_refreshSelectedMetrics: ->
