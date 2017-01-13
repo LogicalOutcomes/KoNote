@@ -49,7 +49,7 @@ load = (win) ->
 			@_initialSize()
 
 		componentWillUnmount: ->
-			win.removeEventListener 'resize', @_windowResizeListener
+			win.removeEventListener 'resize', @_resize
 
 		_initialSize: ->
 			textareaDom = @refs.textarea
