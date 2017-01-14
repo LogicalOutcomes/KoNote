@@ -36,6 +36,13 @@ load = (win) ->
 		displayName: 'EventTabView'
 		mixins: [React.addons.PureRenderMixin]
 
+		componentDidMount: ->
+			@refs.description.focus()
+
+		componentDidUpdate: (oldProps, oldState) ->
+			if (@props.isBeingEdited isnt oldProps.isBeingEdited) and @props.isBeingEdited
+				@refs.description.focus()
+
 		getInitialState: ->
 			# Use progNote's back/date to start (full-day event)
 			startingDate = if @props.backdate then makeMoment(@props.backdate) else Moment()
@@ -95,6 +102,7 @@ load = (win) ->
 					R.div({className: 'form-group'},
 						R.label({}, "Description")
 						ExpandingTextArea({
+							ref: 'description'
 							value: progEvent.get('description')
 							onChange: @_updateDescription
 							placeholder: "Describe details (optional)"
