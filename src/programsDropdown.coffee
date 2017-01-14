@@ -29,12 +29,14 @@ load = (win) ->
 			programs: React.PropTypes.instanceOf(Imm.List).isRequired
 			placeholder: React.PropTypes.string
 			onSelect: React.PropTypes.func.isRequired
+			bsStyle: React.PropTypes.string
 		}
 
 		getDefaultProps: -> {
 			selectedProgram: Imm.Map()
 			placeholder: "No #{Term 'Program'}"
 			excludeNone: false
+			bsStyle: 'link'
 		}
 
 		getInitialState: -> {
@@ -51,6 +53,8 @@ load = (win) ->
 			remainingPrograms = @props.programs.filterNot (program) =>
 				selectedProgram.get('id') is program.get('id')
 
+			console.log "bsStyle", @props.bsStyle
+
 			R.span({
 				className: 'programsDropdown'
 				onClick: @toggle
@@ -60,7 +64,7 @@ load = (win) ->
 					id: 'programsDropdown'
 					open: @state.isOpen
 					onClose: @toggle
-					bsStyle: 'link'
+					bsStyle: @props.bsStyle
 					pullRight: true
 					container: 'body'
 

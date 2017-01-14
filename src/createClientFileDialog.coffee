@@ -48,7 +48,7 @@ load = (win) ->
 				middleName: ''
 				lastName: ''
 				recordId: ''
-				programIds: Imm.List()
+				program: Imm.Map()
 				clientfileId: ''
 				templateId: ''
 				planTemplateHeaders: Imm.List()
@@ -147,9 +147,10 @@ load = (win) ->
 							R.div({className: 'programs'},
 								R.label({}, "Assign to #{Term 'Program'}(s)")
 								ProgramsDropdown({
-									selectedProgram: @state.programIds
+									selectedProgram: @state.program
 									programs: @props.programs
-									onSelect: @_pushToPrograms
+									onSelect: @_updateProgram
+									bsStyle: 'default'
 								})
 							)
 						)
@@ -189,9 +190,6 @@ load = (win) ->
 							)
 						)
 					)
-
-
-
 
 					R.div({className: 'btn-toolbar'},
 						R.button({
@@ -250,14 +248,8 @@ load = (win) ->
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
 
-		_pushToPrograms: (programId) ->
-			programIds = @state.programIds.push programId
-			@setState {programIds}
-
-		_removeFromPrograms: (programId) ->
-			index = @state.programIds.indexOf(programId)
-			programIds = @state.programIds.splice(index, 1)
-			@setState {programIds}
+		_updateProgram: (program) ->
+			 @setState {program}
 
 		_updatePlanTemplate: (templateId) ->
 			@setState {templateId}
@@ -279,6 +271,8 @@ load = (win) ->
 			else
 				birthDate = ''
 
+
+
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
 			  recordId: recordId
@@ -296,6 +290,7 @@ load = (win) ->
 			newClientFile = null
 			selectedPlanTemplate = null
 			templateSections = null
+			programId = null
 
 			Async.series [
 				(cb) =>
@@ -363,18 +358,18 @@ load = (win) ->
 						cb()
 
 				(cb) =>
-					# Build the link objects
-					clientFileProgramLinks = @state.programIds.map (programId) ->
+					return cb() unless @state.program
+					programId = @state.program.get('id')
+					# Build the link object
+					link =
 						Imm.fromJS {
 							clientFileId: newClientFile.get('id')
 							status: 'enrolled'
 							programId
 						}
 
-					# Build every link in list asyncronously, then cb
-					Async.each clientFileProgramLinks.toArray(), (link, cb) ->
-						global.ActiveSession.persist.clientFileProgramLinks.create link, cb
-					, cb
+					global.ActiveSession.persist.clientFileProgramLinks.create link, cb
+
 
 				(cb) =>
 					return cb() unless @state.templateId
