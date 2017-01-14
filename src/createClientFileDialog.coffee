@@ -162,16 +162,7 @@ load = (win) ->
 									B.DropdownButton({
 										title: if selectedPlanTemplateHeaders? then selectedPlanTemplateHeaders.get('name') else "No Template"
 									},
-										if selectedPlanTemplateHeaders?
-											[
-												B.MenuItem({
-													onClick: @_updatePlanTemplate.bind null, ''
-												},
-													"None "
-													FaIcon('ban')
-												)
-												B.MenuItem({divider: true})
-											]
+
 										(@state.planTemplateHeaders.map (planTemplateHeader) =>
 											B.MenuItem({
 												key: planTemplateHeader.get('id')
@@ -185,6 +176,14 @@ load = (win) ->
 												)
 											)
 										)
+										B.MenuItem({divider: true})
+										B.MenuItem({
+											onClick: @_updatePlanTemplate.bind null, ''
+										},
+											"None "
+											FaIcon('ban')
+										)
+
 									)
 								)
 							)
