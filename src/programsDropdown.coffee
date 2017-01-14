@@ -53,8 +53,6 @@ load = (win) ->
 			remainingPrograms = @props.programs.filterNot (program) =>
 				selectedProgram.get('id') is program.get('id')
 
-			console.log "bsStyle", @props.bsStyle
-
 			R.span({
 				className: 'programsDropdown'
 				onClick: @toggle
