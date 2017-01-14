@@ -370,7 +370,9 @@ load = (win) ->
 
 								(unless untypedEvents.isEmpty()
 									R.div({},
-										R.h3({}, "Other")
+										R.h3({},
+											if not @props.eventTypes.isEmpty() then "Other" else " "
+										)
 										R.div({className: 'dataOptions'},
 											R.div({
 												className: [
