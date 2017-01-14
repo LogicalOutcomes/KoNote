@@ -408,84 +408,86 @@ load = (win) ->
 								)
 							)
 
-							R.div({className: 'dataType metrics'},
-								metricsAreSelected = not @state.selectedMetricIds.isEmpty()
-								allMetricsSelected = Imm.is @state.selectedMetricIds, metricIdsWithData
+							(unless planSectionsWithData.isEmpty()
+								R.div({className: 'dataType metrics'},
+									metricsAreSelected = not @state.selectedMetricIds.isEmpty()
+									allMetricsSelected = Imm.is @state.selectedMetricIds, metricIdsWithData
 
-								R.h2({
-									onClick: @_toggleAllMetrics.bind null, allMetricsSelected, metricIdsWithData
-								},
-									R.span({className: 'helper'}
-										"Select "
-										if allMetricsSelected then "None" else "All"
-									)
-									R.input({
-										type: 'checkbox'
-										checked: metricsAreSelected
-									})
-									Term 'Metrics'
-								)
-
-								R.div({className: 'dataOptions'},
-									R.div({className: "chartTypeContainer"},
-										"Chart Type: "
-										R.label({},
-											"Line "
-											R.input({
-												type: 'checkbox'
-												checked: @state.chartType is 'line'
-												onChange: @_updateChartType.bind null, 'line'
-											})
+									R.h2({
+										onClick: @_toggleAllMetrics.bind null, allMetricsSelected, metricIdsWithData
+									},
+										R.span({className: 'helper'}
+											"Select "
+											if allMetricsSelected then "None" else "All"
 										)
-										R.label({},
-											"Scatter "
-											R.input({
-												type: 'checkbox'
-												checked: @state.chartType is 'scatter'
-												onChange: @_updateChartType.bind null, 'scatter'
-											})
-										)
+										R.input({
+											type: 'checkbox'
+											checked: metricsAreSelected
+										})
+										Term 'Metrics'
 									)
-									(planSectionsWithData.map (section) =>
-										R.div({key: section.get('id')},
-											R.h3({}, section.get('name'))
-											R.section({key: section.get('id')},
 
-												(section.get('targets').map (target) =>
-													targetId = target.get('id')
-													targetIsInactive = target.get('status') isnt 'default'
+									R.div({className: 'dataOptions'},
+										R.div({className: "chartTypeContainer"},
+											"Chart Type: "
+											R.label({},
+												"Line "
+												R.input({
+													type: 'checkbox'
+													checked: @state.chartType is 'line'
+													onChange: @_updateChartType.bind null, 'line'
+												})
+											)
+											R.label({},
+												"Scatter "
+												R.input({
+													type: 'checkbox'
+													checked: @state.chartType is 'scatter'
+													onChange: @_updateChartType.bind null, 'scatter'
+												})
+											)
+										)
+										(planSectionsWithData.map (section) =>
+											R.div({key: section.get('id')},
+												R.h3({}, section.get('name'))
+												R.section({key: section.get('id')},
 
-													R.div({
-														key: targetId
-														className: 'target'
-													},
-														R.h5({}, target.get('name'))
+													(section.get('targets').map (target) =>
+														targetId = target.get('id')
+														targetIsInactive = target.get('status') isnt 'default'
 
-														# TODO: Extract to component
-														(target.get('metrics').map (metric) =>
-															metricId = metric.get('id')
-															metricIsInactive = targetIsInactive or metric.get('status') isnt 'default'
-															visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
-															isSelected = @state.selectedMetricIds.contains metricId
-															metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
+														R.div({
+															key: targetId
+															className: 'target'
+														},
+															R.h5({}, target.get('name'))
 
-															R.div({
-																key: metricId
-																className: 'checkbox metric'
-															},
-																R.label({},
-																	ColorKeyCount({
-																		isSelected
-																		className: 'circle'
-																		colorKeyHex: metricColor
-																		count: visibleValues.size
-																	})
-																	R.input({
-																		type: 'checkbox'
-																		onChange: @_updateSelectedMetrics.bind null, metricId
-																		checked: isSelected
-																	})
-																	metric.get('name')
+															# TODO: Extract to component
+															(target.get('metrics').map (metric) =>
+																metricId = metric.get('id')
+																metricIsInactive = targetIsInactive or metric.get('status') isnt 'default'
+																visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
+																isSelected = @state.selectedMetricIds.contains metricId
+																metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
+
+																R.div({
+																	key: metricId
+																	className: 'checkbox metric'
+																},
+																	R.label({},
+																		ColorKeyCount({
+																			isSelected
+																			className: 'circle'
+																			colorKeyHex: metricColor
+																			count: visibleValues.size
+																		})
+																		R.input({
+																			type: 'checkbox'
+																			onChange: @_updateSelectedMetrics.bind null, metricId
+																			checked: isSelected
+																		})
+																		metric.get('name')
+																	)
 																)
 															)
 														)
@@ -494,34 +496,34 @@ load = (win) ->
 											)
 										)
 									)
-								)
-								(unless unassignedMetricsList.isEmpty()
-									R.div({},
-										R.h3({}, "Inactive")
-										R.div({className: 'dataOptions'},
-											(unassignedMetricsList.map (metric) =>
-												metricId = metric.get('id')
-												isSelected = @state.selectedMetricIds.contains metricId
-												visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
-												metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
+									(unless unassignedMetricsList.isEmpty()
+										R.div({},
+											R.h3({}, "Inactive")
+											R.div({className: 'dataOptions'},
+												(unassignedMetricsList.map (metric) =>
+													metricId = metric.get('id')
+													isSelected = @state.selectedMetricIds.contains metricId
+													visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
+													metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
 
-												R.div({
-													key: metricId
-													className: 'checkbox metric'
-												},
-													R.label({},
-														ColorKeyCount({
-															isSelected
-															className: 'circle'
-															colorKeyHex: metricColor
-															count: visibleValues.size
-														})
-														R.input({
-															type: 'checkbox'
-															onChange: @_updateSelectedMetrics.bind null, metricId
-															checked: isSelected
-														})
-														metric.get('name')
+													R.div({
+														key: metricId
+														className: 'checkbox metric'
+													},
+														R.label({},
+															ColorKeyCount({
+																isSelected
+																className: 'circle'
+																colorKeyHex: metricColor
+																count: visibleValues.size
+															})
+															R.input({
+																type: 'checkbox'
+																onChange: @_updateSelectedMetrics.bind null, metricId
+																checked: isSelected
+															})
+															metric.get('name')
+														)
 													)
 												)
 											)
