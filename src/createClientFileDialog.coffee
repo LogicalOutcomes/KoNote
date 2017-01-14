@@ -145,7 +145,7 @@ load = (win) ->
 					R.div({className: "optionDropdowns"},
 						(unless @props.programs.isEmpty()
 							R.div({className: 'programs'},
-								R.label({}, "Assign to #{Term 'Program'}(s)")
+								R.label({}, "Assign to #{Term 'Program'}")
 								ProgramsDropdown({
 									selectedProgram: @state.program
 									programs: @props.programs
