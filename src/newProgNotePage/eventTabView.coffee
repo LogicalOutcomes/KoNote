@@ -23,10 +23,11 @@ load = (win) ->
 	Dialog = require('../dialog').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
+	ColorKeyBubble = require('../colorKeyBubble').load(win)
 	ProgramsDropdown = require('../programsDropdown').load(win)
-	EventTypesDropdown = require('../eventTypesDropdown').load(win)
 	TimeSpanSelection = require('../timeSpanSelection').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
+	EventTypesDropdown = require('../eventTypesDropdown').load(win)
 
 	{FaIcon, renderName, showWhen, formatTimestamp, renderTimeSpan, makeMoment} = require('../utils').load(win)
 
@@ -275,11 +276,10 @@ load = (win) ->
 			if clientHasPrograms
 
 				if @props.clientPrograms.size is 1
-					programId = @props.clientPrograms.first()
+					programId = @props.clientPrograms.first().get('id')
 
 				else
-					clientIsInUserProgram = @props.clientPrograms.some (program) ->
-						program.get('id') is userProgramId
+					clientIsInUserProgram = @props.clientPrograms.some (p) -> p.get('id') is userProgramId
 
 					if clientIsInUserProgram
 						programId = userProgramId
@@ -302,8 +302,7 @@ load = (win) ->
 
 		render: ->
 			flaggedNames = @_generateFlaggedNames()
-			selectedProgram = @props.clientPrograms.find (program) =>
-				program.get('id') is @state.programId
+			selectedProgram = @props.clientPrograms.find (p) => p.get('id') is @state.programId
 
 
 			return Dialog({
@@ -314,8 +313,23 @@ load = (win) ->
 				R.div({className: 'amendGlobalEventDialog'},
 					R.p({},
 						"Please remove any sensitive and/or #{Term 'client'}-specific information
-						to be saved in the #{Term 'global event'}, which will be visible
-						in all #{Term 'client files'}."
+						to be saved in the #{Term 'global event'}."
+					)
+					R.p({},
+						"This information will appear for all #{Term 'client files'}"
+
+						(if not @programSelectionRequired and selectedProgram?
+							R.span({},
+								" in: "
+								ColorKeyBubble({
+									colorKeyHex: selectedProgram.get('colorKeyHex')
+								})
+								' '
+								R.strong({}, selectedProgram.get('name'))
+							)
+						else
+							"in the program you specify."
+						)
 					)
 
 					(if flaggedNames.length > 0
