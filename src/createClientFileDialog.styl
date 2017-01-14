@@ -1,69 +1,28 @@
 .createClientFileDialog
-	min-width 580px
-	max-width 600px
+	min-width 350px
+	max-width 400px
 
-	.noneSelected
-		float right
+	.optionDropdowns
+		display flex
 
-	.programsContainer
-		width 100%
-		max-height 256px
-		overflow-y auto
-		overflow-x hidden
+		.programs
+			flex 1
 
-		.programOptionButton
-			margin-right 10px
-			margin-bottom 10px
-			outline none
-
-			line-height 1.5em
-			vertical-align middle
-
-			&:last-child
-				margin-right 0
-
-			.colorKeyBubble
-				margin-right 10px
-
-				> .bubbleContents
-					font-size 1.5em
+		.templates
+			flex 1
 
 
-	&.singlePanel
-		min-width 280px
-		max-width 365px
 
-		.programsContainer
-			max-height 89px
+
 
 	.btn-toolbar
 		padding-top: 18px
 		float right
 
-	.panelContainer
-		display flex
-
-		&.singlePanel
-			min-width 280px
-
-			.template-form-group
-				.template-container
-					.dropdown-menu
-						max-height 162px
-						overflow-y auto
-
-		.panel-left
-			flex 1
-
-		.panel-right
-			padding-left 20px
-			flex 1
-
-			.template-form-group
-				margin-bottom: 15px
-				.dropdown .dropdown-menu
-					max-height 62px
-					overflow-y auto
+		.template-container
+			.dropdown-menu
+				max-height 162px
+				overflow-y auto
 
 	.birthdateLabel
 		vertical-align middle
