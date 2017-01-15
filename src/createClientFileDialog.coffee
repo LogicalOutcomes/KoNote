@@ -360,8 +360,7 @@ load = (win) ->
 					return cb() unless @state.program
 					programId = @state.program.get('id')
 					# Build the link object
-					link =
-						Imm.fromJS {
+					link = Imm.fromJS {
 							clientFileId: newClientFile.get('id')
 							status: 'enrolled'
 							programId
