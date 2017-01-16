@@ -48,7 +48,7 @@ load = (win) ->
 				middleName: ''
 				lastName: ''
 				recordId: ''
-				program: Imm.Map()
+				programId: ''
 				clientfileId: ''
 				templateId: ''
 				planTemplateHeaders: Imm.List()
@@ -147,9 +147,9 @@ load = (win) ->
 							R.div({className: 'programs'},
 								R.label({}, "Assign to #{Term 'Program'}")
 								ProgramsDropdown({
-									selectedProgram: @state.program
+									selectedProgramId: @state.programId
 									programs: @props.programs
-									onSelect: @_updateProgram
+									onSelect: @_updateProgramId
 									bsStyle: 'default'
 								})
 							)
@@ -247,8 +247,8 @@ load = (win) ->
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
 
-		_updateProgram: (program) ->
-			 @setState {program}
+		_updateProgramId: (programId) ->
+			 @setState {programId}
 
 		_updatePlanTemplate: (templateId) ->
 			@setState {templateId}
@@ -357,13 +357,12 @@ load = (win) ->
 						cb()
 
 				(cb) =>
-					return cb() unless @state.program
-					programId = @state.program.get('id')
+					return cb() unless @state.programId
 					# Build the link object
 					link = Imm.fromJS {
 							clientFileId: newClientFile.get('id')
 							status: 'enrolled'
-							programId
+							programId: @state.programId
 						}
 
 					global.ActiveSession.persist.clientFileProgramLinks.create link, cb

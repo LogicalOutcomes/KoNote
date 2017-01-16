@@ -25,7 +25,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			selectedProgram: React.PropTypes.instanceOf(Imm.Map)
+			selectedProgramId: React.PropTypes.string
 			programs: React.PropTypes.instanceOf(Imm.List).isRequired
 			placeholder: React.PropTypes.string
 			onSelect: React.PropTypes.func.isRequired
@@ -48,10 +48,16 @@ load = (win) ->
 
 		render: ->
 			# selectedProgram can be null, so bypasses getDefaultProps
-			selectedProgram = @props.selectedProgram or Imm.Map()
+			selectedProgramId = @props.selectedProgramId or ''
+
+			selectedProgram = @props.programs.find (program) =>
+				selectedProgramId is program.get('id')
+
+			selectedProgram = selectedProgram or Imm.Map()
 
 			remainingPrograms = @props.programs.filterNot (program) =>
-				selectedProgram.get('id') is program.get('id')
+				selectedProgramId is program.get('id')
+
 
 			R.span({
 				className: 'programsDropdown'
@@ -80,7 +86,7 @@ load = (win) ->
 					.map (program) =>
 						B.MenuItem({
 							key: program.get('id')
-							onClick: @props.onSelect.bind null, program
+							onClick: @props.onSelect.bind null, program.get('id')
 						},
 							program.get('name')
 							' '

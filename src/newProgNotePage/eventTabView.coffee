@@ -365,13 +365,13 @@ load = (win) ->
 						})
 					)
 
-					(if @programSelectionRequired
+					(if @programSelectionRequired and @props.clientPrograms.size > 1
 						R.div({className: 'form-group'},
 							R.hr({})
 
 							R.label({}, "Select a program for this #{Term 'global event'}")
 							ProgramsDropdown({
-								selectedProgram
+								selectedProgramId: @state.programId
 								programs: @props.clientPrograms
 								onSelect: @_updateProgram
 								excludeNone: true
@@ -408,8 +408,7 @@ load = (win) ->
 			description = event.target.value
 			@setState {description}
 
-		_updateProgram: (program) ->
-			programId = program.get('id')
+		_updateProgram: (programId) ->
 			@setState {programId}
 
 		_formIsInvalid: ->
