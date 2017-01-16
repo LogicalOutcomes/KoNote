@@ -33,7 +33,7 @@ load = (win) ->
 		}
 
 		getDefaultProps: -> {
-			selectedProgram: Imm.Map()
+			selectedProgramId: ''
 			placeholder: "No #{Term 'Program'}"
 			excludeNone: false
 			bsStyle: 'link'
