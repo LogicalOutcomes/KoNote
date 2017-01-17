@@ -46,8 +46,10 @@ load = (win) ->
 	WithTooltip = require('../withTooltip').load(win)
 	FilterBar = require('./filterBar').load(win)
 
-	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName, makeMoment
-	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex, blockedExtensions, stripMetadata} = require('../utils').load(win)
+	{
+		FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName, makeMoment
+		getUnitIndex, getPlanSectionIndex, getPlanTargetIndex, blockedExtensions, stripMetadata, scrollToElement
+	} = require('../utils').load(win)
 
 	# List of fields we exclude from keyword search
 	excludedSearchFields = Imm.fromJS [
@@ -294,6 +296,7 @@ load = (win) ->
 						(if @state.isFiltering and not isEditing
 							FilterBar({
 								ref: 'filterBar'
+								historyEntries
 								programIdFilter: @state.programIdFilter
 								dataTypeFilter: @state.dataTypeFilter
 								programsById: @props.programsById
@@ -303,6 +306,7 @@ load = (win) ->
 								onUpdateSearchQuery: @_updateSearchQuery
 								onSelectProgramId: @_updateProgramIdFilter
 								onSelectDataType: @_updateDataTypeFilter
+								onNavigateToDate: @_scrollToEntry
 							})
 						)
 
@@ -366,6 +370,7 @@ load = (win) ->
 						)
 
 						EntriesListView({
+							ref: 'entriesListView'
 							historyEntries
 							entryIds: historyEntries.map (e) -> e.get('id')
 							transientData
@@ -1019,6 +1024,10 @@ load = (win) ->
 		_updateDataTypeFilter: (dataTypeFilter) ->
 			@setState {dataTypeFilter}
 
+		_scrollToEntry: (entry, cb) ->
+			# EntriesListView handles scrolling internally
+			@refs.entriesListView.scrollToEntry(entry, cb)
+
 
 	EntriesListView = React.createFactory React.createClass
 		displayName: 'EntriesListView'
@@ -1099,6 +1108,27 @@ load = (win) ->
 			# Reset scroll when opens edit view for progNote
 			if @props.isEditing isnt oldProps.isEditing and @props.isEditing
 				@_resetScroll()
+
+		scrollToEntry: (entry, cb) ->
+			# Extend filterCount first if not enough loaded into EntriesListView
+			index = @props.historyEntries.indexOf entry
+			highestEntryIndex = @state.filterCount - 1
+
+			performScroll = =>
+				entriesListView = findDOMNode(@)
+				element = win.document.getElementById(entry.get('id'))
+				scrollToElement entriesListView, element, 1000, 'easeInOutQuad', cb
+
+			if highestEntryIndex < index
+				# Provide 10 extra entries, so destinationEntry appears at top
+				filterCount = (index + 1) + 10
+
+				# Set the new filterCount, and then scroll to the entry
+				@setState {filterCount}, performScroll
+
+			else
+				console.info "index #{index} already exists in entriesListView!"
+				performScroll()
 
 		_resetScroll: ->
 			findDOMNode(@).scrollTop = 0

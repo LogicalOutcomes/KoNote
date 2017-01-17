@@ -1,0 +1,38 @@
+#entryDateNavigator
+	position absolute
+	bottom -42px
+	right calc(50% - 50px)
+	z-index 1000
+
+	background
+
+	button
+		opacity 0.75
+		background #eaf1f5
+		color rgb(76, 93, 103)
+
+		&:hover
+			opacity 1
+
+		.fa
+			margin-left .5em
+			width 13px
+
+	input
+		display block
+		width 100%
+		visibility hidden
+		width 0
+		height 0
+
+	// Custom styles for months/days/year whether enabled/disabled
+	.month, .day, .year
+		border-radius 0
+
+		&.disabled
+			color #b5b5b5
+			background rgb(232, 232, 232)
+
+		&:not(.disabled):hover
+			background #337ab7
+			color white
