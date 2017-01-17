@@ -1040,7 +1040,7 @@ load = (win) ->
 
 		componentDidMount: ->
 			# Infinite scroll behaviour
-			leftPane = $('.entriesListView')
+			leftPane = $('#entriesListView')
 
 			leftPane.on 'scroll', _.throttle((=>
 				if leftPane.scrollTop() + (leftPane.innerHeight() *2) >= leftPane[0].scrollHeight
@@ -1152,10 +1152,8 @@ load = (win) ->
 
 			R.div({
 				ref: 'entriesListView'
-				className: [
-					'entriesListView'
-					showWhen not historyEntries.isEmpty()
-				].join ' '
+				id: 'entriesListView'
+				className: showWhen not historyEntries.isEmpty()
 			},
 				(historyEntries.map (entry) =>
 					switch entry.get('entryType')
