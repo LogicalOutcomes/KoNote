@@ -213,7 +213,7 @@ load = (win) ->
 		return Moment(timestamp, TimestampFormat).format(customFormat or Config.timestampFormat)
 
 	capitalize = (word) ->
-    return word.charAt(0).toUpperCase() + word.slice(1)
+		return word.charAt(0).toUpperCase() + word.slice(1)
 
 	# Ensures that `text` does not exceed `maxLength` by replacing excess
 	# characters with an ellipsis character.
@@ -249,6 +249,75 @@ load = (win) ->
 
 		# Otherwise, use default timeSpan format
 		return "#{startMoment.format(Config.timestampFormat)} to #{endMoment.format(Config.timestampFormat)}"
+
+	# Smooth-scroll utility, customized from https://pawelgrzybek.com/page-scroll-in-vanilla-javascript/
+	# Uses nw win for requestAnimationFrame, and can handle scrolling within a container
+	scrollToElement = (container, element, duration = 500, easing = 'linear', callback) ->
+
+		easings =
+			linear: (t) ->
+				t
+			easeInQuad: (t) ->
+				t * t
+			easeOutQuad: (t) ->
+				t * (2 - t)
+			easeInOutQuad: (t) ->
+				if t < 0.5 then 2 * t * t else -1 + (4 - (2 * t)) * t
+			easeInCubic: (t) ->
+				t * t * t
+			easeOutCubic: (t) ->
+				--t * t * t + 1
+			easeInOutCubic: (t) ->
+				if t < 0.5 then 4 * t * t * t else (t - 1) * (2 * t - 2) * (2 * t - 2) + 1
+			easeInQuart: (t) ->
+				t * t * t * t
+			easeOutQuart: (t) ->
+				1 - (--t * t * t * t)
+			easeInOutQuart: (t) ->
+				if t < 0.5 then 8 * t * t * t * t else 1 - (8 * --t * t * t * t)
+			easeInQuint: (t) ->
+				t * t * t * t * t
+			easeOutQuint: (t) ->
+				1 + --t * t * t * t * t
+			easeInOutQuint: (t) ->
+				if t < 0.5 then 16 * t * t * t * t * t else 1 + 16 * --t * t * t * t * t
+
+		start = container.scrollTop
+		startTime = Date.now()
+		destination = element.offsetTop - $(container).position().top
+		paddingOffset = 10 # Scroll up a bit extra for nicer padding
+
+		# requestAnimationFrame can inf-loop if we dont set a limit
+		maxScrollTop = container.scrollHeight - container.clientHeight
+
+		if destination > maxScrollTop
+			destination = maxScrollTop
+		else
+			destination -= paddingOffset
+
+		# Extra safeguard against inf-loop after duration completes
+		cancelOp = null
+		setTimeout (-> cancelOp = true), duration + 10
+
+		# Start the scroll loop
+		scroll = ->
+			now = Date.now()
+			time = Math.min(1, (now - startTime) / duration)
+			timeFunction = easings[easing](time)
+
+			container.scrollTop = timeFunction * (destination - start) + start
+			# console.log "scroll", container.scrollTop
+
+			if container.scrollTop is destination or cancelOp
+				callback()
+				return
+
+			win.requestAnimationFrame scroll
+			return
+
+		scroll()
+		return
+
 
 	##### Convenience methods for fetching data from a progNote
 
@@ -299,6 +368,8 @@ load = (win) ->
 		truncateText
 		makeMoment
 		renderTimeSpan
+		scrollToElement
+
 		getUnitIndex
 		getPlanSectionIndex
 		getPlanTargetIndex
