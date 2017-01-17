@@ -1112,6 +1112,12 @@ load = (win) ->
 		scrollToEntry: (entry, cb) ->
 			# Extend filterCount first if not enough loaded into EntriesListView
 			index = @props.historyEntries.indexOf entry
+
+			if index is -1
+				console.warn "Requested entry doesn't exist in historyEntries", entry.toJS()
+				cb()
+				return
+
 			highestEntryIndex = @state.filterCount - 1
 
 			performScroll = =>
@@ -1119,6 +1125,7 @@ load = (win) ->
 				element = win.document.getElementById(entry.get('id'))
 				scrollToElement entriesListView, element, 1000, 'easeInOutQuad', cb
 
+			# Determine whether needs to extend filterCount first
 			if highestEntryIndex < index
 				# Provide 10 extra entries, so destinationEntry appears at top
 				filterCount = (index + 1) + 10
@@ -1127,7 +1134,6 @@ load = (win) ->
 				@setState {filterCount}, performScroll
 
 			else
-				console.info "index #{index} already exists in entriesListView!"
 				performScroll()
 
 		_resetScroll: ->

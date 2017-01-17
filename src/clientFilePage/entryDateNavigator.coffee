@@ -44,21 +44,22 @@ load = (win) ->
 		componentWillUnmount: ->
 			@datetimepicker.destroy()
 
-		componentWillReceiveProps: (nextProps) ->
-			{historyEntries} = nextProps
-
-			# Update enabledDates when historyEntries has changed
-			unless Imm.is historyEntries, @props.historyEntries
-				dates = @_generateEnabledDates(nextProps.historyEntries).toJS()
-				console.log "dates", dates
-				@datetimepicker.enabledDates dates
+		componentDidUpdate: (oldProps, oldState) ->
+			# Re-init enabledDates when historyEntries has changed
+			# TODO: Use enabledDates API funct (currently doesn't work)
+			unless Imm.is oldProps.historyEntries, @props.historyEntries
+				console.log "Refreshing entryDateNavigator"
+				@_initDateTimePicker()
 
 		_generateEnabledDates: (historyEntries) ->
 			# TODO: Disable selection of any month within min->max whose days are all disabled
 			return historyEntries.map (e) -> makeMoment(e.get 'timestamp').startOf 'day'
 
-		_initDateTimePicker: ->
-			enabledDates = @_generateEnabledDates @props.historyEntries
+		_initDateTimePicker: (props) ->
+			# Destroy any pre-existing instance
+			@datetimepicker.destroy() if @datetimepicker?
+
+			enabledDates = @props.historyEntries.map (e) -> makeMoment(e.get 'timestamp').startOf 'day'
 
 			#	historyEntries are in reverse-order
 			minDate = enabledDates.last()
@@ -72,6 +73,11 @@ load = (win) ->
 			else
 				'years'
 
+			@disableChange = true
+			setTimeout(=>
+				@disableChange = false
+			, 150)
+
 			$input = $(@refs.hiddenInput)
 			$input.datetimepicker({
 				format: 'YYYY-MM-DD'
@@ -84,14 +90,20 @@ load = (win) ->
 				}
 				widgetParent: '#entryDateNavigator'
 				viewMode: 'years'
-			}).on 'dp.change', ({date}) =>
-				console.log "Called change!"
+			})
+			.on 'dp.change', ({date}) =>
+				# Prevent invalid/duplicate calls of @_skipToEntryDate
+				return if not date or @disableChange or date.isSame @lastDate
+				@lastDate = date
+
+				# TODO: use 'dp.update' to scroll top of month selection
 				@_skipToEntryDate(date)
+
 
 			@datetimepicker = $input.data('DateTimePicker')
 
 		_skipToEntryDate: (date) ->
-			selectedMoment = Moment(date)
+			selectedMoment = Moment(+date)
 
 			# TODO: Have moment objs already pre-built
 			entry = @props.historyEntries.find (e) ->
@@ -99,7 +111,8 @@ load = (win) ->
 				return selectedMoment.isSame timestampMoment, 'day'
 
 			if not entry?
-				throw new Error "Could not find day of #{selectedMoment.toDate()} in historyEntries"
+				console.warn "Cancelled scroll, could not find #{selectedMoment.toDate()} in historyEntries"
+				return
 
 			# Wrap the scroll process with isLoading
 			@setState {isLoading: true}, => @props.onSelect entry, => @setState {isLoading: false}
