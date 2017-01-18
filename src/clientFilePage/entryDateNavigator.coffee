@@ -59,6 +59,10 @@ load = (win) ->
 			# Destroy any pre-existing instance
 			@datetimepicker.destroy() if @datetimepicker?
 
+			if @props.historyEntries.isEmpty()
+				console.warn "Cancelled datetimepicker init, historyEntries is empty"
+				return
+
 			enabledDates = @props.historyEntries.map (e) -> makeMoment(e.get 'timestamp').startOf 'day'
 
 			#	historyEntries are in reverse-order
