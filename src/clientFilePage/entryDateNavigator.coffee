@@ -93,7 +93,7 @@ load = (win) ->
 			})
 			.on 'dp.change', ({date}) =>
 				# Prevent invalid/duplicate calls of @_skipToEntryDate
-				return if not date or @disableChange or date.isSame @lastDate
+				return if not date or @disableChange or (date.isSame? and date.isSame @lastDate)
 				@lastDate = date
 
 				# TODO: use 'dp.update' to scroll top of month selection
