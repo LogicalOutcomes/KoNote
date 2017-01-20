@@ -18,7 +18,6 @@ load = (win) ->
 	R = React.DOM
 
 	ColorKeyBubble = require('../colorKeyBubble').load(win)
-	EntryDateNavigator = require('./entryDateNavigator').load(win)
 	{FaIcon, showWhen} = require('../utils').load(win)
 
 
@@ -28,7 +27,6 @@ load = (win) ->
 
 		propTypes: {
 			# TODO: isRequired?
-			historyEntries: PropTypes.instanceOf Imm.List()
 			programIdFilter: PropTypes.string
 			dataTypeFilter: PropTypes.oneOf ['progNotes', 'targets', 'events']
 			programsById: PropTypes.instanceOf Imm.List()
@@ -38,7 +36,6 @@ load = (win) ->
 			onUpdateSearchQuery: PropTypes.func
 			onSelectProgramId: PropTypes.func
 			onSelectDataType: PropTypes.func
-			onNavigateToDate: PropTypes.func
 		}
 
 		getInitialState: -> {
@@ -72,10 +69,6 @@ load = (win) ->
 				className: 'filterBar'
 				onClick: @_focusInput
 			},
-				EntryDateNavigator({
-					historyEntries: @props.historyEntries
-					onSelect: @props.onNavigateToDate
-				})
 				R.section({},
 					R.input({
 						ref: 'searchText'
