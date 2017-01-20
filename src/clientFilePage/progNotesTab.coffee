@@ -42,6 +42,7 @@ load = (win) ->
 	ProgEventWidget = require('../progEventWidget').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
+	EntryDateNavigator = require('./entryDateNavigator').load(win)
 	PrintButton = require('../printButton').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 	FilterBar = require('./filterBar').load(win)
@@ -1024,10 +1025,6 @@ load = (win) ->
 		_updateDataTypeFilter: (dataTypeFilter) ->
 			@setState {dataTypeFilter}
 
-		_scrollToEntry: (entry, cb) ->
-			# EntriesListView handles scrolling internally
-			@refs.entriesListView.scrollToEntry(entry, cb)
-
 
 	EntriesListView = React.createFactory React.createClass
 		displayName: 'EntriesListView'
@@ -1109,30 +1106,28 @@ load = (win) ->
 			if @props.isEditing isnt oldProps.isEditing and @props.isEditing
 				@_resetScroll()
 
-		scrollToEntry: (entry, cb) ->
+		_scrollToEntryDate: (entry, cb) ->
 			# Extend filterCount first if not enough loaded into EntriesListView
 			index = @props.historyEntries.indexOf entry
 
 			if index is -1
-				console.warn "Requested entry doesn't exist in historyEntries", entry.toJS()
+				console.warn "Cancelled _scrollToEntryDate, entry non-existent in historyEntries", entry.toJS()
 				cb()
 				return
 
 			highestEntryIndex = @state.filterCount - 1
 
 			performScroll = =>
-				entriesListView = findDOMNode(@)
-				element = win.document.getElementById(entry.get('id'))
-				scrollToElement entriesListView, element, 1000, 'easeInOutQuad', cb
+				$entriesListView = findDOMNode(@)
+				$element = win.document.getElementById(entry.get('id'))
+				scrollToElement($entriesListView, $element, 1000, 'easeInOutQuad', cb)
 
 			# Determine whether needs to extend filterCount first
 			if highestEntryIndex < index
 				# Provide 10 extra entries, so destinationEntry appears at top
+				# Set the new filterCount, and *then* scroll to the entry
 				filterCount = (index + 1) + 10
-
-				# Set the new filterCount, and then scroll to the entry
 				@setState {filterCount}, performScroll
-
 			else
 				performScroll()
 
@@ -1153,19 +1148,26 @@ load = (win) ->
 
 			# Limit number of entries by filter/historyCount
 			sliceCount = if isFiltering then @state.filterCount else @state.historyCount
-			historyEntries = historyEntries.slice 0, sliceCount
-
+			slicedHistoryEntries = historyEntries.slice 0, sliceCount
 
 			R.div({
 				ref: 'entriesListView'
 				id: 'entriesListView'
-				className: showWhen not historyEntries.isEmpty()
+				className: showWhen not slicedHistoryEntries.isEmpty()
 			},
-				(historyEntries.map (entry) =>
+				EntryDateNavigator({
+					ref: 'entryDateNavigator'
+					historyEntries
+					onSelect: @_scrollToEntryDate
+				})
+
+				(slicedHistoryEntries.map (entry) =>
 					switch entry.get('entryType')
 						when 'progNote'
-							# Combine entry (shallow toJS) & @props
-							ProgNoteContainer(_.extend entry.toObject(), @props, {key: entry.get('id')})
+							# Combine entry with @props + key
+							ProgNoteContainer(_.extend entry.toObject(), @props, {
+								key: entry.get('id')
+							})
 
 						when 'globalEvent'
 							GlobalEventView({
