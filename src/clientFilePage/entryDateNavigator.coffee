@@ -134,7 +134,7 @@ load = (win) ->
 
 					R.button({
 						onClick: @_toggleDateTimePicker
-						className: 'btn btn-default btn-xs animated fadeInRight'
+						className: 'btn btn-default btn-xs'
 					},
 						FaIcon(icon)
 					)
