@@ -1129,7 +1129,8 @@ load = (win) ->
 				cb()
 				return
 
-			highestEntryIndex = @state.filterCount - 1
+			countType = if @props.isFiltering then 'filterCount' else 'historyCount'
+			highestEntryIndex = @state[countType] - 1
 
 			_performScroll = =>
 				$entriesListView = findDOMNode(@)
@@ -1140,8 +1141,6 @@ load = (win) ->
 			if highestEntryIndex < index
 				# Provide 10 extra entries, so destinationEntry appears at top
 				# Set the new count (whichever type is pertinent), and *then* scroll to the entry
-				countType = if @props.isFiltering then 'filterCount' else 'historyCount'
-
 				newState = {}
 				newState[countType] = (index + 1) + 10
 				@setState newState, _performScroll
