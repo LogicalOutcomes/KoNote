@@ -35,7 +35,7 @@ load = (win) ->
 		}
 
 		getInitialState: -> {
-			isLoading: false
+			isScrolling: false
 		}
 
 		componentDidMount: ->
@@ -83,6 +83,7 @@ load = (win) ->
 			, 150)
 
 			$input = $(@refs.hiddenInput)
+
 			$input.datetimepicker({
 				format: 'YYYY-MM-DD'
 				enabledDates: enabledDates.toJS()
@@ -90,9 +91,9 @@ load = (win) ->
 				minDate
 				maxDate
 				widgetPositioning: {
-					vertical: 'bottom'
+					horizontal: 'right'
 				}
-				widgetParent: '#entryDateNavigator'
+				widgetParent: '#navigatorWrapper'
 				viewMode: 'years'
 			})
 			.on 'dp.change', ({date}) =>
@@ -118,22 +119,26 @@ load = (win) ->
 				console.warn "Cancelled scroll, could not find #{selectedMoment.toDate()} in historyEntries"
 				return
 
-			# Wrap the scroll process with isLoading
-			@setState {isLoading: true}, => @props.onSelect entry, => @setState {isLoading: false}
+			# Update the icon with an animated spinner while isScrolling
+			@setState {isScrolling: true}, => @props.onSelect entry, => @setState {isScrolling: false}
 
 		_toggleDateTimePicker: ->
 			@datetimepicker.toggle()
 
 		render: ->
+			icon = if @state.isScrolling then 'refresh fa-spin fa-fw' else 'sort'
+
 			R.div({id: 'entryDateNavigator'},
-				R.button({
-					onClick: @_toggleDateTimePicker
-					className: 'btn btn-default btn-xs'
-				},
-					"Find Date"
-					FaIcon if @state.isLoading then 'refresh fa-spin fa-fw' else 'search'
+				R.div({id: 'navigatorWrapper'},
+					R.input({ref: 'hiddenInput'})
+
+					R.button({
+						onClick: @_toggleDateTimePicker
+						className: 'btn btn-default btn-xs animated fadeInRight'
+					},
+						FaIcon(icon)
+					)
 				)
-				R.input({ref: 'hiddenInput'})
 			)
 
 
