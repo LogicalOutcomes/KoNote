@@ -1055,9 +1055,11 @@ load = (win) ->
 			# Update highlighting when anything changes while searching
 			if @props.isFiltering
 
-				filterParametersChanged = @props.searchQuery isnt oldProps.searchQuery or
-				@props.dataTypeFilter isnt oldProps.dataTypeFilter or
-				@props.programIdFilter isnt oldProps.programIdFilter
+				filterParametersChanged = (
+					@props.searchQuery isnt oldProps.searchQuery or
+					@props.dataTypeFilter isnt oldProps.dataTypeFilter or
+					@props.programIdFilter isnt oldProps.programIdFilter
+				)
 
 				# Reset filterCount and scroll to top anytime filter parameters change
 				if filterParametersChanged
