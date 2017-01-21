@@ -1036,30 +1036,20 @@ load = (win) ->
 		}
 
 		componentDidMount: ->
-			# Infinite scroll behaviour
-			leftPane = $('#entriesListView')
+			# Watch scroll for infinite scroll behaviour, throttle to 1call/per/150ms
+			@_watchUnlimitedScroll = _.throttle(@_watchUnlimitedScroll, 150)
 
-			leftPane.on 'scroll', _.throttle((=>
-				if leftPane.scrollTop() + (leftPane.innerHeight() *2) >= leftPane[0].scrollHeight
+			@entriesListView = $(findDOMNode @)
+			@entriesListView.on 'scroll', @_watchUnlimitedScroll
 
-					# Update seperate result count while filtering
-					# TODO: Refactor redundancy
-					if @props.isFiltering
-						# Disregard if nothing left to load
-						return if @state.filterCount >= @props.historyEntries.size
+			# Custom positioning logic to have EntryDateNavigator hug this.bottom-right
+			@entryDateNavigator = $(findDOMNode @refs.entryDateNavigator)
 
-						filterCount = @state.filterCount + 10
-						@setState {filterCount}
+			# Set initial position, and listen for window resize
+			@rightPane = $('.rightPane')[0] # Ref not available here, maybe get from this upstream?
+			@_setNavigatorRightOffset()
 
-					else
-						# Disregard if nothing left to load
-						return if @state.historyCount >= @props.historyEntries.size
-
-						historyCount = @state.historyCount + 10
-						@setState {historyCount}
-
-				return
-			), 150)
+			$(win).on 'resize', @_setNavigatorRightOffset
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Update highlighting when anything changes while searching
@@ -1106,30 +1096,57 @@ load = (win) ->
 			if @props.isEditing isnt oldProps.isEditing and @props.isEditing
 				@_resetScroll()
 
+		componentWillUnmount: ->
+			@entriesListView.off 'scroll', @_watchUnlimitedScroll
+			$(win.document).off 'resize', @_updateNavigatorPosition
+
+		_watchUnlimitedScroll: ->
+			# Has the scroll been depleted?
+			if @entriesListView.scrollTop() + (@entriesListView.innerHeight() *2) >= @entriesListView[0].scrollHeight
+
+				# Figure out which type of count to update
+				countType = if @props.isFiltering then 'filterCount' else 'historyCount'
+
+				# Disregard if nothing left to load into the count
+				return if @state[countType] >= @props.historyEntries.size
+
+				# Incremenent +10 count state
+				nextState = {}
+				nextState[countType] = @state[countType] + 10
+				@setState {nextState}
+
+		_setNavigatorRightOffset: ->
+			# Add rightPane's width to navigator's initial (css) right positioning
+			right = if @rightPane? then @rightPane.offsetWidth else 0
+			@entryDateNavigator.css {right}
+
 		_scrollToEntryDate: (entry, cb) ->
 			# Extend filterCount first if not enough loaded into EntriesListView
 			index = @props.historyEntries.indexOf entry
 
 			if index is -1
-				console.warn "Cancelled _scrollToEntryDate, entry non-existent in historyEntries", entry.toJS()
+				console.warn "Cancelled _scrollToEntryDate, entry is non-existent in historyEntries:", entry.toJS()
 				cb()
 				return
 
 			highestEntryIndex = @state.filterCount - 1
 
-			performScroll = =>
+			_performScroll = =>
 				$entriesListView = findDOMNode(@)
-				$element = win.document.getElementById(entry.get('id'))
+				$element = win.document.getElementById entry.get('id')
 				scrollToElement($entriesListView, $element, 1000, 'easeInOutQuad', cb)
 
 			# Determine whether needs to extend filterCount first
 			if highestEntryIndex < index
 				# Provide 10 extra entries, so destinationEntry appears at top
-				# Set the new filterCount, and *then* scroll to the entry
-				filterCount = (index + 1) + 10
-				@setState {filterCount}, performScroll
+				# Set the new count (whichever type is pertinent), and *then* scroll to the entry
+				countType = if @props.isFiltering then 'filterCount' else 'historyCount'
+
+				newState = {}
+				newState[countType] = (index + 1) + 10
+				@setState newState, _performScroll
 			else
-				performScroll()
+				_performScroll()
 
 		_resetScroll: ->
 			findDOMNode(@).scrollTop = 0
@@ -1157,7 +1174,7 @@ load = (win) ->
 			},
 				EntryDateNavigator({
 					ref: 'entryDateNavigator'
-					historyEntries
+					historyEntries: @props.historyEntries
 					onSelect: @_scrollToEntryDate
 				})
 
