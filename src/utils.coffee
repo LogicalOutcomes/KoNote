@@ -254,6 +254,10 @@ load = (win) ->
 	# Uses nw win for requestAnimationFrame, and can handle scrolling within a container
 	scrollToElement = (container, element, duration = 500, easing = 'linear', callback) ->
 
+		if not container or not element
+			throw new Error "Missing arg in scrollToElement [container, element]:", [container, element]
+			return
+
 		easings =
 			linear: (t) ->
 				t
