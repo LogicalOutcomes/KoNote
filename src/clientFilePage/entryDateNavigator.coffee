@@ -92,6 +92,7 @@ load = (win) ->
 				maxDate
 				widgetPositioning: {
 					horizontal: 'right'
+					vertical: 'top'
 				}
 				widgetParent: '#navigatorWrapper'
 				viewMode: 'years'
@@ -141,19 +142,23 @@ load = (win) ->
 				, 2500
 
 
-		_toggleDateTimePicker: ->
-			@datetimepicker.toggle()
 
 		render: ->
-			icon = if @state.isScrolling then 'refresh fa-spin fa-fw' else 'sort'
+			{isScrolling} = @state
+			icon = if isScrolling then 'refresh fa-spin fa-fw' else 'sort'
 
 			R.div({id: 'entryDateNavigator'},
 				R.div({id: 'navigatorWrapper'},
 					R.input({ref: 'hiddenInput'})
 
 					R.button({
-						onClick: @_toggleDateTimePicker
-						className: 'btn btn-default btn-xs'
+						ref: 'button'
+						onClick: => @datetimepicker.toggle()
+						onBlur: => @datetimepicker.hide()
+						className: [
+							'btn btn-default btn-xs'
+							'isScrolling' if isScrolling
+						].join ' '
 					},
 						FaIcon(icon)
 					)
