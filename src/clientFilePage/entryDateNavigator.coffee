@@ -120,7 +120,26 @@ load = (win) ->
 				return
 
 			# Update the icon with an animated spinner while isScrolling
-			@setState {isScrolling: true}, => @props.onSelect entry, => @setState {isScrolling: false}
+			@setState {isScrolling: true}, => @props.onSelect entry, =>
+				@setState {isScrolling: false}
+				@refs.button.blur() if @refs.button
+
+				# Highlight destination entries when scroll has completed
+				entryIdsToFlash = @props.historyEntries
+				.filter (e) ->
+					timestampMoment = makeMoment e.get('timestamp')
+					return selectedMoment.isSame timestampMoment, 'day'
+				.map (e) ->
+					return '#' + e.get('id')
+				.toArray()
+				.join ', '
+
+				$(entryIdsToFlash).addClass 'flashDestination'
+
+				setTimeout ->
+					$(entryIdsToFlash).removeClass 'flashDestination'
+				, 2500
+
 
 		_toggleDateTimePicker: ->
 			@datetimepicker.toggle()

@@ -108,12 +108,38 @@
 				color #337ab7
 				font-weight 500
 
+			.entry
+				margin-right -7px // Offset against selectedTarget left-border
+
+				&.flashDestination
+					$duration = .85s
+
+					.entryHeader
+						animation flashHeader $duration
+
+						.timestamp
+							animation bolden $duration
+
+				$highlightColor = darken(sidebar-borders, 25%)
+
+				@keyframes flashHeader
+					50%
+						padding-left 20px
+						margin-left -20px
+						border-color $highlightColor
+
+				@keyframes bolden
+					50%
+						color $highlightColor
+						font-weight 600
+
+
 			.entryHeader
 				display flex
 
 				border-bottom 2px solid sidebar-borders
 
-				padding 5px 0
+				padding 7px 0
 
 				font-size 14px
 				font-weight 300
@@ -137,14 +163,31 @@
 				.revisions
 					margin-right 10px
 
+				> div
+					display flex
+					align-items center
+
 				> .timestamp
 					flex 1
+					display flex
+					align-items center
 
 					.lateTimestamp
 						color darkRed
 						font-size 0.8 em
 						display inline-block
 						padding-left 4px
+
+				> .options
+					.entryHeaderDropdown
+						padding 1px 10px !important
+						margin-bottom -3px
+
+					.dropdown-menu
+						margin-top 8px
+						border-top-right-radius 0px
+						border-top-left-radius 0px
+						border-top 0
 
 				.colorKeyBubble > .bubbleContents
 					width 10px
