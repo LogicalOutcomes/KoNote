@@ -38,11 +38,8 @@ load = (win) ->
 			isScrolling: false
 		}
 
-		componentDidMount: ->
-			@_initDateTimePicker()
-
 		componentWillUnmount: ->
-			@datetimepicker.destroy()
+			@datetimepicker.destroy() if @datetimepicker?
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Re-init enabledDates when historyEntries has changed
@@ -85,13 +82,14 @@ load = (win) ->
 			$input = $(@refs.hiddenInput)
 
 			$input.datetimepicker({
+				debug: true
 				format: 'YYYY-MM-DD'
 				enabledDates: enabledDates.toJS()
 				useCurrent: false
 				minDate
 				maxDate
 				widgetPositioning: {
-					horizontal: 'right'
+					horizontal: 'left'
 					vertical: 'top'
 				}
 				widgetParent: '#navigatorWrapper'
@@ -141,7 +139,13 @@ load = (win) ->
 					$(entryIdsToFlash).removeClass 'flashDestination'
 				, 2500
 
+		_handleClick: ->
+			# Save on window.load perf by only mounting datetimepicker when used
+			@_initDateTimePicker() unless @datetimepicker?
+			@datetimepicker.show()
 
+		_handleBlur: ->
+			@datetimepicker.hide() if @datetimepicker?
 
 		render: ->
 			{isScrolling} = @state
@@ -153,8 +157,8 @@ load = (win) ->
 
 					R.button({
 						ref: 'button'
-						onClick: => @datetimepicker.toggle()
-						onBlur: => @datetimepicker.hide()
+						onClick: @_handleClick unless isScrolling
+						onBlur: @_handleBlur
 						className: [
 							'btn btn-default btn-xs'
 							'isScrolling' if isScrolling

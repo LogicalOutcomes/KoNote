@@ -7,17 +7,20 @@
 	> div
 		display flex
 		flex-direction column
-		align-items flex-end
+		align-items center
 		position relative
 
+
 	$dimension = 4rem
+
+	.bootstrap-datetimepicker-widget
+		left .5rem !important
 
 	button
 		flex 1
 		justify-content center
 		align-items center
 		background rgba(255,255,255,0.8)
-		transition all .15s ease
 		outline none
 		box-shadow 0px 0px 5px white
 
@@ -40,7 +43,7 @@
 
 	input
 		visibility hidden
-		width $dimension
+		width unit($dimension / 2, 'rem')
 		border 0
 		height 0
 
