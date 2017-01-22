@@ -1319,7 +1319,7 @@ load = (win) ->
 			R.div({
 				id: progNote.get('id')
 				className: [
-					'basic progNote'
+					'basic progNote entry'
 					'isEditing' if isEditing
 				].join ' '
 			},
@@ -1416,7 +1416,7 @@ load = (win) ->
 
 			R.div({
 				id: progNote.get('id')
-				className: 'full progNote'
+				className: 'full progNote entry'
 			},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
@@ -1652,7 +1652,7 @@ load = (win) ->
 
 			return R.div({
 				id: firstRev.get('id')
-				className: 'cancelStub'
+				className: 'cancelStub entry'
 			},
 				R.button({
 					className: 'toggleDetails btn btn-xs btn-default'
@@ -1828,7 +1828,7 @@ load = (win) ->
 							pullRight: true
 							noCaret: true
 							container: 'body'
-							title: FaIcon('ellipsis-v', {className:'menuItemIcon'})
+							title: FaIcon('ellipsis-v')
 						},
 							(if canModify
 								B.MenuItem({onClick: startRevisingProgNote.bind null, progNote, progEvents},
@@ -1898,7 +1898,7 @@ load = (win) ->
 
 			return R.div({
 				id: globalEvent.get('id')
-				className: 'globalEventView'
+				className: 'globalEventView entry'
 			},
 				EntryHeader({
 					revisionHistory: Imm.List [globalEvent]
