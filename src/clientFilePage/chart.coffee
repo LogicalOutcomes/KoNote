@@ -324,8 +324,11 @@ load = (win) ->
 			# Half-height for only metrics/events
 			if @props.selectedMetricIds.isEmpty() or @props.progEvents.isEmpty()
 				# Can return minimum height instead
-				halfHeight = if halfHeight > minChartHeight then fullHeight / 2 else minChartHeight
-				return halfHeight
+				halfHeight = fullHeight / 2
+				if halfHeight > minChartHeight
+					return Math.floor halfHeight
+				else
+					return minChartHeight
 
 			return fullHeight
 
