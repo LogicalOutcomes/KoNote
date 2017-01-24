@@ -50,7 +50,7 @@ load = (win) ->
 							'btn'
 							'selected' if spanSize is 1
 						].join ' '
-						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 1, 'day')
+						onClick: @_setTimeSpanRange.bind(null, 1, 'day')
 					},
 						R.span({className: 'buttonWord'},
 							"Day"
@@ -64,7 +64,7 @@ load = (win) ->
 							'btn'
 							'selected' if spanSize is 7
 						].join ' '
-						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 1, 'week')
+						onClick: @_setTimeSpanRange.bind(null, 1, 'week')
 					},
 						R.span({className: 'buttonWord'},
 							"Week"
@@ -78,7 +78,7 @@ load = (win) ->
 							'btn'
 							'selected' if spanSize is 30 or spanSize is 31
 						].join ' '
-						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 1, 'month')
+						onClick: @_setTimeSpanRange.bind(null, 1, 'month')
 					},
 						R.span({className: 'buttonWord'},
 							"1 Month"
@@ -92,7 +92,7 @@ load = (win) ->
 							'btn'
 							'selected' if spanSize > 88 && spanSize < 93
 						].join ' '
-						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 3, 'months')
+						onClick: @_setTimeSpanRange.bind(null, 3, 'months')
 					},
 						R.span({className: 'buttonWord'},
 							"3 Months"
@@ -107,7 +107,7 @@ load = (win) ->
 							'btn'
 							'selected' if spanSize is 365 or spanSize is 366
 						].join ' '
-						onClick: @_setTimeSpanRange.bind(null, @props.lastDay, 1, 'year')
+						onClick: @_setTimeSpanRange.bind(null, 1, 'year')
 					},
 						R.span({className: 'buttonWord'},
 							"Year"
@@ -142,9 +142,9 @@ load = (win) ->
 
 			@props.updateTimeSpan(timeSpan)
 
-		_setTimeSpanRange: (lastDay, value, unit) ->
-			end = lastDay.clone()
-			start = lastDay.clone().subtract(value, unit)
+		_setTimeSpanRange: (value, unit) ->
+			end = @props.timeSpan.get('end').clone()
+			start = end.clone().subtract(value, unit)
 			timeSpan = Imm.Map {
 				start
 				end
