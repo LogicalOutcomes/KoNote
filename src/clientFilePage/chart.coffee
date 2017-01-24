@@ -540,7 +540,7 @@ load = (win) ->
 		propTypes: {
 			eventRows: PropTypes.number.isRequired
 			progEvents: PropTypes.instanceOf(Imm.List).isRequired
-			selectedMetricIds: PropTypes.instanceOf(Imm.List).isRequired
+			selectedMetricIds: PropTypes.instanceOf(Imm.Set).isRequired
 		}
 
 		getInitialState: -> {
