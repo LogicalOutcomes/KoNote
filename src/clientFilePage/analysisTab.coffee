@@ -24,6 +24,7 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata, makeMoment} = require('../utils').load(win)
 	{TimestampFormat} = require('../persist/utils')
 	TimeSpanDate = require('./timeSpanDate').load(win)
+	TimeSpanToolbar = require('./timeSpanToolbar').load(win)
 	Chart = require('./chart').load(win)
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
@@ -240,6 +241,13 @@ load = (win) ->
 											timeSpan
 											xTicks
 											updateTimeSpan: @_updateTimeSpan
+										})
+										TimeSpanToolbar({
+											updateTimeSpan: @_updateTimeSpan
+											timeSpan
+											lastDay
+											firstDay
+											dayRange
 										})
 										TimeSpanDate({
 											date: timeSpan.get('end')

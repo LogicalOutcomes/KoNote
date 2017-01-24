@@ -28,6 +28,7 @@ load = (win) ->
 	Chart = React.createFactory React.createClass
 		displayName: 'Chart'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: -> {
 			eventRows: 0

@@ -35,57 +35,11 @@
 				flex-basis 85px
 				padding 0 20px 0 20px
 
-				.slider
-					width 100%
-
-					.slider-track
-						border-radius 15px
-						height 16px
-
-						.slider-track-low, .slider-track-high
-							border-radius 15px
-							background #e4eff5
-
-						.slider-selection
-							border-radius 0px
-							box-shadow none
-							background #c8dae4
-
-					.slider-handle
-						transition opacity 0.2s ease
-						opacity 0.8
-						background #3b4e59 !important
-						margin-top 3px
-						border 3px solid white
-
-						&:hover
-							opacity 1
-
-					.tooltip
-						margin-top -33px
-
-						.tooltip-inner
-							background sidebar-borders
-							color #4c5d67
-							font-size 13px
-							padding 4px 10px
-
-						.tooltip-arrow
-							border-top-color sidebar-borders
-
-					.slider-tick-label-container
-						margin-left -15% !important
-						margin-right -15% !important
-
-						> .slider-tick-label
-							width 25% !important
-							text-align center !important
-
 				> .timeSpanContainer
 					flex 4
 					display block
 					position relative
-					padding 35px 3% 0px 3%
+					padding 5px 3% 0px 3%
 
 					> .dateDisplay
 						position absolute
@@ -96,10 +50,12 @@
 						width 100%
 						padding 20px
 
-						> .timeSpanDate
-							flex 1
+						@require 'timeSpanToolbar'
 
-							&:first-child
+						> .timeSpanDate
+							flex first
+
+							&:2-child
 								text-align left
 
 							&:last-child
@@ -117,6 +73,9 @@
 
 								font-weight 400
 								color #5c5c5c
+
+								.dateIcon
+									display none
 
 								&:hover
 									background #f9f9f9
@@ -143,7 +102,11 @@
 										color #8CA6B5
 										margin 0
 
-
+								@media screen and (max-width: 1145px)
+									.dateIcon
+										display inline !important
+									.dateText
+										display none
 
 				> .granularContainer
 					flex 2

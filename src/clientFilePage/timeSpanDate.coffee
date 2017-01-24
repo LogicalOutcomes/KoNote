@@ -96,7 +96,8 @@ load = (win) ->
 						ref: 'hiddenDateTimePicker'
 						id: "datetimepicker-#{@props.type}"
 					})
-					R.span({}, formattedDate)
+					R.span({className: 'dateText'}, formattedDate)
+					R.span({className: 'dateIcon'}, FaIcon('calendar'))
 					R.span({}, FaIcon('caret-down'))
 				)
 			)
