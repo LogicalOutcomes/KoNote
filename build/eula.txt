@@ -1,0 +1,14 @@
+KONOTE End User License Agreement
+===========================
+
+Except where otherwise noted, this software, and all documentation, is
+Copyright (c) Konode. All rights reserved.
+
+The source code is subject to the terms of the Mozilla Public License, v.2.0:
+http://mozilla.org/MPL/2.0
+
+This software is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE. In no event shall Konode or its
+developers be held liable for any damages arising from the use of this
+software.

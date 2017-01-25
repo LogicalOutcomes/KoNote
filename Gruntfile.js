@@ -54,6 +54,10 @@ module.exports = function(grunt) {
 				],
 				cwd: '/'
 			},
+			eula: {
+				src: 'build/eula.txt',
+				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/'
+			},
 			uninstaller: {
 				expand: true,
 				cwd: 'build/uninstaller/',
@@ -324,6 +328,7 @@ module.exports = function(grunt) {
 			grunt.task.run('replace:main:'+entry);
 			grunt.task.run('replace:config:'+entry);
 			grunt.task.run('copy:production:'+entry);
+			grunt.task.run('copy:eula:'+entry);
 			if (entry == "win") {
 				//grunt.task.run('copy:generic:'+entry);
 				grunt.task.run('copy:uninstaller:'+entry);

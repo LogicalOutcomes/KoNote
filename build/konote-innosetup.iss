@@ -25,6 +25,7 @@ DefaultGroupName={#MyAppName}
 OutputBaseFilename=konote-{#MyAppVersion}-win-setup
 OutputDir=..\dist
 SetupIconFile=..\dist\temp\nwjs-win\KoNote-win-ia32\src\icon.ico
+LicenseFile=eula.txt
 Compression=lzma
 SolidCompression=yes
 PrivilegesRequired=lowest
