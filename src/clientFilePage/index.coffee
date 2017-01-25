@@ -31,7 +31,7 @@ load = (win, {clientFileId}) ->
 
 	CrashHandler = require('../crashHandler').load(win)
 	PlanTab = require('./planTab').load(win)
-	{ProgNotesTab} = require('./progNotesTab').load(win)
+	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
 	InfoTab = require('./infoTab').load(win)
 	ClientAlerts = require('./clientAlerts').load(win)
