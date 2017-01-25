@@ -1284,31 +1284,15 @@ load = (win) ->
 					startRevisingProgNote: @props.startRevisingProgNote
 					selectProgNote: @props.selectProgNote
 				})
-				R.div({className: 'notes'},
-					R.div({onClick: @_selectQuickNote},
-						(if isEditing
-							ExpandingTextArea({
-								value: progNote.get('notes')
-								onChange: @props.updateQuickNotes
-							})
-						else
-							renderLineBreaks progNote.get('notes')
-						)
-					)
-					(@props.attachments.map (attachment) =>
-						filename = attachment.get('filename')
-						fileExtension = Path.extname filename
 
-						R.a({
-							className: 'attachment'
-							onClick: @_openAttachment.bind null, attachment
-						},
-							FaIcon(fileExtension)
-							' '
-							filename
-						)
-					)
-				)
+				ProgNoteContents({
+					progNote
+					isEditing
+					selectQuickNote: @_selectQuickNote
+					updateQuickNotes: @props.updateQuickNotes
+					attachments: @props.attachments
+					openAttachment: @_openAttachment
+				})
 			)
 
 		_openAttachment: (attachment) ->

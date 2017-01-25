@@ -2,13 +2,16 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Presentational components for progress note elements
+# Presentational components for progress note elements,
+# internally differentiates between full progNotes & quickNotes.
 
+Imm = require 'immutable'
 Term = require '../term'
 
 
 load = (win) ->
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
 
 	ProgEventWidget = require('../progEventWidget').load(win)
@@ -21,12 +24,13 @@ load = (win) ->
 	ProgNoteContents = (props) ->
 		{
 			progNote
-			progEvents
-			eventTypes
-			planTargetsById
 
 			isEditing
 			dataTypeFilter
+
+			progEvents
+			eventTypes
+			planTargetsById
 
 			selectBasicUnit
 			updateBasicUnitNotes
@@ -35,8 +39,25 @@ load = (win) ->
 			updatePlanTargetNotes
 			updatePlanTargetMetric
 			updateProgEvent
+
+			selectQuickNote
+			updateQuickNotes
+			attachments
+			openAttachment
 		} = props
 
+		# QuickNote view
+		if progNote.get('type') is 'basic'
+			return QuickNoteView({
+				progNote
+				isEditing
+				selectQuickNote
+				updateQuickNotes
+				attachments
+				openAttachment
+			})
+
+		# Full progNote view
 		R.div({className: 'progNoteContents'},
 			(progNote.get('units').map (unit) =>
 				unitId = unit.get 'id'
@@ -82,6 +103,31 @@ load = (win) ->
 				})
 			)
 		)
+
+	ProgNoteContents.propTypes = {
+		progNote: PropTypes.instanceOf(Imm.Map).isRequired
+		isEditing: PropTypes.bool
+		dataTypeFilter: PropTypes.bool
+
+		# Full progNote
+		progEvents: PropTypes.instanceOf(Imm.List)
+		eventTypes: PropTypes.instanceOf(Imm.List)
+		planTargetsById: PropTypes.instanceOf(Imm.List)
+
+		selectBasicUnit: PropTypes.func
+		updateBasicUnitNotes: PropTypes.func
+		updateBasicMetric: PropTypes.func
+		selectPlanSectionTarget: PropTypes.func
+		updatePlanTargetNotes: PropTypes.func
+		updatePlanTargetMetric: PropTypes.func
+		updateProgEvent: PropTypes.func
+
+		# QuickNote
+		selectQuickNote: PropTypes.func
+		updateQuickNotes: PropTypes.func
+		attachments: PropTypes.instanceOf(Imm.List)
+		openAttachment: PropTypes.instanceOf
+	}
 
 
 	BasicUnitView = (props) ->
@@ -256,6 +302,34 @@ load = (win) ->
 					isEditing
 					updateProgEvent: updateProgEvent.bind null, index
 				})
+			)
+		)
+
+
+	QuickNoteView = ({progNote, isEditing, selectQuickNote, updateQuickNotes, attachments, openAttachment}) ->
+		R.div({className: 'notes'},
+			R.div({onClick: selectQuickNote},
+				(if isEditing
+					ExpandingTextArea({
+						value: progNote.get('notes')
+						onChange: updateQuickNotes
+					})
+				else
+					renderLineBreaks progNote.get('notes')
+				)
+			)
+			(attachments.map (attachment) =>
+				filename = attachment.get('filename')
+				fileExtension = Path.extname filename
+
+				R.a({
+					className: 'attachment'
+					onClick: openAttachment.bind null, attachment
+				},
+					FaIcon(fileExtension)
+					' '
+					filename
+				)
 			)
 		)
 
