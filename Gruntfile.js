@@ -56,7 +56,7 @@ module.exports = function(grunt) {
 			},
 			eula: {
 				src: 'build/eula.txt',
-				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/'
+				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/eula.txt'
 			},
 			uninstaller: {
 				expand: true,
