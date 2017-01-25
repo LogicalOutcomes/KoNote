@@ -19,6 +19,8 @@ load = (win) ->
 
 	MetricWidget = require('./metricWidget').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
+	ProgNoteContents = require('./clientFilePage/progNoteContents').load(win)
+
 	{FaIcon, renderLineBreaks, showWhen,
 	stripMetadata, formatTimestamp, capitalize} = require('./utils').load(win)
 
@@ -30,6 +32,7 @@ load = (win) ->
 		getDefaultProps: -> {
 			terms: {}
 			metricsById: Imm.List()
+			attachments: Imm.List()
 			disableSnapshot: false
 		}
 
@@ -37,6 +40,7 @@ load = (win) ->
 			dataModelName: React.PropTypes.string().isRequired()
 			revisions: React.PropTypes.instanceOf(Imm.List).isRequired()
 			programsById: React.PropTypes.instanceOf(Imm.Map).isRequired()
+			attachments: React.PropTypes.instanceOf(Imm.List)
 		}
 
 		_diffStrings: (oldString = "", newString = "") ->
@@ -265,16 +269,23 @@ load = (win) ->
 					)
 				else
 					R.div({className: 'revisions'},
-						revisions.map (revision, index) => RevisionChangeLog({
-							key: revision.get('revisionId')
-							isFirstRevision: index is (revisions.size - 1)
-							revision
-							type: @props.type
-							metricsById: @props.metricsById
-							programsById: @props.programsById
-							dataModelName: @props.dataModelName
-							disableSnapshot: @props.disableSnapshot
-						})
+						(revisions.map (revision, index) =>
+							RevisionChangeLog({
+								key: revision.get('revisionId')
+								isFirstRevision: index is (revisions.size - 1)
+								revision
+								attachments: @props.attachments
+								type: @props.type
+								metricsById: @props.metricsById
+								programsById: @props.programsById
+								dataModelName: @props.dataModelName
+								disableSnapshot: @props.disableSnapshot
+
+								progEvents: @props.progEvents
+								eventTypes: @props.eventTypes
+								planTargetsById: @props.planTargetsById
+							})
+						)
 					)
 				)
 			)
@@ -301,6 +312,7 @@ load = (win) ->
 
 			# Special cases made for planTarget types
 			isPlanTarget = @props.type is 'planTarget'
+			isProgNote = @props.type is 'progNote'
 			isRevision = changeLog.first()? and changeLog.first().get('action') is 'revised'
 			isTargetStatusChange = isPlanTarget and not isRevision
 			isRenameEntry = changeLog.first()? and changeLog.first().get('property') is 'name'
@@ -331,20 +343,42 @@ load = (win) ->
 				)
 
 				R.div({className: 'changeLog'},
-					(changeLog.map (entry, index) =>
-						ChangeLogEntry({
-							key: index
-							index
-							entry
-							revision
-							isPlanTarget
-							type: @props.type
-							dataModelName: @props.dataModelName
-							metricsById: @props.metricsById
-							onToggleSnapshot: @_toggleSnapshot
-							isSnapshotVisible: @state.isSnapshotVisible
-							disableSnapshot: @props.disableSnapshot
+					(if isProgNote and changeLog.first().get('action') is 'created'
+						ProgNoteContents({
+							progNote: revision
+							progEvents: @props.progEvents.filter (e) -> e.get('progNoteId') is revision.get('id')
+							eventTypes: @props.eventTypes
+							planTargetsById: @props.planTargetsById
+							attachments: @props.attachments
+
+							# TODO: defaultProps
+							isEditing: false
+							dataTypeFilter: null
+
+							selectBasicUnit: (->)
+							updateBasicUnitNotes: (->)
+							updateBasicMetric: (->)
+							selectPlanSectionTarget: (->)
+							updatePlanTargetNotes: (->)
+							updatePlanTargetMetric: (->)
+							updateProgEvent: (->)
 						})
+					else
+						(changeLog.map (entry, index) =>
+							ChangeLogEntry({
+								key: index
+								index
+								entry
+								revision
+								isPlanTarget
+								type: @props.type
+								dataModelName: @props.dataModelName
+								metricsById: @props.metricsById
+								onToggleSnapshot: @_toggleSnapshot
+								isSnapshotVisible: @state.isSnapshotVisible
+								disableSnapshot: @props.disableSnapshot
+							})
+						)
 					)
 					(if isPlanTarget and not isTargetStatusChange
 						RevisionSnapshot({
@@ -383,8 +417,8 @@ load = (win) ->
 				# )
 
 				R.span({className: 'action'},
-					# Different display cases for indication of change
-					(if entry.get('action') is 'created'
+					# Display full progNote (in revisions) for creation entry
+					(if isCreationEntry
 						"#{capitalize entry.get('action')} #{entry.get('property')}
 						#{if @props.isPlanTarget then ' as:' else ''}"
 					else if entry.has('reason') # Status change

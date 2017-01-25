@@ -68,12 +68,17 @@ load = (win) ->
 			switch item.get('type')
 				when 'progNote'
 					# First figure out which progNote history to diff through
-					progNoteHistory = progNoteHistories.find (progNoteHistory) ->
-						progNoteHistory.last().get('id') is item.get('progNoteId')
+					progNoteHistory = progNoteHistories.find (h) -> h.last().get('id') is item.get('progNoteId')
+
+					# Grab attachments from the selected historyEntry
+					attachments = @props.historyEntries
+					.find (e) -> e.get('id') is item.get('progNoteId')
+					.get('attachments')
 
 					return R.div({className: 'progNoteDetailView'},
 						RevisionHistory({
 							revisions: progNoteHistory.reverse()
+							attachments
 							type: 'progNote'
 							disableSnapshot: true
 							metricsById
@@ -83,6 +88,9 @@ load = (win) ->
 								metric: Term 'metric'
 								metrics: Term 'metric'
 							}
+							progEvents
+							eventTypes
+							planTargetsById: @props.planTargetsById
 						})
 					)
 

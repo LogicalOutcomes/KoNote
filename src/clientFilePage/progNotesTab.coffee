@@ -402,10 +402,12 @@ load = (win) ->
 							searchQuery: @state.searchQuery
 							item: @state.selectedItem
 							progNoteHistories: @props.progNoteHistories
+							historyEntries: @props.historyEntries
 							progEvents: @props.progEvents
 							eventTypes: @props.eventTypes
 							metricsById: @props.metricsById
 							programsById: @props.programsById
+							planTargetsById: @props.planTargetsById
 						})
 					)
 				)
@@ -1522,17 +1524,17 @@ load = (win) ->
 
 		render: ->
 			{
-				userProgram
-				revisionHistory
-
-				isEditing
-				isReadOnly
 				progNote
 				filteredProgNote
 				progNoteHistory
 				progEvents
 				globalEvents
+				userProgram
+				revisionHistory
 				clientFile
+
+				isEditing
+				isReadOnly
 				startRevisingProgNote
 				selectProgNote
 			} = @props
