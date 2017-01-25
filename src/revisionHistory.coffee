@@ -317,6 +317,7 @@ load = (win) ->
 			isTargetStatusChange = isPlanTarget and not isRevision
 			isRenameEntry = changeLog.first()? and changeLog.first().get('property') is 'name'
 
+
 			return R.section({className: 'revision'},
 				R.div({className: 'header'},
 					R.div({className: 'author'},
@@ -346,7 +347,7 @@ load = (win) ->
 					(if isProgNote and changeLog.first().get('action') is 'created'
 						ProgNoteContents({
 							progNote: revision
-							progEvents: @props.progEvents.filter (e) -> e.get('progNoteId') is revision.get('id')
+							progEvents: @props.progEvents.filter (e) -> e.get('relatedProgNoteId') is revision.get('id')
 							eventTypes: @props.eventTypes
 							planTargetsById: @props.planTargetsById
 							attachments: @props.attachments
