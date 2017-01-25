@@ -21,88 +21,96 @@ load = (win) ->
 	{showWhen, renderLineBreaks} = require('../utils').load(win)
 
 
-	ProgNoteContents = (props) ->
-		{
-			progNote
+	ProgNoteContents = React.createFactory React.createClass
+		displayName: 'ProgNoteContents'
+		mixins: [React.addons.PureRenderMixin]
 
-			isEditing
-			dataTypeFilter
+		getDefaultProps: -> {
+			progEvents: Imm.List()
+		}
 
-			progEvents
-			eventTypes
-			planTargetsById
-
-			selectBasicUnit
-			updateBasicUnitNotes
-			updateBasicMetric
-			selectPlanSectionTarget
-			updatePlanTargetNotes
-			updatePlanTargetMetric
-			updateProgEvent
-
-			selectQuickNote
-			updateQuickNotes
-			attachments
-			openAttachment
-		} = props
-
-		# QuickNote view
-		if progNote.get('type') is 'basic'
-			return QuickNoteView({
+		render: ->
+			{
 				progNote
+
 				isEditing
+				dataTypeFilter
+
+				progEvents
+				eventTypes
+				planTargetsById
+
+				selectBasicUnit
+				updateBasicUnitNotes
+				updateBasicMetric
+				selectPlanSectionTarget
+				updatePlanTargetNotes
+				updatePlanTargetMetric
+				updateProgEvent
+
 				selectQuickNote
 				updateQuickNotes
 				attachments
 				openAttachment
-			})
+			} = @props
 
-		# Full progNote view
-		R.div({className: 'progNoteContents'},
-			(progNote.get('units').map (unit) =>
-				unitId = unit.get 'id'
-
-				switch unit.get('type')
-					when 'basic'
-						BasicUnitView({
-							key: unitId
-							unit, unitId
-							isEditing
-							dataTypeFilter
-							selectBasicUnit
-							updateBasicUnitNotes
-							updateBasicMetric
-						})
-					when 'plan'
-						PlanUnitView({
-							key: unitId
-							unit, unitId
-							isEditing
-							dataTypeFilter
-							planTargetsById
-							selectPlanSectionTarget
-							updatePlanTargetNotes
-							updatePlanTargetMetric
-						})
-			)
-
-			(if progNote.get('summary')
-				SummaryUnitView({
+			# QuickNote view
+			if progNote.get('type') is 'basic'
+				return QuickNoteView({
 					progNote
-					dataTypeFilter
-				})
-			)
-
-			(unless progEvents.isEmpty()
-				EventsView({
-					progEvents
-					eventTypes
-					dataTypeFilter
 					isEditing
-					updateProgEvent
+					selectQuickNote
+					updateQuickNotes
+					attachments
+					openAttachment
 				})
+
+			# Full progNote view
+			R.div({className: 'progNoteContents'},
+				(progNote.get('units').map (unit) =>
+					unitId = unit.get 'id'
+
+					switch unit.get('type')
+						when 'basic'
+							BasicUnitView({
+								key: unitId
+								unit, unitId
+								isEditing
+								dataTypeFilter
+								selectBasicUnit
+								updateBasicUnitNotes
+								updateBasicMetric
+							})
+						when 'plan'
+							PlanUnitView({
+								key: unitId
+								unit, unitId
+								isEditing
+								dataTypeFilter
+								planTargetsById
+								selectPlanSectionTarget
+								updatePlanTargetNotes
+								updatePlanTargetMetric
+							})
+				)
+
+				(if progNote.get('summary')
+					SummaryUnitView({
+						progNote
+						dataTypeFilter
+					})
+				)
+
+				(unless progEvents.isEmpty()
+					EventsView({
+						progEvents
+						eventTypes
+						dataTypeFilter
+						isEditing
+						updateProgEvent
+					})
+				)
 			)
-		)
 
 	ProgNoteContents.propTypes = {
 		progNote: PropTypes.instanceOf(Imm.Map).isRequired
