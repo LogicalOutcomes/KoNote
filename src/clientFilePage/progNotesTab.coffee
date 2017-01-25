@@ -1380,51 +1380,24 @@ load = (win) ->
 					startRevisingProgNote: @props.startRevisingProgNote
 					selectProgNote: @props.selectProgNote
 				})
-				R.div({className: 'progNoteList'},
-					(progNote.get('units').map (unit) =>
-						unitId = unit.get 'id'
 
-						switch unit.get('type')
-							when 'basic'
-								BasicUnitView({
-									key: unitId
-									unit, unitId
-									isEditing
-									dataTypeFilter
-									selectBasicUnit: @_selectBasicUnit
-									updateBasicUnitNotes: @props.updateBasicUnitNotes
-									updateBasicMetric: @props.updateBasicMetric
-								})
-							when 'plan'
-								PlanUnitView({
-									key: unitId
-									unit, unitId
-									isEditing
-									dataTypeFilter
-									planTargetsById: @props.planTargetsById
-									selectPlanSectionTarget: @_selectPlanSectionTarget
-									updatePlanTargetNotes: @props.updatePlanTargetNotes
-									updatePlanTargetMetric: @props.updatePlanTargetMetric
-								})
-					)
+				ProgNoteContents({
+					progNote
+					progEvents
+					eventTypes: @props.eventTypes
+					planTargetsById: @props.planTargetsById
 
-					(if progNote.get('summary')
-						SummaryUnitView({
-							progNote
-							dataTypeFilter
-						})
-					)
+					isEditing
+					dataTypeFilter
 
-					(unless progEvents.isEmpty()
-						EventsView({
-							progEvents
-							eventTypes: @props.eventTypes
-							dataTypeFilter
-							isEditing
-							updateProgEvent: @props.updateProgEvent
-						})
-					)
-				)
+					selectBasicUnit: @_selectBasicUnit
+					updateBasicUnitNotes: @props.updateBasicUnitNotes
+					updateBasicMetric: @props.updateBasicMetric
+					selectPlanSectionTarget: @_selectPlanSectionTarget
+					updatePlanTargetNotes: @props.updatePlanTargetNotes
+					updatePlanTargetMetric: @props.updatePlanTargetMetric
+					updateProgEvent: @props.updateProgEvent
+				})
 			)
 
 		_selectBasicUnit: (unit) ->
@@ -1445,6 +1418,72 @@ load = (win) ->
 				targetDescription: mostRecentTargetRevision.get('description')
 				progNoteId: @props.progNote.get('id')
 			}
+
+
+	ProgNoteContents = (props) ->
+		{
+			progNote
+			progEvents
+			eventTypes
+			planTargetsById
+
+			isEditing
+			dataTypeFilter
+
+			selectBasicUnit
+			updateBasicUnitNotes
+			updateBasicMetric
+			selectPlanSectionTarget
+			updatePlanTargetNotes
+			updatePlanTargetMetric
+			updateProgEvent
+		} = props
+
+		R.div({className: 'progNoteContents'},
+			(progNote.get('units').map (unit) =>
+				unitId = unit.get 'id'
+
+				switch unit.get('type')
+					when 'basic'
+						BasicUnitView({
+							key: unitId
+							unit, unitId
+							isEditing
+							dataTypeFilter
+							selectBasicUnit
+							updateBasicUnitNotes
+							updateBasicMetric
+						})
+					when 'plan'
+						PlanUnitView({
+							key: unitId
+							unit, unitId
+							isEditing
+							dataTypeFilter
+							planTargetsById
+							selectPlanSectionTarget
+							updatePlanTargetNotes
+							updatePlanTargetMetric
+						})
+			)
+
+			(if progNote.get('summary')
+				SummaryUnitView({
+					progNote
+					dataTypeFilter
+				})
+			)
+
+			(unless progEvents.isEmpty()
+				EventsView({
+					progEvents
+					eventTypes
+					dataTypeFilter
+					isEditing
+					updateProgEvent
+				})
+			)
+		)
 
 
 	BasicUnitView = (props) ->
@@ -2035,6 +2074,6 @@ load = (win) ->
 		return progNote.set('units', progNoteUnits)
 
 
-	return ProgNotesTab
+	return {ProgNotesTab, ProgNoteContents}
 
 module.exports = {load}
