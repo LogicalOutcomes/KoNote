@@ -101,11 +101,15 @@ load = (win) ->
 				changeLog = changeLog.push Imm.fromJS(entry)
 
 			# Process the changes of an object or Imm.List from its predecessor
-			processChanges = ({parent, property, value, previousValue}) =>
+			processChanges = (parent, property, value, previousValue) =>
+				parentId = if parent.get? then parent.get('id')
+				parentName = if parent.get? then parent.get('name')
+
 				# Handle regular values
 				if typeof value in ['string', 'number'] and value isnt previousValue
 					pushToChangeLog {
-						parent
+						parentId
+						parentName
 						property
 						action: 'revised'
 						value: @_diffStrings(previousValue, value)
@@ -121,7 +125,8 @@ load = (win) ->
 
 						if previousItem? and itemValue isnt previousItemValue
 							pushToChangeLog {
-								parent
+								parentId
+								parentName
 								property: "#{Term 'metric'} value"
 								action: 'revised'
 								item: arrayItem
@@ -200,15 +205,11 @@ load = (win) ->
 								switch unit.get('type')
 
 									when 'basic'
-
 										unit.entrySeq().forEach ([property, value]) =>
 											previousValue = previousRevisionValue.getIn [unitIndex, property]
-											parent = unit.get('name')
-
-											processChanges {parent, property, value, previousValue}
+											processChanges(unit, property, value, previousValue)
 
 									when 'plan'
-
 										unit.get('sections').forEach (section, sectionIndex) =>
 											section.get('targets').forEach (target, targetIndex) =>
 												target.entrySeq().forEach ([property, value]) =>
@@ -218,9 +219,8 @@ load = (win) ->
 														'sections', sectionIndex
 														'targets', targetIndex, property
 													]
-													parent = target.get('name')
 
-													processChanges {parent, property, value, previousValue}
+													processChanges(target, property, value, previousValue)
 
 									else
 										throw new Error "Unknown unit type: #{unit.get('type')}"
@@ -242,6 +242,12 @@ load = (win) ->
 			.reverse()
 			.map(@_buildInChangeLog)
 			.reverse()
+
+			revisedIds = revisions
+			.pop() # Discard creation revision (last one)
+			.map (r) -> r.get('changeLog').map (l) -> l.get('parentId')
+			.flatten()
+			.toSet()
 
 			# Either use the revision's name (ex: target name), or the dataModel name
 			firstRevision = revisions.first()
@@ -274,7 +280,7 @@ load = (win) ->
 								key: revision.get('revisionId')
 								isFirstRevision: index is (revisions.size - 1)
 								revision
-								attachments: @props.attachments
+								revisedIds
 								type: @props.type
 								metricsById: @props.metricsById
 								programsById: @props.programsById
@@ -304,18 +310,56 @@ load = (win) ->
 			@setState {isSnapshotVisible: not @state.isSnapshotVisible}
 
 		render: ->
-			revision = @props.revision
+			{revision, revisedIds} = @props
+
 			changeLog = revision.get('changeLog')
 
 			userProgramId = revision.get('authorProgramId')
 			userProgram = @props.programsById.get(userProgramId)
 
-			# Special cases made for planTarget types
+			# Simpler vars to help handle unique cases for revision display
+			firstChangeLog = changeLog.first()
+
 			isPlanTarget = @props.type is 'planTarget'
-			isProgNote = @props.type is 'progNote'
-			isRevision = changeLog.first()? and changeLog.first().get('action') is 'revised'
+			isProgNote = @props.type in ['progNote', 'quickNote']
+			isRevision = firstChangeLog? and firstChangeLog.get('action') is 'revised'
 			isTargetStatusChange = isPlanTarget and not isRevision
-			isRenameEntry = changeLog.first()? and changeLog.first().get('property') is 'name'
+			isRenameEntry = firstChangeLog? and firstChangeLog.get('property') is 'name'
+			isCreationEntry = firstChangeLog? and firstChangeLog.get('action') is 'created'
+
+
+			if isProgNote and isCreationEntry
+				# TODO: Incorporate progEvents to revisionHistory
+				# progEvents = @props.progEvents.filter (e) -> e.get('relatedProgNoteId') is revision.get('id')
+
+				if revision.get('type') is 'full'
+
+					filteredProgNote = revision.set 'units', revision.get('units').map (unit) ->
+						# Basic unit
+						if unit.get('type') is 'basic'
+							return if @props.revisedIds.includes(unit.get('id')) then unit else undefined
+
+						# Plan unit
+						sections = unit.get('sections')
+						.map (section) ->
+							section.set 'targets', section.get('targets').filter (target) -> revisedIds.includes target.get('id')
+						.filterNot (section) ->
+							section.get('targets').isEmpty()
+
+						return unit.set 'sections', sections
+
+					# Filter out any empty units
+					filteredProgNote = filteredProgNote.set 'units', filteredProgNote.get('units').filterNot (unit) ->
+						unit.get('sections').isEmpty()
+
+				else
+					# Quick Note
+					isQuickNote = true
+					filteredProgNote = revision
+
+				# TODO: Diffing for shiftSummaries (can't edit one yet anyway)
+				filteredProgNote = filteredProgNote.remove 'summary'
+
 
 
 			return R.section({className: 'revision'},
@@ -344,26 +388,21 @@ load = (win) ->
 				)
 
 				R.div({className: 'changeLog'},
-					(if isProgNote and changeLog.first().get('action') is 'created'
-						ProgNoteContents({
-							progNote: revision
-							progEvents: @props.progEvents.filter (e) -> e.get('relatedProgNoteId') is revision.get('id')
-							eventTypes: @props.eventTypes
-							planTargetsById: @props.planTargetsById
-							attachments: @props.attachments
+					(if isProgNote and isCreationEntry
+						R.article({className: 'entry'},
+							R.span({className: 'action'},
+								"Created #{firstChangeLog.get('property')} with entries:"
+							)
 
-							# TODO: defaultProps
-							isEditing: false
-							dataTypeFilter: null
+							ProgNoteContents({
+								progNote: filteredProgNote
+								planTargetsById: @props.planTargetsById
+								# TODO: Incorporate progEvents to revisionHistory
+								# progEvents
+								# eventTypes: @props.eventTypes
+							})
+						)
 
-							selectBasicUnit: (->)
-							updateBasicUnitNotes: (->)
-							updateBasicMetric: (->)
-							selectPlanSectionTarget: (->)
-							updatePlanTargetNotes: (->)
-							updatePlanTargetMetric: (->)
-							updateProgEvent: (->)
-						})
 					else
 						(changeLog.map (entry, index) =>
 							ChangeLogEntry({
@@ -405,7 +444,7 @@ load = (win) ->
 			if entry.get('property') is 'metricIds'
 				entry = entry.set('property', 'metric')
 
-			R.article({className: 'entry', key: @props.index},
+			R.article({className: 'entry'},
 				# # TODO: Restore as Diffing selector
 				# (if not @props.disableSnapshot and @props.index is 0 and entry.get('action') isnt 'created'
 				# 	R.button({
@@ -424,8 +463,8 @@ load = (win) ->
 						#{if @props.isPlanTarget then ' as:' else ''}"
 					else if entry.has('reason') # Status change
 						"#{capitalize entry.get('value')} #{@props.dataModelName}"
-					else if entry.has('parent') and not entry.get('parent').has? # Parent isn't an Imm Map obj
-						"#{capitalize entry.get('action')} #{entry.get('property')} for #{entry.get('parent')}"
+					else if entry.has('parentName') and not entry.get('parentName').has? # Parent isn't an Imm Map obj
+						"#{capitalize entry.get('action')} #{entry.get('property')} for #{entry.get('parentName')}"
 					else
 						"#{capitalize entry.get('action')} #{entry.get('property')}"
 					)
