@@ -66,24 +66,22 @@ load = (win) ->
 				)
 
 			switch item.get('type')
-				when 'progNote'
-					# First figure out which progNote history to diff through
+				when 'progNoteRevisions', 'quickNoteRevisions'
+					# Grab selected progNote history, and identify type
 					progNoteHistory = progNoteHistories.find (h) -> h.last().get('id') is item.get('progNoteId')
 
-					# Grab attachments from the selected historyEntry
-					attachments = @props.historyEntries
-					.find (e) -> e.get('id') is item.get('progNoteId')
-					.get('attachments')
+					isQuickNote = item.get('type') is 'quickNoteRevisions'
+					type = if isQuickNote then 'quickNote' else 'progNote'
+					dataModelName = Term (if isQuickNote then 'quick note' else 'progress note')
 
 					return R.div({className: 'progNoteDetailView'},
 						RevisionHistory({
 							revisions: progNoteHistory.reverse()
-							attachments
-							type: 'progNote'
+							type
 							disableSnapshot: true
 							metricsById
 							programsById
-							dataModelName: Term 'progress note'
+							dataModelName
 							terms: {
 								metric: Term 'metric'
 								metrics: Term 'metric'

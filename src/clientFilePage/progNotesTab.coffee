@@ -943,8 +943,16 @@ load = (win) ->
 			@setState {selectedItem}
 
 		_selectProgNote: (progNote) ->
+			type = switch progNote.get('type')
+				when 'full'
+					'progNoteRevisions'
+				when 'basic'
+					'quickNoteRevisions'
+				else
+					throw new Error "unknown revisionHistory type #{progNote.get('type')}"
+
 			@_setSelectedItem Imm.fromJS {
-				type: 'progNote'
+				type
 				progNoteId: progNote.get('id')
 			}
 
@@ -1554,7 +1562,6 @@ load = (win) ->
 				firstRevision.get('timestamp')
 			)
 
-
 			R.div({className: 'entryHeader'},
 				R.div({className: 'timestamp'},
 					formatTimestamp(timestamp, @props.dateFormat)
@@ -1747,7 +1754,7 @@ load = (win) ->
 						}
 					"""
 
-				when 'progNote' # ProgNote revisions
+				when 'progNoteRevisions', 'quickNoteRevisions' # ProgNote revisions
 					"""
 						div.progNote##{selectedItem.get('progNoteId')}:not(.isEditing) .revisions {
 							border-left: 2px solid #3176aa !important;
