@@ -6,6 +6,7 @@
 # internally differentiates between full progNotes & quickNotes.
 
 Imm = require 'immutable'
+Path = require 'path'
 Term = require '../term'
 
 
@@ -18,7 +19,7 @@ load = (win) ->
 	MetricWidget = require('../metricWidget').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 
-	{showWhen, renderLineBreaks} = require('../utils').load(win)
+	{showWhen, renderLineBreaks, FaIcon} = require('../utils').load(win)
 
 
 	ProgNoteContents = React.createFactory React.createClass
@@ -27,6 +28,19 @@ load = (win) ->
 
 		getDefaultProps: -> {
 			progEvents: Imm.List()
+			attachments: Imm.List()
+			eventTypes: Imm.List()
+
+			selectBasicUnit: (->)
+			updateBasicUnitNotes: (->)
+			updateBasicMetric: (->)
+			selectPlanSectionTarget: (->)
+			updatePlanTargetNotes: (->)
+			updatePlanTargetMetric: (->)
+			updateProgEvent: (->)
+			selectQuickNote: (->)
+			updateQuickNotes: (->)
+			openAttachment: (->)
 		}
 
 		render: ->
@@ -39,6 +53,7 @@ load = (win) ->
 				progEvents
 				eventTypes
 				planTargetsById
+				attachments
 
 				selectBasicUnit
 				updateBasicUnitNotes
@@ -47,10 +62,8 @@ load = (win) ->
 				updatePlanTargetNotes
 				updatePlanTargetMetric
 				updateProgEvent
-
 				selectQuickNote
 				updateQuickNotes
-				attachments
 				openAttachment
 			} = @props
 
@@ -117,10 +130,10 @@ load = (win) ->
 		isEditing: PropTypes.bool
 		dataTypeFilter: PropTypes.bool
 
-		# Full progNote
 		progEvents: PropTypes.instanceOf(Imm.List)
 		eventTypes: PropTypes.instanceOf(Imm.List)
 		planTargetsById: PropTypes.instanceOf(Imm.List)
+		attachments: PropTypes.instanceOf(Imm.List)
 
 		selectBasicUnit: PropTypes.func
 		updateBasicUnitNotes: PropTypes.func
@@ -129,12 +142,9 @@ load = (win) ->
 		updatePlanTargetNotes: PropTypes.func
 		updatePlanTargetMetric: PropTypes.func
 		updateProgEvent: PropTypes.func
-
-		# QuickNote
 		selectQuickNote: PropTypes.func
 		updateQuickNotes: PropTypes.func
-		attachments: PropTypes.instanceOf(Imm.List)
-		openAttachment: PropTypes.instanceOf
+		openAttachment: PropTypes.instanceOf(Imm.List)
 	}
 
 
@@ -187,6 +197,7 @@ load = (win) ->
 				)
 			)
 		)
+
 
 	PlanUnitView = (props) ->
 		{unit, unitId, dataTypeFilter, isEditing} = props
