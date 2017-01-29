@@ -5,12 +5,7 @@
 # Buttons for analysisTab which modify the time span in predefined increments
 
 Moment = require 'moment'
-_ = require 'underscore'
 Imm = require 'immutable'
-
-
-Config = require '../config'
-
 
 load = (win) ->
 	$ = win.jQuery
