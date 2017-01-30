@@ -98,7 +98,7 @@ load = (win, {clientFileId}) ->
 			@_killLocks cb
 
 		suggestClose: ->
-			unless @refs.ui
+			unless @refs.ui and not @loadingData
 				return
 			@refs.ui.suggestClose()
 
@@ -170,6 +170,8 @@ load = (win, {clientFileId}) ->
 			})
 
 		_renewAllData: ->
+			# to prevent closing window if loading
+			@loadingData = true
 			console.log "Renewing all data......"
 
 			# Sync check
@@ -535,6 +537,7 @@ load = (win, {clientFileId}) ->
 						cb()
 
 			], (err) =>
+				@loadingData = false
 				if err
 					# Cancel any lock operations, and show the page in error
 					@_killLocks()
