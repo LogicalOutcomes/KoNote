@@ -66,6 +66,7 @@
 
 				> .sectionHeader
 					position sticky
+					z-index 2
 					top 0px
 					background-color #fff
 					display flex
@@ -76,7 +77,7 @@
 					border-style none
 					border-width 1px
 
-					padding 10px 25px 5px 10px
+					padding 22px 15px 18px 10px
 
 					> .statusButtonGroup
 						display flex
@@ -121,6 +122,9 @@
 							padding-left 10px
 							transition opacity .3s ease
 
+					> .btn-group
+						margin-left 15px
+					
 					> .btn-group > .btn.addTarget > .fa
 						padding-right 6px
 
@@ -131,8 +135,6 @@
 					text-align center
 
 				> .targets
-					padding 13px 0
-
 					// TODO: Make this multi-use
 					&.status-completed, &.status-deactivated
 						padding 0
