@@ -608,14 +608,18 @@ load = (win) ->
 			sectionIndex = @_getSectionIndex sectionId
 			sectionName = @state.plan.getIn ['sections', sectionIndex, 'name']
 
-			Bootbox.prompt 'Enter a new name for "' + sectionName + '"', (newSectionName) =>
-				newSectionName = newSectionName?.trim()
+			Bootbox.prompt {
+				title: "Rename #{Term 'section'}:"
+				value: sectionName
+				callback: (newSectionName) =>
+					newSectionName = newSectionName?.trim()
 
-				unless newSectionName
-					return
+					unless newSectionName
+						return
 
-				newPlan = @state.plan.setIn ['sections', sectionIndex, 'name'], newSectionName
-				@setState {plan: newPlan}
+					newPlan = @state.plan.setIn ['sections', sectionIndex, 'name'], newSectionName
+					@setState {plan: newPlan}
+			}
 
 		_addTargetToSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
