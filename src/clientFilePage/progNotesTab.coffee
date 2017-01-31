@@ -1773,7 +1773,6 @@ load = (win) ->
 							className: 'entryHeaderDropdown'
 							pullRight: true
 							noCaret: true
-							container: 'body'
 							title: FaIcon('ellipsis-v', {className:'menuItemIcon'})
 						},
 							(if canModify
