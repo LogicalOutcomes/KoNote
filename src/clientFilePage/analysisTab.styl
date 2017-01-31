@@ -169,6 +169,19 @@
 					.chart
 						flex 1
 
+						.c3-tooltip-container
+							max-width 250px
+							overflow hidden
+
+							table
+								tr.isHovered > td
+									font-weight bold
+
+								td.definition
+									background #eee
+									max-height 50px !important
+									text-overflow ellipsis
+
 						svg
 							width 100%
 
