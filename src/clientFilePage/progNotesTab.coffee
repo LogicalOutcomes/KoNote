@@ -16,6 +16,8 @@ Config = require '../config'
 Term = require '../term'
 Persist = require '../persist'
 
+Import = require '../../import'
+
 dataTypeOptions = Imm.fromJS [
 	# {name: 'Progress Notes', id: 'progNotes'}
 	# {name: 'Targets', id: 'targets'}
@@ -45,6 +47,7 @@ load = (win) ->
 	PrintButton = require('../printButton').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 	FilterBar = require('./filterBar').load(win)
+	ImportData = require('./importData').load(win)
 
 	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName, makeMoment
 	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex, blockedExtensions, stripMetadata} = require('../utils').load(win)
@@ -262,6 +265,25 @@ load = (win) ->
 								},
 									FaIcon('search')
 								)
+
+								# hidden input for opening backup zip
+								R.input({
+									ref: 'nwbrowse'
+									className: 'hidden'
+									type: 'file'
+								})
+
+								R.button({
+									ref: 'importButton'
+									className: 'importButton'
+									onClick: @_import.bind null, {
+										extension: 'csv'
+										onImport: @_confirmImport
+									}
+								},
+									FaIcon('upload')
+								)
+								# ImportData({})
 							)
 
 						else
@@ -411,6 +433,29 @@ load = (win) ->
 					)
 				)
 			)
+
+		_import: ({extension, onImport}) ->
+			# Configures hidden file inputs with custom attributes, and clicks it
+			$nwbrowse = $(@refs.nwbrowse)
+			$nwbrowse
+			.off()
+			.attr('accept', ".#{extension}")
+			.on('change', (event) => onImport event.target.value)
+			.click()
+
+		_confirmImport: (importFile) ->
+			Bootbox.confirm {
+				title: "Importing"
+				message: "Now importing data from CSV. Are you sure you want to continue?"
+				callback: (confirmed) =>
+					unless confirmed
+						return
+					# @setState {
+					# 	isLoading: true
+					# 	installProgress: {message: "Restoring data file. This may take some time..."}
+					# }
+					Import.runSeries(importFile)
+			}
 
 		_startRevisingProgNote: (progNote, progEvents) ->
 			# Include transient and original data into generic store
