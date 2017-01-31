@@ -1,6 +1,39 @@
+### 1.14.0
+
+This release largely improves the client file analysis tab. The interface is more responsive, informative,
+better supports large datasets, and features a new date range selector. Under the hood are many performance
+and stability improvements.
+
+#### Improvements
+
+- New analysis date selector (#970)
+- Default analysis time span set to 30 days (#827)
+- Analysis can be printed (#969)
+- Metric definition shown on chart tooltips (#784)
+- Analysis chart is more responsive (#967)
+- Plan view whitespace condensed by 30% (#1009)
+- Section headers are now "sticky" (#1014)
+- New programs dropdown on create client file dialog (#999)
+- Builds now include End User License Agreement (#1001)
+
+#### Fixes
+
+- Fix issue which could cause incomplete data load of client file (#968)
+- Improve progress note search performance (#956, #991)
+- Restore data import function (#959)
+- Analysis chart enforces a "0" minimum value for display purposes (#998)
+- Fix metric/event counts on analysis tab (#998)
+- Filter empty entries from prognotes history (#960)
+- Filter empty metrics from prognote print (#961)
+- Revision history renders line breaks (#935)
+- Analysis chart shows events independently of metrics (#822)
+- Various other fixes and stability improvements
+
+
 ### 1.13.1 (Dec 15 2016)
 
-This maintenance release improves search performance and fixes a crash which could occur when closing a client file in certain cases.
+This maintenance release improves search performance and fixes a crash which could occur when closing a client
+file in certain cases.
 
 #### Improvements
 
@@ -16,7 +49,9 @@ This maintenance release improves search performance and fixes a crash which cou
 
 ### 1.13.0 (Dec 14 2016)
 
-This release brings the ability to search and filter data within a client file. It further refines the style of 1.12, with data more intelligently displayed throughout, including some important fixes for metric values. Additionally, the file size of the Windows release has been reduced by 20%.
+This release brings the ability to search and filter data within a client file. It further refines the style
+of 1.12, with data more intelligently displayed throughout, including some important fixes for metric values.
+Additionally, the file size of the Windows release has been reduced by 20%.
 
 #### Improvements
 
@@ -79,7 +114,10 @@ This maintenance release improves the stability of 1.12.
 
 ### 1.12.0 (Nov 18 2016)
 
-This release generally improves performance. Startup time is 50% faster and client file loading times are also significantly faster. Responsiveness has been improved throughout, and we've tried to eliminate most sources of latency (such as when navigating between tabs or highlighting items on a chart). We've also made performance more consistent when dealing with very large databases.
+This release generally improves performance. Startup time is 50% faster and client file loading times are also
+significantly faster. Responsiveness has been improved throughout, and we've tried to eliminate most sources
+of latency (such as when navigating between tabs or highlighting items on a chart). We've also made
+performance more consistent when dealing with very large databases.
 
 #### Improvements
 
