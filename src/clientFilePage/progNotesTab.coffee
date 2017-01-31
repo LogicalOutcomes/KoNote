@@ -1136,7 +1136,7 @@ load = (win) ->
 
 			_performScroll = =>
 				$entriesListView = findDOMNode(@)
-				$element = win.document.getElementById entry.get('id')
+				$element = win.document.getElementById "entry-#{entry.get('id')}"
 				scrollToElement($entriesListView, $element, 1000, 'easeInOutQuad', cb)
 
 			# Determine whether needs to extend filterCount first
@@ -1317,7 +1317,7 @@ load = (win) ->
 				attachmentText = " " + @props.attachments.get('filename')
 
 			R.div({
-				id: progNote.get('id')
+				id: "entry-#{progNote.get('id')}"
 				className: [
 					'basic progNote entry'
 					'isEditing' if isEditing
@@ -1415,8 +1415,8 @@ load = (win) ->
 
 
 			R.div({
-				id: progNote.get('id')
-				className: 'full progNote entry'
+				id: "entry-#{progNote.get('id')}"
+				className: 'full progNote'
 			},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
@@ -1651,8 +1651,8 @@ load = (win) ->
 			statusChangeRev = latestRev
 
 			return R.div({
-				id: firstRev.get('id')
-				className: 'cancelStub entry'
+				id: "entry-#{firstRev.get('id')}"
+				className: 'cancelStub'
 			},
 				R.button({
 					className: 'toggleDetails btn btn-xs btn-default'
@@ -1897,8 +1897,8 @@ load = (win) ->
 			)
 
 			return R.div({
-				id: globalEvent.get('id')
-				className: 'globalEventView entry'
+				id: "entry-#{globalEvent.get('id')}"
+				className: 'globalEventView'
 			},
 				EntryHeader({
 					revisionHistory: Imm.List [globalEvent]
@@ -1976,11 +1976,11 @@ load = (win) ->
 
 				when 'progNote' # ProgNote revisions
 					"""
-						div.progNote##{selectedItem.get('progNoteId')}:not(.isEditing) .revisions {
+						div.progNote#entry-#{selectedItem.get('progNoteId')}:not(.isEditing) .revisions {
 							border-left: 2px solid #3176aa !important;
 						}
 
-						div.progNote##{selectedItem.get('progNoteId')}:not(.isEditing) .revisions a {
+						div.progNote#entry-#{selectedItem.get('progNoteId')}:not(.isEditing) .revisions a {
 							color: #3176aa !important;
 							opacity: 1 !important;
 						}
