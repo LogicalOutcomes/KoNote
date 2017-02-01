@@ -1,14 +1,13 @@
-### 1.14.0
+### 1.14.0 (Feb 1 2017)
 
 This release largely improves the client file analysis tab. The interface is more responsive, informative,
-better supports large datasets, and features a new date range selector. Under the hood are many performance
-and stability improvements.
+better supports large datasets, and features a new date range selector. Under the hood are several important
+performance and stability improvements.
 
 #### Improvements
 
 - New analysis date selector (#970)
 - Default analysis time span set to 30 days (#827)
-- Analysis can be printed (#969)
 - Metric definition shown on chart tooltips (#784)
 - Analysis chart is more responsive (#967)
 - Plan view whitespace condensed by 30% (#1009)
