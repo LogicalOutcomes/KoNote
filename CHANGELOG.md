@@ -19,7 +19,7 @@ and stability improvements.
 #### Fixes
 
 - Fix issue which could cause incomplete data load of client file (#968)
-- Improve progress note search performance (#956, #991)
+- Improve progress note search performance (#991)
 - Restore data import function (#959)
 - Analysis chart enforces a "0" minimum value for display purposes (#998)
 - Fix metric/event counts on analysis tab (#998)
