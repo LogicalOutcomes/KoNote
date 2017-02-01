@@ -2,10 +2,10 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Layer that switches between administrative tabs
+# Layer that switches between individual administrative tab layers for display
+# TODO: See if we can selectively require in each component as needed
 
 load = (win) ->
-	# Libraries from browser context
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
@@ -19,11 +19,13 @@ load = (win) ->
 	MetricDefinitionManagerTab = require('./metricDefinitionManagerTab').load(win)
 	PlanTemplateManagerTab = require('./planTemplateManagerTab').load(win)
 
+
 	ManagerLayer = React.createFactory React.createClass
 		displayName: 'ManagerLayer'
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
+			# TODO: Just capitalize
 			Module = switch @props.name
 				when 'programManagerTab'
 					ProgramManagerTab
@@ -46,6 +48,8 @@ load = (win) ->
 				)
 			)
 
+
 	return ManagerLayer
+
 
 module.exports = {load}

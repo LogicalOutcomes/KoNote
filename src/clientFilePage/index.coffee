@@ -38,6 +38,7 @@ load = (win, {clientFileId}) ->
 
 	{FaIcon, renderName, renderRecordId, showWhen, showWhen3d, stripMetadata} = require('../utils').load(win)
 
+	# TODO: Consolidate with spinner.coffee
 	loadingSpinner = React.createFactory React.createClass
 		displayName: 'loadingSpinner'
 		mixins: [React.addons.PureRenderMixin]
@@ -97,7 +98,7 @@ load = (win, {clientFileId}) ->
 			@_killLocks cb
 
 		suggestClose: ->
-			unless @refs.ui
+			unless @refs.ui and not @loadingData
 				return
 			@refs.ui.suggestClose()
 
@@ -169,6 +170,8 @@ load = (win, {clientFileId}) ->
 			})
 
 		_renewAllData: ->
+			# to prevent closing window if loading
+			@loadingData = true
 			console.log "Renewing all data......"
 
 			# Sync check
@@ -534,6 +537,7 @@ load = (win, {clientFileId}) ->
 						cb()
 
 			], (err) =>
+				@loadingData = false
 				if err
 					# Cancel any lock operations, and show the page in error
 					@_killLocks()
@@ -604,8 +608,11 @@ load = (win, {clientFileId}) ->
 		_secondPass: (deadline) ->
 			progNoteHistories = null
 
-			if (deadline.timeRemaining() > 0 or deadline.didTimout) and (@progNoteIndex < @progNoteTotal)
-				console.info "Second pass start..."
+			if @progNoteIndex < @progNoteTotal
+				# console.info "Second pass start..."
+				unless deadline.timeRemaining() > 0 and not deadline.didTimeout
+					requestIdleCallback @_secondPass, timeout: 3000
+					return
 
 				# lets see what can we do in 100ms
 				count = if deadline.didTimeout then 100 else 10
@@ -628,7 +635,7 @@ load = (win, {clientFileId}) ->
 					if @progNoteIndex < @progNoteTotal
 						# Add to temp store, run another batch
 						@secondPassProgNoteHistories = @secondPassProgNoteHistories.concat results
-						requestIdleCallback @_secondPass
+						requestIdleCallback @_secondPass, timeout: 3000
 					else
 						console.info "Second pass complete!"
 
@@ -891,7 +898,6 @@ load = (win, {clientFileId}) ->
 				'timeout:reactivateWindows': =>
 					@_renewAllData()
 			}
-
 
 
 	ClientFilePageUi = React.createFactory React.createClass
@@ -1229,7 +1235,7 @@ load = (win, {clientFileId}) ->
 				})
 			)
 
-
+	# TODO: Change to view/func
 	SidebarTab = React.createFactory React.createClass
 		displayName: 'SidebarTab'
 
@@ -1243,7 +1249,7 @@ load = (win, {clientFileId}) ->
 				@props.name
 			)
 
-
+	# TODO: Change to view/func
 	LoadError = React.createFactory React.createClass
 		displayName: 'LoadError'
 
@@ -1264,7 +1270,7 @@ load = (win, {clientFileId}) ->
 		render: ->
 			return R.div({className: 'clientFilePage'})
 
-
+	# TODO: Change to view/func
 	ReadOnlyNotice = React.createFactory React.createClass
 		displayName: 'ReadOnlyNotice'
 
@@ -1283,6 +1289,7 @@ load = (win, {clientFileId}) ->
 					@props.data.mode or "Read-Only Mode"
 				)
 			)
+
 
 	return ClientFilePage
 

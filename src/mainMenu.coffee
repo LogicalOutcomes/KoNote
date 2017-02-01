@@ -2,19 +2,20 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Menu component to display MenuOptions
 
 Imm = require 'immutable'
 Term = require './term'
+
 
 load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
 
-	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
-
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ProgramsDropdown = require('./programsDropdown').load(win)
+	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	{FaIcon, showWhen} = require('./utils').load(win)
 
@@ -33,7 +34,10 @@ load = (win) ->
 			updateManagerLayer: React.PropTypes.func.isRequired
 		}
 
-		_overrideProgram: (program) ->
+		_overrideProgram: (programId) ->
+			program = @props.programs.find (p) =>
+				programId is p.get('id')
+
 			currentProgramName = if @props.userProgram
 				@props.userProgram.get('name')
 			else
@@ -56,6 +60,11 @@ load = (win) ->
 		render: ->
 			{isAdmin} = @props
 
+			userProgramId = if @props.userProgram
+				@props.userProgram.get('id')
+			else
+				''
+
 			return R.aside({
 				id: 'mainMenu'
 				className: 'animated fadeInRight'
@@ -66,7 +75,7 @@ load = (win) ->
 							R.h3({}, global.ActiveSession.userName)
 							(unless @props.programs.isEmpty()
 								ProgramsDropdown({
-									selectedProgram: @props.userProgram
+									selectedProgramId: userProgramId
 									programs: @props.programs
 									onSelect: @_overrideProgram
 								})
@@ -153,7 +162,7 @@ load = (win) ->
 				onClick: @props.onClick
 			},
 				if @props.dialog?
-					OpenDialogLink(@props,
+					OpenDialogLink(@props, # Why @props here? Doesn't look right...
 						FaIcon(@props.icon)
 						@props.title
 					)

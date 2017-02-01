@@ -8,6 +8,7 @@
 
 _ = require 'underscore'
 
+
 load = (win) ->
 	React = win.React
 	R = React.DOM
@@ -48,7 +49,7 @@ load = (win) ->
 			@_initialSize()
 
 		componentWillUnmount: ->
-			win.removeEventListener 'resize', @_windowResizeListener
+			win.removeEventListener 'resize', @_resize
 
 		_initialSize: ->
 			textareaDom = @refs.textarea
@@ -104,5 +105,6 @@ load = (win) ->
 			@refs.textarea.focus()
 
 	return ExpandingTextArea
+
 
 module.exports = {load}

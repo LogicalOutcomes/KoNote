@@ -137,14 +137,6 @@
 				.revisions
 					margin-right 10px
 
-					&.active
-						border-left 2px solid #3176aa
-
-						a
-							// text-decoration none !important
-							font-style bold
-							color #3176aa !important
-
 				> .timestamp
 					flex 1
 
@@ -160,12 +152,13 @@
 					margin-left 0.5em
 
 				.selectProgNoteButton
-					color sidebar-borders
+					opacity 0.75
+					color rgb(76, 93, 103)
 					margin-left 10px
 					cursor default
 
 					&:hover
-						color inherit
+						opacity 1
 						text-decoration underline
 
 
@@ -213,24 +206,34 @@
 				h3
 					.fa
 						color #07488b
-						margin-right 6px
+						margin-right 14px
 
 				p
-					padding-left 28px
+					padding-left 35px
 
 			> .progNote, > .cancelStub > .details > .progNote
 				flex 1
 
 				padding-bottom 30px
 
-				> .notes // Quick Note
-					position relative
+				> .notes
 					padding-top 15px
+
+					> div // Quick Note
+						position relative
+						cursor default
+						border-left 2px solid rgba(255,255,255, 0) // avoid reflow when added on select
+						transition all .25s ease
+						padding-left 0px
+						padding-right 20px
+
+						&:hover
+							opacity 0.75
 
 				&:hover .progNoteToolbar
 					opacity 1
 
-					.revisions
+					.revisions // selectedItem styling applied inline (InlineSelectedItemStyles)
 						margin-right 0
 
 				.progNoteList
@@ -272,27 +275,18 @@
 								font-weight 600
 								background-color yellow
 
-						&.basic
+						&.basic // selectedItem styling applied inline (InlineSelectedItemStyles)
+							margin-top 10px
 							cursor default
 							border-left 2px solid rgba(255,255,255, 0) // avoid reflow when added on select
 							transition all .25s ease
 							padding-left 0px
 							padding-right 20px
 
-							&:hover
-								//border-left 2px solid grey
-								//padding-left 20px
-								//padding-right 0px
-
-							&.selected
-								color #3176aa
-								padding-left 20px
-								padding-right 0px
-								border-left 2px solid #3176aa
+							&:not(.isEditing):hover
+								opacity 0.75
 
 							h3
-								//transition all .15s ease
-								//padding 10px 0 10px 0
 								margin 0
 								font-size 14px
 
@@ -315,30 +309,16 @@
 								&:first-child
 									padding-top 10px
 
-								> .target
+								> .target // selectedItem styling applied inline (InlineSelectedItemStyles)
 									cursor default
 									margin-bottom 15px
-									border-left 2px solid rgba(255,255,255, 0) // avoid reflow when added on select
+									border-left 2px solid rgba(255,255,255, 0) // Avoid reflow when selectedItem
 									transition all .25s ease
 									padding-left 0px
 									padding-right 20px
 
-									&:hover
-										//border-left 2px solid grey
-										//padding-left 20px
-										//padding-right 0px
-										.notes
-											opacity 0.7
-
-									&.selected
-										padding-left 20px
-										padding-right 0px
-										border-left 2px solid #3176aa
-										color #3176aa
-										h3
-											opacity 1
-										.notes
-											opacity 1
+									&:not(.isEditing):hover .notes
+										opacity 0.75
 
 									> .empty
 										padding 0 2px

@@ -9,6 +9,10 @@
 # difficult.  We should probably just implement our own auto-complete
 # functionality -- it might even make this file shorter.
 
+Config = require './config'
+Term = require './term'
+
+
 load = (win) ->
 	$ = win.jQuery
 	React = win.React
@@ -18,23 +22,17 @@ load = (win) ->
 
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
 	DefineMetricDialog = require('./defineMetricDialog').load(win)
-	Config = require('./config')
-	Term = require('./term')
+	{FaIcon, renderLineBreaks, showWhen, truncateText} = require('./utils').load(win)
 
-	{
-		FaIcon
-		renderLineBreaks
-		showWhen
-		truncateText
-	} = require('./utils').load(win)
 
 	MetricLookupField = React.createFactory React.createClass
 		displayName: 'MetricLookupField'
 		mixins: [LayeredComponentMixin]
-		getInitialState: ->
-			return {
-				isDefineMetricDialogVisible: false
-			}
+
+		getInitialState: -> {
+			isDefineMetricDialogVisible: false
+		}
+
 		componentDidMount: ->
 			lookupField = $(@refs.lookupField)
 
@@ -125,8 +123,10 @@ load = (win) ->
 
 					@props.onSelection newMetric.get('id')
 			})
+
 		_createMetric: ->
 			@setState {isDefineMetricDialogVisible: true}
+
 		_lookupMetric: (query, cb) ->
 			query = query.toLowerCase()
 
@@ -144,6 +144,7 @@ load = (win) ->
 				.toJS()
 			)
 
+
 	Suggestion = React.createFactory React.createClass
 		displayName: 'Suggestion'
 		render: ->
@@ -157,6 +158,8 @@ load = (win) ->
 				)
 			)
 
+
 	return MetricLookupField
+
 
 module.exports = {load}

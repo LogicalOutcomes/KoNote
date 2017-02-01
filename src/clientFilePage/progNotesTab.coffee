@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Client file view for displaying, searching, and updating progress notes
+
 Fs = require 'fs'
 Path = require 'path'
 Assert = require 'assert'
@@ -61,6 +63,7 @@ load = (win) ->
 	ProgNotesTab = React.createFactory React.createClass
 		displayName: 'ProgNotesTab'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		hasChanges: ->
 			@refs.ui.hasChanges()
@@ -199,7 +202,7 @@ load = (win) ->
 					R.section({className: 'leftPane'},
 
 						(if hasEnoughData
-
+							# TODO: Make component
 							R.div({className: 'flexButtonToolbar'},
 								R.button({
 									className: [
@@ -346,15 +349,20 @@ load = (win) ->
 									R.button({
 										id: 'resetFilterButton'
 										className: 'btn btn-link'
-										onClick: =>
-
-											@refs.filterBar.clear()
+										onClick: => @refs.filterBar.clear()
 									},
 										FaIcon('refresh')
 										"Reset"
 									)
 								)
 							)
+						)
+
+						# Apply selectedItem styles as inline <style>
+						(if @state.selectedItem?
+							InlineSelectedItemStyles({
+								selectedItem: @state.selectedItem
+							})
 						)
 
 						EntriesListView({
@@ -375,7 +383,6 @@ load = (win) ->
 							isReadOnly: @props.isReadOnly
 							isEditing
 
-							selectedItem: @state.selectedItem
 							setSelectedItem: @_setSelectedItem
 							selectProgNote: @_selectProgNote
 							startRevisingProgNote: @_startRevisingProgNote
@@ -1058,7 +1065,7 @@ load = (win) ->
 
 				# Reset filterCount and scroll to top anytime filter parameters change
 				if filterParametersChanged
-					@setState @getInitialState, => findDOMNode(@).scrollTop = 0
+					@setState @getInitialState, @_resetScroll
 
 
 				if @props.searchQuery
@@ -1088,6 +1095,13 @@ load = (win) ->
 					@_redrawSearchHighlighting()
 
 				@props.setSelectedItem(null)
+
+			# Reset scroll when opens edit view for progNote
+			if @props.isEditing isnt oldProps.isEditing and @props.isEditing
+				@_resetScroll()
+
+		_resetScroll: ->
+			findDOMNode(@).scrollTop = 0
 
 		_redrawSearchHighlighting: ->
 			# Performs a complete (expensive) mark/unmark of the entire EntriesListView
@@ -1162,7 +1176,6 @@ load = (win) ->
 					userProgram
 					planTargetsById: @props.planTargetsById
 					setSelectedItem: @props.setSelectedItem
-					selectedItem: @props.selectedItem
 					selectProgNote: @props.selectProgNote
 					isReadOnly: @props.isReadOnly
 
@@ -1188,7 +1201,6 @@ load = (win) ->
 						attachments: @props.attachments
 						userProgram
 						clientFile: @props.clientFile
-						selectedItem: @props.selectedItem
 						dataTypeFilter
 						setSelectedItem: @props.setSelectedItem
 						selectProgNote: @props.selectProgNote
@@ -1217,7 +1229,6 @@ load = (win) ->
 						selectProgNote: @props.selectProgNote
 						setEditingProgNoteId: @props.setEditingProgNoteId
 						updatePlanTargetNotes: @props.updatePlanTargetNotes
-						selectedItem: @props.selectedItem
 						isReadOnly: @props.isReadOnly
 
 						isEditing
@@ -1237,6 +1248,7 @@ load = (win) ->
 	QuickNoteView = React.createFactory React.createClass
 		displayName: 'QuickNoteView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		render: ->
 			{isEditing, dataTypeFilter} = @props
@@ -1252,19 +1264,22 @@ load = (win) ->
 
 			R.div({
 				id: progNote.get('id')
-				className: 'basic progNote'
+				className: [
+					'basic progNote'
+					'isEditing' if isEditing
+				].join ' '
 			},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
 					userProgram: @props.userProgram
 
 					isReadOnly: @props.isReadOnly
-					progNote
+					progNote: @props.progNote
+					filteredProgNote: @props.filteredProgNote
 					progNoteHistory: @props.progNoteHistory
 					progEvents: @props.progEvents
 					globalEvents: @props.globalEvents
 					clientFile: @props.clientFile
-					selectedItem: @props.selectedItem
 					isEditing
 
 					startRevisingProgNote: @props.startRevisingProgNote
@@ -1335,6 +1350,7 @@ load = (win) ->
 	ProgNoteView = React.createFactory React.createClass
 		displayName: 'ProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		render: ->
 			{isEditing, dataTypeFilter} = @props
@@ -1353,12 +1369,12 @@ load = (win) ->
 					userProgram: @props.userProgram
 
 					isReadOnly: @props.isReadOnly
-					progNote: @props.progNote # Pass original (unfiltered)
+					progNote: @props.progNote
+					filteredProgNote: @props.filteredProgNote
 					progNoteHistory: @props.progNoteHistory
 					progEvents: @props.progEvents
 					globalEvents: @props.globalEvents
 					clientFile: @props.clientFile
-					selectedItem: @props.selectedItem
 					isEditing
 
 					startRevisingProgNote: @props.startRevisingProgNote
@@ -1375,7 +1391,8 @@ load = (win) ->
 									R.div({
 										className: [
 											'basic unit'
-											'selected' if @props.selectedItem? and @props.selectedItem.get('unitId') is unitId
+											"unitId-#{unitId}"
+											'isEditing' if isEditing
 											showWhen dataTypeFilter isnt 'events' or isEditing
 										].join ' '
 										key: unitId
@@ -1439,16 +1456,15 @@ load = (win) ->
 											(section.get('targets').map (target) =>
 												planTargetsById = @props.planTargetsById.map (target) -> target.get('revisions').first()
 												targetId = target.get('id')
-
-												# Here we get the most reent revision to show an up to date name & description
-												# in the progNoteDetailView component's header
+												# Use the up-to-date name & description for header display
 												mostRecentTargetRevision = planTargetsById.get targetId
 
 												R.div({
 													key: targetId
 													className: [
 														'target'
-														'selected' if @props.selectedItem? and @props.selectedItem.get('targetId') is targetId
+														"targetId-#{targetId}"
+														'isEditing' if isEditing
 													].join ' '
 													onClick: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
 												},
@@ -1565,6 +1581,7 @@ load = (win) ->
 	CancelledProgNoteView = React.createFactory React.createClass
 		displayName: 'CancelledProgNoteView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: ->
 			return {
@@ -1623,7 +1640,6 @@ load = (win) ->
 								progNoteHistory: @props.progNoteHistory
 								attachments: @props.attachments
 								clientFile: @props.clientFile
-								selectedItem: @props.selectedItem
 								selectProgNote: @props.selectProgNote
 								userProgram: @props.userProgram
 								isReadOnly: true
@@ -1648,7 +1664,6 @@ load = (win) ->
 								userProgram: @props.userProgram
 								clientFile: @props.clientFile
 								setSelectedItem: @props.setSelectedItem
-								selectedItem: @props.selectedItem
 								selectProgNote: @props.selectProgNote
 								isReadOnly: true
 
@@ -1673,6 +1688,12 @@ load = (win) ->
 	EntryHeader = React.createFactory React.createClass
 		displayName: 'EntryHeader'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
+
+		getDefaultProps: -> {
+			progEvents: Imm.List()
+			globalEvents: Imm.List()
+		}
 
 		render: ->
 			{
@@ -1682,32 +1703,18 @@ load = (win) ->
 				isEditing
 				isReadOnly
 				progNote
+				filteredProgNote
 				progNoteHistory
 				progEvents
 				globalEvents
 				clientFile
-				selectedItem
 				startRevisingProgNote
 				selectProgNote
 			} = @props
 
-			# probably a better way to set up this variable:
-			(if progNote? and not isEditing and progNote.get('status') isnt 'cancelled'
-				displayOptionsDropDown = true
-			else
-				displayOptionsDropDown = false
-			)
-
-			(if progNote?
-				selectedItemIsProgNote = selectedItem? and selectedItem.get('progNoteId') is progNote.get('id')
-				userIsAuthor = progNote.get('author') is global.ActiveSession.userName
-
-				isViewingRevisions = selectedItemIsProgNote and selectedItem.get('type') is 'progNote'
-
-				# Ensure events are defined (aka: quickNote)
-				progEvents ||= Imm.List()
-				globalEvents ||= Imm.List()
-			)
+			userIsAuthor = progNote? and (progNote.get('author') is global.ActiveSession.userName)
+			canViewOptions = progNote? and not isEditing
+			canModify = userIsAuthor
 
 			hasRevisions = revisionHistory.size > 1
 			numberOfRevisions = revisionHistory.size - 1
@@ -1720,29 +1727,20 @@ load = (win) ->
 				firstRevision.get('timestamp')
 			)
 
-			R.div({className: 'entryHeader'},
-				# This just sets up the opendialoglink with ref so it can be called below in menu
-				(if displayOptionsDropDown
-					OpenDialogLink({
-						ref: 'cancelButton'
-						className: "cancelNote #{showWhen not isReadOnly}"
-						dialog: CancelProgNoteDialog
-						progNote
-						progEvents
-						globalEvents
-					})
-				)
 
+			R.div({className: 'entryHeader'},
 				R.div({className: 'timestamp'},
 					formatTimestamp(timestamp, @props.dateFormat)
-					if firstRevision.get('backdate')
+
+					(if firstRevision.get('backdate')
 						R.span({className: 'lateTimestamp'},
 							"(late entry)"
 						)
+					)
 				)
 
-				(if progNote?
-					R.div({className: "revisions #{showWhen hasRevisions} #{if isViewingRevisions then 'active' else ''}"},
+				(if progNote? and hasRevisions
+					R.div({className: 'revisions'},
 						R.a({
 							className: 'selectProgNoteButton'
 							onClick: selectProgNote.bind null, progNote
@@ -1767,36 +1765,42 @@ load = (win) ->
 						})
 					)
 				)
-				(if displayOptionsDropDown
+
+				(if canViewOptions
 					R.div({className: 'options'},
 						B.DropdownButton({
+							id: "entryHeaderDropdown-#{progNote.get('id')}"
 							className: 'entryHeaderDropdown'
 							pullRight: true
 							noCaret: true
-							container: 'body'
-							title: R.span({},
-								FaIcon('ellipsis-v', {className:'menuItemIcon'})
-							)
-							# disabled: @props.isReadOnly
+							title: FaIcon('ellipsis-v', {className:'menuItemIcon'})
 						},
-							B.MenuItem({
-								onClick: startRevisingProgNote.bind null, progNote, progEvents
-							},
-								"Edit"
+							(if canModify
+								B.MenuItem({onClick: startRevisingProgNote.bind null, progNote, progEvents},
+									"Edit"
+								)
 							)
 
-							B.MenuItem({onClick: @_print.bind null, progNote, progEvents, clientFile
-							},
+							B.MenuItem({onClick: @_print.bind null, filteredProgNote, progEvents, clientFile},
 								"Print"
 							)
 
-							B.MenuItem({onClick: @_openCancelProgNoteDialog},
-								"Discard"
+							(if canModify
+								B.MenuItem({onClick: @_openCancelProgNoteDialog},
+									OpenDialogLink({
+										ref: 'cancelButton'
+										className: 'cancelNote'
+										dialog: CancelProgNoteDialog
+										progNote
+										progEvents
+										globalEvents
+									}, "Discard")
+								)
 							)
 						)
-
 					)
 				)
+
 			)
 
 		_openCancelProgNoteDialog: (event) ->
@@ -1819,6 +1823,7 @@ load = (win) ->
 	GlobalEventView = React.createFactory React.createClass
 		displayName: 'GlobalEventView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		render: ->
 			{globalEvent} = @props
@@ -1867,6 +1872,69 @@ load = (win) ->
 				)
 			)
 
+
+	# Applies selected styles without having to re-render entire EntriesListView tree
+	InlineSelectedItemStyles = ({selectedItem}) ->
+		R.style({},
+			(switch selectedItem.get('type')
+				when 'planSectionTarget' # Target entry history
+					"""
+						div.target.targetId-#{selectedItem.get('targetId')}:not(.isEditing) {
+							padding-left: 20px !important;
+							padding-right: 0px !important;
+							border-left: 2px solid #3176aa !important;
+							color: #3176aa !important;
+						}
+
+						div.target.targetId-#{selectedItem.get('targetId')}:not(.isEditing) h3 {
+							opacity: 1 !important;
+						}
+
+						div.target.targetId-#{selectedItem.get('targetId')}:not(.isEditing) .notes {
+							opacity: 1 !important;
+						}
+					"""
+
+				when 'quickNote' # QuickNote entry history
+					"""
+						div.basic.progNote:not(.isEditing) .notes > div {
+							padding-left: 20px !important;
+							padding-right: 0px !important;
+							border-left: 2px solid #3176aa !important;
+							color: #3176aa !important;
+
+							opacity: 1 !important;
+						}
+					"""
+
+				when 'basicUnit' # General 'Notes' entry history (TODO: what > 1 basic unit?)
+					"""
+						div.basic.unit.unitId-#{selectedItem.get('unitId')}:not(.isEditing) {
+							padding-left: 20px !important;
+							padding-right: 0px !important;
+							border-left: 2px solid #3176aa !important;
+							color: #3176aa !important;
+
+							opacity: 1 !important;
+						}
+					"""
+
+				when 'progNote' # ProgNote revisions
+					"""
+						div.progNote##{selectedItem.get('progNoteId')}:not(.isEditing) .revisions {
+							border-left: 2px solid #3176aa !important;
+						}
+
+						div.progNote##{selectedItem.get('progNoteId')}:not(.isEditing) .revisions a {
+							color: #3176aa !important;
+							opacity: 1 !important;
+						}
+					"""
+
+				else
+					throw new Error "Unknown selectedItem type #{selectedItem.get('type')} for InlineSelectedItemStyles"
+			)
+		)
 
 
 	filterEmptyProgNoteValues = (progNote) ->

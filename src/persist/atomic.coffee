@@ -15,7 +15,7 @@
 
 Assert = require 'assert'
 Async = require 'async'
-Fs = require 'fs'
+Fs = require 'graceful-fs'
 Path = require 'path'
 Rimraf = require 'rimraf'
 

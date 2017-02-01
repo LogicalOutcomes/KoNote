@@ -12,6 +12,7 @@ load = (win) ->
 
 	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
+
 	ExpandedMetricWidget = React.createFactory React.createClass
 		displayName: 'MetricWidget'
 		mixins: [React.addons.PureRenderMixin]
@@ -30,5 +31,6 @@ load = (win) ->
 			)
 
 	return ExpandedMetricWidget
+
 
 module.exports = {load}

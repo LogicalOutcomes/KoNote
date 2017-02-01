@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Tab layer component for creating/managing user accounts
+
 Async = require 'async'
 _ = require 'underscore'
 Imm = require 'immutable'
@@ -297,8 +299,9 @@ load = (win) ->
 			programLink = @props.userProgramLinks.find (link) ->
 				userAccount.get('userName') is link.get('userName') and link.get('status') is 'assigned'
 
-			userProgram = if not programLink then null else @props.programs.find (program) ->
+			userProgramId = if not programLink then '' else @props.programs.find (program) ->
 				program.get('id') is programLink.get('programId')
+			.get('id')
 
 			isAdmin = userAccount.getIn(['publicInfo', 'accountType']) is 'admin'
 			isDeactivated = not userAccount.getIn(['publicInfo', 'isActive'])
@@ -340,7 +343,7 @@ load = (win) ->
 								ProgramsDropdown({
 									ref: 'userProgramDropdown'
 									id: 'modifyUserProgramDropdown'
-									selectedProgram: userProgram
+									selectedProgramId: userProgramId
 									programs: @props.programs
 									onSelect: @_reassignProgram.bind null, userAccount
 								})
@@ -469,11 +472,11 @@ load = (win) ->
 					action = if newAccountType is 'admin' then "granted to" else "revoked from"
 					Bootbox.alert "Administrator privileges #{action} #{userName}."
 
-		_reassignProgram: (userAccount, newProgram) ->
+		_reassignProgram: (userAccount, newProgramId) ->
 			userAccountProgramId = userAccount.getIn(['program', 'id'])
 
 			# Ignore when same program is selected
-			return if newProgram? and newProgram.get('id') is userAccountProgramId
+			return if newProgramId? and newProgramId is userAccountProgramId
 
 			userName = userAccount.get('userName')
 
@@ -484,9 +487,9 @@ load = (win) ->
 			.map (link) -> stripMetadata link.set('status', 'unassigned')
 
 			# Check for a pre-existing link, so we only have to revise (assign) it
-			existingLink = if newProgram?
+			existingLink = if newProgramId?
 				@props.userProgramLinks.find (link) ->
-					link.get('userName') is userName and link.get('programId') is newProgram.get('id')
+					link.get('userName') is userName and link.get('programId') is newProgramId
 			else
 				null
 
@@ -501,7 +504,7 @@ load = (win) ->
 
 				(cb) =>
 					# No new program, so skip
-					if not newProgram?
+					if not newProgramId?
 						cb()
 
 					# Link exists, so we need to revise it to 'assigned'
@@ -514,7 +517,7 @@ load = (win) ->
 					else
 						userProgramLink = Imm.fromJS {
 							userName
-							programId: newProgram.get('id')
+							programId: newProgramId
 							status: 'assigned'
 						}
 
@@ -531,7 +534,9 @@ load = (win) ->
 
 				# Success
 				# userProgramLinks updated eventListeners on clientSelectionPage
-				if newProgram?
+				if newProgramId?
+					newProgram = @props.programs.find (program) =>
+						newProgramId is program.get('id')
 					Bootbox.alert "Assigned #{userName} to #{Term 'program'}: <b>#{newProgram.get('name')}</b>"
 				else
 					Bootbox.alert "Unassigned #{userName}"

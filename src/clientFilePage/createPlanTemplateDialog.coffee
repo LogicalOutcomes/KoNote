@@ -2,12 +2,15 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Dialog for creating a new plan template from the provided plan section(s)
+
 Imm = require 'immutable'
 Async = require 'async'
 
 Config = require '../config'
 Persist = require '../persist'
 Term = require '../term'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -19,14 +22,17 @@ load = (win) ->
 	Dialog = require('../dialog').load(win)
 	Spinner = require('../spinner').load(win)
 
+
 	CreatePlanTemplateDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		componentDidMount: ->
 			@refs.templateNameField.focus()
 
-		getInitialState: ->
-			return {templateName: ''}
+		getInitialState: -> {
+			templateName: ''
+		}
 
 		render: ->
 			Dialog({
@@ -101,14 +107,16 @@ load = (win) ->
 
 			global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
 				if err
-					console.log "ERROR", err
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again
+						"""
+						return
 
-				if err instanceof Persist.IOError
-					console.error err
-					Bootbox.alert """
-						Please check your network connection and try again
-					"""
+					CrashHandler.handle(err)
 					return
+
 				Bootbox.alert "New template: '#{@state.templateName}' created."
 				@props.onSuccess()
 

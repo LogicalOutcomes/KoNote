@@ -2,10 +2,12 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Inline display of colorKeyBubble for each program, sorted alph. by name
+
 Imm = require 'immutable'
 
+
 load = (win) ->
-	# Libraries from browser context
 	React = win.React
 	R = React.DOM
 
@@ -36,6 +38,7 @@ load = (win) ->
 					})
 				)
 			)
+
 
 	return ProgramBubbles
 

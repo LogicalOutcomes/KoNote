@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Dropdown component for program selection, minus selected program
+
 Imm = require 'immutable'
 Term = require './term'
 
@@ -23,33 +25,39 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			selectedProgram: React.PropTypes.instanceOf(Imm.Map)
+			selectedProgramId: React.PropTypes.string
 			programs: React.PropTypes.instanceOf(Imm.List).isRequired
 			placeholder: React.PropTypes.string
 			onSelect: React.PropTypes.func.isRequired
+			bsStyle: React.PropTypes.string
 		}
 
-		getDefaultProps: ->
-			return {
-				selectedProgram: Imm.Map()
-				placeholder: "No #{Term 'Program'}"
-				excludeNone: false
-			}
+		getDefaultProps: -> {
+			selectedProgramId: ''
+			placeholder: "No #{Term 'Program'}"
+			excludeNone: false
+			bsStyle: 'link'
+		}
 
-		getInitialState: ->
-			return {
-				isOpen: null
-			}
+		getInitialState: -> {
+			isOpen: null
+		}
 
 		toggle: ->
 			@setState {isOpen: not @state.isOpen}
 
 		render: ->
 			# selectedProgram can be null, so bypasses getDefaultProps
-			selectedProgram = @props.selectedProgram or Imm.Map()
+			selectedProgramId = @props.selectedProgramId or ''
+
+			selectedProgram = @props.programs.find (program) =>
+				selectedProgramId is program.get('id')
+
+			selectedProgram = selectedProgram or Imm.Map()
 
 			remainingPrograms = @props.programs.filterNot (program) =>
-				selectedProgram.get('id') is program.get('id')
+				selectedProgramId is program.get('id')
+
 
 			R.span({
 				className: 'programsDropdown'
@@ -60,7 +68,7 @@ load = (win) ->
 					id: 'programsDropdown'
 					open: @state.isOpen
 					onClose: @toggle
-					bsStyle: 'link'
+					bsStyle: @props.bsStyle
 					pullRight: true
 					container: 'body'
 
@@ -78,7 +86,7 @@ load = (win) ->
 					.map (program) =>
 						B.MenuItem({
 							key: program.get('id')
-							onClick: @props.onSelect.bind null, program
+							onClick: @props.onSelect.bind null, program.get('id')
 						},
 							program.get('name')
 							' '

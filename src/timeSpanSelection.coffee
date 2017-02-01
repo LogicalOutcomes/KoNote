@@ -3,6 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Generic timeSpan selector for events
+# TODO: Switch this out for a react datetimepicker component
 
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -421,6 +422,5 @@ load = (win) ->
 
 
 	return TimeSpanSelection
-
 
 module.exports = {load}

@@ -2,10 +2,14 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Lists entries of revisions from provided rev-history, with add/removed diffing
+
 Imm = require 'immutable'
-Term = require './term'
-{diffSentences, diffTrimmedLines, diffWordsWithSpace} = require 'diff'
 DiffMatchPatch = require 'diff-match-patch'
+{diffSentences, diffTrimmedLines, diffWordsWithSpace} = require 'diff'
+
+Term = require './term'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -15,9 +19,9 @@ load = (win) ->
 
 	MetricWidget = require('./metricWidget').load(win)
 	ColorKeyBubble = require('./colorKeyBubble').load(win)
-
 	{FaIcon, renderLineBreaks, showWhen,
 	stripMetadata, formatTimestamp, capitalize} = require('./utils').load(win)
+
 
 	RevisionHistory = React.createFactory React.createClass
 		displayName: 'RevisionHistory'
@@ -35,7 +39,7 @@ load = (win) ->
 			programsById: React.PropTypes.instanceOf(Imm.Map).isRequired()
 		}
 
-		_diffStrings: (oldString, newString) ->
+		_diffStrings: (oldString = "", newString = "") ->
 			dmp = new DiffMatchPatch()
 			# first pass; can lower timeout if too slow
 			# dmp.Diff_Timeout = 0.5
@@ -47,7 +51,9 @@ load = (win) ->
 				# compare the diff by sentences and diff by lines
 				# use the output that produces the cleanest output (shortest sum of removals)
 				diffsSentences = diffSentences(oldString, newString)
-				diffsLines = diffTrimmedLines(oldString, newString, {newlineIsToken:true})
+				# TODO: newlineIsToken would remove all line-breaks for renderLineBreaks, but might be needed
+				# diffsLines = diffTrimmedLines(oldString, newString, {newlineIsToken:true})
+				diffsLines = diffTrimmedLines(oldString, newString)
 				diffsSentencesTotal = 0
 				diffsLinesTotal = 0
 
@@ -68,14 +74,27 @@ load = (win) ->
 				diffs = diffWordsWithSpace(oldString, newString)
 
 			return R.span({className: 'value'},
-				# Iterate over diffs and assign a diff-span or plain string
-				for diff, key in diffs
+				# Iterate over diffs and assign a surrounding span, or just the plain string
+				diffs.map (diff, key) ->
+					lines = diff.value
+					.replace(/\r\n/g, '\n') # Windows -> Unix
+					.replace(/\r/g, '\n') # old Mac -> Unix
+					.split('\n')
+
+					value = []
+					for line, lineIndex in lines
+						if lineIndex > 0
+							value.push R.br({key: lineIndex})
+
+						if line.trim()
+							value.push line
+
 					if diff.added?
-						R.span({className: 'added', key}, diff.value)
+						R.span({className: 'added', key}, value)
 					else if diff.removed?
-						R.span({className: 'removed', key}, diff.value)
+						R.span({className: 'removed', key}, value)
 					else
-						diff.value
+						value
 			)
 
 		_generateChangeLogEntries: (revision, index) ->
@@ -271,15 +290,18 @@ load = (win) ->
 				)
 			)
 
+
 	RevisionChangeLog = React.createFactory React.createClass
 		displayName: 'RevisionChangeLog'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: -> {
 			isSnapshotVisible: null
 		}
 
-		_toggleSnapshot: -> @setState {isSnapshotVisible: not @state.isSnapshotVisible}
+		_toggleSnapshot: ->
+			@setState {isSnapshotVisible: not @state.isSnapshotVisible}
 
 		render: ->
 			revision = @props.revision
@@ -430,6 +452,7 @@ load = (win) ->
 
 			)
 
+
 	RevisionSnapshot = ({revision, metricsById, isRenameEntry}) ->
 		hasMetrics = revision.get('metricIds')?
 
@@ -460,6 +483,7 @@ load = (win) ->
 				)
 			)
 		)
+
 
 	return RevisionHistory
 

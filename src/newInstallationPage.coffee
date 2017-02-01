@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Step-by-step procedure for setting up a new installation of KoNote
+
 Fs = require 'fs'
 Async = require 'async'
 Rimraf = require 'rimraf'
@@ -15,13 +17,12 @@ yauzl = require 'yauzl'
 path = require 'path'
 mkdirp = require 'mkdirp'
 
+
 load = (win) ->
-	# Libraries from browser context
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
 	Bootbox = win.bootbox
-
 	Window = nw.Window.get(win)
 
 	Spinner = require('./spinner').load(win)
@@ -340,13 +341,6 @@ load = (win) ->
 			appVersion = null
 
 			Async.series [
-				(cb) =>
-					unless Fs.existsSync(Config.backend.dataDirectory)
-						mkdirp Config.backend.dataDirectory, (err) =>
-							if err
-								cb err
-								return
-							cb()
 
 				(cb) =>
 					Atomic.writeDirectoryNormally dataDir, tmpDir, (err, op) =>
@@ -421,7 +415,6 @@ load = (win) ->
 						console.log "versions match"
 						@setState {isLoading: false}
 						atomicOp.commit cb
-						cb()
 					else
 						@setState {isLoading: false}
 						Bootbox.dialog {
@@ -668,7 +661,7 @@ load = (win) ->
 				, 1000)
 
 
-
 	return NewInstallationPage
+
 
 module.exports = {load}

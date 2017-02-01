@@ -2,26 +2,31 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Tab layer for exporting data to CSV/etc
+
 Async = require 'async'
 _ = require 'underscore'
 Imm = require 'immutable'
-Persist = require './persist'
 Fs = require 'graceful-fs'
 Path = require 'path'
+Moment = require 'moment'
+
+Config = require './config'
+Persist = require './persist'
 Term = require './term'
+{TimestampFormat} = require './persist/utils'
+
 
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	Moment = require 'moment'
 
-	Config = require('./config')
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
 	{FaIcon, renderName, showWhen} = require('./utils').load(win)
-	{TimestampFormat} = require('./persist/utils')
+
 
 	ExportManagerTab = React.createFactory React.createClass
 		displayName: 'ExportManagerTab'

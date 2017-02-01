@@ -2,6 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# List component for historical entries (desc), concerning targets and data-revisions
+
 Imm = require 'immutable'
 _ = require 'underscore'
 
@@ -26,6 +28,7 @@ load = (win) ->
 	ProgNoteDetailView = React.createFactory React.createClass
 		displayName: 'ProgNoteDetailView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: -> {
 			descriptionIsVisible: true
@@ -200,7 +203,7 @@ load = (win) ->
 			# Filter out blank & cancelled notes, and sort by date/backdate
 			entries = entries
 			.filter (entry) ->
-				(entry.get('notes').trim().length > 0 or entry.get('metrics')) and
+				(entry.get('notes').trim().length > 0 or (entry.get('metrics')? and entry.get('metrics').size > 0)) and
 				entry.get('status') isnt 'cancelled'
 			.sortBy (entry) ->
 				entry.get('backdate') or entry.get('timestamp')
@@ -220,16 +223,12 @@ load = (win) ->
 						R.h3({}, itemName)
 						(if itemDescription?
 							R.div({className: 'toggleDescriptionButton'},
-								if @state.descriptionIsVisible
-									[
-										'Hide Description '
-										FaIcon 'chevron-up', {className:'up'}
-									]
-								else
-									[
-										'View Description '
-										FaIcon 'chevron-up', {className:'down'}
-									]
+								if @state.descriptionIsVisible then "Hide" else "View"
+								" Description "
+
+								FaIcon('chevron-up', {
+									className: if @state.descriptionIsVisible then 'up' else 'down'
+								})
 							)
 						)
 					)
@@ -358,6 +357,7 @@ load = (win) ->
 					)
 				).toJS()...
 			)
+
 
 	return ProgNoteDetailView
 

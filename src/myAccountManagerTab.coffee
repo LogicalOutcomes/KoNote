@@ -2,10 +2,11 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Page overlay for managing client files
+# Tab layer for managing own user account
 
 Persist = require './persist'
 Term = require './term'
+
 
 load = (win) ->
 	$ = win.jQuery
@@ -17,9 +18,11 @@ load = (win) ->
 	Spinner = require('./spinner').load(win)
 	{FaIcon, renderName, showWhen} = require('./utils').load(win)
 
+
 	MyAccountManagerTab = React.createFactory React.createClass
 		displayName: 'MyAccountManagerTab'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		componentDidMount: ->
 			@refs.currentPasswordField.focus()
@@ -55,8 +58,8 @@ load = (win) ->
 									className: 'form-control'
 									type: 'password'
 									onChange: @_updateCurrentPassword
+									onKeyDown: @_onEnterKeydown
 									value: @state.currentPassword
-									onKeyDown: @_onEnterKeyDown
 									placeholder: "Enter password"
 									disabled: @state.passwordIsVerified
 								})
@@ -73,7 +76,7 @@ load = (win) ->
 										)
 										onClick: @_verifyCurrentPassword
 									},
-										if not @state.passwordIsVerified
+										(if not @state.passwordIsVerified
 											[
 												"Verify "
 												FaIcon('lock')
@@ -83,6 +86,7 @@ load = (win) ->
 												"Verified "
 												FaIcon('unlock')
 											]
+										)
 									)
 								)
 							)
@@ -155,6 +159,10 @@ load = (win) ->
 		_updateNewPasswordConfirm: (event) ->
 			@setState {newPasswordConfirm: event.target.value}
 
+		_onEnterKeydown: (event) ->
+			if event.which is 13 and @state.currentPassword
+				@_verifyCurrentPassword()
+
 		_newPasswordIsInvalid: ->
 			return (
 				not @state.newPasswordConfirm or
@@ -190,7 +198,9 @@ load = (win) ->
 
 					if err.name is 'IncorrectPasswordError'
 						Bootbox.alert "Incorrect password. Please try again.", =>
-							@refs.currentPasswordField.focus()
+							setTimeout(=>
+								@refs.currentPasswordField.focus
+							, 250)
 						return
 
 					CrashHandler.handle err
@@ -219,11 +229,6 @@ load = (win) ->
 
 				Bootbox.alert "Your password was successfully reset!"
 				@setState @getInitialState
-
-
-		_onEnterKeyDown: (event) ->
-			# if event.which is 13 and @state.firstName and @state.lastName
-			# 	@_submit()
 
 
 	return MyAccountManagerTab

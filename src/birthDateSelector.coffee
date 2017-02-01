@@ -2,7 +2,10 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
+# Dropdown menu selectors component for birth dates, as: month, day, year
+
 Moment = require 'moment'
+
 
 load = (win) ->
 	React = win.React
@@ -16,15 +19,17 @@ load = (win) ->
 	currentYear = Moment().year()
 	earlyYear = currentYear - 100
 
+
 	BirthDateSelector = React.createFactory React.createClass
 		displayName: 'BirthDateSelector'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		render: ->
-
 			{birthDay, birthMonth, birthYear, onSelectMonth, onSelectDay, onSelectYear} = @props
 
-			return R.div({className: 'birthDateSelector'},
+
+			R.div({className: 'birthDateSelector'},
 
 				R.div({className: 'btn-group btn-group-dropdowns'},
 					B.DropdownButton({
@@ -44,6 +49,7 @@ load = (win) ->
 						id: 'birthDayDropdown'
 						title: if birthDay? then birthDay else "Day"
 					},
+						# TODO: Derive list of days from selected month
 						(for day in [1..31]
 							B.MenuItem({
 								key: day

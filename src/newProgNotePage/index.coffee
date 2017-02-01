@@ -706,7 +706,8 @@ load = (win, {clientFileId}) ->
 									cb()
 									return
 
-								programId = globalEvent.get('programId')
+								# Ensure programId is at least an empty string
+								programId = globalEvent.get('programId') or ''
 
 								# Tack on contextual information about the original progEvent
 								globalEvent = globalEvent
