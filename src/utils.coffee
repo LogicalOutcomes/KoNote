@@ -213,7 +213,7 @@ load = (win) ->
 		return Moment(timestamp, TimestampFormat).format(customFormat or Config.timestampFormat)
 
 	capitalize = (word) ->
-    return word.charAt(0).toUpperCase() + word.slice(1)
+		return word.charAt(0).toUpperCase() + word.slice(1)
 
 	# Ensures that `text` does not exceed `maxLength` by replacing excess
 	# characters with an ellipsis character.
