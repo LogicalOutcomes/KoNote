@@ -2,6 +2,8 @@ Imm = require 'immutable'
 Async = require 'async'
 Moment = require 'moment'
 
+Config = require '../src/config'
+
 {Users, TimestampFormat, generateId} = require '../src/persist'
 {ProgramColors, EventTypeColors} = require '../src/colors'
 {stripMetadata} = require '../src/persist/utils'
@@ -33,8 +35,12 @@ Create.progEvent = ({clientFileId, progNote, title, description, typeId, startTi
 
 	createData 'progEvents', progEvent, cb
 
-Create.progNote = ({backDate, clientFile, sections, planTargets, metrics}, cb) ->
+Create.progNote = (backdate, clientFile, cb) ->
+
+	console.log "clientFile", clientFile
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
+
+	backdate = Moment(backdate, "YYYY-MMM-DD").format(TimestampFormat)
 
 	progNote = Imm.fromJS {
 		clientFileId: clientFile.get('id')
@@ -44,10 +50,13 @@ Create.progNote = ({backDate, clientFile, sections, planTargets, metrics}, cb) -
 		backdate
 		authorProgramId: ''
 		beginTimestamp: ''
-		summary: ''
+		summary: 'testSummary'
 		units: []
 	}
 
+	console.log 'creating progNote....', progNote.toJS()
+
 	createData 'progNotes', progNote, cb
+
 
 module.exports = Create

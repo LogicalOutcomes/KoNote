@@ -13,31 +13,43 @@ runSeries = (importFileName, clientFile) ->
 	console.log 'importFileName', importFileName
 	console.log 'clientFile', clientFile.toJS()
 
-	array = []
+	rows = []
 
 	Async.series [
 
 		(cb) ->
 			# this creates an array of Row objs, with header names as properties.
 			Fs.createReadStream(importFileName).pipe(csv()).on 'data', (data) ->
-				console.log 'data', data
-				array.push data
+				rows.push data
 				return
 			.on 'end', cb
 
 		(cb) ->
-			console.log 'array', array
-			console.log 'array0', array[0]
-			console.log 'event', array[0].Event
+			console.log 'rows', rows
 			cb()
+
+		(cb) ->
+			Async.map rows, (r, cb) ->
+				if r.isProgNote is 'TRUE'
+					Create.progNote r.backdate, clientFile, (err) ->
+						if err
+							cb err
+							return
+						cb()
+			, (err) ->
+				if err
+					cb err
+					return
+				cb()
+
+		(cb) ->
+			console.log "end of series"
+			cb()
+
 
 	], (err) =>
 		if err
 			console.log err
 			return
-
-
-
-
 
 module.exports = {runSeries}
