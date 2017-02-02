@@ -9,14 +9,32 @@ csv = require('csv-parser')
 
 Create = require './create'
 
-runSeries = (importFileName) ->
-	console.log "in migrate index.coffee"
+runSeries = (importFileName, clientFile) ->
 	console.log 'importFileName', importFileName
+	console.log 'clientFile', clientFile.toJS()
 
-	Fs.createReadStream(importFileName).pipe(csv()).on 'data', (data) ->
-	  console.log 'data', data
-	  return
+	array = []
 
+	Async.series [
+
+		(cb) ->
+			# this creates an array of Row objs, with header names as properties.
+			Fs.createReadStream(importFileName).pipe(csv()).on 'data', (data) ->
+				console.log 'data', data
+				array.push data
+				return
+			.on 'end', cb
+
+		(cb) ->
+			console.log 'array', array
+			console.log 'array0', array[0]
+			console.log 'event', array[0].Event
+			cb()
+
+	], (err) =>
+		if err
+			console.log err
+			return
 
 
 
