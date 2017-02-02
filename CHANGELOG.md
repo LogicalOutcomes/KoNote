@@ -6,26 +6,26 @@ performance and stability improvements.
 
 #### Improvements
 
-- New analysis date selector (#970)
-- Default analysis time span set to 30 days (#827)
-- Metric definition shown on chart tooltips (#784)
-- Analysis chart is more responsive (#967)
-- Plan view whitespace condensed by 30% (#1009)
-- Section headers are now "sticky" (#1014)
-- New programs dropdown on create client file dialog (#999)
-- Builds now include End User License Agreement (#1001)
+- New analysis date selector ([#970](https://github.com/konode001/konote/issues/970))
+- Default analysis time span set to 30 days ([#827](https://github.com/konode001/konote/issues/827))
+- Metric definition shown on chart tooltips ([#784](https://github.com/konode001/konote/issues/784))
+- Analysis chart is more responsive ([#967](https://github.com/konode001/konote/issues/967))
+- Plan view whitespace condensed by 30% ([#1009](https://github.com/konode001/konote/issues/1009))
+- Section headers are now "sticky"([#1014](https://github.com/konode001/konote/issues/1014)) 
+- New programs dropdown on create client file dialog ([#999](https://github.com/konode001/konote/issues/999))
+- Builds now include End User License Agreement ([#1001](https://github.com/konode001/konote/issues/1001)) 
 
 #### Fixes
 
-- Fix issue which could cause incomplete data load of client file (#968)
-- Improve progress note search performance (#991)
-- Restore data import function (#959)
-- Analysis chart enforces a "0" minimum value for display purposes (#998)
-- Fix metric/event counts on analysis tab (#998)
-- Filter empty entries from prognotes history (#960)
-- Filter empty metrics from prognote print (#961)
-- Revision history renders line breaks (#935)
-- Analysis chart shows events independently of metrics (#822)
+- Fix issue which could cause incomplete data load of client file ([#968](https://github.com/konode001/konote/issues/968))
+- Improve progress note search performance ([#991](https://github.com/konode001/konote/issues/991))
+- Restore data import function ([#959](https://github.com/konode001/konote/issues/959))
+- Analysis chart enforces a "0" minimum value for display purposes ([#998](https://github.com/konode001/konote/issues/998))
+- Fix metric/event counts on analysis tab ([#998](https://github.com/konode001/konote/issues/998))
+- Filter empty entries from prognotes history ([#960](https://github.com/konode001/konote/issues/960))
+- Filter empty metrics from prognote print ([#961](https://github.com/konode001/konote/issues/961))
+- Revision history renders line breaks ([#935](https://github.com/konode001/konote/issues/935))
+- Analysis chart shows events independently of metrics ([#822](https://github.com/konode001/konote/issues/822))
 - Various other fixes and stability improvements
 
 
