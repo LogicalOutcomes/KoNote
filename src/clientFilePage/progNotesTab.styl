@@ -104,6 +104,15 @@
 			padding 10px 20px
 			padding-top 22px
 
+			// Custom styling for hover effect over notes
+			// (ignored when isEditing)
+			.progNoteContents
+				.unit.basic:not(.isEditing):hover
+					opacity 0.75 !important
+
+				.unit.plan section > .target:not(.isEditing):hover .notes
+					opacity 0.75 !important
+
 			.attachment
 				color #337ab7
 				font-weight 500
