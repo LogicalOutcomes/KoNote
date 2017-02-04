@@ -352,6 +352,13 @@ load = (win) ->
 					filteredProgNote = filteredProgNote.set 'units', filteredProgNote.get('units').filterNot (unit) ->
 						unit.get('sections').isEmpty()
 
+					hasMultipleRevisedEntries = filteredProgNote
+					.get('units')
+					.map (unit) ->
+						unit.get('sections').map((s) -> s.get 'targets').flatten(true)
+					.flatten(true)
+					.count() > 1
+
 				else
 					# Quick Note
 					isQuickNote = true
@@ -391,7 +398,17 @@ load = (win) ->
 					(if isProgNote and isCreationEntry
 						R.article({className: 'entry'},
 							R.span({className: 'action'},
-								"Created #{firstChangeLog.get('property')} with entries:"
+								(if isQuickNote
+									R.span({className: 'action'},
+										"Created original #{Term 'quick note'}:"
+									)
+								else
+									R.span({className: 'action'},
+										"Created original #{Term 'target'} "
+										if hasMultipleRevisedEntries then "entries" else "entry"
+										" as:"
+									)
+								)
 							)
 
 							ProgNoteContents({
