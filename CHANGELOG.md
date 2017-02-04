@@ -11,7 +11,8 @@ performance and stability improvements.
 - Metric definition shown on chart tooltips ([#784](https://github.com/konode001/konote/issues/784))
 - Analysis chart is more responsive ([#967](https://github.com/konode001/konote/issues/967))
 - Plan view whitespace condensed by 30% ([#1009](https://github.com/konode001/konote/issues/1009))
-- Section headers are now "sticky"([#1014](https://github.com/konode001/konote/issues/1014)) 
+- Section headers are now "sticky"([#1014](https://github.com/konode001/konote/issues/1014))
+- Words can be added to spellcheck dictionary with right-click ([#811](https://github.com/konode001/konote/issues/811))
 - New programs dropdown on create client file dialog ([#999](https://github.com/konode001/konote/issues/999))
 - Builds now include End User License Agreement ([#1001](https://github.com/konode001/konote/issues/1001)) 
 
