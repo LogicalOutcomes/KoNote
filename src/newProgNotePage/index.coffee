@@ -329,7 +329,7 @@ load = (win, {clientFileId}) ->
 											sectionId = section.get 'id'
 
 											R.section({key: sectionId},
-												R.h2({}, section.get 'name')
+												R.h2({}, (section.get 'name').toUpperCase())
 
 												(section.get('targets').map (target) =>
 													targetId = target.get 'id'
@@ -340,6 +340,7 @@ load = (win, {clientFileId}) ->
 													},
 														R.h3({},
 															target.get 'name'
+															.toUpperCase()
 															R.span({
 																className: 'star'
 																title: "Mark as Important"
