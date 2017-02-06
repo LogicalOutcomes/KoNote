@@ -19,7 +19,11 @@ createData = (dataCollection, obj, cb) ->
 
 # Singular create functions
 
-Create.progEvent = ({clientFileId, progNote, title, description, typeId, startTimestamp, endTimestamp, eventTypes}, cb) ->
+Create.progEvent = (clientFile, progNote, title, description, typeId, startOfVisit, endOfVisit, cb) ->
+
+	startTimestamp = Moment(startOfVisit, "YYYY-MMM-DD").format(TimestampFormat)
+	endTimestamp = Moment(endOfVisit, "YYYY-MMM-DD").format(TimestampFormat)
+
 	progEvent = Imm.fromJS {
 		title
 		description
@@ -27,19 +31,17 @@ Create.progEvent = ({clientFileId, progNote, title, description, typeId, startTi
 		endTimestamp
 		status: 'default'
 		backdate: progNote.get('backdate')
-		typeId
-		relatedProgNoteId
+		typeId: ''
+		relatedProgNoteId: progNote.get('id')
 		authorProgramId: ''
-		clientFileId
+		clientFileId: clientFile.get('id')
 	}
 
 	createData 'progEvents', progEvent, cb
 
 Create.progNote = (backdate, clientFile, cb) ->
 
-	console.log "clientFile", clientFile
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
-
 	backdate = Moment(backdate, "YYYY-MMM-DD").format(TimestampFormat)
 
 	progNote = Imm.fromJS {

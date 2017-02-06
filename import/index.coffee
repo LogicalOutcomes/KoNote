@@ -15,6 +15,8 @@ runSeries = (importFileName, clientFile) ->
 
 	rows = []
 
+	progNote = null
+
 	Async.series [
 
 		(cb) ->
@@ -30,12 +32,34 @@ runSeries = (importFileName, clientFile) ->
 
 		(cb) ->
 			Async.map rows, (r, cb) ->
-				if r.isProgNote is 'TRUE'
-					Create.progNote r.backdate, clientFile, (err) ->
-						if err
-							cb err
-							return
-						cb()
+				Async.series [
+					(cb) ->
+						if r.isProgNote is 'TRUE'
+							Create.progNote r.backdate, clientFile, (err, result) ->
+								if err
+									cb err
+									return
+								#need resulting prognoteid for next step
+								progNote = result
+								cb()
+					(cb) ->
+						if r.isEvent is 'TRUE'
+							description = "Visited #{r.nameOfHospital}. Discharge Diagnosis:
+							#{r.dischargeDiagnosis}. Attending physician: #{r.attendingPhysician}."
+
+							Create.progEvent clientFile, progNote, r.eventTitle, description,
+							null, r.startOfVisit, r.endOfVisit, (err, result) ->
+								if err
+									cb err
+									return
+								cb()
+
+				], (err) =>
+					if err
+						console.log err
+						return
+					cb()
+
 			, (err) ->
 				if err
 					cb err
