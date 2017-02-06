@@ -329,7 +329,7 @@ load = (win, {clientFileId}) ->
 											sectionId = section.get 'id'
 
 											R.section({key: sectionId},
-												R.h2({}, (section.get 'name').toUpperCase())
+												R.h2({}, section.get 'name')
 
 												(section.get('targets').map (target) =>
 													targetId = target.get 'id'
@@ -340,7 +340,6 @@ load = (win, {clientFileId}) ->
 													},
 														R.h3({},
 															target.get 'name'
-															.toUpperCase()
 															R.span({
 																className: 'star'
 																title: "Mark as Important"
@@ -406,20 +405,23 @@ load = (win, {clientFileId}) ->
 						)
 					)
 
-					(if @hasChanges()
-						WithTooltip({
-							title: if @state.editingWhichEvent?
-								"Please finish editing your #{Term 'event'} before saving"
-							placement: 'top'
+					R.div({className: "newProgNoteToolbar"},
+						R.button({
+							className: 'saveButton'
+							disabled: @state.editingWhichEvent? or not @hasChanges()
+							onClick: @_save
 						},
-							R.button({
-								id: 'saveNoteButton'
-								className: 'btn btn-success btn-lg animated fadeInUp'
-								disabled: @state.editingWhichEvent?
-								onClick: @_save
-							},
-								"Save "
-								FaIcon('check')
+							FaIcon('save', {className:'menuItemIcon'})
+							R.span({className: 'menuItemText'},
+								"Save Note"
+							)
+						)
+						R.button({
+							onClick: @suggestClose
+						},
+							FaIcon('undo', {className:'menuItemIcon'})
+							R.span({className: 'menuItemText'},
+								"Cancel"
 							)
 						)
 					)
