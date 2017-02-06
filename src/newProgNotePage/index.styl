@@ -20,15 +20,20 @@
 				margin 50px
 
 	.backdateContainer
-		padding 13px 20px
+		padding 12px
+		display flex
+		justify-content center
 
+		.backdate
+			border-color white
 
 	// Main ProgNote Area
 
 	> .progNote
 		flex 1
 		position relative
-		overflow auto
+		overflow-x hidden
+		overflow-y auto
 
 		// Regular ProgNote Styles
 
@@ -37,12 +42,18 @@
 			font-size 26px
 			font-weight 300
 			text-transform uppercase
+			border-bottom 1px solid lightgray
+			border-top 1px solid lightgray
+			padding 12px
 
 		h2
-			margin 20px 10px 0px 10px
 			font-size 20px
-			font-weight 200
+			font-weight 500
 			text-transform uppercase
+			border-bottom 1px solid lightgray
+			border-top 1px solid lightgray
+			padding 20px 12px
+			margin 0
 
 		h3
 			margin-top 2px
@@ -62,8 +73,9 @@
 				padding-bottom 15px
 
 				&.basic
-					padding-right 15px
-					padding-left 15px
+
+					textarea
+						padding 10px
 
 					> .metrics
 						display flex
@@ -93,7 +105,7 @@
 								padding-top 2px
 
 							&:last-child
-								border-bottom 1px solid lightgray
+								border-bottom none
 
 							.star
 								color #888
@@ -201,12 +213,12 @@
 	.newProgNoteToolbar
 		display flex
 		background white
-		border-top 1px dotted sidebar-borders
+		border-top 1px dotted lightgray
 		height 60px
 		position sticky
 		bottom 0
 		color rgb(76, 93, 103)
-		font-weight 200
+		font-weight 300
 
 		@media screen and (max-width: 700px)
 			.menuItemText

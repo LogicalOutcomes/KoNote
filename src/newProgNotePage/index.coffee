@@ -295,11 +295,12 @@ load = (win, {clientFileId}) ->
 										key: unitId
 										className: 'unit basic'
 									},
-										R.h1({className: 'unitName'}, unit.get 'name')
+										R.h2({className: 'unitName'}, unit.get 'name')
 										ExpandingTextArea({
 											value: unit.get('notes')
 											onFocus: @_selectBasicUnit.bind null, unit
 											onChange: @_updateBasicNotes.bind null, unitId
+											placeholder: "Enter general notes here..."
 										})
 										R.div({className: 'metrics'},
 											(unit.get('metrics').map (metric) =>
@@ -750,7 +751,7 @@ load = (win, {clientFileId}) ->
 				format: 'MMM-DD-YYYY h:mm A'
 				defaultDate: Moment()
 				maxDate: Moment()
-				sideBySide: true
+				sideBySide: false
 				showClose: true
 				toolbarPlacement: 'bottom'
 				widgetPositioning: {
