@@ -1134,7 +1134,7 @@ load = (win) ->
 			countType = if @props.isFiltering then 'filterCount' else 'historyCount'
 			highestEntryIndex = @state[countType] - 1
 
-			_performScroll = =>
+			performScroll = =>
 				$entriesListView = findDOMNode(@)
 				$element = win.document.getElementById "entry-#{entry.get('id')}"
 				scrollToElement($entriesListView, $element, 1000, 'easeInOutQuad', cb)
@@ -1145,9 +1145,9 @@ load = (win) ->
 				# Set the new count (whichever type is pertinent), and *then* scroll to the entry
 				newState = {}
 				newState[countType] = (index + 1) + 10
-				@setState newState, _performScroll
+				@setState newState, performScroll
 			else
-				_performScroll()
+				performScroll()
 
 		_resetScroll: ->
 			findDOMNode(@).scrollTop = 0
@@ -1319,7 +1319,7 @@ load = (win) ->
 			R.div({
 				id: "entry-#{progNote.get('id')}"
 				className: [
-					'basic progNote entry'
+					'entry basic progNote'
 					'isEditing' if isEditing
 				].join ' '
 			},
@@ -1416,7 +1416,7 @@ load = (win) ->
 
 			R.div({
 				id: "entry-#{progNote.get('id')}"
-				className: 'full progNote'
+				className: 'entry full progNote'
 			},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
@@ -1652,7 +1652,7 @@ load = (win) ->
 
 			return R.div({
 				id: "entry-#{firstRev.get('id')}"
-				className: 'cancelStub'
+				className: 'entry cancelStub'
 			},
 				R.button({
 					className: 'toggleDetails btn btn-xs btn-default'
@@ -1897,7 +1897,7 @@ load = (win) ->
 
 			return R.div({
 				id: "entry-#{globalEvent.get('id')}"
-				className: 'globalEventView'
+				className: 'entry globalEventView'
 			},
 				EntryHeader({
 					revisionHistory: Imm.List [globalEvent]
