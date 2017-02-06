@@ -310,6 +310,24 @@ load = (win) ->
 										FaIcon('plus')
 										"Add #{Term 'quick note'}"
 									)
+									# hidden input for opening backup zip
+									R.input({
+										ref: 'nwbrowse'
+										className: 'hidden'
+										type: 'file'
+									})
+									R.button({
+										ref: 'importButton'
+										className: 'btn btn-default btn-lg importButton'
+										onClick: @_import.bind null, {
+											extension: 'csv'
+											onImport: @_confirmImport
+											clientFile: @props.clientFile
+										}
+									},
+										FaIcon('upload')
+										"Upload Data"
+									)
 								)
 							)
 						)
