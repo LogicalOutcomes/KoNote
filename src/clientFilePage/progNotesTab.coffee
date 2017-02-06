@@ -280,6 +280,7 @@ load = (win) ->
 										extension: 'csv'
 										onImport: @_confirmImport
 										clientFile: @props.clientFile
+										eventTypes: @props.eventTypes
 									}
 								},
 									FaIcon('upload')
@@ -323,6 +324,7 @@ load = (win) ->
 											extension: 'csv'
 											onImport: @_confirmImport
 											clientFile: @props.clientFile
+											eventTypes: @props.eventTypes
 										}
 									},
 										FaIcon('upload')
@@ -453,16 +455,16 @@ load = (win) ->
 				)
 			)
 
-		_import: ({extension, onImport, clientFile}) ->
+		_import: ({extension, onImport, clientFile, eventTypes}) ->
 			# Configures hidden file inputs with custom attributes, and clicks it
 			$nwbrowse = $(@refs.nwbrowse)
 			$nwbrowse
 			.off()
 			.attr('accept', ".#{extension}")
-			.on('change', (event) => onImport event.target.value, clientFile)
+			.on('change', (event) => onImport event.target.value, clientFile, eventTypes)
 			.click()
 
-		_confirmImport: (importFile, clientFile) ->
+		_confirmImport: (importFile, clientFile, eventTypes) ->
 			Bootbox.confirm {
 				title: "Importing"
 				message: "Now importing data from CSV. Are you sure you want to continue?"
@@ -473,7 +475,7 @@ load = (win) ->
 					# 	isLoading: true
 					# 	installProgress: {message: "Restoring data file. This may take some time..."}
 					# }
-					Import.runSeries(importFile, clientFile)
+					Import.runSeries(importFile, clientFile, eventTypes)
 			}
 
 		_startRevisingProgNote: (progNote, progEvents) ->

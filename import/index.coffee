@@ -9,7 +9,7 @@ csv = require('csv-parser')
 
 Create = require './create'
 
-runSeries = (importFileName, clientFile) ->
+runSeries = (importFileName, clientFile, eventTypes) ->
 	console.log 'importFileName', importFileName
 	console.log 'clientFile', clientFile.toJS()
 
@@ -48,7 +48,7 @@ runSeries = (importFileName, clientFile) ->
 							#{r.dischargeDiagnosis}. Attending physician: #{r.attendingPhysician}."
 
 							Create.progEvent clientFile, progNote, r.eventTitle, description,
-							null, r.startOfVisit, r.endOfVisit, (err, result) ->
+							r.eventType, r.startOfVisit, r.endOfVisit, eventTypes, (err, result) ->
 								if err
 									cb err
 									return
@@ -69,7 +69,6 @@ runSeries = (importFileName, clientFile) ->
 		(cb) ->
 			console.log "end of series"
 			cb()
-
 
 	], (err) =>
 		if err
