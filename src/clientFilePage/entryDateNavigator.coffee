@@ -74,10 +74,8 @@ load = (win) ->
 			else
 				'years'
 
-			@disableChange = true
-			setTimeout(=>
-				@disableChange = false
-			, 150)
+			# Block phantom 'onChange' from firing during init
+			@_tempDisableChangeEvent()
 
 			$input = $(@refs.hiddenInput)
 
@@ -97,10 +95,9 @@ load = (win) ->
 			})
 			.on 'dp.change', ({date}) =>
 				# Prevent invalid/duplicate calls of @_skipToEntryDate
-				return if not date or @disableChange or (date.isSame? and date.isSame @lastDate)
-				@lastDate = date
+				return if not date or @disableChange
 
-				# TODO: use 'dp.update' to scroll top of month selection
+				# TODO: Detect month (< >) changes to follow with scroll
 				@_skipToEntryDate(date)
 
 
@@ -139,10 +136,17 @@ load = (win) ->
 					$(entryIdsToFlash).removeClass 'flashDestination'
 				, 2500
 
+		_tempDisableChangeEvent: ->
+			# Temporarily disable datetimepicker's 'change' event from firing
+			# This overrides default behaviour causing more events than needed
+			@disableChange = true
+			setTimeout (=> @disableChange = false), 500
+
 		_handleClick: ->
 			# Save on window.load perf by only mounting datetimepicker when used
 			@_initDateTimePicker() unless @datetimepicker?
-			@datetimepicker.show()
+			@_tempDisableChangeEvent()
+			@datetimepicker.toggle()
 
 		_handleBlur: ->
 			@datetimepicker.hide() if @datetimepicker?
