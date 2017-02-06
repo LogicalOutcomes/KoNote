@@ -6,6 +6,8 @@
 # The enabled/selectable dates are populated by @props.historyEntries
 # Scrolling functionality is handled internally by EntriesListView
 
+# TODO: Actively follow entriesList scroll with calendar view representation
+
 Imm = require 'immutable'
 Moment = require 'moment'
 
@@ -80,6 +82,7 @@ load = (win) ->
 			$input = $(@refs.hiddenInput)
 
 			$input.datetimepicker({
+				keepOpen: true
 				debug: true
 				format: 'YYYY-MM-DD'
 				enabledDates: enabledDates.toJS()
@@ -118,15 +121,13 @@ load = (win) ->
 			# Update the icon with an animated spinner while isScrolling
 			@setState {isScrolling: true}, => @props.onSelect entry, =>
 				@setState {isScrolling: false}
-				@refs.button.blur() if @refs.button
 
-				# Highlight destination entries when scroll has completed
+				# Briefly highlight entries with matching date when scroll has completed
 				entryIdsToFlash = @props.historyEntries
 				.filter (e) ->
 					timestampMoment = makeMoment e.get('timestamp')
 					return selectedMoment.isSame timestampMoment, 'day'
-				.map (e) ->
-					return '#' + e.get('id')
+				.map (e) -> '#entry-' + e.get('id')
 				.toArray()
 				.join ', '
 
