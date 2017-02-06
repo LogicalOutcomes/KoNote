@@ -25,7 +25,7 @@ load = (win) ->
 		displayName: 'EntryDateNavigator'
 
 		propTypes: {
-			historyEntries: PropTypes.instanceOf Imm.List()
+			historyEntries: PropTypes.instanceOf(Imm.List)
 			onSelect: PropTypes.func.isRequired
 		}
 
