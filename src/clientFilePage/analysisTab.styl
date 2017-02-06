@@ -35,57 +35,11 @@
 				flex-basis 85px
 				padding 0 20px 0 20px
 
-				.slider
-					width 100%
-
-					.slider-track
-						border-radius 15px
-						height 16px
-
-						.slider-track-low, .slider-track-high
-							border-radius 15px
-							background #e4eff5
-
-						.slider-selection
-							border-radius 0px
-							box-shadow none
-							background #c8dae4
-
-					.slider-handle
-						transition opacity 0.2s ease
-						opacity 0.8
-						background #3b4e59 !important
-						margin-top 3px
-						border 3px solid white
-
-						&:hover
-							opacity 1
-
-					.tooltip
-						margin-top -33px
-
-						.tooltip-inner
-							background sidebar-borders
-							color #4c5d67
-							font-size 13px
-							padding 4px 10px
-
-						.tooltip-arrow
-							border-top-color sidebar-borders
-
-					.slider-tick-label-container
-						margin-left -15% !important
-						margin-right -15% !important
-
-						> .slider-tick-label
-							width 25% !important
-							text-align center !important
-
 				> .timeSpanContainer
 					flex 4
 					display block
 					position relative
-					padding 35px 3% 0px 3%
+					padding 5px 3% 0px 3%
 
 					> .dateDisplay
 						position absolute
@@ -96,10 +50,12 @@
 						width 100%
 						padding 20px
 
-						> .timeSpanDate
-							flex 1
+						@require 'timeSpanToolbar'
 
-							&:first-child
+						> .timeSpanDate
+							flex first
+
+							&:2-child
 								text-align left
 
 							&:last-child
@@ -113,10 +69,12 @@
 								padding 6px
 
 								border-radius 5px
-								border 1px solid sidebar-borders
 
 								font-weight 400
 								color #5c5c5c
+
+								.dateIcon
+									display none
 
 								&:hover
 									background #f9f9f9
@@ -143,7 +101,11 @@
 										color #8CA6B5
 										margin 0
 
-
+								@media screen and (max-width: 1145px)
+									.dateIcon
+										display inline !important
+									.dateText
+										display none
 
 				> .granularContainer
 					flex 2
@@ -207,6 +169,19 @@
 					.chart
 						flex 1
 
+						.c3-tooltip-container
+							max-width 250px
+							overflow hidden
+
+							table
+								tr.isHovered > td
+									font-weight bold
+
+								td.definition
+									background #eee
+									max-height 50px !important
+									text-overflow ellipsis
+
 						svg
 							width 100%
 
@@ -252,14 +227,20 @@
 
 									&:hover
 										stroke #1d6977
+			.chartTypeContainer
+				display flex
+				justify-content flex-end
+				padding 20px 25px
 
+				> label
+					padding-left 10px
+					padding-right 2px
 
 
 		.selectionPanel
 			flex 2
 			display flex
 			flex-direction column
-			padding-top 10px
 			overflow-y auto
 			overflow-x hidden
 
@@ -362,13 +343,6 @@
 
 					label
 						color #5c5c5c
-
-				.chartTypeContainer
-					padding 10px
-
-					> label
-						padding-left 10px
-						padding-right 2px
 
 				&.metrics
 					h4

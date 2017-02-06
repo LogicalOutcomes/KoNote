@@ -34,7 +34,10 @@ load = (win) ->
 			updateManagerLayer: React.PropTypes.func.isRequired
 		}
 
-		_overrideProgram: (program) ->
+		_overrideProgram: (programId) ->
+			program = @props.programs.find (p) =>
+				programId is p.get('id')
+
 			currentProgramName = if @props.userProgram
 				@props.userProgram.get('name')
 			else
@@ -57,6 +60,11 @@ load = (win) ->
 		render: ->
 			{isAdmin} = @props
 
+			userProgramId = if @props.userProgram
+				@props.userProgram.get('id')
+			else
+				''
+
 			return R.aside({
 				id: 'mainMenu'
 				className: 'animated fadeInRight'
@@ -67,7 +75,7 @@ load = (win) ->
 							R.h3({}, global.ActiveSession.userName)
 							(unless @props.programs.isEmpty()
 								ProgramsDropdown({
-									selectedProgram: @props.userProgram
+									selectedProgramId: userProgramId
 									programs: @props.programs
 									onSelect: @_overrideProgram
 								})

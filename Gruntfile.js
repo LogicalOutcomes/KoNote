@@ -26,6 +26,7 @@ module.exports = function(grunt) {
 							choices: [
 								{name: ' Generic - Mac', value: 'mac'},
 								{name: ' Generic - Windows', value: 'win'},
+								{name: ' Generic - Windows - SDK', value: 'SDK'},
 								{name: ' Griffin - Mac', value: 'griffin-mac'},
 								{name: ' Griffin - Windows', value: 'griffin-win'}
 							]
@@ -53,6 +54,10 @@ module.exports = function(grunt) {
 					}
 				],
 				cwd: '/'
+			},
+			eula: {
+				src: 'build/eula.txt',
+				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/eula.txt'
 			},
 			uninstaller: {
 				expand: true,
@@ -219,6 +224,10 @@ module.exports = function(grunt) {
 				cwd: 'dist/temp/',
 				cmd: 'nwb nwbuild -v 0.17.6 -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			},
+			nwjswinSDK: {
+				cwd: 'dist/temp/',
+				cmd: 'nwb nwbuild -v 0.17.6-sdk -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+			},
 			nwjsosx: {
 				cwd: 'dist/temp/',
 				cmd: 'nwb nwbuild -v 0.17.6 -p osx64 --mac-icns ./<%= grunt.task.current.args[0] %>/src/icon.icns -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
@@ -324,6 +333,7 @@ module.exports = function(grunt) {
 			grunt.task.run('replace:main:'+entry);
 			grunt.task.run('replace:config:'+entry);
 			grunt.task.run('copy:production:'+entry);
+			grunt.task.run('copy:eula:'+entry);
 			if (entry == "win") {
 				//grunt.task.run('copy:generic:'+entry);
 				grunt.task.run('copy:uninstaller:'+entry);
@@ -349,6 +359,13 @@ module.exports = function(grunt) {
 				grunt.task.run('copy:uninstallerbinary:'+entry);
 				// codesign and create setup file
 				grunt.task.run('exec:setup:'+entry)
+				grunt.task.run('exec:zip:'+entry);
+			}
+			if (entry.includes("SDK")) {
+				grunt.task.run('exec:nwjswinSDK:'+entry);
+				grunt.task.run('copy:uninstallerbinary:'+entry);
+				// codesign and create setup file
+				//grunt.task.run('exec:setup:'+entry)
 				grunt.task.run('exec:zip:'+entry);
 			}
 			if (entry.includes("mac")) {

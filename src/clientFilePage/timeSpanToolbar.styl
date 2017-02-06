@@ -1,0 +1,47 @@
+.timeSpanToolbar
+	display flex
+	flex 3
+	margin -7px 0 0 0
+	color #5c5c5c
+	justify-content center
+	align-items center
+
+	.btn-group
+		display flex
+
+		.btn
+			font-size 14px
+			transition background .25s ease
+			cursor default
+			background #fff
+			padding 4.5px 12px
+			outline none
+
+			font-weight 400
+			color #5c5c5c
+
+			&:hover
+				background #f9f9f9
+
+			&.arrow
+				width 30px
+				padding 4.5px
+
+			.buttonWord
+				font-size 14px
+			.buttonLetter
+				display none
+			&.selected
+				background #eaf1f5
+
+			@media screen and (max-width: 1330px)
+				.buttonWord
+					display none
+				.buttonLetter
+					display inline !important
+
+		@media screen and (max-width: 1380px)
+			.btn
+				&.arrow
+					width 20px
+					padding 4.5px

@@ -1827,8 +1827,7 @@ load = (win) ->
 							className: 'entryHeaderDropdown'
 							pullRight: true
 							noCaret: true
-							container: 'body'
-							title: FaIcon('ellipsis-v')
+							title: FaIcon('ellipsis-v', {className:'menuItemIcon'})
 						},
 							(if canModify
 								B.MenuItem({onClick: startRevisingProgNote.bind null, progNote, progEvents},

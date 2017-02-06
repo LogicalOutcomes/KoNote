@@ -24,6 +24,7 @@ load = (win) ->
 	{FaIcon, renderLineBreaks, showWhen, stripMetadata, makeMoment} = require('../utils').load(win)
 	{TimestampFormat} = require('../persist/utils')
 	TimeSpanDate = require('./timeSpanDate').load(win)
+	TimeSpanToolbar = require('./timeSpanToolbar').load(win)
 	Chart = require('./chart').load(win)
 
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
@@ -241,6 +242,13 @@ load = (win) ->
 											xTicks
 											updateTimeSpan: @_updateTimeSpan
 										})
+										TimeSpanToolbar({
+											updateTimeSpan: @_updateTimeSpan
+											timeSpan
+											lastDay
+											firstDay
+											dayRange
+										})
 										TimeSpanDate({
 											date: timeSpan.get('end')
 											type: 'end'
@@ -288,6 +296,25 @@ load = (win) ->
 											)
 										)
 									)
+								)
+							)
+							R.div({className: "chartTypeContainer"},
+								"Metrics Chart Type: "
+								R.label({},
+									"Line "
+									R.input({
+										type: 'checkbox'
+										checked: @state.chartType is 'line'
+										onChange: @_updateChartType.bind null, 'line'
+									})
+								)
+								R.label({},
+									"Scatter "
+									R.input({
+										type: 'checkbox'
+										checked: @state.chartType is 'scatter'
+										onChange: @_updateChartType.bind null, 'scatter'
+									})
 								)
 							)
 						)
@@ -430,25 +457,6 @@ load = (win) ->
 									)
 
 									R.div({className: 'dataOptions'},
-										R.div({className: "chartTypeContainer"},
-											"Chart Type: "
-											R.label({},
-												"Line "
-												R.input({
-													type: 'checkbox'
-													checked: @state.chartType is 'line'
-													onChange: @_updateChartType.bind null, 'line'
-												})
-											)
-											R.label({},
-												"Scatter "
-												R.input({
-													type: 'checkbox'
-													checked: @state.chartType is 'scatter'
-													onChange: @_updateChartType.bind null, 'scatter'
-												})
-											)
-										)
 										(planSectionsWithData.map (section) =>
 											R.div({key: section.get('id')},
 												R.h3({}, section.get('name'))
