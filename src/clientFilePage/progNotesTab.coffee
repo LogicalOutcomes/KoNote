@@ -140,9 +140,7 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				editingProgNoteId: null
-				attachment: null
 				selectedItem: null
-				backdate: ''
 				transientData: null
 				isLoading: null
 				isFiltering: null
@@ -772,8 +770,13 @@ load = (win) ->
 			$nwbrowse = $('#nwBrowse')
 			$nwbrowse
 			.off()
-			#.attr('accept', ".#{extension}")
-			.on('change', (event) => @_encodeFile event.target.value)
+			.on('change', (event) =>
+				# Convert "/path1;/path2" format to array
+				filesString = event.target.value
+				filePathsArray = filesString.split(';')
+
+				filePathsArray.forEach @_encodeFile
+			)
 			.click()
 
 		_encodeFile: (file) ->
@@ -800,26 +803,39 @@ load = (win) ->
 			else
 				filesize = (filesize / 1048576).toFixed() + " MB"
 
-			# Convert to base64 encoded string
-			encodedAttachment = new Buffer(attachment).toString 'base64'
+			# Convert file attachment to base64 encoded string
+			encodedData = new Buffer(attachment).toString 'base64'
 
-			@setState {
-				attachment: {
-					encodedData: encodedAttachment
-					filename: filename
-				}
+			temporaryId = Persist.generateId()
+
+			# Push in new attachment
+			@attachments = @attachments.push {
+				id: temporaryId
+				filename
+				encodedData
 			}
 
-			# TODO: Append for when multiple attachments allowed (#787)
-			$('#attachmentArea').html filename + " (" + filesize + ") <i class='fa fa-times' id='removeBtn'></i>"
+			# TODO: Replace with declarative interface
+			domId = "attachment-#{temporaryId}"
 
-			removeFile = $('#removeBtn')
-			removeFile.on 'click', (event) =>
-				$('#attachmentArea').html ''
-				@setState {attachment: null}
+			$('#attachmentArea').append """
+				<span id='#{domId}' class='attachmentView'>
+					#{filename} (#{filesize}) <i class='fa fa-times removeBtn' />
+				</span>
+			"""
+
+			# Handle remove button onclick, updating DOM and attachment memory
+			$("##{domId} i").on 'click', (event) =>
+				$("##{domId}").remove()
+				@attachments = @attachments.filterNot (a) -> a.id is temporaryId
 
 		_toggleQuickNotePopover: ->
 			# TODO: Refactor to stateful React component
+
+			# Setup default data in local memory
+			@attachments = Imm.List()
+			@backdate = ''
+			@quickNoteBeginTimestamp = Moment().format(Persist.TimestampFormat)
 
 			quickNoteToggle = $(findDOMNode @refs.addQuickNoteButton)
 
@@ -835,7 +851,7 @@ load = (win) ->
 						<button class="btn btn-default" id="attachBtn"><i class="fa fa-paperclip"></i> Attach</button>
 						<button class="cancel btn btn-danger"><i class="fa fa-trash"></i> Discard</button>
 						<button class="save btn btn-primary"><i class="fa fa-check"></i> Save</button>
-						<input type="file" class="hidden" id="nwBrowse"></input>
+						<input type="file" class="hidden" id="nwBrowse" multiple></input>
 					</div>
 				'''
 			}
@@ -857,26 +873,13 @@ load = (win) ->
 				popover.find('.save.btn').on 'click', (event) =>
 					event.preventDefault()
 
-					@_createQuickNote popover.find('textarea').val(), @state.backdate, @state.attachment, (err) =>
-
-						@setState {
-							backdate: '',
-							attachment: null
-						}
-
-						if err
-							if err instanceof Persist.IOError
-								Bootbox.alert """
-									An error occurred.  Please check your network connection and try again.
-								"""
-								return
-
-							CrashHandler.handle err
-							return
-
+					@_createQuickNote popover.find('textarea').val(), @backdate, @attachments, (err) =>
+						# Close popover when quickNote saved to DB
 						quickNoteToggle.popover('hide')
 						quickNoteToggle.data('isVisible', false)
 
+
+				# Init datetimepicker for backdate
 				popover.find('.backdate.date').datetimepicker({
 					format: 'MMM-DD-YYYY h:mm A'
 					defaultDate: Moment()
@@ -886,26 +889,34 @@ load = (win) ->
 					}
 				}).on 'dp.change', (e) =>
 					if Moment(e.date).format('YYYY-MM-DD-HH') is Moment().format('YYYY-MM-DD-HH')
-						@setState {backdate: ''}
+						@backdate = ''
 					else
-						@setState {backdate: Moment(e.date).format(Persist.TimestampFormat)}
+						@backdate = Moment(e.date).format(Persist.TimestampFormat)
 
-				popover.find('.cancel.btn').on 'click', (event) =>
-					event.preventDefault()
-					@setState {
-						backdate: '',
-						attachment: null
-					}
+				closePopover = =>
+					# Reset local memory
+					@attachments = @attachments.clear()
+					@backdate = ''
+
 					quickNoteToggle.popover('hide')
 					quickNoteToggle.data('isVisible', false)
 
+				# Handle close button
+				popover.find('.cancel.btn').on 'click', (event) =>
+					event.preventDefault()
+
+					if popover.find('textarea').val() or not @attachments.isEmpty()
+						Bootbox.confirm "Are you sure you want to discard this note?", (ok) -> if ok then closePopover()
+						return
+
+					closePopover()
+					return
+
+				# Focus textarea once everything's set up
 				popover.find('textarea').focus()
 
-				# Store quickNoteBeginTimestamp as class var, since it wont change
-				@quickNoteBeginTimestamp = Moment().format(Persist.TimestampFormat)
-
-		_createQuickNote: (notes, backdate, attachment, cb) ->
-			unless notes
+		_createQuickNote: (notes, backdate, attachments, cb) ->
+			if not notes and attachments.isEmpty()
 				Bootbox.alert "Cannot create an empty #{Term 'quick note'}."
 				return
 
@@ -919,25 +930,45 @@ load = (win) ->
 				beginTimestamp: @quickNoteBeginTimestamp
 			}
 
-			# TODO: Async series
-			global.ActiveSession.persist.progNotes.create quickNote, (err, result) =>
+			relatedProgNoteId = null
+
+			buildAttachment = ({filename, encodedData}) => Imm.fromJS {
+				status: 'default'
+				filename
+				encodedData
+				clientFileId: @props.clientFileId
+				relatedProgNoteId
+			}
+
+			Async.series [
+				(cb) =>
+					global.ActiveSession.persist.progNotes.create quickNote, (err, result) ->
+						if err
+							cb err
+							return
+
+						relatedProgNoteId = result.get('id')
+						cb()
+
+				(cb) =>
+					return cb() if attachments.isEmpty()
+
+					Async.each attachments.toArray(), (a, cb) ->
+						global.ActiveSession.persist.attachments.create buildAttachment(a), cb
+					, cb
+
+			], (err) ->
 				if err
-					cb err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+
+					CrashHandler.handle err
 					return
 
-				unless attachment
-					cb()
-					return
-
-				attachmentData = Imm.fromJS {
-					status: 'default'
-					filename: attachment.filename
-					encodedData: attachment.encodedData
-					clientFileId: @props.clientFileId
-					relatedProgNoteId: result.get('id')
-				}
-
-				global.ActiveSession.persist.attachments.create attachmentData, cb
+				cb()
 
 		_setSelectedItem: (selectedItem) ->
 			@setState {selectedItem}
