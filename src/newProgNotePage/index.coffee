@@ -427,6 +427,15 @@ load = (win, {clientFileId}) ->
 								"Cancel"
 							)
 						)
+						R.button({
+							onClick: @_newEventTab
+							disabled: @state.editingWhichEvent?
+						},
+							FaIcon('calendar-plus-o', className: 'menuItemIcon')
+							R.span({className: 'menuItemText'},
+								"Add Event"
+							)
+						)
 					)
 				)
 
@@ -438,7 +447,7 @@ load = (win, {clientFileId}) ->
 					programsById: @props.programsById
 				})
 
-				R.div({className: 'eventsPanel'},
+				R.div({className: "eventsPanel #{showWhen @state.progEvents.size > 0}"},
 					R.span({className: 'title'}, Term "Events")
 					R.div({
 						className: [
@@ -461,7 +470,7 @@ load = (win, {clientFileId}) ->
 									className: 'icon'
 									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
 								},
-									FaIcon (if isGlobalEvent then 'globe' else 'calendar')
+									FaIcon (if isGlobalEvent then 'globe' else 'calendar-o'), className: 'fa-lg'
 								)
 								EventTabView({
 									progEvent
@@ -476,12 +485,6 @@ load = (win, {clientFileId}) ->
 								})
 							)
 						)
-
-						R.button({
-							className: 'btn btn-default addEventButton'
-							onClick: @_newEventTab
-							disabled: @state.editingWhichEvent?
-						}, FaIcon('plus'))
 					)
 				)
 			)
