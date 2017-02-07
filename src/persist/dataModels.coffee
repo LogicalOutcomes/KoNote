@@ -95,7 +95,7 @@ dataModelDefinitions = [
 						type: 'basic' # aka "Quick Notes"
 						status: ['default', 'cancelled']
 						statusReason: Joi.string().optional()
-						notes: Joi.string()
+						notes: Joi.string().allow('')
 						backdate: Joi.date().format(TimestampFormat).raw().allow('')
 						authorProgramId: IdSchema.allow('')
 						beginTimestamp: Joi.date().format(TimestampFormat).raw().allow('')
