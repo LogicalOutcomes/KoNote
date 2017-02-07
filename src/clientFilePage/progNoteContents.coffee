@@ -339,21 +339,24 @@ load = (win) ->
 			)
 
 			# TODO: isEditing view for attachments
-			R.div({className: 'attachments'},
-				(attachments.map (attachment) =>
-					{filename, id} = attachment.toObject()
-					fileExtension = Path.extname filename
+			(unless attachments.isEmpty()
 
-					icon = fileExtension or 'paperclip'
+				R.div({className: 'attachments'},
+					(attachments.map (attachment) =>
+						{filename, id} = attachment.toObject()
+						fileExtension = Path.extname filename
 
-					R.a({
-						ref: id
-						className: 'attachmentView'
-						onClick: openAttachment.bind null, attachment
-					},
-						FaIcon(icon)
-						' '
-						R.span({}, filename)
+						icon = fileExtension or 'paperclip'
+
+						R.a({
+							ref: id
+							className: 'attachmentView'
+							onClick: openAttachment.bind null, attachment
+						},
+							FaIcon(icon)
+							' '
+							R.span({}, filename)
+						)
 					)
 				)
 			)
