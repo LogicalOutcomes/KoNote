@@ -345,7 +345,7 @@ load = (win) ->
 					className: 'attachment'
 					onClick: openAttachment.bind null, attachment
 				},
-					FaIcon(fileExtension)
+					FaIcon(fileExtension or 'paperclip')
 					' '
 					filename
 				)
