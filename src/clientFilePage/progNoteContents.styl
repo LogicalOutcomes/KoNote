@@ -41,7 +41,6 @@
 			margin-top 10px
 			cursor default
 			border-left 2px solid rgba(255,255,255, 0) // avoid reflow when added on select
-			transition all .25s ease
 			padding-left 0px
 			padding-right 20px
 
@@ -88,8 +87,18 @@
 						flex-wrap wrap
 
 						margin -5px
-
 						padding-top 5px
 
 						> .metricWidget
 							margin 5px
+
+
+// TODO: Break up all other progNoteContents components like this
+.quickNoteView
+	.notes
+		transition all .25s ease
+		cursor default
+		margin-top 10px
+
+	.attachments
+		padding 10px 0 5px 0

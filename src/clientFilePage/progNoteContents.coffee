@@ -326,8 +326,8 @@ load = (win) ->
 
 
 	QuickNoteView = ({progNote, isEditing, selectQuickNote, updateQuickNotes, attachments, openAttachment}) ->
-		R.div({className: 'notes'},
-			R.div({onClick: selectQuickNote},
+		R.div({className: 'quickNoteView'},
+			R.div({className: 'notes', onClick: selectQuickNote},
 				(if isEditing
 					ExpandingTextArea({
 						value: progNote.get('notes')
@@ -337,17 +337,24 @@ load = (win) ->
 					renderLineBreaks progNote.get('notes')
 				)
 			)
-			(attachments.map (attachment) =>
-				filename = attachment.get('filename')
-				fileExtension = Path.extname filename
 
-				R.a({
-					className: 'attachment'
-					onClick: openAttachment.bind null, attachment
-				},
-					FaIcon(fileExtension or 'paperclip')
-					' '
-					filename
+			# TODO: isEditing view for attachments
+			R.div({className: 'attachments'},
+				(attachments.map (attachment) =>
+					{filename, id} = attachment.toObject()
+					fileExtension = Path.extname filename
+
+					icon = fileExtension or 'paperclip'
+
+					R.a({
+						ref: id
+						className: 'attachmentView'
+						onClick: openAttachment.bind null, attachment
+					},
+						FaIcon(icon)
+						' '
+						R.span({}, filename)
+					)
 				)
 			)
 		)

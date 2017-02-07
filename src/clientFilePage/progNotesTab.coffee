@@ -1732,7 +1732,7 @@ load = (win) ->
 
 				when 'quickNote' # QuickNote entry history
 					"""
-						div.basic.progNote:not(.isEditing) .notes > div {
+						div.basic.progNote:not(.isEditing) .notes {
 							padding-left: 20px !important;
 							padding-right: 0px !important;
 							border-left: 2px solid #3176aa !important;
