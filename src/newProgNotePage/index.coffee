@@ -339,23 +339,25 @@ load = (win, {clientFileId}) ->
 														key: targetId
 														className: 'target'
 													},
-														R.h3({},
+														R.h3({className: 'targetHeader'},
 															target.get 'name'
 															R.span({
-																className: 'star'
+																className: [
+																	'star'
+																	'checked' if target.get('notes').includes "***"
+																].join ' '
 																title: "Mark as Important"
 																onClick: @_starTarget.bind(
 																	null, unitId, sectionId, targetId, target.get 'notes'
 																)
 															},
-																if target.get('notes').includes "***"
-																	FaIcon('star', {className:'checked'})
-																else
-																	FaIcon('star-o')
+																R.span({className:'flagText'},'Flag Important ')
+																FaIcon('flag-o',className:"fa-lg")
 															)
 														)
 														ExpandingTextArea {
 															value: target.get 'notes'
+															placeholder: "..."
 															onFocus: @_selectPlanTarget.bind(
 																null, unit, section, target
 															)
@@ -751,7 +753,7 @@ load = (win, {clientFileId}) ->
 				format: 'MMM-DD-YYYY h:mm A'
 				defaultDate: Moment()
 				maxDate: Moment()
-				sideBySide: false
+				sideBySide: true
 				showClose: true
 				toolbarPlacement: 'bottom'
 				widgetPositioning: {

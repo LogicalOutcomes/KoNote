@@ -24,8 +24,12 @@
 		display flex
 		justify-content center
 
+		.input-group
+			width 100%
+
 		.backdate
 			border-color white
+			width 100%
 
 	// Main ProgNote Area
 
@@ -107,18 +111,32 @@
 							&:last-child
 								//border-bottom none
 
+							.targetHeader
+								display flex
+								justify-content space-between
+								
 							.star
 								color #888
 								float right
 								border none
 								opacity 0
+								font-weight 300
+								cursor default
+								transition all .3s
+								text-transform none
+								white-space nowrap
+								padding-left 6px
 
 								&:hover
-									color #337ab7
+									color red
 
-								> .checked
-									color yellow
-									-webkit-text-stroke 1px #888
+								&.checked
+									opacity 1
+									.fa
+										opacity 1
+										color red
+									.flagText
+										opacity 0
 
 							> .name
 								margin 10px 0 5px
@@ -246,7 +264,7 @@
 
 			&:active
 				&:not([disabled])
-					transform translateY(3px)
+					transform translateY(2px)
 
 			&[disabled]
 				opacity 0.3
