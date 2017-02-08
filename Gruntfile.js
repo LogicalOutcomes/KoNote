@@ -218,19 +218,19 @@ module.exports = function(grunt) {
 			},
 			nwjsuninstaller: {
 				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v 0.17.6 -p win32 -o ./nwjs-<%= grunt.task.current.args[0] %>/ ./uninstaller'
+				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p win32 -o ./nwjs-<%= grunt.task.current.args[0] %>/ ./uninstaller'
 			},
 			nwjswin: {
 				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v 0.17.6 -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			},
 			nwjswinSDK: {
 				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v 0.17.6-sdk -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cmd: 'nwb nwbuild -v <%= pkg.devDependencies.nw %> -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			},
 			nwjsosx: {
 				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v 0.17.6 -p osx64 --mac-icns ./<%= grunt.task.current.args[0] %>/src/icon.icns -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p osx64 --mac-icns ./<%= grunt.task.current.args[0] %>/src/icon.icns -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			}
 		},
 		appdmg: {
