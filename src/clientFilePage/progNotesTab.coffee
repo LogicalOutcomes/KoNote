@@ -1115,7 +1115,7 @@ load = (win) ->
 				# Incremenent +10 count state
 				nextState = {}
 				nextState[countType] = @state[countType] + 10
-				@setState {nextState}
+				@setState(nextState)
 
 		_setNavigatorRightOffset: ->
 			# Add rightPane's width to navigator's initial (css) right positioning
