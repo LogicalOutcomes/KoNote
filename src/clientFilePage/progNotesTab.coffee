@@ -924,7 +924,7 @@ load = (win) ->
 				type: 'basic'
 				status: 'default'
 				clientFileId: @props.clientFileId
-				notes
+				notes: notes or "" # Note can be empty if attachments exist for it
 				backdate
 				authorProgramId: global.ActiveSession.programId or ''
 				beginTimestamp: @quickNoteBeginTimestamp
