@@ -18,7 +18,12 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 		# TODO: propTypes
 
+		getDefaultProps: -> {
+			tooltipViewport: 'body'
+		}
+
 		componentDidMount: ->
+			# TODO: Update definition when @props.definition changes
 			tooltipContent = R.div({className: 'tooltipContent'},
 				renderLineBreaks @props.definition
 			)
@@ -27,7 +32,7 @@ load = (win) ->
 				html: true
 				title: ReactDOMServer.renderToString tooltipContent
 				viewport: {
-					selector: @props.tooltipViewport or 'body'
+					selector: @props.tooltipViewport
 					padding: 0
 				}
 			}
@@ -68,7 +73,11 @@ load = (win) ->
 						FaIcon 'line-chart'
 					)
 				)
-				R.div({className: 'name', ref: 'name'},
+				R.div({
+					ref: 'name'
+					id: @props.id
+					className: 'name'
+				},
 					@props.name
 				)
 				(if @props.allowDeleting and not @props.isReadOnly
