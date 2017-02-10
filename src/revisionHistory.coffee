@@ -480,6 +480,11 @@ load = (win) ->
 						#{if @props.isPlanTarget then ' as:' else ''}"
 					else if entry.has('reason') # Status change
 						"#{capitalize entry.get('value')} #{@props.dataModelName}"
+					else if @props.type is 'progNote'
+						R.span({},
+							"#{capitalize entry.get('action')} #{entry.get('property')} for "
+							R.span({className: 'targetHeader'}, entry.get('parentName'))
+						)
 					else if entry.has('parentName') and not entry.get('parentName').has? # Parent isn't an Imm Map obj
 						"#{capitalize entry.get('action')} #{entry.get('property')} for #{entry.get('parentName')}"
 					else
