@@ -187,6 +187,7 @@ load = (win) ->
 						MetricWidget({
 							isEditable: isEditing
 							key: metric.get('id')
+							id: metric.get('id')
 							name: metric.get('name')
 							definition: metric.get('definition')
 							onFocus: props.selectBasicUnit.bind null, unit
@@ -212,8 +213,11 @@ load = (win) ->
 			(unit.get('sections').map (section) =>
 				sectionId = section.get('id')
 
-				R.section({key: sectionId},
-					R.h2({}, section.get('name'))
+				R.section({
+					className: 'planSection'
+					key: sectionId
+				},
+					R.h2({className: 'sectionHeader'}, section.get('name'))
 					R.div({
 						className: [
 							'empty'
@@ -238,7 +242,7 @@ load = (win) ->
 							].join ' '
 							onClick: props.selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
 						},
-							R.h3({}, target.get('name'))
+							R.h3({className: 'targetHeader'}, target.get('name'))
 							R.div({className: "empty #{showWhen target.get('notes') is '' and not isEditing}"},
 								'(blank)'
 							)

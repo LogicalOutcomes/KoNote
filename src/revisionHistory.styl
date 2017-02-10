@@ -92,10 +92,6 @@
 			&:hover article.entry .snapshotButton
 				opacity 0.5
 
-			.action
-				font-weight 600
-				margin-bottom 5px
-
 			article.entry
 				position relative
 				padding-top 10px
@@ -126,7 +122,7 @@
 					display inline-flex
 
 				.value
-					display inline
+					display block
 					color #515151
 
 					> .added
@@ -139,3 +135,22 @@
 
 				> .snapshot
 					margin 0 // Required for consistent display
+
+	// Share styling for revisions and progNote views
+	.action, .targetHeader
+		font-weight 600 !important
+		opacity 1 !important
+		padding-top 0 !important
+
+	.targetHeader
+		color #666 !important
+
+	.planSection
+		padding-bottom 10px
+		margin-bottom 0
+
+		.sectionHeader
+			display none
+
+	.target
+		padding-right 0 !important // Override overflow padding for isSelected
