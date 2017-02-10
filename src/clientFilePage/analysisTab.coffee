@@ -212,11 +212,16 @@ load = (win) ->
 			otherEventTypesIsPersistent = @state.starredEventTypeIds.contains null
 			visibleUntypedProgEvents = visibleProgEventsByTypeId.get('') or Imm.List()
 
+			# Establish event types selections for side menu
+			untypedEvents = allEvents.filter (e) -> not e.get('typeId')
 
-			#################### ETC ####################
+			eventTypesWithData = @props.eventTypes
+			.filter (t) -> allEvents.some (e) -> e.get('typeId') is t.get('id')
+			.sortBy (t) -> t.get('name')
 
-			untypedEvents = allEvents.filterNot (progEvent) => !!progEvent.get('typeId')
-			eventTypesAlphabetized = @props.eventTypes.sortBy (eventType) -> eventType.get('name')
+			progEventsAreSelected = not @state.selectedEventTypeIds.isEmpty()
+			availableEventTypes = eventTypesWithData.size + (if untypedEvents.isEmpty() then 0 else 1)
+			allEventTypesSelected = @state.selectedEventTypeIds.size is availableEventTypes
 
 
 			return R.div({className: "analysisView"},
@@ -298,61 +303,66 @@ load = (win) ->
 									)
 								)
 							)
-							R.div({className: "chartTypeContainer"},
-								"Metrics Chart Type: "
-								R.label({},
-									"Line "
-									R.input({
-										type: 'checkbox'
-										checked: @state.chartType is 'line'
-										onChange: @_updateChartType.bind null, 'line'
-									})
-								)
-								R.label({},
-									"Scatter "
-									R.input({
-										type: 'checkbox'
-										checked: @state.chartType is 'scatter'
-										onChange: @_updateChartType.bind null, 'scatter'
-									})
+							(unless planSectionsWithData.isEmpty()
+								R.div({className: "chartTypeContainer"},
+									"Metrics Chart Type: "
+
+									R.label({},
+										"Line "
+										R.input({
+											type: 'checkbox'
+											checked: @state.chartType is 'line'
+											onChange: @_updateChartType.bind null, 'line'
+										})
+									)
+									R.label({},
+										"Scatter "
+										R.input({
+											type: 'checkbox'
+											checked: @state.chartType is 'scatter'
+											onChange: @_updateChartType.bind null, 'scatter'
+										})
+									)
 								)
 							)
 						)
-						R.div({className: 'selectionPanel'},
-							R.div({className: 'dataType progEvents'},
-								progEventsAreSelected = not @state.selectedEventTypeIds.isEmpty()
-								allEventTypesSelected = @state.selectedEventTypeIds.size is (@props.eventTypes.size + 1)
 
-								R.h2({
-									onClick: @_toggleAllEventTypes.bind null, allEventTypesSelected
-								},
-									R.span({className: 'helper'}
-										"Select "
-										if allEventTypesSelected then "None" else "All"
-									)
-									R.input({
-										type: 'checkbox'
-										checked: progEventsAreSelected
-									})
-									Term 'Events'
-								)
+						R.div({className: 'selectionPanel'},
+
+							R.div({className: 'dataType progEvents'},
 
 								(if allEvents.isEmpty()
-									R.div({className: 'noData'},
-										"No #{Term 'events'} have been recorded yet."
+									R.h2({className: 'noEventPoints'},
+										R.input({
+											type: 'checkbox'
+											checked: false
+											disabled: true
+										})
+										"No #{Term 'events'} recorded"
+									)
+								else
+									R.h2({onClick: @_toggleAllEventTypes.bind null, allEventTypesSelected, eventTypesWithData},
+										R.span({className: 'helper'}
+											"Select "
+											if allEventTypesSelected then "None" else "All"
+										)
+										R.input({
+											type: 'checkbox'
+											checked: progEventsAreSelected
+										})
+										Term 'Events'
 									)
 								)
 
-								(unless @props.eventTypes.isEmpty()
+								(unless eventTypesWithData.isEmpty()
 									R.div({},
 										R.h3({}, Term 'Event Types')
 										R.div({className: 'dataOptions'},
-											(eventTypesAlphabetized.map (eventType) =>
+											(eventTypesWithData.map (eventType) =>
 												eventTypeId = eventType.get('id')
 
 												# TODO: Make this faster
 												progEventsWithType = allEvents.filter (progEvent) -> progEvent.get('typeId') is eventTypeId
-
 												visibleProgEvents = visibleProgEventsByTypeId.get(eventTypeId) or Imm.List()
 
 												isSelected = @state.selectedEventTypeIds.contains eventTypeId
@@ -398,7 +408,7 @@ load = (win) ->
 								(unless untypedEvents.isEmpty()
 									R.div({},
 										R.h3({},
-											if not @props.eventTypes.isEmpty() then "Other" else " "
+											if not eventTypesWithData.isEmpty() then "Other" else " "
 										)
 										R.div({className: 'dataOptions'},
 											R.div({
@@ -437,14 +447,21 @@ load = (win) ->
 								)
 							)
 
-							(unless planSectionsWithData.isEmpty()
-								R.div({className: 'dataType metrics'},
-									metricsAreSelected = not @state.selectedMetricIds.isEmpty()
-									allMetricsSelected = Imm.is @state.selectedMetricIds, metricIdsWithData
+							R.div({className: 'dataType metrics'},
+								metricsAreSelected = not @state.selectedMetricIds.isEmpty()
+								allMetricsSelected = Imm.is @state.selectedMetricIds, metricIdsWithData
 
-									R.h2({
-										onClick: @_toggleAllMetrics.bind null, allMetricsSelected, metricIdsWithData
-									},
+								(if planSectionsWithData.isEmpty()
+									R.h2({className: 'noMetricPoints'},
+										R.input({
+											type: 'checkbox'
+											checked: false
+											disabled: true
+										})
+										"No #{Term 'metrics'} recorded"
+									)
+								else
+									R.h2({onClick: @_toggleAllMetrics.bind null, allMetricsSelected, metricIdsWithData},
 										R.span({className: 'helper'}
 											"Select "
 											if allMetricsSelected then "None" else "All"
@@ -455,7 +472,9 @@ load = (win) ->
 										})
 										Term 'Metrics'
 									)
+								)
 
+								(unless planSectionsWithData.isEmpty()
 									R.div({className: 'dataOptions'},
 										(planSectionsWithData.map (section) =>
 											R.div({key: section.get('id')},
@@ -506,34 +525,34 @@ load = (win) ->
 											)
 										)
 									)
-									(unless unassignedMetricsList.isEmpty()
-										R.div({},
-											R.h3({}, "Inactive")
-											R.div({className: 'dataOptions'},
-												(unassignedMetricsList.map (metric) =>
-													metricId = metric.get('id')
-													isSelected = @state.selectedMetricIds.contains metricId
-													visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
-													metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
+								)
+								(unless unassignedMetricsList.isEmpty()
+									R.div({},
+										R.h3({}, "Inactive")
+										R.div({className: 'dataOptions'},
+											(unassignedMetricsList.map (metric) =>
+												metricId = metric.get('id')
+												isSelected = @state.selectedMetricIds.contains metricId
+												visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
+												metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
 
-													R.div({
-														key: metricId
-														className: 'checkbox metric'
-													},
-														R.label({},
-															ColorKeyCount({
-																isSelected
-																className: 'circle'
-																colorKeyHex: metricColor
-																count: visibleValues.size
-															})
-															R.input({
-																type: 'checkbox'
-																onChange: @_updateSelectedMetrics.bind null, metricId
-																checked: isSelected
-															})
-															metric.get('name')
-														)
+												R.div({
+													key: metricId
+													className: 'checkbox metric'
+												},
+													R.label({},
+														ColorKeyCount({
+															isSelected
+															className: 'circle'
+															colorKeyHex: metricColor
+															count: visibleValues.size
+														})
+														R.input({
+															type: 'checkbox'
+															onChange: @_updateSelectedMetrics.bind null, metricId
+															checked: isSelected
+														})
+														metric.get('name')
 													)
 												)
 											)
@@ -579,9 +598,9 @@ load = (win) ->
 
 			@setState {selectedEventTypeIds, starredEventTypeIds}
 
-		_toggleAllEventTypes: (allEventTypesSelected) ->
+		_toggleAllEventTypes: (allEventTypesSelected, eventTypesWithData) ->
 			if not allEventTypesSelected
-				selectedEventTypeIds = @props.eventTypes
+				selectedEventTypeIds = eventTypesWithData
 				.map (eventType) -> eventType.get('id') # all eventTypes
 				.push(null) # null = progEvents without an eventType
 				.toSet()
