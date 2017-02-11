@@ -56,8 +56,8 @@ load = (win) ->
 					].join ' '
 				},
 					connectDragSource(
-						R.div({className: 'dragSource'},
-							FaIcon 'arrows-v'
+						R.div({className: 'dragSource targetDragSource'},
+							FaIcon('arrows-v')
 						)
 					)
 

@@ -10,7 +10,7 @@
 		background #eaf1f5
 		opacity 0.75
 
-		.dragSource
+		.targetDragSource
 			background none !important
 
 	&.collapsed
@@ -21,18 +21,15 @@
 		margin 0
 		border 0
 
-	.dragSource
-		display flex
-		align-items center
+	.targetDragSource
 		padding 15px
-		min-width 40px
-		cursor move
 		border-radius inherit
 		border-top-right-radius 0
 		border-bottom-right-radius 0
 
-		&:hover
-			background #eee
+	&:hover
+		.targetDragSource
+			opacity 1
 
 	.targetContainer
 		flex 1
@@ -41,6 +38,8 @@
 		padding-left 1.5%
 
 		> .name
+			color #555
+			font-weight bold
 
 			&:hover
 				cursor default
