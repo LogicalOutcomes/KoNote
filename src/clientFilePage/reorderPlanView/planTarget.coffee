@@ -15,6 +15,8 @@ load = (win) ->
 	{DragDropContext, DragSource, DropTarget} = win.ReactDnD
 	HTML5Backend = win.ReactDnDHTML5Backend
 
+	{FaIcon} = require('../../utils').load(win)
+
 
 	PlanTarget = React.createClass
 		display: 'PlanTarget'
@@ -22,6 +24,7 @@ load = (win) ->
 		propTypes: {
 			# DnD
 			connectDragSource: React.PropTypes.func.isRequired
+			connectDragPreview: React.PropTypes.func.isRequired
 			connectDropTarget: React.PropTypes.func.isRequired
 			isDragging: React.PropTypes.bool.isRequired
 			# DnD props
@@ -36,13 +39,15 @@ load = (win) ->
 		}
 
 		render: ->
-			{target, connectDragSource, connectDropTarget,
-			isCollapsed, isDragging, displayInactive} = @props
+			{
+				target, connectDragSource, connectDragPreview, connectDropTarget
+				isCollapsed, isDragging, displayInactive
+			} = @props
 
 			targetIsInactive = target.get('status') isnt 'default'
 			targetIsHidden = isCollapsed or (not displayInactive and targetIsInactive)
 
-			return connectDragSource connectDropTarget (
+			return connectDropTarget connectDragPreview(
 				R.div({
 					className: [
 						'planTarget'
@@ -50,7 +55,17 @@ load = (win) ->
 						'collapsed' if targetIsHidden
 					].join ' '
 				},
-					target.get('name')
+					connectDragSource(
+						R.div({className: 'dragSource'},
+							FaIcon 'arrows-v'
+						)
+					)
+
+					R.div({className: 'targetContainer'},
+						R.span({className: 'name'},
+							target.get('name')
+						)
+					)
 				)
 			)
 
@@ -111,6 +126,7 @@ load = (win) ->
 	# Specify props to inject into component
 	collectSource = (connect, monitor) -> {
 		connectDragSource: connect.dragSource()
+		connectDragPreview: connect.dragPreview()
 		isDragging: monitor.isDragging()
 	}
 
