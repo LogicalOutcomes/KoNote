@@ -15,15 +15,16 @@ load = (win) ->
 	{DragSource, DropTarget} = win.ReactDnD
 
 	PlanTarget = require('./planTarget').load(win)
+	{FaIcon} = require('../../utils').load(win)
 
 
-	# We wrap this with a factory when decorating
 	PlanSection = React.createClass
 		displayName: 'PlanSection'
 
 		propTypes: {
 			# DnD
 			connectDragSource: React.PropTypes.func.isRequired
+			connectDragPreview: React.PropTypes.func.isRequired
 			connectDropTarget: React.PropTypes.func.isRequired
 			isDragging: React.PropTypes.bool.isRequired
 			# DnD props
@@ -41,37 +42,54 @@ load = (win) ->
 		}
 
 		render: ->
-			{name, isDragging, connectDragSource, section, targets,
-			displayInactive, displayTargets
-			connectDropTarget, targets, reorderTargetId} = @props
+			{
+				connectDragSource, connectDropTarget, connectDragPreview
+				displayInactive, displayTargets, reorderTargetId
+				name, section, targets, isDragging
+			} = @props
 
 			sectionIndex = @props.index
 
 			sectionIsInactive = section.get('status') isnt 'default'
 			sectionIsHidden = not displayInactive and sectionIsInactive
 
+			visibleTargets = if not displayInactive
+				targets.filter (t) -> t.get('status') is 'default'
+			else
+				targets
 
-			return connectDragSource connectDropTarget (
+
+			return connectDropTarget connectDragPreview(
 				R.section({
 					className: [
 						'planSection'
 						'isDragging' if isDragging
+						'hasTargets' if not visibleTargets.isEmpty() and displayTargets
 						'collapsed' if sectionIsHidden
 					].join ' '
 				},
-					R.h4({}, name)
-					R.div({className: 'targets'},
-						(targets.map (target, index) =>
-							PlanTarget({
-								key: target.get('id')
-								id: target.get('id')
-								target
-								index
-								sectionIndex
-								reorderTargetId
-								displayInactive
-								isCollapsed: not displayTargets
-							})
+					R.div({className: 'sectionNameContainer'},
+						connectDragSource(
+							R.div({className: 'dragSource sectionDragSource'},
+								FaIcon('arrows-v')
+							)
+						)
+						R.div({className: 'name'}, name)
+					)
+					(if displayTargets
+						R.div({className: 'targets'},
+							(targets.map (target, index) =>
+								PlanTarget({
+									key: target.get('id')
+									id: target.get('id')
+									target
+									index
+									sectionIndex
+									reorderTargetId
+									displayInactive
+									isCollapsed: not displayTargets
+								})
+							)
 						)
 					)
 				)
@@ -126,6 +144,7 @@ load = (win) ->
 	# Specify props to inject into component
 	collectSource = (connect, monitor) -> {
 		connectDragSource: connect.dragSource()
+		connectDragPreview: connect.dragPreview()
 		isDragging: monitor.isDragging()
 	}
 

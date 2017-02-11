@@ -1,13 +1,19 @@
 .planSection
-	padding 15px
 	border 1px dashed #cadbe5
 	border-bottom 0
-	cursor move
 	transition all .25s ease
 
 	&.isDragging
 		background #eaf1f5
 		opacity 0.75
+
+		.sectionDragSource
+			cursor move
+			border-color #eaf1f5 !important
+
+	&.hasTargets
+		.sectionNameContainer
+			padding-bottom 5px
 
 	&:not(.collapsed):last-child
 		border-bottom 1px dashed #cadbe5
@@ -18,8 +24,33 @@
 		padding 0
 		margin 0
 
-	h4
-		margin-top 0	// Default dragSource styling for the arrow icon
+	.sectionDragSource
+		border-bottom-right-radius 5px
+		border-bottom 1px solid transparent
+
+	&:hover
+		.sectionDragSource
+			opacity 1
+
+	.sectionNameContainer
+		display flex
+
+		.name
+			font-size 1.25em
+			padding-left 10px
+			display flex
+			align-items center
+
+			&:hover
+				cursor default
+				text-decoration underline
+
+
+	.targets
+		padding 15px
+		padding-top 0
+
+	// Default dragSource styling for the arrow icon
 	.dragSource
 		display flex
 		align-items center
