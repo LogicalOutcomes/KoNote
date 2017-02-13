@@ -12,7 +12,7 @@ Fs = require 'fs'
 createVersionMetadataFile = (dataDir, cb) ->
 	versionPath = Path.join(dataDir, 'version.json')
 	versionData = {
-		dataVersion: nw.App.manifest.version
+		dataVersion: JSON.parse(Fs.readFileSync('./package.json')).version;
 		lastMigrationStep: 0
 	}
 
