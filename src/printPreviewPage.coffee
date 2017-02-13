@@ -64,7 +64,9 @@ load = (win, {dataSet}) ->
 
 		_printPage :->
 			Window.print
+				autoprint: false
 				headerFooterEnabled: false
+				#footerString: Config.printFooter
 
 		render: ->
 			R.div({className: 'printPreview'},
@@ -80,7 +82,7 @@ load = (win, {dataSet}) ->
 							R.button({
 								ref: 'print'
 								className: 'print btn btn-primary'
-								onClick: win.print
+								onClick: @_printPage
 							},
 								FaIcon('print')
 								" "
