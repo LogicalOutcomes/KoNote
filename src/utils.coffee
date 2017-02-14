@@ -172,6 +172,7 @@ load = (win) ->
 			console.error "Tried to call renderLineBreaks on a non-string:", text
 			return text
 
+
 		lines = text.trim()
 		.replace(/\r\n/g, '\n') # Windows -> Unix
 		.replace(/\r/g, '\n') # old Mac -> Unix

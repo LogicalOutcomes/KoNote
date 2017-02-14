@@ -72,7 +72,7 @@ load = (win) ->
 				R.div({id: 'menuContainer'},
 					R.div({id: 'user'},
 						R.div({},
-							R.h3({}, global.ActiveSession.userName)
+							R.h3({}, ActiveSession.account.publicInfo.displayName or global.ActiveSession.userName)
 							(unless @props.programs.isEmpty()
 								ProgramsDropdown({
 									selectedProgramId: userProgramId
