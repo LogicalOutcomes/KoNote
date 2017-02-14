@@ -9,6 +9,7 @@ Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
 _ = require 'underscore'
+Fs = require 'graceful-fs'
 
 Config = require '../config'
 Term = require '../term'
@@ -304,24 +305,41 @@ load = (win) ->
 								)
 							)
 							(unless planSectionsWithData.isEmpty()
-								R.div({className: "chartTypeContainer"},
-									"Metrics Chart Type: "
-
-									R.label({},
-										"Line "
+								R.div({className: "chartOptionsContainer"},
+									R.div({},
+										R.button({
+											className: 'btn btn-default printBtn'
+											onClick: @_savePNG
+											title: "Save as PNG"
+										},
+											FaIcon('download')
+										)
+										# Hidden input for file saving
 										R.input({
-											type: 'checkbox'
-											checked: @state.chartType is 'line'
-											onChange: @_updateChartType.bind null, 'line'
+											ref: 'nwsaveas'
+											className: 'hidden'
+											type: 'file'
 										})
 									)
-									R.label({},
-										"Scatter "
-										R.input({
-											type: 'checkbox'
-											checked: @state.chartType is 'scatter'
-											onChange: @_updateChartType.bind null, 'scatter'
-										})
+									R.div({},
+										"Metrics Chart Type: "
+
+										R.label({},
+											"Line "
+											R.input({
+												type: 'checkbox'
+												checked: @state.chartType is 'line'
+												onChange: @_updateChartType.bind null, 'line'
+											})
+										)
+										R.label({},
+											"Scatter "
+											R.input({
+												type: 'checkbox'
+												checked: @state.chartType is 'scatter'
+												onChange: @_updateChartType.bind null, 'scatter'
+											})
+										)
 									)
 								)
 							)
@@ -642,6 +660,30 @@ load = (win) ->
 
 		_updateChartType: (type) ->
 			@setState {chartType: type}
+
+		_savePNG: ->
+			$(@refs.nwsaveas)
+			.off()
+			.val('')
+			.attr('nwsaveas', "analysis")
+			.attr('accept', ".png")
+			.on('change', (event) =>
+				# png as base64string
+				nw.Window.get(win).capturePage ((base64string) ->
+					console.log base64string
+					Fs.writeFile event.target.value, base64string, 'base64', (err) ->
+						if err
+							console.log err
+							return
+						return
+				),
+					format: 'png'
+					datatype: 'raw'
+			)
+			.click()
+
+			console.log "clicked"
+			
 
 		_updateSelectedMetrics: (metricId) ->
 			@setState ({selectedMetricIds}) =>
