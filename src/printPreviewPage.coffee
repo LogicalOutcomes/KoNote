@@ -65,8 +65,8 @@ load = (win, {dataSet}) ->
 		_printPage :->
 			Window.print
 				autoprint: false
-				headerFooterEnabled: false
-				#footerString: Config.printFooter
+				headerFooterEnabled: Config.printHeaderFooterEnabled
+				footerString: Config.printFooter
 
 		render: ->
 			R.div({className: 'printPreview'},
