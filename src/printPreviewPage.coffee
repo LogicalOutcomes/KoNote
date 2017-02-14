@@ -66,6 +66,7 @@ load = (win, {dataSet}) ->
 			Window.print
 				autoprint: false
 				headerFooterEnabled: Config.printHeaderFooterEnabled
+				headerString: Config.printHeader
 				footerString: Config.printFooter
 
 		render: ->
