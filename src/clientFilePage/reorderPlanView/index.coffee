@@ -96,6 +96,8 @@ load = (win) ->
 							reorderTargetId
 							displayInactive
 							displayTargets
+							toggleReorderPlan: @props.toggleReorderPlan
+							scrollToSection: @props.scrollToSection
 						})
 					)
 				)

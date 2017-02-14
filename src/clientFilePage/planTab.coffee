@@ -19,6 +19,7 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	ReactDOM = win.ReactDOM
+	{findDOMNode} = ReactDOM
 	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	ModifyTargetStatusDialog = require('./modifyTargetStatusDialog').load(win)
@@ -35,7 +36,7 @@ load = (win) ->
 	CreatePlanTemplateDialog = require('./createPlanTemplateDialog').load(win)
 
 	{
-		FaIcon, renderLineBreaks, showWhen, stripMetadata, formatTimestamp, capitalize
+		FaIcon, renderLineBreaks, showWhen, stripMetadata, formatTimestamp, capitalize, scrollToElement
 	} = require('../utils').load(win)
 
 
@@ -218,7 +219,7 @@ load = (win) ->
 
 						R.button({
 							className: 'reorderButton'
-							onClick: @_toggleReorderPlan
+							onClick: => @_toggleReorderPlan()
 							disabled: @props.isReadOnly
 						},
 							if @state.isReorderingPlan
@@ -248,9 +249,6 @@ load = (win) ->
 							)
 						)
 
-						
-
-						
 					)
 
 					(if @state.isReorderingPlan
@@ -259,9 +257,13 @@ load = (win) ->
 							currentTargetRevisionsById: @state.currentTargetRevisionsById
 							reorderSection: @_reorderSection
 							reorderTargetId: @_reorderTargetId
+							toggleReorderPlan: @_toggleReorderPlan
+							scrollToSection: @_scrollToSection
+							scrollToTarget: @_scrollToTarget
 						})
 					else
 						SectionsView({
+							ref: 'sectionsView'
 							clientFile: @props.clientFile
 							plan: @state.plan
 							metricsById: @props.metricsById
@@ -283,6 +285,7 @@ load = (win) ->
 						})
 					)
 				)
+
 				R.div({className: 'targetDetail'},
 					(if not selectedTarget?
 						R.div({className: "noSelection #{showWhen plan.get('sections').size > 0}"},
@@ -393,9 +396,9 @@ load = (win) ->
 
 				@props.updatePlan @state.plan, newPlanTargets, updatedPlanTargets
 
-		_toggleReorderPlan: ->
+		_toggleReorderPlan: (cb=(->)) ->
 			isReorderingPlan = not @state.isReorderingPlan
-			@setState {isReorderingPlan}
+			@setState {isReorderingPlan}, cb
 
 		_reorderSection: (dragIndex, hoverIndex) ->
 			if @props.isReadOnly
@@ -710,6 +713,20 @@ load = (win) ->
 							return id isnt metricId
 			}
 
+		_scrollToSection: (sectionId) ->
+			console.log "@refs.sectionsView", @refs.sectionsView
+
+			$sectionsView = findDOMNode(@refs.sectionsView)
+			$element = win.document.getElementById "section-#{sectionId}"
+
+			console.log "$sectionsView", $sectionsView
+			console.log "$element", $element
+
+			scrollToElement($sectionsView, $element, 1000, 'easeInOutQuad', (->))
+
+		_scrollToTarget: (targetId) ->
+			#
+
 	SectionsView = React.createFactory React.createClass
 		displayName: 'SectionsView'
 		mixins: [React.addons.PureRenderMixin]
@@ -935,6 +952,7 @@ load = (win) ->
 
 
 			return R.div({
+				id: "section-#{sectionId}"
 				className: "section status-#{section.get('status')}"
 				key: section.get('id')
 			},
@@ -1243,6 +1261,7 @@ load = (win) ->
 			targetIsInactive = @props.isReadOnly or @props.isInactive or @props.sectionIsInactive
 
 			return R.div({
+				id: "target-#{currentRevision.get('id')}"
 				className: [
 					"target target-#{currentRevision.get('id')}"
 					"status-#{revisionStatus}"

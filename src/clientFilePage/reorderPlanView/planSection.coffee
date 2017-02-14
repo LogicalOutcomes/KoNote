@@ -53,6 +53,7 @@ load = (win) ->
 			} = @props
 
 			sectionIndex = @props.index
+			sectionId = section.get('id')
 
 			sectionIsInactive = section.get('status') isnt 'default'
 			sectionIsHidden = not displayInactive and sectionIsInactive
@@ -83,7 +84,12 @@ load = (win) ->
 								FaIcon('arrows-v')
 							)
 						)
-						R.div({className: 'name'}, name)
+						R.div({
+							className: 'name'
+							onClick: => @props.toggleReorderPlan(=> @props.scrollToSection(sectionId))
+						},
+							name
+						)
 					)
 					(if displayTargets and not targets.isEmpty()
 						R.div({className: 'targets'},
