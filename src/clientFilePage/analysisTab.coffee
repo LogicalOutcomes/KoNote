@@ -351,12 +351,7 @@ load = (win) ->
 
 								(if allEvents.isEmpty()
 									R.h2({className: 'noEventPoints'},
-										R.input({
-											type: 'checkbox'
-											checked: false
-											disabled: true
-										})
-										"No #{Term 'events'} recorded"
+										"(No #{Term 'events'} recorded)"
 									)
 								else
 									R.h2({onClick: @_toggleAllEventTypes.bind null, allEventTypesSelected, eventTypesWithData},
@@ -426,7 +421,7 @@ load = (win) ->
 								(unless untypedEvents.isEmpty()
 									R.div({},
 										R.h3({},
-											if not eventTypesWithData.isEmpty() then "Other" else " "
+											if not eventTypesWithData.isEmpty() then "Untyped" else " "
 										)
 										R.div({className: 'dataOptions'},
 											R.div({
@@ -471,12 +466,7 @@ load = (win) ->
 
 								(if planSectionsWithData.isEmpty()
 									R.h2({className: 'noMetricPoints'},
-										R.input({
-											type: 'checkbox'
-											checked: false
-											disabled: true
-										})
-										"No #{Term 'metrics'} recorded"
+										"(No #{Term 'metrics'} recorded)"
 									)
 								else
 									R.h2({onClick: @_toggleAllMetrics.bind null, allMetricsSelected, metricIdsWithData},
@@ -683,7 +673,7 @@ load = (win) ->
 			.click()
 
 			console.log "clicked"
-			
+
 
 		_updateSelectedMetrics: (metricId) ->
 			@setState ({selectedMetricIds}) =>
