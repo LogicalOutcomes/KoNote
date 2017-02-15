@@ -313,6 +313,7 @@ load = (win) ->
 											title: "Save as PNG"
 										},
 											FaIcon('download')
+											" Export to PNG"
 										)
 										# Hidden input for file saving
 										R.input({
@@ -660,7 +661,6 @@ load = (win) ->
 			.on('change', (event) =>
 				# png as base64string
 				nw.Window.get(win).capturePage ((base64string) ->
-					console.log base64string
 					Fs.writeFile event.target.value, base64string, 'base64', (err) ->
 						if err
 							console.log err
@@ -671,8 +671,6 @@ load = (win) ->
 					datatype: 'raw'
 			)
 			.click()
-
-			console.log "clicked"
 
 
 		_updateSelectedMetrics: (metricId) ->
