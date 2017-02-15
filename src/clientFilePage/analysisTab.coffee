@@ -10,6 +10,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 _ = require 'underscore'
 Fs = require 'graceful-fs'
+Path = require 'path'
 
 Config = require '../config'
 Term = require '../term'
@@ -307,6 +308,14 @@ load = (win) ->
 							(unless planSectionsWithData.isEmpty()
 								R.div({className: "chartOptionsContainer"},
 									R.div({},
+										R.button({
+											className: 'btn btn-default printBtn'
+											onClick: @_printPNG
+											title: "Print"
+										},
+											FaIcon('print')
+											" Print"
+										)
 										R.button({
 											className: 'btn btn-default printBtn'
 											onClick: @_savePNG
@@ -663,7 +672,9 @@ load = (win) ->
 				nw.Window.get(win).capturePage ((base64string) ->
 					Fs.writeFile event.target.value, base64string, 'base64', (err) ->
 						if err
-							console.log err
+							Bootbox.alert """
+								An error occurred.  Please check your network connection and try again.
+							"""
 							return
 						return
 				),
@@ -671,6 +682,34 @@ load = (win) ->
 					datatype: 'raw'
 			)
 			.click()
+		
+		_printPNG: ->
+			nw.Window.get(win).capturePage ((base64string) ->
+				Fs.writeFile Path.join(Config.backend.dataDirectory, '_tmp', 'analysis.png'), base64string, 'base64', (err) ->
+					if err
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+					nw.Window.open Path.join(Config.backend.dataDirectory, '_tmp', 'analysis.png'), {
+						focus: false
+						show: true
+						width: 850
+						height: 1100
+					}, (pngWindow) =>
+						pngWindow.on 'loaded', =>
+							pngWindow.window.print()
+							pngWindow.hide()
+							# cleanup
+							Fs.unlink Path.join(Config.backend.dataDirectory, '_tmp', 'analysis.png'), (err) ->
+								if err
+									console.error err
+									return
+								return
+							pngWindow.close()
+			),
+				format: 'png'
+				datatype: 'raw'
 
 
 		_updateSelectedMetrics: (metricId) ->
