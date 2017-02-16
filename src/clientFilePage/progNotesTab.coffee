@@ -916,7 +916,7 @@ load = (win) ->
 				popover.find('textarea').focus()
 
 		_createQuickNote: (notes, backdate, attachments, cb) ->
-			if not notes and attachments.isEmpty()
+			if not notes
 				Bootbox.alert "Cannot create an empty #{Term 'quick note'}."
 				return
 
