@@ -32,11 +32,16 @@
 		padding-top 3px // Makes sure icon's vert-centered
 		overflow visible
 
+		transition opacity .75s ease
+
 		&:hover, &:focus, &.isScrolling // selected
 			background #cadbe5
 
 		&:focus, &.isScrolling
 			border-color #aec2ce
+
+		&.isScrolling
+			opacity .75
 
 		.fa
 			font-size 2rem
