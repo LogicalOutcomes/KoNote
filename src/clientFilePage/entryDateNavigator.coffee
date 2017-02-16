@@ -10,6 +10,7 @@
 
 Imm = require 'immutable'
 Moment = require 'moment'
+Async = require 'async'
 
 {TimestampFormat} = require '../persist'
 
@@ -107,35 +108,16 @@ load = (win) ->
 			@datetimepicker = $input.data('DateTimePicker')
 
 		_skipToEntryDate: (date) ->
-			selectedMoment = Moment(+date)
-
-			# TODO: Have moment objs already pre-built
-			entry = @props.historyEntries.find (e) ->
-				timestampMoment = makeMoment e.get('timestamp')
-				return selectedMoment.isSame timestampMoment, 'day'
-
-			if not entry?
-				console.warn "Cancelled scroll, could not find #{selectedMoment.toDate()} in historyEntries"
-				return
-
 			# Update the icon with an animated spinner while isScrolling
-			@setState {isScrolling: true}, => @props.onSelect entry, =>
-				@setState {isScrolling: false}
-
-				# Briefly highlight entries with matching date when scroll has completed
-				entryIdsToFlash = @props.historyEntries
-				.filter (e) ->
-					timestampMoment = makeMoment e.get('timestamp')
-					return selectedMoment.isSame timestampMoment, 'day'
-				.map (e) -> '#entry-' + e.get('id')
-				.toArray()
-				.join ', '
-
-				$(entryIdsToFlash).addClass 'flashDestination'
-
-				setTimeout ->
-					$(entryIdsToFlash).removeClass 'flashDestination'
-				, 2500
+			# Give spinner a chance to start spinning first
+			Async.series [
+				(cb) => @setState {isScrolling: true}, -> setTimeout(cb, 50)
+				(cb) => @props.onSelect(date, cb)
+				(cb) => @setState {isScrolling: false}, cb
+			], (err) =>
+				if err
+					throw new Error(err)
+					return
 
 		_tempDisableChangeEvent: ->
 			# Temporarily disable datetimepicker's 'change' event from firing

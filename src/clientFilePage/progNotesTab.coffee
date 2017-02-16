@@ -1053,6 +1053,7 @@ load = (win) ->
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Update highlighting when anything changes while searching
+			# TODO: Maybe wrap component with this logic; allow state to change unimpeded
 			if @props.isFiltering
 
 				filterParametersChanged = (
@@ -1103,51 +1104,88 @@ load = (win) ->
 			$(win.document).off 'resize', @_updateNavigatorPosition
 
 		_watchUnlimitedScroll: ->
-			# Has the scroll been depleted?
+			# Skip if we're scrolling via EntryDateNavigator, entry count is already set
+			return if @isAutoScrolling
+
+			# Detect if we've reached the lower threshold to trigger update
 			if @entriesListView.scrollTop() + (@entriesListView.innerHeight() *2) >= @entriesListView[0].scrollHeight
 
-				# Figure out which type of count to update
+				# Count is contextual to complete history, or filtered entries
 				countType = if @props.isFiltering then 'filterCount' else 'historyCount'
 
 				# Disregard if nothing left to load into the count
 				return if @state[countType] >= @props.historyEntries.size
 
-				# Incremenent +10 count state
+				# Update UI with +10 to entry count
 				nextState = {}
 				nextState[countType] = @state[countType] + 10
 				@setState(nextState)
 
 		_setNavigatorRightOffset: ->
 			# Add rightPane's width to navigator's initial (css) right positioning
+			# TODO: Can we use new chrome 'sticky' instead? Sometimes doesn't show on HCR
 			right = if @rightPane? then @rightPane.offsetWidth else 0
 			@entryDateNavigator.css {right}
 
-		_scrollToEntryDate: (entry, cb) ->
-			# Extend filterCount first if not enough loaded into EntriesListView
-			index = @props.historyEntries.indexOf entry
+		_scrollToEntryDate: (date, cb=(->)) ->
+			selectedMoment = Moment(+date)
 
-			if index is -1
-				console.warn "Cancelled _scrollToEntryDate, entry is non-existent in historyEntries:", entry.toJS()
+			# TODO: Have moment objs already pre-built
+			entry = @props.historyEntries.find (e) ->
+				timestamp = makeMoment e.get('timestamp')
+				return selectedMoment.isSame timestamp, 'day'
+
+			if not entry?
+				console.warn "Cancelled scroll, could not find #{selectedMoment.toDate()} in historyEntries"
 				cb()
 				return
 
+			# Should we supplement filter/historyCount first?
 			countType = if @props.isFiltering then 'filterCount' else 'historyCount'
-			highestEntryIndex = @state[countType] - 1
+			index = @props.historyEntries.indexOf entry
+			requiresMoreEntries = @state[countType] - 1 < index
 
-			performScroll = =>
-				$entriesListView = findDOMNode(@)
-				$element = win.document.getElementById "entry-#{entry.get('id')}"
-				scrollToElement($entriesListView, $element, 1000, 'easeInOutQuad', cb)
 
-			# Determine whether needs to extend filterCount first
-			if highestEntryIndex < index
-				# Provide 10 extra entries, so destinationEntry appears at top
-				# Set the new count (whichever type is pertinent), and *then* scroll to the entry
-				newState = {}
-				newState[countType] = (index + 1) + 10
-				@setState newState, performScroll
-			else
-				performScroll()
+			Async.series [
+				(cb) =>
+					return cb() unless requiresMoreEntries
+
+					# Provide 10 extra entries, so destinationEntry appears at top
+					# Set the new count (whichever type is pertinent), and *then* scroll to the entry
+					newState = {}
+					newState[countType] = (index + 1) + 10
+					@setState newState, cb
+
+				(cb) =>
+					# Scroll to latest entry matching date
+					$entriesListView = findDOMNode(@)
+					$element = win.document.getElementById "entry-#{entry.get('id')}"
+
+					@isAutoScrolling = true # Temporarily block scroll listener(s)
+					scrollToElement $entriesListView, $element, 1000, 'easeInOutQuad', cb
+
+				(cb) =>
+					@isAutoScrolling = false
+
+					# Scroll is completed, briefly highlight/animate any entries with matching date
+					selectedMoment = makeMoment entry.get('timestamp')
+
+					entryIdsToFlash = @props.historyEntries
+					.filter (e) ->
+						timestamp = makeMoment e.get('timestamp')
+						return selectedMoment.isSame makeMoment(timestamp), 'day'
+					.map (e) -> '#entry-' + e.get('id')
+					.toArray()
+					.join ', '
+
+					$(entryIdsToFlash).addClass 'flashDestination'
+					setTimeout(->
+						$(entryIdsToFlash).removeClass 'flashDestination'
+					, 2500)
+
+					cb()
+
+			], cb
 
 		_resetScroll: ->
 			findDOMNode(@).scrollTop = 0
