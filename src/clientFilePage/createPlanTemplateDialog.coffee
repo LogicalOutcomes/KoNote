@@ -92,6 +92,7 @@ load = (win) ->
 					.remove('statusReason')
 					.remove('clientFileId')
 					.remove('id')
+					.remove('authorDisplayName')
 
 				section = Imm.fromJS {
 					name: section.get('name')

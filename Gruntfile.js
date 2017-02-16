@@ -76,36 +76,41 @@ module.exports = function(grunt) {
 			},
 			nodemodules: {
 				expand: true,
+				dot: true,
+				nocase: true,
 				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/node_modules/',
 				src: [
 					'**',
-					'!**/lodash-compat/**', // todo: confirm only required to support ie8...
-					'!**/src/**',
-					'!**/source/**',
-					'!**/spec/**',
-					'!**/test/**',
-					'!**/tests/**',
-					'!**/grunt/**',
+					'!**/bower.json',
+					'!**/changelog*',
+					'!**/changes*',
+					'!**/contributing*',
 					'!**/doc/**',
 					'!**/docs/**',
-					'!**/htdocs/**',
-					'!**/samples/**',
-					'!**/examples/**',
+					'!**/example*',
 					'!**/example/**',
-					'!**/README.md',
-					'!**/readme.md',
-					'!**/readme.markdown',
-					'!**/changelog.md',
-					'!**/CHANGELOG.md',
-					'!**/changes.md',
-					'!**/CHANGES.md',
-					'!**/contributing.md',
-					'!**/CONTRIBUTING.md',
-					'!**/bower.json',
-					'!**/gulpfile.js',
-					'!**/gruntfile.js',
+					'!**/examples/**',
+					'!**/grunt/**',
 					'!**/Gruntfile.js',
-					'!**/Makefile'
+					'!**/gulpfile.js',
+					'!**/history.md',
+					'!**/htdocs/**',
+					'!**/*ignore',
+					'!**/images/**',
+					'!**/LICENSE*',
+					'!**/lodash-compat/**',
+					'!**/Makefile*',
+					'!**/README*',
+					'!**/release-notes*',
+					'!**/samples/**',
+					'!**/source/**',
+					'!**/spec/**',
+					'!**/src/**',
+					'!**/test.js',
+					'!**/test/**',
+					'!**/tests/**',
+					'!**/__tests__/**',
+					'!**/*.yml',
 				],
 				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/temp_node_modules/',
 			},
@@ -327,7 +332,7 @@ module.exports = function(grunt) {
 
 	grunt.registerTask('release', function() {
 		grunt.task.run('clean:temp');
-		//grunt.task.run('exec:test');
+		grunt.task.run('exec:test');
 		release.forEach(function(entry) {
 			grunt.task.run('copy:main:'+entry);
 			grunt.task.run('replace:main:'+entry);

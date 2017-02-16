@@ -5,27 +5,14 @@
 #modifyAccountDialog
 	min-width 475px
 	display flex
+	padding 5px
 
 	section
-		padding 15px
 		flex 1
 
 		&#accountDetails
 			text-align center
 			color darken(#B1B1B1, 50%)
-
-			#avatar > .fa
-				font-size 80px
-				width 1.5em
-				height 1.5em
-				padding 15px
-				margin 0px auto
-				display inline-block
-				text-align center
-				color white
-				background #B1B1B1
-				border-radius 50%
-				border 1px dashed white
 
 			h3
 				font-size 20px
@@ -50,7 +37,7 @@
 
 					li
 						transition border-right-color .25s ease
-						border-right 2px solid #eee
+						border-right 2px solid #fff
 						padding 2px 0
 
 						&:hover
@@ -59,10 +46,17 @@
 						button
 							outline none
 							transition all .15s ease
+							text-decoration none
 
 							&:hover
 								// padding-right 1em
+.resetDisplayNameDialog
+	.buttonToolbar
+		display flex
+		float right
 
+		.btn
+			margin-left 1em
 // TODO: Extract this to component
 .resetPasswordDialog
 

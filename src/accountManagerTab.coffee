@@ -134,6 +134,7 @@ load = (win) ->
 				return userAccount
 				.set 'isActive', isActive
 				.set 'accountType', publicInfo.get('accountType')
+				.set 'displayName', publicInfo.get('displayName')
 
 
 			return R.div({className: 'accountManagerTab'},
@@ -209,6 +210,12 @@ load = (win) ->
 										columnClassName: 'nameColumn'
 										dataSort: true
 									}, "User Name")
+									TableHeaderColumn({
+										dataField: 'displayName'
+										className: 'displayNameColumn'
+										columnClassName: 'displayNameColumn'
+										dataSort: true
+									}, "Display Name")
 									TableHeaderColumn({
 										dataField: 'accountType'
 										dataSort: true
@@ -303,6 +310,10 @@ load = (win) ->
 				program.get('id') is programLink.get('programId')
 			.get('id')
 
+			userProgramColor = if not programLink then '' else @props.programs.find (program) ->
+				program.get('id') is programLink.get('programId')
+			.get('colorKeyHex')
+
 			isAdmin = userAccount.getIn(['publicInfo', 'accountType']) is 'admin'
 			isDeactivated = not userAccount.getIn(['publicInfo', 'isActive'])
 
@@ -331,11 +342,15 @@ load = (win) ->
 						R.div({id: 'avatar'},
 							R.div({id: 'avatar'},
 								FaIcon((if isDeactivated then 'user-times' else 'user'), {
+									className: 'fa-5x'
 									style:
-										background: userAccount.getIn(['program', 'colorKeyHex'])
+										color: userProgramColor
 								})
 							)
 							R.h3({},
+								userAccount.get('publicInfo').get('displayName')
+							)
+							R.h4({},
 								userAccount.get('userName')
 								" (admin)" if isAdmin
 							)
@@ -360,9 +375,19 @@ load = (win) ->
 									onCancel: @_closeView
 									onSuccess: @_closeView
 								})
+							when 'updateDisplayName'
+								UpdateDisplayNameView({
+									userAccount
+									userName: userAccount.get('userName')
+									displayName: userAccount.get('publicInfo').get('displayName')
+									setIsLoading: @refs.dialog.setIsLoading
+									onCancel: @_closeView
+									onSuccess: @_closeView
+									updateAccount: @props.updateAccount
+								})
+
 							else
 								R.div({id: 'actionsList'},
-									R.h4({}, "Account Actions")
 									R.ul({},
 										R.li({},
 											R.button({
@@ -371,6 +396,14 @@ load = (win) ->
 													null, 'resetPassword', "Reset Password"
 												)
 											}, "Reset Password")
+										)
+										R.li({},
+											R.button({
+												className: 'btn btn-link'
+												onClick: @_switchView.bind(
+													null, 'updateDisplayName', "Change Display Name"
+												)
+											}, "Change Display Name")
 										)
 										R.li({},
 											R.button({
@@ -604,6 +637,7 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				userName: ''
+				displayName: ''
 				password: ''
 				passwordConfirm: ''
 				programId: ''
@@ -627,6 +661,15 @@ load = (win) ->
 							className: 'form-control'
 							onChange: @_updateUserName
 							value: @state.userName
+						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "Display name"),
+						R.input({
+							ref: 'displayNameField'
+							className: 'form-control'
+							onChange: @_updateDisplayName
+							value: @state.displayName
 						})
 					)
 					R.div({
@@ -715,6 +758,10 @@ load = (win) ->
 		_updateUserName: (event) ->
 			@setState {userName: event.target.value}
 
+		_updateDisplayName: (event) ->
+			@setState {displayName: event.target.value}
+
+
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
 
@@ -735,6 +782,7 @@ load = (win) ->
 			@refs.dialog.setIsLoading true
 
 			userName = @state.userName
+			displayName = @state.displayName
 			password = @state.password
 			programId = @state.programId
 			accountType = if @state.isAdmin then 'admin' else 'normal'
@@ -745,7 +793,7 @@ load = (win) ->
 			Async.series [
 				(cb) =>
 					# Create the account
-					Persist.Users.Account.create adminAccount, userName, password, accountType, (err, result) =>
+					Persist.Users.Account.create adminAccount, userName, displayName, password, accountType, (err, result) =>
 						if err
 							cb err
 							return
@@ -956,6 +1004,145 @@ load = (win) ->
 					return
 
 				Bootbox.alert "Password reset for \"#{@props.userName}\"", @props.onSuccess
+
+	UpdateDisplayNameView = React.createFactory React.createClass
+		displayName: 'UpdateDisplayNameView'
+		mixins: [React.addons.PureRenderMixin]
+
+		propTypes: {
+			onCancel: React.PropTypes.func.isRequired
+			updateAccount: React.PropTypes.func.isRequired
+			onSuccess: React.PropTypes.func.isRequired
+			userName: React.PropTypes.string.isRequired
+		}
+
+		getInitialState: ->
+			return {
+				displayName: @props.displayName
+			}
+
+		componentDidMount: ->
+			@refs.displayName.focus()
+
+		render: ->
+			R.div({className: 'resetDisplayNameDialog'},
+
+				R.div({
+					className: [
+						'form-group'
+						'has-feedback has-success' if @state.displayName
+					].join ' '
+				},
+					R.label({}, "Display Name"),
+					R.input({
+						ref: 'displayName'
+						className: 'form-control'
+						type: 'displayName'
+						onChange: @_updateDisplayName
+						value: @state.displayName
+					})
+					R.span({
+						className: [
+							'glyphicon'
+							'glyphicon-ok' if @state.password
+							'form-control-feedback'
+						].join ' '
+					})
+				)
+
+				R.div({className: 'buttonToolbar'},
+					R.div({},
+						R.button({
+							className: 'btn btn-default'
+							onClick: @props.onCancel
+						},
+							"Cancel"
+						)
+					)
+					R.div({},
+						R.button({
+							className: 'btn btn-primary'
+							onClick: @_submit
+						},
+							"Update"
+						)
+					)
+				)
+
+			)
+
+		_updateDisplayName: (event) ->
+			@setState {displayName: event.target.value}
+
+		_submit: ->
+			# First catch unmatched passwords
+			unless @state.password is @state.confirmPassword
+				Bootbox.alert "Passwords do not match"
+				return
+
+			@props.setIsLoading true
+
+			password = @state.password
+
+			sessionAccount = global.ActiveSession.account
+
+			userAccount = null
+			decryptedUserAccount = null
+
+			Async.series [
+				(cb) =>
+					Persist.Users.Account.read Config.backend, @props.userName, (err, result) =>
+						if err
+							cb err
+							return
+
+						userAccount = result
+						cb()
+
+				(cb) =>
+					userAccount.decryptWithSystemKey global.ActiveSession.account, (err, result) =>
+						if err
+							cb err
+							return
+
+						decryptedUserAccount = result
+						cb()
+
+				(cb) =>
+					decryptedUserAccount.changeDisplayName sessionAccount, @state.displayName, cb
+
+			], (err) =>
+				@props.setIsLoading false
+
+				if err
+					if err instanceof Persist.Users.UnknownUserNameError
+						Bootbox.alert "Unknown user! Please check user name and try again"
+						return
+
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
+					if err instanceof Persist.Users.DeactivatedAccountError
+						Bootbox.alert "The specified user account has been deactivated."
+						return
+
+					CrashHandler.handle err
+					return
+
+
+				# Success
+				userAccount = @props.userAccount.setIn(['publicInfo', 'displayName'], @state.displayName)
+				@props.updateAccount userAccount
+
+				# if an Admin is changing their own displayName, the session needs to be updated accordingly
+				if global.ActiveSession.account.userName is decryptedUserAccount.userName
+					global.ActiveSession.account.publicInfo.displayName = @state.displayName
+
+				@props.onSuccess()
 
 
 	return AccountManagerTab

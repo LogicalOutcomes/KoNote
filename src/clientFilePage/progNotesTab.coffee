@@ -1787,6 +1787,11 @@ load = (win) ->
 			globalEvents: Imm.List()
 		}
 
+		getDefaultProps: -> {
+			progEvents: Imm.List()
+			globalEvents: Imm.List()
+		}
+
 		render: ->
 			{
 				userProgram
@@ -1843,8 +1848,8 @@ load = (win) ->
 				)
 
 				R.div({className: 'author'},
-					"by "
-					firstRevision.get('author')
+					'by '
+					firstRevision.get('authorDisplayName') or firstRevision.get('author')
 
 					(if userProgram and not userProgram.isEmpty()
 						ColorKeyBubble({

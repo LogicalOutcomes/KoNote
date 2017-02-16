@@ -1,12 +1,14 @@
 @media print
 	.printPreview
-		padding 25px
+		//padding 25px
 	.noPrint
 		display none !important
 
 .printPreview
 	background white
 	min-height 100%
+
+	display flex
 
 	.print
 		margin-left 0
@@ -17,7 +19,9 @@
 		margin-bottom 8px
 
 	.printObj
+		flex 1
 		padding 25px
+		overflow auto
 
 		> header
 			display flex
@@ -145,7 +149,8 @@
 					color #888
 
 				section
-					padding-bottom 4px
+					page-break-inside avoid
+					padding-bottom 3mm
 
 					.target
 						display block

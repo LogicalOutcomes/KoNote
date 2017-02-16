@@ -1,5 +1,6 @@
 .planTarget
 	display flex
+	background white
 
 	border 1px dashed rgba(0,0,0,0.5)
 	margin-top 5px
@@ -7,11 +8,12 @@
 	transition all .25s ease
 
 	&.isDragging
-		background #eaf1f5
 		opacity 0.75
 
 		.targetDragSource
-			background none !important
+			opacity 1
+			background #3f903f !important
+			color white
 
 	&.collapsed
 		display none
@@ -27,9 +29,9 @@
 		border-top-right-radius 0
 		border-bottom-right-radius 0
 
-	&:hover
-		.targetDragSource
+		&:hover
 			opacity 1
+			background #eaf1f5
 
 	.targetContainer
 		flex 1

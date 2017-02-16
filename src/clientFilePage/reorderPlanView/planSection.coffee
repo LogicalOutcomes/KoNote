@@ -21,6 +21,10 @@ load = (win) ->
 	PlanSection = React.createClass
 		displayName: 'PlanSection'
 
+		getInitialState: -> {
+			isHovered: null
+		}
+
 		propTypes: {
 			# DnD
 			connectDragSource: React.PropTypes.func.isRequired
@@ -63,20 +67,25 @@ load = (win) ->
 				R.section({
 					className: [
 						'planSection'
-						'isDragging' if isDragging
 						'hasTargets' if not visibleTargets.isEmpty() and displayTargets
+						'isDragging' if isDragging
+						'isHovered' if @state.isHovered
 						'collapsed' if sectionIsHidden
 					].join ' '
 				},
 					R.div({className: 'sectionNameContainer'},
 						connectDragSource(
-							R.div({className: 'dragSource sectionDragSource'},
+							R.div({
+								className: 'dragSource sectionDragSource'
+								onMouseOver: => @setState {isHovered: true}
+								onMouseOut: => @setState {isHovered: false}
+							},
 								FaIcon('arrows-v')
 							)
 						)
 						R.div({className: 'name'}, name)
 					)
-					(if displayTargets
+					(if displayTargets and not targets.isEmpty()
 						R.div({className: 'targets'},
 							(targets.map (target, index) =>
 								PlanTarget({
@@ -87,7 +96,6 @@ load = (win) ->
 									sectionIndex
 									reorderTargetId
 									displayInactive
-									isCollapsed: not displayTargets
 								})
 							)
 						)

@@ -9,6 +9,8 @@ Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
 _ = require 'underscore'
+Fs = require 'graceful-fs'
+Path = require 'path'
 
 Config = require '../config'
 Term = require '../term'
@@ -304,24 +306,50 @@ load = (win) ->
 								)
 							)
 							(unless planSectionsWithData.isEmpty()
-								R.div({className: "chartTypeContainer"},
-									"Metrics Chart Type: "
-
-									R.label({},
-										"Line "
+								R.div({className: "chartOptionsContainer"},
+									R.div({},
+										R.button({
+											className: 'btn btn-default printBtn'
+											onClick: @_printPNG
+											title: "Print"
+										},
+											FaIcon('print')
+											" Print"
+										)
+										R.button({
+											className: 'btn btn-default printBtn'
+											onClick: @_savePNG
+											title: "Save as PNG"
+										},
+											FaIcon('download')
+											" Export to PNG"
+										)
+										# Hidden input for file saving
 										R.input({
-											type: 'checkbox'
-											checked: @state.chartType is 'line'
-											onChange: @_updateChartType.bind null, 'line'
+											ref: 'nwsaveas'
+											className: 'hidden'
+											type: 'file'
 										})
 									)
-									R.label({},
-										"Scatter "
-										R.input({
-											type: 'checkbox'
-											checked: @state.chartType is 'scatter'
-											onChange: @_updateChartType.bind null, 'scatter'
-										})
+									R.div({},
+										"Metrics Chart Type: "
+
+										R.label({},
+											"Line "
+											R.input({
+												type: 'checkbox'
+												checked: @state.chartType is 'line'
+												onChange: @_updateChartType.bind null, 'line'
+											})
+										)
+										R.label({},
+											"Scatter "
+											R.input({
+												type: 'checkbox'
+												checked: @state.chartType is 'scatter'
+												onChange: @_updateChartType.bind null, 'scatter'
+											})
+										)
 									)
 								)
 							)
@@ -333,12 +361,7 @@ load = (win) ->
 
 								(if allEvents.isEmpty()
 									R.h2({className: 'noEventPoints'},
-										R.input({
-											type: 'checkbox'
-											checked: false
-											disabled: true
-										})
-										"No #{Term 'events'} recorded"
+										"(No #{Term 'events'} recorded)"
 									)
 								else
 									R.h2({onClick: @_toggleAllEventTypes.bind null, allEventTypesSelected, eventTypesWithData},
@@ -408,7 +431,7 @@ load = (win) ->
 								(unless untypedEvents.isEmpty()
 									R.div({},
 										R.h3({},
-											if not eventTypesWithData.isEmpty() then "Other" else " "
+											if not eventTypesWithData.isEmpty() then "Untyped" else " "
 										)
 										R.div({className: 'dataOptions'},
 											R.div({
@@ -453,12 +476,7 @@ load = (win) ->
 
 								(if planSectionsWithData.isEmpty()
 									R.h2({className: 'noMetricPoints'},
-										R.input({
-											type: 'checkbox'
-											checked: false
-											disabled: true
-										})
-										"No #{Term 'metrics'} recorded"
+										"(No #{Term 'metrics'} recorded)"
 									)
 								else
 									R.h2({onClick: @_toggleAllMetrics.bind null, allMetricsSelected, metricIdsWithData},
@@ -642,6 +660,57 @@ load = (win) ->
 
 		_updateChartType: (type) ->
 			@setState {chartType: type}
+
+		_savePNG: ->
+			$(@refs.nwsaveas)
+			.off()
+			.val('')
+			.attr('nwsaveas', "analysis")
+			.attr('accept', ".png")
+			.on('change', (event) =>
+				# png as base64string
+				nw.Window.get(win).capturePage ((base64string) ->
+					Fs.writeFile event.target.value, base64string, 'base64', (err) ->
+						if err
+							Bootbox.alert """
+								An error occurred.  Please check your network connection and try again.
+							"""
+							return
+						return
+				),
+					format: 'png'
+					datatype: 'raw'
+			)
+			.click()
+		
+		_printPNG: ->
+			nw.Window.get(win).capturePage ((base64string) ->
+				Fs.writeFile Path.join(Config.backend.dataDirectory, '_tmp', 'analysis.png'), base64string, 'base64', (err) ->
+					if err
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+					nw.Window.open Path.join(Config.backend.dataDirectory, '_tmp', 'analysis.png'), {
+						focus: false
+						show: true
+						width: 850
+						height: 1100
+					}, (pngWindow) =>
+						pngWindow.on 'loaded', =>
+							pngWindow.window.print()
+							pngWindow.hide()
+							# cleanup
+							Fs.unlink Path.join(Config.backend.dataDirectory, '_tmp', 'analysis.png'), (err) ->
+								if err
+									console.error err
+									return
+								return
+							pngWindow.close()
+			),
+				format: 'png'
+				datatype: 'raw'
+
 
 		_updateSelectedMetrics: (metricId) ->
 			@setState ({selectedMetricIds}) =>
