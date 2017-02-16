@@ -32,9 +32,6 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
 
-	if Config.features.shiftSummaries.isEnabled
-		GenerateSummariesDialog = require('./generateSummariesDialog').load(win)
-
 
 	ClientSelectionPage = React.createFactory React.createClass
 		displayName: 'ClientSelectionPage'
@@ -370,15 +367,6 @@ load = (win) ->
 					'menuIsOpen' if @state.menuIsOpen
 				].join ' '
 			},
-				# TODO: Move to MainMenu
-				(if Config.features.shiftSummaries.isEnabled
-					R.div({id: 'shiftSummariesContainer'},
-						OpenDialogLink({
-							className: 'btn btn-default btn-sm animated fadeIn'
-							dialog: GenerateSummariesDialog
-						}, "Today's Shift Summaries")
-					)
-				)
 				R.a({
 					id: 'expandMenuButton'
 					className: [

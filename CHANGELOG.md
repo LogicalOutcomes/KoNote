@@ -1,3 +1,8 @@
+### 1.15.0
+
+### Improvements
+- Shift summaries button moved to main menu ([#751](https://github.com/konode001/konote/issues/751))
+
 ### 1.14.0 (Feb 1 2017)
 
 This release largely improves the client file analysis tab. The interface is more responsive, informative,
@@ -14,7 +19,7 @@ performance and stability improvements.
 - Section headers are now "sticky"([#1014](https://github.com/konode001/konote/issues/1014))
 - Words can be added to spellcheck dictionary with right-click ([#811](https://github.com/konode001/konote/issues/811))
 - New programs dropdown on create client file dialog ([#999](https://github.com/konode001/konote/issues/999))
-- Builds now include End User License Agreement ([#1001](https://github.com/konode001/konote/issues/1001)) 
+- Builds now include End User License Agreement ([#1001](https://github.com/konode001/konote/issues/1001))
 
 #### Fixes
 
@@ -131,7 +136,7 @@ performance more consistent when dealing with very large databases.
 - Plan can be printed as a "cheat sheet" including metric definitions (#781)
 - Client information includes additional fields (DOB, Care Providers) (#823)
 - Templates have descriptions, and can be viewed from manager layer (#758, #786)
-- Various other performance, style and UI improvements 
+- Various other performance, style and UI improvements
 
 #### Fixes
 
