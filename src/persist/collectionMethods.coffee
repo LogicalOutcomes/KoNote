@@ -84,7 +84,7 @@ createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 		.set 'id', generateId()
 		.set 'revisionId', generateId()
 		.set 'author', obj.get('author') or session.userName
-		.set 'authorDisplayName', session.account.publicInfo.displayName or session.userName
+		.set 'authorDisplayName', session.displayName or session.userName
 		.set 'timestamp', obj.get('timestamp') or Moment().format(TimestampFormat)
 
 		# Validate object before passing to backend
@@ -157,7 +157,7 @@ createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 		obj = obj
 		.set 'revisionId', generateId()
 		.set 'author', session.userName
-		.set 'authorDisplayName', session.account.publicInfo.displayName or session.userName
+		.set 'authorDisplayName', session.displayName or session.userName
 		.set 'timestamp', Moment().format(TimestampFormat)
 
 		# Validate object before passing to backend

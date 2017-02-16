@@ -42,6 +42,7 @@ class Session
 			throw new Error "Invalid account object"
 
 		@userName = @account.userName
+		@displayName = @account.publicInfo.displayName
 		@accountType = @account.publicInfo.accountType
 		@globalEncryptionKey = SymmetricEncryptionKey.import @account.privateInfo.globalEncryptionKey
 
