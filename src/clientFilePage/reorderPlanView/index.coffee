@@ -11,13 +11,14 @@ Term = require '../../term'
 load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
 
 	{DragDropContext} = win.ReactDnD
 	HTML5Backend = win.ReactDnDHTML5Backend
 
 	PlanSection = require('./planSection').load(win)
-
+	{showWhen} = require('../../utils').load(win)
 
 	# Wrap top-level component with DragDropContext
 	ReorderPlanView = React.createClass
@@ -25,10 +26,11 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			plan: React.PropTypes.instanceOf(Imm.Map).isRequired
-			currentTargetRevisionsById: React.PropTypes.instanceOf(Imm.Map).isRequired
-			reorderSection: React.PropTypes.func.isRequired
-			reorderTargetId: React.PropTypes.func.isRequired
+			plan: PropTypes.instanceOf(Imm.Map).isRequired
+			isVisible: PropTypes.bool.isRequired
+			currentTargetRevisionsById: PropTypes.instanceOf(Imm.Map).isRequired
+			reorderSection: PropTypes.func.isRequired
+			reorderTargetId: PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {
@@ -36,9 +38,13 @@ load = (win) ->
 			displayTargets: true
 		}
 
+		getDefaultProps: -> {
+			isVisible: true
+		}
+
 		render: ->
 			{
-				plan
+				plan, isVisible
 				currentTargetRevisionsById, reorderSection, reorderTargetId,
 				scrollToSection, scrollToTarget
 			} = @props
@@ -53,7 +59,11 @@ load = (win) ->
 			numberOfItems = sections.size + numberOfTargets
 			shrinkFontSize = numberOfItems > 16
 
-			return R.div({id: 'reorderPlanView'},
+
+			return R.div({
+				id: 'reorderPlanView'
+				className: showWhen isVisible
+			},
 				R.div({className: 'flexFiltersToolbar'},
 					R.aside({}, "Show:")
 					R.section({},

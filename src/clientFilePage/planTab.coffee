@@ -36,7 +36,8 @@ load = (win) ->
 	CreatePlanTemplateDialog = require('./createPlanTemplateDialog').load(win)
 
 	{
-		FaIcon, renderLineBreaks, showWhen, stripMetadata, formatTimestamp, capitalize, scrollToElement
+		FaIcon, renderLineBreaks, showWhen, stripMetadata,
+		formatTimestamp, capitalize, scrollToElement
 	} = require('../utils').load(win)
 
 
@@ -251,39 +252,40 @@ load = (win) ->
 
 					)
 
-					(if @state.isReorderingPlan
-						ReorderPlanView({
-							plan: @state.plan
-							currentTargetRevisionsById: @state.currentTargetRevisionsById
-							reorderSection: @_reorderSection
-							reorderTargetId: @_reorderTargetId
-							toggleReorderPlan: @_toggleReorderPlan
-							scrollToSection: @_scrollToSection
-							scrollToTarget: @_scrollToTarget
-						})
-					else
-						SectionsView({
-							ref: 'sectionsView'
-							clientFile: @props.clientFile
-							plan: @state.plan
-							metricsById: @props.metricsById
-							currentTargetRevisionsById: @state.currentTargetRevisionsById
-							selectedTargetId: @state.selectedTargetId
-							isReadOnly: @props.isReadOnly
-							planTargetsById: @props.planTargetsById
+					SectionsView({
+						ref: 'sectionsView'
+						isVisible: not @state.isReorderingPlan
+						clientFile: @props.clientFile
+						plan: @state.plan
+						metricsById: @props.metricsById
+						currentTargetRevisionsById: @state.currentTargetRevisionsById
+						selectedTargetId: @state.selectedTargetId
+						isReadOnly: @props.isReadOnly
+						planTargetsById: @props.planTargetsById
 
-							renameSection: @_renameSection
-							addTargetToSection: @_addTargetToSection
-							removeNewTarget: @_removeNewTarget
-							removeNewSection: @_removeNewSection
-							hasTargetChanged: @_hasTargetChanged
-							updateTarget: @_updateTarget
-							setSelectedTarget: @_setSelectedTarget
-							addMetricToTarget: @_addMetricToTarget
-							deleteMetricFromTarget: @_deleteMetricFromTarget
-							getSectionIndex: @_getSectionIndex
-						})
-					)
+						renameSection: @_renameSection
+						addTargetToSection: @_addTargetToSection
+						removeNewTarget: @_removeNewTarget
+						removeNewSection: @_removeNewSection
+						hasTargetChanged: @_hasTargetChanged
+						updateTarget: @_updateTarget
+						setSelectedTarget: @_setSelectedTarget
+						addMetricToTarget: @_addMetricToTarget
+						deleteMetricFromTarget: @_deleteMetricFromTarget
+						getSectionIndex: @_getSectionIndex
+					})
+
+					ReorderPlanView({
+						isVisible: @state.isReorderingPlan
+						plan: @state.plan
+						currentTargetRevisionsById: @state.currentTargetRevisionsById
+						reorderSection: @_reorderSection
+						reorderTargetId: @_reorderTargetId
+						toggleReorderPlan: @_toggleReorderPlan
+						scrollToSection: @_scrollToSection
+						scrollToTarget: @_scrollToTarget
+					})
+
 				)
 
 				R.div({className: 'targetDetail'},
@@ -733,7 +735,8 @@ load = (win) ->
 			$container = findDOMNode(@refs.sectionsView)
 			$element = win.document.getElementById(elementId)
 
-			scrollToElement $container, $element, 1000, 'easeInOutQuad', =>
+			topOffset = 25 # Add offset depending on top padding
+			scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, =>
 				# TODO: add highlighted class to element
 				console.log "scroll complete!"
 
@@ -741,10 +744,15 @@ load = (win) ->
 	SectionsView = React.createFactory React.createClass
 		displayName: 'SectionsView'
 		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes
 
 		getInitialState: -> {
 			displayDeactivatedSections: null
 			displayCompletedSections: null
+		}
+
+		getDefaultProps: -> {
+			isVisible: true
 		}
 
 		expandSection: (section, cb) ->
@@ -777,6 +785,7 @@ load = (win) ->
 				planTargetsById
 				selectedTargetId
 				isReadOnly
+				isVisible
 
 				renameSection
 				addTargetToSection
@@ -798,7 +807,7 @@ load = (win) ->
 			deactivatedSections = sectionsByStatus.get('deactivated')
 
 
-			return R.div({className: 'sections'},
+			return R.div({className: "sections #{showWhen isVisible}"},
 
 				(activeSections.map (section) =>
 					SectionView({
