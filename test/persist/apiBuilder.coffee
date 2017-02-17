@@ -27,6 +27,7 @@ b = {
 # Mock session object
 s = {
 	userName: 'test-user'
+	displayName: 'testUser'
 	accountType: 'normal'
 	globalEncryptionKey: SymmetricEncryptionKey.generate()
 	dataDirectory: dataDir
@@ -124,7 +125,7 @@ describe 'ApiBuilder', ->
 
 					now = Moment()
 
-					Assert.strictEqual result.keySeq().size, 7
+					Assert.strictEqual result.keySeq().size, 8
 
 					Assert.strictEqual typeof result.get('id'), 'string'
 					Assert.strictEqual typeof result.get('revisionId'), 'string'
@@ -287,7 +288,7 @@ describe 'ApiBuilder', ->
 
 					now = Moment()
 
-					Assert.strictEqual result.keySeq().size, 7
+					Assert.strictEqual result.keySeq().size, 8
 
 					Assert.strictEqual typeof result.get('id'), 'string'
 					Assert.strictEqual typeof result.get('revisionId'), 'string'
