@@ -252,10 +252,10 @@ load = (win) ->
 
 	# Smooth-scroll utility, customized from https://pawelgrzybek.com/page-scroll-in-vanilla-javascript/
 	# Uses nw win for requestAnimationFrame, and can handle scrolling within a container
-	scrollToElement = (container, element, duration = 500, easing = 'linear', callback) ->
-
+	scrollToElement = (container, element, duration = 500, easing = 'linear', cb=(->)) ->
 		if not container or not element
-			throw new Error "Missing arg in scrollToElement [container, element]:", [container, element]
+			arg = if element then 'container' else element
+			throw new Error "Missing arg in scrollToElement for #{arg}"
 			return
 
 		easings =
@@ -313,7 +313,7 @@ load = (win) ->
 			# console.log "scroll", container.scrollTop
 
 			if container.scrollTop is destination or cancelOp
-				callback()
+				cb()
 				return
 
 			win.requestAnimationFrame scroll
