@@ -295,17 +295,29 @@ load = (win) ->
 
 		start = container.scrollTop
 		startTime = Date.now()
-		destination = element.offsetTop - $(container).position().top
+
+		# Figure out offset from top, minus any offset for the container itself
+		topOffset = element.offsetTop
+		containerOffset = $(container).position().top
+
+		destination = topOffset - containerOffset
 
 		# requestAnimationFrame can inf-loop if we dont set a limit
 		maxScrollTop = container.scrollHeight - container.clientHeight
 
+		# Can't scroll past maximum, otherwise apply paddingOffset
 		if destination > maxScrollTop
 			destination = maxScrollTop
 		else
 			destination -= paddingOffset
 
-		# Extra safeguard against inf-loop after duration completes
+		# Cancel scroll if we're already at our destination
+		if start is destination
+			console.warn "Cancelled scroll (container.scrollTop is already #{start}px)"
+			cb()
+			return
+
+		# Extra timeout safeguard against inf-loop after duration completes
 		cancelOp = null
 		console.log "scrollTop: #{start} -> #{destination}"
 		setTimeout (-> cancelOp = true), duration + 10
