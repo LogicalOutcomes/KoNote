@@ -41,17 +41,18 @@ load = (win) ->
 		render: ->
 			{
 				connectDragSource, connectDragPreview, connectDropTarget, isDragging
-				target, section, displayInactive, scrollToTarget
+				target, section, displayInactive, displayTargets, scrollToTarget
 			} = @props
 
-			isCollapsed = not displayInactive and target.get('status') isnt 'default'
+			isInactive = target.get('status') isnt 'default'
+			isCollapsed = not displayTargets or (not displayInactive and isInactive)
 
 			return connectDropTarget connectDragPreview(
 				R.div({
 					className: [
 						'planTarget'
 						'isDragging' if isDragging
-						'collapsed' if isCollapsed
+						'isCollapsed' if isCollapsed
 					].join ' '
 				},
 					connectDragSource(

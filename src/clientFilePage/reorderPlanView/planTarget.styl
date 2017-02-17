@@ -2,10 +2,14 @@
 	display flex
 	background white
 
-	border 1px dashed rgba(0,0,0,0.5)
+	height 50px
+	padding-right -10px
+	opacity 1
+	transition all .25s ease
+
+	border 1px solid #cadbe5
 	margin-top 5px
 	border-radius 5px
-	transition all .25s ease
 
 	&.isDragging
 		opacity 0.75
@@ -15,16 +19,21 @@
 			background #3f903f !important
 			color white
 
-	&.collapsed
-		display none
+	&.isCollapsed
 		height 0px
 		overflow hidden
 		padding 0
 		margin 0
 		border 0
+		opacity 0
+
+	&:hover
+		.targetDragSource
+			opacity 0.6
 
 	.targetDragSource
-		padding 15px
+		width 28px
+		padding 10px
 		border-radius inherit
 		border-top-right-radius 0
 		border-bottom-right-radius 0
@@ -41,6 +50,7 @@
 
 		> .name
 			color #555
+			font-size bold
 			font-weight bold
 
 			&:hover

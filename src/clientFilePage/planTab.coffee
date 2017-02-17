@@ -724,7 +724,6 @@ load = (win) ->
 
 		_scrollToTarget: (target, section) ->
 			{id, status} = target.toObject()
-			console.log "target status is: ", status
 
 			@setState {isReorderingPlan: false}, =>
 				@refs.sectionsView.expandTarget target, section, =>

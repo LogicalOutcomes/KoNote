@@ -1,18 +1,18 @@
 .planSection
-	border 1px dashed #cadbe5
-	border-bottom 0
-	transition all .25s ease
-
+	border 1px dashed transparent
+	border-left 0
+	padding-bottom 15px
+	opacity 1
+	transition all .5s ease
 
 	&.isDragging, &.isHovered
 		background #eaf1f5 !important
+		border-color #cadbe5
 
 		.sectionDragSource
-			opacity 1 !important
-			border-color black
+			opacity 1
 
 	&.isDragging
-		cursor move !important
 		opacity 0.75
 
 		.sectionDragSource
@@ -22,24 +22,32 @@
 	&.isHovered .sectionDragSource
 		background #dae6ed
 
+	&:hover
+		.dragSource
+			opacity .6
+
+
+	.sectionDragSource:hover
+		opacity 1
+
 	&.hasTargets
 		.sectionNameContainer
 			padding-bottom 5px
 
-	&:not(.collapsed):last-child
-		border-bottom 1px dashed #cadbe5
-
-	&.collapsed
+	&.isCollapsed
 		height 0px
 		overflow hidden
 		padding 0
 		margin 0
+		border 0
+		opacity 0
 
 	.sectionNameContainer
 		display flex
 
 		.name
-			font-size 1.25em
+			font-size 24px
+			font-weight 300
 			padding-left 10px
 			display flex
 			align-items center
@@ -49,18 +57,18 @@
 				text-decoration underline
 
 	.targets
-		padding 15px
+		padding 15px 25px 0px 25px
 		padding-top 0
 
 
 	// Default dragSource styling for sections & targets
 	.dragSource
+		opacity 0
 		display flex
 		align-items center
 		justify-content center
 
-		min-width 40px
+		width 35px
 		cursor move
-		opacity .5
 		transition opacity .15s ease
 		padding 15px

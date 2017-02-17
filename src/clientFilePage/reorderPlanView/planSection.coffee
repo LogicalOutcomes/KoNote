@@ -55,8 +55,8 @@ load = (win) ->
 			sectionIndex = @props.index
 			sectionId = section.get('id')
 
-			sectionIsInactive = section.get('status') isnt 'default'
-			sectionIsHidden = not displayInactive and sectionIsInactive
+			isInactive = section.get('status') isnt 'default'
+			isCollapsed = not displayInactive and isInactive
 
 			visibleTargets = if not displayInactive
 				targets.filter (t) -> t.get('status') is 'default'
@@ -71,7 +71,7 @@ load = (win) ->
 						'hasTargets' if not visibleTargets.isEmpty() and displayTargets
 						'isDragging' if isDragging
 						'isHovered' if @state.isHovered
-						'collapsed' if sectionIsHidden
+						'isCollapsed' if isCollapsed
 					].join ' '
 				},
 					R.div({className: 'sectionNameContainer'},
@@ -91,20 +91,19 @@ load = (win) ->
 							name
 						)
 					)
-					(if displayTargets and not targets.isEmpty()
-						R.div({className: 'targets'},
-							(targets.map (target, index) =>
-								PlanTarget({
-									key: target.get('id')
-									id: target.get('id')
-									target, section
-									index
-									sectionIndex
-									reorderTargetId
-									displayInactive
-									scrollToTarget
-								})
-							)
+					R.div({className: 'targets'},
+						(targets.map (target, index) =>
+							PlanTarget({
+								key: target.get('id')
+								id: target.get('id')
+								target, section
+								index
+								sectionIndex
+								reorderTargetId
+								displayInactive
+								displayTargets
+								scrollToTarget
+							})
 						)
 					)
 				)
