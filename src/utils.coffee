@@ -253,10 +253,11 @@ load = (win) ->
 	# Smooth-scroll utility, customized from https://pawelgrzybek.com/page-scroll-in-vanilla-javascript/
 	# Uses nw win for requestAnimationFrame, and can handle scrolling within a container
 	# paddingOffset makes it scroll a bit less, for more space on top
-	scrollToElement = (container, element, duration = 500, easing = 'linear', paddingOffset = 0, cb=(->)) ->
+	scrollToElement = (container, element, duration = 500, easing = 'linear', paddingOffset, cb) ->
 		# paddingOffset is optional arg
 		if not cb
 			cb = paddingOffset
+			paddingOffset = 10
 
 		# container and element must both be valid
 		if not container or not element
@@ -306,6 +307,7 @@ load = (win) ->
 
 		# Extra safeguard against inf-loop after duration completes
 		cancelOp = null
+		console.log "scrollTop: #{start} -> #{destination}"
 		setTimeout (-> cancelOp = true), duration + 10
 
 		# Start the scroll loop
@@ -313,11 +315,10 @@ load = (win) ->
 			now = Date.now()
 			time = Math.min(1, (now - startTime) / duration)
 			timeFunction = easings[easing](time)
-
-			container.scrollTop = timeFunction * (destination - start) + start
-			# console.log "scroll", container.scrollTop
+			container.scrollTop = (timeFunction * (destination - start)) + start
 
 			if container.scrollTop is destination or cancelOp
+				console.log "Finished scrolling!"
 				cb()
 				return
 
