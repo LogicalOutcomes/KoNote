@@ -41,7 +41,6 @@ load = (win) ->
 
 
 	PlanView = React.createFactory React.createClass
-
 		displayName: 'PlanView'
 		mixins: [React.addons.PureRenderMixin]
 
@@ -222,7 +221,7 @@ load = (win) ->
 							onClick: => @_toggleReorderPlan()
 							disabled: @props.isReadOnly
 						},
-							if @state.isReorderingPlan
+							(if @state.isReorderingPlan
 								R.div({},
 									FaIcon('sitemap', {className:'menuItemIcon'})
 									R.span({className: 'menuItemText'},
@@ -236,6 +235,7 @@ load = (win) ->
 										"Reorder"
 									)
 								)
+							)
 						)
 
 						R.button({
@@ -713,29 +713,61 @@ load = (win) ->
 							return id isnt metricId
 			}
 
-		_scrollToSection: (sectionId) ->
-			console.log "@refs.sectionsView", @refs.sectionsView
+		_scrollToSection: (section) ->
+			{id, status} = section.toObject()
 
-			$sectionsView = findDOMNode(@refs.sectionsView)
-			$element = win.document.getElementById "section-#{sectionId}"
+			console.log "section status is: ", status
 
-			console.log "$sectionsView", $sectionsView
-			console.log "$element", $element
+			@setState {isReorderingPlan: false}, =>
+				@refs.sectionsView.expandSection section, =>
+					@_scrollTo "section-#{id}"
 
-			scrollToElement($sectionsView, $element, 1000, 'easeInOutQuad', (->))
+		_scrollToTarget: (target, section) ->
+			{id, status} = target.toObject()
+			console.log "target status is: ", status
 
-		_scrollToTarget: (targetId) ->
-			#
+			@setState {isReorderingPlan: false}, =>
+				@refs.sectionsView.expandTarget target, section, =>
+					@_scrollTo "target-#{id}"
+
+		_scrollTo: (elementId) ->
+			$container = findDOMNode(@refs.sectionsView)
+			$element = win.document.getElementById(elementId)
+
+			scrollToElement $container, $element, 1000, 'easeInOutQuad', =>
+				# TODO: add highlighted class to element
+				console.log "scroll complete!"
+
 
 	SectionsView = React.createFactory React.createClass
 		displayName: 'SectionsView'
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: ->
-			return {
-				displayDeactivatedSections: null
-				displayCompletedSections: null
-			}
+		getInitialState: -> {
+			displayDeactivatedSections: null
+			displayCompletedSections: null
+		}
+
+		expandSection: (section, cb) ->
+			{status, id} = section.toObject()
+
+			switch status
+				when 'default'
+					cb()
+				when 'completed'
+					@_toggleDisplayCompletedSections(true, cb)
+				when 'deactivated'
+					@_toggleDisplayDeactivatedSections(true, cb)
+				else
+					throw new Error "Unknown status: #{status}"
+
+		expandTarget: (target, section, cb) ->
+			sectionId = section.get('id')
+			status = target.get('status')
+			# First ensure the section is available
+			@expandSection section, =>
+				# Ask it to expand completed/deactivated targets
+				@refs["section-#{sectionId}"].expandTargetsWithStatus status, cb
 
 		render: ->
 			{
@@ -760,62 +792,62 @@ load = (win) ->
 			} = @props
 
 
-			# Group sections into an object, with a property for each status
+			sectionsByStatus = plan.get('sections').groupBy (s) -> s.get('status')
 
-			sectionsByStatus = plan.get('sections').groupBy (section) ->
-				return section.get('status')
+			activeSections = sectionsByStatus.get('default')
+			completedSections = sectionsByStatus.get('completed')
+			deactivatedSections = sectionsByStatus.get('deactivated')
 
-			return R.div({className: 'sections', ref: 'sections'},
-				(if sectionsByStatus.has('default')
 
-					# Default status
-					(sectionsByStatus.get('default').map (section) =>
-						SectionView({
-							key: section.get('id')
-							ref: 'section-' + section.get('id')
+			return R.div({className: 'sections'},
 
-							section
-							clientFile
-							plan
-							metricsById
-							currentTargetRevisionsById
-							planTargetsById
-							selectedTargetId
-							isReadOnly
+				(activeSections.map (section) =>
+					SectionView({
+						key: section.get('id')
+						ref: 'section-' + section.get('id')
 
-							renameSection
-							addTargetToSection
-							hasTargetChanged
-							updateTarget
-							removeNewTarget
-							setSelectedTarget
-							addMetricToTarget
-							deleteMetricFromTarget
-							getSectionIndex
-							onRemoveNewSection: removeNewSection.bind null, section
+						section
+						clientFile
+						plan
+						metricsById
+						currentTargetRevisionsById
+						planTargetsById
+						selectedTargetId
+						isReadOnly
 
-						})
-					)
+						renameSection
+						addTargetToSection
+						hasTargetChanged
+						updateTarget
+						removeNewTarget
+						setSelectedTarget
+						addMetricToTarget
+						deleteMetricFromTarget
+						getSectionIndex
+						onRemoveNewSection: removeNewSection.bind null, section
+					})
 				)
-				(if sectionsByStatus.has('completed')
+
+				(if completedSections
 					R.div({className: 'sections status-completed'},
 						R.span({
 							className: 'inactiveSectionHeader'
-							onClick: @_toggleDisplayCompletedSections
+							onClick: => @_toggleDisplayCompletedSections()
 						},
 							# Rotates 90'CW when expanded
 							FaIcon('caret-right', {
 								className: 'expanded' if @state.displayCompletedSections
 							})
-							R.strong({}, sectionsByStatus.get('completed').size)
+							R.strong({}, completedSections.size)
 							" Completed "
 							Term (
-								if sectionsByStatus.get('completed').size > 1 then 'Sections' else 'Section'
+								if completedSections.size > 1 then 'Sections' else 'Section'
 							)
 						)
+
 						(if @state.displayCompletedSections
 							# Completed status
-							(sectionsByStatus.get('completed').map (section) =>
+							(completedSections.map (section) =>
 								SectionView({
 									key: section.get('id')
 									ref: 'section-' + section.get('id')
@@ -840,31 +872,32 @@ load = (win) ->
 									addMetricToTarget
 									deleteMetricFromTarget
 									getSectionIndex
-
 								})
 							)
 						)
 					)
 				)
-				(if sectionsByStatus.has('deactivated')
+
+				(if deactivatedSections
 					R.div({className: 'sections status-deactivated'},
 						R.span({
 							className: 'inactiveSectionHeader'
-							onClick: @_toggleDisplayDeactivatedSections
+							onClick: => @_toggleDisplayDeactivatedSections()
 						},
 							# Rotates 90'CW when expanded
 							FaIcon('caret-right', {
 								className: 'expanded' if @state.displayDeactivatedSections
 							})
-							R.strong({}, sectionsByStatus.get('deactivated').size)
+							R.strong({}, deactivatedSections.size)
 							" Deactivated "
 							Term (
-								if sectionsByStatus.get('deactivated').size > 1 then 'Sections' else 'Section'
+								if deactivatedSections.size > 1 then 'Sections' else 'Section'
 							)
 						)
+
 						(if @state.displayDeactivatedSections
 							# Deactivated status
-							(sectionsByStatus.get('deactivated').map (section) =>
+							(deactivatedSections.map (section) =>
 								SectionView({
 									key: section.get('id')
 									ref: 'section-' + section.get('id')
@@ -889,7 +922,6 @@ load = (win) ->
 									addMetricToTarget
 									deleteMetricFromTarget
 									getSectionIndex
-
 								})
 							)
 						)
@@ -897,24 +929,35 @@ load = (win) ->
 				)
 			)
 
-		_toggleDisplayDeactivatedSections: ->
-			displayDeactivatedSections = not @state.displayDeactivatedSections
-			@setState {displayDeactivatedSections}
+		_toggleDisplayDeactivatedSections: (boolean, cb=(->)) ->
+			displayDeactivatedSections = boolean or not @state.displayDeactivatedSections
+			@setState {displayDeactivatedSections}, cb
 
-		_toggleDisplayCompletedSections: ->
-			displayCompletedSections = not @state.displayCompletedSections
-			@setState {displayCompletedSections}
+		_toggleDisplayCompletedSections: (boolean, cb=(->)) ->
+			displayCompletedSections = boolean or not @state.displayCompletedSections
+			@setState {displayCompletedSections}, cb
+
 
 
 	SectionView = React.createFactory React.createClass
 		displayName: 'SectionView'
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: ->
-			return {
-				displayCancelledTargets: null
-				displayCompletedTargets: null
-			}
+		getInitialState: -> {
+			displayCancelledTargets: null
+			displayCompletedTargets: null
+		}
+
+		expandTargetsWithStatus: (status, cb) ->
+			switch status
+				when 'default'
+					cb()
+				when 'completed'
+					@_toggleDisplayCompletedTargets(true, cb)
+				when 'deactivated'
+					@_toggleDisplayDeactivatedTargets(true, cb)
+				else
+					throw new Error "Unknown status: #{status}"
 
 		render: ->
 			{
@@ -941,14 +984,14 @@ load = (win) ->
 			} = @props
 
 			sectionId = section.get('id')
-			headerState = 'inline'
-
-			# Group targetIds into an object, with a property for each status
-
-			targetIdsByStatus = section.get('targetIds').groupBy (targetId) ->
-				return currentTargetRevisionsById.getIn([targetId, 'status'])
-
 			sectionIsInactive = section.get('status') isnt 'default'
+
+			targetIdsByStatus = section.get('targetIds').groupBy (id) ->
+				currentTargetRevisionsById.getIn [id, 'status']
+
+			activeTargets = targetIdsByStatus.get('default')
+			completedTargets = targetIdsByStatus.get('completed')
+			deactivatedTargets = targetIdsByStatus.get('deactivated')
 
 
 			return R.div({
@@ -976,10 +1019,10 @@ load = (win) ->
 
 				# TODO: Generalize these 3 into a single component
 
-				(if targetIdsByStatus.has('default')
+				(if activeTargets
 					R.div({className: 'targets status-default'},
 						# Default status
-						(targetIdsByStatus.get('default').map (targetId) =>
+						(activeTargets.map (targetId) =>
 							PlanTarget({
 								currentRevision: currentTargetRevisionsById.get targetId
 								metricsById
@@ -999,11 +1042,12 @@ load = (win) ->
 						)
 					)
 				)
-				(if targetIdsByStatus.has('completed')
+
+				(if completedTargets
 					R.div({className: 'targets status-completed'},
 						R.span({
 							className: 'inactiveTargetHeader'
-							onClick: @_toggleDisplayCompletedTargets
+							onClick: => @_toggleDisplayCompletedTargets()
 						},
 							# Rotates 90'CW when expanded
 							FaIcon('caret-right', {
@@ -1017,7 +1061,7 @@ load = (win) ->
 						)
 						(if @state.displayCompletedTargets
 							# Completed status
-							(targetIdsByStatus.get('completed').map (targetId) =>
+							(completedTargets.map (targetId) =>
 								PlanTarget({
 									currentRevision: currentTargetRevisionsById.get targetId
 									metricsById
@@ -1039,15 +1083,15 @@ load = (win) ->
 						)
 					)
 				)
-				(if targetIdsByStatus.has('deactivated')
+				(if deactivatedTargets
 					R.div({className: 'targets status-deactivated'},
 						R.span({
 							className: 'inactiveTargetHeader'
-							onClick: @_toggleDisplayCancelledTargets
+							onClick: => @_toggleDisplayCancelledTargets()
 						},
 							# Rotates 90'CW when expanded
 							FaIcon('caret-right', {
-								className: 'expanded' if @state.displayCancelledTargets
+								className: 'expanded' if @state.displayDeactivatedTargets
 							})
 							R.strong({}, targetIdsByStatus.get('deactivated').size)
 							" Deactivated "
@@ -1055,9 +1099,9 @@ load = (win) ->
 								if targetIdsByStatus.get('deactivated').size > 1 then 'Targets' else 'Target'
 							)
 						)
-						(if @state.displayCancelledTargets
+						(if @state.displayDeactivatedTargets
 							# Cancelled statuses
-							(targetIdsByStatus.get('deactivated').map (targetId) =>
+							(deactivatedTargets.map (targetId) =>
 								PlanTarget({
 									currentRevision: currentTargetRevisionsById.get targetId
 									metricsById
@@ -1081,13 +1125,13 @@ load = (win) ->
 				)
 			)
 
-		_toggleDisplayCancelledTargets: ->
-			displayCancelledTargets = not @state.displayCancelledTargets
-			@setState {displayCancelledTargets}
+		_toggleDisplayDeactivatedTargets: (boolean, cb=(->)) ->
+			displayDeactivatedTargets = boolean or not @state.displayDeactivatedTargets
+			@setState {displayDeactivatedTargets}, cb
 
-		_toggleDisplayCompletedTargets: ->
-			displayCompletedTargets = not @state.displayCompletedTargets
-			@setState {displayCompletedTargets}
+		_toggleDisplayCompletedTargets: (boolean, cb=(->)) ->
+			displayCompletedTargets = boolean or not @state.displayCompletedTargets
+			@setState {displayCompletedTargets}, cb
 
 
 	SectionHeader = React.createFactory React.createClass

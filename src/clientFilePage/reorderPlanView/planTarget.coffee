@@ -41,11 +41,10 @@ load = (win) ->
 		render: ->
 			{
 				connectDragSource, connectDragPreview, connectDropTarget, isDragging
-				target, displayInactive
+				target, section, displayInactive, scrollToTarget
 			} = @props
 
 			isCollapsed = not displayInactive and target.get('status') isnt 'default'
-
 
 			return connectDropTarget connectDragPreview(
 				R.div({
@@ -62,7 +61,10 @@ load = (win) ->
 					)
 
 					R.div({className: 'targetContainer'},
-						R.span({className: 'name'},
+						R.span({
+							className: 'name'
+							onClick: => scrollToTarget(target, section)
+						},
 							target.get('name')
 						)
 					)

@@ -37,15 +37,18 @@ load = (win) ->
 		}
 
 		render: ->
-			{currentTargetRevisionsById, reorderSection, reorderTargetId, plan} = @props
+			{
+				plan
+				currentTargetRevisionsById, reorderSection, reorderTargetId,
+				scrollToSection, scrollToTarget
+			} = @props
+
 			{displayInactive, displayTargets} = @state
 
 			sections = plan.get('sections')
 
-			numberOfTargets = sections
-			.reduce (last, section) ->
-				last + section.get('targetIds').size
-			, 0
+			# Sum of sections' targets
+			numberOfTargets = sections.reduce ((last, s) -> last + s.get('targetIds').size), 0
 
 			numberOfItems = sections.size + numberOfTargets
 			shrinkFontSize = numberOfItems > 16
@@ -96,8 +99,8 @@ load = (win) ->
 							reorderTargetId
 							displayInactive
 							displayTargets
-							toggleReorderPlan: @props.toggleReorderPlan
-							scrollToSection: @props.scrollToSection
+							scrollToSection
+							scrollToTarget
 						})
 					)
 				)

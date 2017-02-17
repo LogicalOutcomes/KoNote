@@ -47,9 +47,9 @@ load = (win) ->
 
 		render: ->
 			{
-				connectDragSource, connectDropTarget, connectDragPreview
-				displayInactive, displayTargets, reorderTargetId
-				name, section, targets, isDragging
+				name, section, targets,
+				connectDragSource, connectDropTarget, connectDragPreview, isDragging
+				displayInactive, displayTargets, reorderTargetId, scrollToTarget
 			} = @props
 
 			sectionIndex = @props.index
@@ -86,7 +86,7 @@ load = (win) ->
 						)
 						R.div({
 							className: 'name'
-							onClick: => @props.toggleReorderPlan(=> @props.scrollToSection(sectionId))
+							onClick: => @props.scrollToSection(section)
 						},
 							name
 						)
@@ -97,11 +97,12 @@ load = (win) ->
 								PlanTarget({
 									key: target.get('id')
 									id: target.get('id')
-									target
+									target, section
 									index
 									sectionIndex
 									reorderTargetId
 									displayInactive
+									scrollToTarget
 								})
 							)
 						)
