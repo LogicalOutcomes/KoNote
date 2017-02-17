@@ -252,7 +252,13 @@ load = (win) ->
 
 	# Smooth-scroll utility, customized from https://pawelgrzybek.com/page-scroll-in-vanilla-javascript/
 	# Uses nw win for requestAnimationFrame, and can handle scrolling within a container
-	scrollToElement = (container, element, duration = 500, easing = 'linear', cb=(->)) ->
+	# paddingOffset makes it scroll a bit less, for more space on top
+	scrollToElement = (container, element, duration = 500, easing = 'linear', paddingOffset = 0, cb=(->)) ->
+		# paddingOffset is optional arg
+		if not cb
+			cb = paddingOffset
+
+		# container and element must both be valid
 		if not container or not element
 			arg = if element then 'container' else element
 			throw new Error "Missing arg in scrollToElement for #{arg}"
@@ -289,7 +295,6 @@ load = (win) ->
 		start = container.scrollTop
 		startTime = Date.now()
 		destination = element.offsetTop - $(container).position().top
-		paddingOffset = 10 # Scroll up a bit extra for nicer padding
 
 		# requestAnimationFrame can inf-loop if we dont set a limit
 		maxScrollTop = container.scrollHeight - container.clientHeight
