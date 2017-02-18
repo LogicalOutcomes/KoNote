@@ -51,7 +51,7 @@ load = (win) ->
 				currentTargetRevisionsById: @_generateCurrentTargetRevisionsById @props.planTargetsById
 
 				selectedTargetId: null
-				isReorderingPlan: null
+				isReorderingPlan: false
 			}
 
 		componentWillReceiveProps: (newProps) ->
@@ -91,16 +91,17 @@ load = (win) ->
 			return R.div({className: "planView"},
 
 				OpenDialogLink({
-					ref: 'test'
+					ref: 'planTemplatesButton'
 					className: ''
 					dialog: CreatePlanTemplateDialog
 					title: "Create Template from Plan"
 					sections: @state.plan.get('sections')
 					currentTargetRevisionsById: @state.currentTargetRevisionsById
-					# disabled: isReadOnly
 				})
 
 				R.div({className: 'targetList'},
+
+					# TODO: Make component
 					R.div({className: "empty #{showWhen plan.get('sections').size is 0}"},
 						R.div({className: 'message'},
 							"This #{Term 'client'} does not currently have any #{Term 'plan targets'}."
@@ -132,12 +133,12 @@ load = (win) ->
 							)
 						)
 					)
+
+					# TODO: Make component
 					R.div({className: "flexButtonToolbar #{showWhen plan.get('sections').size > 0}"},
+
 						R.button({
-							className: [
-								'saveButton'
-								#'collapsed' unless hasChanges
-							].join ' '
+							className: 'saveButton'
 							disabled: @props.isReadOnly or not hasChanges
 							onClick: @_save
 						},
@@ -148,10 +149,7 @@ load = (win) ->
 						)
 
 						R.button({
-							className: [
-								'discardButton'
-								#'collapsed' unless hasChanges
-							].join ' '
+							className: 'discardButton'
 							disabled: @props.isReadOnly or not hasChanges
 							onClick: @_resetChanges
 						},
@@ -183,7 +181,6 @@ load = (win) ->
 						)
 
 						PrintButton({
-							#className: 'collapsed' if hasChanges
 							dataSet: [
 								{
 									format: 'plan'
@@ -515,7 +512,7 @@ load = (win) ->
 					@_addTargetToSection sectionId
 
 		_openCreateTemplateDialog: (event) ->
-			@refs.test.open(event)
+			@refs.planTemplatesButton.open(event)
 
 		_applyPlanTemplate: (templateId) ->
 			Bootbox.confirm "Are you sure you want to apply this template?", (ok) =>
