@@ -21,8 +21,12 @@
 			background #3f903f !important
 			color white
 
-	&.isHovered .sectionDragSource
-		background #cadbe5
+	&.isHovered
+		.sectionDragSource
+			background #cadbe5
+
+		.planTarget .dragSource
+			opacity 0.2
 
 	&:hover
 		.dragSource
@@ -75,5 +79,6 @@
 
 		width 35px
 		cursor move
-		transition opacity .15s ease
+		transition all .35s ease-out
+		transition-property opacity, background
 		padding 15px
