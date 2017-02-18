@@ -1719,7 +1719,7 @@ load = (win) ->
 
 			userIsAuthor = progNote? and (progNote.get('author') is global.ActiveSession.userName)
 			canViewOptions = progNote? and not isEditing
-			canModify = userIsAuthor
+			canModify = userIsAuthor and not isReadOnly
 
 			hasRevisions = revisionHistory.size > 1
 			numberOfRevisions = revisionHistory.size - 1
