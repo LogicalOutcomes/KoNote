@@ -735,7 +735,7 @@ load = (win) ->
 					return
 
 				# Remove highlight after 1s
-				setTimeout (=> $sectionName.removeClass 'highlight'), 1000
+				setTimeout (=> $sectionName.removeClass 'highlight'), 500
 
 				# Done scrolling to section
 

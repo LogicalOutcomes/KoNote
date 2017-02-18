@@ -3,6 +3,7 @@
 	border-bottom 1px dashed transparent
 	border-left 0
 	padding-bottom 15px
+	padding-top 10px
 	opacity 1
 	transition all .5s ease
 
@@ -21,12 +22,11 @@
 			color white
 
 	&.isHovered .sectionDragSource
-		background #dae6ed
+		background #cadbe5
 
 	&:hover
 		.dragSource
 			opacity .6
-
 
 	.sectionDragSource:hover
 		opacity 1
@@ -42,6 +42,10 @@
 		margin 0
 		border-color transparent
 		opacity 0
+
+	.sectionDragSource
+		border-top-right-radius 5px
+		border-bottom-right-radius 5px
 
 	.sectionNameContainer
 		display flex
