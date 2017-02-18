@@ -188,7 +188,7 @@ load = (win) ->
 								R.div({},
 									FaIcon('sitemap', {className:'menuItemIcon'})
 									R.span({className: 'menuItemText'},
-										"Edit Plan"
+										"Full Plan"
 									)
 								)
 							else
