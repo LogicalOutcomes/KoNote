@@ -717,28 +717,51 @@ load = (win) ->
 
 		_scrollToSection: (section) ->
 			{id, status} = section.toObject()
+			sectionElementId = "section-#{id}"
 
-			console.log "section status is: ", status
+			# Ensure this sectionHeader replaces the sticky one above it
+			stickyHeaderOffset = $('.sectionName').height() * -1
+			$sectionName = $("##{sectionElementId} .sectionName")
 
-			@setState {isReorderingPlan: false}, =>
-				@refs.sectionsView.expandSection section, =>
-					@_scrollTo "section-#{id}"
+			Async.series [
+				(cb) => @setState {isReorderingPlan: false}, cb
+				(cb) => @refs.sectionsView.expandSection section, cb
+				(cb) =>
+					@_scrollTo sectionElementId, stickyHeaderOffset, cb
+					# Highlight the destination
+					$sectionName.addClass 'highlight'
+			], (err) =>
+				if err
+					CrashHandler.handle err
+					return
+
+				# Remove highlight after 1s
+				setTimeout (=> $sectionName.removeClass 'highlight'), 1000
+
+				# Done scrolling to section
 
 		_scrollToTarget: (target, section) ->
 			{id, status} = target.toObject()
+			targetElementId = "target-#{id}"
 
-			@setState {isReorderingPlan: false}, =>
-				@refs.sectionsView.expandTarget target, section, =>
-					@_scrollTo "target-#{id}"
+			# Switch views & select target, expand groups if needed, scroll
+			Async.series [
+				(cb) => @setState {isReorderingPlan: false, selectedTargetId: id}, cb
+				(cb) => @refs.sectionsView.expandTarget target, section, cb
+				(cb) => @_scrollTo targetElementId, 0, cb
+			], (err) =>
+				if err
+					CrashHandler.handle err
+					return
 
-		_scrollTo: (elementId) ->
+				# Done scrolling and target selection
+
+		_scrollTo: (elementId, additionalOffset, cb=(->)) ->
 			$container = findDOMNode(@refs.sectionsView)
 			$element = win.document.getElementById(elementId)
 
-			topOffset = 25 # Add offset depending on top padding
-			scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, =>
-				# TODO: add highlighted class to element
-				console.log "scroll complete!"
+			topOffset = 25 + additionalOffset # Add offset depending on top padding
+			scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, cb
 
 
 	SectionsView = React.createFactory React.createClass
