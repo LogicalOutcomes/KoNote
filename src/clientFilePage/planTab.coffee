@@ -742,11 +742,16 @@ load = (win) ->
 			{id, status} = target.toObject()
 			targetElementId = "target-#{id}"
 
+			additionalOffset = if @props.isReadOnly
+				$('#readOnlyNotice').innerHeight() * -1
+			else
+				0
+
 			# Switch views & select target, expand groups if needed, scroll!
 			Async.series [
 				(cb) => @setState {isReorderingPlan: false, selectedTargetId: id}, cb
 				(cb) => @refs.sectionsView.expandTarget target, section, cb
-				(cb) => @_scrollTo targetElementId, 0, cb
+				(cb) => @_scrollTo targetElementId, additionalOffset, cb
 			], (err) =>
 				if err
 					CrashHandler.handle err

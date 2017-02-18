@@ -1275,7 +1275,7 @@ load = (win, {clientFileId}) ->
 		displayName: 'ReadOnlyNotice'
 
 		render: ->
-			return R.div({className: 'readOnlyNotice'},
+			return R.div({id: 'readOnlyNotice'},
 				R.div({
 					className: [
 						"notice"
