@@ -161,25 +161,6 @@ load = (win) ->
 							)
 						)
 
-						PrintButton({
-							#className: 'collapsed' if hasChanges
-							dataSet: [
-								{
-									format: 'plan'
-									data: {
-										sections: plan.get('sections')
-										targets: @state.currentTargetRevisionsById
-										metrics: @props.metricsById
-									}
-									clientFile: @props.clientFile
-								}
-							]
-							iconOnly: false
-							iconClassName: 'menuItemIcon'
-							labelClassName: 'menuItemText'
-							disabled: hasChanges
-						})
-
 						R.button({
 							className: 'reorderButton'
 							onClick: => @_toggleReorderPlan()
@@ -200,6 +181,25 @@ load = (win) ->
 								)
 							)
 						)
+
+						PrintButton({
+							#className: 'collapsed' if hasChanges
+							dataSet: [
+								{
+									format: 'plan'
+									data: {
+										sections: plan.get('sections')
+										targets: @state.currentTargetRevisionsById
+										metrics: @props.metricsById
+									}
+									clientFile: @props.clientFile
+								}
+							]
+							iconOnly: false
+							iconClassName: 'menuItemIcon'
+							labelClassName: 'menuItemText'
+							disabled: hasChanges
+						})
 
 						B.DropdownButton({
 							id: 'planTemplatesDropdown'
