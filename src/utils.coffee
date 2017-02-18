@@ -311,6 +311,10 @@ load = (win) ->
 		else
 			destination -= paddingOffset
 
+		# Can't scroll above top
+		if destination < 0
+			destination = 0
+
 		# Cancel scroll if we're already at our destination
 		if start is destination
 			console.warn "Cancelled scroll (container.scrollTop is already #{start}px)"
