@@ -718,32 +718,31 @@ load = (win) ->
 			{id, status} = section.toObject()
 			sectionElementId = "section-#{id}"
 
-			# Ensure this sectionHeader replaces the sticky one above it
-			stickyHeaderOffset = $('.sectionName').height() * -1
+			# Highlight the destination in seperate op (regardless of valid scroll or not)
 			$sectionName = $("##{sectionElementId} .sectionName")
+			$sectionName.addClass 'highlight'
+			setTimeout (=> $sectionName.removeClass 'highlight'), 1750
 
+			# Switch views, expand groups if needed, scroll!
 			Async.series [
 				(cb) => @setState {isReorderingPlan: false}, cb
 				(cb) => @refs.sectionsView.expandSection section, cb
 				(cb) =>
+					# Account for sticky header size when scrolling
+					stickyHeaderOffset = $('.sectionHeader').innerHeight() * -1
 					@_scrollTo sectionElementId, stickyHeaderOffset, cb
-					# Highlight the destination
-					$sectionName.addClass 'highlight'
 			], (err) =>
 				if err
 					CrashHandler.handle err
 					return
 
-				# Remove highlight after 1s
-				setTimeout (=> $sectionName.removeClass 'highlight'), 500
-
-				# Done scrolling to section
+				# Done scrolling to section, highlighting removed on its own
 
 		_scrollToTarget: (target, section) ->
 			{id, status} = target.toObject()
 			targetElementId = "target-#{id}"
 
-			# Switch views & select target, expand groups if needed, scroll
+			# Switch views & select target, expand groups if needed, scroll!
 			Async.series [
 				(cb) => @setState {isReorderingPlan: false, selectedTargetId: id}, cb
 				(cb) => @refs.sectionsView.expandTarget target, section, cb
