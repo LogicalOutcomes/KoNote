@@ -180,6 +180,27 @@ load = (win) ->
 							disabled: hasChanges
 						})
 
+						R.button({
+							className: 'reorderButton'
+							onClick: => @_toggleReorderPlan()
+						},
+							(if @state.isReorderingPlan
+								R.div({},
+									FaIcon('sitemap', {className:'menuItemIcon'})
+									R.span({className: 'menuItemText'},
+										"Edit Plan"
+									)
+								)
+							else
+								R.div({},
+									FaIcon('sort-amount-asc', {className:'menuItemIcon'})
+									R.span({className: 'menuItemText'},
+										"Outline"
+									)
+								)
+							)
+						)
+
 						B.DropdownButton({
 							id: 'planTemplatesDropdown'
 							key: 'planTemplatesDropdownButton'
@@ -214,28 +235,6 @@ load = (win) ->
 										)
 									)
 								]
-							)
-						)
-
-						R.button({
-							className: 'reorderButton'
-							onClick: => @_toggleReorderPlan()
-							disabled: @props.isReadOnly
-						},
-							(if @state.isReorderingPlan
-								R.div({},
-									FaIcon('sitemap', {className:'menuItemIcon'})
-									R.span({className: 'menuItemText'},
-										"Edit Plan"
-									)
-								)
-							else
-								R.div({},
-									FaIcon('sort-amount-asc', {className:'menuItemIcon'})
-									R.span({className: 'menuItemText'},
-										"Reorder"
-									)
-								)
 							)
 						)
 
