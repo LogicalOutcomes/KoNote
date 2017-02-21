@@ -247,6 +247,7 @@ load = (win) ->
 													placeholder: "Set Password"
 													value: @state.password
 													onChange: @_updatePassword
+													onKeyDown: @_onEnterKeyDown
 												})
 												R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
 											)
@@ -272,6 +273,7 @@ load = (win) ->
 													placeholder: "Password again"
 													value: @state.passwordConfirmation
 													onChange: @_updatePasswordConfirmation
+													onKeyDown: @_onEnterKeyDown
 												})
 												R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
 											)
@@ -530,6 +532,10 @@ load = (win) ->
 				isLoading: true
 				installProgress: {percent, message}
 			}
+
+		_onEnterKeyDown: (event) ->
+			if event.which is 13
+				@_install()
 
 		_install: ->
 			if @state.password isnt @state.passwordConfirmation

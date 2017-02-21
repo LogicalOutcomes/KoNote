@@ -670,6 +670,7 @@ load = (win) ->
 							className: 'form-control'
 							onChange: @_updateDisplayName
 							value: @state.displayName
+							onKeyDown: @_onEnterKeyDown
 						})
 					)
 					R.div({
@@ -761,7 +762,6 @@ load = (win) ->
 		_updateDisplayName: (event) ->
 			@setState {displayName: event.target.value}
 
-
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
 
@@ -777,6 +777,10 @@ load = (win) ->
 
 		_cancel: ->
 			@props.onCancel()
+
+		_onEnterKeyDown: (event) ->
+			if event.which is 13
+				@_submit()
 
 		_submit: ->
 			@refs.dialog.setIsLoading true
@@ -880,6 +884,7 @@ load = (win) ->
 						type: 'password'
 						onChange: @_updatePassword
 						value: @state.password
+						onKeyDown: @_onEnterKeyDown
 					})
 					R.span({
 						className: [
@@ -904,6 +909,7 @@ load = (win) ->
 						type: 'password'
 						onChange: @_updateConfirmPassword
 						value: @state.confirmPassword
+						onKeyDown: @_onEnterKeyDown
 					})
 					R.span({
 						className: [
@@ -945,6 +951,10 @@ load = (win) ->
 
 		_updateConfirmPassword: (event) ->
 			@setState {confirmPassword: event.target.value}
+
+		_onEnterKeyDown: (event) ->
+			if event.which is 13 and @_formIsValid()
+				@_submit()
 
 		_submit: ->
 			# First catch unmatched passwords
@@ -1040,6 +1050,7 @@ load = (win) ->
 						type: 'displayName'
 						onChange: @_updateDisplayName
 						value: @state.displayName
+						onKeyDown: @_onEnterKeyDown
 					})
 					R.span({
 						className: [
@@ -1073,6 +1084,10 @@ load = (win) ->
 
 		_updateDisplayName: (event) ->
 			@setState {displayName: event.target.value}
+
+		_onEnterKeyDown: (event) ->
+			if event.which is 13
+				@_submit()
 
 		_submit: ->
 			# First catch unmatched passwords
