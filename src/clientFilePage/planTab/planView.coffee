@@ -11,6 +11,7 @@ Term = require '../../term'
 load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
+	{PropTypes} = React
 	R = React.DOM
 
 	{DragDropContext} = win.ReactDnD
@@ -25,6 +26,10 @@ load = (win) ->
 	PlanView = React.createClass
 		displayName: 'PlanView'
 		mixins: [React.addons.PureRenderMixin]
+
+		propTypes: {
+			isCollapsed: PropTypes.bool.isRequired
+		}
 
 		getInitialState: -> {
 			displayDeactivatedSections: false
@@ -61,8 +66,9 @@ load = (win) ->
 				currentTargetRevisionsById
 				planTargetsById
 				selectedTargetId
+
 				isReadOnly
-				isVisible
+				isCollapsed
 
 				renameSection
 				addTargetToSection
@@ -79,11 +85,12 @@ load = (win) ->
 				reorderTargetId
 			} = @props
 
+			{sections} = plan.toObject()
 
-			if plan.get('sections').isEmpty()
+			if sections.isEmpty()
 				return null
 
-			sectionsByStatus = plan.get('sections').groupBy (s) -> s.get('status')
+			sectionsByStatus = sections.groupBy (s) -> s.get('status')
 
 			activeSections = sectionsByStatus.get('default')
 			completedSections = sectionsByStatus.get('completed')
@@ -94,7 +101,7 @@ load = (win) ->
 
 				(activeSections.map (section) =>
 					id = section.get('id')
-					index = plan.get('sections').indexOf section
+					index = sections.indexOf section
 
 					PlanSection({
 						ref: "section-#{id}"
@@ -108,7 +115,9 @@ load = (win) ->
 						currentTargetRevisionsById
 						planTargetsById
 						selectedTargetId
+
 						isReadOnly
+						isCollapsed
 
 						renameSection
 						addTargetToSection

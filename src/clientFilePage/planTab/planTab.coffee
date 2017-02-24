@@ -44,10 +44,11 @@ load = (win) ->
 				plan: @props.plan # Transient state for plan
 				currentTargetRevisionsById
 				selectedTargetId: null
+				isCollapsedView: false
 			}
 
 		componentWillReceiveProps: ({plan, planTargetsById}) ->
-			# Regenerate transient plan data when is updated upstream (db)
+			# Regenerate transient plan data & definitions when is updated upstream (db)
 			planChanged = not Imm.is(plan, @props.plan)
 			planTargetsChanged = not Imm.is(planTargetsById, @props.planTargetsById)
 			currentTargetRevisionsById = @_generateCurrentTargetRevisionsById(planTargetsById)
@@ -249,10 +250,12 @@ load = (win) ->
 						clientFile: @props.clientFile
 						plan
 						metricsById: @props.metricsById
+						planTargetsById: @props.planTargetsById
 						currentTargetRevisionsById
 						selectedTargetId: @state.selectedTargetId
+
 						isReadOnly: @props.isReadOnly
-						planTargetsById: @props.planTargetsById
+						isCollapsed: @state.isCollapsedView
 
 						renameSection: @_renameSection
 						addTargetToSection: @_addTargetToSection
@@ -382,9 +385,9 @@ load = (win) ->
 
 				@props.updatePlan @state.plan, newPlanTargets, updatedPlanTargets
 
-		_toggleCondensedView: (cb=(->)) ->
-			isCondensedView = not @state.isCondensedView
-			@setState {isCondensedView}, cb
+		_toggleCollapsedView: (cb=(->)) ->
+			isCollapsedView = not @state.isCollapsedView
+			@setState {isCollapsedView}, cb
 
 		_reorderSection: (dragIndex, hoverIndex) ->
 			if @props.isReadOnly
