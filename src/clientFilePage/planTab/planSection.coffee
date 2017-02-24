@@ -14,8 +14,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	ReactDOM = win.ReactDOM
-	{findDOMNode} = ReactDOM
+	{findDOMNode} = win.ReactDOM
 	{DragSource, DropTarget} = win.ReactDnD
 
 	PlanTarget = require('./planTarget').load(win)
@@ -100,6 +99,7 @@ load = (win) ->
 
 			sectionId = section.get('id')
 			sectionIsInactive = section.get('status') isnt 'default'
+			sectionIndex = @props.index
 
 			targetIdsByStatus = section.get('targetIds').groupBy (id) ->
 				currentTargetRevisionsById.getIn [id, 'status']
@@ -145,6 +145,7 @@ load = (win) ->
 							# Default status
 							(activeTargets.map (targetId) =>
 								target = currentTargetRevisionsById.get(targetId)
+								index = section.get('targetIds').indexOf targetId
 
 								PlanTarget({
 									key: targetId
@@ -165,6 +166,8 @@ load = (win) ->
 									targetId
 
 									reorderTargetId
+									sectionIndex
+									index
 								})
 							)
 						)

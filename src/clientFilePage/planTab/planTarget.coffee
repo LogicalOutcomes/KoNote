@@ -11,6 +11,7 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
+	{findDOMNode} = win.ReactDOM
 	{DragSource, DropTarget} = win.ReactDnD
 
 	ExpandingTextArea = require('../../expandingTextArea').load(win)
@@ -24,7 +25,7 @@ load = (win) ->
 	{FaIcon} = require('../../utils').load(win)
 
 
-	PlanTarget = React.createFactory React.createClass
+	PlanTarget = React.createClass
 		displayName: 'PlanTarget'
 		mixins: [React.addons.PureRenderMixin]
 
@@ -44,170 +45,176 @@ load = (win) ->
 		}
 
 		render: ->
-			{target} = @props
+			{
+				target
+				connectDropTarget, connectDragPreview, connectDragSource
+			} = @props
+
 			{id, status, name, description, metricIds} = target.toObject()
 
 			targetIsInactive = @props.isReadOnly or @props.isInactive or @props.sectionIsInactive
 
 
-			return R.div({
-				id: "target-#{id}"
-				className: [
-					"target target-#{id}"
-					"status-#{status}"
-					'isSelected' if @props.isSelected
-					'isInactive' if targetIsInactive
-					'hasChanges' if @props.hasTargetChanged or not @props.isExistingTarget
-					'readOnly' if @props.isReadOnly
-				].join ' '
-				onClick: @_onTargetClick
-			},
+			return connectDropTarget connectDragPreview connectDragSource (
+				R.div({
+					id: "target-#{id}"
+					className: [
+						"target target-#{id}"
+						"status-#{status}"
+						'isSelected' if @props.isSelected
+						'isInactive' if targetIsInactive
+						'hasChanges' if @props.hasTargetChanged or not @props.isExistingTarget
+						'readOnly' if @props.isReadOnly
+					].join ' '
+					onMouseDown: @_onTargetClick
+				},
 
-				R.div({className: 'nameContainer'},
-					R.input({
-						type: 'text'
-						className: 'name field form-control'
-						ref: 'nameField'
-						placeholder: "Name of #{Term 'target'}"
-						value: name
-						onChange: @_updateField.bind null, 'name'
-						onFocus: @props.onTargetSelection
-						onClick: @props.onTargetSelection
-						disabled: targetIsInactive
-					})
+					R.div({className: 'nameContainer'},
+						R.input({
+							type: 'text'
+							className: 'name field form-control'
+							ref: 'nameField'
+							placeholder: "Name of #{Term 'target'}"
+							value: name
+							onChange: @_updateField.bind null, 'name'
+							onFocus: @props.onTargetSelection
+							onClick: @props.onTargetSelection
+							disabled: targetIsInactive
+						})
 
-					(if not @props.hasTargetChanged and @props.isExistingTarget and not @props.sectionIsInactive
-						(if @props.isExistingTarget
-							# Can cancel/complete a 'default' target
-							(if status is 'default'
-								R.div({className: 'statusButtonGroup'},
-									WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
-										OpenDialogLink({
-											className: 'statusButton'
-											dialog: ModifyTargetStatusDialog
-											planTarget: target
-											newStatus: 'deactivated'
-											title: "Deactivate #{Term 'Target'}"
-											message: """
-												This will remove the #{Term 'target'} from the #{Term 'client'}
-												#{Term 'plan'}, and future #{Term 'progress notes'}.
-												It may be re-activated again later.
-											"""
-											reasonLabel: "Reason for deactivation:"
-											disabled: targetIsInactive
-										},
-											FaIcon 'times'
+						(if not @props.hasTargetChanged and @props.isExistingTarget and not @props.sectionIsInactive
+							(if @props.isExistingTarget
+								# Can cancel/complete a 'default' target
+								(if status is 'default'
+									R.div({className: 'statusButtonGroup'},
+										WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
+											OpenDialogLink({
+												className: 'statusButton'
+												dialog: ModifyTargetStatusDialog
+												planTarget: target
+												newStatus: 'deactivated'
+												title: "Deactivate #{Term 'Target'}"
+												message: """
+													This will remove the #{Term 'target'} from the #{Term 'client'}
+													#{Term 'plan'}, and future #{Term 'progress notes'}.
+													It may be re-activated again later.
+												"""
+												reasonLabel: "Reason for deactivation:"
+												disabled: targetIsInactive
+											},
+												FaIcon 'times'
+											)
+										)
+										WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
+											OpenDialogLink({
+												className: 'statusButton'
+												dialog: ModifyTargetStatusDialog
+												planTarget: target
+												newStatus: 'completed'
+												title: "Complete #{Term 'Target'}"
+												message: """
+													This will set the #{Term 'target'} as 'completed'. This often
+													means that the desired outcome has been reached.
+												"""
+												reasonLabel: "Reason for completion:"
+												disabled: targetIsInactive
+											},
+												FaIcon 'check'
+											)
 										)
 									)
-									WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
-										OpenDialogLink({
-											className: 'statusButton'
-											dialog: ModifyTargetStatusDialog
-											planTarget: target
-											newStatus: 'completed'
-											title: "Complete #{Term 'Target'}"
-											message: """
-												This will set the #{Term 'target'} as 'completed'. This often
-												means that the desired outcome has been reached.
-											"""
-											reasonLabel: "Reason for completion:"
-											disabled: targetIsInactive
-										},
-											FaIcon 'check'
+								else
+									R.div({className: 'statusButtonGroup'},
+										WithTooltip({title: "Re-Activate #{Term 'Target'}", placement: 'top'},
+											OpenDialogLink({
+												className: 'statusButton'
+												dialog: ModifyTargetStatusDialog
+												planTarget: target
+												newStatus: 'default'
+												title: "Re-Activate #{Term 'Target'}"
+												message: """
+													This will re-activate the #{Term 'target'}, so it appears
+													in the #{Term 'client'} #{Term 'plan'} and
+													future #{Term 'progress notes'}.
+												"""
+												reasonLabel: "Reason for activation:"
+												disabled: @props.isReadOnly
+											},
+												FaIcon 'sign-in'
+											)
 										)
 									)
 								)
 							else
 								R.div({className: 'statusButtonGroup'},
-									WithTooltip({title: "Re-Activate #{Term 'Target'}", placement: 'top'},
-										OpenDialogLink({
-											className: 'statusButton'
-											dialog: ModifyTargetStatusDialog
-											planTarget: target
-											newStatus: 'default'
-											title: "Re-Activate #{Term 'Target'}"
-											message: """
-												This will re-activate the #{Term 'target'}, so it appears
-												in the #{Term 'client'} #{Term 'plan'} and
-												future #{Term 'progress notes'}.
-											"""
-											reasonLabel: "Reason for activation:"
-											disabled: @props.isReadOnly
-										},
-											FaIcon 'sign-in'
-										)
+									R.div({
+										className: 'statusButton'
+										onClick: @props.onRemoveNewTarget
+										title: 'Cancel'
+									},
+										FaIcon 'times'
 									)
-								)
-							)
-						else
-							R.div({className: 'statusButtonGroup'},
-								R.div({
-									className: 'statusButton'
-									onClick: @props.onRemoveNewTarget
-									title: 'Cancel'
-								},
-									FaIcon 'times'
 								)
 							)
 						)
 					)
-				)
 
-				R.div({className: 'descriptionContainer'},
-					ExpandingTextArea({
-						className: 'description field'
-						ref: 'descriptionField'
-						placeholder: "Describe the current #{Term 'treatment plan'} . . ."
-						value: description
-						disabled: targetIsInactive
-						onChange: @_updateField.bind null, 'description'
-						onFocus: @props.onTargetSelection
-						onClick: @props.onTargetSelection
-					})
-				)
-				(if not metricIds.isEmpty() or @props.isSelected
-					R.div({className: 'metrics'},
-						R.div({className: 'metricsList'},
-							(metricIds.map (metricId) =>
-								metric = @props.metricsById.get(metricId)
+					R.div({className: 'descriptionContainer'},
+						ExpandingTextArea({
+							className: 'description field'
+							ref: 'descriptionField'
+							placeholder: "Describe the current #{Term 'treatment plan'} . . ."
+							value: description
+							disabled: targetIsInactive
+							onChange: @_updateField.bind null, 'description'
+							onFocus: @props.onTargetSelection
+							onClick: @props.onTargetSelection
+						})
+					)
+					(if not metricIds.isEmpty() or @props.isSelected
+						R.div({className: 'metrics'},
+							R.div({className: 'metricsList'},
+								(metricIds.map (metricId) =>
+									metric = @props.metricsById.get(metricId)
 
-								MetricWidget({
-									name: metric.get('name')
-									definition: metric.get('definition')
-									value: metric.get('value')
-									key: metricId
-									tooltipViewport: '.view'
-									isEditable: false
-									allowDeleting: not targetIsInactive
-									onDelete: @props.deleteMetricFromTarget.bind(
-										null, @props.targetId, metricId
+									MetricWidget({
+										name: metric.get('name')
+										definition: metric.get('definition')
+										value: metric.get('value')
+										key: metricId
+										tooltipViewport: '.view'
+										isEditable: false
+										allowDeleting: not targetIsInactive
+										onDelete: @props.deleteMetricFromTarget.bind(
+											null, @props.targetId, metricId
+										)
+									})
+								)
+								(if @props.isSelected and not targetIsInactive
+									R.button({
+										className: "btn btn-link addMetricButton animated fadeIn"
+										onClick: @_focusMetricLookupField.bind(null, @props.targetId)
+									},
+										FaIcon('plus')
+										" Add #{Term 'metric'}"
 									)
-								})
-							)
-							(if @props.isSelected and not targetIsInactive
-								R.button({
-									className: "btn btn-link addMetricButton animated fadeIn"
-									onClick: @_focusMetricLookupField.bind(null, @props.targetId)
-								},
-									FaIcon('plus')
-									" Add #{Term 'metric'}"
 								)
 							)
-						)
-						(unless targetIsInactive
-							R.div({
-								className: 'metricLookupContainer'
-								ref: 'metricLookup'
-							},
-								MetricLookupField({
-									metrics: @props.metricsById.valueSeq().filter (metric) => metric.get('status') is 'default'
-									onSelection: @props.addMetricToTarget.bind(
-										null, @props.targetId, @_hideMetricInput
-									)
-									placeholder: "Find / Define a #{Term 'Metric'}"
-									isReadOnly: @props.isReadOnly
-									onBlur: @_hideMetricInput
-								})
+							(unless targetIsInactive
+								R.div({
+									className: 'metricLookupContainer'
+									ref: 'metricLookup'
+								},
+									MetricLookupField({
+										metrics: @props.metricsById.valueSeq().filter (metric) => metric.get('status') is 'default'
+										onSelection: @props.addMetricToTarget.bind(
+											null, @props.targetId, @_hideMetricInput
+										)
+										placeholder: "Find / Define a #{Term 'Metric'}"
+										isReadOnly: @props.isReadOnly
+										onBlur: @_hideMetricInput
+									})
+								)
 							)
 						)
 					)
@@ -238,11 +245,7 @@ load = (win) ->
 
 	# Drag source contract
 	targetSource = {
-		beginDrag: (props) -> {
-			id: props.id
-			index: props.index
-			sectionIndex: props.sectionIndex
-		}
+		beginDrag: ({id, index, sectionIndex}) -> {id, index, sectionIndex}
 	}
 
 	targetDestination = {
