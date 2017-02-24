@@ -1,8 +1,6 @@
-.planView
+.planTab
 	flex 1
 	display flex
-
-	@require 'reorderPlanView'
 
 	> .targetList
 		flex 1
@@ -25,10 +23,10 @@
 			> .btn > .fa
 				padding-right 10px
 
-		> .sections
+		> #planView
 			position relative
 
-		> .sections, > div > .sections
+		> #planView, > div > #planView
 			flex 1
 			overflow-y auto
 			overflow-x hidden
@@ -57,7 +55,7 @@
 					&.expanded
 						transform rotate(90deg)
 
-			.section
+			.planSection
 				padding-bottom 2px
 
 				&.status-completed, &.status-deactivated

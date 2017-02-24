@@ -1067,7 +1067,7 @@ load = (win, {clientFileId}) ->
 							showWhen activeTabId is 'plan'
 						].join ' '
 					},
-						PlanTab.PlanView({
+						PlanTab({
 							ref: 'planTab'
 							clientFileId
 							clientFile: @props.clientFile
