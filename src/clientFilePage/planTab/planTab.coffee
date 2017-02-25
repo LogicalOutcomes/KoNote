@@ -159,20 +159,20 @@ load = (win) ->
 
 						R.button({
 							className: 'reorderButton'
-							onClick: => @_toggleCondensedView()
+							onClick: => @_toggleCollapsedView()
 						},
-							(if @state.isReorderingPlan
+							(if @state.isCollapsedView
 								R.div({},
-									FaIcon('sitemap', {className:'menuItemIcon'})
+									FaIcon('expand', {className:'menuItemIcon'})
 									R.span({className: 'menuItemText'},
-										"Full Plan"
+										"Expand "
 									)
 								)
 							else
 								R.div({},
-									FaIcon('sort-amount-asc', {className:'menuItemIcon'})
+									FaIcon('compress', {className:'menuItemIcon'})
 									R.span({className: 'menuItemText'},
-										"Outline"
+										"Collapse"
 									)
 								)
 							)
