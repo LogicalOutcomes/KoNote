@@ -307,7 +307,6 @@ load = (win) ->
 								onUpdateSearchQuery: @_updateSearchQuery
 								onSelectProgramId: @_updateProgramIdFilter
 								onSelectDataType: @_updateDataTypeFilter
-								onNavigateToDate: @_scrollToEntry
 							})
 						)
 
@@ -1128,15 +1127,13 @@ load = (win) ->
 			@entryDateNavigator.css {right}
 
 		_scrollToEntryDate: (date, cb=(->)) ->
-			selectedMoment = Moment(+date)
-
-			# TODO: Have moment objs already pre-built
+			# TODO: Have moment objs already pre-built in historyEntries
 			entry = @props.historyEntries.find (e) ->
 				timestamp = makeMoment e.get('timestamp')
-				return selectedMoment.isSame timestamp, 'day'
+				return date.isSame timestamp, 'day'
 
 			if not entry?
-				console.warn "Cancelled scroll, could not find #{selectedMoment.toDate()} in historyEntries"
+				console.warn "Cancelled scroll, could not find #{date.toDate()} in historyEntries"
 				cb()
 				return
 
