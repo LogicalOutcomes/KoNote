@@ -5,7 +5,7 @@
   "author": "KoNote",
   "description": "KoNote",
   "main": "src/start.html",
-  "chromium-args": "--enable-spell-checking",
+  "chromium-args": "--enable-spell-checking --enable-smooth-scrolling",
   "nwjsBuilder": {
     "companyName": "KoNote",
     "copyright": "Copyright 2016 Konode"

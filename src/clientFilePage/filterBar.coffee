@@ -26,7 +26,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
-			onUpdateSearchQuery: PropTypes.func
+			# TODO: isRequired?
 			programIdFilter: PropTypes.string
 			dataTypeFilter: PropTypes.oneOf ['progNotes', 'targets', 'events']
 			programsById: PropTypes.instanceOf Imm.List()
@@ -56,7 +56,7 @@ load = (win) ->
 			@_focusInput()
 
 		_focusInput: ->
-			@refs.searchText.focus()
+			@refs.searchText.focus() if @refs.searchText?
 
 		_updateSearchText: (event) ->
 			searchText = event.target.value
