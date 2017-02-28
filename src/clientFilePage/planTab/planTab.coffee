@@ -19,8 +19,6 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	ReactDOM = win.ReactDOM
-	{findDOMNode} = ReactDOM
 
 	PlanView = require('./planView').load(win)
 	RevisionHistory = require('../../revisionHistory').load(win)
@@ -97,7 +95,7 @@ load = (win) ->
 					currentTargetRevisionsById
 				})
 
-				R.div({className: 'targetList'},
+				R.div({className: 'leftPane'},
 
 					# TODO: Make component
 					R.div({className: "empty #{showWhen not hasPlanSections}"},
@@ -267,15 +265,14 @@ load = (win) ->
 						addMetricToTarget: @_addMetricToTarget
 						deleteMetricFromTarget: @_deleteMetricFromTarget
 						getSectionIndex: @_getSectionIndex
+						collapseAndSelectTargetId: @_collapseAndSelectTargetId
 
 						reorderSection: @_reorderSection
 						reorderTargetId: @_reorderTargetId
-						scrollToSection: @_scrollToSection
-						scrollToTarget: @_scrollToTarget
 					})
 				)
 
-				R.div({className: 'targetDetail'},
+				R.div({className: 'rightPane targetDetail'},
 					(if not selectedTarget?
 						R.div({className: "noSelection #{showWhen plan.get('sections').size > 0}"},
 							"More information will appear here when you select ",
@@ -385,9 +382,15 @@ load = (win) ->
 
 				@props.updatePlan @state.plan, newPlanTargets, updatedPlanTargets
 
-		_toggleCollapsedView: (cb=(->)) ->
+		_collapseAndSelectTargetId: (selectedTargetId, cb) ->
+			@setState {
+				isCollapsedView: false
+				selectedTargetId
+			}, cb
+
+		_toggleCollapsedView: ->
 			isCollapsedView = not @state.isCollapsedView
-			@setState {isCollapsedView}, cb
+			@setState {isCollapsedView}
 
 		_reorderSection: (dragIndex, hoverIndex) ->
 			if @props.isReadOnly
@@ -672,8 +675,11 @@ load = (win) ->
 				currentTargetRevisionsById: @state.currentTargetRevisionsById.set targetId, newValue
 			}
 
-		_setSelectedTarget: (targetId) ->
-			@setState {selectedTargetId: targetId}
+		_setSelectedTarget: (targetId, cb) ->
+			# Prevent event obj arg from ftn binds in planTarget
+			cb = (->) unless typeof cb is 'function'
+
+			@setState {selectedTargetId: targetId}, cb
 
 		_addMetricToTarget: (targetId, cb, metricId) ->
 			# Current target already has this metric
@@ -702,60 +708,7 @@ load = (win) ->
 							return id isnt metricId
 			}
 
-		_scrollToSection: (section) ->
-			{id, status} = section.toObject()
-			sectionElementId = "section-#{id}"
-
-			# Highlight the destination in seperate op (regardless of valid scroll or not)
-			$sectionName = $("##{sectionElementId} .sectionName")
-			$sectionName.addClass 'highlight'
-			setTimeout (=> $sectionName.removeClass 'highlight'), 1750
-
-			# Switch views, expand groups if needed, scroll!
-			Async.series [
-				(cb) => @setState {isReorderingPlan: false}, cb
-				(cb) => @refs.planView.expandSection section, cb
-				(cb) =>
-					# Account for sticky header size when scrolling
-					stickyHeaderOffset = $('.sectionHeader').innerHeight() * -1
-					@_scrollTo sectionElementId, stickyHeaderOffset, cb
-			], (err) =>
-				if err
-					CrashHandler.handle err
-					return
-
-				# Done scrolling to section, highlighting removed on its own
-
-		_scrollToTarget: (target, section) ->
-			{id, status} = target.toObject()
-			targetElementId = "target-#{id}"
-
-			additionalOffset = if @props.isReadOnly
-				$('#readOnlyNotice').innerHeight() * -1
-			else
-				0
-
-			# Switch views & select target, expand groups if needed, scroll!
-			Async.series [
-				(cb) => @setState {isReorderingPlan: false, selectedTargetId: id}, cb
-				(cb) => @refs.planView.expandTarget target, section, cb
-				(cb) => @_scrollTo targetElementId, additionalOffset, cb
-			], (err) =>
-				if err
-					CrashHandler.handle err
-					return
-
-				# Done scrolling and target selection
-
-		_scrollTo: (elementId, additionalOffset, cb=(->)) ->
-			$container = findDOMNode(@refs.planView)
-			$element = win.document.getElementById(elementId)
-
-			topOffset = 25 + additionalOffset # Add offset depending on top padding
-			scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, cb
-
 
 	return PlanTab
-
 
 module.exports = {load}

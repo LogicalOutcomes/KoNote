@@ -13,6 +13,7 @@ load = (win) ->
 	React = win.React
 	{PropTypes} = React
 	R = React.DOM
+	{findDOMNode} = win.ReactDOM
 
 	{DragDropContext} = win.ReactDnD
 	HTML5Backend = win.ReactDnDHTML5Backend
@@ -35,42 +36,17 @@ load = (win) ->
 			displayDeactivatedSections: false
 			displayCompletedSections: false
 		}
-		# TODO: propTypes
 
-		# expandSection: (section, cb) ->
-		# 	{status, id} = section.toObject()
 
-		# 	switch status
-		# 		when 'default'
-		# 			cb()
-		# 		when 'completed'
-		# 			@_toggleDisplayCompletedSections(true, cb)
-		# 		when 'deactivated'
-		# 			@_toggleDisplayDeactivatedSections(true, cb)
-		# 		else
-		# 			throw new Error "Unknown status: #{status}"
-
-		# expandTarget: (target, section, cb) ->
-		# 	sectionId = section.get('id')
-		# 	status = target.get('status')
-		# 	# First ensure the section is available
-		# 	@expandSection section, =>
-		# 		# Ask it to expand completed/deactivated targets
-		# 		@refs["section-#{sectionId}"].expandTargetsWithStatus status, cb
 
 		render: ->
 			{
-				clientFile
-				plan
-				metricsById
-				currentTargetRevisionsById
-				planTargetsById
-				selectedTargetId
+				clientFile, plan, metricsById
+				currentTargetRevisionsById, planTargetsById, selectedTargetId
+				isReadOnly, isCollapsed
 
-				isReadOnly
-				isCollapsed
-
-				renameSection
+				renameSection, reorderSection, getSectionIndex
+				reorderTargetId
 				addTargetToSection
 				hasTargetChanged
 				updateTarget
@@ -79,10 +55,6 @@ load = (win) ->
 				setSelectedTarget
 				addMetricToTarget
 				deleteMetricFromTarget
-				getSectionIndex
-
-				reorderSection
-				reorderTargetId
 			} = @props
 
 			{sections} = plan.toObject()
@@ -129,6 +101,7 @@ load = (win) ->
 						deleteMetricFromTarget
 						getSectionIndex
 						onRemoveNewSection: -> removeNewSection(section)
+						expandTarget: @_expandTarget
 
 						reorderSection
 						reorderTargetId
@@ -244,6 +217,39 @@ load = (win) ->
 		_toggleDisplayCompletedSections: (boolean, cb=(->)) ->
 			displayCompletedSections = boolean or not @state.displayCompletedSections
 			@setState {displayCompletedSections}, cb
+
+		_expandSection: (section) ->
+			{id, status} = section.toObject()
+			sectionElementId = "section-#{id}"
+
+			# Highlight the destination in seperate op (regardless of valid scroll or not)
+			$sectionName = $("##{sectionElementId} .sectionName")
+			$sectionName.addClass 'highlight'
+			setTimeout (=> $sectionName.removeClass 'highlight'), 1750
+
+			@setState {isCollapsed: false}, =>
+				stickyHeaderOffset = $('.sectionHeader').innerHeight() * -1
+				@_scrollTo sectionElementId, stickyHeaderOffset, cb
+				# Done scrolling to section, highlighting removed on its own
+
+		_expandTarget: (target, section) ->
+			{id, status} = target.toObject()
+			targetElementId = "target-#{id}"
+
+			additionalOffset = if @props.isReadOnly
+				$('#readOnlyNotice').innerHeight() * -1
+			else
+				0
+
+			# Switch views & select target, expand groups if needed, scroll!
+			@props.collapseAndSelectTargetId id, => @_scrollTo(targetElementId, additionalOffset)
+
+		_scrollTo: (elementId, additionalOffset, cb=(->)) ->
+			$container = findDOMNode(@)
+			$element = win.document.getElementById(elementId)
+
+			topOffset = 50 + additionalOffset # Add offset depending on top padding
+			scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, cb
 
 
 	# Create drag-drop context for the PlanView class

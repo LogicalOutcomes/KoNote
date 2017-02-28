@@ -50,18 +50,8 @@ load = (win) ->
 		getInitialState: -> {
 			displayCancelledTargets: null
 			displayCompletedTargets: null
+			isReorderHovered: false
 		}
-
-		expandTargetsWithStatus: (status, cb) ->
-			switch status
-				when 'default'
-					cb()
-				when 'completed'
-					@_toggleDisplayCompletedTargets(true, cb)
-				when 'deactivated'
-					@_toggleDisplayDeactivatedTargets(true, cb)
-				else
-					throw new Error "Unknown status: #{status}"
 
 		render: ->
 			{
@@ -87,6 +77,7 @@ load = (win) ->
 				addMetricToTarget
 				deleteMetricFromTarget
 				getSectionIndex
+				expandTarget
 
 				reorderSection
 				reorderTargetId
@@ -97,8 +88,9 @@ load = (win) ->
 				isDragging
 			} = @props
 
-			sectionId = section.get('id')
-			sectionIsInactive = section.get('status') isnt 'default'
+			{id, status} = section.toObject()
+
+			sectionIsInactive = status isnt 'default'
 			sectionIndex = @props.index
 
 			targetIdsByStatus = section.get('targetIds').groupBy (id) ->
@@ -111,17 +103,19 @@ load = (win) ->
 
 			return connectDropTarget connectDragPreview (
 				R.section({
-					id: "section-#{sectionId}"
-					className: "planSection status-#{section.get('status')}"
+					id: "section-#{id}"
+					className: [
+						'planSection'
+						"status-#{status}"
+						'isCollapsed' if isCollapsed
+						'isDragging' if isDragging
+						'isReorderHovered' if @state.isReorderHovered
+					].join ' '
 				},
-					connectDragSource(R.div({}, "DRAG ME!"))
-
 					SectionHeader({
 						clientFile
 						section
-
 						isReadOnly
-						isCollapsed
 
 						renameSection
 						getSectionIndex
@@ -130,6 +124,8 @@ load = (win) ->
 						targetIdsByStatus
 						sectionIsInactive
 						currentTargetRevisionsById
+						connectDragSource
+						onReorderHover: (isReorderHovered) => @setState {isReorderHovered}
 					})
 
 					(if section.get('targetIds').size is 0
@@ -151,21 +147,25 @@ load = (win) ->
 									key: targetId
 									target
 									metricsById
-									hasTargetChanged: hasTargetChanged targetId
+									hasChanges: hasTargetChanged(targetId)
 									isSelected: targetId is selectedTargetId
 									sectionIsInactive
 									isExistingTarget: planTargetsById.has(targetId)
 									isReadOnly
+									isCollapsed
 
-									onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
+									onRemoveNewTarget: removeNewTarget.bind null, id, targetId
 									onTargetUpdate: updateTarget.bind null, targetId
 									onTargetSelection: setSelectedTarget.bind null, targetId
+									setSelectedTarget # allows for setState cb
+									onExpandTarget: expandTarget.bind null, target, section
 
 									addMetricToTarget
 									deleteMetricFromTarget
 									targetId
 
 									reorderTargetId
+									section
 									sectionIndex
 									index
 								})
@@ -273,9 +273,7 @@ load = (win) ->
 			{
 				clientFile
 				section
-
 				isReadOnly
-				isCollapsed
 
 				renameSection
 				getSectionIndex
@@ -285,6 +283,8 @@ load = (win) ->
 				onRemoveNewSection
 				currentTargetRevisionsById
 				sectionIsInactive
+				connectDragSource
+				onReorderHover
 			} = @props
 
 			sectionStatus = section.get('status')
@@ -300,6 +300,16 @@ load = (win) ->
 
 
 			return R.div({className: 'sectionHeader'},
+				connectDragSource (
+					R.div({
+						className: 'dragSource'
+						onMouseOver: => onReorderHover(true)
+						onMouseLeave: => onReorderHover(false)
+					},
+						FaIcon('arrows-v')
+					)
+				)
+
 				R.div({
 					title: "Edit name"
 					className: 'sectionName'
@@ -314,30 +324,34 @@ load = (win) ->
 						)
 					)
 				)
-				R.div({className: "btn-group btn-group-sm #{showWhen(not sectionIsInactive)}"},
-					R.button({
-						ref: 'addTarget'
-						className: 'addTarget btn btn-primary'
-						onClick: addTargetToSection.bind null, section.get('id')
-						disabled: not canModify
-					},
-						FaIcon('plus')
-						"Add #{Term 'target'}"
-					)
-					WithTooltip({
-						title: "Create Section Template"
-						placement: 'top'
-						container: 'body'
-					},
-						OpenDialogLink({
-							className: 'btn btn-default'
-							dialog: CreatePlanTemplateDialog
-							title: "Create Template from Section"
-							sections: Imm.List([section])
-							currentTargetRevisionsById
-							disabled: isReadOnly
+
+				(unless sectionIsInactive
+					R.div({className: 'btn-group btn-group-sm sectionButtons'},
+						R.button({
+							ref: 'addTarget'
+							className: 'addTarget btn btn-primary'
+							onClick: addTargetToSection.bind null, section.get('id')
+							disabled: not canModify
 						},
-							FaIcon 'wpforms'
+							FaIcon('plus')
+							" Add #{Term 'Target'}"
+						)
+
+						WithTooltip({
+							title: "Create #{Term 'Section'} #{Term 'Template'}"
+							placement: 'top'
+							container: 'body'
+						},
+							OpenDialogLink({
+								className: 'btn btn-default'
+								dialog: CreatePlanTemplateDialog
+								title: "Create #{Term 'Template'} from #{Term 'Section'}"
+								sections: Imm.List([section])
+								currentTargetRevisionsById
+								disabled: isReadOnly
+							},
+								FaIcon 'wpforms'
+							)
 						)
 					)
 				)

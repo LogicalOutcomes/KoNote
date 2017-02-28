@@ -1,0 +1,165 @@
+.planSection
+	padding-bottom 2px
+
+	border-top 1px dashed transparent
+	border-bottom 1px dashed transparent
+
+	&.status-completed, &.status-deactivated
+		padding 0
+		padding-left 20px
+
+	&.isReorderHovered
+		$hover-background = #eaf1f5
+		background $hover-background
+		border-top-color #cadbe5
+		border-bottom-color #cadbe5
+
+		&:first-child
+			border-top-color transparent
+
+		.sectionHeader
+			background $hover-background
+
+			.dragSource
+				background #cadbe5
+
+				.fa
+					opacity 1 !important
+
+		.planTarget
+			background white
+
+
+	&.isCollapsed
+		.sectionHeader
+			padding-left 0
+
+			.sectionName
+				padding-left 10px
+
+			.sectionButtons
+				display none
+
+			.dragSource
+				display flex
+				width 30px
+				height 30px
+
+				.fa
+					display block
+					opacity 0
+
+	> .sectionHeader
+		position sticky
+		z-index 2
+		top 0px
+		background linear-gradient(to top, rgba(255,255,255,0.35) 0%,rgba(255,255,255,0.75) 25%,rgba(255,255,255,1) 100%)
+		display flex
+		align-items center
+		justify-content flex-end
+
+		border-color sidebar-borders
+		border-style none
+		border-width 1px
+
+		padding 15px 12px 15px 22px
+
+		&:hover
+			.dragSource .fa
+				opacity .3
+
+		> .dragSource
+			width 0
+			height 0
+			transition width .15s ease
+			justify-content center
+			align-items center
+
+			.fa
+				display none
+
+		> .statusButtonGroup
+			display flex
+
+			> .statusButton
+				display flex
+				flex 1
+				cursor default
+				justify-content center
+				align-items center
+				padding 8px
+				padding-right 2px
+
+				font-size 18px
+				opacity 0.6
+				transition opacity .15s ease
+
+				&:not([disabled]):hover
+					opacity 1
+
+		&.inline
+			margin 0 -30px
+
+			&.invisible
+				opacity 0
+
+		> .sectionName
+			position relative
+			flex 1
+			padding 5px 0
+
+			font-size 24px
+			font-weight 300
+
+			cursor default
+
+			.dragSource
+				opacity 0
+
+			&:hover .renameIcon
+				opacity 0.8
+
+			.renameIcon
+				opacity 0
+				font-size 0.7em
+				padding-left 10px
+				transition opacity .3s ease
+				margin-right -24px
+
+		> .btn-group
+			margin-left 15px
+
+		> .btn-group > .btn.addTarget > .fa
+			padding-right 6px
+
+	> .noTargets
+		padding 25px 0
+
+		color #888
+		text-align center
+
+	> .targets
+		padding 0 15px 15px 15px
+
+		// TODO: Make this multi-use
+		&.status-completed, &.status-deactivated
+			padding 0
+			padding-left 20px
+
+		> .inactiveTargetHeader
+			cursor default
+			font-size 16px
+			opacity 0.8
+			transition opacity .15s ease
+
+			&:hover
+				opacity 1
+
+			.fa
+				font-size 1.25em
+				padding 12px 8px
+				transform rotate(0deg)
+				transition transform .25s ease
+
+				&.expanded
+					transform rotate(90deg)
