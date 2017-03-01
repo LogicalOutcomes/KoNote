@@ -67,11 +67,14 @@ load = (win) ->
 		_submit: ->
 			@refs.dialog.setIsLoading true
 
-			revisedPlan = @props.clientFile.get('plan')
-			.setIn(['sections', @props.sectionIndex, 'status'], @props.newStatus)
-			.setIn(['sections', @props.sectionIndex, 'statusReason'], @state.statusReason)
+			clientFile = @props.parentData
+			index = clientFile.getIn(['plan', 'sections']).indexOf @props.data
 
-			revisedClientFile = @props.clientFile.set 'plan', revisedPlan
+			revisedPlan = clientFile.get('plan')
+			.setIn(['sections', index, 'status'], @props.newStatus)
+			.setIn(['sections', index, 'statusReason'], @state.statusReason)
+
+			revisedClientFile = clientFile.set 'plan', revisedPlan
 
 			ActiveSession.persist.clientFiles.createRevision revisedClientFile, (err, updatedClientFile) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?

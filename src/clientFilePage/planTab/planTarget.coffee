@@ -14,11 +14,12 @@ load = (win) ->
 	{findDOMNode} = win.ReactDOM
 	{DragSource, DropTarget} = win.ReactDnD
 
-	ExpandingTextArea = require('../../expandingTextArea').load(win)
-	WithTooltip = require('../../withTooltip').load(win)
+	StatusButtonGroup = require('./statusButtonGroup').load(win)
 	ModifyTargetStatusDialog = require('../modifyTargetStatusDialog').load(win)
 	MetricLookupField = require('../../metricLookupField').load(win)
+	ExpandingTextArea = require('../../expandingTextArea').load(win)
 	MetricWidget = require('../../metricWidget').load(win)
+	WithTooltip = require('../../withTooltip').load(win)
 	OpenDialogLink = require('../../openDialogLink').load(win)
 	PrintButton = require('../../printButton').load(win)
 
@@ -53,15 +54,11 @@ load = (win) ->
 				target, isCollapsed, isExistingTarget
 				connectDropTarget, connectDragPreview, connectDragSource
 				isExistingTarget, isInactive, hasChanges
-				sectionIsInactive
 				isSelected, isReadOnly
 				onExpandTarget
 			} = @props
 
 			{id, status, name, description, metricIds} = target.toObject()
-
-			targetIsInactive = isReadOnly or isInactive or sectionIsInactive
-			canModifyStatus = not hasChanges and isExistingTarget and not sectionIsInactive
 
 
 			return connectDropTarget connectDragPreview (
@@ -71,7 +68,7 @@ load = (win) ->
 						'planTarget'
 						"status-#{status}"
 						'isSelected' if isSelected
-						'isInactive' if targetIsInactive
+						'isInactive' if isInactive
 						'hasChanges' if hasChanges or not isExistingTarget
 						'isCollapsed' if isCollapsed
 						'readOnly' if isReadOnly
@@ -108,84 +105,20 @@ load = (win) ->
 									onChange: @_updateField.bind null, 'name'
 									onFocus: @props.onTargetSelection
 									onClick: @props.onTargetSelection
-									disabled: targetIsInactive or isCollapsed
+									disabled: isInactive or isReadOnly
 								})
 							)
 
-							(if canModifyStatus
-								(if isExistingTarget
-									# Can cancel/complete a 'default' target
-									(if status is 'default'
-										R.div({className: 'statusButtonGroup'},
-											WithTooltip({title: "Deactivate #{Term 'Target'}", placement: 'top'},
-												OpenDialogLink({
-													className: 'statusButton'
-													dialog: ModifyTargetStatusDialog
-													planTarget: target
-													newStatus: 'deactivated'
-													title: "Deactivate #{Term 'Target'}"
-													message: """
-														This will remove the #{Term 'target'} from the #{Term 'client'}
-														#{Term 'plan'}, and future #{Term 'progress notes'}.
-														It may be re-activated again later.
-													"""
-													reasonLabel: "Reason for deactivation:"
-													disabled: targetIsInactive
-												},
-													FaIcon 'times'
-												)
-											)
-											WithTooltip({title: "Complete #{Term 'Target'}", placement: 'top'},
-												OpenDialogLink({
-													className: 'statusButton'
-													dialog: ModifyTargetStatusDialog
-													planTarget: target
-													newStatus: 'completed'
-													title: "Complete #{Term 'Target'}"
-													message: """
-														This will set the #{Term 'target'} as 'completed'. This often
-														means that the desired outcome has been reached.
-													"""
-													reasonLabel: "Reason for completion:"
-													disabled: targetIsInactive
-												},
-													FaIcon 'check'
-												)
-											)
-										)
-									else
-										R.div({className: 'statusButtonGroup'},
-											WithTooltip({title: "Re-Activate #{Term 'Target'}", placement: 'top'},
-												OpenDialogLink({
-													className: 'statusButton'
-													dialog: ModifyTargetStatusDialog
-													planTarget: target
-													newStatus: 'default'
-													title: "Re-Activate #{Term 'Target'}"
-													message: """
-														This will re-activate the #{Term 'target'}, so it appears
-														in the #{Term 'client'} #{Term 'plan'} and
-														future #{Term 'progress notes'}.
-													"""
-													reasonLabel: "Reason for activation:"
-													disabled: @props.isReadOnly
-												},
-													FaIcon 'sign-in'
-												)
-											)
-										)
-									)
-								else
-									R.div({className: 'statusButtonGroup'},
-										R.div({
-											className: 'statusButton'
-											onClick: @props.onRemoveNewTarget
-											title: 'Cancel'
-										},
-											FaIcon 'times'
-										)
-									)
-								)
+							(if isSelected and not isInactive and not isReadOnly
+								StatusButtonGroup({
+									planElementType: Term 'Target'
+									data: target
+									isExisting: isExistingTarget
+									status
+									onRemove: null
+									dialog: ModifyTargetStatusDialog
+									isDisabled: false
+								})
 							)
 						)
 
@@ -194,7 +127,7 @@ load = (win) ->
 								className: 'description field'
 								placeholder: "Describe the current #{Term 'treatment plan'} . . ."
 								value: description
-								disabled: targetIsInactive
+								disabled: isInactive
 								onChange: @_updateField.bind null, 'description'
 								onFocus: @props.onTargetSelection
 								onClick: @props.onTargetSelection
@@ -214,13 +147,13 @@ load = (win) ->
 											key: metricId
 											tooltipViewport: '.view'
 											isEditable: false
-											allowDeleting: not targetIsInactive
+											allowDeleting: not isInactive
 											onDelete: @props.deleteMetricFromTarget.bind(
 												null, @props.targetId, metricId
 											)
 										})
 									)
-									(if @props.isSelected and not targetIsInactive
+									(if @props.isSelected and not isInactive
 										R.button({
 											className: "btn btn-link addMetricButton animated fadeIn"
 											onClick: @_focusMetricLookupField.bind(null, @props.targetId)
@@ -230,7 +163,7 @@ load = (win) ->
 										)
 									)
 								)
-								(unless targetIsInactive
+								(unless isInactive
 									R.div({
 										ref: 'metricLookup'
 										className: 'metricLookupContainer'

@@ -8,7 +8,7 @@
 	border-radius $border-radius
 
 	&:last-child
-		margin-bottom 0
+		margin-bottom 0 !important
 
 	.dragSource
 		display none
@@ -108,22 +108,6 @@
 
 			> .statusButtonGroup
 				display none
-
-				> .statusButton
-					flex 1
-					display flex
-					justify-content center
-					align-items center
-					padding 8px
-					padding-left 12px
-					padding-right 2px
-
-					font-size 18px
-					opacity 0.6
-					transition opacity .15s ease
-
-					&:not([disabled]):hover
-						opacity 1
 
 		> .descriptionContainer
 			padding-top 15px

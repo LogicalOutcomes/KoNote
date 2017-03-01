@@ -4,9 +4,12 @@
 	border-top 1px dashed transparent
 	border-bottom 1px dashed transparent
 
+	// Overrides by status & UI state
+
 	&.status-completed, &.status-deactivated
 		padding 0
 		padding-left 20px
+
 
 	&.isReorderHovered
 		$hover-background = #eaf1f5
@@ -34,20 +37,23 @@
 		.sectionHeader
 			padding-left 0
 
-			.sectionName
-				padding-left 10px
-
-			.sectionButtons
-				display none
-
 			.dragSource
 				display flex
 				width 30px
 				height 30px
 
 				.fa
-					display block
+					visibility visible
 					opacity 0
+
+			.sectionName
+				padding-left 10px
+
+			.sectionButtons, .statusButtonGroup, .renameIcon
+				display none
+
+
+	// Initial styles
 
 	> .sectionHeader
 		position sticky
@@ -57,6 +63,8 @@
 		display flex
 		align-items center
 		justify-content flex-end
+		$duration = .2s
+		transition padding-left $duration ease
 
 		border-color sidebar-borders
 		border-style none
@@ -68,40 +76,19 @@
 			.dragSource .fa
 				opacity .3
 
+			.statusButtonGroup
+				opacity 1
+
 		> .dragSource
 			width 0
 			height 0
-			transition width .15s ease
+			margin-right 0
+			transition width $duration ease
 			justify-content center
 			align-items center
 
 			.fa
-				display none
-
-		> .statusButtonGroup
-			display flex
-
-			> .statusButton
-				display flex
-				flex 1
-				cursor default
-				justify-content center
-				align-items center
-				padding 8px
-				padding-right 2px
-
-				font-size 18px
-				opacity 0.6
-				transition opacity .15s ease
-
-				&:not([disabled]):hover
-					opacity 1
-
-		&.inline
-			margin 0 -30px
-
-			&.invisible
-				opacity 0
+				visibility hidden
 
 		> .sectionName
 			position relative
@@ -114,6 +101,7 @@
 			cursor default
 
 			.dragSource
+				margin-right 20px
 				opacity 0
 
 			&:hover .renameIcon
@@ -125,6 +113,11 @@
 				padding-left 10px
 				transition opacity .3s ease
 				margin-right -24px
+
+			.statusButtonGroup
+				opacity 0.35
+
+
 
 		> .btn-group
 			margin-left 15px
