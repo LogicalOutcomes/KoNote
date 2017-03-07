@@ -163,7 +163,7 @@ load = (win) ->
 								R.div({},
 									FaIcon('expand', {className:'menuItemIcon'})
 									R.span({className: 'menuItemText'},
-										"Expand "
+										" Expand"
 									)
 								)
 							else

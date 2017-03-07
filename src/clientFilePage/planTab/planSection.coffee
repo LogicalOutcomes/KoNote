@@ -94,12 +94,13 @@ load = (win) ->
 			sectionIsInactive = status isnt 'default'
 			sectionIndex = @props.index
 
-			targetIdsByStatus = section.get('targetIds').groupBy (id) ->
-				currentTargetRevisionsById.getIn [id, 'status']
+			targetsByStatus = section.get('targetIds')
+			.map (id) -> currentTargetRevisionsById.get(id)
+			.groupBy (target) -> target.get('status')
 
-			activeTargets = targetIdsByStatus.get('default')
-			completedTargets = targetIdsByStatus.get('completed')
-			deactivatedTargets = targetIdsByStatus.get('deactivated')
+			activeTargets = targetsByStatus.get('default')
+			completedTargets = targetsByStatus.get('completed')
+			deactivatedTargets = targetsByStatus.get('deactivated')
 
 
 			return connectDropTarget connectDragPreview (
@@ -117,12 +118,12 @@ load = (win) ->
 						clientFile
 						section
 						isReadOnly
+						allTargetsAreInactive: not activeTargets
 
 						renameSection
 						getSectionIndex
 						addTargetToSection
 						onRemoveNewSection
-						targetIdsByStatus
 						sectionIsInactive
 						currentTargetRevisionsById
 						connectDragSource
@@ -138,126 +139,81 @@ load = (win) ->
 					# TODO: Generalize these 3 into a single component
 
 					(if activeTargets
-						R.div({className: 'targets status-default'},
-							# Default status
-							(activeTargets.map (targetId) =>
-								target = currentTargetRevisionsById.get(targetId)
-								index = section.get('targetIds').indexOf targetId
+						# Default status
+						TargetsList({
+							targets: activeTargets
+							selectedTargetId
+							section, sectionIndex
+							currentTargetRevisionsById, metricsById, planTargetsById
+							removeNewTarget, updateTarget, setSelectedTarget, hasTargetChanged
+							expandTarget, addMetricToTarget, deleteMetricFromTarget, reorderTargetId
+							isReadOnly, isCollapsed
+						})
+					)
 
-								isInactive = sectionIsInactive or target.get('status') isnt 'default'
-								isSelected = targetId is selectedTargetId
-								isExistingTarget = planTargetsById.has(targetId)
+					# Inactive targets are pushed to the bottom
 
-								PlanTarget({
-									key: targetId
-									target
-									metricsById
-									hasChanges: hasTargetChanged(targetId)
-									isSelected
-									isInactive
-									isExistingTarget
-									isReadOnly
-									isCollapsed
-
-									onRemoveNewTarget: removeNewTarget.bind null, id, targetId
-									onTargetUpdate: updateTarget.bind null, targetId
-									onTargetSelection: setSelectedTarget.bind null, targetId
-									setSelectedTarget # allows for setState cb
-									onExpandTarget: expandTarget.bind null, target, section
-
-									addMetricToTarget
-									deleteMetricFromTarget
-									targetId
-
-									reorderTargetId
-									section
-									sectionIndex
-									index
+					(if completedTargets
+						R.div({className: 'targets status-completed'},
+							R.span({
+								className: 'inactiveTargetHeader'
+								onClick: => @_toggleDisplayCompletedTargets()
+							},
+								# Rotates 90'CW when expanded
+								FaIcon('caret-right', {
+									className: 'expanded' if @state.displayCompletedTargets
+								})
+								R.strong({}, completedTargets.size)
+								" Completed "
+								Term (
+									if completedTargets.size > 1 then 'Targets' else 'Target'
+								)
+							)
+							(if @state.displayCompletedTargets
+								# Completed status
+								TargetsList({
+									targets: completedTargets
+									selectedTargetId
+									section, sectionIndex
+									currentTargetRevisionsById, metricsById, planTargetsById
+									removeNewTarget, updateTarget, setSelectedTarget, hasTargetChanged
+									expandTarget, addMetricToTarget, deleteMetricFromTarget, reorderTargetId
+									isReadOnly, isCollapsed
 								})
 							)
 						)
 					)
+					(if deactivatedTargets
+						R.div({className: 'targets status-deactivated'},
+							R.span({
+								className: 'inactiveTargetHeader'
+								onClick: => @_toggleDisplayCancelledTargets()
+							},
+								# Rotates 90'CW when expanded
+								FaIcon('caret-right', {
+									className: 'expanded' if @state.displayDeactivatedTargets
+								})
+								R.strong({}, deactivatedTargets.size)
+								" Deactivated "
+								Term (
+									if deactivatedTargets.size > 1 then 'Targets' else 'Target'
+								)
+							)
+							(if @state.displayDeactivatedTargets
+								# Completed status
+								TargetsList({
+									targets: deactivatedTargets
+									selectedTargetId
+									section, sectionIndex
+									currentTargetRevisionsById, metricsById, planTargetsById
+									removeNewTarget, updateTarget, setSelectedTarget, hasTargetChanged
+									expandTarget, addMetricToTarget, deleteMetricFromTarget, reorderTargetId
+									isReadOnly, isCollapsed
+								})
+							)
 
-					# (if completedTargets
-					# 	R.div({className: 'targets status-completed'},
-					# 		R.span({
-					# 			className: 'inactiveTargetHeader'
-					# 			onClick: => @_toggleDisplayCompletedTargets()
-					# 		},
-					# 			# Rotates 90'CW when expanded
-					# 			FaIcon('caret-right', {
-					# 				className: 'expanded' if @state.displayCompletedTargets
-					# 			})
-					# 			R.strong({}, targetIdsByStatus.get('completed').size)
-					# 			" Completed "
-					# 			Term (
-					# 				if targetIdsByStatus.get('completed').size > 1 then 'Targets' else 'Target'
-					# 			)
-					# 		)
-					# 		(if @state.displayCompletedTargets
-					# 			# Completed status
-					# 			(completedTargets.map (targetId) =>
-					# 				PlanTarget({
-					# 					currentRevision: currentTargetRevisionsById.get targetId
-					# 					metricsById
-					# 					hasTargetChanged: hasTargetChanged targetId
-					# 					key: targetId
-					# 					isSelected: targetId is selectedTargetId
-					# 					sectionIsInactive
-					# 					isExistingTarget: planTargetsById.has(targetId)
-					# 					isReadOnly
-					# 					isInactive: true
-					# 					onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
-					# 					onTargetUpdate: updateTarget.bind null, targetId
-					# 					onTargetSelection: setSelectedTarget.bind null, targetId
-					# 					addMetricToTarget
-					# 					deleteMetricFromTarget
-					# 					targetId
-					# 				})
-					# 			)
-					# 		)
-					# 	)
-					# )
-					# (if deactivatedTargets
-					# 	R.div({className: 'targets status-deactivated'},
-					# 		R.span({
-					# 			className: 'inactiveTargetHeader'
-					# 			onClick: => @_toggleDisplayCancelledTargets()
-					# 		},
-					# 			# Rotates 90'CW when expanded
-					# 			FaIcon('caret-right', {
-					# 				className: 'expanded' if @state.displayDeactivatedTargets
-					# 			})
-					# 			R.strong({}, targetIdsByStatus.get('deactivated').size)
-					# 			" Deactivated "
-					# 			Term (
-					# 				if targetIdsByStatus.get('deactivated').size > 1 then 'Targets' else 'Target'
-					# 			)
-					# 		)
-					# 		(if @state.displayDeactivatedTargets
-					# 			# Cancelled statuses
-					# 			(deactivatedTargets.map (targetId) =>
-					# 				PlanTarget({
-					# 					currentRevision: currentTargetRevisionsById.get targetId
-					# 					metricsById
-					# 					hasTargetChanged: hasTargetChanged targetId
-					# 					key: targetId
-					# 					isSelected: targetId is selectedTargetId
-					# 					sectionIsInactive
-					# 					isExistingTarget: planTargetsById.has(targetId)
-					# 					isReadOnly
-					# 					isInactive: true
-					# 					onRemoveNewTarget: removeNewTarget.bind null, sectionId, targetId
-					# 					onTargetUpdate: updateTarget.bind null, targetId
-					# 					onTargetSelection: setSelectedTarget.bind null, targetId
-					# 					addMetricToTarget
-					# 					deleteMetricFromTarget
-					# 					targetId
-					# 				})
-					# 			)
-					# 		)
-					# 	)
-					# )
+						)
+					)
 				)
 			)
 
@@ -279,13 +235,12 @@ load = (win) ->
 				clientFile
 				section
 				isReadOnly
-				hasTargetChanged
+				allTargetsAreInactive
 
 				renameSection
 				getSectionIndex
 				addTargetToSection
 				removeNewSection
-				targetIdsByStatus
 				onRemoveNewSection
 				currentTargetRevisionsById
 				sectionIsInactive
@@ -298,8 +253,6 @@ load = (win) ->
 			# Figure out whether already exists in plan
 			isExistingSection = clientFile.getIn(['plan','sections']).some (obj) =>
 				obj.get('id') is section.get('id')
-
-			allTargetsAreInactive = not targetIdsByStatus.has('default')
 
 			canSetStatus = isExistingSection and allTargetsAreInactive
 			canModify = not isReadOnly and not sectionIsInactive
@@ -377,6 +330,58 @@ load = (win) ->
 					)
 				)
 			)
+
+
+	TargetsList = (props) ->
+		{
+			targets, section, sectionIndex, sectionIsInactive, selectedTargetId
+			currentTargetRevisionsById, metricsById, planTargetsById
+			removeNewTarget, updateTarget, setSelectedTarget, hasTargetChanged
+			expandTarget, addMetricToTarget, deleteMetricFromTarget, reorderTargetId
+			isReadOnly, isCollapsed
+		} = props
+
+		{id, status} = section.toObject()
+
+
+		return R.div({className: "targetsList status-#{status}"},
+			(targets.map (target) =>
+				targetId = target.get('id')
+				index = section.get('targetIds').indexOf targetId
+
+				hasChanges = hasTargetChanged(targetId)
+				isInactive = sectionIsInactive or target.get('status') isnt 'default'
+				isSelected = targetId is selectedTargetId
+				isExistingTarget = planTargetsById.has(targetId)
+
+				PlanTarget({
+					key: targetId
+					target
+					metricsById
+					hasChanges
+					isSelected
+					isInactive
+					isExistingTarget
+					isReadOnly
+					isCollapsed
+
+					onRemoveNewTarget: removeNewTarget.bind null, id, targetId
+					onTargetUpdate: updateTarget.bind null, targetId
+					onTargetSelection: setSelectedTarget.bind null, targetId
+					setSelectedTarget # allows for setState cb
+					onExpandTarget: expandTarget.bind null, target, section
+
+					addMetricToTarget
+					deleteMetricFromTarget
+					targetId
+
+					reorderTargetId
+					section
+					sectionIndex
+					index
+				})
+			)
+		)
 
 
 	# Drag source contract
