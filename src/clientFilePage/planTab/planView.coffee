@@ -5,6 +5,7 @@
 # Main view component for Plan Tab in client file
 # Wrapped in main drag-drop context, to re-order sections & targets
 
+Imm = require 'immutable'
 Term = require '../../term'
 
 
@@ -27,195 +28,84 @@ load = (win) ->
 	PlanView = React.createClass
 		displayName: 'PlanView'
 		mixins: [React.addons.PureRenderMixin]
-
-		propTypes: {
-			isCollapsed: PropTypes.bool.isRequired
-		}
+		# TODO: propTypes
 
 		getInitialState: -> {
 			displayDeactivatedSections: false
 			displayCompletedSections: false
 		}
 
-
-
 		render: ->
-			{
-				clientFile, plan, metricsById
-				currentTargetRevisionsById, planTargetsById, selectedTargetId
-				isReadOnly, isCollapsed
+			planSections = @props.plan.get('sections')
 
-				renameSection, reorderSection, getSectionIndex
-				reorderTargetId
-				addTargetToSection
-				hasTargetChanged
-				updateTarget
-				removeNewTarget
-				removeNewSection
-				setSelectedTarget
-				addMetricToTarget
-				deleteMetricFromTarget
-			} = @props
-
-			{sections} = plan.toObject()
-
-			if sections.isEmpty()
+			if planSections.isEmpty()
 				return null
 
-			sectionsByStatus = sections.groupBy (s) -> s.get('status')
-
-			activeSections = sectionsByStatus.get('default')
-			completedSections = sectionsByStatus.get('completed')
-			deactivatedSections = sectionsByStatus.get('deactivated')
-
+			# Build sections by status, and order them manually into an array
+			# TODO: Make this an ordered set or something...
+			sectionsByStatus = planSections.groupBy (s) -> s.get('status')
+			sectionsByStatusArray = Imm.List(['default', 'deactivated', 'completed']).map (status) ->
+				sectionsByStatus.get(status)
 
 			return R.div({id: 'planView'},
 
-				(activeSections.map (section) =>
-					id = section.get('id')
-					index = sections.indexOf section
+				(sectionsByStatusArray.map (sections) =>
+					# TODO: Remove this in favour of [key, value] (prev. TODO)
+					return null if not sections
+					status = sections.getIn [0, 'status']
+					size = sections.size
 
-					PlanSection({
-						ref: "section-#{id}"
-						key: id
-						id
+					# Build the list of sections
+					PlanSectionsList = R.div({className: 'sections'},
+						(sections.map (section) =>
+							id = section.get('id')
+							index = planSections.indexOf section
+							sectionIsInactive = section.get('status') isnt 'default'
 
-						section
-						clientFile
-						plan
-						metricsById
-						currentTargetRevisionsById
-						planTargetsById
-						selectedTargetId
+							props = Object.assign {}, @props, {
+								ref: "section-#{id}"
+								key: id
+								section, id, index
+								expandTarget: @_expandTarget
+							}
 
-						isReadOnly
-						isCollapsed
+							return PlanSection(props)
+						)
+					)
 
-						renameSection
-						addTargetToSection
-						hasTargetChanged
-						updateTarget
-						removeNewTarget
-						setSelectedTarget
-						addMetricToTarget
-						deleteMetricFromTarget
-						getSectionIndex
-						onRemoveNewSection: -> removeNewSection(section)
-						expandTarget: @_expandTarget
+					# Wrap inactive section groups for display toggling
+					switch status
+						when 'default'
+							PlanSectionsList
 
-						reorderSection
-						reorderTargetId
-						index
-					})
+						when 'completed'
+							InactiveSectionsWrapper({
+								status, size
+								isExpanded: @state.displayCompletedSections
+								onToggle: @_toggleDisplayCompletedSections
+							},
+								PlanSectionsList
+							)
+
+						when 'deactivated'
+							InactiveSectionsWrapper({
+								status, size
+								isExpanded: @state.displayDeactivatedSections
+								onToggle: @_toggleDisplayDeactivatedSections
+							},
+								PlanSectionsList
+							)
+
+
 				)
-
-				# (if completedSections
-				# 	R.div({className: 'sections status-completed'},
-				# 		R.span({
-				# 			className: 'inactiveSectionHeader'
-				# 			onClick: => @_toggleDisplayCompletedSections()
-				# 		},
-				# 			# Rotates 90'CW when expanded
-				# 			FaIcon('caret-right', {
-				# 				className: 'expanded' if @state.displayCompletedSections
-				# 			})
-				# 			R.strong({}, completedSections.size)
-				# 			" Completed "
-				# 			Term (
-				# 				if completedSections.size > 1 then 'Sections' else 'Section'
-				# 			)
-				# 		)
-
-				# 		(if @state.displayCompletedSections
-				# 			# Completed status
-				# 			(completedSections.map (section) =>
-				# 				PlanSection({
-				# 					key: section.get('id')
-				# 					ref: 'section-' + section.get('id')
-
-				# 					section
-				# 					clientFile
-				# 					plan
-				# 					metricsById
-				# 					currentTargetRevisionsById
-				# 					planTargetsById
-				# 					selectedTargetId
-				# 					isReadOnly
-
-				# 					renameSection
-				# 					addTargetToSection
-				# 					hasTargetChanged
-				# 					updateTarget
-				# 					removeNewTarget
-				# 					removeNewSection
-				# 					onRemoveNewSection: removeNewSection.bind null, section
-				# 					setSelectedTarget
-				# 					addMetricToTarget
-				# 					deleteMetricFromTarget
-				# 					getSectionIndex
-				# 				})
-				# 			)
-				# 		)
-				# 	)
-				# )
-
-				# (if deactivatedSections
-				# 	R.div({className: 'sections status-deactivated'},
-				# 		R.span({
-				# 			className: 'inactiveSectionHeader'
-				# 			onClick: => @_toggleDisplayDeactivatedSections()
-				# 		},
-				# 			# Rotates 90'CW when expanded
-				# 			FaIcon('caret-right', {
-				# 				className: 'expanded' if @state.displayDeactivatedSections
-				# 			})
-				# 			R.strong({}, deactivatedSections.size)
-				# 			" Deactivated "
-				# 			Term (
-				# 				if deactivatedSections.size > 1 then 'Sections' else 'Section'
-				# 			)
-				# 		)
-
-				# 		(if @state.displayDeactivatedSections
-				# 			# Deactivated status
-				# 			(deactivatedSections.map (section) =>
-				# 				PlanSection({
-				# 					key: section.get('id')
-				# 					ref: 'section-' + section.get('id')
-
-				# 					section
-				# 					clientFile
-				# 					plan
-				# 					metricsById
-				# 					currentTargetRevisionsById
-				# 					planTargetsById
-				# 					selectedTargetId
-				# 					isReadOnly
-
-				# 					renameSection
-				# 					addTargetToSection
-				# 					hasTargetChanged
-				# 					updateTarget
-				# 					removeNewTarget
-				# 					removeNewSection
-				# 					onRemoveNewSection: removeNewSection.bind null, section
-				# 					setSelectedTarget
-				# 					addMetricToTarget
-				# 					deleteMetricFromTarget
-				# 					getSectionIndex
-				# 				})
-				# 			)
-				# 		)
-				# 	)
-				# )
 			)
 
-		_toggleDisplayDeactivatedSections: (boolean, cb=(->)) ->
-			displayDeactivatedSections = boolean or not @state.displayDeactivatedSections
+		_toggleDisplayDeactivatedSections: (cb=(->)) ->
+			displayDeactivatedSections = @state.displayDeactivatedSections
 			@setState {displayDeactivatedSections}, cb
 
-		_toggleDisplayCompletedSections: (boolean, cb=(->)) ->
-			displayCompletedSections = boolean or not @state.displayCompletedSections
+		_toggleDisplayCompletedSections: ->
+			displayCompletedSections = @state.displayCompletedSections
 			@setState {displayCompletedSections}, cb
 
 		_expandSection: (section) ->
@@ -250,6 +140,30 @@ load = (win) ->
 
 			topOffset = 50 + additionalOffset # Add offset depending on top padding
 			scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, cb
+
+
+	InactiveSectionsWrapper = ({status, size, isExpanded, onToggle, children}) ->
+			Status = status.charAt(0).toUpperCase() + status.slice(1) # Capitalize
+
+			return R.div({className: "status-#{status}"},
+				R.span({
+					className: 'inactiveSectionsWrapper'
+					onClick: onToggle
+				},
+					# Rotates 90'CW when expanded
+					FaIcon('caret-right', {className: 'expanded' if isExpanded})
+
+					R.strong({}, size)
+					" #{Status} "
+					Term (
+						if size > 1 then 'Sections' else 'Section'
+					)
+				)
+
+				R.div({className: 'sections'},
+					children
+				)
+			)
 
 
 	# Create drag-drop context for the PlanView class
