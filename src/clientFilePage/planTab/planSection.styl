@@ -64,13 +64,13 @@
 		align-items center
 		justify-content flex-end
 		$duration = .2s
-		transition padding-left $duration ease
+		transition padding-left $duration linear
 
 		border-color sidebar-borders
 		border-style none
 		border-width 1px
 
-		padding 15px 12px 15px 22px
+		padding 15px 20px
 
 		&:hover
 			.dragSource .fa
@@ -83,7 +83,7 @@
 			width 0
 			height 0
 			margin-right 0
-			transition width $duration ease
+			transition width $duration linear
 			justify-content center
 			align-items center
 
