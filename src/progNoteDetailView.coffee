@@ -97,7 +97,7 @@ load = (win) ->
 					itemName = item.get('unitName')
 
 					entries = progNoteHistories.flatMap (progNoteHistory) ->
-						initialAuthor = progNoteHistory.first().get('author')
+						initialAuthor = progNoteHistory.first().get('authorDisplayName') or progNoteHistory.first().get('author')
 						createdTimestamp = progNoteHistory.first().get('timestamp')
 						progNote = progNoteHistory.last()
 
@@ -135,7 +135,7 @@ load = (win) ->
 					itemDescription = item.get('targetDescription')
 
 					entries = progNoteHistories.flatMap (progNoteHistory) =>
-						initialAuthor = progNoteHistory.first().get('author')
+						initialAuthor = progNoteHistory.first().get('authorDisplayName') or progNoteHistory.first().get('author')
 						createdTimestamp = progNoteHistory.first().get('timestamp')
 						progNote = progNoteHistory.last()
 
@@ -183,7 +183,7 @@ load = (win) ->
 					entries = progNoteHistories
 					.filter (progNoteHistory) -> progNoteHistory.last().get('type') is 'basic'
 					.map (progNoteHistory) =>
-						initialAuthor = progNoteHistory.first().get('author')
+						initialAuthor = progNoteHistory.first().get('authorDisplayName')
 						createdTimestamp = progNoteHistory.first().get('timestamp')
 						progNote = progNoteHistory.last()
 
@@ -229,16 +229,12 @@ load = (win) ->
 						R.h3({}, itemName)
 						(if itemDescription?
 							R.div({className: 'toggleDescriptionButton'},
-								if @state.descriptionIsVisible
-									[
-										'Hide Description '
-										FaIcon 'chevron-up', {className:'up'}
-									]
-								else
-									[
-										'View Description '
-										FaIcon 'chevron-up', {className:'down'}
-									]
+								if @state.descriptionIsVisible then "Hide" else "View"
+								" Description "
+
+								FaIcon('chevron-up', {
+									className: if @state.descriptionIsVisible then 'up' else 'down'
+								})
 							)
 						)
 					)

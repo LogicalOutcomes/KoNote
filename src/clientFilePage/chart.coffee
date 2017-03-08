@@ -32,6 +32,7 @@ load = (win) ->
 
 		getInitialState: -> {
 			eventRows: 0
+			hoveredMetric: null
 		}
 
 		# TODO: propTypes
@@ -273,6 +274,9 @@ load = (win) ->
 					classes: {
 						hiddenId: 'hiddenId'
 					}
+					# Get/destroy hovered metric point data in local memory
+					onmouseover: (d) => @hoveredMetric = d
+					onmouseout: (d) => @hoveredMetric = null if @hoveredMetric? and @hoveredMetric.id is d.id
 				}
 				spline: {
 					interpolation: {
@@ -294,6 +298,67 @@ load = (win) ->
 						title: (timestamp) ->
 							return Moment(timestamp).format(Config.timestampFormat)
 					}
+					# Customization from original c3 tooltip DOM code: http://stackoverflow.com/a/25750639
+					contents: (metrics, defaultTitleFormat, defaultValueFormat, color) =>
+						# Lets us distinguish @_chart's local `this` (->) methods from Chart's `this` (=>)
+						# http://stackoverflow.com/a/15422322
+						$$ = ` this `
+
+						config = $$.config
+						titleFormat = config.tooltip_format_title or defaultTitleFormat
+						nameFormat = config.tooltip_format_name or (name) -> name
+
+						valueFormat = config.tooltip_format_value or defaultValueFormat
+						text = undefined
+						title = undefined
+						value = undefined
+						name = undefined
+						bgcolor = undefined
+
+						tableContents = metrics
+						.sort (a, b) -> b.value - a.value # Sort by scaled value (desc)
+						.forEach (currentMetric) =>
+							# Is this metric is currently being hovered over?
+							isHoveredMetric = @hoveredMetric? and (
+								@hoveredMetric.id is currentMetric.id or # Is currently hovered (top layer)
+								Math.abs(@hoveredMetric.value - currentMetric.value) < 0.025 # Is hiding behind hovered metric
+							)
+
+							# Ignore empty values? TODO: Check this
+							if !(currentMetric and (currentMetric.value or currentMetric.value == 0))
+								return
+
+							if !text
+								title = if titleFormat then titleFormat(currentMetric.x) else currentMetric.x
+								text = '<table class=\'' + $$.CLASS.tooltip + '\'>' + (if title or title == 0 then '<tr><th colspan=\'2\'>' + title + '</th></tr>' else '')
+
+							name = nameFormat(currentMetric.name)
+							value = valueFormat(currentMetric.value, currentMetric.ratio, currentMetric.id, currentMetric.index)
+							hoverClass = if isHoveredMetric then 'isHovered' else ''
+
+							bgcolor = if $$.levelColor then $$.levelColor(currentMetric.value) else color(currentMetric.id)
+							text += '<tr class=\'' + $$.CLASS.tooltipName + '-' + currentMetric.id + ' ' + hoverClass + '\'>'
+							text += '<td class=\'name\'><span style=\'background-color:' + bgcolor + '\'></span>' + name + '</td>'
+							text += '<td class=\'value\'>' + value + '</td>'
+							text += '</tr>'
+
+							# TODO: Show definitions for other metrics w/ overlapping regular or scaled values
+							if isHoveredMetric
+								metricId = currentMetric.id.substr(2) # Cut out "y-" for raw ID
+								metricDefinition = @props.metricsById.getIn [metricId, 'definition']
+
+								# Truncate definition to 100ch + ...
+								if metricDefinition.length > 100
+									metricDefinition = metricDefinition.substring(0, 100) + "..."
+
+								text += '<tr class=\'' + $$.CLASS.tooltipName + '-' + currentMetric.id + ' + \'>'
+								text += '<td class=\'definition\' colspan=\'2\'>' + metricDefinition + '</td>'
+								text += '</tr>'
+
+							return text
+
+						text += '</table>'
+						return text
 				}
 				item: {
 					onclick: (id) -> return false

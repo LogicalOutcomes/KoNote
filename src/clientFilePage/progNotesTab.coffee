@@ -41,12 +41,15 @@ load = (win) ->
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	OpenDialogLink = require('../openDialogLink').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
+	EntryDateNavigator = require('./entryDateNavigator').load(win)
 	PrintButton = require('../printButton').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 	FilterBar = require('./filterBar').load(win)
 
-	{FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName, makeMoment
-	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex, blockedExtensions, stripMetadata} = require('../utils').load(win)
+	{
+		FaIcon, openWindow, renderLineBreaks, showWhen, formatTimestamp, renderName, makeMoment
+		getUnitIndex, getPlanSectionIndex, getPlanTargetIndex, blockedExtensions, stripMetadata, scrollToElement
+	} = require('../utils').load(win)
 
 	# List of fields we exclude from keyword search
 	excludedSearchFields = Imm.fromJS [
@@ -293,6 +296,7 @@ load = (win) ->
 						(if @state.isFiltering and not isEditing
 							FilterBar({
 								ref: 'filterBar'
+								historyEntries
 								programIdFilter: @state.programIdFilter
 								dataTypeFilter: @state.dataTypeFilter
 								programsById: @props.programsById
@@ -365,6 +369,7 @@ load = (win) ->
 						)
 
 						EntriesListView({
+							ref: 'entriesListView'
 							historyEntries
 							entryIds: historyEntries.map (e) -> e.get('id')
 							transientData
@@ -1039,38 +1044,31 @@ load = (win) ->
 		}
 
 		componentDidMount: ->
-			# Infinite scroll behaviour
-			leftPane = $('.entriesListView')
+			# Watch scroll for infinite scroll behaviour, throttle to 1call/per/150ms
+			@_watchUnlimitedScroll = _.throttle(@_watchUnlimitedScroll, 150)
 
-			leftPane.on 'scroll', _.throttle((=>
-				if leftPane.scrollTop() + (leftPane.innerHeight() *2) >= leftPane[0].scrollHeight
+			@entriesListView = $(findDOMNode @)
+			@entriesListView.on 'scroll', @_watchUnlimitedScroll
 
-					# Update seperate result count while filtering
-					# TODO: Refactor redundancy
-					if @props.isFiltering
-						# Disregard if nothing left to load
-						return if @state.filterCount >= @props.historyEntries.size
+			# Custom positioning logic to have EntryDateNavigator hug this.bottom-right
+			@entryDateNavigator = $(findDOMNode @refs.entryDateNavigator)
 
-						filterCount = @state.filterCount + 10
-						@setState {filterCount}
+			# Set initial position, and listen for window resize
+			@rightPane = $('.rightPane')[0] # Ref not available here, maybe get from this upstream?
+			@_setNavigatorRightOffset()
 
-					else
-						# Disregard if nothing left to load
-						return if @state.historyCount >= @props.historyEntries.size
-
-						historyCount = @state.historyCount + 10
-						@setState {historyCount}
-
-				return
-			), 150)
+			$(win).on 'resize', @_setNavigatorRightOffset
 
 		componentDidUpdate: (oldProps, oldState) ->
 			# Update highlighting when anything changes while searching
+			# TODO: Maybe wrap component with this logic; allow state to change unimpeded
 			if @props.isFiltering
 
-				filterParametersChanged = @props.searchQuery isnt oldProps.searchQuery or
-				@props.dataTypeFilter isnt oldProps.dataTypeFilter or
-				@props.programIdFilter isnt oldProps.programIdFilter
+				filterParametersChanged = (
+					@props.searchQuery isnt oldProps.searchQuery or
+					@props.dataTypeFilter isnt oldProps.dataTypeFilter or
+					@props.programIdFilter isnt oldProps.programIdFilter
+				)
 
 				# Reset filterCount and scroll to top anytime filter parameters change
 				if filterParametersChanged
@@ -1109,6 +1107,92 @@ load = (win) ->
 			if @props.isEditing isnt oldProps.isEditing and @props.isEditing
 				@_resetScroll()
 
+		componentWillUnmount: ->
+			@entriesListView.off 'scroll', @_watchUnlimitedScroll
+			$(win.document).off 'resize', @_updateNavigatorPosition
+
+		_watchUnlimitedScroll: ->
+			# Skip if we're scrolling via EntryDateNavigator, entry count is already set
+			return if @isAutoScrolling
+
+			# Detect if we've reached the lower threshold to trigger update
+			if @entriesListView.scrollTop() + (@entriesListView.innerHeight() *2) >= @entriesListView[0].scrollHeight
+
+				# Count is contextual to complete history, or filtered entries
+				countType = if @props.isFiltering then 'filterCount' else 'historyCount'
+
+				# Disregard if nothing left to load into the count
+				return if @state[countType] >= @props.historyEntries.size
+
+				# Update UI with +10 to entry count
+				nextState = {}
+				nextState[countType] = @state[countType] + 10
+				@setState(nextState)
+
+		_setNavigatorRightOffset: ->
+			# Add rightPane's width to navigator's initial (css) right positioning
+			# TODO: Can we use new chrome 'sticky' instead? Sometimes doesn't show on HCR
+			right = if @rightPane? then @rightPane.offsetWidth else 0
+			@entryDateNavigator.css {right}
+
+		_scrollToEntryDate: (date, cb=(->)) ->
+			# TODO: Have moment objs already pre-built in historyEntries
+			entry = @props.historyEntries.find (e) ->
+				timestamp = makeMoment e.get('timestamp')
+				return date.isSame timestamp, 'day'
+
+			if not entry?
+				console.warn "Cancelled scroll, could not find #{date.toDate()} in historyEntries"
+				cb()
+				return
+
+			# Should we supplement filter/historyCount first?
+			countType = if @props.isFiltering then 'filterCount' else 'historyCount'
+			index = @props.historyEntries.indexOf entry
+			requiresMoreEntries = @state[countType] - 1 < index
+
+
+			Async.series [
+				(cb) =>
+					return cb() unless requiresMoreEntries
+
+					# Provide 10 extra entries, so destinationEntry appears at top
+					# Set the new count (whichever type is pertinent), and *then* scroll to the entry
+					newState = {}
+					newState[countType] = (index + 1) + 10
+					@setState newState, cb
+
+				(cb) =>
+					# Scroll to latest entry matching date
+					$entriesListView = findDOMNode(@)
+					$element = win.document.getElementById "entry-#{entry.get('id')}"
+
+					@isAutoScrolling = true # Temporarily block scroll listener(s)
+					scrollToElement $entriesListView, $element, 1000, 'easeInOutQuad', cb
+
+				(cb) =>
+					@isAutoScrolling = false
+
+					# Scroll is completed, briefly highlight/animate any entries with matching date
+					selectedMoment = makeMoment entry.get('timestamp')
+
+					entryIdsToFlash = @props.historyEntries
+					.filter (e) ->
+						timestamp = makeMoment e.get('timestamp')
+						return selectedMoment.isSame makeMoment(timestamp), 'day'
+					.map (e) -> '#entry-' + e.get('id')
+					.toArray()
+					.join ', '
+
+					$(entryIdsToFlash).addClass 'flashDestination'
+					setTimeout(->
+						$(entryIdsToFlash).removeClass 'flashDestination'
+					, 2500)
+
+					cb()
+
+			], cb
+
 		_resetScroll: ->
 			findDOMNode(@).scrollTop = 0
 
@@ -1126,21 +1210,26 @@ load = (win) ->
 
 			# Limit number of entries by filter/historyCount
 			sliceCount = if isFiltering then @state.filterCount else @state.historyCount
-			historyEntries = historyEntries.slice 0, sliceCount
-
+			slicedHistoryEntries = historyEntries.slice 0, sliceCount
 
 			R.div({
 				ref: 'entriesListView'
-				className: [
-					'entriesListView'
-					showWhen not historyEntries.isEmpty()
-				].join ' '
+				id: 'entriesListView'
+				className: showWhen not slicedHistoryEntries.isEmpty()
 			},
-				(historyEntries.map (entry) =>
+				EntryDateNavigator({
+					ref: 'entryDateNavigator'
+					historyEntries: @props.historyEntries
+					onSelect: @_scrollToEntryDate
+				})
+
+				(slicedHistoryEntries.map (entry) =>
 					switch entry.get('entryType')
 						when 'progNote'
-							# Combine entry (shallow toJS) & @props
-							ProgNoteContainer(_.extend entry.toObject(), @props, {key: entry.get('id')})
+							# Combine entry with @props + key
+							ProgNoteContainer(_.extend entry.toObject(), @props, {
+								key: entry.get('id')
+							})
 
 						when 'globalEvent'
 							GlobalEventView({
@@ -1272,9 +1361,9 @@ load = (win) ->
 				attachmentText = " " + @props.attachments.get('filename')
 
 			R.div({
-				id: progNote.get('id')
+				id: "entry-#{progNote.get('id')}"
 				className: [
-					'basic progNote'
+					'entry basic progNote'
 					'isEditing' if isEditing
 				].join ' '
 			},
@@ -1354,8 +1443,8 @@ load = (win) ->
 
 
 			R.div({
-				id: progNote.get('id')
-				className: 'full progNote'
+				id: "entry-#{progNote.get('id')}"
+				className: 'entry full progNote'
 			},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory
@@ -1432,8 +1521,8 @@ load = (win) ->
 			statusChangeRev = latestRev
 
 			return R.div({
-				id: firstRev.get('id')
-				className: 'cancelStub'
+				id: "entry-#{firstRev.get('id')}"
+				className: 'entry cancelStub'
 			},
 				R.button({
 					className: 'toggleDetails btn btn-xs btn-default'
@@ -1530,6 +1619,11 @@ load = (win) ->
 			globalEvents: Imm.List()
 		}
 
+		getDefaultProps: -> {
+			progEvents: Imm.List()
+			globalEvents: Imm.List()
+		}
+
 		render: ->
 			{
 				progNote
@@ -1549,7 +1643,7 @@ load = (win) ->
 
 			userIsAuthor = progNote? and (progNote.get('author') is global.ActiveSession.userName)
 			canViewOptions = progNote? and not isEditing
-			canModify = userIsAuthor
+			canModify = userIsAuthor and not isReadOnly
 
 			hasRevisions = revisionHistory.size > 1
 			numberOfRevisions = revisionHistory.size - 1
@@ -1585,8 +1679,8 @@ load = (win) ->
 				)
 
 				R.div({className: 'author'},
-					"by "
-					firstRevision.get('author')
+					'by '
+					firstRevision.get('authorDisplayName') or firstRevision.get('author')
 
 					(if userProgram and not userProgram.isEmpty()
 						ColorKeyBubble({
@@ -1607,7 +1701,6 @@ load = (win) ->
 							className: 'entryHeaderDropdown'
 							pullRight: true
 							noCaret: true
-							container: 'body'
 							title: FaIcon('ellipsis-v', {className:'menuItemIcon'})
 						},
 							(if canModify
@@ -1677,8 +1770,8 @@ load = (win) ->
 			)
 
 			return R.div({
-				id: globalEvent.get('id')
-				className: 'globalEventView'
+				id: "entry-#{globalEvent.get('id')}"
+				className: 'entry globalEventView'
 			},
 				EntryHeader({
 					revisionHistory: Imm.List [globalEvent]
@@ -1756,11 +1849,11 @@ load = (win) ->
 
 				when 'progNoteRevisions', 'quickNoteRevisions' # ProgNote revisions
 					"""
-						div.progNote##{selectedItem.get('progNoteId')}:not(.isEditing) .revisions {
+						div.progNote#entry-#{selectedItem.get('progNoteId')}:not(.isEditing) .revisions {
 							border-left: 2px solid #3176aa !important;
 						}
 
-						div.progNote##{selectedItem.get('progNoteId')}:not(.isEditing) .revisions a {
+						div.progNote#entry-#{selectedItem.get('progNoteId')}:not(.isEditing) .revisions a {
 							color: #3176aa !important;
 							opacity: 1 !important;
 						}
