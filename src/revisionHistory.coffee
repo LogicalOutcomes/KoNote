@@ -80,7 +80,18 @@ load = (win) ->
 			return R.span({className: 'value'},
 				# Iterate over diffs and assign a surrounding span, or just the plain string
 				diffs.map (diff, key) ->
-					value = renderLineBreaks(diff.value)
+					lines = diff.value
+					.replace(/\r\n/g, '\n') # Windows -> Unix
+					.replace(/\r/g, '\n') # old Mac -> Unix
+					.split('\n')
+
+					value = []
+					for line, lineIndex in lines
+						if lineIndex > 0
+							value.push R.br({key: lineIndex})
+
+						if line.trim()
+							value.push line
 
 					if diff.added?
 						R.span({className: 'added', key}, value)
@@ -373,7 +384,7 @@ load = (win) ->
 				R.div({className: 'header'},
 					R.div({className: 'author'},
 						FaIcon('user')
-						revision.get('author')
+						revision.get('authorDisplayName') or revision.get('author')
 					)
 					R.div({className: 'timestamp'},
 						if @props.isFirstRevision and revision.get('backdate')

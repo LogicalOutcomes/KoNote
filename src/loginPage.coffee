@@ -43,11 +43,6 @@ load = (win) ->
 		suggestClose: ->
 			@props.closeWindow()
 
-		_activateWindow: ->
-			@setState {isSetUp: true}
-			Window.show()
-			Window.focus()
-
 		render: ->
 			unless @state.isSetUp
 				return null
@@ -57,7 +52,6 @@ load = (win) ->
 				isLoading: @state.isLoading
 				loadingMessage: @state.loadingMessage
 				isNewSetUp: @state.isNewSetUp
-				activateWindow: @_activateWindow
 				login: @_login
 			})
 
@@ -160,8 +154,6 @@ load = (win) ->
 
 		componentDidMount: ->
 			setTimeout(=>
-				@props.activateWindow()
-
 				if @props.isNewSetUp
 					@setState {userName: 'admin'}
 					@refs.passwordField.focus()

@@ -6,6 +6,7 @@
 
 Imm = require 'immutable'
 Term = require './term'
+Config = require './config'
 
 
 load = (win) ->
@@ -16,6 +17,9 @@ load = (win) ->
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ProgramsDropdown = require('./programsDropdown').load(win)
 	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
+
+	if Config.features.shiftSummaries.isEnabled
+		GenerateSummariesDialog = require('./generateSummariesDialog').load(win)
 
 	{FaIcon, showWhen} = require('./utils').load(win)
 
@@ -72,7 +76,7 @@ load = (win) ->
 				R.div({id: 'menuContainer'},
 					R.div({id: 'user'},
 						R.div({},
-							R.h3({}, global.ActiveSession.userName)
+							R.h3({}, ActiveSession.account.publicInfo.displayName or global.ActiveSession.userName)
 							(unless @props.programs.isEmpty()
 								ProgramsDropdown({
 									selectedProgramId: userProgramId
@@ -89,6 +93,15 @@ load = (win) ->
 								icon: 'folder-open'
 								onClick: @props.updateManagerLayer.bind null, null
 								isActive: @props.managerLayer is null and @props.isSmallHeaderSet
+							})
+							MenuItem({
+								isVisible: Config.features.shiftSummaries.isEnabled
+								title: "Shift Summaries"
+								icon: 'book'
+								onClick: @props.updateManagerLayer.bind null, 'shiftSummariesDialog'
+								onClose: @props.updateManagerLayer.bind null, null
+								isActive: @props.managerLayer is 'shiftSummariesDialog'
+								dialog: GenerateSummariesDialog
 							})
 							MenuItem({
 								title: Term 'Metrics'
@@ -162,7 +175,7 @@ load = (win) ->
 				onClick: @props.onClick
 			},
 				if @props.dialog?
-					OpenDialogLink(@props, # Why @props here? Doesn't look right...
+					OpenDialogLink(@props,
 						FaIcon(@props.icon)
 						@props.title
 					)

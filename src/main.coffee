@@ -110,7 +110,7 @@ init = (win) ->
 				nwWin.maximize()
 
 			setWindowTitle: (newTitle) =>
-				nwWin.title = newTitle
+				win.document.title = newTitle
 
 		}), containerElem
 

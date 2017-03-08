@@ -42,6 +42,8 @@ load = (win) ->
 				when 'planTemplateManagerTab'
 					PlanTemplateManagerTab
 
+			return null unless Module?
+
 			return R.div({className: 'managerLayer'},
 				R.div({className: 'managerLayerContainer'},
 					Module @props

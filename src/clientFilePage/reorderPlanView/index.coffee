@@ -52,7 +52,7 @@ load = (win) ->
 
 			return R.div({id: 'reorderPlanView'},
 				R.div({className: 'flexFiltersToolbar'},
-					R.aside({}, "Filters:")
+					R.aside({}, "Show:")
 					R.section({},
 						R.label({},
 							R.input({
@@ -60,7 +60,7 @@ load = (win) ->
 								checked: displayTargets
 								type: 'checkbox'
 							})
-							"All #{Term 'Targets'}"
+							"#{Term 'Targets'}"
 						)
 					)
 					R.section({},

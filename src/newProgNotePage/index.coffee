@@ -295,11 +295,12 @@ load = (win, {clientFileId}) ->
 										key: unitId
 										className: 'unit basic'
 									},
-										R.h1({className: 'unitName'}, unit.get 'name')
+										R.h2({className: 'unitName'}, unit.get 'name')
 										ExpandingTextArea({
 											value: unit.get('notes')
 											onFocus: @_selectBasicUnit.bind null, unit
 											onChange: @_updateBasicNotes.bind null, unitId
+											placeholder: "Enter general notes here..."
 										})
 										R.div({className: 'metrics'},
 											(unit.get('metrics').map (metric) =>
@@ -338,23 +339,25 @@ load = (win, {clientFileId}) ->
 														key: targetId
 														className: 'target'
 													},
-														R.h3({},
+														R.h3({className: 'targetHeader'},
 															target.get 'name'
 															R.span({
-																className: 'star'
+																className: [
+																	'star'
+																	'checked' if target.get('notes').includes "***"
+																].join ' '
 																title: "Mark as Important"
 																onClick: @_starTarget.bind(
 																	null, unitId, sectionId, targetId, target.get 'notes'
 																)
 															},
-																if target.get('notes').includes "***"
-																	FaIcon('star', {className:'checked'})
-																else
-																	FaIcon('star-o')
+																R.span({className:'flagText'},'Flag Important ')
+																FaIcon('flag-o',className:"fa-lg")
 															)
 														)
 														ExpandingTextArea {
 															value: target.get 'notes'
+															placeholder: "..."
 															onFocus: @_selectPlanTarget.bind(
 																null, unit, section, target
 															)
@@ -405,20 +408,32 @@ load = (win, {clientFileId}) ->
 						)
 					)
 
-					(if @hasChanges()
-						WithTooltip({
-							title: if @state.editingWhichEvent?
-								"Please finish editing your #{Term 'event'} before saving"
-							placement: 'top'
+					R.div({className: "newProgNoteToolbar"},
+						R.button({
+							className: 'saveButton'
+							disabled: @state.editingWhichEvent? or not @hasChanges()
+							onClick: @_save
 						},
-							R.button({
-								id: 'saveNoteButton'
-								className: 'btn btn-success btn-lg animated fadeInUp'
-								disabled: @state.editingWhichEvent?
-								onClick: @_save
-							},
-								"Save "
-								FaIcon('check')
+							FaIcon('save', {className:'menuItemIcon'})
+							R.span({className: 'menuItemText'},
+								"Save Note"
+							)
+						)
+						R.button({
+							onClick: @suggestClose
+						},
+							FaIcon('undo', {className:'menuItemIcon'})
+							R.span({className: 'menuItemText'},
+								"Cancel"
+							)
+						)
+						R.button({
+							onClick: @_newEventTab
+							disabled: @state.editingWhichEvent?
+						},
+							FaIcon('calendar-plus-o', className: 'menuItemIcon')
+							R.span({className: 'menuItemText'},
+								"Add Event"
 							)
 						)
 					)
@@ -432,7 +447,7 @@ load = (win, {clientFileId}) ->
 					programsById: @props.programsById
 				})
 
-				R.div({className: 'eventsPanel'},
+				R.div({className: "eventsPanel #{showWhen @state.progEvents.size > 0}"},
 					R.span({className: 'title'}, Term "Events")
 					R.div({
 						className: [
@@ -455,7 +470,7 @@ load = (win, {clientFileId}) ->
 									className: 'icon'
 									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
 								},
-									FaIcon (if isGlobalEvent then 'globe' else 'calendar')
+									FaIcon (if isGlobalEvent then 'globe' else 'calendar-o'), className: 'fa-lg'
 								)
 								EventTabView({
 									progEvent
@@ -470,12 +485,6 @@ load = (win, {clientFileId}) ->
 								})
 							)
 						)
-
-						R.button({
-							className: 'btn btn-default addEventButton'
-							onClick: @_newEventTab
-							disabled: @state.editingWhichEvent?
-						}, FaIcon('plus'))
 					)
 				)
 			)

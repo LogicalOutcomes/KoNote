@@ -36,7 +36,7 @@ load = (win) ->
 			# Here we calculate the width needed for the widget's input and set inline below
 			# Note: the added space directly correlates to the padding on .innerValue
 			if @props.value?
-				inputWidth = (@props.value.length * 9.5) + 10
+				inputWidth = (@props.value.length * 10) + 10
 
 
 			return R.div({
