@@ -30,8 +30,8 @@ load = (win) ->
 				" #{capitalize(status)} "
 
 				# Singular or plural
-				Term (
-					if size > 1 then '#{capitalize(dataType)}s' else capitalize(dataType)
+				capitalize Term (
+					if size > 1 then "#{dataType}s" else dataType
 				)
 			)
 

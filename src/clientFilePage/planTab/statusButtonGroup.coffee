@@ -70,7 +70,7 @@ load = (win) ->
 				else
 					StatusButton({
 						className: 'reactivate'
-						tooltip: 'Reactivate'
+						tooltip: "Re-activate #{planElementType}"
 						icon: 'sign-in'
 						dialog
 						title: "Reactivate #{planElementType}"
