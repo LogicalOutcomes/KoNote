@@ -20,6 +20,7 @@ load = (win) ->
 	HTML5Backend = win.ReactDnDHTML5Backend
 
 	PlanSection = require('./planSection').load(win)
+	InactiveToggleWrapper = require('./inactiveToggleWrapper').load(win)
 	{DropdownButton, MenuItem} = require('../../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	{FaIcon, showWhen, scrollToElement} = require('../../utils').load(win)
@@ -44,7 +45,7 @@ load = (win) ->
 			# Build sections by status, and order them manually into an array
 			# TODO: Make this an ordered set or something...
 			sectionsByStatus = planSections.groupBy (s) -> s.get('status')
-			sectionsByStatusArray = Imm.List(['default', 'deactivated', 'completed']).map (status) ->
+			sectionsByStatusArray = Imm.List(['default', 'completed', 'deactivated']).map (status) ->
 				sectionsByStatus.get(status)
 
 			return R.div({id: 'planView'},
@@ -56,7 +57,10 @@ load = (win) ->
 					size = sections.size
 
 					# Build the list of sections
-					PlanSectionsList = R.div({className: 'sections'},
+					PlanSectionsList = R.div({
+						key: status
+						className: 'sections'
+					},
 						(sections.map (section) =>
 							id = section.get('id')
 							index = planSections.indexOf section
@@ -73,40 +77,41 @@ load = (win) ->
 						)
 					)
 
-					# Wrap inactive section groups for display toggling
+					# Return wrapped inactive section groups for display toggling
 					switch status
 						when 'default'
 							PlanSectionsList
 
-						when 'completed'
-							InactiveSectionsWrapper({
-								status, size
-								isExpanded: @state.displayCompletedSections
-								onToggle: @_toggleDisplayCompletedSections
-							},
-								PlanSectionsList
-							)
-
 						when 'deactivated'
-							InactiveSectionsWrapper({
+							InactiveToggleWrapper({
+								key: status
+								children: PlanSectionsList
+								dataType: 'section'
 								status, size
 								isExpanded: @state.displayDeactivatedSections
 								onToggle: @_toggleDisplayDeactivatedSections
-							},
-								PlanSectionsList
-							)
+							})
 
+						when 'completed'
+							InactiveToggleWrapper({
+								key: status
+								children: PlanSectionsList
+								dataType: 'section'
+								status, size
+								isExpanded: @state.displayCompletedSections
+								onToggle: @_toggleDisplayCompletedSections
+							})
 
 				)
 			)
 
-		_toggleDisplayDeactivatedSections: (cb=(->)) ->
-			displayDeactivatedSections = @state.displayDeactivatedSections
-			@setState {displayDeactivatedSections}, cb
-
 		_toggleDisplayCompletedSections: ->
-			displayCompletedSections = @state.displayCompletedSections
-			@setState {displayCompletedSections}, cb
+			displayCompletedSections = not @state.displayCompletedSections
+			@setState {displayCompletedSections}
+
+		_toggleDisplayDeactivatedSections: ->
+			displayDeactivatedSections = not @state.displayDeactivatedSections
+			@setState {displayDeactivatedSections}
 
 		_expandSection: (section) ->
 			{id, status} = section.toObject()
@@ -140,30 +145,6 @@ load = (win) ->
 
 			topOffset = 50 + additionalOffset # Add offset depending on top padding
 			scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, cb
-
-
-	InactiveSectionsWrapper = ({status, size, isExpanded, onToggle, children}) ->
-			Status = status.charAt(0).toUpperCase() + status.slice(1) # Capitalize
-
-			return R.div({className: "status-#{status}"},
-				R.span({
-					className: 'inactiveSectionsWrapper'
-					onClick: onToggle
-				},
-					# Rotates 90'CW when expanded
-					FaIcon('caret-right', {className: 'expanded' if isExpanded})
-
-					R.strong({}, size)
-					" #{Status} "
-					Term (
-						if size > 1 then 'Sections' else 'Section'
-					)
-				)
-
-				R.div({className: 'sections'},
-					children
-				)
-			)
 
 
 	# Create drag-drop context for the PlanView class

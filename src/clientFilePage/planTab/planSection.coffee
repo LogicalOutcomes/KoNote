@@ -18,13 +18,14 @@ load = (win) ->
 	{DragSource, DropTarget} = win.ReactDnD
 
 	PlanTarget = require('./planTarget').load(win)
+	InactiveToggleWrapper = require('./inactiveToggleWrapper').load(win)
 	StatusButtonGroup = require('./statusButtonGroup').load(win)
 	ModifySectionStatusDialog = require('../modifySectionStatusDialog').load(win)
 	OpenDialogLink = require('../../openDialogLink').load(win)
 	WithTooltip = require('../../withTooltip').load(win)
 	CreatePlanTemplateDialog = require('../createPlanTemplateDialog').load(win)
 
-	{FaIcon, showWhen, scrollToElement} = require('../../utils').load(win)
+	{FaIcon, showWhen} = require('../../utils').load(win)
 
 
 	PlanSection = React.createClass
@@ -42,14 +43,13 @@ load = (win) ->
 			id: React.PropTypes.any.isRequired
 			# Raw data
 			section: React.PropTypes.instanceOf(Imm.Map).isRequired
-			targets: React.PropTypes.instanceOf(Imm.List).isRequired
 			# Methods
 			reorderSection: React.PropTypes.func.isRequired
 			reorderTargetId: React.PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {
-			displayCancelledTargets: null
+			displayDeactivatedTargets: null
 			displayCompletedTargets: null
 			isReorderHovered: false
 		}
@@ -94,13 +94,14 @@ load = (win) ->
 			sectionIsInactive = status isnt 'default'
 			sectionIndex = @props.index
 
+			# Build targets by status, and order them manually into an array
+			# TODO: Make this an ordered set or something...
 			targetsByStatus = section.get('targetIds')
 			.map (id) -> currentTargetRevisionsById.get(id)
-			.groupBy (target) -> target.get('status')
+			.groupBy (t) -> t.get('status')
 
-			activeTargets = targetsByStatus.get('default')
-			completedTargets = targetsByStatus.get('completed')
-			deactivatedTargets = targetsByStatus.get('deactivated')
+			targetsByStatusArray = Imm.List(['default', 'completed', 'deactivated']).map (status) ->
+				targetsByStatus.get(status)
 
 
 			return connectDropTarget connectDragPreview (
@@ -118,7 +119,7 @@ load = (win) ->
 						clientFile
 						section
 						isReadOnly
-						allTargetsAreInactive: not activeTargets
+						allTargetsAreInactive: not targetsByStatus.get('default')
 
 						renameSection
 						getSectionIndex
@@ -136,94 +137,91 @@ load = (win) ->
 						)
 					)
 
-					# TODO: Generalize these 3 into a single component
+					(targetsByStatusArray.map (targets) =>
+						# TODO: Remove this in favour of [key, value] (prev. TODO)
+						return if not targets
+						status = targets.getIn [0, 'status']
+						size = targets.size
 
-					(if activeTargets
-						# Default status
-						TargetsList({
-							targets: activeTargets
-							selectedTargetId
-							section, sectionIndex
-							currentTargetRevisionsById, metricsById, planTargetsById
-							removeNewTarget, updateTarget, setSelectedTarget, hasTargetChanged
-							expandTarget, addMetricToTarget, deleteMetricFromTarget, reorderTargetId
-							isReadOnly, isCollapsed
-						})
-					)
+						# Build the list of targets
+						PlanTargetsList = R.div({
+							className: 'planTargetsList'
+							key: status if status isnt 'default'
+						},
+							(targets.map (target) =>
+								targetId = target.get('id')
+								index = section.get('targetIds').indexOf targetId
 
-					# Inactive targets are pushed to the bottom
+								hasChanges = hasTargetChanged(targetId)
+								isInactive = sectionIsInactive or status isnt 'default'
+								isSelected = targetId is selectedTargetId
+								isExistingTarget = planTargetsById.has(targetId)
 
-					(if completedTargets
-						R.div({className: 'targets status-completed'},
-							R.span({
-								className: 'inactiveTargetHeader'
-								onClick: => @_toggleDisplayCompletedTargets()
-							},
-								# Rotates 90'CW when expanded
-								FaIcon('caret-right', {
-									className: 'expanded' if @state.displayCompletedTargets
-								})
-								R.strong({}, completedTargets.size)
-								" Completed "
-								Term (
-									if completedTargets.size > 1 then 'Targets' else 'Target'
-								)
-							)
-							(if @state.displayCompletedTargets
-								# Completed status
-								TargetsList({
-									targets: completedTargets
-									selectedTargetId
-									section, sectionIndex
-									currentTargetRevisionsById, metricsById, planTargetsById
-									removeNewTarget, updateTarget, setSelectedTarget, hasTargetChanged
-									expandTarget, addMetricToTarget, deleteMetricFromTarget, reorderTargetId
-									isReadOnly, isCollapsed
+								PlanTarget({
+									key: targetId unless isInactive # toggleWrapper gets key
+									target
+									metricsById
+									hasChanges
+									isSelected
+									isInactive
+									isExistingTarget
+									isReadOnly
+									isCollapsed
+
+									onRemoveNewTarget: removeNewTarget.bind null, id, targetId
+									onTargetUpdate: updateTarget.bind null, targetId
+									onTargetSelection: setSelectedTarget.bind null, targetId
+									setSelectedTarget # allows for setState cb
+									onExpandTarget: expandTarget.bind null, target, section
+
+									addMetricToTarget
+									deleteMetricFromTarget
+
+									reorderTargetId
+									section
+									sectionIndex
+									index
 								})
 							)
 						)
-					)
-					(if deactivatedTargets
-						R.div({className: 'targets status-deactivated'},
-							R.span({
-								className: 'inactiveTargetHeader'
-								onClick: => @_toggleDisplayCancelledTargets()
-							},
-								# Rotates 90'CW when expanded
-								FaIcon('caret-right', {
-									className: 'expanded' if @state.displayDeactivatedTargets
-								})
-								R.strong({}, deactivatedTargets.size)
-								" Deactivated "
-								Term (
-									if deactivatedTargets.size > 1 then 'Targets' else 'Target'
-								)
-							)
-							(if @state.displayDeactivatedTargets
-								# Completed status
-								TargetsList({
-									targets: deactivatedTargets
-									selectedTargetId
-									section, sectionIndex
-									currentTargetRevisionsById, metricsById, planTargetsById
-									removeNewTarget, updateTarget, setSelectedTarget, hasTargetChanged
-									expandTarget, addMetricToTarget, deleteMetricFromTarget, reorderTargetId
-									isReadOnly, isCollapsed
-								})
-							)
 
-						)
+						# Return wrapped inactive target groups for display toggling
+						switch status
+							when 'default'
+								PlanTargetsList
+
+							when 'deactivated'
+								InactiveToggleWrapper({
+									key: status
+									children: PlanTargetsList
+									dataType: 'target'
+									status, size
+									isExpanded: @state.displayDeactivatedTargets
+									onToggle: @_toggleDisplayDeactivatedTargets
+								})
+
+							when 'completed'
+								InactiveToggleWrapper({
+									key: status
+									children: PlanTargetsList
+									dataType: 'target'
+									status, size
+									isExpanded: @state.displayCompletedTargets
+									onToggle: @_toggleDisplayCompletedTargets
+								})
+
 					)
+
 				)
 			)
 
-		_toggleDisplayDeactivatedTargets: (boolean, cb=(->)) ->
-			displayDeactivatedTargets = boolean or not @state.displayDeactivatedTargets
-			@setState {displayDeactivatedTargets}, cb
+		_toggleDisplayCompletedTargets: ->
+			displayCompletedTargets = not @state.displayCompletedTargets
+			@setState {displayCompletedTargets}
 
-		_toggleDisplayCompletedTargets: (boolean, cb=(->)) ->
-			displayCompletedTargets = boolean or not @state.displayCompletedTargets
-			@setState {displayCompletedTargets}, cb
+		_toggleDisplayDeactivatedTargets: ->
+			displayDeactivatedTargets = not @state.displayDeactivatedTargets
+			@setState {displayDeactivatedTargets}
 
 
 	SectionHeader = React.createFactory React.createClass
@@ -330,58 +328,6 @@ load = (win) ->
 					)
 				)
 			)
-
-
-	TargetsList = (props) ->
-		{
-			targets, section, sectionIndex, sectionIsInactive, selectedTargetId
-			currentTargetRevisionsById, metricsById, planTargetsById
-			removeNewTarget, updateTarget, setSelectedTarget, hasTargetChanged
-			expandTarget, addMetricToTarget, deleteMetricFromTarget, reorderTargetId
-			isReadOnly, isCollapsed
-		} = props
-
-		{id, status} = section.toObject()
-
-
-		return R.div({className: "targetsList status-#{status}"},
-			(targets.map (target) =>
-				targetId = target.get('id')
-				index = section.get('targetIds').indexOf targetId
-
-				hasChanges = hasTargetChanged(targetId)
-				isInactive = sectionIsInactive or target.get('status') isnt 'default'
-				isSelected = targetId is selectedTargetId
-				isExistingTarget = planTargetsById.has(targetId)
-
-				PlanTarget({
-					key: targetId
-					target
-					metricsById
-					hasChanges
-					isSelected
-					isInactive
-					isExistingTarget
-					isReadOnly
-					isCollapsed
-
-					onRemoveNewTarget: removeNewTarget.bind null, id, targetId
-					onTargetUpdate: updateTarget.bind null, targetId
-					onTargetSelection: setSelectedTarget.bind null, targetId
-					setSelectedTarget # allows for setState cb
-					onExpandTarget: expandTarget.bind null, target, section
-
-					addMetricToTarget
-					deleteMetricFromTarget
-					targetId
-
-					reorderTargetId
-					section
-					sectionIndex
-					index
-				})
-			)
-		)
 
 
 	# Drag source contract

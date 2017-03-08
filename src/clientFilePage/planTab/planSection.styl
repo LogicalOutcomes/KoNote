@@ -1,15 +1,7 @@
 .planSection
-	padding-bottom 2px
-
+	padding-bottom 15px
 	border-top 1px dashed transparent
 	border-bottom 1px dashed transparent
-
-	// Overrides by status & UI state
-
-	&.status-completed, &.status-deactivated
-		padding 0
-		padding-left 20px
-
 
 	&.isReorderHovered
 		$hover-background = #eaf1f5
@@ -131,8 +123,17 @@
 		color #888
 		text-align center
 
-	> .targetsList
-		padding 0 20px 20px 20px
+
+	.inactiveToggleWrapper
+		opacity 1
+		margin 20px
+		border-radius 5px
+		padding-left 8px
+		border 2px solid inherit !important
+
+
+	.planTargetsList
+		padding 0 20px
 
 		// TODO: Make this multi-use
 		&.status-completed, &.status-deactivated
@@ -156,3 +157,4 @@
 
 				&.expanded
 					transform rotate(90deg)
+

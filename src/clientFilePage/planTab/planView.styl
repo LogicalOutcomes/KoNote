@@ -5,24 +5,49 @@
 	overflow-x hidden
 	padding-bottom 25px
 
-	// TODO: Make this multi-use (it's used again in targets!)
-	&.status-completed, &.status-deactivated
-		padding 0
-
-	.inactiveSectionHeader
-		cursor default
-		font-size 16px
-		opacity 0.8
-		transition opacity .15s ease
+	// TODO: Extract to file
+	.inactiveToggleWrapper
+		border-top 1px dashed transparent
+		opacity 0.7
+		transition opacity .15s linear
 
 		&:hover
 			opacity 1
 
-		.fa
-			font-size 1.25em
-			padding 12px 8px
-			transform rotate(0deg)
-			transition transform .25s ease
+		&.status-completed
+			background #c5ffc5
+			border-color #ace6ac
 
-			&.expanded
+		&.status-deactivated
+			background #ececec
+			border-color #e6e4e4
+
+		> span
+			cursor default
+			font-size 16px
+
+			.fa
+				font-size 1.25em
+				padding 12px 8px
+				transform rotate(0deg)
+				transition transform .25s linear
+
+		> .inactiveDataList
+			display none
+
+			.sectionHeader
+				background none
+				padding-left 20px
+
+			.dragSource, .dragSource .fa
+				display none !important
+
+
+		&.isExpanded
+			padding-bottom 15px
+
+			> span .fa
 				transform rotate(90deg)
+
+			> .inactiveDataList
+				display block

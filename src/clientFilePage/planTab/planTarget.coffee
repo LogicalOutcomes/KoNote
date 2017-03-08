@@ -42,7 +42,6 @@ load = (win) ->
 			isDragging: React.PropTypes.bool.isRequired
 			# DnD props
 			index: React.PropTypes.number.isRequired
-			id: React.PropTypes.any.isRequired
 			# Raw data
 			target: React.PropTypes.instanceOf(Imm.Map).isRequired
 			# Methods
