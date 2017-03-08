@@ -15,12 +15,6 @@
 		&:not(.isExpanded)
 			opacity 0.75
 
-			> span
-				opacity 0.75
-
-				&:hover
-					opacity 1
-
 		&:last-child
 			border-bottom-width 1px
 			border-bottom-style dashed
@@ -39,6 +33,13 @@
 			background rgba(0, 0, 0, 0.05)
 			border-color #ded6d6
 
+		&:not(.isExpanded)
+			> span
+				opacity 0.85
+
+				&:hover
+					opacity 1
+
 		> span
 			cursor default
 			user-select none
@@ -54,6 +55,7 @@
 			display none
 
 			.sectionHeader
+				position relative // Don't fixate inactive section titles
 				background none
 				padding-left 20px
 

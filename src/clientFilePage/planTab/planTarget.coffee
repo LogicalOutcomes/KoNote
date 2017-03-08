@@ -50,14 +50,16 @@ load = (win) ->
 
 		render: ->
 			{
-				target, isCollapsed, isExistingTarget
+				target, sectionIsInactive
+				isSelected, isReadOnly, isCollapsed, isExistingTarget, hasChanges
 				connectDropTarget, connectDragPreview, connectDragSource
-				isExistingTarget, isInactive, hasChanges
-				isSelected, isReadOnly
 				onExpandTarget
 			} = @props
 
 			{id, status, name, description, metricIds} = target.toObject()
+
+			canChangeStatus = isSelected and not sectionIsInactive and not isReadOnly
+			isDisabled = isReadOnly or status isnt 'default' or sectionIsInactive or isReadOnly
 
 
 			return connectDropTarget connectDragPreview (
@@ -67,7 +69,6 @@ load = (win) ->
 						'planTarget'
 						"status-#{status}"
 						'isSelected' if isSelected
-						'isInactive' if isInactive
 						'hasChanges' if hasChanges or not isExistingTarget
 						'isCollapsed' if isCollapsed
 						'readOnly' if isReadOnly
@@ -104,11 +105,11 @@ load = (win) ->
 									onChange: @_updateField.bind null, 'name'
 									onFocus: @props.onTargetSelection
 									onClick: @props.onTargetSelection
-									disabled: isInactive or isReadOnly
+									disabled: isDisabled
 								})
 							)
 
-							(if isSelected and not isInactive and not isReadOnly
+							(if canChangeStatus
 								StatusButtonGroup({
 									planElementType: Term 'Target'
 									data: target
@@ -116,7 +117,6 @@ load = (win) ->
 									status
 									onRemove: null
 									dialog: ModifyTargetStatusDialog
-									isDisabled: false
 								})
 							)
 						)
@@ -126,7 +126,7 @@ load = (win) ->
 								className: 'description field'
 								placeholder: "Describe the current #{Term 'treatment plan'} . . ."
 								value: description
-								disabled: isInactive
+								disabled: isDisabled
 								onChange: @_updateField.bind null, 'description'
 								onFocus: @props.onTargetSelection
 								onClick: @props.onTargetSelection
@@ -146,13 +146,13 @@ load = (win) ->
 											key: metricId
 											tooltipViewport: '.view'
 											isEditable: false
-											allowDeleting: not isInactive
+											allowDeleting: not isDisabled
 											onDelete: @props.deleteMetricFromTarget.bind(
 												null, @props.targetId, metricId
 											)
 										})
 									)
-									(if @props.isSelected and not isInactive
+									(if @props.isSelected and not isDisabled
 										R.button({
 											className: "btn btn-link addMetricButton animated fadeIn"
 											onClick: @_focusMetricLookupField.bind(null, @props.targetId)
@@ -162,7 +162,7 @@ load = (win) ->
 										)
 									)
 								)
-								(unless isInactive
+								(unless isDisabled
 									R.div({
 										ref: 'metricLookup'
 										className: 'metricLookupContainer'

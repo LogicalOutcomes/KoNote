@@ -17,7 +17,7 @@ load = (win) ->
 	{FaIcon} = require('../../utils').load(win)
 
 
-	StatusButtonGroup = ({planElementType, data, parentData, isExisting, status, onRemove, dialog, isDisabled}) ->
+	StatusButtonGroup = ({planElementType, data, parentData, isExisting, status, onRemove, dialog}) ->
 		isDefaultStatus = status is 'default'
 
 		R.div({className: 'statusButtonGroup'},
@@ -48,7 +48,6 @@ load = (win) ->
 							reasonLabel: "Reason for deactivation:"
 							newStatus: 'deactivated'
 							data, parentData
-							isDisabled
 						}
 						{
 							className: 'complete'
@@ -63,7 +62,6 @@ load = (win) ->
 							reasonLabel: "Reason for completed:"
 							newStatus: 'completed'
 							data, parentData
-							isDisabled
 						}
 					].map (b) -> StatusButton(Object.assign {}, b, {key: b.className})
 
@@ -73,22 +71,22 @@ load = (win) ->
 						tooltip: "Re-activate #{planElementType}"
 						icon: 'sign-in'
 						dialog
-						title: "Reactivate #{planElementType}"
+						title: "Re-activate #{planElementType}"
 						message: """
-							This will reactivate the #{planElementType.toLowerCase()} so it appears in the #{Term 'client'}
+							This will re-activate the #{planElementType.toLowerCase()} so it appears in the #{Term 'client'}
 							#{Term 'plan'}, and future #{Term 'progress notes'}.
 						"""
 						newStatus: 'default'
-						reasonLabel: "Reason for reactivation"
+						reasonLabel: "Reason for re-activation:"
 						data, parentData
-						isDisabled
+
 					})
 
 		)
 
-	StatusButton = ({className, tooltip, icon, onClick, dialog, title, message, newStatus, data, parentData, reasonLabel, isDisabled}) ->
+	StatusButton = ({className, tooltip, icon, onClick, dialog, title, message, newStatus, data, parentData, reasonLabel}) ->
 		WithTooltip({
-			title: tooltip unless isDisabled
+			title: tooltip
 			placement: 'top'
 			container: 'body'
 		},
@@ -100,7 +98,6 @@ load = (win) ->
 				title
 				message
 				reasonLabel
-				disabled: isDisabled
 			},
 				FaIcon(icon)
 			)

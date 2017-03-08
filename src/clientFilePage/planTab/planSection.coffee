@@ -146,27 +146,26 @@ load = (win) ->
 						# Build the list of targets
 						PlanTargetsList = R.div({
 							className: 'planTargetsList'
-							key: status if status isnt 'default'
+							key: status if status is 'default' # Use key if won't be wrapped
 						},
 							(targets.map (target) =>
 								targetId = target.get('id')
 								index = section.get('targetIds').indexOf targetId
 
 								hasChanges = hasTargetChanged(targetId)
-								isInactive = sectionIsInactive or status isnt 'default'
 								isSelected = targetId is selectedTargetId
 								isExistingTarget = planTargetsById.has(targetId)
 
 								PlanTarget({
-									key: targetId unless isInactive # toggleWrapper gets key
+									key: targetId
 									target
 									metricsById
 									hasChanges
 									isSelected
-									isInactive
 									isExistingTarget
 									isReadOnly
 									isCollapsed
+									sectionIsInactive
 
 									onRemoveNewTarget: removeNewTarget.bind null, id, targetId
 									onTargetUpdate: updateTarget.bind null, targetId
