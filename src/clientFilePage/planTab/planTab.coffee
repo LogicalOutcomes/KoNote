@@ -682,8 +682,14 @@ load = (win) ->
 			@setState {selectedTargetId: targetId}, cb
 
 		_addMetricToTarget: (targetId, cb, metricId) ->
+			targetRevision = @state.currentTargetRevisionsById.get(targetId)
+
+			if not targetRevision
+				throw new Error "Target ID #{targetID} does not exist in @state.currentTargetRevisionsById"
+				return
+
 			# Current target already has this metric
-			if @state.currentTargetRevisionsById.getIn([targetId, 'metricIds']).contains metricId
+			if targetRevision.get('metricIds').contains metricId
 				Bootbox.alert "This #{Term 'metric'} has already been added to the selected #{Term 'target'}."
 				return
 

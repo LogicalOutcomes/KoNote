@@ -148,14 +148,14 @@ load = (win) ->
 											isEditable: false
 											allowDeleting: not isDisabled
 											onDelete: @props.deleteMetricFromTarget.bind(
-												null, @props.targetId, metricId
+												null, id, metricId
 											)
 										})
 									)
 									(if @props.isSelected and not isDisabled
 										R.button({
 											className: "btn btn-link addMetricButton animated fadeIn"
-											onClick: @_focusMetricLookupField.bind(null, @props.targetId)
+											onClick: @_focusMetricLookupField.bind(null, id)
 										},
 											FaIcon('plus')
 											" Add #{Term 'metric'}"
@@ -170,7 +170,7 @@ load = (win) ->
 										MetricLookupField({
 											metrics: @props.metricsById.valueSeq().filter (metric) => metric.get('status') is 'default'
 											onSelection: @props.addMetricToTarget.bind(
-												null, @props.targetId, @_hideMetricInput
+												null, id, @_hideMetricInput
 											)
 											placeholder: "Find / Define a #{Term 'Metric'}"
 											isReadOnly: @props.isReadOnly
