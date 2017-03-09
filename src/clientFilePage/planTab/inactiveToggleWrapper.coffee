@@ -18,6 +18,7 @@ load = (win) ->
 		iconName = (if isExpanded then 'minus' else 'plus') + '-square-o'
 
 		return R.div({
+			id: "sections-#{status}"
 			className: [
 				"inactiveToggleWrapper status-#{status}"
 				'isExpanded' if isExpanded

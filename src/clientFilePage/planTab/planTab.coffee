@@ -19,6 +19,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	{findDOMNode} = win.ReactDOM
 
 	PlanView = require('./planView').load(win)
 	RevisionHistory = require('../../revisionHistory').load(win)
@@ -244,7 +245,7 @@ load = (win) ->
 					)
 
 					PlanView({
-						ref: 'planView'
+						ref: (component) => @planView = component
 						clientFile: @props.clientFile
 						plan
 						metricsById: @props.metricsById
@@ -639,15 +640,17 @@ load = (win) ->
 				currentTargetRevisionsById: newCurrentRevs
 				selectedTargetId: targetId
 			}, =>
-
-
-				$container = findDOMNode(@refs.planView)
+				# TODO: Refactor w/ PlanView.scrollTo into util
+				$container = findDOMNode(@planView)
+				elementId = "target-#{targetId}"
 				$element = win.document.getElementById(elementId)
 
 				topPadding = 50 # TODO: Figure this out programatically
 
-				topOffset = topPadding + additionalOffset
-				scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, cb
+				topOffset = topPadding
+				scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, (->)
+
+				$("##{elementId} .name.field").focus() # Pre-focus the name field for input
 
 		_removeNewTarget: (sectionId, transientTargetId) ->
 			sectionIndex = @_getSectionIndex sectionId

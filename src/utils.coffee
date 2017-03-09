@@ -256,7 +256,7 @@ load = (win) ->
 	# paddingOffset makes it scroll a bit less, for more space on top
 	scrollToElement = (container, element, duration = 500, easing = 'linear', paddingOffset, cb) ->
 		# paddingOffset is optional arg
-		if not cb
+		if not cb?
 			cb = paddingOffset
 			paddingOffset = 10
 
