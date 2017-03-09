@@ -172,6 +172,7 @@ load = (win) ->
 			console.error "Tried to call renderLineBreaks on a non-string:", text
 			return text
 
+
 		lines = text.trim()
 		.replace(/\r\n/g, '\n') # Windows -> Unix
 		.replace(/\r/g, '\n') # old Mac -> Unix
@@ -324,6 +325,7 @@ load = (win) ->
 		# Extra timeout safeguard against inf-loop after duration completes
 		cancelOp = null
 		console.log "scrollTop: #{start} -> #{destination}"
+
 		setTimeout (-> cancelOp = true), duration + 10
 
 		# Start the scroll loop
@@ -343,6 +345,7 @@ load = (win) ->
 
 		scroll()
 		return
+
 
 	##### Convenience methods for fetching data from a progNote
 

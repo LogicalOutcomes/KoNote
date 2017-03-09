@@ -247,6 +247,7 @@ load = (win) ->
 													placeholder: "Set Password"
 													value: @state.password
 													onChange: @_updatePassword
+													onKeyDown: @_onEnterKeyDown
 												})
 												R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
 											)
@@ -272,6 +273,7 @@ load = (win) ->
 													placeholder: "Password again"
 													value: @state.passwordConfirmation
 													onChange: @_updatePasswordConfirmation
+													onKeyDown: @_onEnterKeyDown
 												})
 												R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
 											)
@@ -531,6 +533,10 @@ load = (win) ->
 				installProgress: {percent, message}
 			}
 
+		_onEnterKeyDown: (event) ->
+			if event.which is 13
+				@_install()
+
 		_install: ->
 			if @state.password isnt @state.passwordConfirmation
 				Bootbox.alert "Passwords do not match"
@@ -607,7 +613,7 @@ load = (win) ->
 				(cb) =>
 					@_updateProgress 75, "Creating \"admin\" user..."
 					# Create admin user account using systemAccount
-					Persist.Users.Account.create systemAccount, 'admin', adminPassword, 'admin', (err) =>
+					Persist.Users.Account.create systemAccount, 'admin', 'admin', adminPassword, 'admin', (err) =>
 						if err
 							if err instanceof Persist.Users.UserNameTakenError
 								Bootbox.alert "An admin #{Term 'user account'} already exists."

@@ -30,6 +30,8 @@
 		"label": "ID#"
 	},
 
+	"printHeaderFooterEnabled": false,
+	"printHeader": "",
 	"printFooter": "",
 
 	"timestampFormat": "MMM Do, YYYY [-] h:mma",

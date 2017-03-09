@@ -274,10 +274,11 @@ Create.eventType = (index, cb) ->
 
 Create.account = (index, cb) ->
 	userName = 'user' + Faker.random.number()
+	displayName = 'userDisplay' + Faker.random.number()
 	password = 'password'
 	accountType = 'normal'
 
-	Users.Account.create global.ActiveSession.account, userName, password, accountType, cb
+	Users.Account.create global.ActiveSession.account, userName, displayName, password, accountType, cb
 
 Create.planTemplate = (index, cb) ->
 	planTemplate = Imm.fromJS {

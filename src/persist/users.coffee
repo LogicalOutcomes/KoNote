@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # This module handles all logic related to user accounts.
@@ -105,6 +105,7 @@ class Account
 		publicInfo = {
 			accountType: 'admin'
 			isActive: true
+			displayName: 'system'
 		}
 		privateInfo = {
 			globalEncryptionKey: SymmetricEncryptionKey.generate().export()
@@ -147,9 +148,9 @@ class Account
 	# - UserNameTakenError if the user name has already been taken
 	# - IOError
 	#
-	# (DecryptedAccount loggedInAccount, string userName, string password, string accountType,
+	# (DecryptedAccount loggedInAccount, string userName, string displayName, string password, string accountType,
 	#  function cb(Error err, Account newAccount)) -> undefined
-	@create: (loggedInAccount, userName, password, accountType, cb) ->
+	@create: (loggedInAccount, userName, displayName, password, accountType, cb) ->
 		unless accountType in ['normal', 'admin']
 			cb new Error "unknown account type #{JSON.stringify accountType}"
 			return
@@ -157,7 +158,7 @@ class Account
 		if accountType is 'admin'
 			Assert.strictEqual loggedInAccount.publicInfo.accountType, 'admin', 'only admins can create admins'
 
-		publicInfo = {accountType, isActive: true}
+		publicInfo = {accountType, displayName, isActive: true}
 		kdfParams = generateKdfParams()
 		accountEncryptionKey = SymmetricEncryptionKey.generate()
 
@@ -598,7 +599,7 @@ class DecryptedAccount extends Account
 			# See Account.decrypt* instead
 			throw new Error "DecryptedAccount constructor should only be used internally"
 
-		@_userDir = getUserDir @dataDirectory, @userName		
+		@_userDir = getUserDir @dataDirectory, @userName
 
 	# Change account Type: Admin -> Normal | Normal -> Admin.
 	#
@@ -612,7 +613,7 @@ class DecryptedAccount extends Account
 		privateInfo = @privateInfo
 		publicInfoPath = Path.join(@_userDir, 'public-info')
 		privateInfoPath = Path.join(@_userDir, 'private-info')
-		
+
 		unless loggedInAccount.publicInfo.accountType is 'admin'
 			cb new Error "only admins can change account types"
 			return
@@ -623,7 +624,7 @@ class DecryptedAccount extends Account
 		if loggedInAccount.userName == @userName
 			cb new AccountTypeError "you cannot change your own account type"
 			return
-		
+
 		Async.series [
 			(cb) =>
 				publicInfo.accountType = newType
@@ -645,7 +646,40 @@ class DecryptedAccount extends Account
 						return
 					cb()
 		], cb
-	
+
+	changeDisplayName: (loggedInAccount, newDisplayName, cb) ->
+		publicInfo = @publicInfo
+		privateInfo = @privateInfo
+		publicInfoPath = Path.join(@_userDir, 'public-info')
+		privateInfoPath = Path.join(@_userDir, 'private-info')
+
+		unless loggedInAccount.publicInfo.accountType is 'admin'
+			cb new Error "only admins can change account types"
+			return
+
+		Async.series [
+			(cb) =>
+				publicInfo.displayName = newDisplayName
+				Fs.writeFile publicInfoPath, JSON.stringify(publicInfo), (err) =>
+					if err
+						cb new IOError err
+						return
+					cb()
+			(cb) =>
+				if publicInfo.accountType is 'admin'
+					privateInfo.systemPrivateKey = loggedInAccount.privateInfo.systemPrivateKey
+				else
+					privateInfo.systemPrivateKey = null
+
+				encryptedData = @_accountKey.encrypt JSON.stringify privateInfo
+				Fs.writeFile privateInfoPath, encryptedData, (err) =>
+					if err
+						cb new IOError err
+						return
+					cb()
+		], cb
+
+
 	# Updates this user account's password.
 	#
 	# Errors:
@@ -657,7 +691,7 @@ class DecryptedAccount extends Account
 		kdfParams = generateKdfParams()
 		nextAccountKeyId = null
 		pwEncryptionKey = null
-		
+
 		tmpDirPath = Path.join(@dataDirectory, '_tmp')
 
 		Async.series [
@@ -680,11 +714,12 @@ class DecryptedAccount extends Account
 			(cb) =>
 				accountKeyEncoded = Base64url.encode pwEncryptionKey.encrypt(@_accountKey.export())
 				data = {kdfParams, accountKey: accountKeyEncoded}
-				
+
 				nextAccountKeyPath = Path.join(@_userDir, "account-key-#{nextAccountKeyId}")
 
 				Atomic.writeJSONToFile nextAccountKeyPath, tmpDirPath, JSON.stringify(data), cb
 		], cb
+
 
 generateKdfParams = ->
 	return {
