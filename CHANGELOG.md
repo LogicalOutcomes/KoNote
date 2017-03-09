@@ -1,7 +1,19 @@
 ### 1.15.0
 
 ### Improvements
+
+- Quick navigation to date in progress notes tab ([#994](https://github.com/konode001/konote/issues/994))
+- Analysis can be printed or exported to PNG ([#969](https://github.com/konode001/konote/issues/969))
+- Friendly display names for users ([#20](https://github.com/konode001/konote/issues/20))
+- Custom print headers and footers ([#913](https://github.com/konode001/konote/issues/913))
+- Restyle new progress note window ([#1024](https://github.com/konode001/konote/issues/1024))
 - Shift summaries button moved to main menu ([#751](https://github.com/konode001/konote/issues/751))
+
+#### Fixes
+
+- Fix revision link style ([#1007](https://github.com/konode001/konote/issues/1007))
+- Fix default filename for export functions ([#1021](https://github.com/konode001/konote/issues/1021))
+
 
 ### 1.14.0 (Feb 1 2017)
 
