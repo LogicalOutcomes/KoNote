@@ -40,8 +40,11 @@ load = (win) ->
 				)
 			)
 
-			R.div({className: "inactiveDataList"},
-				children
+			# Can't do with CSS, expandingTextArea needs to know its height on render
+			(if isExpanded
+				R.div({className: "inactiveDataList"},
+					children
+				)
 			)
 		)
 
