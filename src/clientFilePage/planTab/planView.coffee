@@ -109,11 +109,18 @@ load = (win) ->
 
 		_toggleDisplayCompletedSections: ->
 			displayCompletedSections = not @state.displayCompletedSections
-			@setState {displayCompletedSections}
+			@setState {displayCompletedSections}, =>
+				# Scroll top of inactive sections container when expanded
+				if displayCompletedSections
+					@scrollTo("sections-completed")
 
 		_toggleDisplayDeactivatedSections: ->
 			displayDeactivatedSections = not @state.displayDeactivatedSections
-			@setState {displayDeactivatedSections}
+
+			@setState {displayDeactivatedSections}, =>
+				# Scroll top of inactive sections container when expanded
+				if displayDeactivatedSections
+					@scrollTo("sections-deactivated")
 
 		_expandTarget: (id) ->
 			elementId = "target-#{id}"
