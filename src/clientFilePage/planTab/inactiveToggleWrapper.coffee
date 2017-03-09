@@ -15,6 +15,7 @@ load = (win) ->
 
 
 	InactiveToggleWrapper = ({dataType, status, size, isExpanded, onToggle, children}) ->
+		iconName = (if isExpanded then 'minus' else 'plus') + '-square-o'
 
 		return R.div({
 			className: [
@@ -22,9 +23,12 @@ load = (win) ->
 				'isExpanded' if isExpanded
 			].join ' '
 		},
-			R.span({onClick: onToggle},
+			R.div({
+				className: 'toggleHeader'
+				onClick: onToggle
+			},
 				# Rotates 90'CW when expanded
-				FaIcon('caret-right')
+				FaIcon(iconName, {className: 'toggleIcon'})
 
 				R.strong({}, size)
 				" #{capitalize(status)} "

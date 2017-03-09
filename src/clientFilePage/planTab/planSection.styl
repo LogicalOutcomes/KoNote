@@ -92,12 +92,19 @@
 
 			cursor default
 
+
 			.dragSource
 				margin-right 20px
 				opacity 0
 
-			&:hover .renameIcon
+			&:hover	.renameIcon
 				opacity 0.8
+
+			> span
+				padding 2px 0
+
+				&:hover
+					text-decoration underline
 
 			.renameIcon
 				opacity 0
@@ -127,8 +134,10 @@
 	.inactiveToggleWrapper
 		margin 20px
 		border-radius 5px
-		padding-left 8px
 		border 1px solid
+
+		.toggleHeader
+			padding 10px 12px !important
 
 
 	.planTargetsList

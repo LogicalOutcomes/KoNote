@@ -79,6 +79,7 @@ load = (win) ->
 				deleteMetricFromTarget
 				getSectionIndex
 				expandTarget
+				expandSection
 
 				reorderSection
 				reorderTargetId
@@ -119,6 +120,7 @@ load = (win) ->
 						clientFile
 						section
 						isReadOnly
+						isCollapsed
 						allTargetsAreInactive: not targetsByStatus.get('default')
 
 						renameSection
@@ -128,7 +130,8 @@ load = (win) ->
 						sectionIsInactive
 						currentTargetRevisionsById
 						connectDragSource
-						onReorderHover: (isReorderHovered) => @setState {isReorderHovered}
+						expandSection
+						onReorderHover: @_onReorderHover
 					})
 
 					(if section.get('targetIds').size is 0
@@ -171,7 +174,7 @@ load = (win) ->
 									onTargetUpdate: updateTarget.bind null, targetId
 									onTargetSelection: setSelectedTarget.bind null, targetId
 									setSelectedTarget # allows for setState cb
-									onExpandTarget: expandTarget.bind null, target, section
+									onExpandTarget: expandTarget.bind null, targetId
 
 									addMetricToTarget
 									deleteMetricFromTarget
@@ -222,6 +225,8 @@ load = (win) ->
 			displayDeactivatedTargets = not @state.displayDeactivatedTargets
 			@setState {displayDeactivatedTargets}
 
+		_onReorderHover: (isReorderHovered) -> @setState {isReorderHovered}
+
 
 	SectionHeader = React.createFactory React.createClass
 		displayName: 'SectionHeader'
@@ -232,6 +237,7 @@ load = (win) ->
 				clientFile
 				section
 				isReadOnly
+				isCollapsed
 				allTargetsAreInactive
 
 				renameSection
@@ -242,10 +248,12 @@ load = (win) ->
 				currentTargetRevisionsById
 				sectionIsInactive
 				connectDragSource
+				expandSection
 				onReorderHover
 			} = @props
 
 			sectionStatus = section.get('status')
+			sectionId = section.get('id')
 
 			# Figure out whether already exists in plan
 			isExistingSection = clientFile.getIn(['plan','sections']).some (obj) =>
@@ -271,11 +279,15 @@ load = (win) ->
 					className: 'sectionName'
 				},
 					R.span({
-						onClick: -> if canModify then renameSection(section.get('id'))
+						onClick: ->
+							if isCollapsed
+								expandSection(sectionId)
+							else if canModify
+								renameSection(sectionId)
 					},
 						section.get('name')
 
-						(if canModify
+						(if canModify and not isCollapsed
 							FaIcon('pencil', {className: 'renameIcon'})
 						)
 					)

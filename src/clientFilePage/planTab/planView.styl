@@ -3,56 +3,45 @@
 	flex 1
 	overflow-y auto
 	overflow-x hidden
-	padding-bottom 25px
 
-	// Overrides specific to sections
-	> .inactiveToggleWrapper
-		padding 10px
-		transition opacity .15s linear
-		border-top-width 1px
-		border-top-style dashed
+	> .sections // active sections
+		padding-bottom 25px
 
-		&:not(.isExpanded)
-			opacity 0.75
-
-		&:last-child
-			border-bottom-width 1px
-			border-bottom-style dashed
-
-		&:hover
-			opacity 1
 
 	// TODO: Extract to file
 	.inactiveToggleWrapper
+		position relative
 
-		&.status-completed
-			background rgba(0, 255, 0, 0.05)
+		&.status-completed, &.status-completed .toggleHeader:hover
+			background rgba(0, 255, 0, 0.075)
 			border-color #ace6ac
 
-		&.status-deactivated
-			background rgba(0, 0, 0, 0.05)
+		&.status-deactivated, &.status-deactivated .toggleHeader:hover
+			background rgba(0, 0, 0, 0.075)
 			border-color #ded6d6
 
 		&:not(.isExpanded)
-			> span
+			.toggleHeader
 				opacity 0.85
 
 				&:hover
 					opacity 1
 
-		> span
+		> .toggleHeader
+			padding 10px 20px 10px 20px
 			cursor default
 			user-select none
 			font-size 16px
 
-			.fa
-				font-size 1.25em
-				padding 12px 8px
-				transform rotate(0deg)
-				transition transform .25s linear
+			.toggleIcon
+				float right
+				opacity 0.65
+				font-size 1.15em
+				margin-top 3px
 
 		> .inactiveDataList
 			display none
+			padding 10px
 
 			.sectionHeader
 				position relative // Don't fixate inactive section titles
@@ -66,8 +55,31 @@
 		&.isExpanded
 			padding-bottom 15px
 
-			> span .fa
-				transform rotate(90deg)
-
 			> .inactiveDataList
 				display block
+
+
+
+	// Overrides specific to sections
+	> .inactiveToggleWrapper
+		transition opacity .15s linear
+		border-top-width 1px
+		border-top-style dashed
+
+		.toggleHeader
+			padding-top 15px
+			padding-bottom 15px
+
+		&:not(.isExpanded)
+			opacity 0.85
+
+		&.isExpanded
+			.toggleHeader
+				border-bottom 1px solid rgba(0,0,0,0.04)
+
+		&:last-child
+			border-bottom-width 1px
+			border-bottom-style dashed
+
+		&:hover
+			opacity 1

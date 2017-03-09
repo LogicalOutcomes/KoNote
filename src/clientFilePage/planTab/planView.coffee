@@ -4,6 +4,7 @@
 
 # Main view component for Plan Tab in client file
 # Wrapped in main drag-drop context, to re-order sections & targets
+# Handles auto-scrolling behaviour
 
 Imm = require 'immutable'
 Term = require '../../term'
@@ -71,6 +72,7 @@ load = (win) ->
 								key: id
 								section, id, index
 								expandTarget: @_expandTarget
+								expandSection: @_expandSection
 							}
 
 							return PlanSection(props)
@@ -113,37 +115,35 @@ load = (win) ->
 			displayDeactivatedSections = not @state.displayDeactivatedSections
 			@setState {displayDeactivatedSections}
 
-		_expandSection: (section) ->
-			{id, status} = section.toObject()
-			sectionElementId = "section-#{id}"
+		_expandTarget: (id) ->
+			elementId = "target-#{id}"
 
-			# Highlight the destination in seperate op (regardless of valid scroll or not)
-			$sectionName = $("##{sectionElementId} .sectionName")
-			$sectionName.addClass 'highlight'
-			setTimeout (=> $sectionName.removeClass 'highlight'), 1750
-
-			@setState {isCollapsed: false}, =>
-				stickyHeaderOffset = $('.sectionHeader').innerHeight() * -1
-				@_scrollTo sectionElementId, stickyHeaderOffset, cb
-				# Done scrolling to section, highlighting removed on its own
-
-		_expandTarget: (target, section) ->
-			{id, status} = target.toObject()
-			targetElementId = "target-#{id}"
-
+			# Account for read-only notice on top if isReadOnly
 			additionalOffset = if @props.isReadOnly
 				$('#readOnlyNotice').innerHeight() * -1
 			else
 				0
 
 			# Switch views & select target, expand groups if needed, scroll!
-			@props.collapseAndSelectTargetId id, => @_scrollTo(targetElementId, additionalOffset)
+			@props.collapseAndSelectTargetId id, => @scrollTo(elementId, additionalOffset)
 
-		_scrollTo: (elementId, additionalOffset, cb=(->)) ->
+		_expandSection: (id) ->
+			elementId = "section-#{id}"
+
+			console.log "elementId", elementId
+
+			additionalOffset = -100
+
+			# TODO: Make sections selectable (ie: section history)
+			@props.toggleCollapsedView => @scrollTo(elementId, additionalOffset)
+
+		scrollTo: (elementId, additionalOffset=0, cb=(->)) ->
 			$container = findDOMNode(@)
 			$element = win.document.getElementById(elementId)
 
-			topOffset = 50 + additionalOffset # Add offset depending on top padding
+			topPadding = 50 # TODO: Figure this out programatically
+
+			topOffset = topPadding + additionalOffset
 			scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, cb
 
 

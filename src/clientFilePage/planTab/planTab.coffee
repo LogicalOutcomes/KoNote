@@ -266,6 +266,7 @@ load = (win) ->
 						deleteMetricFromTarget: @_deleteMetricFromTarget
 						getSectionIndex: @_getSectionIndex
 						collapseAndSelectTargetId: @_collapseAndSelectTargetId
+						toggleCollapsedView: @_toggleCollapsedView
 
 						reorderSection: @_reorderSection
 						reorderTargetId: @_reorderTargetId
@@ -388,9 +389,9 @@ load = (win) ->
 				selectedTargetId
 			}, cb
 
-		_toggleCollapsedView: ->
+		_toggleCollapsedView: (cb=(->)) ->
 			isCollapsedView = not @state.isCollapsedView
-			@setState {isCollapsedView}
+			@setState {isCollapsedView}, cb
 
 		_reorderSection: (dragIndex, hoverIndex) ->
 			if @props.isReadOnly
@@ -636,11 +637,17 @@ load = (win) ->
 			@setState {
 				plan: newPlan
 				currentTargetRevisionsById: newCurrentRevs
+				selectedTargetId: targetId
 			}, =>
-				# Temporary until we work out a Bootbox alternative
-				setTimeout(=>
-					$(".target-#{targetId} .name.field").focus()
-				, 250)
+
+
+				$container = findDOMNode(@refs.planView)
+				$element = win.document.getElementById(elementId)
+
+				topPadding = 50 # TODO: Figure this out programatically
+
+				topOffset = topPadding + additionalOffset
+				scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, cb
 
 		_removeNewTarget: (sectionId, transientTargetId) ->
 			sectionIndex = @_getSectionIndex sectionId
