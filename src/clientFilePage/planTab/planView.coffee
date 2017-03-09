@@ -112,7 +112,7 @@ load = (win) ->
 			@setState {displayCompletedSections}, =>
 				# Scroll top of inactive sections container when expanded
 				if displayCompletedSections
-					@scrollTo("sections-completed")
+					@scrollTo "sections-completed"
 
 		_toggleDisplayDeactivatedSections: ->
 			displayDeactivatedSections = not @state.displayDeactivatedSections
@@ -120,7 +120,7 @@ load = (win) ->
 			@setState {displayDeactivatedSections}, =>
 				# Scroll top of inactive sections container when expanded
 				if displayDeactivatedSections
-					@scrollTo("sections-deactivated")
+					 @scrollTo "sections-deactivated"
 
 		_expandTarget: (id) ->
 			elementId = "target-#{id}"
@@ -131,27 +131,27 @@ load = (win) ->
 			else
 				0
 
+			additionalOffset += 25 # Add a bit extra for sectionHeader
+
 			# Switch views & select target, expand groups if needed, scroll!
 			@props.collapseAndSelectTargetId id, => @scrollTo(elementId, additionalOffset)
 
 		_expandSection: (id) ->
 			elementId = "section-#{id}"
 
-			console.log "elementId", elementId
-
-			additionalOffset = -100
+			additionalOffset = 0
 
 			# TODO: Make sections selectable (ie: section history)
 			@props.toggleCollapsedView => @scrollTo(elementId, additionalOffset)
 
 		scrollTo: (elementId, additionalOffset=0, cb=(->)) ->
-			$container = findDOMNode(@)
-			$element = win.document.getElementById(elementId)
+			# We have CSS animations in play, wait 250ms before measuring scroll destination
+			setTimeout (=>
+				$container = findDOMNode(@)
+				$element = win.document.getElementById(elementId)
 
-			topPadding = 50 # TODO: Figure this out programatically
-
-			topOffset = topPadding + additionalOffset
-			scrollToElement $container, $element, 1000, 'easeInOutQuad', topOffset, cb
+				scrollToElement $container, $element, 1000, 'easeInOutQuad', additionalOffset, cb
+			), 250
 
 
 	# Create drag-drop context for the PlanView class

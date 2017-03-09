@@ -10,7 +10,6 @@
 
 	// TODO: Extract to file
 	.inactiveToggleWrapper
-		position relative
 
 		&.status-completed, &.status-completed .toggleHeader:hover
 			background rgba(0, 255, 0, 0.075)
@@ -43,7 +42,7 @@
 			padding 10px
 
 			.sectionHeader
-				position relative // Don't fixate inactive section titles
+				position static // Don't fixate inactive section titles
 				background none
 				padding-left 20px
 
