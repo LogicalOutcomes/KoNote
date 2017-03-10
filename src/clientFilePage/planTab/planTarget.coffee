@@ -74,7 +74,7 @@ load = (win) ->
 						'readOnly' if isReadOnly
 						'isReorderHovered' if @state.isReorderHovered
 					].join ' '
-					onMouseDown: @_onTargetClick
+					onClick: @_onTargetClick
 				},
 					connectDragSource (
 						R.div({
