@@ -304,7 +304,7 @@ load = (win) ->
 		destination = topOffset - containerOffset
 
 		# requestAnimationFrame can inf-loop if we dont set a limit
-		maxScrollTop = container.scrollHeight - container.clientHeight
+		maxScrollTop = container.scrollHeight - container.offsetTop
 
 		# Can't scroll past maximum, otherwise apply paddingOffset
 		if destination > maxScrollTop
