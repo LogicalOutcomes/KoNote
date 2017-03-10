@@ -81,7 +81,10 @@ load = (win) ->
 
 					# Return wrapped inactive section groups for display toggling
 					# Needs to be wrapped in a keyed div, for the key to work
-					return R.div({key: status},
+					return R.div({
+						id: "sections-#{status}"
+						key: status
+					},
 						switch status
 							when 'default'
 								PlanSectionsList
