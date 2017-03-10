@@ -256,7 +256,7 @@ load = (win) ->
 			isExistingSection = clientFile.getIn(['plan','sections']).some (obj) =>
 				obj.get('id') is section.get('id')
 
-			canSetStatus = isExistingSection and allTargetsAreInactive and not isReadOnly
+			canSetStatus = isExistingSection and (allTargetsAreInactive or sectionIsInactive) and not isReadOnly
 			canModify = not isReadOnly and not sectionIsInactive
 
 
