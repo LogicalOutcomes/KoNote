@@ -147,10 +147,7 @@ load = (win) ->
 						size = targets.size
 
 						# Build the list of targets
-						PlanTargetsList = R.div({
-							className: 'planTargetsList'
-							key: status if status is 'default' # Use key if won't be wrapped
-						},
+						PlanTargetsList = R.div({className: 'planTargetsList'},
 							(targets.map (target) =>
 								targetId = target.get('id')
 								index = section.get('targetIds').indexOf targetId
@@ -188,29 +185,29 @@ load = (win) ->
 						)
 
 						# Return wrapped inactive target groups for display toggling
-						switch status
-							when 'default'
-								PlanTargetsList
+						R.div({key: status},
+							switch status
+								when 'default'
+									PlanTargetsList
 
-							when 'deactivated'
-								InactiveToggleWrapper({
-									key: status
-									children: PlanTargetsList
-									dataType: 'target'
-									status, size
-									isExpanded: @state.displayDeactivatedTargets
-									onToggle: @_toggleDisplayDeactivatedTargets
-								})
+								when 'deactivated'
+									InactiveToggleWrapper({
+										children: PlanTargetsList
+										dataType: 'target'
+										status, size
+										isExpanded: @state.displayDeactivatedTargets
+										onToggle: @_toggleDisplayDeactivatedTargets
+									})
 
-							when 'completed'
-								InactiveToggleWrapper({
-									key: status
-									children: PlanTargetsList
-									dataType: 'target'
-									status, size
-									isExpanded: @state.displayCompletedTargets
-									onToggle: @_toggleDisplayCompletedTargets
-								})
+								when 'completed'
+									InactiveToggleWrapper({
+										children: PlanTargetsList
+										dataType: 'target'
+										status, size
+										isExpanded: @state.displayCompletedTargets
+										onToggle: @_toggleDisplayCompletedTargets
+									})
+						)
 
 					)
 

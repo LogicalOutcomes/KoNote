@@ -80,30 +80,30 @@ load = (win) ->
 					)
 
 					# Return wrapped inactive section groups for display toggling
-					switch status
-						when 'default'
-							PlanSectionsList
+					# Needs to be wrapped in a keyed div, for the key to work
+					return R.div({key: status},
+						switch status
+							when 'default'
+								PlanSectionsList
 
-						when 'deactivated'
-							InactiveToggleWrapper({
-								key: status
-								children: PlanSectionsList
-								dataType: 'section'
-								status, size
-								isExpanded: @state.displayDeactivatedSections
-								onToggle: @_toggleDisplayDeactivatedSections
-							})
+							when 'deactivated'
+								InactiveToggleWrapper({
+									children: PlanSectionsList
+									dataType: 'section'
+									status, size
+									isExpanded: @state.displayDeactivatedSections
+									onToggle: @_toggleDisplayDeactivatedSections
+								})
 
-						when 'completed'
-							InactiveToggleWrapper({
-								key: status
-								children: PlanSectionsList
-								dataType: 'section'
-								status, size
-								isExpanded: @state.displayCompletedSections
-								onToggle: @_toggleDisplayCompletedSections
-							})
-
+							when 'completed'
+								InactiveToggleWrapper({
+									children: PlanSectionsList
+									dataType: 'section'
+									status, size
+									isExpanded: @state.displayCompletedSections
+									onToggle: @_toggleDisplayCompletedSections
+								})
+					)
 				)
 			)
 

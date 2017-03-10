@@ -27,7 +27,7 @@
 					opacity 1
 
 		> .toggleHeader
-			padding 10px 20px 10px 20px
+			padding 10px 20px
 			cursor default
 			user-select none
 			font-size 16px
@@ -56,21 +56,20 @@
 
 
 	// Overrides specific to sections
-	> .inactiveToggleWrapper
+	> div > .inactiveToggleWrapper
 		transition opacity .15s linear
 		border-top-width 1px
 		border-top-style dashed
+		border-bottom none !important
 
-		.toggleHeader
-			padding-top 15px
-			padding-bottom 15px
+		> .inactiveDataList
+			padding-top 0
+
+		> .toggleHeader
+			padding 15px 20px
 
 		&:not(.isExpanded)
 			opacity 0.85
-
-		&.isExpanded
-			.toggleHeader
-				border-bottom 1px solid rgba(0,0,0,0.04)
 
 		&:last-child
 			border-bottom-width 1px

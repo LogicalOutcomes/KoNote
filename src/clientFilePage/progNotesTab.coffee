@@ -1386,10 +1386,11 @@ load = (win) ->
 						)
 					)
 					(@props.attachments.map (attachment) =>
-						filename = attachment.get('filename')
+						{id, filename} = attachment.toObject()
 						fileExtension = Path.extname filename
 
 						R.a({
+							key: id
 							className: 'attachment'
 							onClick: @_openAttachment.bind null, attachment
 						},
