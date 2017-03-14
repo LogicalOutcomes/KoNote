@@ -414,7 +414,7 @@ load = (win) ->
 									className: 'subtitle'
 									style: {color: Config.logoSubtitleColor}
 								},
-									Config.logoSubtitle
+									Config.logoSubtitle + " v" + nw.App.manifest.version
 								)
 							)
 							R.div({className: 'searchBoxContainer'},
