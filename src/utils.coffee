@@ -207,6 +207,7 @@ load = (win) ->
 		return persistObj
 		.delete('revisionId')
 		.delete('author')
+		.delete('authorDisplayName')
 		.delete('timestamp')
 		.delete('_dirPath')
 

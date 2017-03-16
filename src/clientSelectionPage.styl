@@ -112,9 +112,19 @@ sidebar-borders = darken(sidebar-bg, 10%)
 						transition opacity duration-to-big3 linear (duration-to-big1 + duration-to-big2)
 						opacity 1
 
-					.subtitle
-						font-size 36px
-						text-align center
+					.subtitleContainer
+						display flex
+						justify-content center
+						align-items baseline
+
+						.subtitleText
+							font-size 36px
+							margin-right 10px
+
+						.versionNumber
+							font-size 20px
+							color #686868
+
 
 				&.small
 					height 100px

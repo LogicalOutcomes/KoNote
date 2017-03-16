@@ -337,10 +337,12 @@ load = (win) ->
 
 			lastRev = target.getIn ['revisions', 0]
 
+			# Like stripMetaData, but keep timestamp intact
 			lastRevNormalized = lastRev
 				.delete('revisionId')
 				.delete('author')
 				.delete('timestamp')
+				.delete('authorDisplayName')
 
 			return not Imm.is(currentRev, lastRevNormalized)
 
