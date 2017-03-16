@@ -154,6 +154,7 @@ load = (win) ->
 				searchQuery: ''
 				programIdFilter: null
 				dataTypeFilter: null
+				dateSpanFilter: null
 			}
 
 		hasChanges: ->
@@ -300,6 +301,7 @@ load = (win) ->
 								historyEntries
 								programIdFilter: @state.programIdFilter
 								dataTypeFilter: @state.dataTypeFilter
+								dateSpanFilter: @state.dateSpanFilter
 								programsById: @props.programsById
 								dataTypeOptions
 

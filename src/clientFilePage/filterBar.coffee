@@ -85,6 +85,7 @@ load = (win) ->
 						dataOptions: @props.dataTypeOptions
 						onSelect: @props.onSelectDataType
 					})
+
 					(unless @props.programsById.isEmpty()
 						FilterDropdownMenu({
 							title: Term 'Programs'
@@ -92,6 +93,15 @@ load = (win) ->
 							dataOptions: @props.programsById
 							onSelect: @props.onSelectProgramId
 						})
+					)
+
+					FilterDropdownMenu({
+						title: "Dates"
+						dataOptions: Imm.List()
+						selectedValue: @props.dateSpanFilter
+						onSelect: (->)
+					},
+						R.li({}, "Whatup?")
 					)
 				)
 				R.section({
@@ -107,7 +117,9 @@ load = (win) ->
 		displayName: 'FilterDropdownMenu'
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: -> {isOpen: false}
+		getInitialState: -> {
+			isOpen: false
+		}
 
 		componentDidMount: ->
 			win.document.addEventListener 'click', @_onDocumentClick
@@ -116,53 +128,28 @@ load = (win) ->
 			win.document.removeEventListener 'click', @_onDocumentClick
 
 		_onDocumentClick: (event) ->
-			button = findDOMNode @refs.menuButton
-			optionsList = findDOMNode @refs.optionsList
+			buttonChildren = Array.from findDOMNode @refs.menuButton
+			optionsListChildren = Array.from findDOMNode @refs.optionsList
 
 			# Check for inside/outside click
-			if button.contains event.target
+			if buttonChildren.contains event.target
 				@_toggleIsOpen()
-			else if not optionsList.contains event.target
+			else if not optionsListChildren.contains event.target
 				@setState {isOpen: false}
+			else
+				console.warn "Unknown document click..?"
 
 		_toggleIsOpen: ->
 			@setState {isOpen: not @state.isOpen}
 
-		_onSelect: (value) ->
-			@props.onSelect(value)
-
-		_renderOption: (option) ->
-			selectedOption = option or @props.dataOptions.find (o) =>
-				o.get('id') is @props.selectedValue
-
-			name = selectedOption.get('name')
-			# Specific logic for userProgram icon to appear
-			isUserProgram = selectedOption.get('id') is global.ActiveSession.programId
-
-			[
-				(if selectedOption.has 'colorKeyHex'
-					ColorKeyBubble {
-						key: 'bubble'
-						colorKeyHex: selectedOption.get('colorKeyHex')
-						icon: 'check' if isUserProgram
-					}
-				)
-				R.span({
-					key: 'value'
-					className: 'value'
-				},
-					name
-				)
-			]
-
 		render: ->
-			{title, dataOptions, selectedValue} = @props
+			{title, dataOptions, selectedValue, onSelect} = @props
 			hasSelection = !!selectedValue
 
-			if hasSelection
-				# Filter out selected type
-				dataOptions = dataOptions.filterNot (o) -> o.get('id') is selectedValue
-
+			if dataOptions and hasSelection
+				# Filter out selected option from the list
+				selectedOption = dataOptions.find (o) -> o.get('id') is selectedValue
+				dataOptions = dataOptions.remove(selectedOption)
 
 			R.div({
 				className: [
@@ -170,6 +157,7 @@ load = (win) ->
 					'isOpen' if @state.isOpen
 				].join ' '
 			},
+				# Hidden <ul> of dataOptions
 				R.ul({
 					ref: 'optionsList'
 					className: 'filterOptions'
@@ -177,7 +165,7 @@ load = (win) ->
 					(if hasSelection
 						R.li({
 							className: 'selectAllOption'
-							onClick: @_onSelect.bind null, null
+							onClick: onSelect.bind null, null
 						},
 							R.span({className: 'value'},
 								"All #{title}"
@@ -185,22 +173,26 @@ load = (win) ->
 						)
 					)
 
-					(dataOptions.toSeq().map (option) =>
-						R.li({
-							key: option.get('id')
-							className: 'option'
-							onClick: @_onSelect.bind null, option.get('id')
-						},
-							@_renderOption(option)
-						)
+					# Use custom children if defined, otherwise iterate over dataOptions
+					@props.children or (
+						dataOptions.map (option) =>
+							FilterOption({
+								option
+								onSelect
+							})
 					)
 				)
+
+				# Visible option either shows
 				R.div({
 					ref: 'menuButton'
 					className: 'option selectedValue'
 				},
 					(if hasSelection
-						@_renderOption()
+						FilterOption({
+							option: selectedOption
+							onSelect
+						})
 					else
 						R.span({className: 'value'},
 							"All #{title}"
@@ -210,6 +202,35 @@ load = (win) ->
 					FaIcon('caret-down')
 				)
 			)
+
+
+	FilterOption = ({option, onSelect}) ->
+		{id, name, colorKeyHex} = option.toObject()
+
+		return R.li({
+			key: id
+			className: 'option'
+			onClick: onSelect.bind null, id
+		},
+			(if colorKeyHex?
+				ColorKeyBubble {
+					key: 'bubble'
+					colorKeyHex: colorKeyHex
+					# Use a checkmark icon if this is the current user's program
+					icon: 'check' if id is global.ActiveSession.programId
+				}
+			)
+			R.span({
+				key: 'value'
+				className: 'value'
+			},
+				name
+			)
+		)
+
+
+
+
 
 
 	return FilterBar
