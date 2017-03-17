@@ -4,6 +4,13 @@
 
 (function () {
 
+	let pref = chrome.privacy.services.spellingServiceEnabled;
+	function turnSpellingServiceOff(details) {
+		pref.set({ value: false });
+	}
+	pref.get({}, turnSpellingServiceOff);
+	pref.onChange.addListener(turnSpellingServiceOff);
+
 	var Config = require('./config');
 
 	if (!Config.devMode) {

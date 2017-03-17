@@ -98,7 +98,7 @@ load = (win) ->
 					})
 					R.div({className: 'buttonContainer'},
 						R.button({
-							className: 'btn btn-default'
+							className: 'btn btn-danger'
 							onClick: @_close
 						}, "Close")
 						R.button({

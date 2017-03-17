@@ -19,6 +19,10 @@
 		"metric": "indicator"
 	},
 
+	"printHeaderFooterEnabled": true,
+	"printHeader": "",
+	"printFooter": "CONFIDENTIAL - NOT TO BE DISCLOSED WITHOUT THE INFORMED CONSENT OF THE CLIENT OR AS REQUIRED BY LAW",
+
 	"useTemplate": "clientLog",
 
 	"templates": {

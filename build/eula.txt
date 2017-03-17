@@ -1,23 +1,13 @@
 KONOTE END USER LICENSE AGREEMENT
 =================================
 
-Except where otherwise noted, this software and all documentation is
-Copyright (c) 2017 Konode. All rights reserved.
+Except where otherwise noted, this software and all documentation is Copyright (c) 2017 Konode. All rights reserved.
 
 The source code is subject to the terms of the Mozilla Public License, v.2.0:
 http://mozilla.org/MPL/2.0
 
-This software is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY, either express or implied, including, but not limited to, the
-implied warranties of MERCHANTABILITY and FITNESS FOR A PARTICULAR PURPOSE.
+This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY, either express or implied, including, but not limited to, the implied warranties of MERCHANTABILITY and FITNESS FOR A PARTICULAR PURPOSE.
 
-IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING WILL
-KONODE OR ITS DEVELOPERS BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENERAL,
-SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR
-INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR
-DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR
-A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS), EVEN IF KONODE
-OR ITS DEVELOPERS HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING WILL KONODE OR ITS DEVELOPERS BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS), EVEN IF KONODE OR ITS DEVELOPERS HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
-By accepting this agreement or using the software, you agree to all of these
-terms. If you do not accept the terms, you may not use this software.
+By accepting this agreement or using the software, you agree to all of these terms. If you do not accept the terms, you may not use this software.

@@ -227,14 +227,25 @@
 
 									&:hover
 										stroke #1d6977
-			.chartTypeContainer
+
+
+			.chartOptionsContainer
 				display flex
-				justify-content flex-end
+				justify-content space-between
 				padding 20px 25px
 
-				> label
-					padding-left 10px
-					padding-right 2px
+				> div
+					display flex
+					align-items center
+
+					label
+						margin 0
+						padding-left 10px
+						padding-right 2px
+
+				button
+					border none
+					color #4c5d67
 
 
 		.selectionPanel
@@ -244,16 +255,11 @@
 			overflow-y auto
 			overflow-x hidden
 
-			.noData
-				padding 10px
-				font-size 14px
-				font-weight 400
-
 			.dataType
 				clear both
-				padding-bottom 15px
 
 				h2
+					cursor default
 					font-size 24px
 					font-weight 300
 					margin 0
@@ -261,10 +267,24 @@
 					border-bottom 1px solid sidebar-borders
 					transition all .15s ease
 
+					&.noEventPoints, &.noMetricPoints
+						opacity 0.65
+						font-size 14px
+						font-weight 400
+						border-bottom 0
+						padding 20px 15px
+						text-align center
+
+					&.noEventPoints
+						padding-top 27px
+
+					&.noMetricPoints
+						border-top 1px solid sidebar-borders
+
 					input[type=checkbox]
 						height 18px
+						margin 0
 						margin-right 10px
-						// margin-left -5px
 
 					.helper
 						opacity 0
@@ -272,7 +292,7 @@
 						line-height 24px
 						float right
 
-					&:hover
+					&:not(.noEventPoints):not(.noMetricPoints):hover
 						cursor default
 						color white
 						background sidebar-borders
@@ -339,7 +359,7 @@
 						-webkit-text-stroke 1px #888
 
 				.dataOptions
-					padding 0px 15px 0 25px
+					padding 0px 15px 15px 25px
 
 					label
 						color #5c5c5c

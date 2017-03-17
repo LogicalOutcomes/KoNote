@@ -76,36 +76,45 @@ module.exports = function(grunt) {
 			},
 			nodemodules: {
 				expand: true,
+				dot: true,
+				nocase: true,
 				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/node_modules/',
 				src: [
 					'**',
-					'!**/lodash-compat/**', // todo: confirm only required to support ie8...
-					'!**/src/**',
-					'!**/source/**',
-					'!**/spec/**',
-					'!**/test/**',
-					'!**/tests/**',
-					'!**/grunt/**',
+					'!**/AUTHOR*',
+					'!**/bower.json',
+					'!**/changelog*',
+					'!**/changes*',
+					'!**/contributing*',
+					'!**/coverage/**',
 					'!**/doc/**',
 					'!**/docs/**',
-					'!**/htdocs/**',
-					'!**/samples/**',
-					'!**/examples/**',
+					'!**/example*',
 					'!**/example/**',
-					'!**/README.md',
-					'!**/readme.md',
-					'!**/readme.markdown',
-					'!**/changelog.md',
-					'!**/CHANGELOG.md',
-					'!**/changes.md',
-					'!**/CHANGES.md',
-					'!**/contributing.md',
-					'!**/CONTRIBUTING.md',
-					'!**/bower.json',
-					'!**/gulpfile.js',
-					'!**/gruntfile.js',
+					'!**/examples/**',
+					'!**/grunt/**',
 					'!**/Gruntfile.js',
-					'!**/Makefile'
+					'!**/gulpfile.js',
+					'!**/history.md',
+					'!**/htdocs/**',
+					'!**/*ignore',
+					'!**/images/**',
+					'!**/LICENSE*',
+					'!**/LICENCE*',
+					'!**/lodash-compat/**',
+					'!**/Makefile*',
+					'!**/man/**',
+					'!**/README*',
+					'!**/release-notes*',
+					'!**/samples/**',
+					'!**/source/**',
+					'!**/spec/**',
+					'!**/src/**',
+					'!**/test.js',
+					'!**/test/**',
+					'!**/tests/**',
+					'!**/__tests__/**',
+					'!**/*.yml'
 				],
 				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/temp_node_modules/',
 			},
@@ -218,19 +227,19 @@ module.exports = function(grunt) {
 			},
 			nwjsuninstaller: {
 				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v 0.17.6 -p win32 -o ./nwjs-<%= grunt.task.current.args[0] %>/ ./uninstaller'
+				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p win32 -o ./nwjs-<%= grunt.task.current.args[0] %>/ ./uninstaller'
 			},
 			nwjswin: {
 				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v 0.17.6 -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			},
 			nwjswinSDK: {
 				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v 0.17.6-sdk -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cmd: 'nwb nwbuild -v <%= pkg.devDependencies.nw %> -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			},
 			nwjsosx: {
 				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v 0.17.6 -p osx64 --mac-icns ./<%= grunt.task.current.args[0] %>/src/icon.icns -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p osx64 --mac-icns ./<%= grunt.task.current.args[0] %>/src/icon.icns -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			}
 		},
 		appdmg: {
@@ -327,7 +336,7 @@ module.exports = function(grunt) {
 
 	grunt.registerTask('release', function() {
 		grunt.task.run('clean:temp');
-		//grunt.task.run('exec:test');
+		grunt.task.run('exec:test');
 		release.forEach(function(entry) {
 			grunt.task.run('copy:main:'+entry);
 			grunt.task.run('replace:main:'+entry);
