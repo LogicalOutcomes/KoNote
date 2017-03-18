@@ -128,16 +128,18 @@ load = (win) ->
 			win.document.removeEventListener 'click', @_onDocumentClick
 
 		_onDocumentClick: (event) ->
-			buttonChildren = Array.from findDOMNode @refs.menuButton
-			optionsListChildren = Array.from findDOMNode @refs.optionsList
+			button = findDOMNode @refs.menuButton
+			optionsList = findDOMNode @refs.optionsList
 
 			# Check for inside/outside click
-			if buttonChildren.contains event.target
+			if button.contains event.target
 				@_toggleIsOpen()
-			else if not optionsListChildren.contains event.target
+			else if not optionsList.contains(event.target)
 				@setState {isOpen: false}
-			else
-				console.warn "Unknown document click..?"
+
+		_onSelectOption: (optionId) ->
+			@setState {isOpen: false}
+			@props.onSelect(optionId)
 
 		_toggleIsOpen: ->
 			@setState {isOpen: not @state.isOpen}
@@ -164,7 +166,7 @@ load = (win) ->
 				},
 					(if hasSelection
 						R.li({
-							className: 'selectAllOption'
+							className: 'option selectAllOption'
 							onClick: onSelect.bind null, null
 						},
 							R.span({className: 'value'},
@@ -178,7 +180,7 @@ load = (win) ->
 						dataOptions.map (option) =>
 							FilterOption({
 								option
-								onSelect
+								onSelect: @_onSelectOption
 							})
 					)
 				)
