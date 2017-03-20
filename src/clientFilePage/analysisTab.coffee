@@ -682,7 +682,7 @@ load = (win) ->
 					datatype: 'raw'
 			)
 			.click()
-		
+
 		_printPNG: ->
 			nw.Window.get(win).capturePage ((base64string) ->
 				Fs.writeFile Path.join(Config.backend.dataDirectory, '_tmp', 'analysis.png'), base64string, 'base64', (err) ->
@@ -698,7 +698,12 @@ load = (win) ->
 						height: 1100
 					}, (pngWindow) =>
 						pngWindow.on 'loaded', =>
-							pngWindow.window.print()
+							pngWindow.print({
+								autoprint: false
+								headerFooterEnabled: Config.printHeaderFooterEnabled
+								headerString: Config.printHeader
+								footerString: Config.printFooter
+							})
 							pngWindow.hide()
 							# cleanup
 							Fs.unlink Path.join(Config.backend.dataDirectory, '_tmp', 'analysis.png'), (err) ->
