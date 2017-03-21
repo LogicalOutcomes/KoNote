@@ -345,7 +345,7 @@ load = (win) ->
 
 				if revision.get('type') is 'full'
 
-					filteredProgNote = revision.set 'units', revision.get('units').map (unit) ->
+					filteredProgNote = revision.set 'units', revision.get('units').map (unit) =>
 						# Basic unit
 						if unit.get('type') is 'basic'
 							return if @props.revisedIds.includes(unit.get('id')) then unit else undefined
@@ -361,7 +361,7 @@ load = (win) ->
 
 					# Filter out any empty units
 					filteredProgNote = filteredProgNote.set 'units', filteredProgNote.get('units').filterNot (unit) ->
-						unit.get('sections').isEmpty()
+						not unit or unit.get('sections').isEmpty()
 
 					hasMultipleRevisedEntries = filteredProgNote
 					.get('units')
