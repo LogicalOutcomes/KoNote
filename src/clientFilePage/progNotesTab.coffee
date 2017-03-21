@@ -309,6 +309,7 @@ load = (win) ->
 								onUpdateSearchQuery: @_updateSearchQuery
 								onSelectProgramId: @_updateProgramIdFilter
 								onSelectDataType: @_updateDataTypeFilter
+								onSelectDateSpan: @_updateDateSpanFilter
 							})
 						)
 
@@ -1025,6 +1026,17 @@ load = (win) ->
 
 		_updateDataTypeFilter: (dataTypeFilter) ->
 			@setState {dataTypeFilter}
+
+		_updateDateSpanFilter: (type, date) ->
+			# Create obj if state is null
+			dateSpanFilter = @state.dateSpanFilter or Imm.Map {
+				startDate: null
+				endDate: null
+			}
+
+			# Assume null 'type' to clear filter ("All Dates")
+			dateSpanFilter = if type then dateSpanFilter.set(type, date) else null
+			@setState {dateSpanFilter}
 
 
 	EntriesListView = React.createFactory React.createClass

@@ -7,6 +7,7 @@
 
 _ = require 'underscore'
 Imm = require 'immutable'
+Moment = require 'moment'
 
 Term = require '../term'
 
@@ -16,9 +17,10 @@ load = (win) ->
 	{PropTypes} = React
 	{findDOMNode} = win.ReactDOM
 	R = React.DOM
+	$ = win.jQuery
 
 	ColorKeyBubble = require('../colorKeyBubble').load(win)
-	{FaIcon, showWhen} = require('../utils').load(win)
+	{FaIcon, showWhen, makeMoment} = require('../utils').load(win)
 
 
 	FilterBar = React.createFactory React.createClass
@@ -31,11 +33,13 @@ load = (win) ->
 			dataTypeFilter: PropTypes.oneOf ['progNotes', 'targets', 'events']
 			programsById: PropTypes.instanceOf Imm.List()
 			dataTypeOptions: PropTypes.instanceOf Imm.List()
+			dateSpanFilter: PropTypes.instanceOf Imm.Map()
 
 			onClose: PropTypes.func
 			onUpdateSearchQuery: PropTypes.func
 			onSelectProgramId: PropTypes.func
 			onSelectDataType: PropTypes.func
+			onSelectDateSpan: PropTypes.func
 		}
 
 		getInitialState: -> {
@@ -99,9 +103,23 @@ load = (win) ->
 						title: "Dates"
 						dataOptions: Imm.List()
 						selectedValue: @props.dateSpanFilter
-						onSelect: (->)
+						onSelect: @props.onSelectDateSpan
+						selectedDisplay: =>
+							{startDate, endDate} = @props.dateSpanFilter.toObject()
+
+							if startDate and endDate
+								if startDate.isBefore(endDate)
+									"#{@props.dateSpanFilter.get('startDate').format('D MMM')} - #{@props.dateSpanFilter.get('endDate').format('D MMM')}"
+								else
+									"(invalid range)"
+							else
+								"(invalid)"
 					},
-						R.li({}, "Whatup?")
+						DateSpanSelection({
+							dateSpanFilter: @props.dateSpanFilter
+							historyEntries: @props.historyEntries
+							onSelect: @props.onSelectDateSpan
+						})
 					)
 				)
 				R.section({
@@ -128,14 +146,26 @@ load = (win) ->
 			win.document.removeEventListener 'click', @_onDocumentClick
 
 		_onDocumentClick: (event) ->
+			console.log "------------------------"
+			# return if event.className is 'dateSpanPicker'
+			console.log "There was a click for #{@props.title}!"
 			button = findDOMNode @refs.menuButton
 			optionsList = findDOMNode @refs.optionsList
 
 			# Check for inside/outside click
 			if button.contains event.target
+				console.log "toggle open!"
 				@_toggleIsOpen()
 			else if not optionsList.contains(event.target)
+				unless @state.isOpen
+					console.log "never mind, already closed"
+					return
+
+				console.log "close it"
 				@setState {isOpen: false}
+			else
+				console.log "Unknown, do nothing"
+				return
 
 		_onSelectOption: (optionId) ->
 			@setState {isOpen: false}
@@ -145,7 +175,8 @@ load = (win) ->
 			@setState {isOpen: not @state.isOpen}
 
 		render: ->
-			{title, dataOptions, selectedValue, onSelect} = @props
+			console.log "dropdown render"
+			{title, dataOptions, selectedValue, selectedDisplay, onSelect} = @props
 			hasSelection = !!selectedValue
 
 			if dataOptions and hasSelection
@@ -190,12 +221,14 @@ load = (win) ->
 					ref: 'menuButton'
 					className: 'option selectedValue'
 				},
-					(if hasSelection
+					(if selectedDisplay and hasSelection # Custom display for datespan
+						selectedDisplay()
+					else if hasSelection # Use selected option
 						FilterOption({
 							option: selectedOption
 							onSelect
 						})
-					else
+					else # Default to "All X"
 						R.span({className: 'value'},
 							"All #{title}"
 						)
@@ -230,6 +263,98 @@ load = (win) ->
 			)
 		)
 
+
+	DateSpanSelection = ({dateSpanFilter, historyEntries, onSelect}) ->
+		startDate = if dateSpanFilter then dateSpanFilter.get('startDate')
+		endDate = if dateSpanFilter then dateSpanFilter.get('endDate')
+
+		[
+			R.li({key: 'startDate', className: '', onClick: => @startDate.toggle()},
+				"From "
+				FaIcon('calendar-o')
+
+				DateSpanPicker({
+					ref: (node) => @startDate = node
+					type: 'startDate'
+					date: startDate
+					historyEntries
+					onSelect
+				})
+			)
+
+			R.li({key: 'endDate', className: '', onClick: => @endDate.toggle()},
+				"To "
+				FaIcon('calendar-o')
+
+				DateSpanPicker({
+					ref: (node) => @endDate = node
+					type: 'endDate'
+					date: endDate
+					historyEntries
+					onSelect
+				})
+			)
+		]
+
+
+	DateSpanPicker = React.createFactory React.createClass
+		displayName: 'DateSpanPicker'
+
+		propTypes: {
+			type: PropTypes.string.isRequired
+			date: PropTypes.instanceOf Moment()
+			historyEntries: PropTypes.instanceOf Imm.List()
+		}
+
+		componentDidMount: ->
+			@_initDateTimePicker()
+
+		_initDateTimePicker: ->
+			@datepickerInstance.destroy() if @datepickerInstance?
+
+			{historyEntries} = @props
+
+			#	historyEntries are in reverse-order
+			minDate = makeMoment(historyEntries.last().get('timestamp')).startOf 'day'
+			maxDate = makeMoment(historyEntries.first().get('timestamp')).startOf 'day'
+
+			$(@dateInput).datetimepicker({
+				format: 'Do MMM'
+				defaultDate: @props.date or null
+				showClose: true
+				minDate
+				maxDate
+				toolbarPlacement: 'bottom'
+				widgetPositioning: {
+					vertical: 'bottom'
+					horizontal: 'right'
+				}
+			}).on 'dp.change', ({date}) => @props.onSelect(@props.type, date)
+
+			@datepickerInstance = $(@dateInput).data('DateTimePicker')
+
+		toggle: ->
+			@datepickerInstance.toggle()
+
+		componentWillUnmount: ->
+			@datepickerInstance.destroy()
+
+		componentWillReceiveProps: (newProps) ->
+			unless Imm.is newProps.historyEntries, @props.historyEntries
+				@_initDateTimePicker()
+
+		render: ->
+			R.span({className: 'dateSpanPicker'},
+				R.input({
+					ref: (node) => @dateInput = node
+					style: {
+						width: '75px'
+						display: 'none'
+					}
+				})
+
+				@props.date.format('Do MMM') if @props.date
+			)
 
 
 
