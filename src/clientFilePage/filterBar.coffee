@@ -109,7 +109,7 @@ load = (win) ->
 
 							if startDate and endDate
 								if startDate.isBefore(endDate)
-									"#{@props.dateSpanFilter.get('startDate').format('D MMM')} - #{@props.dateSpanFilter.get('endDate').format('D MMM')}"
+									"#{@props.dateSpanFilter.get('startDate').format('MMM D')} - #{@props.dateSpanFilter.get('endDate').format('MMM D')}"
 								else
 									"(invalid range)"
 							else
@@ -269,10 +269,14 @@ load = (win) ->
 		endDate = if dateSpanFilter then dateSpanFilter.get('endDate')
 
 		[
-			R.li({key: 'startDate', className: '', onClick: => @startDate.toggle()},
-				"From "
-				FaIcon('calendar-o')
-
+			R.li({
+				key: 'startDate'
+				className: 'dateSpanSelection'
+				onClick: =>
+					@endDate.hide()
+					@startDate.toggle()
+			},
+				R.section({}, "From ")
 				DateSpanPicker({
 					ref: (node) => @startDate = node
 					type: 'startDate'
@@ -282,10 +286,14 @@ load = (win) ->
 				})
 			)
 
-			R.li({key: 'endDate', className: '', onClick: => @endDate.toggle()},
-				"To "
-				FaIcon('calendar-o')
-
+			R.li({
+				key: 'endDate'
+				className: 'dateSpanSelection'
+				onClick: =>
+					@startDate.hide()
+					@endDate.toggle()
+			},
+				R.section({}, "To ")
 				DateSpanPicker({
 					ref: (node) => @endDate = node
 					type: 'endDate'
@@ -321,9 +329,9 @@ load = (win) ->
 			$(@dateInput).datetimepicker({
 				format: 'Do MMM'
 				defaultDate: @props.date or null
-				showClose: true
 				minDate
 				maxDate
+				showClose: true
 				toolbarPlacement: 'bottom'
 				widgetPositioning: {
 					vertical: 'bottom'
@@ -333,8 +341,8 @@ load = (win) ->
 
 			@datepickerInstance = $(@dateInput).data('DateTimePicker')
 
-		toggle: ->
-			@datepickerInstance.toggle()
+		toggle: -> @datepickerInstance.toggle()
+		hide: -> @datepickerInstance.hide()
 
 		componentWillUnmount: ->
 			@datepickerInstance.destroy()
@@ -344,20 +352,21 @@ load = (win) ->
 				@_initDateTimePicker()
 
 		render: ->
-			R.span({className: 'dateSpanPicker'},
+			R.section({className: 'dateSpanPicker'},
+
+				@props.date.format('MMM D') if @props.date
+
+				FaIcon('calendar-o')
+
 				R.input({
 					ref: (node) => @dateInput = node
+					id: "dateSpanPicker-#{@props.type}"
 					style: {
-						width: '75px'
+						width: '0px'
 						display: 'none'
 					}
 				})
-
-				@props.date.format('Do MMM') if @props.date
 			)
-
-
-
 
 
 	return FilterBar
