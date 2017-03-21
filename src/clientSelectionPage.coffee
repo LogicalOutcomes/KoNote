@@ -410,11 +410,16 @@ load = (win) ->
 						},
 							R.div({className: 'logoContainer'},
 								R.img({src: Config.logoCustomerLg})
-								R.div({
-									className: 'subtitle'
-									style: {color: Config.logoSubtitleColor}
-								},
-									Config.logoSubtitle
+								R.div({className: 'subtitleContainer'},
+									R.div({
+										className: 'subtitleText'
+										style: {color: Config.logoSubtitleColor}
+									},
+										Config.logoSubtitle
+									)
+									R.div({className: 'versionNumber'},
+										"v" + nw.App.manifest.version
+									)
 								)
 							)
 							R.div({className: 'searchBoxContainer'},
