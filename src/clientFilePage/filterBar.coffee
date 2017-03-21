@@ -310,8 +310,9 @@ load = (win) ->
 
 		propTypes: {
 			type: PropTypes.string.isRequired
-			date: PropTypes.instanceOf Moment()
-			historyEntries: PropTypes.instanceOf Imm.List()
+			date: PropTypes.instanceOf(Moment()).isRequired
+			historyEntries: PropTypes.instanceOf(Imm.List()).isRequired
+			onSelect: PropTypes.func.isRequired
 		}
 
 		componentDidMount: ->
