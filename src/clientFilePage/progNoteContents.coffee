@@ -149,10 +149,10 @@ load = (win) ->
 
 
 	BasicUnitView = (props) ->
+		{unit, unitId, dataTypeFilter, isEditing} = props
+
 		if not unit.get('notes')
 			return null
-
-		{unit, unitId, dataTypeFilter, isEditing} = props
 
 		R.div({
 			className: [
