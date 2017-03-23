@@ -322,7 +322,7 @@ load = (win) ->
 											title: "Save as PNG"
 										},
 											FaIcon('download')
-											" Export to PNG"
+											" Export"
 										)
 										# Hidden input for file saving
 										R.input({
