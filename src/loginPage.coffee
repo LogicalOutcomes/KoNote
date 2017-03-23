@@ -5,9 +5,10 @@
 # Window for user login -> account validation, with detection for setup/migrations
 
 Async = require 'async'
+Fs = require 'fs'
+Path = require 'path'
 
 Config = require './config'
-Term = require './term'
 Persist = require './persist'
 
 
@@ -20,7 +21,7 @@ load = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
-	{FaIcon, openWindow, renderName, showWhen} = require('./utils').load(win)
+	{openWindow} = require('./utils').load(win)
 
 
 	LoginPage = React.createFactory React.createClass
@@ -52,6 +53,7 @@ load = (win) ->
 				isLoading: @state.isLoading
 				loadingMessage: @state.loadingMessage
 				isNewSetUp: @state.isNewSetUp
+				checkVersionsMatch: @_checkVersionsMatch
 				login: @_login
 			})
 
@@ -59,12 +61,21 @@ load = (win) ->
 			# Check to make sure the dataDir exists and has an account system
 			Persist.Users.isAccountSystemSetUp Config.backend, (err, isSetUp) =>
 				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							Sorry, we're unable to reach the database.
+							Please check your network connection and try again.
+						"""
+						return
+
 					CrashHandler.handle err
 					return
 
 				if isSetUp
 					# Already set up, no need to continue here
-					@setState {isSetUp: true}
+					@setState {
+						isSetUp: true
+					}
 					return
 
 				# Falsy isSetUp triggers NewInstallationPage
@@ -81,19 +92,123 @@ load = (win) ->
 							@setState {
 								isSetUp: true
 								isNewSetUp: true
-							}
-							Window.show()
+							}, Window.show()
 						else
 							# Didn't complete installation, so close window and quit the app
 							@props.closeWindow()
 							Window.quit()
 
-		_login: (userName, password) ->
+		_checkVersionsMatch: ->
+			dataDir = Config.backend.dataDirectory
+			appVersion = nw.App.manifest.version
+
+			# Read DB's version file, compare against app version
+			Fs.readFile Path.join(dataDir, 'version.json'), (err, result) =>
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+
+					CrashHandler.handle err
+					return
+
+				dbVersion = JSON.parse(result).dataVersion
+
+				# Launch migration dialog if mismatched versions
+				if appVersion isnt dbVersion
+					console.log "App & data versions do not match"
+					@_showMigrationDialog(dbVersion, appVersion)
+
+		_showMigrationDialog: (dbVersion, appVersion) ->
+			$ =>
+				Bootbox.dialog {
+					title: "Database Migration Required"
+					message: """
+						Your database is from an earlier version of #{Config.productName} (<strong>v#{dbVersion}</strong>), so a migration is required.<br><br>
+						To update the database to <strong>v#{appVersion}</strong>, please log in with an administrator account:<br><br>
+						<input id="username" name="username" type="text" placeholder="username" class="form-control input-md"><br>
+						<input id="password" name="password" type="password" placeholder="password" class="form-control input-md"><br>
+					"""
+					closeButton: false
+					buttons: {
+						cancel: {
+							label: "Cancel"
+							className: 'btn-default'
+							callback: =>
+								@props.closeWindow()
+						}
+						continue: {
+							label: "Continue"
+							className: 'btn-primary'
+							callback: =>
+								# passing a string to the migrate function if the fields are left empty
+								# this lets the existing error conditions handle empty fields.
+								username = $('#username').val() or ' '
+								password = $('#password').val() or ' '
+								@_migrateToLatestVersion(username, password, dbVersion)
+						}
+					}
+				}
+
+				# Focus first field
+				# bootbox focuses primary button by default
+				setTimeout(->
+					$('#username').focus()
+				, 500)
+
+		_migrateToLatestVersion: (username, password, currentVersion) ->
+			Migration = require './migrations'
+			dataDir = Config.backend.dataDirectory
+			destinationVersion = nw.App.manifest.version
 
 			Async.series [
 				(cb) =>
-					@setState {isLoading: true, loadingMessage: "Authenticating..."}
+					@setState {isLoading: true, loadingMessage: "Migrating Database..."}, cb
 
+				(cb) =>
+					Migration.atomicMigration dataDir, currentVersion, destinationVersion, username, password, cb
+
+			], (err) =>
+				@setState {isLoading: false, loadingMessage: ""}
+
+				# ToDo: handle case where migration file is not found
+				if err
+					if err instanceof Persist.Session.AccountTypeError
+						@refs.ui.onLoginError('AccountTypeError', @_checkVersionsMatch)
+						return
+
+					if err instanceof Persist.Session.UnknownUserNameError
+						@refs.ui.onLoginError('UnknownUserNameError', @_checkVersionsMatch)
+						return
+
+					if err instanceof Persist.Session.InvalidUserNameError
+						@refs.ui.onLoginError('InvalidUserNameError', @_checkVersionsMatch)
+						return
+
+					if err instanceof Persist.Session.IncorrectPasswordError
+						@refs.ui.onLoginError('IncorrectPasswordError', @_checkVersionsMatch)
+						return
+
+					if err instanceof Persist.Session.DeactivatedAccountError
+						@refs.ui.onLoginError('DeactivatedAccountError', @_checkVersionsMatch)
+						return
+
+					if err instanceof Persist.Session.IOError
+						@refs.ui.onLoginError('IOError', @_checkVersionsMatch)
+						return
+
+					CrashHandler.handle err
+					return
+
+				# Migrations were successful!
+				Bootbox.alert "The data file has been successfully migrated to the app version. Please log in to continue."
+
+		_login: (userName, password) ->
+			Async.series [
+				(cb) =>
+					@setState {isLoading: true, loadingMessage: "Authenticating..."}, cb
+
+				(cb) =>
 					# Create session
 					Persist.Session.login userName, password, Config.backend, (err, session) =>
 						if err
@@ -121,6 +236,7 @@ load = (win) ->
 				@setState {isLoading: false, loadingMessage: ""}
 
 				if err
+
 					if err instanceof Persist.Session.UnknownUserNameError
 						@refs.ui.onLoginError('UnknownUserNameError')
 						return
@@ -137,10 +253,12 @@ load = (win) ->
 						@refs.ui.onLoginError('DeactivatedAccountError')
 						return
 
+					if err instanceof Persist.Session.IOError
+						@refs.ui.onLoginError('IOError')
+						return
+
 					CrashHandler.handle err
 					return
-
-				#Window.hide()
 
 
 	LoginPageUi = React.createFactory React.createClass
@@ -152,40 +270,53 @@ load = (win) ->
 				password: ''
 			}
 
-		componentDidMount: ->
-			setTimeout(=>
-				if @props.isNewSetUp
-					@setState {userName: 'admin'}
-					@refs.passwordField.focus()
-			, 350)
+		componentWillMount: ->
+			if @props.isNewSetUp
+				@setState {userName: 'admin'}
 
-		onLoginError: (type) ->
+		componentDidMount: ->
+			@props.checkVersionsMatch()
+			if @props.isNewSetUp
+				@refs.passwordField.focus()
+
+		onLoginError: (type, cb=(->)) ->
 			switch type
+				when 'AccountTypeError'
+					Bootbox.alert "This user is not an Admin. Please try again.", =>
+						setTimeout(=>
+							@refs.userNameField.focus()
+						, 100)
+						cb()
+
 				when 'UnknownUserNameError'
 					Bootbox.alert "Unknown user name. Please try again.", =>
 						setTimeout(=>
 							@refs.userNameField.focus()
 						, 100)
+						cb()
 				when 'InvalidUserNameError'
 					Bootbox.alert "Invalid user name. Please try again.", =>
 						@refs.userNameField.focus()
 						setTimeout(=>
 							@refs.userNameField.focus()
 						, 100)
+						cb()
 				when 'IncorrectPasswordError'
 					Bootbox.alert "Incorrect password. Please try again.", =>
 						@setState {password: ''}
 						setTimeout(=>
 							@refs.passwordField.focus()
 						, 100)
+						cb()
 				when 'DeactivatedAccountError'
 					Bootbox.alert "This user account has been deactivated.", =>
 						@refs.userNameField.focus()
 						setTimeout(=>
 							@refs.userNameField.focus()
 						, 100)
+						cb()
 				when 'IOError'
-					Bootbox.alert "Please check your network connection and try again."
+					Bootbox.alert "Please check your network connection and try again.", cb
 				else
 					throw new Error "Invalid Login Error"
 

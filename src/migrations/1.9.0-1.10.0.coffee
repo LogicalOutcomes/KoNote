@@ -7,6 +7,7 @@ Path = require 'path'
 Moment = require 'moment'
 
 {SymmetricEncryptionKey, WeakSymmetricEncryptionKey} = require '../persist/crypto'
+{IncorrectPasswordError, UnknownUserNameError, AccountTypeError, DeactivatedAccountError} = require '../persist/users'
 {TimestampFormat} = require '../persist/utils'
 
 lastMigrationStep = 0
@@ -21,6 +22,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 	accountKeyInfo = null
 	accountKey = null
 	privateInfo = null
+	publicInfo = null
 	accountType = null
 	decryptedAccount = null
 
@@ -29,7 +31,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 			Fs.readdir userDir, (err, fileNames) ->
 				if err
 					if err.code is 'ENOENT'
-						cb new Error "Unknown Username"
+						cb new UnknownUserNameError()
 						return
 
 					cb err
@@ -47,6 +49,9 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 		(cb) ->
 			Fs.readFile Path.join(userDir, "account-key-#{accountKeyId}"), (err, buf) ->
 				if err
+					if err.code is 'ENOENT'
+						cb new DeactivatedAccountError()
+						return
 					cb err
 					return
 
@@ -68,10 +73,25 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 					console.error err.stack
 
 					# If decryption fails, we're probably using the wrong key
-					cb new Error "Incorrect Password"
+					cb new IncorrectPasswordError()
 					return
 
 				accountKey = SymmetricEncryptionKey.import(accountKeyBuf.toString())
+
+				cb()
+		(cb) =>
+			Fs.readFile Path.join(userDir, 'public-info'), (err, buf) ->
+				if err
+					cb err
+					return
+
+				publicInfo = JSON.parse buf
+				accountType = publicInfo.accountType
+
+				# Throw error if account is not Admin
+				unless accountType is 'admin'
+					cb new AccountTypeError()
+					return
 
 				cb()
 		(cb) =>
