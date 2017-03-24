@@ -278,6 +278,7 @@ load = (win, {clientFileId}) ->
 			return R.div({className: 'newProgNotePage animated fadeIn'},
 
 				R.div({className: 'progNote'},
+					R.div({className: 'unitContainer'},
 					R.div({className: 'backdateContainer'},
 						BackdateWidget({
 							onChange: @_updateBackdate
@@ -406,6 +407,7 @@ load = (win, {clientFileId}) ->
 								})
 							)
 						)
+					)
 					)
 
 					R.div({className: "newProgNoteToolbar"},
