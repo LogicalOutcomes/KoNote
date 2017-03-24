@@ -25,13 +25,10 @@
 #	each other, and from their environment.
 
 Async = require 'async'
-Base64url = require 'base64url'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
 Moment = require 'moment'
-
-Config = require '../config'
 
 # Utilities
 copyRecursiveSync = (src, dest) ->
