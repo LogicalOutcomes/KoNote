@@ -35,6 +35,7 @@ Config = require '../config'
 
 # Utilities
 copyRecursiveSync = (src, dest) ->
+	# TODO: Make async, or try/catch err
 	exists = Fs.existsSync(src)
 	stats = exists and Fs.statSync(src)
 	isDirectory = exists and stats.isDirectory()
@@ -62,79 +63,102 @@ writeDataVersion = (dataDir, toVersion, cb) ->
 				metadata.dataVersion = toVersion
 				cb()
 		(cb) ->
-			Fs.writeFile versionPath, JSON.stringify(metadata), (err) ->
+			Fs.writeFile versionPath, JSON.stringify(metadata), cb
+
+	], cb
+
+# This loops through migrations until currentVersion = destinationVersion
+runMigration = (dataDir, currentVersion, destinationVersion, userName, password, cb) ->
+	migrationVersionSets = null
+
+	# This expression is used to filter non-migration files from the migrations directory
+	migrationRegex = /([0-9\-.]+\.coffee)/
+
+	Async.series [
+		(cb) =>
+			# fetch list of migration files
+			Fs.readdir "./src/migrations", (err, result) ->
 				if err
 					cb err
 					return
 
-				console.log "Updated dataVersion to v#{toVersion}"
+				migrationVersionSets = Imm.fromJS(result)
+				.filter (m) -> migrationRegex.exec(m)
+				.map (m) ->
+					# Parsing migration files, splitting, creating obj
+					[fromVersion, toVersion] = m.replace(".coffee", "").split("-")
+					return Imm.Map {fromVersion, toVersion}
+
 				cb()
+
+		(cb) =>
+			Async.until (-> currentVersion is destinationVersion), (cb) ->
+		 		# find a migration to run
+				{fromVersion, toVersion} = migrationVersionSets
+				.find (m) => m.get('fromVersion') is currentVersion
+				.toObject()
+
+				migrate dataDir, fromVersion, toVersion, userName, password, (err) ->
+					if err
+						cb err
+						return
+					currentVersion = toVersion
+					cb()
+					return
+
+			, cb
 	], cb
 
-
-# Use this at the command line
-runMigration = (dataDir, fromVersion, toVersion, userName, password, cb=(->)) ->
-	stagedDataDir = "./data_migration_#{fromVersion}-#{toVersion}"
-	backupDataDir = "./data_migration_#{fromVersion}--backup-#{Moment().format('YYYY-MM-DD-(h-ssa)')}"
-
-	lastMigrationStep = null
+# This sets up the staging directory, can use this at the command line to migrate manually
+atomicMigration = (dataDir, fromVersion, toVersion, userName, password, cb=(->)) ->
+	randomId = new Date().valueOf()
+	stagedDataDir = "./data_migration_#{fromVersion}-#{toVersion}-#{randomId}"
+	backupDataDir = "./data_migration_#{fromVersion}--backup-#{Moment().format('YYYY-MM-DD-(h-ssa)')}-#{randomId}"
 
 	Async.series [
-		(cb) -> # Verify that all versions are valid
+		(cb) ->
+
+			# Verify that all versions are valid
 			dataDirMetadataPath = Path.join dataDir, 'version.json'
 
 			Fs.readFile dataDirMetadataPath, (err, result) ->
 				if err
-					if err.code is 'ENOENT' and toVersion is '1.6.0'
-						console.warn "No version metadata exists yet, it will soon. Skipping tests!"
-						cb()
-						return
-
 					console.error "Unable to read version metadata!"
 					cb err
 					return
 
 				dataDirMetadata = JSON.parse result
 
-				numerical = (v) -> Number v.split('.').join('')
-
 				# Ensure fromVersions match
 				if dataDirMetadata.dataVersion isnt fromVersion
-					console.error """
+					cb new Error """
 						Version Mismatch! Data directory is currently
 						v#{dataDirMetadata.dataVersion}, but trying to install from #{fromVersion}."
 					"""
-					cb err
 					return
 
 				# Ensure srcVersion (package.json) matches toVersion
 				# In other words, the files are ready for the new DB version
 				# This is OK in 'development' mode, for interim partial migrations
-				if nw.App.manifest.version isnt toVersion
-					if process.env.NODE_ENV isnt 'development'
-						console.error """
-							Your current src/package files are v#{nw.App.manifest.version},
-							which doesn't match the destination data version v#{toVersion}.
-						"""
-						cb err
-						return
-					else
-						console.warn """
-							Developer Mode! The last migration step run was
-							Step ##{dataDirMetadata.lastMigrationStep}, so we'll
-							start from Step ##{dataDirMetadata.lastMigrationStep + 1}
-							if exists.
-						"""
-						lastMigrationStep = dataDirMetadata.lastMigrationStep
 
-				# Ensure fromVersion is numerically earlier than toVersion
-				unless numerical(fromVersion) < numerical(toVersion)
-					console.error """
-						Oops! Looks like you're trying to migrate backwards,
-						from v#{fromVersion} to v#{toVersion}
-					"""
-					cb err
-					return
+				# ToDo, check lastMigrationStep logic when iterating over multiple migrations
+
+				# if nw.App.manifest.version isnt toVersion
+				# 	if process.env.NODE_ENV isnt 'development'
+				# 		console.error """
+				# 			Your current src/package files are v#{nw.App.manifest.version},
+				# 			which doesn't match the destination data version v#{toVersion}.
+				# 		"""
+				# 		cb err
+				# 		return
+				# 	else
+				# 		console.warn """
+				# 			Developer Mode! The last migration step run was
+				# 			Step ##{dataDirMetadata.lastMigrationStep}, so we'll
+				# 			start from Step ##{dataDirMetadata.lastMigrationStep + 1}
+				# 			if exists.
+				# 		"""
+				# 		lastMigrationStep = dataDirMetadata.lastMigrationStep
 
 				# All tests passed, continue with data migration
 				console.info "1. Version validity check successful."
@@ -147,7 +171,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password, cb=(->)) ->
 			cb()
 
 		(cb) -> # Run migration on staged database dir
-			migrate stagedDataDir, fromVersion, toVersion, userName, password, lastMigrationStep, (err) ->
+			runMigration stagedDataDir, fromVersion, toVersion, userName, password, (err) ->
 				if err
 					console.error "Database migration error!"
 					cb err
@@ -156,7 +180,7 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password, cb=(->)) ->
 				console.info "3. Data migration successful."
 				cb()
 
-		(cb) -> # Move (rename) live database to app directory
+		(cb) -> # Backup (move) current database
 			Fs.rename dataDir, backupDataDir, (err) ->
 				if err
 					console.error "Database backup error!"
@@ -202,29 +226,38 @@ runMigration = (dataDir, fromVersion, toVersion, userName, password, cb=(->)) ->
 		console.info "------ Migration Complete! ------"
 		cb()
 
+# This runs a single migration
+migrate = (dataDir, fromVersion, toVersion, userName, password, cb) ->
+	# lastMigrationStep is no longer relevant, so setting to null
+	# ToDo: remove lastMigrationStep(?)
+	lastMigrationStep = null
 
-
-migrate = (dataDir, fromVersion, toVersion, userName, password, lastMigrationStep, cb) ->
-	# Eventually, this could be expanded to support migrating across many
-	# versions (e.g. v1 -> v5).
-
-	# TODO: Grab full list of migrations, handle multi-step migrations
-
-	console.log "Running migration step #{fromVersion} -> #{toVersion}..."
-
+	# ToDo: handle case where migration file is not found
 	try
-		migrationStep = require("./#{fromVersion}-#{toVersion}")
+		migration = require("./#{fromVersion}-#{toVersion}")
 	catch err
 		cb err
 		return
 
-	migrationStep.run dataDir, userName, password, lastMigrationStep, (err) ->
+	Async.series [
+		(cb) =>
+			migration.run dataDir, userName, password, lastMigrationStep, cb
+
+		(cb) =>
+			writeDataVersion dataDir, toVersion, (err) ->
+				if err
+					cb err
+					return
+
+				console.log "Updated version number in data file to v#{toVersion}"
+				cb()
+
+	], (err) =>
 		if err
-			cb new Error "Could not run migration #{fromVersion}-#{toVersion}"
+			console.error "Could not run migration #{fromVersion}-#{toVersion}"
+			cb err
 			return
+		cb()
+		return
 
-		writeDataVersion dataDir, toVersion, ->
-			console.log "Done migrating v#{fromVersion} -> v#{toVersion}."
-			cb()
-
-module.exports = {runMigration, migrate}
+module.exports = {atomicMigration, runMigration, migrate}

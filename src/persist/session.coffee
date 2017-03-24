@@ -19,6 +19,7 @@ DataModels = require './dataModels'
 	InvalidUserNameError
 	IncorrectPasswordError
 	DeactivatedAccountError
+	AccountTypeError
 } = require './users'
 
 login = (userName, password, backend, cb) ->
@@ -97,4 +98,5 @@ module.exports = {
 	InvalidUserNameError
 	IncorrectPasswordError
 	DeactivatedAccountError
+	AccountTypeError
 }

@@ -1,4 +1,19 @@
-### 1.15.0
+### 1.15.1 (Mar 24 2017)
+
+This release resolves a dependency issue which may have prevented the app from starting. It also introduces automatic
+migration when importing a previous database through the UI.
+
+### Improvements
+
+- Automatic migration of database on import ([#974](https://github.com/konode001/konote/issues/974))
+
+#### Fixes
+
+- Explicitly install moment.js (02bae74)
+- Support custom headers/footers when printing analysis tab (970e822)
+
+
+### 1.15.0 (Mar 17 2017)
 
 ### Improvements
 

@@ -339,8 +339,6 @@ load = (win) ->
 			dataDir = Config.backend.dataDirectory
 			tmpDir = dataDir + '_tmp_import' + Date.now()
 			atomicOp = null
-			dataVersion = null
-			appVersion = null
 
 			Async.series [
 
@@ -399,57 +397,8 @@ load = (win) ->
 							cb()
 
 				(cb) =>
-					appVersion = nw.App.manifest.version
-					cb()
-
-				(cb) =>
-					Fs.readFile path.join(tmpDir, 'version.json'), (err, result) =>
-						if err
-							cb err
-						try
-							dataVersion = JSON.parse(result).dataVersion
-							cb()
-						catch err
-							cb new Error "Invalid Data Version"
-
-				(cb) =>
-					if appVersion is dataVersion
-						console.log "versions match"
-						@setState {isLoading: false}
-						atomicOp.commit cb
-					else
-						@setState {isLoading: false}
-						Bootbox.dialog {
-							title: "Migration Required"
-							message: "You are attempting to import data from a previous version of KoNote. " +
-								"The data will be migrated to the current version. To continue, please log in with an administrator account: <br><br>" +
-								'<input id="username" name="username" type="text" placeholder="username" class="form-control input-md"> <br>' +
-								'<input id="password" name="password" type="password" placeholder="password" class="form-control input-md"> <br>'
-							buttons: {
-								cancel: {
-									label: "Cancel"
-									className: 'btn-default'
-									callback: =>
-										cb new Error 'Data migration aborted'
-								}
-								continue: {
-									label: "Continue"
-									className: 'btn-primary'
-									callback: =>
-										@setState {
-											isLoading: true
-											installProgress: {message: "Upgrading data to current version..."}
-										}
-										username = $('#username').val()
-										password = $('#password').val()
-										Migration.runMigration tmpDir, dataVersion, appVersion, username, password, (err) =>
-											if err
-												cb err
-											atomicOp.commit cb
-											cb()
-								}
-							}
-						}
+					@setState {isLoading: false}
+					atomicOp.commit cb
 
 			], (err) =>
 				@setState {isLoading: false}
