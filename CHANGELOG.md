@@ -3,7 +3,7 @@
 This release resolves a dependency issue which may have prevented the app from starting. It also introduces automatic
 migration when importing a previous database through the UI.
 
-### Improvements
+#### Improvements
 
 - Automatic migration of database on import ([#974](https://github.com/konode001/konote/issues/974))
 
@@ -15,7 +15,7 @@ migration when importing a previous database through the UI.
 
 ### 1.15.0 (Mar 17 2017)
 
-### Improvements
+#### Improvements
 
 - Quick navigation to date in progress notes tab ([#994](https://github.com/konode001/konote/issues/994))
 - Analysis can be printed or exported to PNG ([#969](https://github.com/konode001/konote/issues/969))
