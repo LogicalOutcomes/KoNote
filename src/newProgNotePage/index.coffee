@@ -27,11 +27,9 @@ load = (win, {clientFileId}) ->
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	MetricWidget = require('../metricWidget').load(win)
-	WithTooltip = require('../withTooltip').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 
-	{FaIcon, renderName, showWhen, stripMetadata,
-	getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
+	{FaIcon, renderName, showWhen, getUnitIndex, getPlanSectionIndex, getPlanTargetIndex} = require('../utils').load(win)
 
 	progNoteTemplate = Imm.fromJS Config.templates[Config.useTemplate]
 
@@ -279,135 +277,135 @@ load = (win, {clientFileId}) ->
 
 				R.div({className: 'progNote'},
 					R.div({className: 'unitContainer'},
-					R.div({className: 'backdateContainer'},
-						BackdateWidget({
-							onChange: @_updateBackdate
-							isBackdated
-						})
-					)
+						R.div({className: 'backdateContainer'},
+							BackdateWidget({
+								onChange: @_updateBackdate
+								isBackdated
+							})
+						)
 
-					R.div({className: 'units'},
-						(@state.progNote.get('units').map (unit) =>
-							unitId = unit.get 'id'
+						R.div({className: 'units'},
+							(@state.progNote.get('units').map (unit) =>
+								unitId = unit.get 'id'
 
-							switch unit.get('type')
-								when 'basic'
-									R.div({
-										key: unitId
-										className: 'unit basic'
-									},
-										R.h2({className: 'unitName'}, unit.get 'name')
-										ExpandingTextArea({
-											value: unit.get('notes')
-											onFocus: @_selectBasicUnit.bind null, unit
-											onChange: @_updateBasicNotes.bind null, unitId
-											placeholder: "Enter general notes here..."
-										})
-										R.div({className: 'metrics'},
-											(unit.get('metrics').map (metric) =>
-												metricId = metric.get 'id'
+								switch unit.get('type')
+									when 'basic'
+										R.div({
+											key: unitId
+											className: 'unit basic'
+										},
+											R.h2({className: 'unitName'}, unit.get 'name')
+											ExpandingTextArea({
+												value: unit.get('notes')
+												onFocus: @_selectBasicUnit.bind null, unit
+												onChange: @_updateBasicNotes.bind null, unitId
+												placeholder: "Enter general notes here..."
+											})
+											R.div({className: 'metrics'},
+												(unit.get('metrics').map (metric) =>
+													metricId = metric.get 'id'
 
-												MetricWidget({
-													key: metric.get('id')
-													name: metric.get('name')
-													definition: metric.get('definition')
-													onFocus: @_selectBasicUnit.bind null, unit
-													onChange: @_updateBasicMetric.bind(
-														null,
-														unitId, metricId
-													)
-													value: metric.get('value')
-													isEditable: true
-												})
-											).toJS()...
-										)
-									)
-								when 'plan'
-									R.div({
-										className: 'unit plan'
-										key: unitId
-									},
-										(unit.get('sections').map (section) =>
-											sectionId = section.get 'id'
-
-											R.section({key: sectionId},
-												R.h2({}, section.get 'name')
-
-												(section.get('targets').map (target) =>
-													targetId = target.get 'id'
-
-													R.div({
-														key: targetId
-														className: 'target'
-													},
-														R.h3({className: 'targetHeader'},
-															target.get 'name'
-															R.span({
-																className: [
-																	'star'
-																	'checked' if target.get('notes').includes "***"
-																].join ' '
-																title: "Mark as Important"
-																onClick: @_starTarget.bind(
-																	null, unitId, sectionId, targetId, target.get 'notes'
-																)
-															},
-																R.span({className:'flagText'},'Flag Important ')
-																FaIcon('flag-o',className:"fa-lg")
-															)
+													MetricWidget({
+														key: metric.get('id')
+														name: metric.get('name')
+														definition: metric.get('definition')
+														onFocus: @_selectBasicUnit.bind null, unit
+														onChange: @_updateBasicMetric.bind(
+															null,
+															unitId, metricId
 														)
-														ExpandingTextArea {
-															value: target.get 'notes'
-															placeholder: "..."
-															onFocus: @_selectPlanTarget.bind(
-																null, unit, section, target
-															)
-															onChange: @_updatePlanTargetNotes.bind(
-																null, unitId, sectionId, targetId
-															)
-														}
-														R.div({className: 'metrics'},
-															(target.get('metrics').map (metric) =>
-																metricId = metric.get 'id'
-
-																MetricWidget {
-																	key: metricId
-																	name: metric.get 'name'
-																	definition: metric.get 'definition'
-																	value: metric.get 'value'
-																	onFocus: @_selectPlanTarget.bind(
-																		null,
-																		unit, section, target
-																	)
-																	onChange: @_updatePlanTargetMetric.bind(
-																		null,
-																		unitId, sectionId, targetId, metricId
-																	)
-																	isEditable: true
-																}
-															)
-														)
-													)
+														value: metric.get('value')
+														isEditable: true
+													})
 												).toJS()...
 											)
-										).toJS()...
-									)
-						).toJS()...
+										)
+									when 'plan'
+										R.div({
+											className: 'unit plan'
+											key: unitId
+										},
+											(unit.get('sections').map (section) =>
+												sectionId = section.get 'id'
 
-						# PROTOTYPE Shift Summary Feature
-						(if Config.features.shiftSummaries.isEnabled
-							R.div({
-								id: 'shiftSummaryField'
-								className: 'unit basic'
-							},
-								R.h2({}, "Shift Summary")
-								ExpandingTextArea({
-									value: @state.progNote.get('summary')
-									onChange: @_updateSummary
-								})
+												R.section({key: sectionId},
+													R.h2({}, section.get 'name')
+
+													(section.get('targets').map (target) =>
+														targetId = target.get 'id'
+
+														R.div({
+															key: targetId
+															className: 'target'
+														},
+															R.h3({className: 'targetHeader'},
+																target.get 'name'
+																R.span({
+																	className: [
+																		'star'
+																		'checked' if target.get('notes').includes "***"
+																	].join ' '
+																	title: "Mark as Important"
+																	onClick: @_starTarget.bind(
+																		null, unitId, sectionId, targetId, target.get 'notes'
+																	)
+																},
+																	R.span({className:'flagText'},'Flag Important ')
+																	FaIcon('flag-o',className:"fa-lg")
+																)
+															)
+															ExpandingTextArea {
+																value: target.get 'notes'
+																placeholder: "..."
+																onFocus: @_selectPlanTarget.bind(
+																	null, unit, section, target
+																)
+																onChange: @_updatePlanTargetNotes.bind(
+																	null, unitId, sectionId, targetId
+																)
+															}
+															R.div({className: 'metrics'},
+																(target.get('metrics').map (metric) =>
+																	metricId = metric.get 'id'
+
+																	MetricWidget {
+																		key: metricId
+																		name: metric.get 'name'
+																		definition: metric.get 'definition'
+																		value: metric.get 'value'
+																		onFocus: @_selectPlanTarget.bind(
+																			null,
+																			unit, section, target
+																		)
+																		onChange: @_updatePlanTargetMetric.bind(
+																			null,
+																			unitId, sectionId, targetId, metricId
+																		)
+																		isEditable: true
+																	}
+																)
+															)
+														)
+													).toJS()...
+												)
+											).toJS()...
+										)
+							).toJS()...
+
+							# PROTOTYPE Shift Summary Feature
+							(if Config.features.shiftSummaries.isEnabled
+								R.div({
+									id: 'shiftSummaryField'
+									className: 'unit basic'
+								},
+									R.h2({}, "Shift Summary")
+									ExpandingTextArea({
+										value: @state.progNote.get('summary')
+										onChange: @_updateSummary
+									})
+								)
 							)
 						)
-					)
 					)
 
 					R.div({className: "newProgNoteToolbar"},
