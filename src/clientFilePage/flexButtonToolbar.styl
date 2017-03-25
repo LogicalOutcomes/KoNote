@@ -9,11 +9,16 @@
 		color rgb(76, 93, 103)
 		font-weight 200
 
+	.menuItemText
+		padding-left 8px
+
 	@media screen and (max-width: 1280px)
 		.menuItemText
 			display none
 		.menuItemIcon
 			font-size 1.33em
+		> button
+			flex 1 !important
 
 	> button, > .dropdown
 		z-index 3
@@ -39,7 +44,7 @@
 			overflow hidden
 
 		> .fa, > div > .fa, .dropdown-toggle .fa
-			margin 8px
+			margin 0px
 			transition all .1s ease
 
 		&:hover
