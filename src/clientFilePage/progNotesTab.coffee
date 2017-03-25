@@ -216,7 +216,9 @@ load = (win) ->
 									disabled: not hasChanges
 								},
 									FaIcon('save')
-									"Save #{Term 'Progress Note'}"
+									R.span({className: 'wideMenuItemText'},
+										"Save #{Term 'Progress Note'}"
+									)
 								)
 
 								R.button({
@@ -227,7 +229,9 @@ load = (win) ->
 									onClick: @_cancelRevisingProgNote
 								},
 									FaIcon('undo')
-									"Discard"
+									R.span({className: 'wideMenuItemText'},
+										"Discard"
+									)
 								)
 
 								R.button({
@@ -239,7 +243,9 @@ load = (win) ->
 									disabled: @state.isLoading or @props.isReadOnly
 								},
 									FaIcon('file')
-									"New #{Term 'Progress Note'}"
+									R.span({className: 'wideMenuItemText'},
+										"New #{Term 'Progress Note'}"
+									)
 								)
 
 								R.button({
@@ -252,7 +258,9 @@ load = (win) ->
 									disabled: @props.isReadOnly
 								},
 									FaIcon('plus')
-									"Add #{Term 'Quick Note'}"
+									R.span({className: 'wideMenuItemText'},
+										"Add #{Term 'Quick Note'}"
+									)
 								)
 
 								R.button({

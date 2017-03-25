@@ -9,7 +9,7 @@
 		color rgb(76, 93, 103)
 		font-weight 200
 
-	.menuItemText
+	.menuItemText, .wideMenuItemText
 		padding-left 8px
 
 	@media screen and (max-width: 1280px)
@@ -112,6 +112,9 @@
 			&:not([disabled]):hover
 				background lighten($bgColor, 25%)
 
+			.menuItemText
+				color white
+
 		&.openFilterBarButton
-			flex 0.25
+			flex 0.25 !important
 			font-size 1.3em
