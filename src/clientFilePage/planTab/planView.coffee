@@ -7,11 +7,8 @@
 # Handles auto-scrolling behaviour
 
 Imm = require 'immutable'
-Term = require '../../term'
-
 
 load = (win) ->
-	Bootbox = win.bootbox
 	React = win.React
 	{PropTypes} = React
 	R = React.DOM
@@ -24,7 +21,7 @@ load = (win) ->
 	InactiveToggleWrapper = require('./inactiveToggleWrapper').load(win)
 	{DropdownButton, MenuItem} = require('../../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
-	{FaIcon, showWhen, scrollToElement} = require('../../utils').load(win)
+	{scrollToElement} = require('../../utils').load(win)
 
 
 	PlanView = React.createClass

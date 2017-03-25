@@ -19,9 +19,6 @@ load = (win) ->
 	MetricLookupField = require('../../metricLookupField').load(win)
 	ExpandingTextArea = require('../../expandingTextArea').load(win)
 	MetricWidget = require('../../metricWidget').load(win)
-	WithTooltip = require('../../withTooltip').load(win)
-	OpenDialogLink = require('../../openDialogLink').load(win)
-	PrintButton = require('../../printButton').load(win)
 
 	{FaIcon} = require('../../utils').load(win)
 
