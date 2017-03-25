@@ -73,6 +73,7 @@ load = (win) ->
 						'isCollapsed' if isCollapsed
 						'readOnly' if isReadOnly
 						'isReorderHovered' if @state.isReorderHovered
+						'dragging' if @props.isDragging
 					].join ' '
 					onClick: @_onTargetClick
 				},

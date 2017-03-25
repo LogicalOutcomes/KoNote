@@ -21,10 +21,15 @@
 		justify-content center
 		border-top-left-radius $border-radius
 		border-bottom-left-radius $border-radius
+		cursor -webkit-grab
 
 	&.hasChanges
 		background #EEFFF5 !important
 		border-color #C9FFB2
+
+	&.dragging
+		border 2px dotted #cadbe5
+		opacity 0.6
 
 	&.isCollapsed
 		margin-bottom 8px
@@ -82,8 +87,8 @@
 			opacity 0.3
 
 	&.isReorderHovered .dragSource
-		opacity 1
-		background #cadbe5
+		//opacity 1
+		//background #cadbe5
 
 
 	.planTargetContainer
