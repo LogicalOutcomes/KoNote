@@ -30,6 +30,8 @@
 	&.dragging
 		border 2px dotted #cadbe5
 		opacity 0.6
+		color white
+		background white !important
 
 	&.isCollapsed
 		margin-bottom 8px
@@ -85,6 +87,10 @@
 	&:hover
 		.dragSource
 			opacity 0.3
+
+	&:active
+		.dragSource
+			background #cadbe5
 
 	&.isReorderHovered .dragSource
 		//opacity 1

@@ -27,10 +27,6 @@ load = (win) ->
 		displayName: 'PlanTarget'
 		mixins: [React.addons.PureRenderMixin]
 
-		getInitialState: -> {
-			isReorderHovered: false
-		}
-
 		propTypes: {
 			# DnD
 			connectDragSource: React.PropTypes.func.isRequired
@@ -69,7 +65,6 @@ load = (win) ->
 						'hasChanges' if hasChanges or not isExistingTarget
 						'isCollapsed' if isCollapsed
 						'readOnly' if isReadOnly
-						'isReorderHovered' if @state.isReorderHovered
 						'dragging' if @props.isDragging
 					].join ' '
 					onClick: @_onTargetClick
@@ -77,8 +72,6 @@ load = (win) ->
 					connectDragSource (
 						R.div({
 							className: 'dragSource'
-							onMouseEnter: => @setState {isReorderHovered: true}
-							onMouseLeave: => @setState {isReorderHovered: false}
 						},
 							FaIcon('arrows-v')
 						)
