@@ -139,6 +139,23 @@
 								margin-right -20px !important
 								margin-top 0px !important
 
+							// Disable decade selection
+							.datepicker-years thead .picker-switch
+								cursor default
+								pointer-events none
+
+							// Custom styles for months/days/year whether enabled/disabled
+							.month, .day, .year
+								border-radius 0
+
+								&.disabled
+									color #b5b5b5
+									background rgb(232, 232, 232)
+
+								&:not(.disabled):hover
+									background #337ab7
+									color white
+
 						.fa
 							margin-left 5px
 							opacity 0.75
