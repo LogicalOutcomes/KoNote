@@ -31,6 +31,7 @@ load = (win) ->
 			$(@refs.name).tooltip {
 				html: true
 				title: ReactDOMServer.renderToString tooltipContent
+				placement: 'auto'
 				viewport: {
 					selector: @props.tooltipViewport
 					padding: 0
