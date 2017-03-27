@@ -15,7 +15,6 @@ load = (win) ->
 
 	CrashHandler = require('../crashHandler').load(win)
 	Dialog = require('../dialog').load(win)
-	Spinner = require('../spinner').load(win)
 
 
 	ModifySectionStatusDialog = React.createFactory React.createClass
