@@ -6,10 +6,8 @@ Imm = require 'immutable'
 Path = require 'path'
 Moment = require 'moment'
 
-{
-	SymmetricEncryptionKey
-	WeakSymmetricEncryptionKey
-} = require '../persist/crypto'
+{SymmetricEncryptionKey, WeakSymmetricEncryptionKey} = require '../persist/crypto'
+{IncorrectPasswordError, UnknownUserNameError, AccountTypeError, DeactivatedAccountError} = require '../persist/users'
 {TimestampFormat} = require '../persist/utils'
 
 lastMigrationStep = 0
@@ -24,6 +22,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 	accountKeyInfo = null
 	accountKey = null
 	privateInfo = null
+	publicInfo = null
 	accountType = null
 	decryptedAccount = null
 
@@ -32,7 +31,7 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 			Fs.readdir userDir, (err, fileNames) ->
 				if err
 					if err.code is 'ENOENT'
-						cb new Error "Unknown Username"
+						cb new UnknownUserNameError()
 						return
 
 					cb err
@@ -50,6 +49,9 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 		(cb) ->
 			Fs.readFile Path.join(userDir, "account-key-#{accountKeyId}"), (err, buf) ->
 				if err
+					if err.code is 'ENOENT'
+						cb new DeactivatedAccountError()
+						return
 					cb err
 					return
 
@@ -68,13 +70,28 @@ loadGlobalEncryptionKey = (dataDir, userName, password, cb) =>
 				try
 					accountKeyBuf = pwEncryptionKey.decrypt(encryptedAccountKey)
 				catch err
-					console.error err.stack
+					# console.error err.stack
 
 					# If decryption fails, we're probably using the wrong key
-					cb new Error "Incorrect Password"
+					cb new IncorrectPasswordError()
 					return
 
 				accountKey = SymmetricEncryptionKey.import(accountKeyBuf.toString())
+
+				cb()
+		(cb) =>
+			Fs.readFile Path.join(userDir, 'public-info'), (err, buf) ->
+				if err
+					cb err
+					return
+
+				publicInfo = JSON.parse buf
+				accountType = publicInfo.accountType
+
+				# Throw error if account is not Admin
+				unless accountType is 'admin'
+					cb new AccountTypeError()
+					return
 
 				cb()
 		(cb) =>
@@ -184,7 +201,7 @@ getAllRevisions = (dirPath, globalEncryptionKey, cb) ->
 			Fs.readdir dirPath, (err, result) ->
 				if err
 					if err.code is 'ENOENT'
-						console.error "'#{dirPath}' does exist.", err						
+						console.error "'#{dirPath}' does exist.", err
 					cb err
 					return
 
@@ -373,11 +390,11 @@ finalizeMigrationStep = (dataDir, cb=(->)) ->
 addClientFilePlanSectionStatusField = (dataDir, globalEncryptionKey, cb) ->
 	forEachFileIn Path.join(dataDir, 'clientFiles'), (clientFile, cb) ->
 		clientFileDirPath = Path.join(dataDir, 'clientFiles', clientFile)
-		
+
 		forEachFileIn clientFileDirPath, (clientFileRev, cb) ->
 			clientFileRevPath = Path.join(clientFileDirPath, clientFileRev)
 			clientFileRevObject = null
- 
+
 			Async.series [
 				(cb) =>
 					# Read and decrypt ClientFile object
@@ -390,7 +407,7 @@ addClientFilePlanSectionStatusField = (dataDir, globalEncryptionKey, cb) ->
 						cb()
 				(cb) =>
 					# Add 'default' status to every section
-					planSections = clientFileRevObject.getIn(['plan', 'sections']).map (section) ->						
+					planSections = clientFileRevObject.getIn(['plan', 'sections']).map (section) ->
 						return section.set 'status', 'default'
 
 					clientFileRevObject = clientFileRevObject
@@ -433,7 +450,7 @@ module.exports = {
 		if lastMigrationStep?
 			migrationSeries = migrationSeries.slice(lastMigrationStep)
 
-		# Shift in standard step 
+		# Shift in standard step
 		migrationSeries.unshift (cb) ->
 			console.groupCollapsed "0. Load global encryption key"
 			loadGlobalEncryptionKey dataDir, userName, password, (err, result) ->

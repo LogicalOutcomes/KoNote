@@ -2,6 +2,6 @@
 
 module.exports = {
 	run: (dataDir, userName, password, lastMigrationStep, cb) ->
-		console.log "No migrations to run for v1.9.0"
+		console.log "No migrations to run for v1.15.1"
 		cb()
 }

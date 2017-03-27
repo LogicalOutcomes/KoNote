@@ -1,7 +1,7 @@
 # ////////////////////// Migration Series //////////////////////
 
 module.exports = {
-	run: (dataDir, userName, password, cb) ->
+	run: (dataDir, userName, password, lastMigrationStep, cb) ->
 		console.log "No migrations to run for v1.5.3"
 		cb()
 }
