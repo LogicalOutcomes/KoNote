@@ -177,11 +177,27 @@ load = (win) ->
 			####### Filtering / Search Logic #######
 
 			if @state.isFiltering
-				# TODO: Make this filtering faster
+				# TODO: Make this filtering faster, combine to single filter func?
 
 				# By program?
 				if @state.programIdFilter
 					historyEntries = historyEntries.filter (e) => e.get('programId') is @state.programIdFilter
+
+				dateSpanFilterIsValid = (
+					@state.dateSpanFilter and
+					@state.dateSpanFilter.get('startDate') and
+					@state.dateSpanFilter.get('endDate') and
+					@state.dateSpanFilter.get('startDate').isBefore @state.dateSpanFilter.get('endDate')
+				)
+
+				# By date?
+				if dateSpanFilterIsValid
+					historyEntries = historyEntries.filter (e) =>
+						makeMoment(e.get 'timestamp').isBetween(
+							@state.dateSpanFilter.get('startDate'),
+							@state.dateSpanFilter.get('endDate'),
+							null, '[]'
+						)
 
 				# By type of progNote?
 				if @state.dataTypeFilter in ['progNotes', 'targets']
@@ -195,6 +211,7 @@ load = (win) ->
 					# TODO: Restore this dataType at some point
 					# if @state.dataTypeFilter is 'targets'
 					# 	historyEntries = historyEntries.filter (e) => e.getIn(['filteredProgNote', 'type']) is 'full'
+
 
 				# By search query? Pass dataTypeFilter for conditional property checks
 				if @state.searchQuery.trim().length > 0
@@ -298,7 +315,7 @@ load = (win) ->
 						(if @state.isFiltering and not isEditing
 							FilterBar({
 								ref: 'filterBar'
-								historyEntries
+								historyEntries: @props.historyEntries # dateSpanFilter datepicker requires unfiltered entries
 								programIdFilter: @state.programIdFilter
 								dataTypeFilter: @state.dataTypeFilter
 								dateSpanFilter: @state.dateSpanFilter
@@ -350,6 +367,14 @@ load = (win) ->
 										ColorKeyBubble({
 											colorKeyHex: @props.programsById.getIn [@state.programIdFilter, 'colorKeyHex']
 										})
+									)
+								)
+								(if dateSpanFilterIsValid
+									R.div({},
+										"within: "
+										@state.dateSpanFilter.get('startDate').format('MMMM Do, YYYY')
+										" - "
+										@state.dateSpanFilter.get('endDate').format('MMMM Do YYYY')
 									)
 								)
 								R.div({},
