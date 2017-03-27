@@ -338,6 +338,8 @@ load = (win) ->
 			isRenameEntry = firstChangeLog? and firstChangeLog.get('property') is 'name'
 			isCreationEntry = firstChangeLog? and firstChangeLog.get('action') is 'created'
 
+			tooltipViewport = 'section.revision'
+
 
 			if isProgNote and isCreationEntry
 				# TODO: Incorporate progEvents to revisionHistory
@@ -377,7 +379,6 @@ load = (win) ->
 
 				# TODO: Diffing for shiftSummaries (can't edit one yet anyway)
 				filteredProgNote = filteredProgNote.remove 'summary'
-
 
 
 			return R.section({className: 'revision'},
@@ -425,6 +426,7 @@ load = (win) ->
 							ProgNoteContents({
 								progNote: filteredProgNote
 								planTargetsById: @props.planTargetsById
+								tooltipViewport
 								# TODO: Incorporate progEvents to revisionHistory
 								# progEvents
 								# eventTypes: @props.eventTypes
@@ -445,6 +447,7 @@ load = (win) ->
 								onToggleSnapshot: @_toggleSnapshot
 								isSnapshotVisible: @state.isSnapshotVisible
 								disableSnapshot: @props.disableSnapshot
+								tooltipViewport
 							})
 						)
 					)
@@ -453,6 +456,7 @@ load = (win) ->
 							revision
 							metricsById: @props.metricsById
 							isRenameEntry
+							tooltipViewport
 						})
 					)
 				)
@@ -463,7 +467,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			entry = @props.entry
+			{entry, tooltipViewport} = @props
 
 			isCreationEntry = entry.get('action') is 'created'
 			isRenameEntry = entry.get('property') is 'name'
@@ -531,7 +535,7 @@ load = (win) ->
 						isEditable: false
 						name: metric.get('name')
 						definition: metric.get('definition')
-						tooltipViewport: 'article'
+						tooltipViewport
 						styleClass: 'clear' unless entry.get('value')
 					})
 
@@ -549,7 +553,7 @@ load = (win) ->
 			)
 
 
-	RevisionSnapshot = ({revision, metricsById, isRenameEntry}) ->
+	RevisionSnapshot = ({revision, metricsById, isRenameEntry, tooltipViewport}) ->
 		hasMetrics = revision.get('metricIds')?
 
 		R.div({className: 'snapshot'},
@@ -573,7 +577,7 @@ load = (win) ->
 							key: metricId
 							name: metric.get('name')
 							definition: metric.get('definition')
-							tooltipViewport: '.snapshot'
+							tooltipViewport
 						})
 					)
 				)

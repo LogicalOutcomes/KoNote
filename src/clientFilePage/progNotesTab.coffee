@@ -1229,6 +1229,7 @@ load = (win) ->
 							# Combine entry with @props + key
 							ProgNoteContainer(_.extend entry.toObject(), @props, {
 								key: entry.get('id')
+								tooltipViewport: '#entriesListView'
 							})
 
 						when 'globalEvent'
@@ -1249,7 +1250,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			{isEditing, filteredProgNote, progEvents, globalEvents, dataTypeFilter} = @props
+			{isEditing, filteredProgNote, progEvents, globalEvents, dataTypeFilter, tooltipViewport} = @props
 
 			progNote = @props.progNoteHistory.last()
 			progNoteId = progNote.get('id')
@@ -1277,7 +1278,7 @@ load = (win) ->
 					selectProgNote: @props.selectProgNote
 					isReadOnly: @props.isReadOnly
 
-					isEditing: @props.isEditing
+					isEditing
 					transientData: @props.transientData
 					startRevisingProgNote: @props.startRevisingProgNote
 					cancelRevisingProgNote: @props.cancelRevisingProgNote
@@ -1287,6 +1288,7 @@ load = (win) ->
 					updateProgEvent: @props.updateProgEvent
 					updateQuickNotes: @props.updateQuickNotes
 					saveProgNoteRevision: @props.saveProgNoteRevision
+					tooltipViewport
 				})
 
 			Assert.equal progNote.get('status'), 'default'
@@ -1310,6 +1312,7 @@ load = (win) ->
 						cancelRevisingProgNote: @props.cancelRevisingProgNote
 						updateQuickNotes: @props.updateQuickNotes
 						saveProgNoteRevision: @props.saveProgNoteRevision
+						tooltipViewport
 					})
 				when 'full'
 					ProgNoteView({
@@ -1338,6 +1341,7 @@ load = (win) ->
 						updatePlanTargetMetric: @props.updatePlanTargetMetric
 						updateProgEvent: @props.updateProgEvent
 						saveProgNoteRevision: @props.saveProgNoteRevision
+						tooltipViewport
 					})
 				else
 					throw new Error "unknown prognote type: #{progNote.get('type')}"
@@ -1349,7 +1353,7 @@ load = (win) ->
 		# TODO: propTypes
 
 		render: ->
-			{isEditing, dataTypeFilter} = @props
+			{isEditing, dataTypeFilter, tooltipViewport} = @props
 
 			# Don't render anything if only events are shown
 			if dataTypeFilter is 'events' and not isEditing
@@ -1391,6 +1395,7 @@ load = (win) ->
 					updateQuickNotes: @props.updateQuickNotes
 					attachments: @props.attachments
 					openAttachment: @_openAttachment
+					tooltipViewport
 				})
 			)
 
@@ -1435,7 +1440,7 @@ load = (win) ->
 		# TODO: propTypes
 
 		render: ->
-			{isEditing, dataTypeFilter} = @props
+			{isEditing, dataTypeFilter, tooltipViewport} = @props
 
 			# Use transient data when isEditing
 			progNote = if isEditing then @props.transientData.get('progNote') else @props.filteredProgNote
@@ -1479,6 +1484,7 @@ load = (win) ->
 					updatePlanTargetNotes: @props.updatePlanTargetNotes
 					updatePlanTargetMetric: @props.updatePlanTargetMetric
 					updateProgEvent: @props.updateProgEvent
+					tooltipViewport
 				})
 			)
 
@@ -1574,6 +1580,7 @@ load = (win) ->
 								cancelRevisingProgNote: @props.cancelRevisingProgNote
 								updateQuickNotes: @props.updateQuickNotes
 								saveProgNoteRevision: @props.saveProgNoteRevision
+								tooltipViewport: @props.tooltipViewport
 							})
 						when 'full'
 							ProgNoteView({
@@ -1599,6 +1606,7 @@ load = (win) ->
 								updatePlanTargetMetric: @props.updatePlanTargetMetric
 								updateProgEvent: @props.updateProgEvent
 								saveProgNoteRevision: @props.saveProgNoteRevision
+								tooltipViewport: @props.tooltipViewport
 							})
 						else
 							throw new Error "unknown prognote type: #{progNote.get('type')}"

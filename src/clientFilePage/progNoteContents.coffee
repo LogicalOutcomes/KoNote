@@ -41,6 +41,8 @@ load = (win) ->
 			selectQuickNote: (->)
 			updateQuickNotes: (->)
 			openAttachment: (->)
+
+			tooltipViewport: 'body'
 		}
 
 		render: ->
@@ -65,6 +67,7 @@ load = (win) ->
 				selectQuickNote
 				updateQuickNotes
 				openAttachment
+				tooltipViewport
 			} = @props
 
 			# QuickNote view
@@ -76,6 +79,7 @@ load = (win) ->
 					updateQuickNotes
 					attachments
 					openAttachment
+					tooltipViewport
 				})
 
 			# Full progNote view
@@ -93,6 +97,7 @@ load = (win) ->
 								selectBasicUnit
 								updateBasicUnitNotes
 								updateBasicMetric
+								tooltipViewport
 							})
 						when 'plan'
 							PlanUnitView({
@@ -104,6 +109,7 @@ load = (win) ->
 								selectPlanSectionTarget
 								updatePlanTargetNotes
 								updatePlanTargetMetric
+								tooltipViewport
 							})
 				)
 
@@ -121,6 +127,7 @@ load = (win) ->
 						dataTypeFilter
 						isEditing
 						updateProgEvent
+						tooltipViewport
 					})
 				)
 			)
@@ -145,11 +152,13 @@ load = (win) ->
 		selectQuickNote: PropTypes.func
 		updateQuickNotes: PropTypes.func
 		openAttachment: PropTypes.instanceOf(Imm.List)
+		tooltipViewport: PropTypes.string
+
 	}
 
 
 	BasicUnitView = (props) ->
-		{unit, unitId, dataTypeFilter, isEditing} = props
+		{unit, unitId, dataTypeFilter, isEditing, tooltipViewport} = props
 
 		if not unit.get('notes')
 			return null
@@ -193,6 +202,7 @@ load = (win) ->
 							onFocus: props.selectBasicUnit.bind null, unit
 							onChange: props.updateBasicMetric.bind null, unitId, metricId
 							value: metric.get('value')
+							tooltipViewport
 						})
 					)
 				)
@@ -201,7 +211,7 @@ load = (win) ->
 
 
 	PlanUnitView = (props) ->
-		{unit, unitId, dataTypeFilter, isEditing} = props
+		{unit, unitId, dataTypeFilter, isEditing, tooltipViewport} = props
 
 		R.div({
 			className: [
@@ -270,7 +280,7 @@ load = (win) ->
 
 									MetricWidget({
 										isEditable: isEditing
-										tooltipViewport: '.entriesListView'
+										tooltipViewport
 										onChange: props.updatePlanTargetMetric.bind(
 											null,
 											unitId, sectionId, targetId, metricId
