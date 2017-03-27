@@ -57,6 +57,7 @@ load = (win) ->
 			@_updateSearchText {target: {value: ''}}
 			@props.onSelectProgramId null
 			@props.onSelectDataType null
+			@props.onSelectDateSpan null
 			@_focusInput()
 
 		_focusInput: ->
@@ -175,7 +176,6 @@ load = (win) ->
 			@setState {isOpen: not @state.isOpen}
 
 		render: ->
-			console.log "dropdown render"
 			{title, dataOptions, selectedValue, selectedDisplay, onSelect} = @props
 			hasSelection = !!selectedValue
 
@@ -329,16 +329,21 @@ load = (win) ->
 
 			$(@dateInput).datetimepicker({
 				format: 'Do MMM'
-				defaultDate: @props.date or null
+				defaultDate: @props.date or undefined
 				minDate
 				maxDate
-				showClose: true
-				toolbarPlacement: 'bottom'
 				widgetPositioning: {
 					vertical: 'bottom'
 					horizontal: 'right'
 				}
-			}).on 'dp.change', ({date}) => @props.onSelect(@props.type, date)
+			}).on 'dp.change', ({date}) =>
+				# We use start or end of day to get the full inclusive span
+				newDate = if @props.type is 'startDate'
+					date.clone().startOf 'day'
+				else if @props.type is 'endDate'
+					date.clone().endOf 'day'
+
+				@props.onSelect(@props.type, newDate)
 
 			@datepickerInstance = $(@dateInput).data('DateTimePicker')
 
