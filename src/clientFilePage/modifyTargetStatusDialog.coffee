@@ -15,7 +15,6 @@ load = (win) ->
 
 	CrashHandler = require('../crashHandler').load(win)
 	Dialog = require('../dialog').load(win)
-	Spinner = require('../spinner').load(win)
 
 
 	ModifyTargetStatusDialog = React.createFactory React.createClass
@@ -67,7 +66,9 @@ load = (win) ->
 		_submit: ->
 			@refs.dialog.setIsLoading true
 
-			revisedPlanTarget = @props.planTarget
+			target = @props.data
+
+			revisedPlanTarget = target
 			.set('status', @props.newStatus)
 			.set('statusReason', @state.statusReason)
 

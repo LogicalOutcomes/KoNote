@@ -1,0 +1,34 @@
+.statusButtonGroup
+	display flex
+
+	> .statusButton
+		flex 1
+		display flex
+		cursor default
+		justify-content center
+		align-items center
+		padding 5px
+
+		font-size 18px
+		opacity 0.6
+		transition opacity .15s ease, color .15s ease
+
+		&.reactivate
+			background white
+			border-radius 5px
+			padding-left 10px
+			padding-right 10px
+			border 1px solid rgba(0,0,0,0.25)
+
+		&:not([disabled]):hover
+			opacity 1
+
+			// Different hover color for each status action type
+			&.deactivate, &.remove
+				color #af5965
+
+			&.complete
+				color #70bd62
+
+			&.reactivate
+				color #337ab7

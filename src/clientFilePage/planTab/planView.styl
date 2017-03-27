@@ -1,0 +1,79 @@
+#planView
+	position relative
+	flex 1
+	overflow-y auto
+	overflow-x hidden
+
+	> div > .sections // active sections
+		padding-bottom 25px
+
+
+	// TODO: Extract to file
+	.inactiveToggleWrapper
+
+		&.status-completed, &.status-completed .toggleHeader:hover
+			background rgba(0, 255, 0, 0.075)
+			border-color #ace6ac
+
+		&.status-deactivated, &.status-deactivated .toggleHeader:hover
+			background rgba(0, 0, 0, 0.075)
+			border-color #ded6d6
+
+		&:not(.isExpanded)
+			.toggleHeader
+				opacity 0.85
+
+				&:hover
+					opacity 1
+
+		> .toggleHeader
+			padding 10px 20px
+			cursor default
+			user-select none
+			font-size 16px
+
+			.toggleIcon
+				float right
+				opacity 0.65
+				font-size 1.15em
+				margin-top 3px
+
+		> .inactiveDataList
+			padding 10px
+
+			.sectionHeader
+				position static // Don't fixate inactive section titles
+				background none
+				padding-left 20px
+
+			.dragSource, .dragSource .fa
+				display none !important
+
+
+		&.isExpanded
+			padding-bottom 15px
+
+
+
+	// Overrides specific to sections
+	> div > .inactiveToggleWrapper
+		transition opacity .15s linear
+		border-top-width 1px
+		border-top-style dashed
+		border-bottom none !important
+
+		> .inactiveDataList
+			padding-top 0
+
+		> .toggleHeader
+			padding 15px 20px
+
+		&:not(.isExpanded)
+			opacity 0.85
+
+		&:last-child
+			border-bottom-width 1px
+			border-bottom-style dashed
+
+		&:hover
+			opacity 1
