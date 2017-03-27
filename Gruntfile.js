@@ -36,6 +36,17 @@ module.exports = function(grunt) {
 						release = results.platformType
 					}
 				}
+			},
+			codesignPassword: {
+				options: {
+					questions: [
+						{
+							config: 'codesignPassword',
+							type: 'password',
+							message: 'Please enter password for windows codesigning key file'
+						}
+					]
+				}
 			}
 		},
 		copy: {
@@ -210,6 +221,10 @@ module.exports = function(grunt) {
 				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-osx-x64',
 				cmd: '../../../../build/codesign-osx.sh'
 			},
+			codesignWin: {
+				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-ia32',
+				cmd: '../../../../build/codesign-win.sh <%= grunt.config("codesignPassword") %> KoNote.exe'
+			},
 			npm: {
 				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>',
 				cmd: 'npm install --production --no-optional'
@@ -325,12 +340,12 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-coffee');
 	grunt.loadNpmTasks('grunt-contrib-clean');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
-	if (process.platform == 'darwin') {
+	if (process.platform === 'darwin') {
 		grunt.loadNpmTasks('grunt-appdmg');
 	}
 
 	grunt.registerTask('build', function() {
-		grunt.task.run('prompt');
+		grunt.task.run('prompt:platformType');
 		grunt.task.run('release');
 	});
 
@@ -343,13 +358,13 @@ module.exports = function(grunt) {
 			grunt.task.run('replace:config:'+entry);
 			grunt.task.run('copy:production:'+entry);
 			grunt.task.run('copy:eula:'+entry);
-			if (entry == "win") {
+			if (entry === "win") {
 				//grunt.task.run('copy:generic:'+entry);
 				grunt.task.run('copy:uninstaller:'+entry);
 				grunt.task.run('exec:npmUninstaller:'+entry);
 				grunt.task.run('exec:nwjsuninstaller:'+entry);
 			}
-			if (entry == "griffin-mac" || entry == "griffin-win") {
+			if (entry === "griffin-mac" || entry === "griffin-win") {
 				grunt.task.run('copy:griffin:'+entry);
 				grunt.task.run('replace:griffin:'+entry);
 			}
@@ -367,7 +382,9 @@ module.exports = function(grunt) {
 				grunt.task.run('exec:nwjswin:'+entry);
 				grunt.task.run('copy:uninstallerbinary:'+entry);
 				// codesign and create setup file
-				grunt.task.run('exec:setup:'+entry)
+				grunt.task.run('prompt:codesignPassword');
+				grunt.task.run('exec:codesignWin:'+entry);
+				grunt.task.run('exec:setup:'+entry);
 				grunt.task.run('exec:zip:'+entry);
 			}
 			if (entry.includes("SDK")) {
@@ -379,7 +396,7 @@ module.exports = function(grunt) {
 			}
 			if (entry.includes("mac")) {
 				grunt.task.run('exec:nwjsosx:'+entry);
-				if (process.platform == 'darwin') {
+				if (process.platform === 'darwin') {
 					grunt.task.run('exec:codesign:'+entry);
 					grunt.task.run('appdmg:main:'+entry);
 				}
