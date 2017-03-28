@@ -3,7 +3,7 @@
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 # Toolbar for handling search query (via props and internal copy),
-# and a dropdown menu handling selection for options within each filter type
+# and a dropdown menu handling selection for options/dates within each filter type
 
 _ = require 'underscore'
 Imm = require 'immutable'
@@ -74,7 +74,7 @@ load = (win) ->
 				className: 'filterBar'
 				onClick: @_focusInput
 			},
-				R.section({},
+				R.section({id: 'searchFilter'},
 					R.input({
 						ref: 'searchText'
 						className: 'form-control'
@@ -83,7 +83,8 @@ load = (win) ->
 						placeholder: "Search by keywords . . ."
 					})
 				)
-				R.section({className: 'filters'},
+
+				R.section({id: 'otherFilters'},
 					FilterDropdownMenu({
 						title: 'Data'
 						selectedValue: @props.dataTypeFilter
@@ -108,13 +109,19 @@ load = (win) ->
 						selectedDisplay: =>
 							{startDate, endDate} = @props.dateSpanFilter.toObject()
 
-							if startDate and endDate
-								if startDate.isBefore(endDate)
-									"#{@props.dateSpanFilter.get('startDate').format('MMM D')} - #{@props.dateSpanFilter.get('endDate').format('MMM D')}"
+							R.div({className: 'selectedDateSpan'},
+								if startDate and endDate
+									if startDate.isBefore(endDate)
+										R.span({className: 'innerSelected'}
+											@props.dateSpanFilter.get('startDate').format('MMM D')
+											R.em({}, " - ")
+											@props.dateSpanFilter.get('endDate').format('MMM D')
+										)
+									else
+										"(invalid range)"
 								else
-									"(invalid range)"
-							else
-								"(invalid)"
+									"(invalid)"
+							)
 					},
 						DateSpanSelection({
 							dateSpanFilter: @props.dateSpanFilter
@@ -123,8 +130,9 @@ load = (win) ->
 						})
 					)
 				)
+
 				R.section({
-					className: 'closeButton'
+					id: 'filterCloseButton'
 					onClick: @props.onClose
 				},
 					FaIcon('times-circle')
@@ -184,7 +192,7 @@ load = (win) ->
 				selectedOption = dataOptions.find (o) -> o.get('id') is selectedValue
 				dataOptions = dataOptions.remove(selectedOption)
 
-			R.div({
+			R.article({
 				className: [
 					'filterDropdownMenu'
 					'isOpen' if @state.isOpen

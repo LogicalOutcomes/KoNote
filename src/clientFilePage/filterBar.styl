@@ -3,43 +3,31 @@
 	position relative
 	background #eaf1f5
 	color rgb(76, 93, 103)
-	height 50px
+	min-height 50px
 	padding 0px 3%
+	width 100%
 
-	section
+	> section
 		display flex
 
-		&:first-child
+		&#searchFilter
+			flex 2
+			min-width 150px
+
+		&#otherFilters
 			flex 3
-
-		&.filters
-			flex 4
 			display flex
-			justify-content flex-end
+			font-size 0.95em
 
-			> div
-				flex 1
-				display flex
-				align-items center
-				justify-content center
-
-				font-weight 500 !important
-				cursor default
-
-				&:hover
-					opacity 1
-
-		&.closeButton
-			flex 1
+		&#filterCloseButton
+			flex-basis 28px
+			display flex
 			position relative
-			max-width 30px
-			display flex
 			justify-content center
 			align-items center
 
 			.fa
 				font-size 1.5em
-				float right
 				transition opacity .2s ease
 				padding 5px
 
@@ -57,12 +45,29 @@
 
 
 	.filterDropdownMenu
+		flex 2
 		font-size 1em
 		position relative
-		z-index 1059 // Under quickNote popover
-		max-width 150px
+		z-index 1058 // Under quickNote popover
+
+		> div
+			flex 1
+			display flex
+			align-items center
+			justify-content center
+
+			font-weight 500 !important
+			cursor default
+
+			&:hover
+				opacity 1
+
+			#dateSpanTitle
+				white-space nowrap
 
 		.option
+			cursor default !important
+			white-space nowrap
 			display flex
 			align-items center
 
@@ -79,11 +84,21 @@
 		.selectedValue
 			flex 1
 			font-weight 600
-			padding 10px 3%
+			padding 10px 8%
 			height 100%
 
 			&:hover .value
 				opacity 100%
+
+			> span.innerSelected
+				display flex
+				align-items center
+				justify-content center
+
+				.fa
+					font-size 0.75em
+					opacity 0.5
+					margin 1px 4px 0 4px
 
 		.colorKeyBubble
 			margin-right 5px
@@ -99,10 +114,12 @@
 			list-style none
 			position absolute
 			top 100%
+			width 100%
 			left 0
 			display none
 			transition opacity .25s ease
 			min-width 125px
+			z-index 1259
 
 			> li
 				font-weight 400
@@ -111,6 +128,7 @@
 				border-bottom 1px solid #cadbe5
 				padding 7px 7px
 				width 100%
+				cursor default
 
 				&:hover
 					background #cadbe5
@@ -127,12 +145,16 @@
 					position relative
 
 					section
+						flex 1 1 auto
 						display flex
 						align-items center
 
 						&:first-child // From/To
 							font-weight bold
 							font-size 0.9em
+
+						&:last-child
+							justify-content flex-end
 
 						&.dateSpanPicker
 							.bootstrap-datetimepicker-widget // Fix positioning
@@ -166,30 +188,29 @@
 				display block
 
 
-	@media screen and (max-width: 1200px)
-		font-size 0.9em
+	@media screen and (max-width: 1350px)
+		font-size 0.89em
 
 	// 2-row display
-	@media screen and (max-width: 1024px)
-		font-size 1em
-		display block
-		height auto
+	@media screen and (max-width: 1200px)
+		flex-direction column
 
-		section
-			display block
+		> section
 
-		section.filters > div
-			padding-top 5px
-			justify-content flex-start
+			&#searchFilter
+				// width 100%
 
-			ul
-				width 100%
+			&#otherFilters
+				clear both
+
+			&:not(#searchFilter)
+				font-size 0.9em
+
+			&#filterCloseButton
+				position absolute !important
+				top 5px
+				right 5px
 
 		input
 			padding 0px inherit !important
 			padding-right 30px !important
-
-		.closeButton
-			position absolute !important
-			top 5px
-			right 5px
