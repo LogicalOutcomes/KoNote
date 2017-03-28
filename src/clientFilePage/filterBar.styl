@@ -19,6 +19,9 @@
 			display flex
 			font-size 0.95em
 
+			> article
+				flex 1
+
 		&#filterCloseButton
 			flex-basis 28px
 			display flex
@@ -45,8 +48,6 @@
 
 
 	.filterDropdownMenu
-		flex 2
-		font-size 1em
 		position relative
 		z-index 1058 // Under quickNote popover
 
@@ -84,7 +85,7 @@
 		.selectedValue
 			flex 1
 			font-weight 600
-			padding 10px 8%
+			padding 10px 6%
 			height 100%
 
 			&:hover .value
@@ -118,7 +119,7 @@
 			left 0
 			display none
 			transition opacity .25s ease
-			min-width 125px
+			min-width 100px
 			z-index 1259
 
 			> li
@@ -189,7 +190,7 @@
 
 
 	@media screen and (max-width: 1350px)
-		font-size 0.89em
+		font-size 0.9em
 
 	// 2-row display
 	@media screen and (max-width: 1200px)
@@ -197,20 +198,16 @@
 
 		> section
 
-			&#searchFilter
-				// width 100%
-
-			&#otherFilters
-				clear both
-
 			&:not(#searchFilter)
 				font-size 0.9em
 
+			// Take out of flex, move to top-right
 			&#filterCloseButton
 				position absolute !important
 				top 5px
 				right 5px
 
+		// Make extra space for the close button
 		input
 			padding 0px inherit !important
 			padding-right 30px !important
