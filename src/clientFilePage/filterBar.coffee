@@ -338,6 +338,7 @@ load = (win) ->
 			$(@dateInput).datetimepicker({
 				format: 'Do MMM'
 				defaultDate: @props.date or undefined
+				useCurrent: false
 				minDate
 				maxDate
 				widgetPositioning: {
