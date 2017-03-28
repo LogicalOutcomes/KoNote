@@ -21,12 +21,9 @@ pageModulePathsById = {
 }
 
 init = (win) ->
-	Assert = require 'assert'
 	Backbone = require 'backbone'
 	QueryString = require 'querystring'
 	Imm = require 'immutable'
-
-	isRefreshing = null
 
 	Config = require('./config')
 
@@ -116,11 +113,13 @@ init = (win) ->
 
 	initPage = =>
 		# Make sure up this page has the required methods
-		Assert pageComponent.init, "missing page.init"
-		Assert pageComponent.suggestClose, "missing page.suggestClose"
-		Assert pageComponent.deinit, "missing page.deinit"
-		if global.ActiveSession
-			Assert pageComponent.getPageListeners, "missing page.getPageListeners"
+		if Config.devMode
+			Assert = require 'assert'
+			Assert pageComponent.init, "missing page.init"
+			Assert pageComponent.suggestClose, "missing page.suggestClose"
+			Assert pageComponent.deinit, "missing page.deinit"
+			if global.ActiveSession
+				Assert pageComponent.getPageListeners, "missing page.getPageListeners"
 
 		# Are we in the middle of a hot code replace for this page?
 		hcrState = global.HCRSavedState[win.location.href]
@@ -151,8 +150,7 @@ init = (win) ->
 		#	return false
 
 		# User-Facing Utlities
-		devToolsKeyCount = null
-
+		#devToolsKeyCount = null
 		win.document.addEventListener 'keydown', (event) ->
 			# Prevent backspace navigation
 			if event.which is 8 and event.target.tagName is 'BODY'
