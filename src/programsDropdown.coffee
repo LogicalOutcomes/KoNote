@@ -9,9 +9,7 @@ Term = require './term'
 
 
 load = (win) ->
-	Bootbox = win.bootbox
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 
 	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')

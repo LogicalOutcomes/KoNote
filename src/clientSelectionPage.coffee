@@ -17,7 +17,6 @@ load = (win) ->
 	React = win.React
 	ReactDOM = win.ReactDOM
 	R = React.DOM
-	Window = nw.Window.get(win)
 
 	# TODO: Refactor to single require
 	{BootstrapTable, TableHeaderColumn} = win.ReactBootstrapTable
@@ -30,7 +29,7 @@ load = (win) ->
 	ManagerLayer = require('./managerLayer').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	CrashHandler = require('./crashHandler').load(win)
-	{FaIcon, openWindow, renderName, showWhen, stripMetadata} = require('./utils').load(win)
+	{FaIcon, openWindow, renderName, stripMetadata} = require('./utils').load(win)
 
 
 	ClientSelectionPage = React.createFactory React.createClass

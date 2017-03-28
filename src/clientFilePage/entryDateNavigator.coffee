@@ -9,10 +9,7 @@
 # TODO: Actively follow entriesList scroll with calendar view representation
 
 Imm = require 'immutable'
-Moment = require 'moment'
 Async = require 'async'
-
-{TimestampFormat} = require '../persist'
 
 
 load = (win) ->

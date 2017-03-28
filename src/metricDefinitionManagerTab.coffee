@@ -8,7 +8,6 @@ Async = require 'async'
 Imm = require 'immutable'
 
 Persist = require './persist'
-Config = require './config'
 Term = require './term'
 
 
@@ -26,7 +25,6 @@ load = (win) ->
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	OpenDialogLink = require('./openDialogLink').load(win)
-	ExpandingTextArea = require('./expandingTextArea').load(win)
 	DefineMetricDialog = require('./defineMetricDialog').load(win)
 	DialogLayer = require('./dialogLayer').load(win)
 

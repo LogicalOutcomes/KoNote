@@ -15,10 +15,8 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	{PropTypes} = React
 
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
-	{FaIcon} = require('./utils').load(win)
 
 
 	DialogLayer = React.createFactory React.createClass

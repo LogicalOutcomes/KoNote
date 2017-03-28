@@ -7,7 +7,6 @@
 Imm = require 'immutable'
 Async = require 'async'
 
-Config = require '../config'
 Persist = require '../persist'
 Term = require '../term'
 

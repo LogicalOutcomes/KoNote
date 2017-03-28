@@ -6,7 +6,6 @@
 
 Imm = require 'immutable'
 Moment = require 'moment'
-_ = require 'underscore'
 nlp = require 'nlp_compromise'
 Term = require '../term'
 {TimestampFormat} = require '../persist/utils'
@@ -17,8 +16,6 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 	Bootbox = win.bootbox
-
-	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	Dialog = require('../dialog').load(win)
 	WithTooltip = require('../withTooltip').load(win)

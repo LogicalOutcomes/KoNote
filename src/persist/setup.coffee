@@ -1,5 +1,5 @@
 # Copyright (c) Konode. All rights reserved.
-# This source code is subject to the terms of the Mozilla Public License, v. 2.0 
+# This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 Async = require 'async'
@@ -12,7 +12,7 @@ Fs = require 'fs'
 createVersionMetadataFile = (dataDir, cb) ->
 	versionPath = Path.join(dataDir, 'version.json')
 	versionData = {
-		dataVersion: JSON.parse(Fs.readFileSync('./package.json')).version;
+		dataVersion: JSON.parse(Fs.readFileSync('./package.json')).version,
 		lastMigrationStep: 0
 	}
 

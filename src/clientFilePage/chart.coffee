@@ -6,14 +6,12 @@
 
 Imm = require 'immutable'
 Moment = require 'moment'
-_ = require 'underscore'
 
 Config = require '../config'
 
 
 load = (win) ->
 	$ = win.jQuery
-	Bootbox = win.bootbox
 	C3 = win.c3
 	React = win.React
 	{PropTypes} = React

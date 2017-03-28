@@ -10,12 +10,10 @@ _ = require 'underscore'
 
 load = (win) ->
 	$ = win.jQuery
-	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
 
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
-	{FaIcon} = require('./utils').load(win)
 
 
 	OpenDialogLink = React.createFactory React.createClass

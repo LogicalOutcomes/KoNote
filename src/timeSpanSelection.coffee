@@ -5,9 +5,6 @@
 # Generic timeSpan selector for events
 # TODO: Switch this out for a react datetimepicker component
 
-Imm = require 'immutable'
-Moment = require 'moment'
-
 Config = require './config'
 {TimestampFormat} = require './persist/utils'
 

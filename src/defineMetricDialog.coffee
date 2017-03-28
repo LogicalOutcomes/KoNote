@@ -14,12 +14,10 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
-	Config = require('./config')
 	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
 	ExpandingTextArea = require('./expandingTextArea').load(win)
-	{FaIcon, showWhen} = require('./utils').load(win)
 
 
 	DefineMetricDialog = React.createFactory React.createClass

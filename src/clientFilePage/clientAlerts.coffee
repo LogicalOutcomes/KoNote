@@ -24,7 +24,6 @@ load = (win) ->
 	Bootbox = win.bootbox
 
 	CrashHandler = require('../crashHandler').load(win)
-	ExpandingTextArea = require('../expandingTextArea').load(win)
 	WithTooltip = require('../withTooltip').load(win)
 
 	{FaIcon, renderLineBreaks} = require('../utils').load(win)

@@ -4,7 +4,6 @@
 
 # Set of frequently-used utilities used all around the app
 
-_ = require 'underscore'
 Moment = require 'moment'
 
 {TimestampFormat} = require './persist'

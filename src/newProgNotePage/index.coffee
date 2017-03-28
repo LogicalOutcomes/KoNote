@@ -7,7 +7,6 @@
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
-_ = require 'underscore'
 
 Config = require '../config'
 Term = require '../term'

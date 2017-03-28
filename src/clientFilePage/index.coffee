@@ -12,7 +12,6 @@
 # some default values.
 
 
-_ = require 'underscore'
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'

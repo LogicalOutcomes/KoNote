@@ -7,7 +7,6 @@
 
 Async = require 'async'
 Imm = require 'immutable'
-_ = require 'underscore'
 
 Term = require '../../term'
 Persist = require '../../persist'

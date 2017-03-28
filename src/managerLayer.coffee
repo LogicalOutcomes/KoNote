@@ -7,7 +7,6 @@
 
 load = (win) ->
 	$ = win.jQuery
-	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
 

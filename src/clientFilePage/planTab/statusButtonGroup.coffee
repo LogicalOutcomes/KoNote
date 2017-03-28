@@ -19,7 +19,6 @@ load = (win) ->
 
 
 	StatusButtonGroup = ({planElementType, data, parentData, isExisting, status, onRemove, dialog}) ->
-		isDefaultStatus = status is 'default'
 
 		R.div({className: 'statusButtonGroup'},
 			# Will show remove (x) button for an empty section, rare case

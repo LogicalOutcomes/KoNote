@@ -5,9 +5,6 @@
 # This module handles all logic related to login sessions, including logging
 # in, logging out, and managing encryption keys.
 
-Async = require 'async'
-Fs = require 'fs'
-Path = require 'path'
 Config = require '../config'
 
 {SymmetricEncryptionKey} = require './crypto'

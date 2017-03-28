@@ -9,9 +9,6 @@ load = (win) ->
 	React = win.React
 	ReactDOM = win.ReactDOM
 
-	{showWhen} = require('./utils').load(win)
-
-
 	WithTooltip = React.createFactory React.createClass
 		displayName: 'WithTooltip'
 		mixins: [React.addons.PureRenderMixin]

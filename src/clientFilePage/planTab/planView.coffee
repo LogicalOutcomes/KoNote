@@ -10,7 +10,6 @@ Imm = require 'immutable'
 
 load = (win) ->
 	React = win.React
-	{PropTypes} = React
 	R = React.DOM
 	{findDOMNode} = win.ReactDOM
 

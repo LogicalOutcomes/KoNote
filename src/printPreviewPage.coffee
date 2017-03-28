@@ -10,7 +10,6 @@ Moment = require 'moment'
 
 Config = require './config'
 Term = require './term'
-Persist = require './persist'
 
 
 load = (win, {dataSet}) ->
@@ -19,7 +18,6 @@ load = (win, {dataSet}) ->
 	R = React.DOM
 	Window = nw.Window.get(win)
 
-	CrashHandler = require('./crashHandler').load(win)
 	MetricWidget = require('./metricWidget').load(win)
 	ProgEventWidget = require('./progEventWidget').load(win)
 	ExpandedMetricWidget = require('./expandedMetricWidget').load(win)

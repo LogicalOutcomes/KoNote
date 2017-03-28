@@ -5,7 +5,6 @@
 # Wrapper component for ColorKeyBubble to toggle selection, and detect duplicate selection
 
 Imm = require 'immutable'
-Term = require './term'
 
 
 load = (win) ->

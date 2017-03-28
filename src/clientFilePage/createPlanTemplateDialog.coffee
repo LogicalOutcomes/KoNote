@@ -5,11 +5,8 @@
 # Dialog for creating a new plan template from the provided plan section(s)
 
 Imm = require 'immutable'
-Async = require 'async'
 
-Config = require '../config'
 Persist = require '../persist'
-Term = require '../term'
 
 
 load = (win) ->
@@ -20,7 +17,6 @@ load = (win) ->
 
 	CrashHandler = require('../crashHandler').load(win)
 	Dialog = require('../dialog').load(win)
-	Spinner = require('../spinner').load(win)
 
 
 	CreatePlanTemplateDialog = React.createFactory React.createClass

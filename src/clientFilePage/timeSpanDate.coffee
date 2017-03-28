@@ -6,7 +6,6 @@
 # TODO: Replace with simpler react datetimepicker component
 
 Moment = require 'moment'
-_ = require 'underscore'
 
 Config = require '../config'
 

@@ -5,7 +5,6 @@
 # Tab layer component for creating/managing user accounts
 
 Async = require 'async'
-_ = require 'underscore'
 Imm = require 'immutable'
 
 Persist = require './persist'

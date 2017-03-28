@@ -4,10 +4,8 @@
 
 # The Client Information tab on the client file page.
 
-Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
-_ = require 'underscore'
 
 Config = require '../config'
 Term = require '../term'
@@ -18,16 +16,12 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-	ReactDOM = win.ReactDOM
-	B = require('../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	CrashHandler = require('../crashHandler').load(win)
 	ExpandingTextArea = require('../expandingTextArea').load(win)
 	BirthDateSelector = require('../birthDateSelector').load(win)
 
-	{
-		FaIcon, renderLineBreaks, showWhen, capitalize
-	} = require('../utils').load(win)
+	{FaIcon} = require('../utils').load(win)
 
 	birthDateFormat = 'YYYYMMMDD'
 
@@ -67,7 +61,6 @@ load = (win) ->
 		render: ->
 			hasChanges = @hasChanges()
 			currentYear = Moment().year()
-			earlyYear = currentYear - 100
 
 			return R.div({className: 'infoView'},
 

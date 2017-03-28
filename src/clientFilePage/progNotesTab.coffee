@@ -43,8 +43,6 @@ load = (win) ->
 	OpenDialogLink = require('../openDialogLink').load(win)
 	ProgNoteDetailView = require('../progNoteDetailView').load(win)
 	EntryDateNavigator = require('./entryDateNavigator').load(win)
-	PrintButton = require('../printButton').load(win)
-	WithTooltip = require('../withTooltip').load(win)
 	FilterBar = require('./filterBar').load(win)
 
 	{
