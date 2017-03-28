@@ -372,9 +372,11 @@ load = (win) ->
 								(if dateSpanFilterIsValid
 									R.div({},
 										"within: "
-										@state.dateSpanFilter.get('startDate').format('MMMM Do, YYYY')
-										" - "
-										@state.dateSpanFilter.get('endDate').format('MMMM Do YYYY')
+										R.strong({},
+											@state.dateSpanFilter.get('startDate').format('MMMM Do, YYYY')
+											" - "
+											@state.dateSpanFilter.get('endDate').format('MMMM Do YYYY')
+										)
 									)
 								)
 								R.div({},
