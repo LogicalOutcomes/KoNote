@@ -1041,6 +1041,7 @@ load = (win) ->
 					searchQuery: ''
 					dataTypeFilter: null
 					programIdFilter: null
+					dateSpanFilter: null
 				}
 				return
 
