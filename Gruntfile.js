@@ -382,9 +382,9 @@ module.exports = function(grunt) {
 				grunt.task.run('exec:nwjswin:'+entry);
 				grunt.task.run('copy:uninstallerbinary:'+entry);
 				// codesign and create setup file
-				grunt.task.run('prompt:codesignPassword');
-				grunt.task.run('exec:codesignWin:'+entry);
-				grunt.task.run('exec:setup:'+entry);
+				//grunt.task.run('prompt:codesignPassword');
+				//grunt.task.run('exec:codesignWin:'+entry);
+				//grunt.task.run('exec:setup:'+entry);
 				grunt.task.run('exec:zip:'+entry);
 			}
 			if (entry.includes("SDK")) {
