@@ -1,0 +1,141 @@
+.planTarget
+	display flex
+	background white
+	margin-bottom 15px
+	transition margin-bottom .15s ease
+
+	$border-radius = 5px
+	border 1px solid sidebar-borders
+	border-radius $border-radius
+
+	&:last-child
+		margin-bottom 0 !important
+
+	.dragSource
+		display none
+		opacity 0
+		width 0 // Hidden unless isCollapsed
+		padding 0
+		color #4c5d67
+		align-items center
+		justify-content center
+		border-top-left-radius $border-radius
+		border-bottom-left-radius $border-radius
+		cursor -webkit-grab
+
+	&.hasChanges
+		background #EEFFF5 !important
+		border-color #C9FFB2
+
+	&.dragging
+		border 2px dotted #cadbe5
+		opacity 0.6
+		color white
+		background white !important
+
+	&.isCollapsed
+		margin-bottom 8px
+
+		.planTargetContainer
+			padding 5px
+
+		.statusButtonGroup, .descriptionContainer, .metrics
+			display none !important
+
+		.dragSource
+			padding 0 13px
+			display flex !important
+
+		span.name.field:hover
+			text-decoration underline
+
+	&.isSelected
+		background hsl(202, 35%, 94%)
+
+	&.isSelected:not(.isCollapsed) .planTargetContainer
+
+		&.hasChanges
+			background #C9FFB2
+			border-color #A4D291
+
+		.field
+			background white
+			cursor text !important
+			border-color #ccc !important
+			box-shadow inset 0 1px 1px rgba(0, 0, 0, .075)
+
+		.nameContainer
+			.statusButtonGroup
+				display flex
+				margin-left 8px
+
+		.metrics
+			.addMetricButton
+				outline none
+				display block
+
+				text-decoration none
+
+	&.readOnly
+		input[disabled], textarea[disabled]
+			background white
+
+	&.blink
+		background #7ecdfc !important
+		border-color #68AAD2 !important
+
+	&:hover
+		.dragSource
+			opacity 0.3
+
+	&:active
+		.dragSource
+			background #cadbe5
+
+	&.isReorderHovered .dragSource
+		//opacity 1
+		//background #cadbe5
+
+
+	.planTargetContainer
+		flex 1
+		padding 10px 15px
+		transition padding-bottom 0.15s linear, padding-top 0.15s linear
+
+		> .nameContainer, > .descriptionContainer
+			.field
+				background none
+				cursor default
+				padding 5px
+				border 1px solid transparent
+				box-shadow none
+				transition none
+
+		> .nameContainer
+			display flex
+			flex-direction row
+
+			> .field
+				font-weight 700
+
+			> .statusButtonGroup
+				display none
+
+		> .descriptionContainer
+			padding-top 15px
+
+		> .metrics
+			padding-top 15px
+
+			> .metricsList
+				display flex
+				flex-wrap wrap
+
+				margin -5px
+
+				> .metricWidget
+					margin 5px
+
+			> .metricLookupContainer
+				clear both
+				display none

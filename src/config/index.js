@@ -4,7 +4,6 @@
 
 // Merges config setting files (JSON) in order
 
-var Fs = require('fs');
 var Imm = require('immutable');
 
 var Config = Imm.Map();

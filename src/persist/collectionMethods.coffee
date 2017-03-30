@@ -14,7 +14,6 @@
 # session).  The `persist/apiBuilder` module uses this function on every data
 # model definition.
 
-Assert = require 'assert'
 Async = require 'async'
 Joi = require 'joi'
 Imm = require 'immutable'

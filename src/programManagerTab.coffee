@@ -6,7 +6,6 @@
 
 Async = require 'async'
 Imm = require 'immutable'
-_ = require 'underscore'
 
 Persist = require './persist'
 Config = require './config'

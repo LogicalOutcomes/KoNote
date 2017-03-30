@@ -5,7 +5,6 @@
 # Tab layer for exporting data to CSV/etc
 
 Async = require 'async'
-_ = require 'underscore'
 Imm = require 'immutable'
 Fs = require 'graceful-fs'
 Path = require 'path'

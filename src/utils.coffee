@@ -4,7 +4,6 @@
 
 # Set of frequently-used utilities used all around the app
 
-_ = require 'underscore'
 Moment = require 'moment'
 
 {TimestampFormat} = require './persist'
@@ -254,10 +253,17 @@ load = (win) ->
 
 	# Smooth-scroll utility, customized from https://pawelgrzybek.com/page-scroll-in-vanilla-javascript/
 	# Uses nw win for requestAnimationFrame, and can handle scrolling within a container
-	scrollToElement = (container, element, duration = 500, easing = 'linear', callback) ->
+	# paddingOffset makes it scroll a bit less, for more space on top
+	scrollToElement = (container, element, duration = 500, easing = 'linear', paddingOffset, cb) ->
+		# paddingOffset is optional arg
+		if not cb?
+			cb = paddingOffset
+			paddingOffset = 10
 
+		# container and element must both be valid
 		if not container or not element
-			throw new Error "Missing arg in scrollToElement [container, element]:", [container, element]
+			arg = if element then 'container' else element
+			throw new Error "Missing arg in scrollToElement for #{arg}"
 			return
 
 		easings =
@@ -290,19 +296,36 @@ load = (win) ->
 
 		start = container.scrollTop
 		startTime = Date.now()
-		destination = element.offsetTop - $(container).position().top
-		paddingOffset = 10 # Scroll up a bit extra for nicer padding
+
+		# Figure out offset from top, minus any offset for the container itself
+		topOffset = element.offsetTop
+		containerOffset = $(container).position().top
+
+		destination = topOffset - containerOffset
 
 		# requestAnimationFrame can inf-loop if we dont set a limit
-		maxScrollTop = container.scrollHeight - container.clientHeight
+		maxScrollTop = container.scrollHeight - container.offsetTop
 
+		# Can't scroll past maximum, otherwise apply paddingOffset
 		if destination > maxScrollTop
 			destination = maxScrollTop
 		else
 			destination -= paddingOffset
 
-		# Extra safeguard against inf-loop after duration completes
+		# Can't scroll above top
+		if destination < 0
+			destination = 0
+
+		# Cancel scroll if we're already at our destination
+		if start is destination
+			console.warn "Cancelled scroll (container.scrollTop is already #{start}px)"
+			cb()
+			return
+
+		# Extra timeout safeguard against inf-loop after duration completes
 		cancelOp = null
+		console.log "scrollTop: #{start} -> #{destination}"
+
 		setTimeout (-> cancelOp = true), duration + 10
 
 		# Start the scroll loop
@@ -310,12 +333,11 @@ load = (win) ->
 			now = Date.now()
 			time = Math.min(1, (now - startTime) / duration)
 			timeFunction = easings[easing](time)
-
-			container.scrollTop = timeFunction * (destination - start) + start
-			# console.log "scroll", container.scrollTop
+			container.scrollTop = (timeFunction * (destination - start)) + start
 
 			if container.scrollTop is destination or cancelOp
-				callback()
+				console.log "Finished scrolling!"
+				cb()
 				return
 
 			win.requestAnimationFrame scroll
@@ -375,7 +397,6 @@ load = (win) ->
 		makeMoment
 		renderTimeSpan
 		scrollToElement
-
 		getUnitIndex
 		getPlanSectionIndex
 		getPlanTargetIndex

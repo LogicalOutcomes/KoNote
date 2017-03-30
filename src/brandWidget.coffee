@@ -9,7 +9,6 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
-	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 
 	BrandWidget = React.createFactory React.createClass
 		displayName: 'BrandWidget'

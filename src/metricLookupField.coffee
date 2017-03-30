@@ -9,7 +9,6 @@
 # difficult.  We should probably just implement our own auto-complete
 # functionality -- it might even make this file shorter.
 
-Config = require './config'
 Term = require './term'
 
 

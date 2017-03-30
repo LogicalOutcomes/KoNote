@@ -8,7 +8,6 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
-	ReactDOMServer = win.ReactDOMServer
 
 	{FaIcon, renderLineBreaks, showWhen} = require('./utils').load(win)
 

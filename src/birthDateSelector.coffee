@@ -12,10 +12,8 @@ load = (win) ->
 	R = React.DOM
 
 	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
-	{FaIcon} = require('./utils').load(win)
 
 	months = Moment.monthsShort()
-	birthDateFormat = 'YYYYMMMDD'
 	currentYear = Moment().year()
 	earlyYear = currentYear - 100
 

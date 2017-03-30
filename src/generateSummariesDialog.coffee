@@ -9,7 +9,6 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Config = require './config'
-Term = require './term'
 
 
 load = (win) ->
@@ -17,8 +16,6 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
-
-	Gui = win.require 'nw.gui'
 
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)

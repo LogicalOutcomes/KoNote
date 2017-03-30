@@ -16,7 +16,6 @@ load = (win) ->
 
 	OpenDialogLink = require('./openDialogLink').load(win)
 	ProgramsDropdown = require('./programsDropdown').load(win)
-	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	if Config.features.shiftSummaries.isEnabled
 		GenerateSummariesDialog = require('./generateSummariesDialog').load(win)

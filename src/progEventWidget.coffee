@@ -4,11 +4,7 @@
 
 # Event display component with 3 different formats: 'small', 'large', and 'print'
 
-Moment = require 'moment'
 Imm = require 'immutable'
-
-Persist = require './persist'
-Config = require './config'
 
 
 load = (win) ->

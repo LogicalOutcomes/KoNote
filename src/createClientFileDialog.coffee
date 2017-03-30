@@ -22,14 +22,12 @@ load = (win) ->
 
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
-	ColorKeyBubble = require('./colorKeyBubble').load(win)
 	BirthDateSelector = require('./birthDateSelector').load(win)
 	ProgramsDropdown = require('./programsDropdown').load(win)
 
 
 	{renderName, renderRecordId, FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
 
-	months = Moment.monthsShort()
 
 	CreateClientFileDialog = React.createFactory React.createClass
 		displayName: 'CreateClientFileDialog'
@@ -68,7 +66,6 @@ load = (win) ->
 
 		render: ->
 			currentYear = Moment().year()
-			earlyYear = currentYear - 100
 			formIsValid = @_formIsValid()
 			selectedPlanTemplateHeaders = @state.planTemplateHeaders.find (template) => template.get('id') is @state.templateId
 			recordIdIsRequired = Config.clientFileRecordId.isRequired

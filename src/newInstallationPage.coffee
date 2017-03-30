@@ -11,7 +11,6 @@ Rimraf = require 'rimraf'
 Config = require './config'
 Persist = require './persist'
 Atomic = require './persist/atomic'
-Migration = require './migrations'
 
 yauzl = require 'yauzl'
 path = require 'path'
@@ -26,7 +25,6 @@ load = (win) ->
 	Window = nw.Window.get(win)
 
 	Spinner = require('./spinner').load(win)
-	CrashHandler = require('./crashHandler').load(win)
 	{FaIcon} = require('./utils').load(win)
 
 

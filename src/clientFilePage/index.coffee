@@ -12,7 +12,6 @@
 # some default values.
 
 
-_ = require 'underscore'
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -1067,7 +1066,7 @@ load = (win, {clientFileId}) ->
 							showWhen activeTabId is 'plan'
 						].join ' '
 					},
-						PlanTab.PlanView({
+						PlanTab({
 							ref: 'planTab'
 							clientFileId
 							clientFile: @props.clientFile
@@ -1275,7 +1274,7 @@ load = (win, {clientFileId}) ->
 		displayName: 'ReadOnlyNotice'
 
 		render: ->
-			return R.div({className: 'readOnlyNotice'},
+			return R.div({id: 'readOnlyNotice'},
 				R.div({
 					className: [
 						"notice"

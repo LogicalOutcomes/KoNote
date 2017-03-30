@@ -71,7 +71,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 	flex-direction column
 	height 100%
 
-	> .readOnlyNotice
+	> #readOnlyNotice
 		display flex
 		background rgba(255, 174, 0, 0.5)
 		border-bottom 2px solid sidebar-borders
@@ -240,6 +240,7 @@ sidebar-borders = darken(sidebar-bg, 10%)
 				margin-left calc(-100% + 250px)
 
 			@require 'planTab'
+			@require 'planTab/statusButtonGroup'
 			@require 'progNotesTab'
 			@require 'analysisTab'
 			@require 'infoTab'

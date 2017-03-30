@@ -5,31 +5,25 @@
 # The Analysis tab on the client file page.
 # Provides various tools for visualizing metrics and events.
 
-Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
-_ = require 'underscore'
 Fs = require 'graceful-fs'
 Path = require 'path'
 
 Config = require '../config'
 Term = require '../term'
-Persist = require '../persist'
 
 
 load = (win) ->
 	$ = win.jQuery
 	Bootbox = win.bootbox
-	C3 = win.c3
 	React = win.React
 	R = React.DOM
-	{FaIcon, renderLineBreaks, showWhen, stripMetadata, makeMoment} = require('../utils').load(win)
+	{FaIcon, showWhen} = require('../utils').load(win)
 	{TimestampFormat} = require('../persist/utils')
 	TimeSpanDate = require('./timeSpanDate').load(win)
 	TimeSpanToolbar = require('./timeSpanToolbar').load(win)
 	Chart = require('./chart').load(win)
-
-	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 
 	AnalysisView = React.createFactory React.createClass
 		displayName: 'AnalysisView'
