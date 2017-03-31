@@ -194,9 +194,11 @@ load = (win) ->
 				dataOptions = dataOptions.remove(selectedOption)
 
 			R.article({
+				id: "dropdown-#{title.toLowerCase()}"
 				className: [
 					'filterDropdownMenu'
 					'isOpen' if @state.isOpen
+					'hasSelection' if hasSelection
 				].join ' '
 			},
 				# Hidden <ul> of dataOptions

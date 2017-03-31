@@ -12,15 +12,28 @@
 
 		&#searchFilter
 			flex 2
+			flex-grow 3
 			min-width 150px
 
 		&#otherFilters
 			flex 3
+			flex-grow 5.5
 			display flex
 			font-size 0.95em
 
 			> article
-				flex 1
+				flex 2
+
+				&#dropdown-data
+					min-width 90px
+
+				&#dropdown-programs
+					min-width 110px
+
+				&.hasSelection // Dates has bigger flex when has value
+
+					&#dropdown-dates
+						flex-grow 3
 
 		&#filterCloseButton
 			flex-basis 28px
@@ -91,15 +104,11 @@
 			&:hover .value
 				opacity 100%
 
-			> span.innerSelected
+			> span.innerSelected // Date range
 				display flex
 				align-items center
 				justify-content center
-
-				.fa
-					font-size 0.75em
-					opacity 0.5
-					margin 1px 4px 0 4px
+				font-size 0.97em
 
 		.colorKeyBubble
 			margin-right 5px
@@ -115,7 +124,7 @@
 			list-style none
 			position absolute
 			top 100%
-			width 100%
+			width 100% !important
 			left 0
 			display none
 			transition opacity .25s ease
@@ -206,6 +215,10 @@
 				position absolute !important
 				top 5px
 				right 5px
+
+			// Remove min-width to allow for finer flexing
+			&#otherFilters > article
+				min-width 0 !important
 
 		// Make extra space for the close button
 		input
