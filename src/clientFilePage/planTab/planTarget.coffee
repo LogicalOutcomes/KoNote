@@ -51,8 +51,18 @@ load = (win) ->
 
 			{id, status, name, description, metricIds} = target.toObject()
 
-			canChangeStatus = isSelected and not sectionIsInactive and not isReadOnly
-			isDisabled = isReadOnly or status isnt 'default' or sectionIsInactive or isReadOnly
+			canChangeStatus = (
+				isSelected and
+				not sectionIsInactive and
+				not isReadOnly and
+				isExistingTarget
+			)
+
+			isDisabled = (
+				isReadOnly or
+				status isnt 'default' or
+				sectionIsInactive or isReadOnly
+			)
 
 
 			return connectDropTarget connectDragPreview (
