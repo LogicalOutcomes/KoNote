@@ -291,7 +291,10 @@ load = (win) ->
 					type: 'startDate'
 					date: startDate
 					historyEntries
-					onSelect
+					onSelect: (type, date) =>
+						onSelect(type, date)
+						# Default endDate to today upon first startDate selection
+						if not endDate? then onSelect('endDate', Moment())
 				})
 			)
 
