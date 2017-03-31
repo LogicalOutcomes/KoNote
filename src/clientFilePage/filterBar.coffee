@@ -10,6 +10,7 @@ Imm = require 'immutable'
 Moment = require 'moment'
 
 Term = require '../term'
+Config = require '../config'
 
 
 load = (win) ->
@@ -113,9 +114,9 @@ load = (win) ->
 								if startDate and endDate
 									if startDate.isBefore(endDate)
 										R.span({className: 'innerSelected'}
-											@props.dateSpanFilter.get('startDate').format('MMM D')
+											@props.dateSpanFilter.get('startDate').format(Config.numericalDateFormat)
 											R.em({}, " - ")
-											@props.dateSpanFilter.get('endDate').format('MMM D')
+											@props.dateSpanFilter.get('endDate').format(Config.numericalDateFormat)
 										)
 									else
 										"(invalid range)"
@@ -336,7 +337,7 @@ load = (win) ->
 			maxDate = makeMoment(historyEntries.first().get('timestamp')).startOf 'day'
 
 			$(@dateInput).datetimepicker({
-				format: 'Do MMM'
+				format: Config.numericalDateFormat
 				defaultDate: @props.date or undefined
 				useCurrent: false
 				minDate
@@ -369,7 +370,7 @@ load = (win) ->
 		render: ->
 			R.section({className: 'dateSpanPicker'},
 
-				@props.date.format('MMM D') if @props.date
+				@props.date.format(Config.numericalDateFormat) if @props.date
 
 				FaIcon('calendar-o')
 

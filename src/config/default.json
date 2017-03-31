@@ -36,6 +36,7 @@
 
 	"timestampFormat": "MMM Do, YYYY [-] h:mma",
 	"dateFormat": "MMM Do, YYYY",
+	"numericalDateFormat": "D/M/YY",
 	"timeFormat": "h:mma",
 
 	"timeout": {
