@@ -21,7 +21,7 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		componentDidMount: ->
-			@refs.statusReasonField.focus()
+			setTimeout (=> @refs.statusReasonField.focus()), 250
 
 		getInitialState: -> {
 			statusReason: ''
