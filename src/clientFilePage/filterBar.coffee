@@ -372,10 +372,16 @@ load = (win) ->
 			unless Imm.is newProps.historyEntries, @props.historyEntries
 				@_initDateTimePicker()
 
+		_renderDate: (date) ->
+			if date.isSame Moment(), 'day'
+				return "- Today -"
+
+			return @props.date.format(Config.numericalDateFormat)
+
 		render: ->
 			R.section({className: 'dateSpanPicker'},
 
-				@props.date.format(Config.numericalDateFormat) if @props.date
+				@_renderDate(@props.date) if @props.date
 
 				FaIcon('calendar-o')
 
