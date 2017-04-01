@@ -51,45 +51,6 @@ load = (win) ->
 			.toSet()
 
 
-			AnalysisViewUi(Object.assign {}, @props, {
-				metricValues
-				metricIdsWithData
-			})
-
-
-	AnalysisViewUi = React.createFactory React.createClass
-		displayName: 'AnalysisViewUi'
-
-		getInitialState: ->
-			return {
-				daysOfData: null
-				selectedMetricIds: Imm.Set()
-				chartType: 'line'
-				selectedEventTypeIds: Imm.Set()
-				starredEventTypeIds: Imm.Set()
-				excludedTargetIds: Imm.Set()
-				timeSpan: null
-			}
-
-		# # Leave this here, need for diff-checking renders/vs/state-props
-		# componentDidUpdate: (oldProps, oldState) ->
-		# 	# Figure out what changed
-		# 	for property of @props
-		# 		# console.log "property", property
-		# 		if @props[property] isnt oldProps[property]
-		# 			console.info "#{property} changed"
-
-		# 	for property of @state
-		# 		if @state[property] isnt oldState[property]
-		# 			console.info "#{property} changed"
-
-		render: ->
-
-			{
-				metricValues, metricIdsWithData
-			} = @props
-
-
 			#################### Plan Targets & Metrics ####################
 
 			# Replace plan target & metric ids with obj, discard empty / without metric data
@@ -128,6 +89,47 @@ load = (win) ->
 			.filterNot (metricId) -> planMetricsById.has metricId
 			.map (metricId) => @props.metricsById.get metricId
 			.toList()
+
+
+			AnalysisViewUi(Object.assign {}, @props, {
+				metricValues, metricIdsWithData
+				planSectionsWithData, planMetricsById, unassignedMetricsList
+
+			})
+
+
+	AnalysisViewUi = React.createFactory React.createClass
+		displayName: 'AnalysisViewUi'
+
+		getInitialState: ->
+			return {
+				daysOfData: null
+				selectedMetricIds: Imm.Set()
+				chartType: 'line'
+				selectedEventTypeIds: Imm.Set()
+				starredEventTypeIds: Imm.Set()
+				excludedTargetIds: Imm.Set()
+				timeSpan: null
+			}
+
+		# # Leave this here, need for diff-checking renders/vs/state-props
+		# componentDidUpdate: (oldProps, oldState) ->
+		# 	# Figure out what changed
+		# 	for property of @props
+		# 		# console.log "property", property
+		# 		if @props[property] isnt oldProps[property]
+		# 			console.info "#{property} changed"
+
+		# 	for property of @state
+		# 		if @state[property] isnt oldState[property]
+		# 			console.info "#{property} changed"
+
+		render: ->
+
+			{
+				metricValues, metricIdsWithData
+				planSectionsWithData, planMetricsById, unassignedMetricsList
+			} = @props
 
 
 			#################### ProgEvents ####################
