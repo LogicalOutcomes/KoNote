@@ -167,7 +167,6 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				daysOfData: null
 				selectedMetricIds: Imm.Set()
 				chartType: 'line'
 				selectedEventTypeIds: Imm.Set()
