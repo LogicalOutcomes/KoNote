@@ -261,6 +261,12 @@ load = (win) ->
 								)
 								R.div({className: 'granularContainer'}) # TODO: Make use of this space
 							)
+
+							TimeSpanSlider({
+								timeSpan
+								firstDay, lastDay
+							})
+
 							R.div({className: 'chartContainer'},
 
 								# Fade out un-highlighted regions when exists
@@ -772,6 +778,39 @@ load = (win) ->
 		},
 			count
 		)
+
+
+	# Visual proportion	display of the timeSpan within client's history
+	TimeSpanSlider = ({timeSpan, firstDay, lastDay}) ->
+		totalHours = lastDay.diff(firstDay, 'hours')
+
+		beforeHours = timeSpan.get('start').diff(firstDay, 'hours')
+		afterHours = timeSpan.get('end').diff(lastDay, 'hours')
+		timeSpanHours = totalHours - (beforeHours + afterHours) # Remainder
+
+		console.log "beforeHours", beforeHours
+		console.log "afterHours", afterHours
+		console.log "timeSpanHours", timeSpanHours
+
+		return R.div({id: 'timeSpanSlider'},
+			R.section({
+				id: 'beforeTimeSpan'
+				style:
+					width: "#{calculateWidthPercentage(beforeHours, totalHours)}%"
+			})
+			R.section({
+				id: 'currentTimeSpan'
+				style:
+					width: "#{calculateWidthPercentage(timeSpanHours, totalHours)}%"
+			})
+			R.section({
+				id: 'afterTimeSpan'
+				style:
+					width: "#{calculateWidthPercentage(afterHours, totalHours)}%"
+			})
+		)
+
+	calculateWidthPercentage = (num, den) -> Math.abs((num / den) * 100).toFixed(2)
 
 
 	extractMetricsFromProgNoteHistory = (progNoteHist) ->
