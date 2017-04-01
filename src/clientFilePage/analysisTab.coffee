@@ -788,15 +788,15 @@ load = (win) ->
 		render: ->
 			{timeSpan, firstDay, lastDay} = @props
 
+			# 1 extra day was added earlier (?)
+			lastDay = lastDay.clone().add(1, 'day')
+
 			totalHours = lastDay.diff(firstDay, 'hours')
 
 			beforeHours = Math.abs timeSpan.get('start').diff(firstDay, 'hours')
 			afterHours = Math.abs timeSpan.get('end').diff(lastDay, 'hours')
 			timeSpanHours = totalHours - (beforeHours + afterHours) # Remainder
 
-			console.log "beforeHours", beforeHours
-			console.log "afterHours", afterHours
-			console.log "timeSpanHours", timeSpanHours
 
 			return R.div({id: 'timeSpanSlider'},
 				R.section({
