@@ -781,36 +781,42 @@ load = (win) ->
 
 
 	# Visual proportion	display of the timeSpan within client's history
-	TimeSpanSlider = ({timeSpan, firstDay, lastDay}) ->
-		totalHours = lastDay.diff(firstDay, 'hours')
+	TimeSpanSlider = React.createFactory React.createClass React.createFactory
+		displayName: 'TimeSpanSlider'
+		mixins: [React.addons.PureRenderMixin]
 
-		beforeHours = timeSpan.get('start').diff(firstDay, 'hours')
-		afterHours = timeSpan.get('end').diff(lastDay, 'hours')
-		timeSpanHours = totalHours - (beforeHours + afterHours) # Remainder
+		render: ->
+			{timeSpan, firstDay, lastDay} = @props
 
-		console.log "beforeHours", beforeHours
-		console.log "afterHours", afterHours
-		console.log "timeSpanHours", timeSpanHours
+			totalHours = lastDay.diff(firstDay, 'hours')
 
-		return R.div({id: 'timeSpanSlider'},
-			R.section({
-				id: 'beforeTimeSpan'
-				style:
-					width: "#{calculateWidthPercentage(beforeHours, totalHours)}%"
-			})
-			R.section({
-				id: 'currentTimeSpan'
-				style:
-					width: "#{calculateWidthPercentage(timeSpanHours, totalHours)}%"
-			})
-			R.section({
-				id: 'afterTimeSpan'
-				style:
-					width: "#{calculateWidthPercentage(afterHours, totalHours)}%"
-			})
-		)
+			beforeHours = Math.abs timeSpan.get('start').diff(firstDay, 'hours')
+			afterHours = Math.abs timeSpan.get('end').diff(lastDay, 'hours')
+			timeSpanHours = totalHours - (beforeHours + afterHours) # Remainder
 
-	calculateWidthPercentage = (num, den) -> Math.abs((num / den) * 100).toFixed(2)
+			console.log "beforeHours", beforeHours
+			console.log "afterHours", afterHours
+			console.log "timeSpanHours", timeSpanHours
+
+			return R.div({id: 'timeSpanSlider'},
+				R.section({
+					id: 'beforeTimeSpan'
+					style:
+						width: "#{calculateWidthPercentage(beforeHours, totalHours)}%"
+				})
+				R.section({
+					id: 'currentTimeSpan'
+					style:
+						width: "#{calculateWidthPercentage(timeSpanHours, totalHours)}%"
+				})
+				R.section({
+					id: 'afterTimeSpan'
+					style:
+						width: "#{calculateWidthPercentage(afterHours, totalHours)}%"
+				})
+			)
+
+	calculateWidthPercentage = (num, den) -> ((num / den) * 100).toFixed(2)
 
 
 	extractMetricsFromProgNoteHistory = (progNoteHist) ->
