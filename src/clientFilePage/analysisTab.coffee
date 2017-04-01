@@ -358,7 +358,9 @@ load = (win) ->
 										"(No #{Term 'events'} recorded)"
 									)
 								else
-									R.h2({onClick: @_toggleAllEventTypes.bind null, allEventTypesSelected, eventTypesWithData},
+									R.h2({onClick: @_toggleAllEventTypes.bind(
+										null, allEventTypesSelected, eventTypesWithData, untypedEvents.size > 0
+									)},
 										R.span({className: 'helper'}
 											"Select "
 											if allEventTypesSelected then "None" else "All"
@@ -610,12 +612,15 @@ load = (win) ->
 
 			@setState {selectedEventTypeIds, starredEventTypeIds}
 
-		_toggleAllEventTypes: (allEventTypesSelected, eventTypesWithData) ->
+		_toggleAllEventTypes: (allEventTypesSelected, eventTypesWithData, untypedEventsExist) ->
 			if not allEventTypesSelected
 				selectedEventTypeIds = eventTypesWithData
 				.map (eventType) -> eventType.get('id') # all eventTypes
-				.push(null) # null = progEvents without an eventType
 				.toSet()
+
+				if untypedEventsExist
+					# null = progEvents without an eventType
+					selectedEventTypeIds = selectedEventTypeIds.push(null)
 
 				starredEventTypeIds = @state.starredEventTypeIds
 			else
