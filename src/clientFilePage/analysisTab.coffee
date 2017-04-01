@@ -781,7 +781,7 @@ load = (win) ->
 
 
 	# Visual proportion	display of the timeSpan within client's history
-	TimeSpanSlider = React.createFactory React.createClass React.createFactory
+	TimeSpanSlider = React.createFactory React.createClass
 		displayName: 'TimeSpanSlider'
 		mixins: [React.addons.PureRenderMixin]
 
