@@ -265,6 +265,10 @@ load = (win) ->
 							TimeSpanSlider({
 								timeSpan
 								firstDay, lastDay
+								isVisible: (
+									not @state.selectedEventTypeIds.isEmpty() or
+									not @state.selectedMetricIds.isEmpty()
+								)
 							})
 
 							R.div({className: 'chartContainer'},
@@ -786,9 +790,16 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		render: ->
-			{timeSpan, firstDay, lastDay} = @props
+			{timeSpan, firstDay, lastDay, isVisible} = @props
 
-			# 1 extra day was added earlier (?)
+			if not isVisible
+				return R.div({
+					id: 'timeSpanSlider'
+					style:
+						opacity: 0
+				})
+
+			# Account for the 1 extra day on lastDay (added upstream)
 			lastDay = lastDay.clone().add(1, 'day')
 
 			totalHours = lastDay.diff(firstDay, 'hours')
