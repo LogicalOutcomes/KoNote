@@ -145,12 +145,20 @@ load = (win) ->
 					end: xTicks.last()
 				}
 
+			# Establish event types selections for side menu
+			untypedEvents = allEvents.filter (e) -> not e.get('typeId')
+
+			eventTypesWithData = @props.eventTypes
+			.filter (t) -> allEvents.some (e) -> e.get('typeId') is t.get('id')
+			.sortBy (t) -> t.get('name')
+
 
 			AnalysisViewUi(Object.assign {}, @props, {
 				metricValues, metricIdsWithData
 				planSectionsWithData, planMetricsById, unassignedMetricsList
 				activeGlobalEvents, uniqueProgEvents, allEvents, spannedProgEvents
 				daysOfData, firstDay, lastDay, dayRange, xTicks, defaultTimeSpan
+				untypedEvents, eventTypesWithData
 			})
 
 
@@ -181,12 +189,12 @@ load = (win) ->
 		# 			console.info "#{property} changed"
 
 		render: ->
-
 			{
 				metricValues, metricIdsWithData
 				planSectionsWithData, planMetricsById, unassignedMetricsList
 				activeGlobalEvents, uniqueProgEvents, allEvents, spannedProgEvents
 				daysOfData, firstDay, lastDay, dayRange, xTicks, defaultTimeSpan
+				untypedEvents, eventTypesWithData
 			} = @props
 
 			# List of progEvents currently selected
@@ -227,13 +235,6 @@ load = (win) ->
 			otherEventTypesIsSelected = @state.selectedEventTypeIds.contains null
 			otherEventTypesIsPersistent = @state.starredEventTypeIds.contains null
 			visibleUntypedProgEvents = visibleProgEventsByTypeId.get('') or Imm.List()
-
-			# Establish event types selections for side menu
-			untypedEvents = allEvents.filter (e) -> not e.get('typeId')
-
-			eventTypesWithData = @props.eventTypes
-			.filter (t) -> allEvents.some (e) -> e.get('typeId') is t.get('id')
-			.sortBy (t) -> t.get('name')
 
 			progEventsAreSelected = not @state.selectedEventTypeIds.isEmpty()
 			availableEventTypes = eventTypesWithData.size + (if untypedEvents.isEmpty() then 0 else 1)
