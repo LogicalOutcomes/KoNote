@@ -91,10 +91,66 @@ load = (win) ->
 			.toList()
 
 
+			#################### ProgEvents ####################
+
+			# Ensure globalEvents aren't cancelled
+			activeGlobalEvents = @props.globalEvents.filter (globalEvent) -> globalEvent.get('status') is 'default'
+
+			# Figure out which progEvents don't have a globalEvent, and ignore cancelled ones
+			uniqueProgEvents = @props.progEvents.filterNot (progEvent) ->
+				progEventId = progEvent.get('id')
+				return progEvent.get('status') isnt 'default' or activeGlobalEvents.find (globalEvent) ->
+					globalEvent.get('relatedProgEventId') is progEventId
+
+			allEvents = uniqueProgEvents.concat activeGlobalEvents
+
+			# We only grab endTimestamp from progEvents that have one
+			spannedProgEvents = allEvents.filter (progEvent) -> !!progEvent.get('endTimestamp')
+
+
+			#################### Date Range / TimeSpan ####################
+
+			# Build list of timestamps from progEvents (start & end) & metrics
+			daysOfData = Imm.List()
+			.concat allEvents.map (progEvent) ->
+				progEvent.get('startTimestamp')
+			.concat spannedProgEvents.map (progEvent) ->
+				progEvent.get('endTimestamp')
+			.concat metricValues.map (metric) ->
+				# Account for backdate, else normal timestamp
+				metricTimestamp = metric.get('backdate') or metric.get('timestamp')
+				return metricTimestamp
+			.toOrderedSet()
+			.sort()
+
+			# Determine earliest & latest days
+			firstDay = Moment daysOfData.first(), TimestampFormat
+			lastDay = Moment daysOfData.last(), TimestampFormat
+			dayRange = lastDay.diff(firstDay, 'days') + 1
+
+			# Create list of all days as moments
+			xTicks = Imm.List([0..dayRange]).map (n) ->
+				firstDay.clone().add(n, 'days')
+
+			# Declare default timeSpan
+			# Confirm we have enough data and set to 1 month
+			if xTicks.size > 0 and xTicks.last().clone().subtract(1, "month").isSameOrAfter(xTicks.first())
+				defaultTimeSpan = Imm.Map {
+					start: xTicks.last().clone().subtract(1, "month")
+					end: xTicks.last()
+				}
+			else
+				defaultTimeSpan = Imm.Map {
+					start: xTicks.first()
+					end: xTicks.last()
+				}
+
+
 			AnalysisViewUi(Object.assign {}, @props, {
 				metricValues, metricIdsWithData
 				planSectionsWithData, planMetricsById, unassignedMetricsList
-
+				activeGlobalEvents, uniqueProgEvents, allEvents, spannedProgEvents
+				daysOfData, firstDay, lastDay, dayRange, xTicks, defaultTimeSpan
 			})
 
 
@@ -129,72 +185,17 @@ load = (win) ->
 			{
 				metricValues, metricIdsWithData
 				planSectionsWithData, planMetricsById, unassignedMetricsList
+				activeGlobalEvents, uniqueProgEvents, allEvents, spannedProgEvents
+				daysOfData, firstDay, lastDay, dayRange, xTicks, defaultTimeSpan
 			} = @props
-
-
-			#################### ProgEvents ####################
-
-			# TODO: Filter out cancelled prog/globalEvents @ top-level
-
-			# Ensure globalEvents aren't cancelled
-			activeGlobalEvents = @props.globalEvents.filter (globalEvent) -> globalEvent.get('status') is 'default'
-
-			# Figure out which progEvents don't have a globalEvent, and ignore cancelled ones
-			uniqueProgEvents = @props.progEvents.filterNot (progEvent) ->
-				progEventId = progEvent.get('id')
-				return progEvent.get('status') isnt 'default' or activeGlobalEvents.find (globalEvent) ->
-					globalEvent.get('relatedProgEventId') is progEventId
-
-			allEvents = uniqueProgEvents.concat activeGlobalEvents
 
 			# List of progEvents currently selected
 			# 'null' is used to identify un-typed/other progEvents
 			selectedProgEvents = allEvents.filter (progEvent) =>
 				@state.selectedEventTypeIds.contains (progEvent.get('typeId') or null)
 
-			# We only grab endTimestamp from progEvents that have one
-			spannedProgEvents = allEvents.filter (progEvent) -> !!progEvent.get('endTimestamp')
-
-			# Build list of timestamps from progEvents (start & end) & metrics
-			daysOfData = Imm.List()
-			.concat allEvents.map (progEvent) ->
-				progEvent.get('startTimestamp')
-			.concat spannedProgEvents.map (progEvent) ->
-				progEvent.get('endTimestamp')
-			.concat metricValues.map (metric) ->
-				# Account for backdate, else normal timestamp
-				metricTimestamp = metric.get('backdate') or metric.get('timestamp')
-				return metricTimestamp
-			.toOrderedSet()
-			.sort()
-
-
-			#################### Date Range / TimeSpan ####################
-
-			# Determine earliest & latest days
-			firstDay = Moment daysOfData.first(), TimestampFormat
-			lastDay = Moment daysOfData.last(), TimestampFormat
-			dayRange = lastDay.diff(firstDay, 'days') + 1
-
-			# Create list of all days as moments
-			xTicks = Imm.List([0..dayRange]).map (n) ->
-				firstDay.clone().add(n, 'days')
-
-			# Declare default timeSpan
-			# confirm we have enough data and set to 1 month
-			if xTicks.size > 0 and xTicks.last().clone().subtract(1, "month").isSameOrAfter(xTicks.first())
-				@defaultTimeSpan = Imm.Map {
-					start: xTicks.last().clone().subtract(1, "month")
-					end: xTicks.last()
-				}
-			else
-				@defaultTimeSpan = Imm.Map {
-					start: xTicks.first()
-					end: xTicks.last()
-				}
-
 			# Assign default timespan if null
-			timeSpan = if not @state.timeSpan? then @defaultTimeSpan else @state.timeSpan
+			timeSpan = if not @state.timeSpan? then defaultTimeSpan else @state.timeSpan
 
 
 			#################### Event Types ####################
