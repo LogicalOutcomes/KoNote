@@ -25,6 +25,7 @@ load = (win) ->
 	TimeSpanToolbar = require('./timeSpanToolbar').load(win)
 	Chart = require('./chart').load(win)
 
+
 	AnalysisView = React.createFactory React.createClass
 		displayName: 'AnalysisView'
 
@@ -33,6 +34,31 @@ load = (win) ->
 			return false unless newProps.isVisible
 
 			React.addons.shallowCompare @, newProps, newState
+
+		render: ->
+
+			#################### Metric Values/Entries ####################
+
+			# All non-empty metric values
+			metricValues = @props.progNoteHistories
+			.filter (progNoteHist) -> progNoteHist.last().get('status') is 'default'
+			.flatMap (progNoteHist) -> extractMetricsFromProgNoteHistory progNoteHist
+			.filter (metricValue) -> metricValue.get('value').trim().length > 0
+
+			# All metric IDs for which this client file has data
+			metricIdsWithData = metricValues
+			.map (m) -> m.get 'id'
+			.toSet()
+
+
+			AnalysisViewUi(Object.assign {}, @props, {
+				metricValues
+				metricIdsWithData
+			})
+
+
+	AnalysisViewUi = React.createFactory React.createClass
+		displayName: 'AnalysisViewUi'
 
 		getInitialState: ->
 			return {
@@ -59,18 +85,9 @@ load = (win) ->
 
 		render: ->
 
-			#################### Metric Values/Entries ####################
-
-			# All non-empty metric values
-			metricValues = @props.progNoteHistories
-			.filter (progNoteHist) -> progNoteHist.last().get('status') is 'default'
-			.flatMap (progNoteHist) -> extractMetricsFromProgNoteHistory progNoteHist
-			.filter (metricValue) -> metricValue.get('value').trim().length > 0
-
-			# All metric IDs for which this client file has data
-			metricIdsWithData = metricValues
-			.map (m) -> m.get 'id'
-			.toSet()
+			{
+				metricValues, metricIdsWithData
+			} = @props
 
 
 			#################### Plan Targets & Metrics ####################
