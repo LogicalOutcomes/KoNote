@@ -77,7 +77,7 @@ load = (win) ->
 						'readOnly' if isReadOnly
 						'dragging' if @props.isDragging
 					].join ' '
-					onClick: @_onTargetClick
+					onClick: @props.onTargetSelection
 				},
 					connectDragSource (
 						R.div({
@@ -189,10 +189,14 @@ load = (win) ->
 			newValue = @props.target.set fieldName, event.target.value
 			@props.onTargetUpdate(newValue)
 
+		###
+  		# todo: do we need this?
 		_onTargetClick: (event) ->
 			classList = event.target.classList
 			# Prevent distracting switching of selectedTarget while re-ordering targets
 			return if classList.contains 'dragSource'
+
+			@props.onTargetSelection
 
 			# Clicking anywhere but the fields or buttons will focus the name field
 			shouldFocusNameField = not (
@@ -204,6 +208,7 @@ load = (win) ->
 
 			@props.setSelectedTarget @props.target.get('id'), =>
 				@_focusNameField() if shouldFocusNameField
+		###
 
 		_focusNameField: ->
 			@refs.nameField.focus() if @refs.nameField?
