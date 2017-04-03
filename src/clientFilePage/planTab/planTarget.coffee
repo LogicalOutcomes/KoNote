@@ -196,8 +196,6 @@ load = (win) ->
 			# Prevent distracting switching of selectedTarget while re-ordering targets
 			return if classList.contains 'dragSource'
 
-			@props.onTargetSelection
-
 			# Clicking anywhere but the fields or buttons will focus the name field
 			shouldFocusNameField = not (
 				(classList.contains 'field') or
