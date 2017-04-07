@@ -109,19 +109,20 @@ load = (win) ->
 								isActive: @props.managerLayer is 'metricDefinitionManagerTab'
 							})
 							MenuItem({
+								isVisible: isAdmin
 								title: Term 'Plan Templates'
 								icon: 'wpforms'
 								onClick: @props.updateManagerLayer.bind null, 'planTemplateManagerTab'
 								isActive: @props.managerLayer is 'planTemplateManagerTab'
 							})
 							MenuItem({
-								isVisible: isAdmin
 								title: Term 'Event Types'
 								icon: 'calendar-o'
 								onClick: @props.updateManagerLayer.bind null, 'eventTypeManagerTab'
 								isActive: @props.managerLayer is 'eventTypeManagerTab'
 							})
 							MenuItem({
+								isVisible: isAdmin
 								title: Term 'Programs'
 								icon: 'users'
 								onClick: @props.updateManagerLayer.bind null, 'programManagerTab'

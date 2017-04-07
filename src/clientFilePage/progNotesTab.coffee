@@ -633,7 +633,12 @@ load = (win) ->
 				},
 					R.option({value: ''}, "Select a #{Term 'client'} #{Term 'program'}")
 					(@props.clientPrograms.map (program) ->
-						R.option({value: program.get('id')}, program.get('name'))
+						R.option({
+							key: program.get('id')
+							value: program.get('id')
+						},
+							program.get('name')
+						)
 					)
 				)
 			)

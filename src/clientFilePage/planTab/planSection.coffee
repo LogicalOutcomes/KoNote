@@ -22,6 +22,7 @@ load = (win) ->
 	OpenDialogLink = require('../../openDialogLink').load(win)
 	WithTooltip = require('../../withTooltip').load(win)
 	CreatePlanTemplateDialog = require('../createPlanTemplateDialog').load(win)
+	ColorKeyBubble = require('../../colorKeyBubble').load(win)
 
 	{FaIcon, showWhen} = require('../../utils').load(win)
 
@@ -55,6 +56,7 @@ load = (win) ->
 		render: ->
 			{
 				section
+				program
 				clientFile
 				plan
 				metricsById
@@ -117,6 +119,7 @@ load = (win) ->
 					SectionHeader({
 						clientFile
 						section
+						program
 						isReadOnly
 						isCollapsed
 						allTargetsAreInactive: not targetsByStatus.get('default')
@@ -231,6 +234,7 @@ load = (win) ->
 			{
 				clientFile
 				section
+				program
 				isReadOnly
 				isCollapsed
 				allTargetsAreInactive
@@ -256,6 +260,7 @@ load = (win) ->
 
 			canSetStatus = isExistingSection and (allTargetsAreInactive or sectionIsInactive) and not isReadOnly
 			canModify = not isReadOnly and not sectionIsInactive
+			isAdmin = global.ActiveSession.isAdmin()
 
 
 			return R.div({className: 'sectionHeader'},
@@ -282,14 +287,24 @@ load = (win) ->
 					},
 						section.get('name')
 
+						(if program
+							ColorKeyBubble({
+								colorKeyHex: program.get('colorKeyHex')
+								popover: {
+									title: program.get('name')
+									content: program.get('description')
+									placement: 'top'
+								}
+							})
+						)
+
 						(if canModify and not isCollapsed
 							FaIcon('pencil', {className: 'renameIcon'})
 						)
 					)
 				)
 
-				# TODO: Extract to component
-				(if canSetStatus
+				(if canSetStatus and isAdmin
 					StatusButtonGroup({
 						planElementType: Term 'Section'
 						data: section
@@ -303,7 +318,7 @@ load = (win) ->
 				)
 
 				# TODO: Extract to component
-				(unless sectionIsInactive
+				(if not sectionIsInactive and isAdmin
 					R.div({className: 'btn-group btn-group-sm sectionButtons'},
 						R.button({
 							ref: 'addTarget'

@@ -63,10 +63,12 @@ load = (win) ->
 							index = planSections.indexOf section
 							sectionIsInactive = section.get('status') isnt 'default'
 
+							program = @props.programsById.get(section.get('programId'))
+
 							props = Object.assign {}, @props, {
 								ref: "section-#{id}"
 								key: id
-								section, id, index
+								section, program, id, index
 								expandTarget: @_expandTarget
 								expandSection: @_expandSection
 							}

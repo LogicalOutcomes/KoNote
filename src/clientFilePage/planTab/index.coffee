@@ -17,6 +17,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	ReactDOMServer = win.ReactDOMServer
 	{findDOMNode} = win.ReactDOM
 
 	PlanView = require('./planView').load(win)
@@ -247,6 +248,7 @@ load = (win) ->
 						clientFile: @props.clientFile
 						plan
 						metricsById: @props.metricsById
+						programsById: @props.programsById
 						planTargetsById: @props.planTargetsById
 						currentTargetRevisionsById
 						selectedTargetId: @state.selectedTargetId
@@ -488,24 +490,75 @@ load = (win) ->
 					return not emptyName and not emptyDescription
 
 		_addSection: ->
-			sectionId = Persist.generateId()
+			# Build programDropdown markup
+			programDropdown = ReactDOMServer.renderToString(
+				R.select({
+					id: 'programDropdown'
+					className: 'form-control'
+				},
+					R.option({value: ''}, "All #{Term 'Programs'}")
+					(@props.clientPrograms.map (program) ->
+						R.option({
+							key: program.get('id')
+							value: program.get('id')
+						},
+							program.get('name')
+						)
+					)
+				)
+			)
 
-			Bootbox.prompt "Enter a name for the new #{Term 'section'}:", (sectionName) =>
-				sectionName = sectionName?.trim()
-
-				unless sectionName
-					return
-
-				newPlan = @state.plan.update 'sections', (sections) =>
-					return sections.push Imm.fromJS {
-						id: sectionId
-						name: sectionName
-						targetIds: []
-						status: 'default'
+			Bootbox.dialog {
+				title: "New #{Term 'plan'} #{Term 'section'}"
+				message: """
+					<div style="display: flex;">
+						<div style="flex: 3;">
+							<input
+								id="sectionNameInput"
+								class="form-control"
+								placeholder="Enter a #{Term 'section'} name"
+							/>
+						</div>
+						<div style="flex: 2; padding-left: 10px;">
+							#{programDropdown}
+						</div>
+					</div>
+				"""
+				buttons: {
+					cancel: {
+						label: "Cancel"
+						className: 'btn-default'
 					}
+					success: {
+						label: "Done"
+						className: 'btn-success'
+						callback: =>
+							sectionName = $('#sectionNameInput').val().trim()
 
-				@setState {plan: newPlan}, =>
-					@_addTargetToSection sectionId
+							if not sectionName
+								Bootbox.alert "A valid #{Term 'section'} name must be provided."
+								return
+
+							sectionId = Persist.generateId()
+							programId = $('#programDropdown').val() or ''
+
+							newPlan = @state.plan.update 'sections', (sections) =>
+								return sections.push Imm.fromJS {
+									id: sectionId
+									name: sectionName
+									targetIds: []
+									programId: programId or ''
+									status: 'default'
+								}
+
+							@setState {plan: newPlan}, =>
+								@_addTargetToSection sectionId
+
+
+					}
+				}
+			}
+			.on('shown.bs.modal', -> $('#sectionNameInput').focus())
 
 		_openCreateTemplateDialog: (event) ->
 			@refs.planTemplatesButton.open(event)
@@ -603,20 +656,74 @@ load = (win) ->
 
 		_renameSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId
-			sectionName = @state.plan.getIn ['sections', sectionIndex, 'name']
+			section = @state.plan.getIn ['sections', sectionIndex]
 
-			Bootbox.prompt {
-				title: "Rename #{Term 'section'}:"
-				value: sectionName
-				callback: (newSectionName) =>
-					newSectionName = newSectionName?.trim()
+			name = section.get('name')
+			programId = section.get('programId')
 
-					unless newSectionName
-						return
+			# Build programDropdown markup
+			programDropdown = ReactDOMServer.renderToString(
+				R.select({
+					id: 'programDropdown'
+					className: 'form-control'
+					defaultValue: programId or ''
+				},
+					R.option({value: ''}, "All #{Term 'Programs'}")
+					(@props.clientPrograms.map (program) ->
+						R.option({
+							key: program.get('id')
+							value: program.get('id')
+						},
+							program.get('name')
+						)
+					)
+				)
+			)
 
-					newPlan = @state.plan.setIn ['sections', sectionIndex, 'name'], newSectionName
-					@setState {plan: newPlan}
+			Bootbox.dialog {
+				title: "Modify #{Term 'plan'} #{Term 'section'}"
+				message: """
+					<div style="display: flex;">
+						<div style="flex: 3;">
+							<input
+								id="sectionNameInput"
+								class="form-control"
+								value=#{name}
+								placeholder="Enter a #{Term 'section'} name"
+							/>
+						</div>
+						<div style="flex: 2; padding-left: 10px;">
+							#{programDropdown}
+						</div>
+					</div>
+				"""
+				buttons: {
+					cancel: {
+						label: "Cancel"
+						className: 'btn-default'
+					}
+					success: {
+						label: "Done"
+						className: 'btn-success'
+						callback: =>
+							sectionName = $('#sectionNameInput').val().trim()
+
+							if not sectionName
+								Bootbox.alert "A valid #{Term 'section'} name must be provided."
+								return
+
+							programId = $('#programDropdown').val() or ''
+
+							updatedSection = section
+							.set 'name', sectionName
+							.set 'programId', programId
+
+							newPlan = @state.plan.setIn ['sections', sectionIndex], updatedSection
+							@setState {plan: newPlan}
+					}
+				}
 			}
+			.on('shown.bs.modal', -> $('#sectionNameInput').focus())
 
 		_addTargetToSection: (sectionId) ->
 			sectionIndex = @_getSectionIndex sectionId

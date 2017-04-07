@@ -62,11 +62,26 @@ load = (win) ->
 			unless @state.status is 'ready' then return null
 
 			userProgram = @_getUserProgram()
+			isAdmin = global.ActiveSession.isAdmin()
+
+			# For regular users, we filter out clientFiles that
+			# and don't match the user's assigned program
+			clientFileHeaders = if not isAdmin and userProgram?
+				@state.clientFileHeaders.filter (clientFile) =>
+					clientFileId = clientFile.get('id')
+
+					@state.clientFileProgramLinks.some (link) =>
+						link.get('clientFileId') is clientFileId and
+						link.get('programId') is @state.userProgramId and
+						link.get('status') is 'enrolled'
+			else
+				@state.clientFileHeaders
+
 
 			return ClientSelectionPageUi {
 				openClientFile: @_openClientFile
 				status: @state.status
-				clientFileHeaders: @state.clientFileHeaders
+				clientFileHeaders
 				clientFileProgramLinks: @state.clientFileProgramLinks
 				programs: @state.programs
 				userProgram
@@ -189,6 +204,7 @@ load = (win) ->
 								if err
 									cb err
 									return
+
 								clientFileProgramLinkHeaders = result
 								cb()
 						(cb) =>

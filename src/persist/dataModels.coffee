@@ -37,6 +37,7 @@ dataModelDefinitions = [
 						name: Joi.string()
 						status: ['default', 'deactivated', 'completed']
 						statusReason: Joi.string().optional()
+						programId: IdSchema.allow('')
 						targetIds: Joi.array().items(
 							IdSchema
 						)
