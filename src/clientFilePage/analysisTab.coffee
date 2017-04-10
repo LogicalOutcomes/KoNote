@@ -218,7 +218,7 @@ load = (win) ->
 			progEventsAreSelected = not @state.selectedEventTypeIds.isEmpty()
 			availableEventTypes = eventTypesWithData.size + (if untypedEvents.isEmpty() then 0 else 1)
 			allEventTypesSelected = @state.selectedEventTypeIds.size is availableEventTypes
-
+			untypedEventsExist = untypedEvents.size > 0
 
 			return R.div({className: "analysisView"},
 				R.div({className: "noData #{showWhen not daysOfData.size > 0}"},
@@ -358,14 +358,14 @@ load = (win) ->
 										"(No #{Term 'events'} recorded)"
 									)
 								else
-									R.h2({onClick: @_toggleAllEventTypes.bind null, allEventTypesSelected, eventTypesWithData},
+									R.h2({onClick: @_toggleAllEventTypes.bind null, allEventTypesSelected, eventTypesWithData, untypedEventsExist},
 										R.span({className: 'helper'}
 											"Select "
 											if allEventTypesSelected then "None" else "All"
 										)
 										R.input({
 											type: 'checkbox'
-											checked: progEventsAreSelected
+											checked: progEventsAreSelected #todo: maybe this should only be checked when all events are selected
 										})
 										Term 'Events'
 									)
@@ -610,12 +610,14 @@ load = (win) ->
 
 			@setState {selectedEventTypeIds, starredEventTypeIds}
 
-		_toggleAllEventTypes: (allEventTypesSelected, eventTypesWithData) ->
+		_toggleAllEventTypes: (allEventTypesSelected, eventTypesWithData, untypedEventsExist) ->
 			if not allEventTypesSelected
 				selectedEventTypeIds = eventTypesWithData
 				.map (eventType) -> eventType.get('id') # all eventTypes
-				.push(null) # null = progEvents without an eventType
 				.toSet()
+
+				if untypedEventsExist
+					selectedEventTypeIds = selectedEventTypeIds.add(null) # null = progEvents without an eventType
 
 				starredEventTypeIds = @state.starredEventTypeIds
 			else
