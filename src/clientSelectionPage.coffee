@@ -441,7 +441,7 @@ load = (win) ->
 								noData = @props.clientFileHeaders.isEmpty()
 
 								R.div({className: 'input-group'}
-									(unless noData
+									(unless noData or not isAdmin
 										OpenDialogLink({
 											className: 'input-group-btn'
 											ref: 'openCreateClientSmall'
@@ -483,6 +483,7 @@ load = (win) ->
 												className: 'btn btn-success'
 												dialog: CreateClientFileDialog
 												programs: @props.programs
+												disabled: not isAdmin
 											},
 												"New #{Term 'Client File'} "
 												FaIcon('folder-open')
