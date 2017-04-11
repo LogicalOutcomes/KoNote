@@ -616,7 +616,7 @@ load = (win) ->
 
 		render: ->
 			# Calculate scaled height of each region (larger if no metrics)
-			scaleFactor = if @props.selectedMetricIds.isEmpty() then 0.65 else 0.375
+			scaleFactor = if @props.selectedMetricIds.isEmpty() then 0.65 else 0.3
 			scaleY = (scaleFactor / @props.eventRows).toFixed(2)
 
 
