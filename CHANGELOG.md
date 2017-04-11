@@ -1,3 +1,22 @@
+### 2.0.0 (tentative)
+
+#### Improvements
+
+- New plan outline view ([#1014](https://github.com/konode001/konote/issues/1014))
+- Plan sections can be assigned to program; new progress note includes sections for user's program only
+([#697](https://github.com/konode001/konote/issues/697))
+- Restrict non admin users from: creating new client files, changing plans, editing metrics, editing event types,
+viewing client files outside their program ([#241](https://github.com/konode001/konote/issues/241))
+- Show version number in UI ([#1030](https://github.com/konode001/konote/issues/1030))
+
+#### Fixes
+
+- Events toggle in analysis was not always working ([#1044](https://github.com/konode001/konote/issues/1044))
+- Events overlap metrics in analysis ([#1045](https://github.com/konode001/konote/issues/1045))
+- Progote quick-navigation positioning fix ([#1046](https://github.com/konode001/konote/issues/1046))
+- Various UI and performance improvements
+
+
 ### 1.15.1 (Mar 24 2017)
 
 This release resolves a dependency issue which may have prevented the app from starting. It also introduces automatic
