@@ -98,13 +98,6 @@ load = (win) ->
 				title
 				message
 				reasonLabel
-				onSuccess: ->
-					# Sticky sectionHeader position isn't recalculated when React appends new DOM elements
-					# Flipping its display off and on again forces the recalculation
-					$('.sectionHeader').each (index, element) ->
-						element.style.display = 'none'
-						element.style.display = 'flex'
-
 			},
 				FaIcon(icon)
 			)
