@@ -109,7 +109,7 @@ load = (win) ->
 					clientName = renderName clientFile.get('clientName')
 					clientFileOpen = false
 					appWindows.forEach (appWindow) ->
-						winTitle = nw.Window.get(appWindow.contentWindow).title
+						winTitle = nw.Window.get(appWindow.contentWindow).window.document.title
 						if winTitle.includes(clientName)
 							# already open, focus
 							clientFileOpen = true
