@@ -1056,7 +1056,7 @@ load = (win) ->
 			@entryDateNavigator = $(findDOMNode @refs.entryDateNavigator)
 
 			# Set initial position, and listen for window resize
-			@rightPane = $('.rightPane')[0] # Ref not available here, maybe get from this upstream?
+			@rightPane = $('.rightPane')[1] #todo: clunky... Ref not available here, maybe get from this upstream?
 			@_setNavigatorRightOffset()
 
 			$(win).on 'resize', @_setNavigatorRightOffset
