@@ -1741,6 +1741,7 @@ load = (win) ->
 								progNoteHistory: @props.progNoteHistory
 								attachments: @props.attachments
 								clientFile: @props.clientFile
+								setSelectedItem: @props.setSelectedItem
 								selectProgNote: @props.selectProgNote
 								userProgram: @props.userProgram
 								isReadOnly: true
