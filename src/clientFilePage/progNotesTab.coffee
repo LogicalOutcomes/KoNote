@@ -1570,25 +1570,24 @@ load = (win) ->
 													onClick: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
 												},
 													R.h3({}, target.get('name'))
-													R.div({className: "empty #{showWhen target.get('notes') is '' and not isEditing}"},
-														'(blank)'
-													)
-													R.div({className: 'notes'},
-														(if isEditing
-															ExpandingTextArea({
-																value: target.get('notes')
-																onChange: @props.updatePlanTargetNotes.bind(
-																	null,
-																	unitId, sectionId, targetId
-																)
-															})
-														else
-															if target.get('notes').includes "***"
-																R.span({className: 'starred'},
-																	renderLineBreaks target.get('notes').replace(/\*\*\*/g, '')
-																)
+													(unless target.get('notes') is ''
+														R.div({className: 'notes'},
+															(if isEditing
+																ExpandingTextArea({
+																	value: target.get('notes')
+																	onChange: @props.updatePlanTargetNotes.bind(
+																		null,
+																		unitId, sectionId, targetId
+																	)
+																})
 															else
-																renderLineBreaks target.get('notes')
+																if target.get('notes').includes "***"
+																	R.span({className: 'starred'},
+																		renderLineBreaks target.get('notes').replace(/\*\*\*/g, '')
+																	)
+																else
+																	renderLineBreaks target.get('notes')
+															)
 														)
 													)
 													R.div({className: 'metrics'},
