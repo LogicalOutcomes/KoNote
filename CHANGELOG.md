@@ -1,4 +1,4 @@
-### 2.0.0 (tentative)
+### 2.0 (tentative)
 
 #### Improvements
 
@@ -14,6 +14,8 @@ viewing client files outside their program ([#241](https://github.com/konode001/
 - Events toggle in analysis was not always working ([#1044](https://github.com/konode001/konote/issues/1044))
 - Events overlap metrics in analysis ([#1045](https://github.com/konode001/konote/issues/1045))
 - Progote quick-navigation positioning fix ([#1046](https://github.com/konode001/konote/issues/1046))
+- Fix crash which could occur when opening a cancelled quick note ([#1048](https://github.com/konode001/konote/issues/1048))
+- Fix regression that allowed same client file to be opened in multiple windows
 - Various UI and performance improvements
 
 
