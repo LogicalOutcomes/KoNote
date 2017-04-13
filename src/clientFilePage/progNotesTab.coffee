@@ -1988,7 +1988,7 @@ load = (win) ->
 					"""
 						div.target.targetId-#{selectedItem.get('targetId')}:not(.isEditing) {
 							padding-left: 20px !important;
-							padding-right: 0px !important;
+							padding-right: 6px !important;
 							border-left: 2px solid #3176aa !important;
 							color: #3176aa !important;
 						}

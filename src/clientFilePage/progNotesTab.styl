@@ -141,7 +141,15 @@
 			.entryHeader
 				display flex
 
-				border-top 1px solid sidebar-borders
+				border-top 10px solid sidebar-borders
+				border-bottom 1px dotted #eaf1f5
+
+				position sticky
+				top -10px
+
+				background white
+
+				z-index 2
 
 				padding 10px
 
@@ -200,7 +208,8 @@
 
 					&:hover
 						opacity 1
-						text-decoration underline
+						text-decoration none
+						color #3176aa
 
 
 			> .cancelStub
@@ -267,9 +276,6 @@
 						padding-left 0px
 						padding-right 20px
 
-						&:hover
-							opacity 0.75
-
 				&:hover .progNoteToolbar
 					opacity 1
 
@@ -304,12 +310,13 @@
 							padding 10px 0
 							font-size 22px
 							font-weight 100
+							text-transform uppercase
 
 						h3
 							padding 6px 0
 							font-weight 600
 							font-size 18px
-							opacity 0.75
+							text-transform uppercase
 
 						.notes
 							overflow-wrap break-word
@@ -325,9 +332,6 @@
 							transition all .25s ease
 							padding-left 0px
 							padding-right 20px
-
-							&:not(.isEditing):hover
-								opacity 0.75
 
 							h3
 								margin 0
@@ -346,7 +350,7 @@
 								color #888
 
 							h3
-								font-size 14px
+								font-size 12px
 
 							section
 								&:first-child
@@ -357,11 +361,8 @@
 									margin-bottom 15px
 									border-left 2px solid rgba(255,255,255, 0) // Avoid reflow when selectedItem
 									transition all .25s ease
-									padding-left 0px
+									padding-left 6px
 									padding-right 20px
-
-									&:not(.isEditing):hover .notes
-										opacity 0.75
 
 									> .empty
 										padding 0 2px
