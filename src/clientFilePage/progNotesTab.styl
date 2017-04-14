@@ -37,6 +37,7 @@
 			overflow auto
 
 			&.leftPane
+				flex 1
 
 				> .empty
 					flex 1
@@ -94,7 +95,12 @@
 								margin-left 5px
 
 			&.rightPane
+				flex 1
 				border-left 2px solid sidebar-borders
+				transition flex-grow 200ms // todo: evaluate performance
+
+				&.collapsed
+					flex 0
 
 		#entriesListView
 			flex 1
@@ -250,12 +256,12 @@
 
 				h3
 					font-size 22px
-					font-weight 200
+					font-weight 100
 					padding-left 10px
 
 					.fa
-						color #07488b
-						margin-right 14px
+						//color #07488b
+						margin-right 10px
 
 				p
 					padding-left 10px

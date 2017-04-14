@@ -148,6 +148,7 @@ load = (win) ->
 				transientData: null
 				isLoading: null
 				isFiltering: null
+				showHistory: true
 
 				searchQuery: ''
 				programIdFilter: null
@@ -240,9 +241,9 @@ load = (win) ->
 									onClick: @_openNewProgNote
 									disabled: @state.isLoading or @props.isReadOnly
 								},
-									FaIcon('file')
+									FaIcon('plus')
 									R.span({className: 'wideMenuItemText'},
-										"New #{Term 'Progress Note'}"
+										"#{Term 'Progress Note'}"
 									)
 								)
 
@@ -257,7 +258,7 @@ load = (win) ->
 								},
 									FaIcon('plus')
 									R.span({className: 'wideMenuItemText'},
-										"Add #{Term 'Quick Note'}"
+										"#{Term 'Quick Note'}"
 									)
 								)
 
@@ -270,6 +271,16 @@ load = (win) ->
 									onClick: @_toggleIsFiltering
 								},
 									FaIcon('search')
+								)
+
+								R.button({
+									ref: 'toggleHistoryPane'
+									className: [
+										'toggleHistoryPaneButton'
+									].join ' '
+									onClick: @_toggleHistoryPane
+								},
+									FaIcon('columns')
 								)
 							)
 
@@ -407,7 +418,12 @@ load = (win) ->
 							updateQuickNotes: @_updateQuickNotes
 						})
 					)
-					R.section({className: 'rightPane'},
+					R.section({
+						className: [
+							'rightPane'
+							'collapsed' unless @state.showHistory
+						].join ' '
+					},
 						ProgNoteDetailView({
 							ref: 'progNoteDetailView'
 							isFiltering: @state.isFiltering
@@ -1028,6 +1044,10 @@ load = (win) ->
 				return
 
 			@setState {isFiltering}
+
+		_toggleHistoryPane: ->
+			showHistory = not @state.showHistory
+			@setState {showHistory}
 
 		_updateProgramIdFilter: (programIdFilter) ->
 			@setState {programIdFilter}
