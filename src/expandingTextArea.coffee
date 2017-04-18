@@ -105,8 +105,8 @@ load = (win) ->
 			@props.onChange event
 			@_resize()
 
-		_onFocus: ->
-			@props.onFocus
+		_onFocus: (event) ->
+			@props.onFocus event
 			@_resize()
 
 		focus: ->
