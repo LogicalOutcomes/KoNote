@@ -69,7 +69,7 @@ runMigration = (dataDir, currentVersion, destinationVersion, userName, password,
 	migrationVersionSets = null
 
 	# This expression is used to filter non-migration files from the migrations directory
-	migrationRegex = /([0-9\-.]+\.coffee)/
+	migrationRegex = /\d{1,2}\.\d{1,2}\.\d{1,2}-\d{1,2}\.\d{1,2}\.\d{1,2}\.(coffee|js)/gi
 
 	Async.series [
 		(cb) =>
@@ -83,7 +83,7 @@ runMigration = (dataDir, currentVersion, destinationVersion, userName, password,
 				.filter (m) -> migrationRegex.exec(m)
 				.map (m) ->
 					# Parsing migration files, splitting, creating obj
-					[fromVersion, toVersion] = m.replace(".coffee", "").split("-")
+					[fromVersion, toVersion] = m.replace(/\.(coffee|js)/i, "").split("-")
 					return Imm.Map {fromVersion, toVersion}
 
 				cb()
