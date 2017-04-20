@@ -243,7 +243,7 @@ load = (win) ->
 						)
 
 						R.button({
-							className: 'addSectionButton'
+							className: 'toggleHistoryButton'
 							onClick: @_toggleHistoryPane
 						},
 							(if @state.showHistory
