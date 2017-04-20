@@ -280,7 +280,11 @@ load = (win) ->
 									].join ' '
 									onClick: @_toggleHistoryPane
 								},
-									FaIcon('columns')
+									(if @state.showHistory
+										FaIcon('angle-right')
+									else
+										FaIcon('angle-left')
+									)
 								)
 							)
 

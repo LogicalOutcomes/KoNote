@@ -43,6 +43,7 @@ load = (win) ->
 				currentTargetRevisionsById
 				selectedTargetId: null
 				isCollapsedView: false
+				showHistory: true
 			}
 
 		componentWillReceiveProps: ({plan, planTargetsById}) ->
@@ -241,6 +242,17 @@ load = (win) ->
 							)
 						)
 
+						R.button({
+							className: 'addSectionButton'
+							onClick: @_toggleHistoryPane
+						},
+							(if @state.showHistory
+								FaIcon('angle-right', {className:'menuItemIcon'})
+							else
+								FaIcon('angle-left', {className:'menuItemIcon'})
+							)
+						)
+
 					)
 
 					PlanView({
@@ -274,7 +286,13 @@ load = (win) ->
 					})
 				)
 
-				R.div({className: 'rightPane targetDetail'},
+				R.div({
+					className: [
+						'rightPane
+						targetDetail'
+						'collapsed' unless @state.showHistory
+					].join ' '
+				},
 					(if not selectedTarget?
 						R.div({className: "noSelection #{showWhen plan.get('sections').size > 0}"},
 							"More information will appear here when you select ",
@@ -488,6 +506,11 @@ load = (win) ->
 					emptyDescription = currentRev.get('description') is ''
 
 					return not emptyName and not emptyDescription
+
+
+		_toggleHistoryPane: ->
+			showHistory = not @state.showHistory
+			@setState {showHistory}
 
 		_addSection: ->
 			# Build programDropdown markup
