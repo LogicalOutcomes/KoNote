@@ -1135,7 +1135,7 @@ load = (win) ->
 
 		componentWillUnmount: ->
 			@entriesListView.off 'scroll', @_watchUnlimitedScroll
-			$(win.document).off 'resize', @_updateNavigatorPosition
+			$(win.document).off 'resize', @_setNavigatorRightOffset
 
 		_watchUnlimitedScroll: ->
 			# Skip if we're scrolling via EntryDateNavigator, entry count is already set
