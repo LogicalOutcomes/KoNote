@@ -1569,14 +1569,11 @@ load = (win) ->
 
 										R.section({key: sectionId},
 											R.h2({}, section.get('name'))
-											R.div({
-												className: [
-													'empty'
-													showWhen section.get('targets').isEmpty()
-												].join ' '
-											},
-												"This #{Term 'section'} is empty because
-												the #{Term 'client'} has no #{Term 'plan targets'}."
+											(if section.get('targets').isEmpty()
+												R.div({className: 'empty'},
+													"This #{Term 'section'} is empty because
+													the #{Term 'client'} has no #{Term 'plan targets'}."
+												)
 											)
 											(section.get('targets').map (target) =>
 												planTargetsById = @props.planTargetsById.map (target) -> target.get('revisions').first()
@@ -1605,6 +1602,7 @@ load = (win) ->
 																	)
 																})
 															else
+																# todo: make this nicer
 																if target.get('notes').includes "***"
 																	R.span({className: 'starred'},
 																		renderLineBreaks target.get('notes').replace(/\*\*\*/g, '')
@@ -1614,23 +1612,25 @@ load = (win) ->
 															)
 														)
 													)
-													R.div({className: 'metrics'},
-														(target.get('metrics').map (metric) =>
-															metricId = metric.get('id')
+													(unless target.get('metrics').isEmpty()
+														R.div({className: 'metrics'},
+															(target.get('metrics').map (metric) =>
+																metricId = metric.get('id')
 
-															MetricWidget({
-																isEditable: isEditing
-																tooltipViewport: '#entriesListView'
-																onChange: @props.updatePlanTargetMetric.bind(
-																	null,
-																	unitId, sectionId, targetId, metricId
-																)
-																onFocus: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
-																key: metric.get('id')
-																name: metric.get('name')
-																definition: metric.get('definition')
-																value: metric.get('value')
-															})
+																MetricWidget({
+																	isEditable: isEditing
+																	tooltipViewport: '#entriesListView'
+																	onChange: @props.updatePlanTargetMetric.bind(
+																		null,
+																		unitId, sectionId, targetId, metricId
+																	)
+																	onFocus: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
+																	key: metric.get('id')
+																	name: metric.get('name')
+																	definition: metric.get('definition')
+																	value: metric.get('value')
+																})
+															)
 														)
 													)
 												)

@@ -323,16 +323,17 @@ load = (win) ->
 								entry.get('author')
 							)
 						)
-						R.div({className: 'notes'},
-							if entry.get('notes').includes "***"
-								R.span({className: 'starred'},
-									renderLineBreaks entry.get('notes').replace(/\*\*\*/g, '')
-								)
-							else
-								renderLineBreaks entry.get('notes')
-						)
+						unless entry.get('notes') is ''
+							R.div({className: 'notes'},
+								if entry.get('notes').includes "***"
+									R.span({className: 'starred'},
+										renderLineBreaks entry.get('notes').replace(/\*\*\*/g, '')
+									)
+								else
+									renderLineBreaks entry.get('notes')
+							)
 
-						if entry.get('metrics')
+						unless entry.get('metrics').isEmpty()
 							R.div({className: 'metrics'},
 								entry.get('metrics').map (metric) =>
 									MetricWidget({
@@ -344,7 +345,7 @@ load = (win) ->
 									})
 							)
 
-						if entry.get('progEvents')
+						unless entry.get('progEvents').isEmpty()
 							R.div({className: 'progEvents'},
 								entry.get('progEvents').map (progEvent) =>
 									ProgEventWidget({
