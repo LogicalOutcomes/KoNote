@@ -21,7 +21,7 @@ viewing client files outside their program ([#241](https://github.com/konode001/
 - Auto migration fix ([#1050](https://github.com/konode001/konote/issues/1050))
 - Events toggle in analysis was not always working ([#1044](https://github.com/konode001/konote/issues/1044))
 - Events overlap metrics in analysis ([#1045](https://github.com/konode001/konote/issues/1045))
-- Progote quick-navigation positioning fix ([#1046](https://github.com/konode001/konote/issues/1046))
+- Prognote quick-navigation positioning fix ([#1046](https://github.com/konode001/konote/issues/1046))
 - Fix crash which could occur when opening a cancelled quick note ([#1048](https://github.com/konode001/konote/issues/1048))
 - Fix regression that allowed long metric names to overly extend the middle pane ([#866](https://github.com/konode001/konote/issues/866)) 
 - Fix regression that allowed same client file to be opened in multiple windows ([#722](https://github.com/konode001/konote/issues/722))
