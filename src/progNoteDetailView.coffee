@@ -333,28 +333,30 @@ load = (win) ->
 									renderLineBreaks entry.get('notes')
 							)
 
-						unless entry.get('metrics').isEmpty()
-							R.div({className: 'metrics'},
-								entry.get('metrics').map (metric) =>
-									MetricWidget({
-										isEditable: false
-										key: metric.get('id')
-										name: metric.get('name')
-										definition: metric.get('definition')
-										value: metric.get('value')
-									})
-							)
+						if entry.get('metrics')
+							unless entry.get('metrics').size is 0
+								R.div({className: 'metrics'},
+									entry.get('metrics').map (metric) =>
+										MetricWidget({
+											isEditable: false
+											key: metric.get('id')
+											name: metric.get('name')
+											definition: metric.get('definition')
+											value: metric.get('value')
+										})
+								)
 
-						unless entry.get('progEvents').isEmpty()
-							R.div({className: 'progEvents'},
-								entry.get('progEvents').map (progEvent) =>
-									ProgEventWidget({
-										key: progEvent.get('id')
-										format: 'small'
-										progEvent
-										eventTypes
-									})
-							)
+						if entry.get('progEvents')
+							unless entry.get('progEvents').isEmpty()
+								R.div({className: 'progEvents'},
+									entry.get('progEvents').map (progEvent) =>
+										ProgEventWidget({
+											key: progEvent.get('id')
+											format: 'small'
+											progEvent
+											eventTypes
+										})
+								)
 					)
 				).toJS()...
 			)
