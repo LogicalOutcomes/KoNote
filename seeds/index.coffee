@@ -85,6 +85,7 @@ generateClientFile = (metrics, template, eventTypes, cb) ->
 					id: generateId()
 					name: Faker.company.bsBuzz()
 					targetIds: sectionTargetIds
+					programId: '' # TODO: Use a real program ID
 					status
 				}
 				cb null, section

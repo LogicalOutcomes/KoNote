@@ -51,8 +51,18 @@ load = (win) ->
 
 			{id, status, name, description, metricIds} = target.toObject()
 
-			canChangeStatus = isSelected and not sectionIsInactive and not isReadOnly
-			isDisabled = isReadOnly or status isnt 'default' or sectionIsInactive or isReadOnly
+			canChangeStatus = (
+				isSelected and
+				not sectionIsInactive and
+				not isReadOnly and
+				isExistingTarget
+			)
+
+			isDisabled = (
+				isReadOnly or
+				status isnt 'default' or
+				sectionIsInactive or isReadOnly
+			)
 
 
 			return connectDropTarget connectDragPreview (
@@ -67,7 +77,7 @@ load = (win) ->
 						'readOnly' if isReadOnly
 						'dragging' if @props.isDragging
 					].join ' '
-					onClick: @_onTargetClick
+					onClick: @props.onTargetSelection
 				},
 					connectDragSource (
 						R.div({
@@ -179,6 +189,8 @@ load = (win) ->
 			newValue = @props.target.set fieldName, event.target.value
 			@props.onTargetUpdate(newValue)
 
+		###
+  		# todo: do we need this?
 		_onTargetClick: (event) ->
 			classList = event.target.classList
 			# Prevent distracting switching of selectedTarget while re-ordering targets
@@ -194,6 +206,7 @@ load = (win) ->
 
 			@props.setSelectedTarget @props.target.get('id'), =>
 				@_focusNameField() if shouldFocusNameField
+		###
 
 		_focusNameField: ->
 			@refs.nameField.focus() if @refs.nameField?

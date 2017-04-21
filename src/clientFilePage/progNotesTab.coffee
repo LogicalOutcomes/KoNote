@@ -148,6 +148,7 @@ load = (win) ->
 				transientData: null
 				isLoading: null
 				isFiltering: null
+				showHistory: true
 
 				searchQuery: ''
 				programIdFilter: null
@@ -240,9 +241,9 @@ load = (win) ->
 									onClick: @_openNewProgNote
 									disabled: @state.isLoading or @props.isReadOnly
 								},
-									FaIcon('file')
+									FaIcon('plus')
 									R.span({className: 'wideMenuItemText'},
-										"New #{Term 'Progress Note'}"
+										"#{Term 'Progress Note'}"
 									)
 								)
 
@@ -257,7 +258,7 @@ load = (win) ->
 								},
 									FaIcon('plus')
 									R.span({className: 'wideMenuItemText'},
-										"Add #{Term 'Quick Note'}"
+										"#{Term 'Quick Note'}"
 									)
 								)
 
@@ -270,6 +271,20 @@ load = (win) ->
 									onClick: @_toggleIsFiltering
 								},
 									FaIcon('search')
+								)
+
+								R.button({
+									ref: 'toggleHistoryPane'
+									className: [
+										'toggleHistoryPaneButton'
+									].join ' '
+									onClick: @_toggleHistoryPane
+								},
+									(if @state.showHistory
+										FaIcon('angle-right')
+									else
+										FaIcon('angle-left')
+									)
 								)
 							)
 
@@ -407,7 +422,12 @@ load = (win) ->
 							updateQuickNotes: @_updateQuickNotes
 						})
 					)
-					R.section({className: 'rightPane'},
+					R.section({
+						className: [
+							'rightPane'
+							'collapsed' unless @state.showHistory
+						].join ' '
+					},
 						ProgNoteDetailView({
 							ref: 'progNoteDetailView'
 							isFiltering: @state.isFiltering
@@ -633,7 +653,12 @@ load = (win) ->
 				},
 					R.option({value: ''}, "Select a #{Term 'client'} #{Term 'program'}")
 					(@props.clientPrograms.map (program) ->
-						R.option({value: program.get('id')}, program.get('name'))
+						R.option({
+							key: program.get('id')
+							value: program.get('id')
+						},
+							program.get('name')
+						)
 					)
 				)
 			)
@@ -1024,6 +1049,10 @@ load = (win) ->
 
 			@setState {isFiltering}
 
+		_toggleHistoryPane: ->
+			showHistory = not @state.showHistory
+			@setState {showHistory}
+
 		_updateProgramIdFilter: (programIdFilter) ->
 			@setState {programIdFilter}
 
@@ -1051,7 +1080,7 @@ load = (win) ->
 			@entryDateNavigator = $(findDOMNode @refs.entryDateNavigator)
 
 			# Set initial position, and listen for window resize
-			@rightPane = $('.rightPane')[0] # Ref not available here, maybe get from this upstream?
+			@rightPane = $('.rightPane')[1] #todo: clunky... Ref not available here, maybe get from this upstream?
 			@_setNavigatorRightOffset()
 
 			$(win).on 'resize', @_setNavigatorRightOffset
@@ -1106,7 +1135,7 @@ load = (win) ->
 
 		componentWillUnmount: ->
 			@entriesListView.off 'scroll', @_watchUnlimitedScroll
-			$(win.document).off 'resize', @_updateNavigatorPosition
+			$(win.document).off 'resize', @_setNavigatorRightOffset
 
 		_watchUnlimitedScroll: ->
 			# Skip if we're scrolling via EntryDateNavigator, entry count is already set
@@ -1540,14 +1569,11 @@ load = (win) ->
 
 										R.section({key: sectionId},
 											R.h2({}, section.get('name'))
-											R.div({
-												className: [
-													'empty'
-													showWhen section.get('targets').isEmpty()
-												].join ' '
-											},
-												"This #{Term 'section'} is empty because
-												the #{Term 'client'} has no #{Term 'plan targets'}."
+											(if section.get('targets').isEmpty()
+												R.div({className: 'empty'},
+													"This #{Term 'section'} is empty because
+													the #{Term 'client'} has no #{Term 'plan targets'}."
+												)
 											)
 											(section.get('targets').map (target) =>
 												planTargetsById = @props.planTargetsById.map (target) -> target.get('revisions').first()
@@ -1565,44 +1591,46 @@ load = (win) ->
 													onClick: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
 												},
 													R.h3({}, target.get('name'))
-													R.div({className: "empty #{showWhen target.get('notes') is '' and not isEditing}"},
-														'(blank)'
-													)
-													R.div({className: 'notes'},
-														(if isEditing
-															ExpandingTextArea({
-																value: target.get('notes')
-																onChange: @props.updatePlanTargetNotes.bind(
-																	null,
-																	unitId, sectionId, targetId
-																)
-															})
-														else
-															if target.get('notes').includes "***"
-																R.span({className: 'starred'},
-																	renderLineBreaks target.get('notes').replace(/\*\*\*/g, '')
-																)
+													(unless target.get('notes') is ''
+														R.div({className: 'notes'},
+															(if isEditing
+																ExpandingTextArea({
+																	value: target.get('notes')
+																	onChange: @props.updatePlanTargetNotes.bind(
+																		null,
+																		unitId, sectionId, targetId
+																	)
+																})
 															else
-																renderLineBreaks target.get('notes')
+																# todo: make this nicer
+																if target.get('notes').includes "***"
+																	R.span({className: 'starred'},
+																		renderLineBreaks target.get('notes').replace(/\*\*\*/g, '')
+																	)
+																else
+																	renderLineBreaks target.get('notes')
+															)
 														)
 													)
-													R.div({className: 'metrics'},
-														(target.get('metrics').map (metric) =>
-															metricId = metric.get('id')
+													(unless target.get('metrics').isEmpty()
+														R.div({className: 'metrics'},
+															(target.get('metrics').map (metric) =>
+																metricId = metric.get('id')
 
-															MetricWidget({
-																isEditable: isEditing
-																tooltipViewport: '#entriesListView'
-																onChange: @props.updatePlanTargetMetric.bind(
-																	null,
-																	unitId, sectionId, targetId, metricId
-																)
-																onFocus: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
-																key: metric.get('id')
-																name: metric.get('name')
-																definition: metric.get('definition')
-																value: metric.get('value')
-															})
+																MetricWidget({
+																	isEditable: isEditing
+																	tooltipViewport: '#entriesListView'
+																	onChange: @props.updatePlanTargetMetric.bind(
+																		null,
+																		unitId, sectionId, targetId, metricId
+																	)
+																	onFocus: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
+																	key: metric.get('id')
+																	name: metric.get('name')
+																	definition: metric.get('definition')
+																	value: metric.get('value')
+																})
+															)
 														)
 													)
 												)
@@ -1736,6 +1764,7 @@ load = (win) ->
 								progNoteHistory: @props.progNoteHistory
 								attachments: @props.attachments
 								clientFile: @props.clientFile
+								setSelectedItem: @props.setSelectedItem
 								selectProgNote: @props.selectProgNote
 								userProgram: @props.userProgram
 								isReadOnly: true
@@ -1982,7 +2011,7 @@ load = (win) ->
 					"""
 						div.target.targetId-#{selectedItem.get('targetId')}:not(.isEditing) {
 							padding-left: 20px !important;
-							padding-right: 0px !important;
+							padding-right: 6px !important;
 							border-left: 2px solid #3176aa !important;
 							color: #3176aa !important;
 						}

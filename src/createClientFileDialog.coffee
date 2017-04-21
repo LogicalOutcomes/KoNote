@@ -26,7 +26,7 @@ load = (win) ->
 	ProgramsDropdown = require('./programsDropdown').load(win)
 
 
-	{renderName, renderRecordId, FaIcon, showWhen, stripMetadata} = require('./utils').load(win)
+	{renderName, renderRecordId, FaIcon, stripMetadata} = require('./utils').load(win)
 
 
 	CreateClientFileDialog = React.createFactory React.createClass
@@ -65,7 +65,6 @@ load = (win) ->
 				@setState {planTemplateHeaders}
 
 		render: ->
-			currentYear = Moment().year()
 			formIsValid = @_formIsValid()
 			selectedPlanTemplateHeaders = @state.planTemplateHeaders.find (template) => template.get('id') is @state.templateId
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
@@ -257,10 +256,10 @@ load = (win) ->
 		_submit: ->
 			@refs.dialog.setIsLoading(true)
 
-			first = @state.firstName
-			middle = @state.middleName
-			last = @state.lastName
-			recordId = @state.recordId
+			first = @state.firstName.trim()
+			middle = @state.middleName.trim()
+			last = @state.lastName.trim()
+			recordId = @state.recordId.trim()
 
 			if @state.birthYear? and @state.birthMonth? and @state.birthDay?
 				birthDate = Moment(@state.birthYear + @state.birthMonth + @state.birthDay, 'YYYYMMMD', true).format('YYYYMMMDD')

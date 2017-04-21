@@ -20,9 +20,6 @@ load = (win) ->
 	ModifyTargetStatusDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
-		componentDidMount: ->
-			@refs.statusReasonField.focus()
-
 		getInitialState: -> {
 			statusReason: ''
 		}
@@ -44,6 +41,7 @@ load = (win) ->
 							onChange: @_updateStatusReason
 							value: @state.statusReason
 							placeholder: "Please specify a reason..."
+							autoFocus: true
 						})
 					)
 					R.div({className: 'btn-toolbar'},

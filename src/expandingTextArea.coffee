@@ -34,7 +34,8 @@ load = (win) ->
 					className: "expandingTextAreaComponent form-control #{@props.className}"
 					ref: 'textarea'
 					placeholder: @props.placeholder
-					onFocus: @props.onFocus
+					onFocus: @_onFocus
+					#todo: onblur?
 					onClick: @props.onClick
 					onChange: @_onChange
 					value: @props.value
@@ -64,7 +65,10 @@ load = (win) ->
 			textareaDom.style.height = '0px'
 
 			# Calculate new height
-			minimumHeight = 54 # pixels
+			if (win.document.activeElement == textareaDom) or (textareaDom.value == '')
+				minimumHeight = 54 # pixels
+			else
+				minimumHeight = 27
 			scrollableAreaHeight = textareaDom.scrollHeight
 			scrollableAreaHeight += 2 # to prevent scrollbar
 			newHeight = Math.max minimumHeight, scrollableAreaHeight
@@ -99,6 +103,11 @@ load = (win) ->
 
 		_onChange: (event) ->
 			@props.onChange event
+			@_resize()
+
+		_onFocus: (event) ->
+			if @props.onFocus
+				@props.onFocus event
 			@_resize()
 
 		focus: ->

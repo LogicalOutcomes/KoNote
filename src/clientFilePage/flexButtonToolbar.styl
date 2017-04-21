@@ -12,7 +12,7 @@
 	.menuItemText, .wideMenuItemText
 		padding-left 8px
 
-	@media screen and (max-width: 1280px)
+	@media screen and (max-width: 1398px)
 		.menuItemText
 			display none
 		.menuItemIcon
@@ -48,13 +48,16 @@
 			transition all .1s ease
 
 		&:hover
-			&:not([disabled])
+			&:not([disabled]):not(.disabled)
 				//transform translateY(-3px)
 				box-shadow 0px 3px 0px 0px #337ab7
 
 	// Overrides for B.Dropdown
 	> .dropdown
 		display flex
+
+		&.disabled
+			opacity 0.5
 		//flex 0.5 // TEMPORARY
 
 		> button
@@ -68,6 +71,7 @@
 			z-index 10000
 
 	// Button customizations
+	// todo: replace individual flex widths with 'justify-content: space-around' on parent
 	> button
 		color rgb(76, 93, 103)
 
@@ -90,6 +94,9 @@
 
 		&.addSectionButton
 			//
+
+		&.toggleHistoryButton
+			flex 0.8
 
 		&.printButton
 			flex 0.8
@@ -116,5 +123,9 @@
 				color white
 
 		&.openFilterBarButton
+			flex 0.25 !important
+			font-size 1.3em
+
+		&.toggleHistoryPaneButton
 			flex 0.25 !important
 			font-size 1.3em

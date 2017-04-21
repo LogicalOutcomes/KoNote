@@ -1070,13 +1070,15 @@ load = (win, {clientFileId}) ->
 							ref: 'planTab'
 							clientFileId
 							clientFile: @props.clientFile
+							clientPrograms: @props.clientPrograms
 							plan: @props.clientFile.get('plan')
 							planTargetsById: @props.planTargetsById
 							programsById: @props.programsById
 							metricsById: @props.metricsById
 							updatePlan: @props.updatePlan
 							planTemplateHeaders: @props.planTemplateHeaders
-							isReadOnly
+							# Plan is disabled for regular users
+							isReadOnly: isReadOnly or ActiveSession.accountType isnt 'admin'
 						})
 					)
 					R.div({

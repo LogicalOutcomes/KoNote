@@ -86,7 +86,7 @@ load = (win) ->
 
 		render: ->
 			hasData = not @state.eventTypes.isEmpty()
-
+			isAdmin = global.ActiveSession.isAdmin()
 
 			eventTypes = @state.eventTypes
 
@@ -104,16 +104,19 @@ load = (win) ->
 				R.div({className: 'header'},
 					R.h1({},
 						R.div({className: 'optionsMenu'},
-							OpenDialogLink({
-								className: 'btn btn-primary'
-								dialog: CreateEventTypeDialog
-								onSuccess: @_addNewEventType
-								data:
-									eventTypes: @state.eventTypes
-							},
-								FaIcon('plus')
-								" New #{Term 'Event Type'}"
+							(if isAdmin
+								OpenDialogLink({
+									className: 'btn btn-primary'
+									dialog: CreateEventTypeDialog
+									onSuccess: @_addNewEventType
+									data:
+										eventTypes: @state.eventTypes
+								},
+									FaIcon('plus')
+									" New #{Term 'Event Type'}"
+								)
 							)
+
 							(if hasInactiveEventTypes
 								R.div({className: 'toggleInactive'},
 									R.label({},
@@ -149,6 +152,7 @@ load = (win) ->
 											defaultSortName: 'name'
 											defaultSortOrder: 'asc'
 											onRowClick: ({id}) =>
+												return unless isAdmin
 												@refs.dialogLayer.open ModifyEventTypeDialog, {eventTypeId: id}
 
 											noDataText: "No #{Term 'event types'} to display"

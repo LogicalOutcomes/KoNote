@@ -1,4 +1,8 @@
 {
+	"backend": {
+		"dataDirectory": "P:\\KoNode\\data"
+	},
+
 	"logoCustomerLg": "gc-logo.svg",
 	"logoCustomerSm": "gc-logo.svg",
 	"logoSubtitle": "",

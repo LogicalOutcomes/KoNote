@@ -1,3 +1,33 @@
+### 2.0 (Apr 21, 2017)
+
+This release marks the stability of the core features of konote. Some of the changes in 2.0 are intended to make
+reviewing client information easier, such as the plan outline and history pane toggle. Programs are also more fully
+supported. New progress notes now only include plan sections from the author's program. In addition, regular user
+permissions have been redefined (see notes for details).
+
+#### Improvements
+
+- New plan outline view ([#1014](https://github.com/konode001/konote/issues/1014))
+- History pane toggle ([#296](https://github.com/konode001/konote/issues/296))
+- Plan sections can be assigned to program; new progress note includes sections for user's program only
+([#697](https://github.com/konode001/konote/issues/697))
+- Restrict non admin users from: creating new client files, changing plans, editing metrics, editing event types,
+viewing client files outside their program ([#241](https://github.com/konode001/konote/issues/241))
+- Show version number in UI ([#1030](https://github.com/konode001/konote/issues/1030))
+- Windows releases are now 64-bit by default
+
+#### Fixes
+
+- Auto migration fix ([#1050](https://github.com/konode001/konote/issues/1050))
+- Events toggle in analysis was not always working ([#1044](https://github.com/konode001/konote/issues/1044))
+- Events overlap metrics in analysis ([#1045](https://github.com/konode001/konote/issues/1045))
+- Progote quick-navigation positioning fix ([#1046](https://github.com/konode001/konote/issues/1046))
+- Fix crash which could occur when opening a cancelled quick note ([#1048](https://github.com/konode001/konote/issues/1048))
+- Fix regression that allowed long metric names to overly extend the middle pane ([#866](https://github.com/konode001/konote/issues/866)) 
+- Fix regression that allowed same client file to be opened in multiple windows ([#722](https://github.com/konode001/konote/issues/722))
+- Various UI and performance improvements
+
+
 ### 1.15.1 (Mar 24 2017)
 
 This release resolves a dependency issue which may have prevented the app from starting. It also introduces automatic

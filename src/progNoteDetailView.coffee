@@ -323,37 +323,40 @@ load = (win) ->
 								entry.get('author')
 							)
 						)
-						R.div({className: 'notes'},
-							if entry.get('notes').includes "***"
-								R.span({className: 'starred'},
-									renderLineBreaks entry.get('notes').replace(/\*\*\*/g, '')
-								)
-							else
-								renderLineBreaks entry.get('notes')
-						)
+						unless entry.get('notes') is ''
+							R.div({className: 'notes'},
+								if entry.get('notes').includes "***"
+									R.span({className: 'starred'},
+										renderLineBreaks entry.get('notes').replace(/\*\*\*/g, '')
+									)
+								else
+									renderLineBreaks entry.get('notes')
+							)
 
 						if entry.get('metrics')
-							R.div({className: 'metrics'},
-								entry.get('metrics').map (metric) =>
-									MetricWidget({
-										isEditable: false
-										key: metric.get('id')
-										name: metric.get('name')
-										definition: metric.get('definition')
-										value: metric.get('value')
-									})
-							)
+							unless entry.get('metrics').size is 0
+								R.div({className: 'metrics'},
+									entry.get('metrics').map (metric) =>
+										MetricWidget({
+											isEditable: false
+											key: metric.get('id')
+											name: metric.get('name')
+											definition: metric.get('definition')
+											value: metric.get('value')
+										})
+								)
 
 						if entry.get('progEvents')
-							R.div({className: 'progEvents'},
-								entry.get('progEvents').map (progEvent) =>
-									ProgEventWidget({
-										key: progEvent.get('id')
-										format: 'small'
-										progEvent
-										eventTypes
-									})
-							)
+							unless entry.get('progEvents').isEmpty()
+								R.div({className: 'progEvents'},
+									entry.get('progEvents').map (progEvent) =>
+										ProgEventWidget({
+											key: progEvent.get('id')
+											format: 'small'
+											progEvent
+											eventTypes
+										})
+								)
 					)
 				).toJS()...
 			)

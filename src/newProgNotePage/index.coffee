@@ -151,12 +151,19 @@ load = (win, {clientFileId}) ->
 								id: unit.get 'id'
 								name: unit.get 'name'
 								sections: clientFile.getIn(['plan', 'sections'])
-								.filter (section) => section.get('status') is 'default'
+								.filter (section) =>
+									# Filter sections based on status and programId, or isAdmin
+									section.get('status') is 'default' and (
+										global.ActiveSession.isAdmin() or
+										not section.get('programId') or
+										global.ActiveSession.programId is section.get('programId')
+									)
 								.map (section) =>
 
 									Imm.fromJS {
 										id: section.get 'id'
 										name: section.get 'name'
+										# section programId is not included in note
 										targets: section.get 'targetIds'
 										.filter (targetId) =>
 											target = planTargetsById.get targetId
@@ -180,7 +187,9 @@ load = (win, {clientFileId}) ->
 													}
 											}
 									}
-								.filter (section) => not section.get('targets').isEmpty()
+								.filter (section) =>
+									# Remove empty sections
+									not section.get('targets').isEmpty()
 							}
 			}
 

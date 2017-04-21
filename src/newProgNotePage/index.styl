@@ -261,6 +261,9 @@
 			.menuItemIcon
 				font-size 1.33em
 
+		.menuItemText, .wideMenuItemText
+			padding-left 8px
+
 		> button
 			z-index 3
 			background none
@@ -272,7 +275,7 @@
 			transition all .1s ease
 
 			> .fa, > div > .fa, .dropdown-toggle .fa
-				margin 8px
+				margin 0px
 				transition all .1s ease
 
 			&:hover
@@ -281,7 +284,7 @@
 
 			&:active
 				&:not([disabled])
-					transform translateY(2px)
+					//transform translateY(2px)
 
 			&[disabled]
 				opacity 0.3

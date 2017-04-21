@@ -120,14 +120,18 @@ load = (win) ->
 								placeholder: 'Search Metrics'
 								onChange: @_handleTableSearch
 							})
-							OpenDialogLink({
-								className: 'btn btn-primary'
-								dialog: DefineMetricDialog
-								onSuccess: @_createMetric
-							},
-								FaIcon('plus')
-								" New #{Term 'Metric Definition'}"
+
+							(if isAdmin
+								OpenDialogLink({
+									className: 'btn btn-primary'
+									dialog: DefineMetricDialog
+									onSuccess: @_createMetric
+								},
+									FaIcon('plus')
+									" New #{Term 'Metric Definition'}"
+								)
 							)
+
 							(if hasInactiveMetrics
 								R.div({className: 'toggleInactive'},
 									R.label({},
@@ -162,6 +166,8 @@ load = (win) ->
 											defaultSortOrder: 'asc'
 											searchPosition: 'right'
 											onRowClick: ({id}) =>
+												return unless isAdmin
+
 												@refs.dialogLayer.open ModifyMetricDialog, {
 													metricId: id
 													onSuccess: @_modifyMetric

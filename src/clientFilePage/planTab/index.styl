@@ -1,6 +1,7 @@
 .planTab
 	flex 1
 	display flex
+	overflow hidden
 
 	> .leftPane
 		flex 1
@@ -35,6 +36,10 @@
 		display flex
 
 		border-left 2px solid sidebar-borders
+		transition flex-grow 200ms // todo: evaluate performance
+
+		&.collapsed
+			flex 0
 
 		> .revisionHistoryContainer
 			flex 1
