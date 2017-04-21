@@ -1,4 +1,4 @@
-### 2.0 (tentative)
+### 2.0 (Apr 21, 2017)
 
 This release marks the stability of the core features of konote. Some of the changes in 2.0 are intended to make
 reviewing client information easier, such as the plan outline and history pane toggle. Programs are also more fully
