@@ -81,9 +81,9 @@ module.exports = function(grunt) {
 			},
 			uninstallerbinary: {
 				expand: true,
-				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/uninstall-win-ia32/',
+				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/uninstall-win-x64/',
 				src: 'uninstall.exe',
-				dest: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-ia32/'
+				dest: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-x64/'
 			},
 			nodemodules: {
 				expand: true,
@@ -210,11 +210,11 @@ module.exports = function(grunt) {
 		},
 		exec: {
 			zip: {
-				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-ia32',
+				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-x64',
 				cmd: 'zip -r --quiet ../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
 			},
 			setup :{
-				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-ia32',
+				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-x64',
 				cmd: '../../../../build/innosetup.sh ../../../../build/konote-innosetup.iss'
 			},
 			codesign: {
@@ -222,7 +222,7 @@ module.exports = function(grunt) {
 				cmd: '../../../../build/codesign-osx.sh'
 			},
 			codesignWin: {
-				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-ia32',
+				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-x64',
 				cmd: '../../../../build/codesign-win.sh <%= grunt.config("codesignPassword") %> KoNote.exe'
 			},
 			npm: {
@@ -242,15 +242,15 @@ module.exports = function(grunt) {
 			},
 			nwjsuninstaller: {
 				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p win32 -o ./nwjs-<%= grunt.task.current.args[0] %>/ ./uninstaller'
+				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p win64 -o ./nwjs-<%= grunt.task.current.args[0] %>/ ./uninstaller'
 			},
 			nwjswin: {
 				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p win64 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			},
 			nwjswinSDK: {
 				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v <%= pkg.devDependencies.nw %> -p win32 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cmd: 'nwb nwbuild -v <%= pkg.devDependencies.nw %> -p win64 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			},
 			nwjsosx: {
 				cwd: 'dist/temp/',
