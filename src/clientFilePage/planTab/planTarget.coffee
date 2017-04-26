@@ -20,7 +20,7 @@ load = (win) ->
 	ExpandingTextArea = require('../../expandingTextArea').load(win)
 	MetricWidget = require('../../metricWidget').load(win)
 
-	{FaIcon} = require('../../utils').load(win)
+	{FaIcon, scrollToElement} = require('../../utils').load(win)
 
 
 	PlanTarget = React.createClass
@@ -214,6 +214,10 @@ load = (win) ->
 		_focusMetricLookupField: ->
 			$(@refs.metricLookup).show()
 			$('.lookupField').focus()
+			# scroll down so metric results are never hidden below view
+			$parent = win.document.getElementById('planView')
+			$element = findDOMNode(@refs.metricLookup)
+			scrollToElement $parent, $element, 1000, 'easeInOutQuad', 200, (->)
 
 		_hideMetricInput: ->
 			$(@refs.metricLookup).hide()

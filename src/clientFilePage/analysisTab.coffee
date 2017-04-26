@@ -43,6 +43,7 @@ load = (win) ->
 				starredEventTypeIds: Imm.Set()
 				excludedTargetIds: Imm.Set()
 				timeSpan: null
+				showSelection: true
 			}
 
 		# # Leave this here, need for diff-checking renders/vs/state-props
@@ -259,8 +260,8 @@ load = (win) ->
 										})
 									)
 								)
-								R.div({className: 'granularContainer'}) # TODO: Make use of this space
 							)
+
 							R.div({className: 'chartContainer'},
 
 								# Fade out un-highlighted regions when exists
@@ -349,114 +350,134 @@ load = (win) ->
 							)
 						)
 
-						R.div({className: 'selectionPanel'},
+						R.div({
+							className: [
+								'selectionPanel'
+								'collapsed' unless @state.showSelection
+							].join ' '
+						},
 
-							R.div({className: 'dataType progEvents'},
-
-								(if allEvents.isEmpty()
-									R.h2({className: 'noEventPoints'},
-										"(No #{Term 'events'} recorded)"
-									)
-								else
-									R.h2({onClick: @_toggleAllEventTypes.bind null, allEventTypesSelected, eventTypesWithData, untypedEventsExist},
-										R.span({className: 'helper'}
-											"Select "
-											if allEventTypesSelected then "None" else "All"
+							R.div({className: 'dataType panelHeader'},
+								R.h2({
+									className: 'selectionToggle'
+									onClick: @_toggleSelectionPane
+								},
+									R.button({},
+										(if @state.showSelection
+											FaIcon('angle-right')
+										else
+											FaIcon('angle-left')
 										)
-										R.input({
-											type: 'checkbox'
-											checked: progEventsAreSelected #todo: maybe this should only be checked when all events are selected
-										})
-										Term 'Events'
 									)
 								)
+							)
 
-								(unless eventTypesWithData.isEmpty()
-									R.div({},
-										R.h3({}, Term 'Event Types')
-										R.div({className: 'dataOptions'},
-											(eventTypesWithData.map (eventType) =>
-												eventTypeId = eventType.get('id')
+							(unless allEvents.isEmpty()
+								R.div({
+									className: [
+										'dataType'
+										'progEvents'
+										'collapsed' unless @state.showSelection
+									].join ' '
+								},
+									R.h2({onClick: @_toggleAllEventTypes.bind null, allEventTypesSelected, eventTypesWithData, untypedEventsExist},
+										Term 'Events'
+										R.span({className: 'helper'},
+											R.input({
+												type: 'checkbox'
+												checked: allEventTypesSelected #todo: maybe this should only be checked when all events are selected
+											})
+											" Select All"
+										)
+									)
 
-												# TODO: Make this faster
-												progEventsWithType = allEvents.filter (progEvent) -> progEvent.get('typeId') is eventTypeId
-												visibleProgEvents = visibleProgEventsByTypeId.get(eventTypeId) or Imm.List()
+									(unless eventTypesWithData.isEmpty()
+										R.div({},
+											R.h3({}, Term 'Event Types')
+											R.div({className: 'dataOptions'},
+												(eventTypesWithData.map (eventType) =>
+													eventTypeId = eventType.get('id')
 
-												isSelected = @state.selectedEventTypeIds.contains eventTypeId
-												isPersistent = @state.starredEventTypeIds.contains eventTypeId
+													# TODO: Make this faster
+													progEventsWithType = allEvents.filter (progEvent) -> progEvent.get('typeId') is eventTypeId
+													visibleProgEvents = visibleProgEventsByTypeId.get(eventTypeId) or Imm.List()
 
-												(unless progEventsWithType.isEmpty()
-													R.div({
-														key: eventTypeId
-														className: [
-															'checkbox'
-															'isHighlighted' if isPersistent
-														].join ' '
-														onMouseEnter: @_highlightEventType.bind(null, eventTypeId) if isSelected
-														onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isSelected
-													},
-														R.label({},
-															ColorKeyCount({
-																isSelected
-																colorKeyHex: eventType.get('colorKeyHex')
-																count: visibleProgEvents.size
-															})
+													isSelected = @state.selectedEventTypeIds.contains eventTypeId
+													isPersistent = @state.starredEventTypeIds.contains eventTypeId
 
-															(if isSelected
-																FaIcon('star', {
-																	onClick: @_toggleStarredEventType.bind null, eventTypeId
+													(unless progEventsWithType.isEmpty()
+														R.div({
+															key: eventTypeId
+															className: [
+																'checkbox'
+																'isHighlighted' if isPersistent
+															].join ' '
+															onMouseEnter: @_highlightEventType.bind(null, eventTypeId) if isSelected
+															onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isSelected
+														},
+															R.label({},
+																ColorKeyCount({
+																	isSelected
+																	colorKeyHex: eventType.get('colorKeyHex')
+																	count: visibleProgEvents.size
 																})
-															)
 
-															R.input({
-																type: 'checkbox'
-																checked: @state.selectedEventTypeIds.contains eventTypeId
-																onChange: @_updateSelectedEventTypes.bind null, eventTypeId
-															})
-															eventType.get('name')
+																(if isSelected
+																	FaIcon('star', {
+																		onClick: @_toggleStarredEventType.bind null, eventTypeId
+																	})
+																)
+
+																R.input({
+																	type: 'checkbox'
+																	checked: @state.selectedEventTypeIds.contains eventTypeId
+																	onChange: @_updateSelectedEventTypes.bind null, eventTypeId
+																})
+																eventType.get('name')
+															)
 														)
 													)
 												)
 											)
 										)
 									)
-								)
 
-								(unless untypedEvents.isEmpty()
-									R.div({},
-										R.h3({},
-											if not eventTypesWithData.isEmpty() then "Untyped" else " "
-										)
-										R.div({className: 'dataOptions'},
-											R.div({
-												className: [
-													'checkbox'
-													'isHighlighted' if otherEventTypesIsPersistent
-												].join ' '
-												onMouseEnter: @_highlightEventType.bind(null, null) if otherEventTypesIsSelected
-												onMouseLeave: @_unhighlightEventType.bind(null, null) if otherEventTypesIsSelected
-											},
-												R.label({},
-													ColorKeyCount({
-														isSelected: otherEventTypesIsSelected
-														colorKeyHex: '#cadbe5'
-														count: visibleUntypedProgEvents.size
-													})
-
-													(if otherEventTypesIsSelected
-														FaIcon('star', {
-															onClick: @_toggleStarredEventType.bind null, null
+									(unless untypedEvents.isEmpty()
+										R.div({},
+											R.h3({},
+												if not eventTypesWithData.isEmpty() then "Untyped" else " "
+											)
+											R.div({className: 'dataOptions'},
+												R.div({
+													className: [
+														'checkbox'
+														'isHighlighted' if otherEventTypesIsPersistent
+													].join ' '
+													onMouseEnter: @_highlightEventType.bind(null, null) if otherEventTypesIsSelected
+													onMouseLeave: @_unhighlightEventType.bind(null, null) if otherEventTypesIsSelected
+												},
+													R.label({},
+														ColorKeyCount({
+															isSelected: otherEventTypesIsSelected
+															colorKeyHex: '#cadbe5'
+															count: visibleUntypedProgEvents.size
 														})
-													)
 
-													R.input({
-														type: 'checkbox'
-														checked: otherEventTypesIsSelected
-														onChange: @_updateSelectedEventTypes.bind null, null
-													})
-													untypedEvents.size
-													' '
-													Term (if untypedEvents.size is 1 then 'Event' else 'Events')
+														(if otherEventTypesIsSelected
+															FaIcon('star', {
+																onClick: @_toggleStarredEventType.bind null, null
+															})
+														)
+
+														R.input({
+															type: 'checkbox'
+															checked: otherEventTypesIsSelected
+															onChange: @_updateSelectedEventTypes.bind null, null
+														})
+														untypedEvents.size
+														' '
+														Term (if untypedEvents.size is 1 then 'Event' else 'Events')
+													)
 												)
 											)
 										)
@@ -464,7 +485,13 @@ load = (win) ->
 								)
 							)
 
-							R.div({className: 'dataType metrics'},
+							R.div({
+								className: [
+									'dataType'
+									'metrics'
+									'collapsed' unless @state.showSelection
+								].join ' '
+							},
 								metricsAreSelected = not @state.selectedMetricIds.isEmpty()
 								allMetricsSelected = Imm.is @state.selectedMetricIds, metricIdsWithData
 
@@ -474,15 +501,14 @@ load = (win) ->
 									)
 								else
 									R.h2({onClick: @_toggleAllMetrics.bind null, allMetricsSelected, metricIdsWithData},
-										R.span({className: 'helper'}
-											"Select "
-											if allMetricsSelected then "None" else "All"
-										)
-										R.input({
-											type: 'checkbox'
-											checked: metricsAreSelected
-										})
 										Term 'Metrics'
+										R.span({className: 'helper'}
+											R.input({
+												type: 'checkbox'
+												checked: allMetricsSelected
+											})
+											" Select All"
+										)
 									)
 								)
 
@@ -539,9 +565,9 @@ load = (win) ->
 									)
 								)
 								(unless unassignedMetricsList.isEmpty()
-									R.div({},
+									R.div({className: 'inactive'},
 										R.h3({}, "Inactive")
-										R.div({className: 'dataOptions'},
+										R.section({},
 											(unassignedMetricsList.map (metric) =>
 												metricId = metric.get('id')
 												isSelected = @state.selectedMetricIds.contains metricId
@@ -576,6 +602,14 @@ load = (win) ->
 					)
 				)
 			)
+
+		_toggleSelectionPane: ->
+			showSelection = not @state.showSelection
+			@setState {showSelection}, =>
+				setTimeout(=>
+					if @refs.mainChart
+						@refs.mainChart._refreshChartHeight(true)
+				, 250)
 
 		_toggleTargetExclusionById: (targetId) ->
 			@setState ({excludedTargetIds}) =>

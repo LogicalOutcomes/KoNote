@@ -36,7 +36,7 @@ load = (win) ->
 			lookupField = $(@refs.lookupField)
 
 			lookupField.typeahead {
-				highlight: true
+				highlight: false
 				hint: false
 				minLength: 1
 			}, {
@@ -147,13 +147,15 @@ load = (win) ->
 	Suggestion = React.createFactory React.createClass
 		displayName: 'Suggestion'
 		render: ->
+			metricName = truncateText(100, @props.metric.name)
+			maxLength = Math.max(0, (160 - metricName.length))
 			return R.div({},
 				R.span({className: 'name'},
-					@props.metric.name
+					metricName
 				)
 				' — ' # &mdash;
 				R.span({className: 'definition'},
-					renderLineBreaks(truncateText(75, @props.metric.definition))
+					truncateText(maxLength, @props.metric.definition)
 				)
 			)
 
