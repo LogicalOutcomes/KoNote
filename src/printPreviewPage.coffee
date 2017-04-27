@@ -69,12 +69,26 @@ load = (win, {dataSet}) ->
 				footerString: Config.printFooter
 
 		_exportPage: ->
-			pageHTML = win.document.documentElement.innerHTML
-			Fs.writeFile 'test.doc', pageHTML, (err) ->
-				if err
-					return console.log(err)
-				return
-			Window.close()
+			clientName = @props.printDataSet.first().get('clientFile').get('clientName')
+			fileName = "KN Plan " + clientName.get('first') + " " + clientName.get('last')
+			$(@refs.nwsaveas)
+			.off()
+			.val('')
+			.attr('nwsaveas', fileName)
+			.attr('accept', ".doc")
+			.on('change', (event) =>
+				pageHTML = '<body>' + win.document.getElementsByClassName('plan unit')[0].innerHTML + '</body>'
+				#pageHTML = win.document.documentElement.innerHTML
+				Fs.writeFile event.target.value, pageHTML, (err) ->
+					if err
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+					return
+				Window.close()
+			)
+			.click()
 
 		render: ->
 			R.div({className: 'printPreview'},
@@ -112,7 +126,7 @@ load = (win, {dataSet}) ->
 									R.button({
 										ref: 'print'
 										className: 'default btn btn-primary'
-										onClick: @_togglePreviewType
+										onClick: @_togglePreviewType.bind null, 'default'
 										disabled: @state.previewType is 'default'
 									},
 										"Default"
@@ -120,20 +134,34 @@ load = (win, {dataSet}) ->
 									R.button({
 										ref: 'print'
 										className: 'cheatSheet btn btn-primary'
-										onClick: @_togglePreviewType
+										onClick: @_togglePreviewType.bind null, 'cheatSheet'
 										disabled: @state.previewType is 'cheatSheet'
 									},
 										"Cheat Sheet"
 									)
+									R.button({
+										ref: 'print'
+										className: 'default btn btn-primary'
+										onClick: @_togglePreviewType.bind null, 'review'
+										disabled: @state.previewType is 'review'
+									},
+										"Service Review"
+									)
+									R.input({
+										ref: 'nwsaveas'
+										className: 'hidden'
+										type: 'file'
+									})
 								)
 							)
 						)
 
-						PrintHeader({
-							data
-							format: printObj.get('format')
-							clientFile: clientFile
-						})
+						unless @state.previewType is 'review'
+							PrintHeader({
+								data
+								format: printObj.get('format')
+								clientFile: clientFile
+							})
 						switch printObj.get('format')
 							when 'progNote'
 								switch data.get('type')
@@ -166,6 +194,12 @@ load = (win, {dataSet}) ->
 										clientFile
 										progEvents
 									})
+								else if @state.previewType is 'review'
+									ReviewPlanView({
+										title: "Plan (Service Review)"
+										data
+										clientFile
+									})
 
 
 							else
@@ -174,11 +208,8 @@ load = (win, {dataSet}) ->
 				).toJS()...
 			)
 
-		_togglePreviewType: ->
-			unless @state.previewType is 'default'
-				@setState {previewType: 'default'}
-				return
-			@setState {previewType: 'cheatSheet'}
+		_togglePreviewType: (t) ->
+			@setState {previewType: t}
 
 
 	PrintHeader = React.createFactory React.createClass
@@ -195,7 +226,6 @@ load = (win, {dataSet}) ->
 			return R.header({className: 'header'},
 				R.div({className: 'basicInfo'},
 					R.h1({className: 'title'},
-						FaIcon('pencil-square-o')
 						switch @props.format
 							when 'progNote' then "Progress Note"
 							when 'plan' then "Care Plan"
@@ -393,6 +423,60 @@ load = (win, {dataSet}) ->
 
 	CheatSheetPlanView = React.createFactory React.createClass
 		displayName: 'SinglePlanView'
+		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes, or make this a view
+
+		render: ->
+			R.div({className: 'plan unit'},
+				R.div({className: 'sections'},
+					(@props.data.get('sections')
+					.filter (section) =>
+						section.get('status') is 'default'
+
+					.map (section) =>
+						R.section({className: 'section planTargets', key: section.get('id')},
+							R.h2({className: 'name'}, section.get('name'))
+							(if section.get('targetIds').size is 0
+								R.div({className: 'noTargets'},
+									"This #{Term 'section'} is empty."
+								)
+							)
+							R.div({className: 'targets'},
+								(section.get('targetIds')
+								.filter (targetId) =>
+									targets = @props.data.get('targets')
+									thisTarget = targets.get(targetId)
+									return thisTarget.get('status') is 'default'
+								.map (targetId) =>
+									targets = @props.data.get('targets')
+									thisTarget = targets.get(targetId)
+
+									R.div({className: 'target'},
+										R.h3({className: 'name'}, thisTarget.get('name'))
+										R.div({className: 'description'},
+											renderLineBreaks thisTarget.get('description')
+										)
+										R.div({className: 'cheatMetrics'},
+											(thisTarget.get('metricIds').map (metricId) =>
+												metric = @props.data.get('metrics').get(metricId)
+												ExpandedMetricWidget({
+													name: metric.get('name')
+													definition: metric.get('definition')
+													value: metric.get('value')
+													key: metricId
+												})
+											).toJS()...
+										)
+									)
+								).toJS()...
+							)
+						)
+					).toJS()...
+				)
+			)
+
+	ReviewPlanView = React.createFactory React.createClass
+		displayName: 'ReviewPlanView'
 		mixins: [React.addons.PureRenderMixin]
 		# TODO: propTypes, or make this a view
 
