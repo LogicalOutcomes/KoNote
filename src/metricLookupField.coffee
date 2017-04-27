@@ -139,7 +139,7 @@ load = (win) ->
 					# definition.  It might be useful to change this to a
 					# word-by-word fuzzy comparison.
 					return name.toLowerCase().includes(query) or definition.toLowerCase().includes(query)
-				.take(10) # limit to first 10 results
+				.take(20) # limit to first 20 results
 				.toJS()
 			)
 
