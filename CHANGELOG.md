@@ -1,3 +1,15 @@
+### 2.0.1 (tentative)
+
+#### Improvements
+
+- Plan can be exported to Word document ([#1055](https://github.com/konode001/konote/issues/1055))
+- Analysis data selection pane can be toggled open/closed ([#1054](https://github.com/konode001/konote/issues/1054))
+
+#### Fixes
+- Fix metric lookup results from sometimes being hidden below the viewport ([#1053](https://github.com/konode001/konote/issues/1053))
+- Some minor UI improvements
+
+
 ### 2.0 (Apr 21, 2017)
 
 This release marks the stability of the core features of konote. Some of the changes in 2.0 are intended to make
