@@ -7,6 +7,7 @@
 
 Imm = require 'immutable'
 Moment = require 'moment'
+Fs = require 'fs'
 
 Config = require './config'
 Term = require './term'
@@ -60,12 +61,20 @@ load = (win, {dataSet}) ->
 				previewType: 'default'
 			}
 
-		_printPage :->
+		_printPage: ->
 			Window.print
 				autoprint: false
 				headerFooterEnabled: Config.printHeaderFooterEnabled
 				headerString: Config.printHeader
 				footerString: Config.printFooter
+
+		_exportPage: ->
+			pageHTML = win.document.documentElement.innerHTML
+			Fs.writeFile 'test.doc', pageHTML, (err) ->
+				if err
+					return console.log(err)
+				return
+			Window.close()
 
 		render: ->
 			R.div({className: 'printPreview'},
@@ -86,6 +95,16 @@ load = (win, {dataSet}) ->
 								FaIcon('print')
 								" "
 								"Print"
+							)
+
+							R.button({
+								ref: 'export'
+								className: 'print btn btn-primary'
+								onClick: @_exportPage
+							},
+								FaIcon('download')
+								" "
+								"Export"
 							)
 
 							(if printObj.get('format') is 'plan'
