@@ -77,6 +77,7 @@ load = (win, {dataSet}) ->
 			.attr('nwsaveas', fileName)
 			.attr('accept', ".doc")
 			.on('change', (event) =>
+				#todo: add header back to other views (default or cheat sheet)
 				pageHTML =
 					'<head><style>' +
 					win.document.getElementById('main-css').innerHTML.split('html,').pop() +
@@ -154,7 +155,7 @@ load = (win, {dataSet}) ->
 										onClick: @_togglePreviewType.bind null, 'review'
 										disabled: @state.previewType is 'review'
 									},
-										"Service Review"
+										"Minimal"
 									)
 									R.input({
 										ref: 'nwsaveas'
