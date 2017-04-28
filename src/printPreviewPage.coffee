@@ -77,9 +77,18 @@ load = (win, {dataSet}) ->
 			.attr('nwsaveas', fileName)
 			.attr('accept', ".doc")
 			.on('change', (event) =>
-				pageHTML = '<body>' + win.document.getElementsByClassName('plan unit')[0].innerHTML + '</body>'
+				pageHTML =
+					'<head><style>' +
+					win.document.getElementById('main-css').innerHTML.split('html,').pop() +
+					'</style></head>' + '<body>' +
+					win.document.getElementsByClassName('plan unit')[0].innerHTML +
+					'</body>'
+				# replace metric icon with unicode symbol (alternative: &#x1f4ca;)
+				iconRegex = new RegExp('<i class="fa fa-line-chart"></i>', 'g')
+				doc = pageHTML.replace(iconRegex, '&#x1F4C8;')
+
 				#pageHTML = win.document.documentElement.innerHTML
-				Fs.writeFile event.target.value, pageHTML, (err) ->
+				Fs.writeFile event.target.value, doc, (err) ->
 					if err
 						Bootbox.alert """
 							An error occurred.  Please check your network connection and try again.
