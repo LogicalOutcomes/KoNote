@@ -1,9 +1,13 @@
-### 2.0.1 (tentative)
+### 2.1.0 (April 29, 2017)
+
+This release improves the UX when adding metrics to a plan and when selecting metrics for analysis. The analysis pane
+also gets the same side panel toggle that the plan and progress note views have. Finally, an 'export to Word' option
+has been added to the plan's print preview page.
 
 #### Improvements
 
 - Plan can be exported to Word document ([#1055](https://github.com/konode001/konote/issues/1055))
-- Analysis data selection pane can be toggled open/closed ([#1054](https://github.com/konode001/konote/issues/1054))
+- Analysis data selection pane can be toggled open or closed ([#1054](https://github.com/konode001/konote/issues/1054))
 
 #### Fixes
 - Fix metric lookup results from sometimes being hidden below the viewport ([#1053](https://github.com/konode001/konote/issues/1053))
