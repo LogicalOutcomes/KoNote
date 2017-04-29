@@ -1,9 +1,9 @@
 .metricLookupField
-	
+
 	> .twitter-typeahead
 		display block !important
 		text-align center
-		
+
 		> input
 			opacity .75
 			box-shadow none
@@ -12,14 +12,14 @@
 			font-size 16px
 			font-weight 400
 			padding 18px 5px
-			border 1px 
+			border 1px
 			background #eaf1f5
 			width 50%
 			min-width 200px
 			text-align center
 			border 1px solid #cadbe5
 			transition all .5s ease
-			
+
 			&:focus
 				background none
 				width 100%
@@ -31,8 +31,11 @@
 				border-bottom 1px solid #7ecdfc
 
 	.tt-dropdown-menu
-		overflow hidden
+		// todo: reverse position when results open near bottom of window
 		width 100%
+
+		max-height 250px
+		overflow-y auto // scrollable
 
 		margin 12px 0 0
 
@@ -50,22 +53,26 @@
 			text-align center
 
 		.tt-suggestion
-			padding 8px 12px
-
+			padding 6px 10px
 			cursor default
 
 			&.tt-cursor
 				color white
-
 				background hsl(202, 80%, 55%)
 
 				.definition
 					color white
 
+			.name
+				font-weight 500
+
 			.definition
 				color #888
 
 		.createMetricContainer
+			position sticky
+			bottom 0px
+			left 0px
+			background white
 			padding 10px
-
 			text-align center

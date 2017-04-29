@@ -520,9 +520,10 @@ load = (win) ->
 						}
 						cb()
 
+					archive.pipe(output)
 					archive.directory(Config.backend.dataDirectory, '')
 					archive.finalize()
-					archive.pipe(output)
+
 
 					progressCheck = setInterval =>
 						@setState {

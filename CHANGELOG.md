@@ -1,3 +1,19 @@
+### 2.1.0 (April 29, 2017)
+
+This release improves the UX when adding metrics to a plan and when selecting metrics for analysis. The analysis pane
+also gets the same side panel toggle that the plan and progress note views have. Finally, an 'export to Word' option
+has been added to the plan's print preview page.
+
+#### Improvements
+
+- Plan can be exported to Word document ([#1055](https://github.com/konode001/konote/issues/1055))
+- Analysis data selection pane can be toggled open or closed ([#1054](https://github.com/konode001/konote/issues/1054))
+
+#### Fixes
+- Fix metric lookup results from sometimes being hidden below the viewport ([#1053](https://github.com/konode001/konote/issues/1053))
+- Some minor UI improvements
+
+
 ### 2.0 (Apr 21, 2017)
 
 This release marks the stability of the core features of konote. Some of the changes in 2.0 are intended to make
@@ -21,7 +37,7 @@ viewing client files outside their program ([#241](https://github.com/konode001/
 - Auto migration fix ([#1050](https://github.com/konode001/konote/issues/1050))
 - Events toggle in analysis was not always working ([#1044](https://github.com/konode001/konote/issues/1044))
 - Events overlap metrics in analysis ([#1045](https://github.com/konode001/konote/issues/1045))
-- Progote quick-navigation positioning fix ([#1046](https://github.com/konode001/konote/issues/1046))
+- Prognote quick-navigation positioning fix ([#1046](https://github.com/konode001/konote/issues/1046))
 - Fix crash which could occur when opening a cancelled quick note ([#1048](https://github.com/konode001/konote/issues/1048))
 - Fix regression that allowed long metric names to overly extend the middle pane ([#866](https://github.com/konode001/konote/issues/866)) 
 - Fix regression that allowed same client file to be opened in multiple windows ([#722](https://github.com/konode001/konote/issues/722))

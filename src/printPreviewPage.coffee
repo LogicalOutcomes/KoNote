@@ -7,6 +7,7 @@
 
 Imm = require 'immutable'
 Moment = require 'moment'
+Fs = require 'fs'
 
 Config = require './config'
 Term = require './term'
@@ -60,12 +61,42 @@ load = (win, {dataSet}) ->
 				previewType: 'default'
 			}
 
-		_printPage :->
+		_printPage: ->
 			Window.print
 				autoprint: false
 				headerFooterEnabled: Config.printHeaderFooterEnabled
 				headerString: Config.printHeader
 				footerString: Config.printFooter
+
+		_exportPage: ->
+			clientName = @props.printDataSet.first().get('clientFile').get('clientName')
+			fileName = "KN Plan " + clientName.get('first') + " " + clientName.get('last')
+			$(@refs.nwsaveas)
+			.off()
+			.val('')
+			.attr('nwsaveas', fileName)
+			.attr('accept', ".doc")
+			.on('change', (event) =>
+				pageHTML =
+					'<head><style>' +
+					win.document.getElementById('main-css').innerHTML.split('html,').pop() +
+					'</style></head>' + '<body>' +
+					win.document.getElementsByClassName('plan unit')[0].innerHTML +
+					'</body>'
+				# replace metric icon with unicode symbol
+				iconRegex = new RegExp('<i class="fa fa-line-chart"></i>', 'g')
+				doc = pageHTML.replace(iconRegex, '&#x1F4C8;')
+
+				Fs.writeFile event.target.value, doc, (err) ->
+					if err
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+					return
+				Window.close()
+			)
+			.click()
 
 		render: ->
 			R.div({className: 'printPreview'},
@@ -88,12 +119,22 @@ load = (win, {dataSet}) ->
 								"Print"
 							)
 
+							R.button({
+								ref: 'export'
+								className: 'print btn btn-primary'
+								onClick: @_exportPage
+							},
+								FaIcon('download')
+								" "
+								"Export"
+							)
+
 							(if printObj.get('format') is 'plan'
 								R.div({className: 'toggle btn-group btn-group-sm'},
 									R.button({
 										ref: 'print'
 										className: 'default btn btn-primary'
-										onClick: @_togglePreviewType
+										onClick: @_togglePreviewType.bind null, 'default'
 										disabled: @state.previewType is 'default'
 									},
 										"Default"
@@ -101,11 +142,16 @@ load = (win, {dataSet}) ->
 									R.button({
 										ref: 'print'
 										className: 'cheatSheet btn btn-primary'
-										onClick: @_togglePreviewType
+										onClick: @_togglePreviewType.bind null, 'cheatSheet'
 										disabled: @state.previewType is 'cheatSheet'
 									},
 										"Cheat Sheet"
 									)
+									R.input({
+										ref: 'nwsaveas'
+										className: 'hidden'
+										type: 'file'
+									})
 								)
 							)
 						)
@@ -148,18 +194,14 @@ load = (win, {dataSet}) ->
 										progEvents
 									})
 
-
 							else
 								throw new Error "Unknown print-data type: #{setType}"
 					)
 				).toJS()...
 			)
 
-		_togglePreviewType: ->
-			unless @state.previewType is 'default'
-				@setState {previewType: 'default'}
-				return
-			@setState {previewType: 'cheatSheet'}
+		_togglePreviewType: (t) ->
+			@setState {previewType: t}
 
 
 	PrintHeader = React.createFactory React.createClass
@@ -176,7 +218,6 @@ load = (win, {dataSet}) ->
 			return R.header({className: 'header'},
 				R.div({className: 'basicInfo'},
 					R.h1({className: 'title'},
-						FaIcon('pencil-square-o')
 						switch @props.format
 							when 'progNote' then "Progress Note"
 							when 'plan' then "Care Plan"
