@@ -77,18 +77,16 @@ load = (win, {dataSet}) ->
 			.attr('nwsaveas', fileName)
 			.attr('accept', ".doc")
 			.on('change', (event) =>
-				#todo: add header back to other views (default or cheat sheet)
 				pageHTML =
 					'<head><style>' +
 					win.document.getElementById('main-css').innerHTML.split('html,').pop() +
 					'</style></head>' + '<body>' +
 					win.document.getElementsByClassName('plan unit')[0].innerHTML +
 					'</body>'
-				# replace metric icon with unicode symbol (alternative: &#x1f4ca;)
+				# replace metric icon with unicode symbol
 				iconRegex = new RegExp('<i class="fa fa-line-chart"></i>', 'g')
 				doc = pageHTML.replace(iconRegex, '&#x1F4C8;')
 
-				#pageHTML = win.document.documentElement.innerHTML
 				Fs.writeFile event.target.value, doc, (err) ->
 					if err
 						Bootbox.alert """
@@ -149,14 +147,6 @@ load = (win, {dataSet}) ->
 									},
 										"Cheat Sheet"
 									)
-									R.button({
-										ref: 'print'
-										className: 'default btn btn-primary'
-										onClick: @_togglePreviewType.bind null, 'review'
-										disabled: @state.previewType is 'review'
-									},
-										"Minimal"
-									)
 									R.input({
 										ref: 'nwsaveas'
 										className: 'hidden'
@@ -166,12 +156,11 @@ load = (win, {dataSet}) ->
 							)
 						)
 
-						unless @state.previewType is 'review'
-							PrintHeader({
-								data
-								format: printObj.get('format')
-								clientFile: clientFile
-							})
+						PrintHeader({
+							data
+							format: printObj.get('format')
+							clientFile: clientFile
+						})
 						switch printObj.get('format')
 							when 'progNote'
 								switch data.get('type')
@@ -204,13 +193,6 @@ load = (win, {dataSet}) ->
 										clientFile
 										progEvents
 									})
-								else if @state.previewType is 'review'
-									ReviewPlanView({
-										title: "Plan (Service Review)"
-										data
-										clientFile
-									})
-
 
 							else
 								throw new Error "Unknown print-data type: #{setType}"
@@ -433,60 +415,6 @@ load = (win, {dataSet}) ->
 
 	CheatSheetPlanView = React.createFactory React.createClass
 		displayName: 'SinglePlanView'
-		mixins: [React.addons.PureRenderMixin]
-		# TODO: propTypes, or make this a view
-
-		render: ->
-			R.div({className: 'plan unit'},
-				R.div({className: 'sections'},
-					(@props.data.get('sections')
-					.filter (section) =>
-						section.get('status') is 'default'
-
-					.map (section) =>
-						R.section({className: 'section planTargets', key: section.get('id')},
-							R.h2({className: 'name'}, section.get('name'))
-							(if section.get('targetIds').size is 0
-								R.div({className: 'noTargets'},
-									"This #{Term 'section'} is empty."
-								)
-							)
-							R.div({className: 'targets'},
-								(section.get('targetIds')
-								.filter (targetId) =>
-									targets = @props.data.get('targets')
-									thisTarget = targets.get(targetId)
-									return thisTarget.get('status') is 'default'
-								.map (targetId) =>
-									targets = @props.data.get('targets')
-									thisTarget = targets.get(targetId)
-
-									R.div({className: 'target'},
-										R.h3({className: 'name'}, thisTarget.get('name'))
-										R.div({className: 'description'},
-											renderLineBreaks thisTarget.get('description')
-										)
-										R.div({className: 'cheatMetrics'},
-											(thisTarget.get('metricIds').map (metricId) =>
-												metric = @props.data.get('metrics').get(metricId)
-												ExpandedMetricWidget({
-													name: metric.get('name')
-													definition: metric.get('definition')
-													value: metric.get('value')
-													key: metricId
-												})
-											).toJS()...
-										)
-									)
-								).toJS()...
-							)
-						)
-					).toJS()...
-				)
-			)
-
-	ReviewPlanView = React.createFactory React.createClass
-		displayName: 'ReviewPlanView'
 		mixins: [React.addons.PureRenderMixin]
 		# TODO: propTypes, or make this a view
 
