@@ -15,6 +15,7 @@ Term = require './term'
 
 load = (win, {dataSet}) ->
 	$ = win.jQuery
+	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
 	Window = nw.Window.get(win)
@@ -93,8 +94,9 @@ load = (win, {dataSet}) ->
 							An error occurred.  Please check your network connection and try again.
 						"""
 						return
+					else
+						Window.close()
 					return
-				Window.close()
 			)
 			.click()
 
