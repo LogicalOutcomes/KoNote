@@ -1,3 +1,12 @@
+### 2.1.1 (April 29, 2017)
+
+This maintenance release resolves a potential crash when exporting a plan to Word, and also improves the formatting of
+the exported document.
+
+#### Fixes
+- Improve plan export to Word ([#1056](https://github.com/konode001/konote/issues/1056))
+
+
 ### 2.1.0 (April 29, 2017)
 
 This release improves the UX when adding metrics to a plan and when selecting metrics for analysis. The analysis pane
