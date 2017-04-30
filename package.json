@@ -58,6 +58,7 @@
     "mkdirp": "^0.5.1",
     "moment": "2.17.1",
     "nlp_compromise": "6.5.0",
+    "officegen": "^0.4.5",
     "pluralize": "^1.1.2",
     "request": "^2.78.0",
     "rimraf": "^2.6.1",

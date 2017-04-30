@@ -8,6 +8,7 @@
 Imm = require 'immutable'
 Moment = require 'moment'
 Fs = require 'fs'
+Officegen = require 'officegen'
 
 Config = require './config'
 Term = require './term'
@@ -70,33 +71,91 @@ load = (win, {dataSet}) ->
 				footerString: Config.printFooter
 
 		_exportPage: ->
-			clientName = @props.printDataSet.first().get('clientFile').get('clientName')
-			fileName = "KN Plan " + clientName.get('first') + " " + clientName.get('last')
+			data = @props.printDataSet.first().get('data')
+			clientFile = @props.printDataSet.first().get('clientFile')
+			clientFirstName = clientFile.get('clientName').get('first')
+			clientLastName = clientFile.get('clientName').get('last')
+			fileName = "KN Plan " + clientFirstName + " " + clientLastName
+
 			$(@refs.nwsaveas)
 			.off()
 			.val('')
 			.attr('nwsaveas', fileName)
 			.attr('accept', ".doc")
 			.on('change', (event) =>
-				pageHTML =
-					'<head><style>' +
-					win.document.getElementById('main-css').innerHTML.split('html,').pop() +
-					'</style></head>' + '<body>' +
-					win.document.getElementsByClassName('plan unit')[0].innerHTML +
-					'</body>'
-				# replace metric icon with unicode symbol
-				iconRegex = new RegExp('<i class="fa fa-line-chart"></i>', 'g')
-				doc = pageHTML.replace(iconRegex, '&#x1F4C8;')
 
-				Fs.writeFile event.target.value, doc, (err) ->
-					if err
+				tableData = [
+					[
+						{val: 'Goals for Youth', opts: {b: true, shd: {fill: "99ddff"}}},
+						{val: 'Indicators', opts: {b: true, shd: {fill: "99ddff"}}},
+						{val: 'Intervention Method',opts: {b: true, shd: {fill: "99ddff"}}}
+					]
+				]
+
+				data.get('sections')
+				.filter (section) =>
+					section.get('status') is 'default'
+				.map (section) =>
+					tableData.push [
+						{val: section.get('name'), opts: {b: true, shd: {fill:'ffffff'}}},
+						{val: '', opts: {shd: {fill:'ffffff'}}},
+						{val: '', opts: {shd: {fill:'ffffff'}}}
+					]
+					section.get('targetIds')
+					.filter (targetId) =>
+						targets = data.get('targets')
+						thisTarget = targets.get(targetId)
+						return thisTarget.get('status') is 'default'
+					.map (targetId) =>
+						targets = data.get('targets')
+						thisTarget = targets.get(targetId)
+						targetName = thisTarget.get('name')
+						targetDescription = thisTarget.get('description')
+						metrics = ''
+						thisTarget.get('metricIds').map (metricId) =>
+							metric = data.get('metrics').get(metricId)
+							metrics += metric.get('name') + metric.get('definition')
+						tableData.push [
+							{val: targetName, opts: {shd: {fill: 'ffffff'}}},
+							{val: metrics, opts: {shd: {fill: 'ffffff'}}},
+							{val: targetDescription, opts: {shd: {fill: 'ffffff'}}}
+						]
+
+				tableStyle = {
+					tableColWidth: 4261,
+					tableSize: 24,
+					color: '000000'
+					tableAlign: "left",
+					tableFontFamily: "Segoe UI",
+					borders: true
+				}
+
+				docx = Officegen {
+					'type': 'docx'
+					'orientation': 'landscape'
+				}
+
+				docx.createTable(tableData, tableStyle)
+
+				header = docx.getHeader().createP()
+				header.addText ("PLAN FOR " + clientFirstName + " " + clientLastName).toUpperCase() + " - " + Moment().format("MMM DD YYYY")
+
+				out = Fs.createWriteStream event.target.value
+				out.on 'error', (err) ->
+					Bootbox.alert """
+						An error occurred.  Please check your network connection and try again.
+					"""
+					return
+				out.on 'close', () ->
+					Window.close()
+
+				docx.generate out,
+					'error': (err) ->
+
 						Bootbox.alert """
 							An error occurred.  Please check your network connection and try again.
 						"""
 						return
-					else
-						Window.close()
-					return
 			)
 			.click()
 
