@@ -71,6 +71,7 @@ load = (win, {dataSet}) ->
 				footerString: Config.printFooter
 
 		_exportPage: ->
+			# todo: enable/disable via config (griffin-oriented feature)
 			data = @props.printDataSet.first().get('data')
 			clientFile = @props.printDataSet.first().get('clientFile')
 			clientFirstName = clientFile.get('clientName').get('first')
@@ -88,7 +89,9 @@ load = (win, {dataSet}) ->
 					[
 						{val: 'Goals for Youth', opts: {b: true, shd: {fill: "99ddff"}}},
 						{val: 'Indicators', opts: {b: true, shd: {fill: "99ddff"}}},
-						{val: 'Intervention Method',opts: {b: true, shd: {fill: "99ddff"}}}
+						{val: 'Intervention Method',opts: {b: true, shd: {fill: "99ddff"}}},
+						{val: 'Person Responsible',opts: {b: true, shd: {fill: "99ddff"}}},
+						{val: 'Expected Date of Completion',opts: {b: true, shd: {fill: "99ddff"}}}
 					]
 				]
 
@@ -98,6 +101,8 @@ load = (win, {dataSet}) ->
 				.map (section) =>
 					tableData.push [
 						{val: section.get('name'), opts: {b: true, shd: {fill:'ffffff'}}},
+						{val: '', opts: {shd: {fill:'ffffff'}}},
+						{val: '', opts: {shd: {fill:'ffffff'}}},
 						{val: '', opts: {shd: {fill:'ffffff'}}},
 						{val: '', opts: {shd: {fill:'ffffff'}}}
 					]
@@ -118,7 +123,9 @@ load = (win, {dataSet}) ->
 						tableData.push [
 							{val: targetName, opts: {shd: {fill: 'ffffff'}}},
 							{val: metrics, opts: {shd: {fill: 'ffffff'}}},
-							{val: targetDescription, opts: {shd: {fill: 'ffffff'}}}
+							{val: targetDescription, opts: {shd: {fill: 'ffffff'}}},
+							{val: '', opts: {shd: {fill:'ffffff'}}},
+							{val: '', opts: {shd: {fill:'ffffff'}}},
 						]
 
 				tableStyle = {

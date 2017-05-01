@@ -1,9 +1,17 @@
+### 2.1.2 (April 30, 2017)
+
+#### Fixes
+
+- Adds additional columnns to plan exported as Word document, per Griffin's requirements.
+
+
 ### 2.1.1 (April 29, 2017)
 
 This maintenance release resolves a potential crash when exporting a plan to Word, and also improves the formatting of
 the exported document.
 
 #### Fixes
+
 - Improve plan export to Word ([#1056](https://github.com/konode001/konote/issues/1056))
 
 
@@ -19,6 +27,7 @@ has been added to the plan's print preview page.
 - Analysis data selection pane can be toggled open or closed ([#1054](https://github.com/konode001/konote/issues/1054))
 
 #### Fixes
+
 - Fix metric lookup results from sometimes being hidden below the viewport ([#1053](https://github.com/konode001/konote/issues/1053))
 - Some minor UI improvements
 
