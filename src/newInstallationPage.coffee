@@ -168,145 +168,134 @@ load = (win) ->
 				id: 'newInstallationPage'
 				className: 'animated fadeIn'
 			},
-				R.section({},
-					R.div({
-						id: 'brandContainer'
-						className: 'animated fadeInDown'
-					},
-						R.div({},
-							R.img({
-								id: 'logoImage'
-								src: 'customer-logo-lg.png'
-							})
-							R.div({id: 'version'}, "v#{nw.App.manifest.version}")
-						)
-					)
-					R.div({
-						id: 'contentContainer'
-						# className: 'animated fadeInUp'
-					},
-						(switch @state.openTab
-							when 'index'
-								R.div({ref: 'index'},
-									# hidden input for opening backup zip
-									R.input({
-										ref: 'nwbrowse'
-										className: 'hidden'
-										type: 'file'
-									})
-									R.h2({}, "Thank you for trying the #{Config.productName} beta!")
-									R.p({}, "To get started, let's set up your user account...")
-									R.br({})
-									R.div({className: 'btn-toolbar'},
-										R.button({
-											className: 'btn btn-lg btn-default'
-											onClick: @_import.bind null, {
-												extension: 'zip'
-												onImport: @_confirmRestore
-											}
-										},
-											"Restore Backup"
-											FaIcon('upload right-side')
-										)
-										R.button({
-											className: 'btn btn-lg btn-success'
-											onClick: @_switchTab.bind null, 'createAdmin'
-										},
-											"Create Admin Account"
-											FaIcon('arrow-right right-side')
-										)
-									)
+				R.div({
+					id: 'brandContainer'
+					className: 'animated fadeInDown'
+				},
+					R.img({
+						id: 'logoImage'
+						src: 'customer-logo-lg.png'
+					})
+				)
+				R.div({
+					id: 'contentContainer'
+					# className: 'animated fadeInUp'
+				},
+					(switch @state.openTab
+						when 'index'
+							R.div({ref: 'index'},
+								# hidden input for opening backup zip
+								R.input({
+									ref: 'nwbrowse'
+									className: 'hidden'
+									type: 'file'
+								})
+								R.p({}, "Let's get started!")
+								R.button({
+									className: 'btn btn-lg btn-default'
+									onClick: @_import.bind null, {
+										extension: 'zip'
+										onImport: @_confirmRestore
+									}
+								},
+									"Restore Backup"
 								)
-							when 'createAdmin'
-								R.div({ref: 'createAdmin'},
-									R.h2({}, "Your username will be \"admin\"")
-									R.p({},
-										"Please choose a password"
-									)
-									R.div({
-										id: 'passwordFields'
-										className: 'row-fluid'
-									},
-										R.div({className: 'col-md-6'},
-											R.div({
-												className: [
-													'form-group has-feedback'
-													'has-success' if @state.password.length > 0
-												].join ' '
-											},
-												R.label({
-													htmlFor: 'password'
-												}, "Password")
-												R.input({
-													ref: 'password'
-													id: 'password'
-													className: 'form-control'
-													type: 'password'
-													placeholder: "Set Password"
-													value: @state.password
-													onChange: @_updatePassword
-													onKeyDown: @_onEnterKeyDown
-												})
-												R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
-											)
-										)
-										R.div({className: 'col-md-6'},
-											R.div({
-												className: [
-													'form-group has-feedback'
-													if @_passwordsMatch()
-														'has-success'
-													else if @state.passwordConfirmation.length > 0
-														'has-error'
-												].join ' '
-											},
-												R.label({
-													htmlFor: 'passwordConfirmation'
-												}, "Confirm password")
-												R.input({
-													ref: 'passwordConfirmation'
-													id: 'passwordConfirmation'
-													className: 'form-control'
-													type: 'password'
-													placeholder: "Password again"
-													value: @state.passwordConfirmation
-													onChange: @_updatePasswordConfirmation
-													onKeyDown: @_onEnterKeyDown
-												})
-												R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
-											)
-										)
-									)
-									R.div({className: 'btn-toolbar'},
-										R.button({
+								R.button({
+									className: 'btn btn-lg btn-success'
+									onClick: @_switchTab.bind null, 'createAdmin'
+								},
+									"Setup New Account"
+								)
+							)
+						when 'createAdmin'
+							R.div({ref: 'createAdmin'},
+								R.p({},
+									"Setup admin account"
+								)
+								R.div({
+									id: 'passwordFields'
+									className: 'row-fluid'
+								},
+									R.div({},
+										R.div({
 											className: [
-												'btn btn-lg btn-success'
-												'animated pulse' if @_passwordsMatch()
+												'form-group has-feedback'
+												'has-success' if @state.password.length > 0
+											].join ' '
+										},
+											R.input({
+												ref: 'password'
+												id: 'password'
+												className: 'form-control'
+												type: 'password'
+												placeholder: "Create Password"
+												value: @state.password
+												onChange: @_updatePassword
+												onKeyDown: @_onEnterKeyDown
+											})
+											R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
+										)
+									)
+									R.div({},
+										R.div({
+											className: [
+												'form-group has-feedback'
+												if @_passwordsMatch()
+													'has-success'
+												else if @state.passwordConfirmation.length > 0
+													'has-error'
+											].join ' '
+										},
+											R.input({
+												ref: 'passwordConfirmation'
+												id: 'passwordConfirmation'
+												className: 'form-control'
+												type: 'password'
+												placeholder: "Confirm password"
+												value: @state.passwordConfirmation
+												onChange: @_updatePasswordConfirmation
+												onKeyDown: @_onEnterKeyDown
+											})
+											R.span({className: 'glyphicon glyphicon-ok form-control-feedback'})
+										)
+									)
+									R.button({
+											className: [
+												'btn btn-default'
+												'btn-success animated pulse' if @_passwordsMatch()
 											].join ' '
 											disabled: not @_passwordsMatch()
 											onClick: @_install
 										},
-											"Create Account"
-											FaIcon('check') if @_passwordsMatch()
-										)
+										"Create Account"
 									)
 								)
-
-						)
+							)
 					)
+				)
 					R.div({
 						id: 'helpContainer'
 						className: 'animated fadeIn'
 					},
-						"Contact us:"
-						R.a({
-							href: "#"
-							onClick: @_copyHelpEmail.bind null, Config.supportEmailAddress
-						},
-							Config.supportEmailAddress
+						R.div({className: 'left'},
+							"v#{nw.App.manifest.version}"
+						)
+						R.div({className: 'right'},
+							R.a({
+								href: "#"
+								onClick: @_openLink.bind null, 'terms'
+							},
+							"Terms\xa0\xa0\xa0\xa0\xa0\xa0"
+							)
+							R.a({
+								href: "#"
+								onClick: @_openLink.bind null, 'contact'
+							},
+							"Help"
+							)
 						)
 					)
-				)
+
 			)
 
 
@@ -441,6 +430,9 @@ load = (win) ->
 				title: "Copied Support E-mail"
 				message: "\"#{emailAddress}\" copied to your clipboard!"
 			}
+
+		_openLink: (page) ->
+			nw.Shell.openExternal 'https://konote.ca/'+page
 
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
