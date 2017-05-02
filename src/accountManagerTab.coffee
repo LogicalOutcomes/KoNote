@@ -111,8 +111,8 @@ load = (win) ->
 
 
 			# Do ANY active userProgramLinks exist?
-			hasProgramLinks = @props.userProgramLinks.some (link) ->
-				link.get('status') is 'assigned'
+			#hasProgramLinks = @props.userProgramLinks.some (link) ->
+			#	link.get('status') is 'assigned'
 
 			# Do ANY inactive accounts exist?
 			inactiveUserAccounts = @state.userAccounts.filter (account) ->
@@ -407,14 +407,13 @@ load = (win) ->
 										R.li({},
 											R.button({
 												className: 'btn btn-link'
-												onClick: @_toggleUserProgramDropdown.bind null, userAccount
-											}, "Re-Assign #{Term 'Program'}")
-										)
-										R.li({},
-											R.button({
-												className: 'btn btn-link'
 												onClick: @_changeAccountType.bind null, userAccount, isAdmin
-											}, "Change Account Type")
+											}, (if isAdmin
+													"Revoke Admin Rights"
+												else
+													"Grant Admin Rights"
+												)
+											)
 										)
 										R.li({},
 											R.button({
@@ -434,9 +433,6 @@ load = (win) ->
 
 		_closeView: ->
 			@_switchView null, null
-
-		_toggleUserProgramDropdown: ->
-			@refs.userProgramDropdown.toggle()
 
 		_changeAccountType: (userAccount, isAdmin) ->
 			userName = userAccount.get('userName')
@@ -566,11 +562,7 @@ load = (win) ->
 
 				# Success
 				# userProgramLinks updated eventListeners on clientSelectionPage
-				if newProgramId?
-					newProgram = @props.programs.find (program) =>
-						newProgramId is program.get('id')
-					Bootbox.alert "Assigned #{userName} to #{Term 'program'}: <b>#{newProgram.get('name')}</b>"
-				else
+				unless newProgramId?
 					Bootbox.alert "Unassigned #{userName}"
 
 		_deactivateAccount: (userAccount) ->
