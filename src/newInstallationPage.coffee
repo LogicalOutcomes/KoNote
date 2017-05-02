@@ -192,7 +192,7 @@ load = (win) ->
 								})
 								R.p({}, "Let's get started!")
 								R.button({
-									className: 'btn btn-lg btn-default'
+									className: 'btn btn-default'
 									onClick: @_import.bind null, {
 										extension: 'zip'
 										onImport: @_confirmRestore
@@ -201,7 +201,7 @@ load = (win) ->
 									"Restore Backup"
 								)
 								R.button({
-									className: 'btn btn-lg btn-success'
+									className: 'btn btn-success'
 									onClick: @_switchTab.bind null, 'createAdmin'
 								},
 									"Setup New Account"
@@ -210,7 +210,15 @@ load = (win) ->
 						when 'createAdmin'
 							R.div({ref: 'createAdmin'},
 								R.p({},
-									"Setup admin account"
+									"Your username will be "
+									R.span({
+										style: {
+											'font-weight': 'bold'
+										}
+									},
+										"admin"
+									)
+									"."
 								)
 								R.div({
 									id: 'passwordFields'
@@ -432,7 +440,10 @@ load = (win) ->
 			}
 
 		_openLink: (page) ->
-			nw.Shell.openExternal 'https://konote.ca/'+page
+			if page is 'terms'
+				nw.Shell.openItem 'eula.txt'
+				return
+			nw.Shell.openExternal Config.supportUrl
 
 		_updatePassword: (event) ->
 			@setState {password: event.target.value}
