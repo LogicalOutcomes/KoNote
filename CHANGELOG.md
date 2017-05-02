@@ -1,3 +1,13 @@
+### 2.1.3 (May 2, 2017)
+
+This point release resolves a couple of minor UI issues from 2.0
+
+#### Improvements
+
+- Improve UX of Account Manager and Account Settings tabs ([#1056](https://github.com/konode001/konote/issues/1056))
+- Restyle new installation window to include the End User License Agreement and Support URL ([5a52d66](https://github.com/konode001/konote/commit/5a52d66ed5e662d8945eb6e36b3c2f7001408d1a))
+
+
 ### 2.1.2 (April 30, 2017)
 
 #### Fixes
