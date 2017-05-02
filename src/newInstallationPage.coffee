@@ -179,7 +179,7 @@ load = (win) ->
 				)
 				R.div({
 					id: 'contentContainer'
-					# className: 'animated fadeInUp'
+					className: 'animated fadeInUp'
 				},
 					(switch @state.openTab
 						when 'index'
