@@ -4,7 +4,7 @@ This point release resolves a couple of minor UI issues from 2.0
 
 #### Improvements
 
-- Improve UX of Account Manager and Account Settings tabs ([#1056](https://github.com/konode001/konote/issues/1056))
+- Improve UX of Account Manager and Account Settings tabs ([cd782fc](https://github.com/konode001/konote/commit/cd782fc1dc82fedf642ec9cfe9c95c59fd519ab2)), ([6dfbb39](https://github.com/konode001/konote/commit/6dfbb39))
 - Restyle new installation window to include the End User License Agreement and Support URL ([5a52d66](https://github.com/konode001/konote/commit/5a52d66ed5e662d8945eb6e36b3c2f7001408d1a))
 
 
