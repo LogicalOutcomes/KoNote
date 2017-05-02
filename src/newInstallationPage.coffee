@@ -542,13 +542,13 @@ load = (win) ->
 
 						cb()
 				(cb) =>
-					@_updateProgress 25, "Generating encryption keys (this may take a while...)"
+					@_updateProgress 25, "Generating encryption keys..."
 
 					isDone = false
 					# Only fires if async setUp
 					setTimeout(=>
 						unless isDone
-							@_updateProgress 50, "Configuring account system (this may take a while...)"
+							@_updateProgress 50, "Configuring accounts..."
 					, 3000)
 
 					# Generate mock "_system" admin user
@@ -608,7 +608,7 @@ load = (win) ->
 
 
 				console.log "Successfully installed #{Config.productName}!"
-				@_updateProgress 100, "Successfully installed #{Config.productName}!"
+				@_updateProgress 100, "Installation complete!"
 
 				# Allow 1s for success animation before closing
 				setTimeout(=>
