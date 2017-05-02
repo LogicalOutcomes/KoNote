@@ -158,6 +158,22 @@ load = (win) ->
 		hasChanges: ->
 			@_transientDataHasChanges()
 
+		componentDidMount: ->
+			toggleBtn = @refs.toggleHistoryPane
+			# Set will-change when the element is hovered
+
+			hintBrowser = ->
+				# anticipate window toggle
+				$('.rightPane')[1].style.willChange = 'flex-grow'
+				return
+
+			removeHint = ->
+				$('.rightPane')[1].style.willChange = 'auto'
+				return
+
+			toggleBtn.addEventListener 'mouseenter', hintBrowser
+			toggleBtn.addEventListener 'mouseleave', removeHint
+
 		render: ->
 			{transientData} = @state
 
