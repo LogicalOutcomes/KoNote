@@ -82,7 +82,16 @@ load = (win) ->
 				console.log "Not set up, redirecting to installation page..."
 				@setState {isSetUp: false}
 
-				openWindow {page: 'newInstallation'}, (newInstallationWindow) =>
+				nw.Window.open 'src/main.html?' + $.param(page:'newInstallation'), {
+					focus: false
+					show: false
+					width: 400
+					height: 500
+					min_width: 400
+					min_height: 500
+					icon: "src/icon.png"
+				}, (newInstallationWindow) =>
+
 					# Hide loginPage while installing
 					Window.hide()
 

@@ -49,7 +49,7 @@ load = (win) ->
 				)
 				R.div({className: 'main'},
 					R.div({id: 'passwordSettings'},
-						R.h3({}, "My Password")
+						R.h4({}, "Change Password")
 						R.div({className: 'form-group animated'},
 							R.label({}, "Verify your current password"),
 							R.div({className: 'input-group'},
@@ -103,7 +103,8 @@ load = (win) ->
 										'has-success has-feedback' if @state.newPassword
 									].join ' '
 								},
-									R.label({}, "Set your new password")
+									R.p({},"Choose a strong password and don't reuse it for other accounts.")
+									R.label({}, "New password")
 									R.input({
 										ref: 'newPasswordField'
 										className: 'form-control'
@@ -138,7 +139,7 @@ load = (win) ->
 										className: 'btn btn-primary'
 										disabled: @_newPasswordIsInvalid()
 										onClick: @_resetPassword
-									}, "Reset My Password")
+									}, "Change Password")
 								)
 							)
 						)
