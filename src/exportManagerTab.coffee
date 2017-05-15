@@ -507,11 +507,7 @@ load = (win) ->
 
 				(cb) =>
 					output = Fs.createWriteStream(savepath)
-					archive = Archiver('zip', {store:true})
-					.on 'error', (err) =>
-						cb err
-						return
-					.on 'finish', (err) =>
+					.on 'close', =>
 						clearInterval(progressCheck)
 						@setState {isLoading: false}
 						Bootbox.alert {
@@ -519,6 +515,11 @@ load = (win) ->
 							message: "Saved to: #{savepath}"
 						}
 						cb()
+
+					archive = Archiver('zip', {store:true})
+					.on 'error', (err) =>
+						cb err
+						return
 
 					archive.pipe(output)
 					archive.directory(Config.backend.dataDirectory, '')
