@@ -415,6 +415,7 @@ load = (win) ->
 							newSection = Imm.fromJS {
 								id: Persist.generateId()
 								name: section.get('name')
+								programId: section.get('programId')
 								targetIds: results
 								status: 'default'
 							}

@@ -243,6 +243,7 @@ dataModelDefinitions = [
 				[
 					Joi.object().keys({
 						name: Joi.string()
+						programId: IdSchema.allow('')
 						targets: Joi.array().items(
 							name: Joi.string()
 							description: Joi.string()

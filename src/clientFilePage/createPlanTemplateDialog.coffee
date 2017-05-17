@@ -92,6 +92,7 @@ load = (win) ->
 
 				section = Imm.fromJS {
 					name: section.get('name')
+					programId: section.get('programId')
 					targets: sectionTargets
 				}
 
