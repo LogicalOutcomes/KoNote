@@ -32,7 +32,7 @@ load = (win) ->
 
 		componentDidMount: ->
 			if @props.metricQuery?
-				@refs.definitionField.refs.textarea.focus()
+				@refs.definitionField.focus()
 			else
 				@refs.nameField.focus()
 
@@ -55,10 +55,12 @@ load = (win) ->
 					)
 					R.div({className: 'form-group'},
 						R.label({}, "Definition")
-						ExpandingTextArea({
+						R.textarea({
+							className: 'form-control'
 							ref: 'definitionField'
 							onChange: @_updateDefinition
 							value: @state.definition
+							rows: 4
 						})
 					)
 					R.div({className: 'btn-toolbar pull-right'},

@@ -97,34 +97,40 @@ load = (win) ->
 				return null
 
 		_openClientFile: (clientFileId) ->
-			appWindows = chrome.app.window.getAll()
-			# skip if no client files open
-			if appWindows.length > 2
-				clientName = ''
-				ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
-					if err
-						# fail silently, let user retry
-						return
-					clientFile = stripMetadata revisions.get(0)
-					clientName = renderName clientFile.get('clientName')
-					clientFileOpen = false
-					appWindows.forEach (appWindow) ->
-						winTitle = nw.Window.get(appWindow.contentWindow).window.document.title
-						if winTitle.includes(clientName)
-							# already open, focus
-							clientFileOpen = true
-							nw.Window.get(appWindow.contentWindow).focus()
+			# prevent opening twice on doubleclick; todo: improve this
+			unless @state.loadingFile
+				@setState {loadingFile: true}
+				appWindows = chrome.app.window.getAll()
+				# skip if no client files open
+				if appWindows.length > 2
+					clientName = ''
+					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
+						if err
+							# fail silently, let user retry
 							return
-					if clientFileOpen is false
-						openWindow {
-							page: 'clientFile'
-							clientFileId
-						}
-			else
-				openWindow {page: 'clientFile', clientFileId}, maximize:true, (clientFileWindow) =>
+						clientFile = stripMetadata revisions.get(0)
+						clientName = renderName clientFile.get('clientName')
+						clientFileOpen = false
+						appWindows.forEach (appWindow) ->
+							winTitle = nw.Window.get(appWindow.contentWindow).window.document.title
+							if winTitle.includes(clientName)
+								# already open, focus
+								clientFileOpen = true
+								nw.Window.get(appWindow.contentWindow).focus()
+								return
+						if clientFileOpen is false
+							openWindow {
+								page: 'clientFile'
+								clientFileId
+							}
+				else
+					openWindow {page: 'clientFile', clientFileId}, maximize:true, (clientFileWindow) =>
 						# prevent window from closing before its ready
 						clientFileWindow.on 'close', =>
 							clientFileWindow = null
+				setTimeout(=>
+					@setState {loadingFile: false}
+				, 1500)
 
 		_setStatus: (status) ->
 			@setState {status}
