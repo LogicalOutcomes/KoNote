@@ -518,6 +518,7 @@ load = (win) ->
 
 					archive = Archiver('zip', {store:true})
 					.on 'error', (err) =>
+						archive.abort()
 						cb err
 						return
 
