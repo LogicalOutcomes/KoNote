@@ -1,3 +1,20 @@
+### 2.1.4 (May 17, 2017)
+
+This maintenance release resolves a crash which could occur when applying a plan template to a client file. It also
+resolves an issue where the same client file could be opened in multiple windows, and finally improves the status
+message when exporting data.
+
+#### Improvements
+
+- Larger definition field when creating a metric ([f957032](https://github.com/konode001/konote/commit/f957032))
+
+#### Fixes
+
+- Resolve crash when applying templates ([#1059](https://github.com/konode001/konote/issues/1059))
+- Resolve issue where data export could display "completed" message prematurely ([#1061](https://github.com/konode001/konote/issues/1061))
+- Fix extraneous client file window from being opened on double-click ([2dfe0e6](https://github.com/konode001/konote/commit/2dfe0e6c6eb156dde4257bfb4e797d8e7abe3cea))
+
+
 ### 2.1.3 (May 2, 2017)
 
 This point release resolves a couple of minor UI issues from 2.0
