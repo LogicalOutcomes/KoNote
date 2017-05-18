@@ -1462,8 +1462,13 @@ load = (win) ->
 					filepath = Path.join process.cwd(), Config.backend.dataDirectory, '_tmp', filename
 					file = new Buffer(encodedData, 'base64')
 					# TODO cleanup file...
-					Fs.writeFileSync filepath, file
-					nw.Shell.openItem filepath
+					Fs.writeFile filepath, file, (err) ->
+						if err
+							Bootbox.alert """
+								An error occurred.  Please check your network connection and try again.
+							"""
+							return
+						nw.Shell.openItem filepath
 
 		_selectQuickNote: ->
 			@props.setSelectedItem Imm.fromJS {
