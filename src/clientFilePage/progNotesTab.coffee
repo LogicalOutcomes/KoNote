@@ -1596,7 +1596,7 @@ load = (win) ->
 													onClick: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
 												},
 													R.h3({}, target.get('name'))
-													(unless target.get('notes') is ''
+													(if isEditing or target.get('notes') isnt ''
 														R.div({className: 'notes'},
 															(if isEditing
 																ExpandingTextArea({
