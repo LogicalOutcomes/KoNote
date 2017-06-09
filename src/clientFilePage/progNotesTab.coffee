@@ -265,6 +265,7 @@ load = (win) ->
 								className: [
 									'openFilterBarButton'
 									'collapsed' if isEditing or @state.isFiltering
+									showWhen hasEnoughData
 								].join ' '
 								onClick: @_toggleIsFiltering
 							},
