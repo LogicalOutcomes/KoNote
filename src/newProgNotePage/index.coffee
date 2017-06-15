@@ -302,7 +302,22 @@ load = (win, {clientFileId}) ->
 											key: unitId
 											className: 'unit basic'
 										},
-											R.h2({className: 'unitName'}, unit.get 'name')
+											R.h2({className: 'unitName'},
+												unit.get 'name'
+												R.span({
+													className: [
+														'star'
+														'checked' if unit.get('notes').includes "***"
+													].join ' '
+													title: "Mark as Important"
+													onClick: @_starBasicNote.bind(
+														null, unitId, unit.get 'notes'
+													)
+												},
+													R.span({className:'flagText'},'Flag Important ')
+													FaIcon('flag-o',className:"fa-lg")
+												)
+											)
 											ExpandingTextArea({
 												value: unit.get('notes')
 												onFocus: @_selectBasicUnit.bind null, unit
@@ -566,6 +581,24 @@ load = (win, {clientFileId}) ->
 						'units', unitIndex
 						'sections', sectionIndex
 						'targets', targetIndex
+						'notes'
+					]
+					newNotes
+				)
+			}
+
+		_starBasicNote: (unitId, note) ->
+			if note.includes "***"
+				newNotes = note.replace(/\*\*\*/g, '')
+			else
+				newNotes = "***" + note
+
+			unitIndex = getUnitIndex @state.progNote, unitId
+
+			@setState {
+				progNote: @state.progNote.setIn(
+					[
+						'units', unitIndex
 						'notes'
 					]
 					newNotes
