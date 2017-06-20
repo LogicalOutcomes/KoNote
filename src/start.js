@@ -4,6 +4,9 @@
 
 (function () {
 
+	var Config = require('./config');
+
+	// disable 'spelling suggestions' (do not send input to google)
 	let pref = chrome.privacy.services.spellingServiceEnabled;
 	function turnSpellingServiceOff(details) {
 		pref.set({ value: false });
@@ -11,7 +14,8 @@
 	pref.get({}, turnSpellingServiceOff);
 	pref.onChange.addListener(turnSpellingServiceOff);
 
-	var Config = require('./config');
+	// set dictionary language
+	chrome.settingsPrivate.setPref('spellcheck.dictionaries', [Config.language], "null", function() {console.log("language set!")});
 
 	if (!Config.devMode) {
 		/////////// PRODUCTION MODE ///////////
