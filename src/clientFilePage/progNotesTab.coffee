@@ -202,115 +202,95 @@ load = (win) ->
 			return R.div({className: 'progNotesView'},
 				R.div({className: 'panes'},
 					R.section({className: 'leftPane'},
-
-						(if hasEnoughData
-							# TODO: Make component
-							R.div({className: 'flexButtonToolbar'},
-								R.button({
-									className: [
-										'saveButton'
-										'collapsed' unless isEditing
-									].join ' '
-									onClick: @_saveTransientData
-									disabled: not hasChanges
-								},
-									FaIcon('save')
-									R.span({className: 'wideMenuItemText'},
-										"Save #{Term 'Progress Note'}"
-									)
-								)
-
-								R.button({
-									className: [
-										'discardButton'
-										'collapsed' unless isEditing
-									].join ' '
-									onClick: @_cancelRevisingProgNote
-								},
-									FaIcon('undo')
-									R.span({className: 'wideMenuItemText'},
-										"Discard"
-									)
-								)
-
-								R.button({
-									className: [
-										'newProgNoteButton'
-										'collapsed' if isEditing
-									].join ' '
-									onClick: @_openNewProgNote
-									disabled: @state.isLoading or @props.isReadOnly
-								},
-									FaIcon('plus')
-									R.span({className: 'wideMenuItemText'},
-										"#{Term 'Progress Note'}"
-									)
-								)
-
-								R.button({
-									ref: 'addQuickNoteButton'
-									className: [
-										'addQuickNoteButton'
-										'collapsed' if isEditing
-									].join ' '
-									onClick: @_openNewQuickNote
-									disabled: @props.isReadOnly
-								},
-									FaIcon('plus')
-									R.span({className: 'wideMenuItemText'},
-										"#{Term 'Quick Note'}"
-									)
-								)
-
-								R.button({
-									ref: 'openFilterBarButton'
-									className: [
-										'openFilterBarButton'
-										'collapsed' if isEditing or @state.isFiltering
-									].join ' '
-									onClick: @_toggleIsFiltering
-								},
-									FaIcon('search')
-								)
-
-								R.button({
-									ref: 'toggleHistoryPane'
-									className: [
-										'toggleHistoryPaneButton'
-									].join ' '
-									onClick: @_toggleHistoryPane
-								},
-									(if @state.showHistory
-										FaIcon('angle-right')
-									else
-										FaIcon('angle-left')
-									)
+						# TODO: Make component
+						R.div({className: 'flexButtonToolbar'},
+							R.button({
+								className: [
+									'saveButton'
+									'collapsed' unless isEditing
+								].join ' '
+								onClick: @_saveTransientData
+								disabled: not hasChanges
+							},
+								FaIcon('save')
+								R.span({className: 'wideMenuItemText'},
+									"Save #{Term 'Progress Note'}"
 								)
 							)
 
-						else
+							R.button({
+								className: [
+									'discardButton'
+									'collapsed' unless isEditing
+								].join ' '
+								onClick: @_cancelRevisingProgNote
+							},
+								FaIcon('undo')
+								R.span({className: 'wideMenuItemText'},
+									"Discard"
+								)
+							)
+
+							R.button({
+								className: [
+									'newProgNoteButton'
+									'collapsed' if isEditing
+								].join ' '
+								onClick: @_openNewProgNote
+								disabled: @state.isLoading or @props.isReadOnly
+							},
+								FaIcon('plus')
+								R.span({className: 'wideMenuItemText'},
+									"#{Term 'Progress Note'}"
+								)
+							)
+
+							R.button({
+								ref: 'addQuickNoteButton'
+								className: [
+									'addQuickNoteButton'
+									'collapsed' if isEditing
+								].join ' '
+								onClick: @_openNewQuickNote
+								disabled: @props.isReadOnly
+							},
+								FaIcon('plus')
+								R.span({className: 'wideMenuItemText'},
+									"#{Term 'Quick Note'}"
+								)
+							)
+
+							R.button({
+								ref: 'openFilterBarButton'
+								className: [
+									'openFilterBarButton'
+									'collapsed' if isEditing or @state.isFiltering
+									showWhen hasEnoughData
+								].join ' '
+								onClick: @_toggleIsFiltering
+							},
+								FaIcon('search')
+							)
+
+							R.button({
+								ref: 'toggleHistoryPane'
+								className: [
+									'toggleHistoryPaneButton'
+								].join ' '
+								onClick: @_toggleHistoryPane
+							},
+								(if @state.showHistory
+									FaIcon('angle-right')
+								else
+									FaIcon('angle-left')
+								)
+							)
+						)
+
+						(unless hasEnoughData
 							R.div({className: 'empty'},
 								R.div({className: 'message'},
-									R.div({},
-										"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
-									)
-									R.button({
-										className: 'btn btn-primary btn-lg newProgNoteButton'
-										onClick: @_openNewProgNote
-										disabled: @state.isLoading or @props.isReadOnly
-									},
-										FaIcon('file')
-										"New #{Term 'progress note'}"
-									)
-									R.button({
-										ref: 'addQuickNoteButton'
-										className: 'btn btn-default btn-lg addQuickNoteButton'
-										onClick: @_openNewQuickNote
-										disabled: @props.isReadOnly
-									},
-										FaIcon('plus')
-										"Add #{Term 'quick note'}"
-									)
+									"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
 								)
 							)
 						)

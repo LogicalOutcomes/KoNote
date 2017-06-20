@@ -21,7 +21,7 @@
 
 	.backdateContainer
 		padding 12px
-		display flex
+		//display flex
 		justify-content center
 
 		.input-group
@@ -91,6 +91,33 @@
 
 					textarea
 						padding 10px
+
+					.star
+						color #888
+						float right
+						border none
+						opacity 0
+						font-size 12px
+						font-weight 300
+						cursor default
+						transition all .3s
+						text-transform none
+						white-space nowrap
+						padding 12px 0 2 6px
+
+						&:hover
+							color red
+
+						&.checked
+							opacity 1
+							.fa
+								opacity 1
+								color red
+							.flagText
+								opacity 0
+
+					&:hover .star
+						opacity 1
 
 					> .metrics
 						display flex
