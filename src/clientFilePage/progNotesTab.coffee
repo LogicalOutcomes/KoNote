@@ -1242,6 +1242,7 @@ load = (win) ->
 								key: entry.get('id')
 								globalEvent: entry.get('globalEvent')
 								programsById: @props.programsById
+								eventTypes: @props.eventTypes
 							})
 
 						else
@@ -1942,6 +1943,11 @@ load = (win) ->
 
 		render: ->
 			{globalEvent} = @props
+
+			eventType = @props.eventTypes.find (eventType) ->
+				eventType.get('id') is globalEvent.get('typeId')
+			eventTypeName = if eventType then eventType.get('name') else null
+
 			programId = globalEvent.get('programId')
 
 			program = @props.programsById.get(programId) or Imm.Map()
@@ -1968,9 +1974,14 @@ load = (win) ->
 				R.h3({},
 					FaIcon('globe')
 					"Global Event: "
-					globalEvent.get('title')
+					globalEvent.get('title') or eventTypeName or (
+						if globalEvent.get('description').length > 20
+							globalEvent.get('description').substring(0, 20) + "..."
+						else
+							globalEvent.get('description')
+					)
 				)
-				(if globalEvent.get('description')
+				(if globalEvent.get('title') or eventTypeName and globalEvent.get('description')
 					R.p({}, globalEvent.get('description'))
 				)
 				(if globalEvent.get('endTimestamp') and not isFullDay

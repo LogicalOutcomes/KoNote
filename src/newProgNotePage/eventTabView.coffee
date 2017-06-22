@@ -346,19 +346,11 @@ load = (win) ->
 					)
 
 					R.div({className: 'form-group'},
-						R.label({}, "Name")
-						R.input({
-							className: 'form-control'
-							value: @state.title
-							onChange: @_updateTitle
-						})
-					)
-
-					R.div({className: 'form-group'},
 						R.label({}, "Description")
 						ExpandingTextArea({
 							value: @state.description
 							onChange: @_updateDescription
+							placeholder: if @state.typeId then "(optional)" else ''
 						})
 					)
 
@@ -397,10 +389,6 @@ load = (win) ->
 				)
 			)
 
-		_updateTitle: (event) ->
-			title = event.target.value
-			@setState {title}
-
 		_updateDescription: (event) ->
 			description = event.target.value
 			@setState {description}
@@ -409,8 +397,7 @@ load = (win) ->
 			@setState {programId}
 
 		_formIsInvalid: ->
-			return not @state.title or not @state.description or
-			(@programSelectionRequired and not @state.programId)
+			return not (@state.description or @state.typeId) or (@programSelectionRequired and not @state.programId)
 
 		_generateFlaggedNames: ->
 			# TODO: Process the title as well?
