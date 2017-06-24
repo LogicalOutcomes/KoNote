@@ -16,6 +16,7 @@ load = (win) ->
 	Bootbox = win.bootbox
 	React = win.React
 	R = React.DOM
+	ReactDOMServer = win.ReactDOMServer
 
 	CrashHandler = require('./crashHandler').load(win)
 	Spinner = require('./spinner').load(win)
@@ -23,6 +24,7 @@ load = (win) ->
 
 	{TimestampFormat, stripMetadata} = require('./persist/utils')
 	{FaIcon, renderName} = require('./utils').load(win)
+	Term = require('./term')
 
 
 	GenerateSummariesDialog = React.createFactory React.createClass
@@ -31,6 +33,7 @@ load = (win) ->
 		# TODO: propTypes
 
 		getInitialState: -> {
+			showDialog: false
 			isBuilding: true
 			progressMessage: "Generating summaries..."
 			progressPercent: 0
@@ -42,6 +45,9 @@ load = (win) ->
 			@_buildSummariesData()
 
 		render: ->
+			unless @state.showDialog
+				return null
+
 			return Dialog({
 				title: "Today's Shift Summary Log"
 				onClose: @props.onClose
@@ -96,18 +102,79 @@ load = (win) ->
 
 		_buildSummariesData: ->
 			userProgramId = global.ActiveSession.programId
-			userHasProgramId = !!userProgramId
 
 			clientFileIds = null
 			summaryObjects = null
+			programs = null
 
 			# 1. Determine which clientFileIds we need to search for summaries in
 			# 2. Find progNotes from today that include a summary, choose most recent one
 
 			Async.series [
 				(cb) =>
+					ActiveSession.persist.programs.list (err, result) =>
+						if err
+							cb err
+							return
+						programs = result
+						cb()
+
+				(cb) =>
+					# If user not in a program, prompt to choose one
+					if userProgramId or programs.size is 0
+						cb()
+					else
+						# Build programDropdown markup
+						programDropdown = ReactDOMServer.renderToString(
+							R.select({
+								id: 'programDropdown'
+								className: 'form-control '
+							},
+								R.option({value: ''}, "All #{Term 'programs'}")
+								console.log programs
+								(programs.map (program) ->
+									R.option({
+										key: program.get('id')
+										value: program.get('id')
+									},
+										program.get('name')
+									)
+								)
+							)
+						)
+
+						Bootbox.dialog {
+							title: "Select #{Term 'program'}"
+							message: """
+								Your user is not currently assigned to any #{Term 'program'}.
+								<br><br>
+								Please select which #{Term 'program'} you would like to generate summaries for, or generate summaries for all #{Term 'programs'}.
+								<br><br>
+								#{programDropdown}
+							"""
+							closeButton: false
+							buttons: {
+								cancel: {
+									label: "Cancel"
+									className: "btn-default"
+									callback: =>
+										Bootbox.hideAll()
+										@props.onClose()
+								}
+								success: {
+									label: "Show Summaries"
+									className: "btn-success"
+									callback: =>
+										userProgramId = $('#programDropdown').val()
+										cb()
+								}
+							}
+						}
+
+				(cb) =>
+					@setState {showDialog: true}
 					# Use all clientFileIds if user isn't in a program
-					if not userHasProgramId
+					if not userProgramId
 						ActiveSession.persist.clientFiles.list (err, result) =>
 							if err
 								cb err
