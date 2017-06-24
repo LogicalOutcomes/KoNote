@@ -481,6 +481,8 @@ load = (win, {clientFileId}) ->
 						(@state.progEvents.map (progEvent, index) =>
 							isBeingEdited = @state.editingWhichEvent is index
 							isGlobalEvent = progEvent.has 'globalEvent'
+							eventType = @props.eventTypes.find (type) => type.get('id') is progEvent.get('typeId')
+							eventTypeColor = if eventType then eventType.get('colorKeyHex') else
 
 							R.div({
 								key: index
@@ -491,6 +493,7 @@ load = (win, {clientFileId}) ->
 							},
 								R.div({
 									className: 'icon'
+									style: if eventTypeColor then color: eventTypeColor else null
 									onClick: @_editEventTab.bind(null, index) if not @state.editingWhichEvent?
 								},
 									FaIcon (if isGlobalEvent then 'globe' else 'calendar-o'), className: 'fa-lg'
