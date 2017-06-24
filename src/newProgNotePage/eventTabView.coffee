@@ -64,6 +64,7 @@ load = (win) ->
 			progEvent = @state.progEvent
 			typeId = progEvent.get 'typeId'
 			selectedEventType = @props.eventTypes.find (type) => type.get('id') is typeId
+			selectedEventTypeName = if selectedEventType then selectedEventType.get('name') else null
 
 			formIsValid = @_formIsValid()
 			hasChanges = @_hasChanges()
@@ -185,7 +186,7 @@ load = (win) ->
 				)
 
 				R.div({className: "details #{showWhen not @props.isBeingEdited}"},
-					R.div({className: 'title'}, @props.progEvent.get('title'))
+					R.div({className: 'title'}, @props.progEvent.get('title') or selectedEventTypeName)
 					R.div({className: 'description'}, @props.progEvent.get('description'))
 					R.div({className: 'timeSpan'},
 						renderTimeSpan(
