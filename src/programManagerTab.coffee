@@ -619,7 +619,7 @@ load = (win) ->
 										R.thead({},
 											R.tr({},
 												R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
-												R.td({colSpan: 2}, "#{Term 'Client'} Name")
+												R.td({colSpan: 2}, "Name")
 											)
 										)
 										R.tbody({},
@@ -642,8 +642,9 @@ load = (win) ->
 														R.button({
 															className: 'btn btn-danger btn-xs'
 															onClick: @_unenrollClient.bind null, link
+															title: "Remove #{Term 'client'} from #{Term 'program'}"
 														},
-															FaIcon('minus')
+															FaIcon('times')
 														)
 													)
 												)
@@ -652,27 +653,13 @@ load = (win) ->
 									)
 								)
 							)
-							R.div({className: 'btn-toolbar saveButtonToolbar'},
-								R.button({
-									className: 'btn btn-default'
-									onClick: @props.onCancel
-								},
-									"Cancel"
-								)
-								R.button({
-									className: 'btn btn-success btn-large'
-									onClick: @_submit
-									disabled: hasChanges
-								},
-									"Save"
-									' '
-									FaIcon('check')
-								)
-							)
 						)
 					)
 					R.div({className: 'clientPickerContainer'},
 						R.div({className: 'clientPicker'},
+							R.h3({className: 'panel-title'},
+								"Add #{Term 'Clients'}"
+							)
 							R.div({className: 'panel panel-default'},
 								R.div({className: 'panel-heading'}
 									R.input({
@@ -695,7 +682,7 @@ load = (win) ->
 											R.thead({},
 												R.tr({},
 													R.td({}, Config.clientFileRecordId.label) if Config.clientFileRecordId?
-													R.td({}, "#{Term 'Client'} Name")
+													R.td({}, "Name")
 												)
 											)
 											R.tbody({},
@@ -705,7 +692,7 @@ load = (win) ->
 
 													R.tr({
 														key: clientFileId
-														onClick: @_enrollClient.bind null, clientFileId
+														#onClick: @_enrollClient.bind null, clientFileId
 													},
 														(if Config.clientFileRecordId?
 															R.td({},
@@ -717,6 +704,15 @@ load = (win) ->
 															)
 														)
 														R.td({}, renderName result.get('clientName'))
+														R.td({},
+															R.button({
+																className: 'btn btn-success btn-xs'
+																onClick: @_enrollClient.bind null, clientFileId
+																title: "Add #{Term 'client'} to #{Term 'program'}"
+															},
+																FaIcon('plus')
+															)
+														)
 													)
 												)
 											)
@@ -725,6 +721,23 @@ load = (win) ->
 								)
 							)
 						)
+					)
+				)
+				R.div({className: 'btn-toolbar saveButtonToolbar'},
+					R.button({
+						className: 'btn btn-default'
+						onClick: @props.onCancel
+					},
+						"Cancel"
+					)
+					R.button({
+						className: 'btn btn-success btn-large'
+						onClick: @_submit
+						disabled: hasChanges
+					},
+						"Save"
+						' '
+						FaIcon('check')
 					)
 				)
 			)
