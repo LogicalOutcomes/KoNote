@@ -1,3 +1,23 @@
+### 2.1.5
+
+#### Improvements
+
+- All sections of a progress note can be flagged for highlighting (be2faed)
+- Event type and colour now included in events tab of new prognote window (#1077)
+- Spellcheck language can be defined via config file (#810)
+- Shift summary prompts user for program if they are not assigned to one (#1062)
+
+#### Fixes
+
+- Resolve potential crash on accounts manager page (579017a)
+- Resolve potential crash when opening attachments on Windows (#1065)
+- Include all fields when editing a progress note (#1074)
+- Global events now show event type, removed legacy 'title' field (#1085)
+- Improve button positioning on progress notes tab for new client files (#1083)
+- Prevent backwards migration and improve version checking (a5e4f63)
+- Minor UI improvements
+
+
 ### 2.1.4 (May 17, 2017)
 
 This maintenance release resolves a crash which could occur when applying a plan template to a client file. It also
