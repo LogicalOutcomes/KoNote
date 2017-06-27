@@ -7,6 +7,7 @@
 Async = require 'async'
 Fs = require 'fs'
 Path = require 'path'
+Semver = require 'semver'
 
 Config = require './config'
 Persist = require './persist'
@@ -124,9 +125,29 @@ load = (win) ->
 				dbVersion = JSON.parse(result).dataVersion
 
 				# Launch migration dialog if mismatched versions
-				if appVersion isnt dbVersion
-					console.log "App & data versions do not match"
+				if Semver.lt(dbVersion, appVersion)
+					console.log "data version less than app version. Migration required"
 					@_showMigrationDialog(dbVersion, appVersion)
+				else if Semver.gt(dbVersion, appVersion)
+					console.log "Warning! Data version newer than app version"
+					Bootbox.dialog {
+						title: "Database Error"
+						message: """
+							The application cannot start because your database appears to be from a newer version of #{Config.productName}.<br><br>
+							You must upgrade #{Config.productName} from v#{appVersion} to v#{dbVersion} or greater to continue.<br><br>
+							If you believe you are seeing this message in error, please contact support at #{Config.supportEmailAddress}.
+						"""
+						closeButton: false
+						buttons: {
+							cancel: {
+								label: "OK"
+								className: 'btn-primary'
+								callback: =>
+									@props.closeWindow()
+							}
+						}
+					}
+
 
 		_showMigrationDialog: (dbVersion, appVersion) ->
 			$ =>

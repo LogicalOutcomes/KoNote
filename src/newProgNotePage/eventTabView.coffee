@@ -64,6 +64,7 @@ load = (win) ->
 			progEvent = @state.progEvent
 			typeId = progEvent.get 'typeId'
 			selectedEventType = @props.eventTypes.find (type) => type.get('id') is typeId
+			selectedEventTypeName = if selectedEventType then selectedEventType.get('name') else null
 
 			formIsValid = @_formIsValid()
 			hasChanges = @_hasChanges()
@@ -185,7 +186,7 @@ load = (win) ->
 				)
 
 				R.div({className: "details #{showWhen not @props.isBeingEdited}"},
-					R.div({className: 'title'}, @props.progEvent.get('title'))
+					R.div({className: 'title'}, @props.progEvent.get('title') or selectedEventTypeName)
 					R.div({className: 'description'}, @props.progEvent.get('description'))
 					R.div({className: 'timeSpan'},
 						renderTimeSpan(
@@ -293,8 +294,8 @@ load = (win) ->
 
 
 			return {
-				title: @props.progEvent.get('title')
-				description: @props.progEvent.get('description')
+				title: @props.progEvent.get('title') or ''
+				description: @props.progEvent.get('description') or ''
 				typeId: @props.progEvent.get('typeId') or ''
 				programId
 			}
@@ -346,19 +347,11 @@ load = (win) ->
 					)
 
 					R.div({className: 'form-group'},
-						R.label({}, "Name")
-						R.input({
-							className: 'form-control'
-							value: @state.title
-							onChange: @_updateTitle
-						})
-					)
-
-					R.div({className: 'form-group'},
 						R.label({}, "Description")
 						ExpandingTextArea({
 							value: @state.description
 							onChange: @_updateDescription
+							placeholder: if @state.typeId then "(optional)" else ''
 						})
 					)
 
@@ -397,10 +390,6 @@ load = (win) ->
 				)
 			)
 
-		_updateTitle: (event) ->
-			title = event.target.value
-			@setState {title}
-
 		_updateDescription: (event) ->
 			description = event.target.value
 			@setState {description}
@@ -409,8 +398,7 @@ load = (win) ->
 			@setState {programId}
 
 		_formIsInvalid: ->
-			return not @state.title or not @state.description or
-			(@programSelectionRequired and not @state.programId)
+			return not (@state.description or @state.typeId) or (@programSelectionRequired and not @state.programId)
 
 		_generateFlaggedNames: ->
 			# TODO: Process the title as well?

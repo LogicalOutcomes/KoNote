@@ -305,13 +305,13 @@ load = (win) ->
 			programLink = @props.userProgramLinks.find (link) ->
 				userAccount.get('userName') is link.get('userName') and link.get('status') is 'assigned'
 
-			userProgramId = if not programLink then '' else @props.programs.find (program) ->
+			userProgramId = if not programLink then '' else (@props.programs.find (program) ->
 				program.get('id') is programLink.get('programId')
-			.get('id')
+			).get('id')
 
-			userProgramColor = if not programLink then '' else @props.programs.find (program) ->
+			userProgramColor = if not programLink then '' else (@props.programs.find (program) ->
 				program.get('id') is programLink.get('programId')
-			.get('colorKeyHex')
+			).get('colorKeyHex')
 
 			isAdmin = userAccount.getIn(['publicInfo', 'accountType']) is 'admin'
 			isDeactivated = not userAccount.getIn(['publicInfo', 'isActive'])

@@ -1,5 +1,6 @@
 {
 	"devMode": true,
+	"language": "en-CA",
 	"backend": {
 		"type": "file-system",
 		"dataDirectory": "data"

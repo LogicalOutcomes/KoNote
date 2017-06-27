@@ -202,115 +202,95 @@ load = (win) ->
 			return R.div({className: 'progNotesView'},
 				R.div({className: 'panes'},
 					R.section({className: 'leftPane'},
-
-						(if hasEnoughData
-							# TODO: Make component
-							R.div({className: 'flexButtonToolbar'},
-								R.button({
-									className: [
-										'saveButton'
-										'collapsed' unless isEditing
-									].join ' '
-									onClick: @_saveTransientData
-									disabled: not hasChanges
-								},
-									FaIcon('save')
-									R.span({className: 'wideMenuItemText'},
-										"Save #{Term 'Progress Note'}"
-									)
-								)
-
-								R.button({
-									className: [
-										'discardButton'
-										'collapsed' unless isEditing
-									].join ' '
-									onClick: @_cancelRevisingProgNote
-								},
-									FaIcon('undo')
-									R.span({className: 'wideMenuItemText'},
-										"Discard"
-									)
-								)
-
-								R.button({
-									className: [
-										'newProgNoteButton'
-										'collapsed' if isEditing
-									].join ' '
-									onClick: @_openNewProgNote
-									disabled: @state.isLoading or @props.isReadOnly
-								},
-									FaIcon('plus')
-									R.span({className: 'wideMenuItemText'},
-										"#{Term 'Progress Note'}"
-									)
-								)
-
-								R.button({
-									ref: 'addQuickNoteButton'
-									className: [
-										'addQuickNoteButton'
-										'collapsed' if isEditing
-									].join ' '
-									onClick: @_openNewQuickNote
-									disabled: @props.isReadOnly
-								},
-									FaIcon('plus')
-									R.span({className: 'wideMenuItemText'},
-										"#{Term 'Quick Note'}"
-									)
-								)
-
-								R.button({
-									ref: 'openFilterBarButton'
-									className: [
-										'openFilterBarButton'
-										'collapsed' if isEditing or @state.isFiltering
-									].join ' '
-									onClick: @_toggleIsFiltering
-								},
-									FaIcon('search')
-								)
-
-								R.button({
-									ref: 'toggleHistoryPane'
-									className: [
-										'toggleHistoryPaneButton'
-									].join ' '
-									onClick: @_toggleHistoryPane
-								},
-									(if @state.showHistory
-										FaIcon('angle-right')
-									else
-										FaIcon('angle-left')
-									)
+						# TODO: Make component
+						R.div({className: 'flexButtonToolbar'},
+							R.button({
+								className: [
+									'saveButton'
+									'collapsed' unless isEditing
+								].join ' '
+								onClick: @_saveTransientData
+								disabled: not hasChanges
+							},
+								FaIcon('save')
+								R.span({className: 'wideMenuItemText'},
+									"Save #{Term 'Progress Note'}"
 								)
 							)
 
-						else
+							R.button({
+								className: [
+									'discardButton'
+									'collapsed' unless isEditing
+								].join ' '
+								onClick: @_cancelRevisingProgNote
+							},
+								FaIcon('undo')
+								R.span({className: 'wideMenuItemText'},
+									"Discard"
+								)
+							)
+
+							R.button({
+								className: [
+									'newProgNoteButton'
+									'collapsed' if isEditing
+								].join ' '
+								onClick: @_openNewProgNote
+								disabled: @state.isLoading or @props.isReadOnly
+							},
+								FaIcon('plus')
+								R.span({className: 'wideMenuItemText'},
+									"#{Term 'Progress Note'}"
+								)
+							)
+
+							R.button({
+								ref: 'addQuickNoteButton'
+								className: [
+									'addQuickNoteButton'
+									'collapsed' if isEditing
+								].join ' '
+								onClick: @_openNewQuickNote
+								disabled: @props.isReadOnly
+							},
+								FaIcon('plus')
+								R.span({className: 'wideMenuItemText'},
+									"#{Term 'Quick Note'}"
+								)
+							)
+
+							R.button({
+								ref: 'openFilterBarButton'
+								className: [
+									'openFilterBarButton'
+									'collapsed' if isEditing or @state.isFiltering
+									showWhen hasEnoughData
+								].join ' '
+								onClick: @_toggleIsFiltering
+							},
+								FaIcon('search')
+							)
+
+							R.button({
+								ref: 'toggleHistoryPane'
+								className: [
+									'toggleHistoryPaneButton'
+								].join ' '
+								onClick: @_toggleHistoryPane
+							},
+								(if @state.showHistory
+									FaIcon('angle-right')
+								else
+									FaIcon('angle-left')
+								)
+							)
+						)
+
+						(unless hasEnoughData
 							R.div({className: 'empty'},
 								R.div({className: 'message'},
-									R.div({},
-										"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
-									)
-									R.button({
-										className: 'btn btn-primary btn-lg newProgNoteButton'
-										onClick: @_openNewProgNote
-										disabled: @state.isLoading or @props.isReadOnly
-									},
-										FaIcon('file')
-										"New #{Term 'progress note'}"
-									)
-									R.button({
-										ref: 'addQuickNoteButton'
-										className: 'btn btn-default btn-lg addQuickNoteButton'
-										onClick: @_openNewQuickNote
-										disabled: @props.isReadOnly
-									},
-										FaIcon('plus')
-										"Add #{Term 'quick note'}"
-									)
+									"This #{Term 'client'} does not currently have any #{Term 'progress notes'}."
 								)
 							)
 						)
@@ -1262,6 +1242,7 @@ load = (win) ->
 								key: entry.get('id')
 								globalEvent: entry.get('globalEvent')
 								programsById: @props.programsById
+								eventTypes: @props.eventTypes
 							})
 
 						else
@@ -1462,8 +1443,13 @@ load = (win) ->
 					filepath = Path.join process.cwd(), Config.backend.dataDirectory, '_tmp', filename
 					file = new Buffer(encodedData, 'base64')
 					# TODO cleanup file...
-					Fs.writeFileSync filepath, file
-					nw.Shell.openItem filepath
+					Fs.writeFile filepath, file, (err) ->
+						if err
+							Bootbox.alert """
+								An error occurred.  Please check your network connection and try again.
+							"""
+							return
+						nw.Shell.openItem filepath
 
 		_selectQuickNote: ->
 			@props.setSelectedItem Imm.fromJS {
@@ -1591,7 +1577,7 @@ load = (win) ->
 													onClick: @_selectPlanSectionTarget.bind(null, unit, section, mostRecentTargetRevision)
 												},
 													R.h3({}, target.get('name'))
-													(unless target.get('notes') is ''
+													(if isEditing or target.get('notes') isnt ''
 														R.div({className: 'notes'},
 															(if isEditing
 																ExpandingTextArea({
@@ -1957,6 +1943,11 @@ load = (win) ->
 
 		render: ->
 			{globalEvent} = @props
+
+			eventType = @props.eventTypes.find (eventType) ->
+				eventType.get('id') is globalEvent.get('typeId')
+			eventTypeName = if eventType then eventType.get('name') else null
+
 			programId = globalEvent.get('programId')
 
 			program = @props.programsById.get(programId) or Imm.Map()
@@ -1983,9 +1974,14 @@ load = (win) ->
 				R.h3({},
 					FaIcon('globe')
 					"Global Event: "
-					globalEvent.get('title')
+					globalEvent.get('title') or eventTypeName or (
+						if globalEvent.get('description').length > 20
+							globalEvent.get('description').substring(0, 20) + "..."
+						else
+							globalEvent.get('description')
+					)
 				)
-				(if globalEvent.get('description')
+				(if globalEvent.get('title') or eventTypeName and globalEvent.get('description')
 					R.p({}, globalEvent.get('description'))
 				)
 				(if globalEvent.get('endTimestamp') and not isFullDay
