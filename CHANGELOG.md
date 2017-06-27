@@ -2,20 +2,20 @@
 
 #### Improvements
 
-- All sections of a progress note can be flagged for highlighting ([be2faed](https://github.com/konode001/konote/commit/f957032))
-- Event type and colour now included in events tab of new prognote window ([#1077](https://github.com/konode001/konote/issues/1059))
-- Spellcheck language can be defined via config file ([#810](https://github.com/konode001/konote/issues/1059))
-- Shift summary prompts user for program if they are not assigned to one ([#1062](https://github.com/konode001/konote/issues/1059))
+- All sections of a progress note can be flagged for highlighting ([be2faed](https://github.com/konode001/konote/commit/be2faed))
+- Event type and colour now included in events tab of new prognote window ([#1077](https://github.com/konode001/konote/issues/1077))
+- Spellcheck language can be defined via config file ([#810](https://github.com/konode001/konote/issues/810))
+- Shift summary prompts user for program if they are not assigned to one ([#1062](https://github.com/konode001/konote/issues/1062))
 
 #### Fixes
 
-- Resolve potential crash on accounts manager page ([579017a](https://github.com/konode001/konote/commit/f957032))
-- Resolve potential crash when opening attachments on Windows ([#1065](https://github.com/konode001/konote/issues/1059))
-- Include all fields when editing a progress note ([#1074](https://github.com/konode001/konote/issues/1059))
-- Global events now show event type, removed legacy 'title' field ([#1085](https://github.com/konode001/konote/issues/1059))
-- Programs manager better supports large number of clients ([#1064](https://github.com/konode001/konote/issues/1059))
-- Improve button positioning on progress notes tab for new client files ([#1083](https://github.com/konode001/konote/issues/1059))
-- Prevent backwards migration and improve version checking ([a5e4f63](https://github.com/konode001/konote/commit/f957032))
+- Resolve potential crash on accounts manager page ([579017a](https://github.com/konode001/konote/commit/579017a))
+- Resolve potential crash when opening attachments on Windows ([#1065](https://github.com/konode001/konote/issues/1065))
+- Include all fields when editing a progress note ([#1074](https://github.com/konode001/konote/issues/1074))
+- Global events now show event type, removed legacy 'title' field ([#1085](https://github.com/konode001/konote/issues/1085))
+- Programs manager better supports large number of clients ([#1064](https://github.com/konode001/konote/issues/1064))
+- Improve button positioning on progress notes tab for new client files ([#1083](https://github.com/konode001/konote/issues/1083))
+- Prevent backwards migration and improve version checking ([a5e4f63](https://github.com/konode001/konote/commit/a5e4f63))
 - Minor UI improvements
 
 
