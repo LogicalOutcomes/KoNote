@@ -5,7 +5,6 @@
 Joi = require 'joi'
 
 ApiBuilder = require './apiBuilder'
-FileSystemBackend = require './backends/fileSystemBackend'
 {IdSchema, TimestampFormat} = require './utils'
 
 dataModelDefinitions = [

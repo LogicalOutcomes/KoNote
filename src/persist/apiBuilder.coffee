@@ -11,7 +11,6 @@ Imm = require 'immutable'
 
 CollectionMethods = require './collectionMethods'
 
-CloudBackend = require './backends/cloudBackend'
 FileSystemBackend = require './backends/fileSystemBackend'
 
 # Generate the persistent object API based on the specified definitions.
@@ -28,6 +27,7 @@ buildApi = (backendConfig, session, dataModelDefinitions) ->
 				backendConfig.dataDirectory
 			)
 		when 'cloud'
+			CloudBackend = require './backends/cloudBackend'
 			backend = CloudBackend.create(
 				eventBus, session.globalEncryptionKey,
 				backendConfig.serverUrl, backendConfig.localDataDirectory,
