@@ -1,3 +1,8 @@
+### 2.1.6 (Jun 30, 2017)
+
+This releases improves startup performance ([c0ef898](https://github.com/konode001/konote/commit/c0ef898))
+
+
 ### 2.1.5 (Jun 26, 2017)
 
 #### Improvements
