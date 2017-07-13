@@ -2,8 +2,8 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Main view component for Plan Tab in client file
-# Wrapped in main drag-drop context, to re-order sections & targets
+# Main view component for Chx Tab in client file
+# Wrapped in main drag-drop context, to re-order sections & topics
 # Handles auto-scrolling behaviour
 
 Imm = require 'immutable'
@@ -13,18 +13,17 @@ load = (win) ->
 	R = React.DOM
 	{findDOMNode} = win.ReactDOM
 
-	{DragDropContext} = win.ReactDnD
-	HTML5Backend = win.ReactDnDHTML5Backend
+	DragDropContext = require('../dnd').load(win)
 
-	PlanSection = require('./planSection').load(win)
+	ChxSection = require('./chxSection').load(win)
 	InactiveToggleWrapper = require('./inactiveToggleWrapper').load(win)
 	{DropdownButton, MenuItem} = require('../../utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
 
 	{scrollToElement} = require('../../utils').load(win)
 
 
-	PlanView = React.createClass
-		displayName: 'PlanView'
+	ChxView = React.createClass
+		displayName: 'ChxView'
 		mixins: [React.addons.PureRenderMixin]
 		# TODO: propTypes
 
@@ -34,18 +33,18 @@ load = (win) ->
 		}
 
 		render: ->
-			planSections = @props.plan.get('sections')
+			chxSections = @props.chx.get('sections')
 
-			if planSections.isEmpty()
+			if chxSections.isEmpty()
 				return null
 
 			# Build sections by status, and order them manually into an array
 			# TODO: Make this an ordered set or something...
-			sectionsByStatus = planSections.groupBy (s) -> s.get('status')
+			sectionsByStatus = chxSections.groupBy (s) -> s.get('status')
 			sectionsByStatusArray = Imm.List(['default', 'completed', 'deactivated']).map (status) ->
 				sectionsByStatus.get(status)
 
-			return R.div({id: 'planView'},
+			return R.div({id: 'chxView'},
 
 				(sectionsByStatusArray.map (sections) =>
 					# TODO: Remove this in favour of [key, value] (prev. TODO)
@@ -54,13 +53,13 @@ load = (win) ->
 					size = sections.size
 
 					# Build the list of sections
-					PlanSectionsList = R.div({
+					ChxSectionsList = R.div({
 						key: status
 						className: 'sections'
 					},
 						(sections.map (section) =>
 							id = section.get('id')
-							index = planSections.indexOf section
+							index = chxSections.indexOf section
 							sectionIsInactive = section.get('status') isnt 'default'
 
 							program = @props.programsById.get(section.get('programId'))
@@ -69,11 +68,11 @@ load = (win) ->
 								ref: "section-#{id}"
 								key: id
 								section, program, id, index
-								expandTarget: @_expandTarget
+								expandTopic: @_expandTopic
 								expandSection: @_expandSection
 							}
 
-							return PlanSection(props)
+							return ChxSection(props)
 						)
 					)
 
@@ -85,11 +84,11 @@ load = (win) ->
 					},
 						switch status
 							when 'default'
-								PlanSectionsList
+								ChxSectionsList
 
 							when 'deactivated'
 								InactiveToggleWrapper({
-									children: PlanSectionsList
+									children: ChxSectionsList
 									dataType: 'section'
 									status, size
 									isExpanded: @state.displayDeactivatedSections
@@ -98,7 +97,7 @@ load = (win) ->
 
 							when 'completed'
 								InactiveToggleWrapper({
-									children: PlanSectionsList
+									children: ChxSectionsList
 									dataType: 'section'
 									status, size
 									isExpanded: @state.displayCompletedSections
@@ -123,8 +122,8 @@ load = (win) ->
 				if displayDeactivatedSections
 					 @scrollTo "sections-deactivated"
 
-		_expandTarget: (id) ->
-			elementId = "target-#{id}"
+		_expandTopic: (id) ->
+			elementId = "topic-#{id}"
 
 			# Account for read-only notice on top if isReadOnly
 			additionalOffset = if @props.isReadOnly
@@ -134,8 +133,8 @@ load = (win) ->
 
 			additionalOffset += 25 # Add a bit extra for sectionHeader
 
-			# Switch views & select target, expand groups if needed, scroll!
-			@props.collapseAndSelectTargetId id, => @scrollTo(elementId, additionalOffset)
+			# Switch views & select topic, expand groups if needed, scroll!
+			@props.collapseAndSelectTopicId id, => @scrollTo(elementId, additionalOffset)
 
 		_expandSection: (id) ->
 			elementId = "section-#{id}"
@@ -155,8 +154,8 @@ load = (win) ->
 			), 250
 
 
-	# Create drag-drop context for the PlanView class
-	return React.createFactory DragDropContext(HTML5Backend) PlanView
+	# Create drag-drop context for the ChxView class
+	return React.createFactory DragDropContext ChxView
 
 
 module.exports = {load}

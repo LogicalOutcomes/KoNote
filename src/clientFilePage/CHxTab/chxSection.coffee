@@ -2,7 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Plan section view, which is draggable
+# Chx section view, which is draggable
 
 Imm = require 'immutable'
 Decorate = require 'es-decorate'
@@ -15,20 +15,17 @@ load = (win) ->
 	{findDOMNode} = win.ReactDOM
 	{DragSource, DropTarget} = win.ReactDnD
 
-	PlanTarget = require('./planTarget').load(win)
+	ChxTopic = require('./chxTopic').load(win)
 	InactiveToggleWrapper = require('./inactiveToggleWrapper').load(win)
 	StatusButtonGroup = require('./statusButtonGroup').load(win)
 	ModifySectionStatusDialog = require('../modifySectionStatusDialog').load(win)
-	OpenDialogLink = require('../../openDialogLink').load(win)
-	WithTooltip = require('../../withTooltip').load(win)
-	CreatePlanTemplateDialog = require('../createPlanTemplateDialog').load(win)
 	ColorKeyBubble = require('../../colorKeyBubble').load(win)
 
 	{FaIcon, showWhen} = require('../../utils').load(win)
 
 
-	PlanSection = React.createClass
-		displayName: 'PlanSection'
+	ChxSection = React.createClass
+		displayName: 'ChxSection'
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
@@ -44,12 +41,12 @@ load = (win) ->
 			section: React.PropTypes.instanceOf(Imm.Map).isRequired
 			# Methods
 			reorderSection: React.PropTypes.func.isRequired
-			reorderTargetId: React.PropTypes.func.isRequired
+			reorderTopicId: React.PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {
-			displayDeactivatedTargets: null
-			displayCompletedTargets: null
+			displayDeactivatedTopics: null
+			displayCompletedTopics: null
 			isReorderHovered: false
 		}
 
@@ -58,31 +55,30 @@ load = (win) ->
 				section
 				program
 				clientFile
-				plan
-				metricsById
-				currentTargetRevisionsById
-				planTargetsById
-				selectedTargetId
+				chx
+				currentTopicRevisionsById
+				chxTopicsById
+				selectedTopicId
 
 				isReadOnly
 				isCollapsed
 
 				renameSection
-				addTargetToSection
-				hasTargetChanged
-				updateTarget
-				removeNewTarget
+				addTopicToSection
+				hasTopicChanged
+				updateTopic
+				removeNewTopic
 				removeNewSection
 				onRemoveNewSection
-				setSelectedTarget
-				addMetricToTarget
-				deleteMetricFromTarget
+				setSelectedTopic
+				addMetricToTopic
+				deleteMetricFromTopic
 				getSectionIndex
-				expandTarget
+				expandTopic
 				expandSection
 
 				reorderSection
-				reorderTargetId
+				reorderTopicId
 
 				connectDragSource
 				connectDropTarget
@@ -95,21 +91,21 @@ load = (win) ->
 			sectionIsInactive = status isnt 'default'
 			sectionIndex = @props.index
 
-			# Build targets by status, and order them manually into an array
+			# Build topics by status, and order them manually into an array
 			# TODO: Make this an ordered set or something...
-			targetsByStatus = section.get('targetIds')
-			.map (id) -> currentTargetRevisionsById.get(id)
+			topicsByStatus = section.get('topicIds')
+			.map (id) -> currentTopicRevisionsById.get(id)
 			.groupBy (t) -> t.get('status')
 
-			targetsByStatusArray = Imm.List(['default', 'completed', 'deactivated']).map (status) ->
-				targetsByStatus.get(status)
+			topicsByStatusArray = Imm.List(['default', 'completed', 'deactivated']).map (status) ->
+				topicsByStatus.get(status)
 
 
 			return connectDropTarget connectDragPreview (
 				R.section({
 					id: "section-#{id}"
 					className: [
-						'planSection'
+						'chxSection'
 						"status-#{status}"
 						'isCollapsed' if isCollapsed
 						'isDragging' if isDragging
@@ -122,62 +118,61 @@ load = (win) ->
 						program
 						isReadOnly
 						isCollapsed
-						allTargetsAreInactive: not targetsByStatus.get('default')
+						allTopicsAreInactive: not topicsByStatus.get('default')
 
 						renameSection
 						getSectionIndex
-						addTargetToSection
+						addTopicToSection
 						onRemoveNewSection
 						sectionIsInactive
-						currentTargetRevisionsById
+						currentTopicRevisionsById
 						connectDragSource
 						expandSection
 						onReorderHover: @_onReorderHover
 					})
 
-					(if section.get('targetIds').size is 0
-						R.div({className: 'noTargets'},
+					(if section.get('topicIds').size is 0
+						R.div({className: 'noTopics'},
 							"This #{Term 'section'} is empty."
 						)
 					)
 
-					(targetsByStatusArray.map (targets) =>
+					(topicsByStatusArray.map (topics) =>
 						# TODO: Remove this in favour of [key, value] (prev. TODO)
-						return if not targets
-						status = targets.getIn [0, 'status']
-						size = targets.size
+						return if not topics
+						status = topics.getIn [0, 'status']
+						size = topics.size
 
-						# Build the list of targets
-						PlanTargetsList = R.div({className: 'planTargetsList'},
-							(targets.map (target) =>
-								targetId = target.get('id')
-								index = section.get('targetIds').indexOf targetId
+						# Build the list of topics
+						ChxTopicsList = R.div({className: 'chxTopicsList'},
+							(topics.map (topic) =>
+								topicId = topic.get('id')
+								index = section.get('topicIds').indexOf topicId
 
-								hasChanges = hasTargetChanged(targetId)
-								isSelected = targetId is selectedTargetId
-								isExistingTarget = planTargetsById.has(targetId)
+								hasChanges = hasTopicChanged(topicId)
+								isSelected = topicId is selectedTopicId
+								isExistingTopic = chxTopicsById.has(topicId)
 
-								PlanTarget({
-									key: targetId
-									target
-									metricsById
+								ChxTopic({
+									key: topicId
+									topic
 									hasChanges
 									isSelected
-									isExistingTarget
+									isExistingTopic
 									isReadOnly
 									isCollapsed
 									sectionIsInactive
 
-									onRemoveNewTarget: removeNewTarget.bind null, id, targetId
-									onTargetUpdate: updateTarget.bind null, targetId
-									onTargetSelection: setSelectedTarget.bind null, targetId
-									setSelectedTarget # allows for setState cb
-									onExpandTarget: expandTarget.bind null, targetId
+									onRemoveNewTopic: removeNewTopic.bind null, id, topicId
+									onTopicUpdate: updateTopic.bind null, topicId
+									onTopicSelection: setSelectedTopic.bind null, topicId
+									setSelectedTopic # allows for setState cb
+									onExpandTopic: expandTopic.bind null, topicId
 
-									addMetricToTarget
-									deleteMetricFromTarget
+									addMetricToTopic
+									deleteMetricFromTopic
 
-									reorderTargetId
+									reorderTopicId
 									section
 									sectionIndex
 									index
@@ -185,28 +180,28 @@ load = (win) ->
 							)
 						)
 
-						# Return wrapped inactive target groups for display toggling
+						# Return wrapped inactive topic groups for display toggling
 						R.div({key: status},
 							switch status
 								when 'default'
-									PlanTargetsList
+									ChxTopicsList
 
 								when 'deactivated'
 									InactiveToggleWrapper({
-										children: PlanTargetsList
-										dataType: 'target'
+										children: ChxTopicsList
+										dataType: 'topic'
 										status, size
-										isExpanded: @state.displayDeactivatedTargets
-										onToggle: @_toggleDisplayDeactivatedTargets
+										isExpanded: @state.displayDeactivatedTopics
+										onToggle: @_toggleDisplayDeactivatedTopics
 									})
 
 								when 'completed'
 									InactiveToggleWrapper({
-										children: PlanTargetsList
-										dataType: 'target'
+										children: ChxTopicsList
+										dataType: 'topic'
 										status, size
-										isExpanded: @state.displayCompletedTargets
-										onToggle: @_toggleDisplayCompletedTargets
+										isExpanded: @state.displayCompletedTopics
+										onToggle: @_toggleDisplayCompletedTopics
 									})
 						)
 
@@ -215,13 +210,13 @@ load = (win) ->
 				)
 			)
 
-		_toggleDisplayCompletedTargets: ->
-			displayCompletedTargets = not @state.displayCompletedTargets
-			@setState {displayCompletedTargets}
+		_toggleDisplayCompletedTopics: ->
+			displayCompletedTopics = not @state.displayCompletedTopics
+			@setState {displayCompletedTopics}
 
-		_toggleDisplayDeactivatedTargets: ->
-			displayDeactivatedTargets = not @state.displayDeactivatedTargets
-			@setState {displayDeactivatedTargets}
+		_toggleDisplayDeactivatedTopics: ->
+			displayDeactivatedTopics = not @state.displayDeactivatedTopics
+			@setState {displayDeactivatedTopics}
 
 		_onReorderHover: (isReorderHovered) -> @setState {isReorderHovered}
 
@@ -237,14 +232,14 @@ load = (win) ->
 				program
 				isReadOnly
 				isCollapsed
-				allTargetsAreInactive
+				allTopicsAreInactive
 
 				renameSection
 				getSectionIndex
-				addTargetToSection
+				addTopicToSection
 				removeNewSection
 				onRemoveNewSection
-				currentTargetRevisionsById
+				currentTopicRevisionsById
 				sectionIsInactive
 				connectDragSource
 				expandSection
@@ -254,11 +249,11 @@ load = (win) ->
 			sectionStatus = section.get('status')
 			sectionId = section.get('id')
 
-			# Figure out whether already exists in plan
-			isExistingSection = clientFile.getIn(['plan','sections']).some (obj) =>
+			# Figure out whether already exists in chx
+			isExistingSection = clientFile.getIn(['chx','sections']).some (obj) =>
 				obj.get('id') is section.get('id')
 
-			canSetStatus = isExistingSection and (allTargetsAreInactive or sectionIsInactive) and not isReadOnly
+			canSetStatus = isExistingSection and (allTopicsAreInactive or sectionIsInactive) and not isReadOnly
 			canModify = not isReadOnly and not sectionIsInactive
 			isAdmin = global.ActiveSession.isAdmin()
 
@@ -306,7 +301,7 @@ load = (win) ->
 
 				(if canSetStatus and isAdmin
 					StatusButtonGroup({
-						planElementType: Term 'Section'
+						chxElementType: Term 'Section'
 						data: section
 						parentData: clientFile
 						isExisting: isExistingSection
@@ -321,30 +316,13 @@ load = (win) ->
 				(if not sectionIsInactive and isAdmin
 					R.div({className: 'btn-group btn-group-sm sectionButtons'},
 						R.button({
-							ref: 'addTarget'
-							className: 'addTarget btn btn-primary'
-							onClick: addTargetToSection.bind null, section.get('id')
+							ref: 'addTopic'
+							className: 'addTopic btn btn-primary'
+							onClick: addTopicToSection.bind null, section.get('id')
 							disabled: not canModify
 						},
 							FaIcon('plus')
-							" Add #{Term 'Target'}"
-						)
-
-						WithTooltip({
-							title: "Create #{Term 'Section'} #{Term 'Template'}"
-							placement: 'top'
-							container: 'body'
-						},
-							OpenDialogLink({
-								className: 'btn btn-default'
-								dialog: CreatePlanTemplateDialog
-								title: "Create #{Term 'Template'} from #{Term 'Section'}"
-								sections: Imm.List([section])
-								currentTargetRevisionsById
-								disabled: isReadOnly
-							},
-								FaIcon 'wpforms'
-							)
+							" Add #{Term 'Topic'}"
 						)
 					)
 				)
@@ -405,11 +383,11 @@ load = (win) ->
 	}
 
 
-	# Decorate/Wrap PlanSection with DragDropContext, DropTarget, and DragSource
+	# Decorate/Wrap ChxSection with DragDropContext, DropTarget, and DragSource
 	return React.createFactory Decorate [
 		DropTarget('section', sectionDestination, connectDestination)
 		DragSource('section', sectionSource, collectSource)
-	], PlanSection
+	], ChxSection
 
 
 module.exports = {load}

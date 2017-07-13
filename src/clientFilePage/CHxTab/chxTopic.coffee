@@ -15,16 +15,14 @@ load = (win) ->
 	{DragSource, DropTarget} = win.ReactDnD
 
 	StatusButtonGroup = require('./statusButtonGroup').load(win)
-	ModifyTargetStatusDialog = require('../modifyTargetStatusDialog').load(win)
-	MetricLookupField = require('../../metricLookupField').load(win)
+	ModifyTopicStatusDialog = require('../modifyTopicStatusDialog').load(win)
 	ExpandingTextArea = require('../../expandingTextArea').load(win)
-	MetricWidget = require('../../metricWidget').load(win)
 
 	{FaIcon, scrollToElement} = require('../../utils').load(win)
 
 
-	PlanTarget = React.createClass
-		displayName: 'PlanTarget'
+	ChxTopic = React.createClass
+		displayName: 'ChxTopic'
 		mixins: [React.addons.PureRenderMixin]
 
 		propTypes: {
@@ -36,26 +34,26 @@ load = (win) ->
 			# DnD props
 			index: React.PropTypes.number.isRequired
 			# Raw data
-			target: React.PropTypes.instanceOf(Imm.Map).isRequired
+			topic: React.PropTypes.instanceOf(Imm.Map).isRequired
 			# Methods
-			reorderTargetId: React.PropTypes.func.isRequired
+			reorderTopicId: React.PropTypes.func.isRequired
 		}
 
 		render: ->
 			{
-				target, sectionIsInactive
-				isSelected, isReadOnly, isCollapsed, isExistingTarget, hasChanges
+				topic, sectionIsInactive
+				isSelected, isReadOnly, isCollapsed, isExistingTopic, hasChanges
 				connectDropTarget, connectDragPreview, connectDragSource
-				onExpandTarget
+				onExpandTopic
 			} = @props
 
-			{id, status, name, description, metricIds} = target.toObject()
+			{id, status, name, description} = topic.toObject()
 
 			canChangeStatus = (
 				isSelected and
 				not sectionIsInactive and
 				not isReadOnly and
-				isExistingTarget
+				isExistingTopic
 			)
 
 			isDisabled = (
@@ -67,17 +65,17 @@ load = (win) ->
 
 			return connectDropTarget connectDragPreview (
 				R.div({
-					id: "target-#{id}"
+					id: "topic-#{id}"
 					className: [
-						'planTarget'
+						'chxTopic'
 						"status-#{status}"
 						'isSelected' if isSelected
-						'hasChanges' if hasChanges or not isExistingTarget
+						'hasChanges' if hasChanges or not isExistingTopic
 						'isCollapsed' if isCollapsed
 						'readOnly' if isReadOnly
 						'dragging' if @props.isDragging
 					].join ' '
-					onClick: @props.onTargetSelection
+					onClick: @props.onTopicSelection
 				},
 					connectDragSource (
 						R.div({
@@ -87,12 +85,12 @@ load = (win) ->
 						)
 					)
 
-					R.div({className: 'planTargetContainer'},
+					R.div({className: 'chxTopicContainer'},
 						R.div({className: 'nameContainer'},
 							(if isCollapsed
 								R.span({
 									className: 'name field static'
-									onClick: @props.onExpandTarget
+									onClick: @props.onExpandTopic
 								},
 									name
 								)
@@ -102,22 +100,22 @@ load = (win) ->
 									className: 'form-control name field'
 									type: 'text'
 									value: name
-									placeholder: "Name of #{Term 'target'}"
+									placeholder: "Name of #{Term 'topic'}"
 									onChange: @_updateField.bind null, 'name'
-									onFocus: @props.onTargetSelection
-									onClick: @props.onTargetSelection
+									onFocus: @props.onTopicSelection
+									onClick: @props.onTopicSelection
 									disabled: isDisabled
 								})
 							)
 
 							(if canChangeStatus
 								StatusButtonGroup({
-									planElementType: Term 'Target'
-									data: target
-									isExisting: isExistingTarget
+									chxElementType: Term 'Topic'
+									data: topic
+									isExisting: isExistingTopic
 									status
 									onRemove: null
-									dialog: ModifyTargetStatusDialog
+									dialog: ModifyTopicStatusDialog
 								})
 							)
 						)
@@ -125,75 +123,27 @@ load = (win) ->
 						R.div({className: 'descriptionContainer'},
 							ExpandingTextArea({
 								className: 'description field'
-								placeholder: "Describe the current #{Term 'treatment plan'} . . ."
+								placeholder: "#{Term 'chx'} . . ."
 								value: description
 								disabled: isDisabled
 								onChange: @_updateField.bind null, 'description'
-								onFocus: @props.onTargetSelection
-								onClick: @props.onTargetSelection
+								onFocus: @props.onTopicSelection
+								onClick: @props.onTopicSelection
 							})
-						)
-
-						(if not metricIds.isEmpty() or @props.isSelected
-							R.div({className: 'metrics'},
-								R.div({className: 'metricsList'},
-									(metricIds.map (metricId) =>
-										metric = @props.metricsById.get(metricId)
-
-										MetricWidget({
-											name: metric.get('name')
-											definition: metric.get('definition')
-											value: metric.get('value')
-											key: metricId
-											tooltipViewport: '.view'
-											isEditable: false
-											allowDeleting: not isDisabled
-											onDelete: @props.deleteMetricFromTarget.bind(
-												null, id, metricId
-											)
-										})
-									)
-									(if @props.isSelected and not isDisabled
-										R.button({
-											className: "btn btn-link addMetricButton animated fadeIn"
-											onClick: @_focusMetricLookupField.bind(null, id)
-										},
-											FaIcon('plus')
-											" Add #{Term 'metric'}"
-										)
-									)
-								)
-								(unless isDisabled
-									R.div({
-										ref: 'metricLookup'
-										className: 'metricLookupContainer'
-									},
-										MetricLookupField({
-											metrics: @props.metricsById.valueSeq().filter (metric) => metric.get('status') is 'default'
-											onSelection: @props.addMetricToTarget.bind(
-												null, id, @_hideMetricInput
-											)
-											placeholder: "Find / Define a #{Term 'Metric'}"
-											isReadOnly: @props.isReadOnly
-											onBlur: @_hideMetricInput
-										})
-									)
-								)
-							)
 						)
 					)
 				)
 			)
 
 		_updateField: (fieldName, event) ->
-			newValue = @props.target.set fieldName, event.target.value
-			@props.onTargetUpdate(newValue)
+			newValue = @props.topic.set fieldName, event.target.value
+			@props.onTopicUpdate(newValue)
 
 		###
   		# todo: do we need this?
-		_onTargetClick: (event) ->
+		_onTopicClick: (event) ->
 			classList = event.target.classList
-			# Prevent distracting switching of selectedTarget while re-ordering targets
+			# Prevent distracting switching of selectedTopic while re-ordering topics
 			return if classList.contains 'dragSource'
 
 			# Clicking anywhere but the fields or buttons will focus the name field
@@ -204,23 +154,12 @@ load = (win) ->
 				@props.isReadOnly
 			)
 
-			@props.setSelectedTarget @props.target.get('id'), =>
+			@props.setSelectedTopic @props.topic.get('id'), =>
 				@_focusNameField() if shouldFocusNameField
 		###
 
 		_focusNameField: ->
 			@refs.nameField.focus() if @refs.nameField?
-
-		_focusMetricLookupField: ->
-			$(@refs.metricLookup).show()
-			$('.lookupField').focus()
-			# scroll down so metric results are never hidden below view
-			$parent = win.document.getElementById('planView')
-			$element = findDOMNode(@refs.metricLookup)
-			scrollToElement $parent, $element, 1000, 'easeInOutQuad', 200, (->)
-
-		_hideMetricInput: ->
-			$(@refs.metricLookup).hide()
 
 
 	# Drag source contract
@@ -228,18 +167,18 @@ load = (win) ->
 		beginDrag: ({id, index, sectionIndex}) -> {id, index, sectionIndex}
 	}
 
-	targetDestination = {
+	topicDestination = {
 		hover: (props, monitor, component) ->
-			draggingTargetProps = monitor.getItem()
+			draggingTopicProps = monitor.getItem()
 
-			sectionIndex = draggingTargetProps.sectionIndex
-			dragIndex = draggingTargetProps.index
+			sectionIndex = draggingTopicProps.sectionIndex
+			dragIndex = draggingTopicProps.index
 			hoverIndex = props.index
 
 			# Don't replace items with themselves
 			return if dragIndex is hoverIndex
 
-			# Can't drag target to another section
+			# Can't drag topic to another section
 			return if sectionIndex isnt props.sectionIndex
 
 			# Determine rectangle on screen
@@ -266,7 +205,7 @@ load = (win) ->
 			return if dragIndex > hoverIndex and hoverClientY > hoverMiddleBottomY
 
 			# Time to actually perform the action
-			props.reorderTargetId(sectionIndex, dragIndex, hoverIndex)
+			props.reorderTopicId(sectionIndex, dragIndex, hoverIndex)
 
 			# (Example says to mutate here, but we're using Imm data)
 			monitor.getItem().index = hoverIndex;
@@ -284,11 +223,11 @@ load = (win) ->
 	}
 
 
-	# Wrap (decorate) planTarget with drag-drop
+	# Wrap (decorate) chxTopic with drag-drop
 	return React.createFactory Decorate [
-		DropTarget('target', targetDestination, connectDestination)
-		DragSource('target', targetSource, collectSource)
-	], PlanTarget
+		DropTarget('topic', topicDestination, connectDestination)
+		DragSource('topic', targetSource, collectSource)
+	], ChxTopic
 
 
 module.exports = {load}
