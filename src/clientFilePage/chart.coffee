@@ -282,7 +282,11 @@ load = (win) ->
 					}
 				}
 				point: {
-					r: 4.5
+					r: (d) ->
+						if d.value > 0.5
+							return 4
+						else
+							return
 				}
 				tooltip: {
 					format: {
