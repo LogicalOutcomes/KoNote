@@ -276,6 +276,9 @@ load = (win) ->
 			  plan: {
 			    sections: []
 			  }
+			  chx: {
+			  	sections: []
+				}
 			  detailUnits: []
 			}
 
