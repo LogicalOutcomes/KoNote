@@ -43,6 +43,20 @@ dataModelDefinitions = [
 					})
 				)
 			})
+			chx: Joi.object().keys({
+				sections: Joi.array().items(
+					Joi.object().keys({
+						id: IdSchema
+						name: Joi.string()
+						status: ['default', 'deactivated', 'completed']
+						statusReason: Joi.string().optional()
+						programId: IdSchema.allow('')
+						topicIds: Joi.array().items(
+							IdSchema
+						)
+					})
+				)
+			})
 			detailUnits: Joi.array().items(
 				Joi.object().keys({
 					groupId: IdSchema
@@ -83,6 +97,18 @@ dataModelDefinitions = [
 					metricIds: Joi.array().items(
 						IdSchema
 					)
+				})
+			}
+			{
+				name: 'chxTopic'
+				collectionName: 'chxTopics'
+				isMutable: true
+				indexes: [['status']]
+				schema: Joi.object().keys({
+					name: Joi.string()
+					description: Joi.string()
+					status: ['default', 'deactivated', 'completed']
+					statusReason: Joi.string().optional()
 				})
 			}
 			{

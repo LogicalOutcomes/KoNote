@@ -1,0 +1,57 @@
+.planTab
+	flex 1
+	display flex
+	overflow hidden
+
+	> .leftPane
+		flex 1
+		overflow inherit
+		display flex
+		flex-direction column
+
+		> .empty
+			text-align center
+
+			> .message
+				padding 100px 80px 50px
+
+				color #888
+				font-size 16px
+
+			> .btn, .templates
+				margin 5px
+
+			> .btn > .fa
+				padding-right 10px
+
+		@require 'planView'
+		@require 'planSection'
+		@require 'planTarget'
+
+
+	> .targetDetail
+		overflow-y auto
+		overflow-x hidden
+		flex 1
+		display flex
+
+		border-left 2px solid sidebar-borders
+		transition flex-grow 200ms // todo: evaluate performance
+
+		&.collapsed
+			flex 0
+
+		> .revisionHistoryContainer
+			flex 1
+			display flex
+			max-width 100%
+
+			.revisionHistory
+				flex 1
+
+		> .noSelection
+			flex 1
+			padding 100px 0
+
+			color #888
+			text-align center
