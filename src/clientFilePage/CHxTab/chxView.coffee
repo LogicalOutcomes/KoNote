@@ -13,7 +13,8 @@ load = (win) ->
 	R = React.DOM
 	{findDOMNode} = win.ReactDOM
 
-	DragDropContext = require('../dnd').load(win)
+	{DragDropContext} = win.ReactDnD
+	HTML5Backend = win.ReactDnDHTML5Backend
 
 	ChxSection = require('./chxSection').load(win)
 	InactiveToggleWrapper = require('./inactiveToggleWrapper').load(win)
@@ -155,7 +156,7 @@ load = (win) ->
 
 
 	# Create drag-drop context for the ChxView class
-	return React.createFactory DragDropContext ChxView
+	return React.createFactory DragDropContext(HTML5Backend) ChxView
 
 
 module.exports = {load}
