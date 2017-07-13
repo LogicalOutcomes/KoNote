@@ -30,6 +30,7 @@ load = (win, {clientFileId}) ->
 
 	CrashHandler = require('../crashHandler').load(win)
 	PlanTab = require('./planTab').load(win)
+	CHxTab = require('./CHxTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
 	InfoTab = require('./infoTab').load(win)
@@ -73,6 +74,7 @@ load = (win, {clientFileId}) ->
 				progNoteHistories: null
 				progressEvents: null
 				planTargetsById: Imm.Map()
+				chxTopicsById: Imm.Map()
 				programsById: Imm.Map()
 				metricsById: Imm.Map()
 				attachmentHeaders: Imm.List()
@@ -150,6 +152,7 @@ load = (win, {clientFileId}) ->
 				progNoteHistories
 				progressEvents: @state.progressEvents
 				planTargetsById: @state.planTargetsById
+				chxTopicsById: @state.chxTopicsById
 				metricsById: @state.metricsById
 				planTemplateHeaders: @state.planTemplateHeaders
 				programs: @state.programs
@@ -163,6 +166,7 @@ load = (win, {clientFileId}) ->
 				closeWindow: @props.closeWindow
 				setWindowTitle: @props.setWindowTitle
 				updatePlan: @_updatePlan
+				updateCHx: @_updateCHx
 
 				renewAllData: @_renewAllData
 				secondPass: @_secondPass
@@ -180,6 +184,8 @@ load = (win, {clientFileId}) ->
 			planTemplateHeaders = null
 			planTargetsById = null
 			planTargetHeaders = null
+			chxTopicsById = null
+			chxTopicHeaders = null
 			progNoteTotal = null
 			progNoteHeaders = null
 			allProgNoteHeaders = null
@@ -236,6 +242,15 @@ load = (win, {clientFileId}) ->
 									return
 
 								planTargetHeaders = results
+								cb()
+
+						(cb) =>
+							ActiveSession.persist.chxTopics.list clientFileId, (err, results) =>
+								if err
+									cb err
+									return
+
+								chxTopicHeaders = results
 								cb()
 
 						(cb) =>
@@ -369,6 +384,26 @@ load = (win, {clientFileId}) ->
 						.fromEntrySeq().toMap()
 
 						checkFileSync planTargetsById, @state.planTargetsById
+						cb()
+
+				(cb) =>
+					Async.map chxTopicHeaders.toArray(), (chxTopicHeader, cb) =>
+						topicId = chxTopicHeader.get('id')
+						ActiveSession.persist.chxTopics.readRevisions clientFileId, topicId, cb
+					, (err, results) =>
+						if err
+							cb err
+							return
+
+						chxTopicsById = Imm.List(results).map (chxTopicRevs) =>
+							id = chxTopicRevs.getIn([0, 'id'])
+							return [
+								id
+								Imm.Map({id, revisions: chxTopicRevs.reverse()})
+							]
+						.fromEntrySeq().toMap()
+
+						checkFileSync chxTopicsById, @state.chxTopicsById
 						cb()
 
 				(cb) =>
@@ -584,6 +619,8 @@ load = (win, {clientFileId}) ->
 							}
 						}
 				else
+					console.log planTargetsById
+					console.log chxTopicsById
 					@setState {
 						status: 'ready'
 
@@ -596,6 +633,7 @@ load = (win, {clientFileId}) ->
 						metricsById
 						planTargetsById
 						planTemplateHeaders
+						chxTopicsById
 						programs
 						programsById
 						detailDefinitionGroups
@@ -763,6 +801,56 @@ load = (win, {clientFileId}) ->
 				# Persist operations will automatically trigger event listeners
 				# that update the UI.
 
+		_updateCHx: (chx, newChxTopics, updatedChxTopics) ->
+			idMap = Imm.Map()
+
+			Async.series [
+				(cb) =>
+					Async.each newChxTopics.toArray(), (newChxTopic, cb) =>
+						transientId = newChxTopic.get('id')
+						newChxTopic = newChxTopic.delete('id')
+
+						ActiveSession.persist.chxTopics.create newChxTopic, (err, result) =>
+							if err
+								cb err
+								return
+
+							persistentId = result.get('id')
+							idMap = idMap.set(transientId, persistentId)
+							cb()
+					, cb
+				(cb) =>
+					Async.each updatedChxTopics.toArray(), (updatedChxTopic, cb) =>
+						ActiveSession.persist.chxTopics.createRevision updatedChxTopic, cb
+					, cb
+				(cb) =>
+					# Replace transient IDs with newly created persistent IDs
+					newChx = chx.update 'sections', (sections) =>
+						return sections.map (section) =>
+							return section.update 'topicIds', (topicIds) =>
+								return topicIds.map (topicId) =>
+									return idMap.get(topicId, topicId)
+					newClientFile = @state.clientFile.set 'chx', newChx
+
+					# If no changes, skip this step
+					if Imm.is(newClientFile, @state.clientFile)
+						cb()
+						return
+
+					ActiveSession.persist.clientFiles.createRevision newClientFile, cb
+			], (err) =>
+
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							An error occurred.  Please check your network connection and try again.
+						"""
+						return
+
+					CrashHandler.handle err
+					return
+
+
 		getPageListeners: ->
 			# TODO: Refactor these to be more consistent & performant
 
@@ -784,6 +872,20 @@ load = (win, {clientFileId}) ->
 								revisions: Imm.List [newRev]
 							}
 						return {planTargetsById}
+
+				'create:chxTopic createRevision:chxTopic': (newRev) =>
+					return unless newRev.get('clientFileId') is clientFileId
+					@setState (state) =>
+						topicId = newRev.get('id')
+						if state.chxTopicsById.has topicId
+							chxTopicsById = state.chxTopicsById.updateIn [topicId, 'revisions'], (revs) =>
+								return revs.unshift newRev
+						else
+							chxTopicsById = state.chxTopicsById.set topicId, Imm.fromJS {
+								id: topicId
+								revisions: Imm.List [newRev]
+							}
+						return {chxTopicsById}
 
 				'create:progNote': (newProgNote) =>
 					return unless newProgNote.get('clientFileId') is clientFileId
@@ -1083,6 +1185,25 @@ load = (win, {clientFileId}) ->
 					)
 					R.div({
 						className: [
+							'view plan CHx'
+							showWhen activeTabId is 'CHx'
+						].join ' '
+					},
+						CHxTab({
+						ref: 'CHx'
+						clientFileId
+						clientFile: @props.clientFile
+						clientPrograms: @props.clientPrograms
+						chx: @props.clientFile.get('chx')
+						chxTopicsById: @props.chxTopicsById
+						programsById: @props.programsById
+						updateCHx: @props.updateCHx
+						# Plan is disabled for regular users
+						isReadOnly: isReadOnly or ActiveSession.accountType isnt 'admin'
+						})
+					)
+					R.div({
+						className: [
 							'view'
 							showWhen3d activeTabId is 'progressNotes'
 						].join ' '
@@ -1207,6 +1328,12 @@ load = (win, {clientFileId}) ->
 						icon: 'sitemap'
 						isActive: activeTabId is 'plan'
 						onClick: @props.onTabChange.bind null, 'plan'
+					})
+					SidebarTab({
+						name: "Cumulative History"
+						icon: 'history'
+						isActive: activeTabId is 'CHx'
+						onClick: @props.onTabChange.bind null, 'CHx'
 					})
 					SidebarTab({
 						name: Term('Progress Notes')
