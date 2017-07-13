@@ -65,6 +65,10 @@
 		"target": "target",
 		"plan target": "plan target",
 		"treatment plan": "treatment plan",
+		"chx topic": "cumulative history topic",
+
+		"chx": "cumulative history",
+		"topic": "topic",
 
 		"template": "template",
 		"plan template": "plan template",
