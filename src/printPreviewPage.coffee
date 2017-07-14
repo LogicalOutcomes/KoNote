@@ -189,7 +189,7 @@ load = (win, {dataSet}) ->
 
 							R.button({
 								ref: 'export'
-								className: 'print btn btn-primary'
+								className: "print btn btn-primary #{showWhen printObj.get('format') is 'plan'}"
 								onClick: @_exportPage
 							},
 								FaIcon('download')
@@ -261,6 +261,12 @@ load = (win, {dataSet}) ->
 										clientFile
 										progEvents
 									})
+							when 'chx'
+									SingleChxView({
+										title: "Cumulative History"
+										data
+										clientFile
+									})
 
 							else
 								throw new Error "Unknown print-data type: #{setType}"
@@ -289,6 +295,7 @@ load = (win, {dataSet}) ->
 						switch @props.format
 							when 'progNote' then "Progress Note"
 							when 'plan' then "Care Plan"
+							when 'chx' then "Cumulative History"
 					)
 					R.h3({className: 'clientName'},
 						renderName @props.clientFile.get('clientName')
@@ -298,7 +305,7 @@ load = (win, {dataSet}) ->
 					)
 				)
 				R.div({className: 'authorInfo'},
-					(if @props.format isnt 'plan'
+					(unless @props.format is 'plan' or 'chx'
 						R.ul({},
 							R.li({},
 								FaIcon('user')
@@ -471,6 +478,45 @@ load = (win, {dataSet}) ->
 													key: metricId
 												})
 											).toJS()...
+										)
+									)
+								).toJS()...
+							)
+						)
+					).toJS()...
+				)
+			)
+
+	SingleChxView = React.createFactory React.createClass
+		displayName: 'SingleChxView'
+		mixins: [React.addons.PureRenderMixin]
+		# TODO: propTypes, or make this a view
+
+		render: ->
+			R.div({className: 'plan unit'},
+				R.div({className: 'sections'},
+					(@props.data.get('sections').map (section) =>
+						R.section({className: 'section chxTopics', key: section.get('id')},
+							R.h2({className: 'name'}, section.get('name'))
+							(if section.get('topicIds').size is 0
+								R.div({className: 'noTargets'},
+									"This #{Term 'section'} is empty."
+								)
+							)
+							R.div({className: 'targets'},
+								(section.get('topicIds')
+								.filter (topicId) =>
+									topics = @props.data.get('topics')
+									thisTopic = topics.get(topicId)
+									return thisTopic.get('status') is 'default'
+								.map (topicId) =>
+									topics = @props.data.get('topics')
+									thisTopic = topics.get(topicId)
+
+									R.div({className: 'target'},
+										R.h3({className: 'name'}, thisTopic.get('name'))
+										R.div({className: 'description'},
+											renderLineBreaks thisTopic.get('description')
 										)
 									)
 								).toJS()...
