@@ -460,8 +460,7 @@ load = (win) ->
 		_normalizeTargets: ->
 			@setState (state) =>
 				return {
-					currentTargetRevisionsById: state.currentTargetRevisionsById
-					.map (targetRev, targetId) =>
+					currentTargetRevisionsById: state.currentTargetRevisionsById.map (targetRev, targetId) =>
 						return @_normalizeTarget targetRev
 				}
 
@@ -492,8 +491,7 @@ load = (win) ->
 								return targetIds.filter (targetId) =>
 									return not unusedTargetIds.contains(targetId)
 
-					currentTargetRevisionsById: state.currentTargetRevisionsById
-					.filter (rev, targetId) =>
+					currentTargetRevisionsById: state.currentTargetRevisionsById.filter (rev, targetId) =>
 						return not unusedTargetIds.contains(targetId)
 				}
 
