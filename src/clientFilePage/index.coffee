@@ -30,7 +30,7 @@ load = (win, {clientFileId}) ->
 
 	CrashHandler = require('../crashHandler').load(win)
 	PlanTab = require('./planTab').load(win)
-	CHxTab = require('./CHxTab').load(win)
+	CHxTab = require('./cHxTab').load(win)
 	ProgNotesTab = require('./progNotesTab').load(win)
 	AnalysisTab = require('./analysisTab').load(win)
 	InfoTab = require('./infoTab').load(win)
@@ -1330,12 +1330,6 @@ load = (win, {clientFileId}) ->
 						onClick: @props.onTabChange.bind null, 'plan'
 					})
 					SidebarTab({
-						name: "Cumulative History"
-						icon: 'history'
-						isActive: activeTabId is 'CHx'
-						onClick: @props.onTabChange.bind null, 'CHx'
-					})
-					SidebarTab({
 						name: Term('Progress Notes')
 						icon: 'pencil-square-o'
 						isActive: activeTabId is 'progressNotes'
@@ -1346,6 +1340,12 @@ load = (win, {clientFileId}) ->
 						icon: 'line-chart'
 						isActive: activeTabId is 'analysis'
 						onClick: @props.onTabChange.bind null, 'analysis'
+					})
+					SidebarTab({
+						name: "Cumulative History"
+						icon: 'history'
+						isActive: activeTabId is 'CHx'
+						onClick: @props.onTabChange.bind null, 'CHx'
 					})
 					SidebarTab({
 						name: "Information"
