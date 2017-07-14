@@ -185,8 +185,6 @@ load = (win) ->
 						hasTopicChanged: @_hasTopicChanged
 						updateTopic: @_updateTopic
 						setSelectedTopic: @_setSelectedTopic
-						addMetricToTopic: @_addMetricToTopic
-						deleteMetricFromTopic: @_deleteMetricFromTopic
 						getSectionIndex: @_getSectionIndex
 						collapseAndSelectTopicId: @_collapseAndSelectTopicId
 						toggleCollapsedView: @_toggleCollapsedView
@@ -387,7 +385,7 @@ load = (win) ->
 						emptyDescription = currentRev.get('description') is ''
 						noHistory = @props.chxTopicsById.get(topicId, null) is null
 
-						return emptyName and emptyDescription and noMetrics and noHistory
+						return emptyName and emptyDescription and noHistory
 
 				return {
 					chx: state.chx.update 'sections', (sections) =>

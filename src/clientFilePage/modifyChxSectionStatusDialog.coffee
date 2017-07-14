@@ -2,8 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Dialog to change the status of a section within the client's chx (default/deactivated/completed)
-# TODO: Consolidate with ModifySectionStatusDialog and modifyTargetStatusDialog
+# TODO: Consolidate with ModifyTopicStatusDialog / ModifyTopic...
 
 Persist = require '../persist'
 
@@ -17,8 +16,11 @@ load = (win) ->
 	Dialog = require('../dialog').load(win)
 
 
-	ModifyTopicStatusDialog = React.createFactory React.createClass
+	ModifySectionStatusDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
+
+		componentDidMount: ->
+			@refs.statusReasonField.focus()
 
 		getInitialState: -> {
 			statusReason: ''
@@ -41,7 +43,6 @@ load = (win) ->
 							onChange: @_updateStatusReason
 							value: @state.statusReason
 							placeholder: "Please specify a reason..."
-							autoFocus: true
 						})
 					)
 					R.div({className: 'btn-toolbar'},
@@ -64,13 +65,16 @@ load = (win) ->
 		_submit: ->
 			@refs.dialog.setIsLoading true
 
-			topic = @props.data
+			clientFile = @props.parentData
+			index = clientFile.getIn(['chx', 'sections']).indexOf @props.data
 
-			revisedCHxTopic = topic
-			.set('status', @props.newStatus)
-			.set('statusReason', @state.statusReason)
+			revisedCHx = clientFile.get('chx')
+			.setIn(['sections', index, 'status'], @props.newStatus)
+			.setIn(['sections', index, 'statusReason'], @state.statusReason)
 
-			ActiveSession.persist.chxTopics.createRevision revisedCHxTopic, (err, updatedCHxTopic) =>
+			revisedClientFile = clientFile.set 'chx', revisedCHx
+
+			ActiveSession.persist.clientFiles.createRevision revisedClientFile, (err, updatedClientFile) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
@@ -84,10 +88,9 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-				# Persist will trigger an event to update the UI
 				@props.onSuccess()
 
 
-	return ModifyTopicStatusDialog
+	return ModifySectionStatusDialog
 
 module.exports = {load}

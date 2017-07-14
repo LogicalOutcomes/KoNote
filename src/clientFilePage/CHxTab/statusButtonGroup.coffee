@@ -42,7 +42,7 @@ load = (win) ->
 							title: "Deactivate #{chxElementType}"
 							message: """
 								This will remove the #{chxElementType.toLowerCase()} from the #{Term 'client'}
-								#{Term 'chx'}, and future #{Term 'progress notes'}.
+								#{Term 'chx'}.
 								It may be re-activated again later.
 							"""
 							reasonLabel: "Reason for deactivation:"
@@ -74,7 +74,7 @@ load = (win) ->
 						title: "Re-activate #{chxElementType}"
 						message: """
 							This will re-activate the #{chxElementType.toLowerCase()} so it appears in the #{Term 'client'}
-							#{Term 'chx'}, and future #{Term 'progress notes'}.
+							#{Term 'chx'}.
 						"""
 						newStatus: 'default'
 						reasonLabel: "Reason for re-activation:"

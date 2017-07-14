@@ -18,7 +18,7 @@ load = (win) ->
 	ChxTopic = require('./chxTopic').load(win)
 	InactiveToggleWrapper = require('./inactiveToggleWrapper').load(win)
 	StatusButtonGroup = require('./statusButtonGroup').load(win)
-	ModifySectionStatusDialog = require('../modifySectionStatusDialog').load(win)
+	ModifySectionStatusDialog = require('../modifyChxSectionStatusDialog').load(win)
 	ColorKeyBubble = require('../../colorKeyBubble').load(win)
 
 	{FaIcon, showWhen} = require('../../utils').load(win)
