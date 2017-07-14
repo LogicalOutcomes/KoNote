@@ -2,7 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-# Presentational component for plan section or target status buttons
+# Presentational component for chx section or topic status buttons
 
 Term = require '../../term'
 
@@ -18,7 +18,7 @@ load = (win) ->
 	{FaIcon} = require('../../utils').load(win)
 
 
-	StatusButtonGroup = ({planElementType, data, parentData, isExisting, status, onRemove, dialog}) ->
+	StatusButtonGroup = ({chxElementType, data, parentData, isExisting, status, onRemove, dialog}) ->
 
 		R.div({className: 'statusButtonGroup'},
 			# Will show remove (x) button for an empty section, rare case
@@ -39,10 +39,10 @@ load = (win) ->
 							tooltip: 'Deactivate'
 							icon: 'times'
 							dialog
-							title: "Deactivate #{planElementType}"
+							title: "Deactivate #{chxElementType}"
 							message: """
-								This will remove the #{planElementType.toLowerCase()} from the #{Term 'client'}
-								#{Term 'plan'}, and future #{Term 'progress notes'}.
+								This will remove the #{chxElementType.toLowerCase()} from the #{Term 'client'}
+								#{Term 'chx'}, and future #{Term 'progress notes'}.
 								It may be re-activated again later.
 							"""
 							reasonLabel: "Reason for deactivation:"
@@ -54,9 +54,9 @@ load = (win) ->
 							tooltip: 'Complete'
 							icon: 'check'
 							dialog
-							title: "Mark #{planElementType} as Completed"
+							title: "Mark #{chxElementType} as Completed"
 							message: """
-								This will mark the #{planElementType.toLowerCase()} as 'completed'. This often
+								This will mark the #{chxElementType.toLowerCase()} as 'completed'. This often
 								means that the desired outcome has been reached.
 							"""
 							reasonLabel: "Reason for completed:"
@@ -68,13 +68,13 @@ load = (win) ->
 				else
 					StatusButton({
 						className: 'reactivate'
-						tooltip: "Re-activate #{planElementType}"
+						tooltip: "Re-activate #{chxElementType}"
 						icon: 'sign-in'
 						dialog
-						title: "Re-activate #{planElementType}"
+						title: "Re-activate #{chxElementType}"
 						message: """
-							This will re-activate the #{planElementType.toLowerCase()} so it appears in the #{Term 'client'}
-							#{Term 'plan'}, and future #{Term 'progress notes'}.
+							This will re-activate the #{chxElementType.toLowerCase()} so it appears in the #{Term 'client'}
+							#{Term 'chx'}, and future #{Term 'progress notes'}.
 						"""
 						newStatus: 'default'
 						reasonLabel: "Reason for re-activation:"

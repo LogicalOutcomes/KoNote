@@ -125,27 +125,6 @@ load = (win) ->
 							)
 						)
 
-						R.button({
-							className: 'reorderButton'
-							onClick: => @_toggleCollapsedView()
-						},
-							(if @state.isCollapsedView
-								R.div({},
-									FaIcon('expand', {className:'menuItemIcon'})
-									R.span({className: 'menuItemText'},
-										" Expand"
-									)
-								)
-							else
-								R.div({},
-									FaIcon('compress', {className:'menuItemIcon'})
-									R.span({className: 'menuItemText'},
-										"Collapse"
-									)
-								)
-							)
-						)
-
 						PrintButton({
 							dataSet: [
 								{
