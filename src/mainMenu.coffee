@@ -177,7 +177,9 @@ load = (win) ->
 				if @props.dialog?
 					OpenDialogLink(@props,
 						FaIcon(@props.icon)
-						@props.title
+						R.span({className: 'menuItemText'},
+							@props.title
+						)
 					)
 				else
 					R.div({title: @props.title},
