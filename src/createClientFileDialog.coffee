@@ -314,11 +314,21 @@ load = (win) ->
 						.flatten()
 						.toList()
 
-						Bootbox.confirm """
-							The #{renderRecordId recordId} is already in use by #{clientList.toJS().join(', ')}.
-							Would you like to continue creating a duplicate #{Config.clientFileRecordId.label}?
-						""", (ok) ->
-							if ok then cb() else cb('CANCEL')
+						Bootbox.confirm {
+							title: "Warning: Duplicate ID"
+							message: """The #{renderRecordId recordId} is already in use by #{clientList.toJS().join(', ')}.
+								Are you sure you would like to continue creating a duplicate #{Config.clientFileRecordId.label}?"""
+							buttons: {
+								cancel: {
+									label: 'Cancel'
+								},
+								confirm: {
+									label: 'Confirm'
+								}
+							}
+							callback: (ok) =>
+								if ok then cb() else cb('CANCEL')
+						}
 
 					(cb) =>
 						# Warn if first & last name already used, but may continue
@@ -335,12 +345,14 @@ load = (win) ->
 						else
 							""
 
-						Bootbox.confirm """
-							The name \"#{first} #{last}\" matches an existing #{Term 'client file'}
-							\"<b>#{renderName matchingClientName.get('clientName')}</b>\" #{matchingClientRecordId}).
-							Would you like to create this new #{Term 'client file'} anyway?
-						""", (ok) ->
-							if ok then cb() else cb('CANCEL')
+						Bootbox.confirm {
+							title: "Warning: Duplicate Name"
+							message: """The name \"#{first} #{last}\" matches an existing #{Term 'client file'}:
+							\"#{renderName matchingClientName.get('clientName')}\", #{matchingClientRecordId}.
+							Would you like to create this new #{Term 'client file'} anyway?"""
+							callback: (ok) =>
+								if ok then cb() else cb('CANCEL')
+						}
 
 				(cb) =>
 					# Create the clientFile,
