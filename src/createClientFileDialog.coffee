@@ -71,7 +71,7 @@ load = (win) ->
 
 			Dialog({
 				ref: 'dialog'
-				title: "Create New #{Term 'Client File'}"
+				title: "New #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
 				R.div({className: 'createClientFileDialog'},
