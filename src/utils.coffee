@@ -112,7 +112,7 @@ load = (win) ->
 
 		if options instanceof Function then cb = options
 
-		if options.maximize
+		if options.maximize or Config.mobile
 			width = screenWidth
 			height = screenHeight
 		else

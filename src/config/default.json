@@ -5,6 +5,7 @@
 		"type": "file-system",
 		"dataDirectory": "data"
 	},
+	"mobile": false,
 
 	"productName": "KoNote",
 	"supportEmailAddress": "help@konote.ca",
