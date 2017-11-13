@@ -432,7 +432,7 @@ load = (win) ->
 			not @state.userName or not @state.password
 
 		_login: (event) ->
-			@props.login(@state.userName, @state.password)
+			@props.login(@state.userName.split('@')[0], @state.password)
 
 
 	return LoginPage
