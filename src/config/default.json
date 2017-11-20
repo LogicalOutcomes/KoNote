@@ -33,6 +33,8 @@
 		"label": "ID#"
 	},
 
+	"defaultClientFileTab": "plan",
+
 	"printHeaderFooterEnabled": false,
 	"printHeader": "",
 	"printFooter": "",
