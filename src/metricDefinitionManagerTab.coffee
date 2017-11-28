@@ -117,7 +117,7 @@ load = (win) ->
 							R.input({
 								className: 'form-control'
 								id: 'searchBar'
-								placeholder: 'Search Metrics'
+								placeholder: "Search #{Term 'Metrics'}"
 								onChange: @_handleTableSearch
 							})
 
@@ -128,7 +128,7 @@ load = (win) ->
 									onSuccess: @_createMetric
 								},
 									FaIcon('plus')
-									" New #{Term 'Metric Definition'}"
+									" New #{Term 'Metric'}"
 								)
 							)
 
