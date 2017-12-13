@@ -165,7 +165,6 @@ load = (win) ->
 												onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
 											},
 												R.div({
-													onclick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
 												},
 													planTemplateHeader.get('name')
 

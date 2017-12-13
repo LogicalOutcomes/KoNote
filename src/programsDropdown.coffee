@@ -68,7 +68,6 @@ load = (win) ->
 					onClose: @toggle
 					bsStyle: @props.bsStyle
 					pullRight: true
-					container: 'body'
 
 					title: R.span({
 						className: 'currentProgram'
