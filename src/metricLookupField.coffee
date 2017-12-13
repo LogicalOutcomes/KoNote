@@ -16,7 +16,6 @@ load = (win) ->
 	$ = win.jQuery
 	React = win.React
 	R = React.DOM
-	Bootbox = win.bootbox
 	ReactDOMServer = win.ReactDOMServer
 
 	LayeredComponentMixin = require('./layeredComponentMixin').load(win)
@@ -81,18 +80,8 @@ load = (win) ->
 
 				target = event.target
 				if target.classList.contains('btn') and target.classList.contains('createMetric')
-					#check if metric exists before creating
-					match = @props.metrics.toJS().filter (match) -> match.name == lookupField.typeahead 'val'
-					if match[0]
-						Bootbox.alert "<strong>#{Term 'Metric'} already exists!</strong>
-							<br><br>Please select an existing #{Term 'metric'} from the search field
-							or use a unique name to create a new #{Term 'metric'}."
-						.on 'hidden.bs.modal', ->
-							lookupField.typeahead 'val', ''
-							lookupField.focus()
-					else
-						lookupField.typeahead 'close'
-						@_createMetric()
+					lookupField.typeahead 'close'
+					@_createMetric()
 
 		render: ->
 			return R.div({className: 'metricLookupField'},
