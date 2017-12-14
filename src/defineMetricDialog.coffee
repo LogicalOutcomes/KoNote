@@ -100,19 +100,11 @@ load = (win) ->
 
 				# Avoid duplicate metrics
 				# TODO: show the existing metric definition here to help the user decide how to continue
-				existingMetric = result.toJS().filter (match) => match.name is @state.name.trim()
+				existingMetric = result.toJS().filter (match) => match.name.toLowerCase() is @state.name.trim().toLowerCase()
 				if existingMetric[0]
-					Bootbox.dialog {
+					Bootbox.alert {
 						title: "Unable to Create #{Term 'Metric'}"
-						message: "A metric with this name already exists. Choose a unique name to define a new #{Term 'metric'} or use the existing #{Term 'metric'}."
-						buttons: {
-							default: {
-								label: "OK"
-								className: "btn-primary"
-								callback: =>
-									Bootbox.hideAll()
-							}
-						}
+						message: "A metric with this name already exists. Choose a new name to define this #{Term 'metric'}, or cancel and use the preexisting #{Term 'metric'}."
 					}
 					.on 'hidden.bs.modal', =>
 						@refs.nameField.focus()
