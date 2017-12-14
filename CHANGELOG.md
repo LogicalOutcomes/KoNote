@@ -1,3 +1,18 @@
+### 2.1.7 (Dec 13, 2017)
+
+#### Improvements
+
+- Default client file tab can be set via config ([#1101](https://github.com/konode001/konote/issues/1101))
+- Crash log is written to disk instead of localStorage ([#402](https://github.com/konode001/konote/issues/402))
+
+#### Fixes
+
+- Resolve issue that allowed duplicate metric names to be created under certain circumstances ([#109](https://github.com/konode001/konote/issues/109))
+- Allow removal of transient targets from unsaved plan ([#1103](https://github.com/konode001/konote/issues/1103))
+- Disable user management functions for inactive users ([ef3ed1e](https://github.com/konode001/konote/commit/ef3ed1e))
+- Minor UI improvements
+
+
 ### 2.1.6 (Jun 30, 2017)
 
 This releases improves startup performance ([c0ef898](https://github.com/konode001/konote/commit/c0ef898))
