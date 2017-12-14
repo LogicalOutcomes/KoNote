@@ -1,3 +1,8 @@
+### 2.1.8 (Dec 13, 2017)
+
+This release restores a missing migration file from v2.1.7
+
+
 ### 2.1.7 (Dec 13, 2017)
 
 #### Improvements
