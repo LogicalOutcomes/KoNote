@@ -20,7 +20,8 @@
 	},
 
 	"terminology": {
-		"metric": "indicator"
+		"metric": "indicator",
+		"target": "goal"
 	},
 
 	"printHeaderFooterEnabled": true,

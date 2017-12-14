@@ -88,6 +88,11 @@ load = (win) ->
 					)
 
 					R.div({className: 'planTargetContainer'},
+						(if not isExistingTarget
+							R.div({className: 'deleteTarget', onClick: @props.onRemoveNewTarget},
+								FaIcon 'times'
+							)
+						)
 						R.div({className: 'nameContainer'},
 							(if isCollapsed
 								R.span({

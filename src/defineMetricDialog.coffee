@@ -17,7 +17,6 @@ load = (win) ->
 	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
-	ExpandingTextArea = require('./expandingTextArea').load(win)
 
 
 	DefineMetricDialog = React.createFactory React.createClass
@@ -96,26 +95,41 @@ load = (win) ->
 
 			@refs.dialog.setIsLoading true
 
-			newMetric = Imm.fromJS {
-				name: @state.name.trim()
-				definition: @state.definition.trim()
-				status: 'default'
-			}
-
-			ActiveSession.persist.metrics.create newMetric, (err, result) =>
+			ActiveSession.persist.metrics.list (err, result) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
-				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert """
-							Please check your network connection and try again.
-						"""
-						return
-
-					CrashHandler.handle err
+				# Avoid duplicate metrics
+				# TODO: show the existing metric definition here to help the user decide how to continue
+				existingMetric = result.toJS().filter (match) => match.name.toLowerCase() is @state.name.trim().toLowerCase()
+				if existingMetric[0]
+					Bootbox.alert {
+						title: "Unable to Create #{Term 'Metric'}"
+						message: "A metric with this name already exists. Choose a new name to define this #{Term 'metric'}, or cancel and use the preexisting #{Term 'metric'}."
+					}
+					.on 'hidden.bs.modal', =>
+						@refs.nameField.focus()
 					return
+				else
+					newMetric = Imm.fromJS {
+						name: @state.name.trim()
+						definition: @state.definition.trim()
+						status: 'default'
+					}
 
-				@props.onSuccess result
+					ActiveSession.persist.metrics.create newMetric, (err, result) =>
+						@refs.dialog.setIsLoading(false) if @refs.dialog?
+
+						if err
+							if err instanceof Persist.IOError
+								Bootbox.alert """
+									Please check your network connection and try again.
+								"""
+								return
+
+							CrashHandler.handle err
+							return
+
+						@props.onSuccess result
 
 	return DefineMetricDialog
 

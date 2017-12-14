@@ -365,64 +365,66 @@ load = (win) ->
 						)
 					)
 
-					R.section({id: 'accountActions'},
-						(switch @state.view
-							when 'resetPassword'
-								ResetPasswordView({
-									userName: userAccount.get('userName')
-									setIsLoading: @refs.dialog.setIsLoading
-									onCancel: @_closeView
-									onSuccess: @_closeView
-								})
-							when 'updateDisplayName'
-								UpdateDisplayNameView({
-									userAccount
-									userName: userAccount.get('userName')
-									displayName: userAccount.get('publicInfo').get('displayName')
-									setIsLoading: @refs.dialog.setIsLoading
-									onCancel: @_closeView
-									onSuccess: @_closeView
-									updateAccount: @props.updateAccount
-								})
+					(unless isDeactivated
+						R.section({id: 'accountActions'},
+							(switch @state.view
+								when 'resetPassword'
+									ResetPasswordView({
+										userName: userAccount.get('userName')
+										setIsLoading: @refs.dialog.setIsLoading
+										onCancel: @_closeView
+										onSuccess: @_closeView
+									})
+								when 'updateDisplayName'
+									UpdateDisplayNameView({
+										userAccount
+										userName: userAccount.get('userName')
+										displayName: userAccount.get('publicInfo').get('displayName')
+										setIsLoading: @refs.dialog.setIsLoading
+										onCancel: @_closeView
+										onSuccess: @_closeView
+										updateAccount: @props.updateAccount
+									})
 
-							else
-								R.div({id: 'actionsList'},
-									R.ul({},
-										R.li({},
-											R.button({
-												className: 'btn btn-link'
-												onClick: @_switchView.bind(
-													null, 'resetPassword', "Reset Password"
-												)
-											}, "Reset Password")
-										)
-										R.li({},
-											R.button({
-												className: 'btn btn-link'
-												onClick: @_switchView.bind(
-													null, 'updateDisplayName', "Change Display Name"
-												)
-											}, "Change Display Name")
-										)
-										R.li({},
-											R.button({
-												className: 'btn btn-link'
-												onClick: @_changeAccountType.bind null, userAccount, isAdmin
-											}, (if isAdmin
-													"Revoke Admin Rights"
-												else
-													"Grant Admin Rights"
+								else
+									R.div({id: 'actionsList'},
+										R.ul({},
+											R.li({},
+												R.button({
+													className: 'btn btn-link'
+													onClick: @_switchView.bind(
+														null, 'resetPassword', "Reset Password"
+													)
+												}, "Reset Password")
+											)
+											R.li({},
+												R.button({
+													className: 'btn btn-link'
+													onClick: @_switchView.bind(
+														null, 'updateDisplayName', "Change Display Name"
+													)
+												}, "Change Display Name")
+											)
+											R.li({},
+												R.button({
+													className: 'btn btn-link'
+													onClick: @_changeAccountType.bind null, userAccount, isAdmin
+												}, (if isAdmin
+														"Revoke Admin Rights"
+													else
+														"Grant Admin Rights"
+													)
 												)
 											)
-										)
-										R.li({},
-											R.button({
-												className: 'btn btn-link'
-												onClick: @_deactivateAccount.bind null, userAccount
-											}, "Deactivate Account")
+											R.li({},
+												R.button({
+													className: 'btn btn-link'
+													onClick: @_deactivateAccount.bind null, userAccount
+												}, "Deactivate Account")
+											)
 										)
 									)
-								)
+							)
 						)
 					)
 				)

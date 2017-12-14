@@ -905,7 +905,7 @@ load = (win, {clientFileId}) ->
 
 		getInitialState: ->
 			return {
-				activeTabId: 'plan'
+				activeTabId: Config.defaultClientFileTab
 			}
 
 		hasChanges: ->

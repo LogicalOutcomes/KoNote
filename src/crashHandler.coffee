@@ -8,6 +8,7 @@
 # the user's computer:
 #  JSON.parse(localStorage.crashLog)
 
+Fs = require 'fs'
 Moment = require 'moment'
 
 {generateId} = require './persist'
@@ -56,17 +57,14 @@ load = (win) ->
 					errorHandlerStackTrace: handlerStackTrace
 				}
 
-				# Log to localStorage
-				crashLog = JSON.parse(win.localStorage.crashLog or '[]')
-				crashLog.push crash
-				if crashLog.length > 100
-					crashLog = crashLog.slice(-100)
-				win.localStorage.crashLog = JSON.stringify(crashLog)
-
 				# Show crash screen to user
 				containerDiv = win.document.createElement 'div'
 				win.document.body.appendChild containerDiv
 				ReactDOM.render CrashOverlay({crash}), containerDiv
+
+				# Log to file
+				# todo: truncate
+				Fs.appendFileSync 'error.log', JSON.stringify(crash)
 			catch err2
 				try
 					console.error "CrashHandler has crashed."
@@ -85,7 +83,7 @@ load = (win) ->
 					R.div({}, """
 						KoNote encountered an unexpected error.
 						If this happens repeatedly, please copy the error message below
-						and send to KoNode support with details on how you encountered it.
+						and send to KoNote support with details on how you encountered it.
 						Thank you!
 					""")
 					R.textarea({

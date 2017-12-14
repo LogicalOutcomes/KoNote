@@ -667,6 +667,7 @@ isValidFileName = (fileName) ->
 # When a Buffer is first created, its contents are leftover from whatever used
 # that area of memory last, which might mean that it contains sensitive
 # information.  By zeroing Buffers before use, we avoid that security risk.
+# todo: remove if nwjs updated >= v0.23.0 (buffers are zeroed by default in node8)
 createZeroedBuffer = (bufferSize) ->
 	result = new Buffer(bufferSize)
 	result.fill(0)
