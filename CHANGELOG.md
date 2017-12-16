@@ -1,3 +1,14 @@
+### 2.1.9 (Dec 16, 2017)
+
+#### Improvements
+
+- Improve performance when creating certain objects ([#1104](https://github.com/konode001/konote/issues/1104))
+
+#### Fixes
+
+- Fix issue with truncated text when renaming a section title ([361c74d](https://github.com/konode001/konote/commit/361c74d))
+
+
 ### 2.1.8 (Dec 13, 2017)
 
 This release restores a missing migration file from v2.1.7
