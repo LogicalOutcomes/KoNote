@@ -14,6 +14,7 @@ Utils = require './utils'
 
 module.exports = {
 	buildDataDirectory
+	initializeCrypto: Utils.initializeCrypto
 	generateId: Utils.generateId
 	IOError: Utils.IOError
 	ObjectNotFoundError: Utils.ObjectNotFoundError

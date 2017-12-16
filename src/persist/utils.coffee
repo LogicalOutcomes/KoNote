@@ -7,6 +7,12 @@ Crypto = require 'crypto'
 Imm = require 'immutable'
 Joi = require 'joi'
 
+# warm up the crypto library
+# this allows subsequent crypto calls to run faster
+initializeCrypto = ->
+	Crypto.randomBytes 1, ->
+		return
+
 # Generate a unique ID.
 # Outputs a string containing only a-z, A-Z, 0-9, "-", and "_".
 # Expected to be unique until 2^60 IDs have been generated.
@@ -126,6 +132,7 @@ module.exports = {
 	flattenModelDefs
 	generateId
 	generateFastId
+	initializeCrypto
 	isValidJSON
 	stripMetadata
 }

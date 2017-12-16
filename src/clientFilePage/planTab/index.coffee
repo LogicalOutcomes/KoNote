@@ -711,7 +711,7 @@ load = (win) ->
 							<input
 								id="sectionNameInput"
 								class="form-control"
-								value=#{name}
+								value="#{name}"
 								placeholder="Enter a #{Term 'section'} name"
 							/>
 						</div>

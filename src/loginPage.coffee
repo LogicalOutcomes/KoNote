@@ -308,6 +308,7 @@ load = (win) ->
 			@props.checkVersionsMatch()
 			if @props.isNewSetUp
 				@refs.passwordField.focus()
+			Persist.initializeCrypto()
 
 		onLoginError: (type, cb=(->)) ->
 			switch type
