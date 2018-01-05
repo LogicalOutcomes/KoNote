@@ -102,8 +102,9 @@ load = (win) ->
 						ExpandingTextArea({
 							ref: 'description'
 							value: progEvent.get('description')
+							height: 100
 							onChange: @_updateDescription
-							placeholder: "Describe details (optional)"
+							placeholder: if not @props.eventTypes.isEmpty() then "Describe details (optional)" else "Describe details"
 						})
 					)
 

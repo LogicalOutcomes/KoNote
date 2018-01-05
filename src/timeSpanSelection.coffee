@@ -110,7 +110,8 @@ load = (win) ->
 				defaultDate: startDate
 				widgetPositioning: leftPositioning
 			}).on 'dp.change', ({date}) =>
-				@_updateStartDate @_getStartMoment(), date
+				if date
+				  @_updateStartDate @_getStartMoment(), date
 
 			@startDate = $startDate.data('DateTimePicker')
 
@@ -121,7 +122,8 @@ load = (win) ->
 				defaultDate: startDate
 				widgetPositioning: leftPositioning
 			}).on 'dp.change', ({date}) =>
-				@_updateStartTime @_getStartMoment(), date
+        if date
+          @_updateStartTime @_getStartMoment(), date
 
 			@startTime = $startTime.data('DateTimePicker')
 
@@ -133,7 +135,8 @@ load = (win) ->
 				defaultDate: endDate
 				widgetPositioning: rightPositioning
 			}).on 'dp.change', ({date}) =>
-				@_updateEndDate @_getEndMoment(), date
+				if date
+          @_updateEndDate @_getEndMoment(), date
 
 			@endDate = $endDate.data('DateTimePicker')
 
@@ -144,7 +147,8 @@ load = (win) ->
 				defaultDate: endDate
 				widgetPositioning: rightPositioning
 			}).on 'dp.change', ({date}) =>
-				@_updateEndTime @_getEndMoment(), date
+				if date
+          @_updateEndTime @_getEndMoment(), date
 
 			@endTime = $endTime.data('DateTimePicker')
 

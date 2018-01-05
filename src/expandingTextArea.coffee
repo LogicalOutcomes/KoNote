@@ -19,6 +19,7 @@ load = (win) ->
 
 		propTypes: {
 			value: React.PropTypes.string.isRequired
+			height: React.PropTypes.number
 			placeholder: React.PropTypes.string
 			disabled: React.PropTypes.bool
 			className: React.PropTypes.string
@@ -66,7 +67,7 @@ load = (win) ->
 
 			# Calculate new height
 			if (win.document.activeElement == textareaDom) or (textareaDom.value == '')
-				minimumHeight = 54 # pixels
+				minimumHeight = @props.height or 54 # pixels
 			else
 				minimumHeight = 27
 			scrollableAreaHeight = textareaDom.scrollHeight
@@ -90,7 +91,7 @@ load = (win) ->
 			textareaDom.style.height = '0px'
 
 			# Calculate new height
-			minimumHeight = 54 # pixels
+			minimumHeight = @props.height or 54 # pixels
 			scrollableAreaHeight = textareaDom.scrollHeight
 			scrollableAreaHeight += 2 # to prevent scrollbar
 			newHeight = Math.max minimumHeight, scrollableAreaHeight
