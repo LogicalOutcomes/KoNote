@@ -400,6 +400,7 @@ load = (win) ->
 							updatePlanTargetMetric: @_updatePlanTargetMetric
 							updateProgEvent: @_updateProgEvent
 							updateQuickNotes: @_updateQuickNotes
+							updateShiftSummary: @_updateShiftSummary
 						})
 					)
 					R.section({
@@ -506,6 +507,13 @@ load = (win) ->
 
 			@setState {
 				transientData: @state.transientData.setIn ['progNote', 'notes'], newNotes
+			}
+
+		_updateShiftSummary: (event) ->
+			newSummary = event.target.value
+
+			@setState {
+				transientData: @state.transientData.setIn ['progNote', 'summary'], newSummary
 			}
 
 		_updateProgEvent: (index, updatedProgEvent) ->
@@ -1334,6 +1342,7 @@ load = (win) ->
 						selectProgNote: @props.selectProgNote
 						setEditingProgNoteId: @props.setEditingProgNoteId
 						updatePlanTargetNotes: @props.updatePlanTargetNotes
+						updateShiftSummary: @props.updateShiftSummary
 						isReadOnly: @props.isReadOnly
 
 						isEditing
@@ -1635,8 +1644,15 @@ load = (win) ->
 							].join ' '
 						},
 							R.h3({}, "Shift Summary")
-							R.div({className: 'notes'},
-								renderLineBreaks progNote.get('summary')
+							(if isEditing
+								ExpandingTextArea({
+									value: progNote.get('summary')
+									onChange: @props.updateShiftSummary
+								})
+							else
+								R.div({className: 'notes'},
+									renderLineBreaks progNote.get('summary')
+								)
 							)
 						)
 					)
@@ -1783,6 +1799,7 @@ load = (win) ->
 								startRevisingProgNote: @props.startRevisingProgNote
 								cancelRevisingProgNote: @props.cancelRevisingProgNote
 								updatePlanTargetNotes: @props.updatePlanTargetNotes
+								updateShiftSummary: @props.updateShiftSummary
 								updatePlanTargetMetric: @props.updatePlanTargetMetric
 								updateProgEvent: @props.updateProgEvent
 								saveProgNoteRevision: @props.saveProgNoteRevision
