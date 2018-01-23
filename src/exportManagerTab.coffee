@@ -209,7 +209,7 @@ load = (win) ->
 									id: progEvent.get('id')
 									timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									author: progEvent.get('author')
-									clientName
+									clientName: "\"#{clientName}\""
 									programs: "\"#{programNames.toJS().join(", ")}\""
 									title: "\"#{progEvent.get('title')}\""
 									description: "\"#{progEvent.get('description')}\""
@@ -327,7 +327,7 @@ load = (win) ->
 
 					# Retrieve all metric definitions
 					(cb) =>
-						@_updateProgress 20
+						@_updateProgress 30
 						Async.map metricDefinitionHeaders.toArray(), (metricHeader, cb) ->
 							ActiveSession.persist.metrics.readLatestRevisions metricHeader.get('id'), 1, cb
 						, (err, results) ->
@@ -340,7 +340,7 @@ load = (win) ->
 
 					# List progNote headers
 					(cb) =>
-						@_updateProgress 30
+						@_updateProgress 40
 						ActiveSession.persist.progNotes.list clientFileId, (err, results) ->
 							if err
 								cb err
@@ -351,7 +351,7 @@ load = (win) ->
 
 					# Retrieve progNotes
 					(cb) =>
-						@_updateProgress 40
+						@_updateProgress 50
 						Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
 							ActiveSession.persist.progNotes.readLatestRevisions clientFileId, progNoteHeader.get('id'), 1, cb
 						, (err, results) ->
@@ -364,7 +364,7 @@ load = (win) ->
 
 					# Filter out full list of metrics
 					(cb) =>
-						@_updateProgress 50
+						@_updateProgress 70
 						fullProgNotes = progNotes.filter (progNote) =>
 							progNote.get('type') is "full" and
 							progNote.get('status') isnt "cancelled"
@@ -398,7 +398,7 @@ load = (win) ->
 									timestamp
 									authorUsername: progNote.get('author')
 									clientFileId
-									clientName
+									clientName: "\"#{clientName}\""
 									metricId: metric.get('id')
 									programs: "\"#{programNames.toJS().join(", ")}\""
 									metricName: "\"#{metric.get('name')}\""
@@ -406,7 +406,7 @@ load = (win) ->
 									metricValue: metric.get('value')
 								}
 
-							console.info "progNoteMetrics", progNoteMetrics.toJS()
+							# console.info "progNoteMetrics", progNoteMetrics.toJS()
 							cb null, progNoteMetrics
 
 						, (err, results) ->
@@ -443,7 +443,11 @@ load = (win) ->
 
 				CSVConverter.json2csv metricsList.toJS(), (err, result) =>
 					if err
-						cb err
+						@setState {isLoading: false}
+						Bootbox.alert {
+							title: "Data export failed!"
+							message: err.toString().substring(0, 300)
+						}
 						return
 
 					csv = result
@@ -457,7 +461,7 @@ load = (win) ->
 								CrashHandler.handle err
 								return
 
-							console.info "Destination Path:", path
+							# console.info "Destination Path:", path
 							@setState {isLoading: false}
 
 							if isConfirmClosed isnt true
