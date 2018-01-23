@@ -123,8 +123,11 @@
 				color white
 
 		&.openFilterBarButton
-			flex 0.25 !important
+			flex 0.25
 			font-size 1.3em
+
+			&:not(.collapsed)
+				flex 0.25 !important
 
 		&.toggleHistoryPaneButton
 			flex 0.25 !important
