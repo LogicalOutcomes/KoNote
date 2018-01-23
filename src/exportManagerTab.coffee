@@ -124,7 +124,7 @@ load = (win) ->
 			isConfirmClosed = false
 			# Map over client files
 
-			console.log "clientfileheaders: ", @props.clientFileHeaders.toArray()
+			# console.log "clientfileheaders: ", @props.clientFileHeaders.toArray()
 
 			if @props.clientFileHeaders.size is 0
 				Bootbox.alert {
@@ -133,8 +133,8 @@ load = (win) ->
 				}
 			else
 				@_updateProgress 0, "Saving #{Term 'Events'} to CSV..."
-				console.log "progress should be 0"
-				console.log "size of clients array: ", @props.clientFileHeaders.size
+				# console.log "progress should be 0"
+				# console.log "size of clients array: ", @props.clientFileHeaders.size
 				progressIterator = 0
 
 				Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
@@ -151,7 +151,7 @@ load = (win) ->
 					progressIterator = progressIterator + 1
 
 
-					console.log "checking clientFile with name: ",  clientName, progressIterator
+					# console.log "checking clientFile with name: ",  clientName, progressIterator
 					currentProgress = (progressIterator/@props.clientFileHeaders.size) * 90
 					@_updateProgress currentProgress
 
@@ -165,7 +165,7 @@ load = (win) ->
 							.map (link) ->
 								link.get('programId')
 
-							console.log "link IDs: ", clientFileProgramLinkIds.toJS()
+							# console.log "link IDs: ", clientFileProgramLinkIds.toJS()
 
 							cb()
 
@@ -174,7 +174,7 @@ load = (win) ->
 							.filter (program) -> clientFileProgramLinkIds.contains program.get('id')
 					        .map (program) -> program.get('name')
 
-							console.log "program names: ", programNames.toJS()
+							# console.log "program names: ", programNames.toJS()
 
 							cb()
 
@@ -211,8 +211,8 @@ load = (win) ->
 									author: progEvent.get('author')
 									clientName
 									programs: "\"#{programNames.toJS().join(", ")}\""
-									title: progEvent.get('title')
-									description: progEvent.get('description')
+									title: "\"#{progEvent.get('title')}\""
+									description: "\"#{progEvent.get('description')}\""
 									startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									endDate: Moment(progEvent.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 								}
@@ -224,7 +224,7 @@ load = (win) ->
 							cb err
 							return
 
-						console.log "Done iterating over client", clientName
+						# console.log "Done iterating over client", clientName
 						cb(null, progEvents)
 
 				, (err, results) =>
@@ -301,7 +301,7 @@ load = (win) ->
 						.map (link) ->
 							link.get('programId')
 
-						console.log "link IDs: ", clientFileProgramLinkIds.toJS()
+						# console.log "link IDs: ", clientFileProgramLinkIds.toJS()
 
 						cb()
 
@@ -310,7 +310,7 @@ load = (win) ->
 						.filter (program) -> clientFileProgramLinkIds.contains program.get('id')
 				        .map (program) -> program.get('name')
 
-						console.log "program names: ", programNames.toJS()
+						# console.log "program names: ", programNames.toJS()
 
 						cb()
 
@@ -401,8 +401,8 @@ load = (win) ->
 									clientName
 									metricId: metric.get('id')
 									programs: "\"#{programNames.toJS().join(", ")}\""
-									metricName: metric.get('name')
-									metricDefinition: metric.get('definition')
+									metricName: "\"#{metric.get('name')}\""
+									metricDefinition: "\"#{metric.get('definition')}\""
 									metricValue: metric.get('value')
 								}
 
@@ -423,7 +423,7 @@ load = (win) ->
 						cb err
 						return
 
-					console.log "Done iterating over client: ", clientName
+					# console.log "Done iterating over client: ", clientName
 					cb(null, metricsList)
 
 			, (err, results) =>
@@ -438,7 +438,7 @@ load = (win) ->
 
 				metricsList = Imm.List(results).flatten()
 
-				console.log "Final Metrics result: ", metricsList.toJS()
+				# console.log "Final Metrics result: ", metricsList.toJS()
 
 
 				CSVConverter.json2csv metricsList.toJS(), (err, result) =>
