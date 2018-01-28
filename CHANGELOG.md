@@ -1,3 +1,16 @@
+### 2.1.11 (Jan 28, 2018)
+
+#### Improvements
+
+- Progress note shift summaries can be edited ([#1112](https://github.com/konode001/konote/issues/1112))
+- Several UI and performance improvements
+
+#### Fixes
+
+- Prevent potential crash that could occur while editing events on new progress note ([#1109](https://github.com/konode001/konote/issues/1109))
+- Improved formatting of exported metrics and events ([#1107](https://github.com/konode001/konote/issues/1107))
+
+
 ### 2.1.9 (Dec 16, 2017)
 
 #### Improvements
