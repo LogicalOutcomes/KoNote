@@ -326,9 +326,7 @@ load = (win) ->
 											type: 'file'
 										})
 									)
-									R.div({},
-										"Metrics Chart Type: "
-
+									R.div({className: "#{showWhen not @state.selectedMetricIds.isEmpty()}"},
 										R.label({},
 											"Line "
 											R.input({

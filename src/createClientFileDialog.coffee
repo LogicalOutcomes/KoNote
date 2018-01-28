@@ -18,12 +18,8 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
-	B = require('./utils/reactBootstrap').load(win, 'DropdownButton', 'MenuItem')
-
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
-	BirthDateSelector = require('./birthDateSelector').load(win)
-	ProgramsDropdown = require('./programsDropdown').load(win)
 
 
 	{renderName, renderRecordId, FaIcon, stripMetadata} = require('./utils').load(win)
@@ -39,9 +35,9 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				birthDay: null
-				birthMonth: null
-				birthYear: null
+				birthDay: ''
+				birthMonth: ''
+				birthYear: ''
 				firstName: ''
 				middleName: ''
 				lastName: ''
@@ -66,7 +62,6 @@ load = (win) ->
 
 		render: ->
 			formIsValid = @_formIsValid()
-			selectedPlanTemplateHeaders = @state.planTemplateHeaders.find (template) => template.get('id') is @state.templateId
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
 
 			Dialog({
@@ -74,122 +69,153 @@ load = (win) ->
 				title: "New #{Term 'Client File'}"
 				onClose: @props.onClose
 			},
-				R.div({className: 'createClientFileDialog'},
+				R.div({className: 'createClientFileDialog form-horizontal'},
+					# R.div({className: 'col-xs-8 col-xs-offset-4'}, 'New Client File')
 					R.div({className: 'form-group'},
-						R.label({}, "First Name"),
-						R.input({
-							ref: 'firstNameField'
-							className: 'form-control'
-							onChange: @_updateFirstName
-							value: @state.firstName
-							onKeyDown: @_onEnterKeyDown
-							maxLength: 35
-						})
+						R.label({className: 'col-sm-4 control-label'}, "First Name"),
+						R.div({className: 'col-sm-8'},
+							R.input({
+								ref: 'firstNameField'
+								className: 'form-control'
+								onChange: @_updateFirstName
+								value: @state.firstName
+								onKeyDown: @_onEnterKeyDown
+								maxLength: 35
+							})
+						)
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Middle Name"),
-						R.input({
-							className: 'form-control'
-							onChange: @_updateMiddleName
-							value: @state.middleName
-							placeholder: "(optional)"
-							maxLength: 35
-						})
+						R.label({className: 'col-sm-4 control-label'}, "Middle Name"),
+						R.div({className: 'col-sm-8'},
+							R.input({
+								className: 'form-control'
+								onChange: @_updateMiddleName
+								value: @state.middleName
+								placeholder: "(optional)"
+								maxLength: 35
+							})
+						)
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Last Name"),
-						R.input({
-							className: 'form-control'
-							onChange: @_updateLastName
-							value: @state.lastName
-							onKeyDown: @_onEnterKeyDown
-							maxLength: 35
-						})
+						R.label({className: 'col-sm-4 control-label'}, "Last Name"),
+						R.div({className: 'col-sm-8'},
+							R.input({
+								className: 'form-control'
+								onChange: @_updateLastName
+								value: @state.lastName
+								onKeyDown: @_onEnterKeyDown
+								maxLength: 35
+							})
+						)
 					)
 
 					(if Config.clientFileRecordId.isEnabled
 						R.div({className: 'form-group'},
-							R.label({}, Config.clientFileRecordId.label),
-							R.input({
-								className: 'form-control'
-								onChange: @_updateRecordId
-								value: @state.recordId
-								placeholder: "(optional)" unless recordIdIsRequired
-								onKeyDown: @_onEnterKeyDown
-								maxLength: 23
-							})
-						)
-					)
-					R.div({className: "birthdaySelection"},
-						R.label({}, "Birthdate")
-						R.button({
-							className: [
-								'btn btn-link btnReset'
-								'invisible' unless @state.birthDay? or @state.birthMonth? or @state.birthYear?
-							].join ' '
-							onClick: @_resetBirthDate
-						}, "clear")
-						BirthDateSelector({
-							birthDay: @state.birthDay
-							birthMonth: @state.birthMonth
-							birthYear: @state.birthYear
-							onSelectMonth: @_updateBirthMonth
-							onSelectDay: @_updateBirthDay
-							onSelectYear: @_updateBirthYear
-						})
-					)
-					R.div({className: "optionDropdowns"},
-						(unless @props.programs.isEmpty()
-							R.div({className: 'programs'},
-								R.label({}, "Assign to #{Term 'Program'}")
-								ProgramsDropdown({
-									selectedProgramId: @state.programId
-									programs: @props.programs
-									onSelect: @_updateProgramId
-									bsStyle: 'default'
+							R.label({className: 'col-sm-4 control-label'}, Config.clientFileRecordId.label),
+							R.div({className: 'col-sm-8'},
+								R.input({
+									className: 'form-control'
+									onChange: @_updateRecordId
+									value: @state.recordId
+									placeholder: "(optional)" unless recordIdIsRequired
+									onKeyDown: @_onEnterKeyDown
+									maxLength: 23
 								})
 							)
 						)
-						(unless @state.planTemplateHeaders.isEmpty()
-							R.div({className: 'templates'},
-								R.label({}, "Select Plan Template"),
-								R.div({className: "template-container"}
-
-									B.DropdownButton({
-										title: if selectedPlanTemplateHeaders? then selectedPlanTemplateHeaders.get('name') else "No Template"
-									},
-
-										(@state.planTemplateHeaders.map (planTemplateHeader) =>
-											B.MenuItem({
-												key: planTemplateHeader.get('id')
-												onClick: @_updatePlanTemplate.bind null, planTemplateHeader.get('id')
-											},
-												R.div({
-												},
-													planTemplateHeader.get('name')
-
-												)
-											)
-										)
-										B.MenuItem({divider: true})
-										B.MenuItem({
-											onClick: @_updatePlanTemplate.bind null, ''
+					)
+					R.div({className: "form-group"},
+						R.label({className: 'col-sm-4 control-label'}, "Birthday")
+						R.div({className: 'col-sm-4'},
+							R.select({
+								className: 'form-control'
+								onChange: @_updateBirthMonth
+								value: @state.birthMonth
+							},
+								R.option({
+									value: ''
+									# hidden: true
+								}, "Month")
+								(months = Moment.monthsShort()
+								months.map (month) =>
+									R.option({
+											key: month
+											value: month
 										},
-											"None "
-											FaIcon('ban')
-										)
+										month
+									)
+								)
+							)
+						)
+						R.div({className: 'col-sm-2 birthday'},
+							R.input({
+								className: 'form-control'
+								onChange: @_updateBirthDay
+								value: @state.birthDay
+								placeholder: "Day"
+								onKeyDown: @_onEnterKeyDown
+								maxLength: 2
+							})
+						)
+						R.div({className: 'col-sm-2 birthday'},
+							R.input({
+								className: 'form-control'
+								onChange: @_updateBirthYear
+								value: @state.birthYear
+								placeholder: "Year"
+								onKeyDown: @_onEnterKeyDown
+								maxLength: 4
+							})
+						)
+					)
 
+					(unless @props.programs.isEmpty()
+						R.div({className: 'form-group'},
+							R.label({className: 'col-sm-4 control-label'}, "#{Term 'Program'}"),
+							R.div({className: 'col-sm-8'},
+								R.select({
+									className: 'form-control'
+									onChange: @_updateProgramId
+									value: @state.programId
+								},
+									R.option({value: ''}, "Select a #{Term 'client'} #{Term 'program'}")
+									(@props.programs.sortBy((val, key) => val.get('name')).map (program) ->
+										R.option({
+												key: program.get('id')
+												value: program.get('id')
+											},
+											program.get('name')
+										)
 									)
 								)
 							)
 						)
 					)
 
-					R.div({className: 'btn-toolbar'},
-						R.button({
-							className: 'btn btn-default'
-							onClick: @_cancel
-						}, "Cancel")
+					(unless @state.planTemplateHeaders.isEmpty()
+						R.div({className: 'form-group'},
+							R.label({className: 'col-sm-4 control-label'}, "#{Term 'Plan'} Template"),
+							R.div({className: 'col-sm-8'},
+								R.select({
+									className: 'form-control'
+									onChange: @_updatePlanTemplate
+									value: @state.templateId
+								},
+									R.option({value: ''}, "Select a #{Term 'plan'} #{Term 'template'}")
+									(@state.planTemplateHeaders.sortBy((val, key) => val.get('name')).map (planTemplateHeader) =>
+										R.option({
+												key: planTemplateHeader.get('id')
+												value: planTemplateHeader.get('id')
+											},
+											planTemplateHeader.get('name')
+										)
+									)
+								)
+							)
+						)
+					)
+
+					R.div({className: 'col-sm-8 col-sm-offset-4'},
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
@@ -202,8 +228,8 @@ load = (win) ->
 		_formIsValid: ->
 			# dob field must be all or none
 			birthday = true
-			if @state.birthDay? or @state.birthMonth? or @state.birthYear?
-				unless @state.birthDay? and @state.birthMonth? and @state.birthYear?
+			if @state.birthDay or @state.birthMonth or @state.birthYear
+				unless @state.birthDay and @state.birthMonth and @state.birthYear
 					birthday = false
 
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
@@ -214,13 +240,6 @@ load = (win) ->
 		_cancel: ->
 			@props.onCancel()
 
-		_resetBirthDate: ->
-			@setState {
-				birthDay: null
-				birthMonth: null
-				birthYear: null
-			}
-
 		_updateFirstName: (event) ->
 			@setState {firstName: event.target.value}
 
@@ -230,23 +249,23 @@ load = (win) ->
 		_updateLastName: (event) ->
 			@setState {lastName: event.target.value}
 
-		_updateBirthMonth: (birthMonth) ->
-			@setState {birthMonth}
+		_updateBirthMonth: (event) ->
+			@setState {birthMonth: event.target.value}
 
-		_updateBirthDay: (birthDay) ->
-			@setState {birthDay}
+		_updateBirthDay: (event) ->
+			@setState {birthDay: event.target.value.replace(/[^0-9]/g,'')}
 
-		_updateBirthYear: (birthYear) ->
-			@setState {birthYear}
+		_updateBirthYear: (event) ->
+			@setState {birthYear: event.target.value.replace(/[^0-9]/g,'')}
 
 		_updateRecordId: (event) ->
 			@setState {recordId: event.target.value}
 
-		_updateProgramId: (programId) ->
-			 @setState {programId}
+		_updateProgramId: (event) ->
+			 @setState {programId: event.target.value}
 
-		_updatePlanTemplate: (templateId) ->
-			@setState {templateId}
+		_updatePlanTemplate: (event) ->
+			@setState {templateId: event.target.value}
 
 		_onEnterKeyDown: (event) ->
 			if event.which is 13 and @_formIsValid()
@@ -260,12 +279,10 @@ load = (win) ->
 			last = @state.lastName.trim()
 			recordId = @state.recordId.trim()
 
-			if @state.birthYear? and @state.birthMonth? and @state.birthDay?
+			if @state.birthYear and @state.birthMonth and @state.birthDay
 				birthDate = Moment(@state.birthYear + @state.birthMonth + @state.birthDay, 'YYYYMMMD', true).format('YYYYMMMDD')
 			else
 				birthDate = ''
-
-
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}

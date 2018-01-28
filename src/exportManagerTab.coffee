@@ -124,7 +124,7 @@ load = (win) ->
 			isConfirmClosed = false
 			# Map over client files
 
-			console.log "clientfileheaders: ", @props.clientFileHeaders.toArray()
+			# console.log "clientfileheaders: ", @props.clientFileHeaders.toArray()
 
 			if @props.clientFileHeaders.size is 0
 				Bootbox.alert {
@@ -133,8 +133,8 @@ load = (win) ->
 				}
 			else
 				@_updateProgress 0, "Saving #{Term 'Events'} to CSV..."
-				console.log "progress should be 0"
-				console.log "size of clients array: ", @props.clientFileHeaders.size
+				# console.log "progress should be 0"
+				# console.log "size of clients array: ", @props.clientFileHeaders.size
 				progressIterator = 0
 
 				Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
@@ -151,7 +151,7 @@ load = (win) ->
 					progressIterator = progressIterator + 1
 
 
-					console.log "checking clientFile with name: ",  clientName, progressIterator
+					# console.log "checking clientFile with name: ",  clientName, progressIterator
 					currentProgress = (progressIterator/@props.clientFileHeaders.size) * 90
 					@_updateProgress currentProgress
 
@@ -165,7 +165,7 @@ load = (win) ->
 							.map (link) ->
 								link.get('programId')
 
-							console.log "link IDs: ", clientFileProgramLinkIds.toJS()
+							# console.log "link IDs: ", clientFileProgramLinkIds.toJS()
 
 							cb()
 
@@ -174,7 +174,7 @@ load = (win) ->
 							.filter (program) -> clientFileProgramLinkIds.contains program.get('id')
 					        .map (program) -> program.get('name')
 
-							console.log "program names: ", programNames.toJS()
+							# console.log "program names: ", programNames.toJS()
 
 							cb()
 
@@ -209,10 +209,10 @@ load = (win) ->
 									id: progEvent.get('id')
 									timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									author: progEvent.get('author')
-									clientName
+									clientName: "\"#{clientName}\""
 									programs: "\"#{programNames.toJS().join(", ")}\""
-									title: progEvent.get('title')
-									description: progEvent.get('description')
+									title: "\"#{progEvent.get('title')}\""
+									description: "\"#{progEvent.get('description')}\""
 									startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									endDate: Moment(progEvent.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 								}
@@ -224,7 +224,7 @@ load = (win) ->
 							cb err
 							return
 
-						console.log "Done iterating over client", clientName
+						# console.log "Done iterating over client", clientName
 						cb(null, progEvents)
 
 				, (err, results) =>
@@ -301,7 +301,7 @@ load = (win) ->
 						.map (link) ->
 							link.get('programId')
 
-						console.log "link IDs: ", clientFileProgramLinkIds.toJS()
+						# console.log "link IDs: ", clientFileProgramLinkIds.toJS()
 
 						cb()
 
@@ -310,7 +310,7 @@ load = (win) ->
 						.filter (program) -> clientFileProgramLinkIds.contains program.get('id')
 				        .map (program) -> program.get('name')
 
-						console.log "program names: ", programNames.toJS()
+						# console.log "program names: ", programNames.toJS()
 
 						cb()
 
@@ -327,7 +327,7 @@ load = (win) ->
 
 					# Retrieve all metric definitions
 					(cb) =>
-						@_updateProgress 20
+						@_updateProgress 30
 						Async.map metricDefinitionHeaders.toArray(), (metricHeader, cb) ->
 							ActiveSession.persist.metrics.readLatestRevisions metricHeader.get('id'), 1, cb
 						, (err, results) ->
@@ -340,7 +340,7 @@ load = (win) ->
 
 					# List progNote headers
 					(cb) =>
-						@_updateProgress 30
+						@_updateProgress 40
 						ActiveSession.persist.progNotes.list clientFileId, (err, results) ->
 							if err
 								cb err
@@ -351,7 +351,7 @@ load = (win) ->
 
 					# Retrieve progNotes
 					(cb) =>
-						@_updateProgress 40
+						@_updateProgress 50
 						Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
 							ActiveSession.persist.progNotes.readLatestRevisions clientFileId, progNoteHeader.get('id'), 1, cb
 						, (err, results) ->
@@ -364,7 +364,7 @@ load = (win) ->
 
 					# Filter out full list of metrics
 					(cb) =>
-						@_updateProgress 50
+						@_updateProgress 70
 						fullProgNotes = progNotes.filter (progNote) =>
 							progNote.get('type') is "full" and
 							progNote.get('status') isnt "cancelled"
@@ -398,15 +398,15 @@ load = (win) ->
 									timestamp
 									authorUsername: progNote.get('author')
 									clientFileId
-									clientName
+									clientName: "\"#{clientName}\""
 									metricId: metric.get('id')
 									programs: "\"#{programNames.toJS().join(", ")}\""
-									metricName: metric.get('name')
-									metricDefinition: metric.get('definition')
+									metricName: "\"#{metric.get('name')}\""
+									metricDefinition: "\"#{metric.get('definition')}\""
 									metricValue: metric.get('value')
 								}
 
-							console.info "progNoteMetrics", progNoteMetrics.toJS()
+							# console.info "progNoteMetrics", progNoteMetrics.toJS()
 							cb null, progNoteMetrics
 
 						, (err, results) ->
@@ -423,7 +423,7 @@ load = (win) ->
 						cb err
 						return
 
-					console.log "Done iterating over client: ", clientName
+					# console.log "Done iterating over client: ", clientName
 					cb(null, metricsList)
 
 			, (err, results) =>
@@ -438,12 +438,16 @@ load = (win) ->
 
 				metricsList = Imm.List(results).flatten()
 
-				console.log "Final Metrics result: ", metricsList.toJS()
+				# console.log "Final Metrics result: ", metricsList.toJS()
 
 
 				CSVConverter.json2csv metricsList.toJS(), (err, result) =>
 					if err
-						cb err
+						@setState {isLoading: false}
+						Bootbox.alert {
+							title: "Data export failed!"
+							message: err.toString().substring(0, 300)
+						}
 						return
 
 					csv = result
@@ -457,7 +461,7 @@ load = (win) ->
 								CrashHandler.handle err
 								return
 
-							console.info "Destination Path:", path
+							# console.info "Destination Path:", path
 							@setState {isLoading: false}
 
 							if isConfirmClosed isnt true
