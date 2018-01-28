@@ -228,8 +228,8 @@ load = (win) ->
 		_formIsValid: ->
 			# dob field must be all or none
 			birthday = true
-			if @state.birthDay? or @state.birthMonth? or @state.birthYear?
-				unless @state.birthDay? and @state.birthMonth? and @state.birthYear?
+			if @state.birthDay or @state.birthMonth or @state.birthYear
+				unless @state.birthDay and @state.birthMonth and @state.birthYear
 					birthday = false
 
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
@@ -239,13 +239,6 @@ load = (win) ->
 				return birthday and @state.firstName and @state.lastName
 		_cancel: ->
 			@props.onCancel()
-
-		_resetBirthDate: ->
-			@setState {
-				birthDay: null
-				birthMonth: null
-				birthYear: null
-			}
 
 		_updateFirstName: (event) ->
 			@setState {firstName: event.target.value}
@@ -286,12 +279,10 @@ load = (win) ->
 			last = @state.lastName.trim()
 			recordId = @state.recordId.trim()
 
-			if @state.birthYear? and @state.birthMonth? and @state.birthDay?
+			if @state.birthYear and @state.birthMonth and @state.birthDay
 				birthDate = Moment(@state.birthYear + @state.birthMonth + @state.birthDay, 'YYYYMMMD', true).format('YYYYMMMDD')
 			else
 				birthDate = ''
-
-
 
 			clientFile = Imm.fromJS {
 			  clientName: {first, middle, last}
