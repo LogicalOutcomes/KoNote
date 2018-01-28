@@ -35,9 +35,9 @@ load = (win) ->
 
 		getInitialState: ->
 			return {
-				birthDay: null
-				birthMonth: null
-				birthYear: null
+				birthDay: ''
+				birthMonth: ''
+				birthYear: ''
 				firstName: ''
 				middleName: ''
 				lastName: ''
@@ -130,6 +130,7 @@ load = (win) ->
 							R.select({
 								className: 'form-control'
 								onChange: @_updateBirthMonth
+								value: @state.birthMonth
 							},
 								R.option({
 									value: ''
