@@ -272,7 +272,7 @@ load = (win) ->
 			metrics = null
 			count = 0
 			total = @props.clientFileHeaders.size
-			@_updateProgress 0, "Exporting #{Term 'Metrics'} to CSV..."
+			@_updateProgress 1, "Exporting #{Term 'Metrics'} to CSV..."
 
 			# Map over client files
 			Async.mapSeries @props.clientFileHeaders.toArray(), (clientFile, cb) =>
@@ -296,7 +296,6 @@ load = (win) ->
 				Async.series [
 					# get clientfile program links
 					(cb) =>
-						#@_updateProgress 5
 						clientFileProgramLinkIds = @props.clientFileProgramLinks
 						.filter (link) ->
 							link.get('clientFileId') is clientFileId and
