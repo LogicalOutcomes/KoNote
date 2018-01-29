@@ -1,3 +1,11 @@
+### 2.1.12 (Jan 29, 2018)
+
+#### Fixes
+
+- Fix potential freeze during metrics export ([#1105](https://github.com/konode001/konote/issues/1105))
+- Improved input validation on new client file dialog ([579a720](https://github.com/konode001/konote/commit/579a7200a8cb22f0306f4aff208631cc7ee21d2b))
+
+
 ### 2.1.11 (Jan 28, 2018)
 
 #### Improvements
