@@ -270,10 +270,13 @@ load = (win) ->
 			CSVConverter = require 'json-2-csv'
 			isConfirmClosed = false
 			metrics = null
-			@_updateProgress 0, "Saving #{Term 'Metrics'} to CSV..."
+			count = 0
+			total = @props.clientFileHeaders.size
+			@_updateProgress 0, "Exporting #{Term 'Metrics'} to CSV..."
 
 			# Map over client files
-			Async.map @props.clientFileHeaders.toArray(), (clientFile, cb) =>
+			Async.mapSeries @props.clientFileHeaders.toArray(), (clientFile, cb) =>
+				@_updateProgress Math.floor((count / total) * 100)
 
 				metricsResult = Imm.List()
 
@@ -293,14 +296,13 @@ load = (win) ->
 				Async.series [
 					# get clientfile program links
 					(cb) =>
-						@_updateProgress 5
+						#@_updateProgress 5
 						clientFileProgramLinkIds = @props.clientFileProgramLinks
 						.filter (link) ->
 							link.get('clientFileId') is clientFileId and
 							link.get('status') is "enrolled"
 						.map (link) ->
 							link.get('programId')
-
 						# console.log "link IDs: ", clientFileProgramLinkIds.toJS()
 
 						cb()
@@ -309,14 +311,12 @@ load = (win) ->
 						programNames = programs
 						.filter (program) -> clientFileProgramLinkIds.contains program.get('id')
 				        .map (program) -> program.get('name')
-
 						# console.log "program names: ", programNames.toJS()
 
 						cb()
 
 					# List metric definition headers
 					(cb) =>
-						@_updateProgress 10
 						ActiveSession.persist.metrics.list (err, results) ->
 							if err
 								cb err
@@ -327,7 +327,6 @@ load = (win) ->
 
 					# Retrieve all metric definitions
 					(cb) =>
-						@_updateProgress 30
 						Async.map metricDefinitionHeaders.toArray(), (metricHeader, cb) ->
 							ActiveSession.persist.metrics.readLatestRevisions metricHeader.get('id'), 1, cb
 						, (err, results) ->
@@ -340,7 +339,6 @@ load = (win) ->
 
 					# List progNote headers
 					(cb) =>
-						@_updateProgress 40
 						ActiveSession.persist.progNotes.list clientFileId, (err, results) ->
 							if err
 								cb err
@@ -351,7 +349,6 @@ load = (win) ->
 
 					# Retrieve progNotes
 					(cb) =>
-						@_updateProgress 50
 						Async.map progNoteHeaders.toArray(), (progNoteHeader, cb) ->
 							ActiveSession.persist.progNotes.readLatestRevisions clientFileId, progNoteHeader.get('id'), 1, cb
 						, (err, results) ->
@@ -364,7 +361,6 @@ load = (win) ->
 
 					# Filter out full list of metrics
 					(cb) =>
-						@_updateProgress 70
 						fullProgNotes = progNotes.filter (progNote) =>
 							progNote.get('type') is "full" and
 							progNote.get('status') isnt "cancelled"
@@ -424,6 +420,7 @@ load = (win) ->
 						return
 
 					# console.log "Done iterating over client: ", clientName
+					count++
 					cb(null, metricsList)
 
 			, (err, results) =>
