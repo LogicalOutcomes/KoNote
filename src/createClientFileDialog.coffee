@@ -229,8 +229,10 @@ load = (win) ->
 			# dob field must be all or none
 			birthday = true
 			if @state.birthDay or @state.birthMonth or @state.birthYear
-				unless @state.birthDay and @state.birthMonth and @state.birthYear
-					birthday = false
+				unless @state.birthDay and @state.birthMonth and @state.birthYear and
+					@state.birthDay <= Moment(@state.birthMonth, "MMM").daysInMonth() and
+					@state.birthYear <= Moment().year() and @state.birthYear >= 1900
+						birthday = false
 
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
 			if recordIdIsRequired
