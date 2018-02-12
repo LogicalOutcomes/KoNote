@@ -80,8 +80,17 @@
 								display none
 
 						> .fa
+							width 25px
+
 							padding-right 10px
 							transition padding-right .25s ease
+
+							text-align center
+
+							&.fa-wpforms
+								// Prevent icon from being positioned at a half pixel value
+								// (prevents blurring)
+								padding-right 9px
 
 							@media screen and (max-width: 899px)
 								padding-right 0px
