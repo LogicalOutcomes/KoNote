@@ -31,7 +31,7 @@ load = (win) ->
 		# TODO: propTypes
 
 		getInitialState: -> {
-			descriptionIsVisible: true
+			descriptionVisibility: 'showingSome'
 			historyCount: 10
 		}
 
@@ -43,6 +43,18 @@ load = (win) ->
 				@_resetHistoryCount()
 
 				if @refs.history? then @refs.history.resetScroll()
+
+		componentDidUpdate: (oldProps, oldState) ->
+			oldDescVis = oldState.descriptionVisibility
+			newDescVis = @state.descriptionVisibility
+
+			# Unfortunately necessary...
+			# Needed in order to determine if itemDescription's rendered height
+			# is big enough to warrant an "Expand" button
+			if oldDescVis isnt 'showingSome' and newDescVis is 'showingSome'
+				@forceUpdate()
+			unless Imm.is oldProps.item, @props.item
+				@forceUpdate()
 
 		_addHistoryCount: (count) ->
 			# Disregard if nothing left to load
@@ -214,26 +226,77 @@ load = (win) ->
 			entries = entries
 			.slice(0, @state.historyCount)
 
+			# Figure out next state in description visibility cycle
+			switch @state.descriptionVisibility
+				when 'hidden'
+					nextDescVis = 'showingSome'
+				when 'showingSome'
+					unless @refs.itemDescription
+						console.log 'unknown scrollHeight'
+						nextDescVis = 'hidden'
+					else if @refs.itemDescription.scrollHeight >= 130 # must match max-height used in CSS
+						console.log 'big scrollHeight'
+						console.log @refs.itemDescription.scrollHeight
+						nextDescVis = 'showingAll'
+					else
+						console.log 'lil scrollHeight'
+						console.log @refs.itemDescription.scrollHeight
+						nextDescVis = 'hidden'
+				when 'showingAll'
+					nextDescVis = 'hidden'
+				else
+					throw new Error(
+						'unknown descriptionVisibility ' +
+						JSON.stringify @state.descriptionVisibility
+					)
+
 			return R.div({className: 'progNoteDetailView'},
 				R.div({className: 'itemDetails'},
 					R.div({
 						className: 'itemName'
-						onClick: => @setState {descriptionIsVisible: not @state.descriptionIsVisible}
+						onClick: => @setState {
+							descriptionVisibility: nextDescVis
+						}
 					},
 						R.h3({}, itemName)
 						(if itemDescription?
 							R.div({className: 'toggleDescriptionButton'},
-								if @state.descriptionIsVisible then "Hide" else "View"
+								switch nextDescVis
+									when 'hidden'
+										"Hide"
+									when 'showingSome'
+										"Show"
+									when 'showingAll'
+										"Expand"
+									else
+										throw new Error(
+											'unknown descriptionVisibility ' +
+											JSON.stringify nextDescVis
+										)
 								" Description "
 
 								FaIcon('chevron-up', {
-									className: if @state.descriptionIsVisible then 'up' else 'down'
+									className: switch nextDescVis
+										when 'hidden'
+											'up'
+										when 'showingSome'
+											'down'
+										when 'showingAll'
+											'down'
+										else
+											throw new Error(
+												'unknown descriptionVisibility ' +
+												JSON.stringify nextDescVis
+											)
 								})
 							)
 						)
 					)
-					(if itemDescription? and @state.descriptionIsVisible
-						R.div({className: 'itemDescription'},
+					(if itemDescription?
+						R.div({
+							className: 'itemDescription ' + @state.descriptionVisibility
+							ref: 'itemDescription'
+						},
 							renderLineBreaks itemDescription
 						)
 					)

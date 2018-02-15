@@ -52,9 +52,17 @@
 		.itemDescription
 			padding 15px
 			padding-top 0
-			max-height 130px
 			overflow auto
 			color grey
+
+			&.hidden
+				max-height 0
+
+			&.showingSome
+				max-height 130px // must match value used in render function
+
+			&.showingAll
+				max-height 600px
 
 	> .history
 		flex 1
