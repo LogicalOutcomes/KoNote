@@ -232,15 +232,10 @@ load = (win) ->
 					nextDescVis = 'showingSome'
 				when 'showingSome'
 					unless @refs.itemDescription
-						console.log 'unknown scrollHeight'
 						nextDescVis = 'hidden'
 					else if @refs.itemDescription.scrollHeight >= 130 # must match max-height used in CSS
-						console.log 'big scrollHeight'
-						console.log @refs.itemDescription.scrollHeight
 						nextDescVis = 'showingAll'
 					else
-						console.log 'lil scrollHeight'
-						console.log @refs.itemDescription.scrollHeight
 						nextDescVis = 'hidden'
 				when 'showingAll'
 					nextDescVis = 'hidden'
