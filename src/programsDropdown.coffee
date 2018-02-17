@@ -90,10 +90,10 @@ load = (win) ->
 							ColorKeyBubble({colorKeyHex: program.get('colorKeyHex')})
 						)
 					)
-					(if not remainingPrograms.isEmpty() and @props.selectedProgram and not @props.excludeNone
+					(if not remainingPrograms.isEmpty() and selectedProgram and not @props.excludeNone
 						B.MenuItem({divider: true})
 					)
-					(if @props.selectedProgram and not @props.excludeNone
+					(if selectedProgram and not @props.excludeNone
 						B.MenuItem({
 							onClick: @props.onSelect.bind null, null
 						},
