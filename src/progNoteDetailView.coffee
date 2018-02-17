@@ -254,7 +254,7 @@ load = (win) ->
 						}
 					},
 						R.h3({}, itemName)
-						(if itemDescription?
+						(if itemDescription
 							R.div({className: 'toggleDescriptionButton'},
 								switch nextDescVis
 									when 'hidden'
@@ -287,7 +287,7 @@ load = (win) ->
 							)
 						)
 					)
-					(if itemDescription?
+					(if itemDescription
 						R.div({
 							className: 'itemDescription ' + @state.descriptionVisibility
 							ref: 'itemDescription'

@@ -373,7 +373,7 @@ load = (win) ->
 				valid = @_validateTargets()
 
 				unless valid
-					Bootbox.alert "Cannot save #{Term 'plan'}: there are empty #{Term 'target'} fields."
+					Bootbox.alert "Cannot save #{Term 'plan'}: all #{Term 'targets'} must have names."
 					return
 
 				# Capture these values for use in filtering functions below.
@@ -501,11 +501,8 @@ load = (win) ->
 			return @state.plan.get('sections').every (section) =>
 				return section.get('targetIds').every (targetId) =>
 					currentRev = @state.currentTargetRevisionsById.get(targetId)
-
 					emptyName = currentRev.get('name') is ''
-					emptyDescription = currentRev.get('description') is ''
-
-					return not emptyName and not emptyDescription
+					return not emptyName
 
 
 		_toggleHistoryPane: ->
