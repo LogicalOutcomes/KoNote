@@ -388,8 +388,12 @@ load = (win) ->
 							.format('YYYY-MM-DD HH:mm:ss')
 
 							# Model output format of metric object
-							progNoteMetrics = progNoteMetrics.map (metric) ->
-								return {
+							progNoteMetrics = progNoteMetrics.flatMap (metric) ->
+								if metric.get('value') is null or metric.get('value') is ''
+									# No output for blank metric values
+									return Imm.List()
+
+								progNoteMetricCsv = Imm.OrderedMap({
 									timestamp
 									authorUsername: progNote.get('author')
 									clientFileId
@@ -399,9 +403,10 @@ load = (win) ->
 									metricName: "\"#{metric.get('name')}\""
 									metricDefinition: "\"#{metric.get('definition')}\""
 									metricValue: metric.get('value')
-								}
+								})
+								return Imm.List([progNoteMetricCsv])
 
-							# console.info "progNoteMetrics", progNoteMetrics.toJS()
+							# console.info "progNoteMetrics " + JSON.stringify progNoteMetrics.toJS()
 							cb null, progNoteMetrics
 
 						, (err, results) ->
@@ -409,7 +414,8 @@ load = (win) ->
 								cb err
 								return
 
-							metricsList = Imm.fromJS(results).flatten(true)
+							metricsList = Imm.List(results).flatten(true)
+							# console.info "all prognote metrics " + JSON.stringify metricsList.toJS()
 							cb()
 
 
@@ -432,9 +438,8 @@ load = (win) ->
 					return
 
 
-				metricsList = Imm.List(results).flatten()
-
-				# console.log "Final Metrics result: ", metricsList.toJS()
+				metricsList = Imm.List(results).flatten(true)
+				# console.log "Final Metrics result: " + JSON.stringify metricsList.toJS()
 
 
 				CSVConverter.json2csv metricsList.toJS(), (err, result) =>
