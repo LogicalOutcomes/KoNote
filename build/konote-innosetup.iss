@@ -50,20 +50,80 @@ Filename: "{app}\uninstall.exe"; Flags: runhidden
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-Filename: "{app}\uninstall.exe"; Flags: runhidden
+; todo: add option to perform fresh installation instead of ugprade
+; Filename: "{app}\uninstall.exe"; Flags: runhidden
 
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\data"
 
 [Code]
-function InitializeSetup(): Boolean;
+var
+  TypePage: TInputOptionWizardPage;
+  DataDirPage: TInputDirWizardPage;
+  DataDirPageID: Integer;
+
+procedure InitializeWizard;
 begin
-  if DirExists(ExpandConstant('{userappdata}\{#MyAppName}\data')) then 
-    begin
-    Result := MsgBox('WARNING!' #13#13 'KoNote has detected data from a previous installation. If you continue, this data will be lost. We recommended backing up your data before continuing.' #13#13 'Do you really want to start setup?', mbInformation, MB_YESNO) = idYes;
-    end
-  else
-    begin
-    result := true;
-    end;
+  TypePage := CreateInputOptionPage(2,
+    'Installation Type', 'Choose the setup type for this system',
+    'Standard installation is recommended for most users. Select advanced installation to specify a custom location for the database.'#13#10,
+    True, False);
+  TypePage.Add('Standard Installation');
+  TypePage.Add('Advanced Installation');
+  TypePage.SelectedValueIndex := 0;
+
+  DataDirPage := CreateInputDirPage(wpSelectDir,
+    'Select Installation Location', 'Where should {#MyAppName}''s files be installed?',
+    'Setup will install {#MyAppName} and its database into the following directories.'#13#10,
+    False, '');
+  DataDirPage.Add('Application location');
+  DataDirPage.Add('Database location');
+  DataDirPage.Values[0] := GetPreviousData('AppDir', ExpandConstant('{userappdata}\{#MyAppName}')); 
+  DataDirPage.Values[1] := GetPreviousData('DataDir', ExpandConstant('{userappdata}\{#MyAppName}\data')); 
+  DataDirPageID := DataDirPage.ID; 
+end;
+procedure RegisterPreviousData(PreviousDataKey: Integer);
+begin
+  { Store the selected db folder for further reinstall/upgrade }
+  SetPreviousData(PreviousDataKey, 'AppDir', DataDirPage.Values[0]);
+  SetPreviousData(PreviousDataKey, 'DataDir', DataDirPage.Values[1]);
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := False;
+  if PageID = DataDirPageID then
+    { if standard install is selected, skip the page }
+    Result := TypePage.SelectedValueIndex = 0;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+var DataDirConfig: String;
+
+begin
+  if CurPageID = wpFinished then
+	begin
+		DataDirConfig := '{"devMode": false,"backend": {"type": "file-system","dataDirectory": "' + DataDirPage.Values[1] + '"}}';
+    StringChangeEx(DataDirConfig, '\', '/', True);
+    SaveStringToFile(DataDirPage.Values[0]+'\src\config\production.json', DataDirConfig, False);  
+	end;
+end;
+
+function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo, MemoTypeInfo,
+  MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
+var
+  S: String;
+begin
+  { Fill the 'Ready Memo' with the normal settings and the custom settings }
+  S := '';
+  S := S + 'Application location:' + NewLine;
+  S := S + Space + DataDirPage.Values[0] + NewLine;
+  S := S + NewLine;
+  S := S + 'Database location:' + NewLine;
+  S := S + Space + DataDirPage.Values[1] + NewLine;
+  S := S + NewLine;
+  
+  S := S + MemoTasksInfo;
+
+  Result := S;
 end;

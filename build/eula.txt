@@ -1,7 +1,7 @@
 KONOTE END USER LICENSE AGREEMENT
 =================================
 
-Except where otherwise noted, this software and all documentation is Copyright (c) 2017 Konode. All rights reserved.
+Except where otherwise noted, this software and all documentation is Copyright (c) 2018 Konode. All rights reserved.
 
 The source code is subject to the terms of the Mozilla Public License, v.2.0:
 http://mozilla.org/MPL/2.0
