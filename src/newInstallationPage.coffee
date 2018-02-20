@@ -33,7 +33,6 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		init: ->
-			@_testDataDirectory()
 			@_testLocalWritePermissions()
 
 		deinit: (cb=(->)) ->
@@ -45,24 +44,6 @@ load = (win) ->
 
 		suggestClose: ->
 			@refs.ui.suggestClose()
-
-		_testDataDirectory: ->
-			dataDirectory = Config.backend.dataDirectory
-
-			# Ensure a non-standard dataDirectory path actually exists
-			if dataDirectory isnt 'data' and not Fs.existsSync(dataDirectory)
-				Bootbox.alert {
-					title: "Database folder not found"
-					message: """
-						The destination folder specified for the database installation
-						can not be found on the file system.
-						Please check the 'dataDirectory' path in your configuration file.
-					"""
-					callback: =>
-						process.exit(1)
-				}
-			else
-				console.log "Data directory is valid!"
 
 		_testLocalWritePermissions: ->
 			fileTestPath = 'writeFileTest.txt'
