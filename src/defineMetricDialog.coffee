@@ -97,6 +97,15 @@ load = (win) ->
 
 			ActiveSession.persist.metrics.list (err, result) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
+					CrashHandler.handle err
+					return
 
 				# Avoid duplicate metrics
 				# TODO: show the existing metric definition here to help the user decide how to continue
