@@ -28,7 +28,9 @@ load = (win) ->
 	DefineMetricDialog = require('./defineMetricDialog').load(win)
 	DialogLayer = require('./dialogLayer').load(win)
 
-	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
+	{
+		maxMetricNameLength, FaIcon, showWhen, stripMetadata, renderName
+	} = require('./utils').load(win)
 
 
 	MetricDefinitionManagerTab = React.createFactory React.createClass
@@ -272,7 +274,7 @@ load = (win) ->
 							className: 'form-control'
 							onChange: @_updateName
 							value: @state.name
-							maxLength: 128
+							maxLength: maxMetricNameLength
 						})
 					)
 					R.div({className: 'form-group'},

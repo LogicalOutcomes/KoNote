@@ -16,6 +16,8 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	maxMetricNameLength = 50
+
 	# return a list of unsafe file extensions
 	blockedExtensions = [
 		'.action',
@@ -380,6 +382,7 @@ load = (win) ->
 		return result
 
 	return {
+		maxMetricNameLength
 		blockedExtensions
 		CustomError
 		executeIfFunction
