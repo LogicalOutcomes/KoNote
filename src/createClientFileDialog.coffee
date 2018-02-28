@@ -320,60 +320,59 @@ load = (win) ->
 						cb()
 
 				(cb) =>
-						# Enforce uniqueness of clientFileRecordId
-						clientsWithRecordId = clientFileHeaders.filter (clientFile) ->
-							clientFile.get('recordId') and (clientFile.get('recordId') is recordId)
+					# Enforce uniqueness of clientFileRecordId
+					clientsWithRecordId = clientFileHeaders.filter (clientFile) ->
+						clientFile.get('recordId') and (clientFile.get('recordId') is recordId)
 
-						return cb() if clientsWithRecordId.isEmpty()
+					return cb() if clientsWithRecordId.isEmpty()
 
+					clientsByStatus = clientsWithRecordId.groupBy (clientFile) -> clientFile.get('status')
 
-						clientsByStatus = clientsWithRecordId.groupBy (clientFile) -> clientFile.get('status')
+					clientList = clientsByStatus
+					.map (clients, status) ->
+						clients.map (clientFile) -> "<b>#{renderName clientFile.get('clientName')}</b> (#{status})"
+					.flatten()
+					.toList()
 
-						clientList = clientsByStatus
-						.map (clients, status) ->
-							clients.map (clientFile) -> "<b>#{renderName clientFile.get('clientName')}</b> (#{status})"
-						.flatten()
-						.toList()
-
-						Bootbox.confirm {
-							title: "Warning: Duplicate ID"
-							message: """The #{renderRecordId recordId} is already in use by #{clientList.toJS().join(', ')}.
-								Are you sure you would like to continue creating a duplicate #{Config.clientFileRecordId.label}?"""
-							buttons: {
-								cancel: {
-									label: 'Cancel'
-								},
-								confirm: {
-									label: 'Confirm'
-								}
+					Bootbox.confirm {
+						title: "Warning: Duplicate ID"
+						message: """The #{renderRecordId recordId} is already in use by #{clientList.toJS().join(', ')}.
+							Are you sure you would like to continue creating a duplicate #{Config.clientFileRecordId.label}?"""
+						buttons: {
+							cancel: {
+								label: 'Cancel'
+							},
+							confirm: {
+								label: 'Confirm'
 							}
-							callback: (ok) =>
-								if ok then cb() else cb('CANCEL')
 						}
+						callback: (ok) =>
+							if ok then cb() else cb('CANCEL')
+					}
 
-					(cb) =>
-						# Warn if first & last name already used, but may continue
-						matchingClientName = clientFileHeaders.find (clientFile) ->
-							sameFirstName = clientFile.getIn(['clientName', 'first']).toLowerCase() is first.toLowerCase()
-							sameLastName = clientFile.getIn(['clientName', 'last']).toLowerCase()  is last.toLowerCase()
-							return sameFirstName and sameLastName
+				(cb) =>
+					# Warn if first & last name already used, but may continue
+					matchingClientName = clientFileHeaders.find (clientFile) ->
+						sameFirstName = clientFile.getIn(['clientName', 'first']).toLowerCase() is first.toLowerCase()
+						sameLastName = clientFile.getIn(['clientName', 'last']).toLowerCase()  is last.toLowerCase()
+						return sameFirstName and sameLastName
 
-						return cb() unless matchingClientName
+					return cb() unless matchingClientName
 
 
-						matchingClientRecordId = if Config.clientFileRecordId.isEnabled
-							" #{renderRecordId matchingClientName.get('recordId')}"
-						else
-							""
+					matchingClientRecordId = if Config.clientFileRecordId.isEnabled
+						" #{renderRecordId matchingClientName.get('recordId')}"
+					else
+						""
 
-						Bootbox.confirm {
-							title: "Warning: Duplicate Name"
-							message: """The name \"#{first} #{last}\" matches an existing #{Term 'client file'}:
-							\"#{renderName matchingClientName.get('clientName')}\", #{matchingClientRecordId}.
-							Would you like to create this new #{Term 'client file'} anyway?"""
-							callback: (ok) =>
-								if ok then cb() else cb('CANCEL')
-						}
+					Bootbox.confirm {
+						title: "Warning: Duplicate Name"
+						message: """The name \"#{first} #{last}\" matches an existing #{Term 'client file'}:
+						\"#{renderName matchingClientName.get('clientName')}\", #{matchingClientRecordId}.
+						Would you like to create this new #{Term 'client file'} anyway?"""
+						callback: (ok) =>
+							if ok then cb() else cb('CANCEL')
+					}
 
 				(cb) =>
 					# Create the clientFile,
