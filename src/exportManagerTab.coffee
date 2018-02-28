@@ -145,7 +145,7 @@ load = (win) ->
 					clientName = renderName clientFile.get('clientName')
 					clientFileProgramLinkIds = null
 					programHeaders = null
-					programs = @props.programs
+					programs = @props.programsById.valueSeq().toList()
 					programNames = null
 					csv = null
 					progressIterator = progressIterator + 1
@@ -289,7 +289,7 @@ load = (win) ->
 				metricsList = null
 				clientFileProgramLinkIds = null
 				programHeaders = null
-				programs = @props.programs
+				programs = @props.programsById.valueSeq().toList()
 				programNames = null
 				csv = null
 

@@ -16,6 +16,8 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
+	maxMetricNameLength = 50
+
 	# return a list of unsafe file extensions
 	blockedExtensions = [
 		'.action',
@@ -226,6 +228,16 @@ load = (win) ->
 
 	makeMoment = (timestamp) -> Moment timestamp, TimestampFormat
 
+	# Takes a list or collection of persistent objects and puts them into a Map
+	# so that they can be accessed by their ID.
+	#
+	# (Imm.Collection<Imm.Map>) -> Imm.Map
+	objectsAsIdMap = (objects) ->
+		return objects
+			.map((o) -> [o.get('id'), o])
+			.fromEntrySeq()
+			.toMap()
+
 	renderTimeSpan = (startTimestamp, endTimestamp) ->
 		startMoment = makeMoment(startTimestamp)
 
@@ -380,6 +392,7 @@ load = (win) ->
 		return result
 
 	return {
+		maxMetricNameLength
 		blockedExtensions
 		CustomError
 		executeIfFunction
@@ -395,6 +408,7 @@ load = (win) ->
 		capitalize
 		truncateText
 		makeMoment
+		objectsAsIdMap
 		renderTimeSpan
 		scrollToElement
 		getUnitIndex

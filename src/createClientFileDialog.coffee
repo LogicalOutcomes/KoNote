@@ -169,7 +169,7 @@ load = (win) ->
 						)
 					)
 
-					(unless @props.programs.isEmpty()
+					(unless @props.programsById.isEmpty()
 						R.div({className: 'form-group'},
 							R.label({className: 'col-sm-4 control-label'}, "#{Term 'Program'}"),
 							R.div({className: 'col-sm-8'},
@@ -179,13 +179,16 @@ load = (win) ->
 									value: @state.programId
 								},
 									R.option({value: ''}, "Select a #{Term 'client'} #{Term 'program'}")
-									(@props.programs.sortBy((val, key) => val.get('name')).map (program) ->
-										R.option({
+									(@props.programsById
+										.valueSeq()
+										.sortBy((val, key) => val.get('name'))
+										.map (program) ->
+											R.option({
 												key: program.get('id')
 												value: program.get('id')
 											},
-											program.get('name')
-										)
+												program.get('name')
+											)
 									)
 								)
 							)

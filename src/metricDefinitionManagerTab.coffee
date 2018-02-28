@@ -4,8 +4,12 @@
 
 # Tab layer for adding/defining or managing existing metric definitions
 
+_ = require 'underscore'
 Async = require 'async'
+CSVConverter = require 'json-2-csv'
+Fs = require 'fs'
 Imm = require 'immutable'
+Path = require 'path'
 
 Persist = require './persist'
 Term = require './term'
@@ -28,7 +32,9 @@ load = (win) ->
 	DefineMetricDialog = require('./defineMetricDialog').load(win)
 	DialogLayer = require('./dialogLayer').load(win)
 
-	{FaIcon, showWhen, stripMetadata, renderName} = require('./utils').load(win)
+	{
+		maxMetricNameLength, FaIcon, showWhen, stripMetadata, renderName
+	} = require('./utils').load(win)
 
 
 	MetricDefinitionManagerTab = React.createFactory React.createClass
@@ -37,66 +43,32 @@ load = (win) ->
 		# TODO: propTypes
 
 		getInitialState: -> {
-			dataIsReady: false
-			metricDefinitions: Imm.List()
 			displayInactive: false
 		}
 
-		componentWillMount: ->
-			metricDefinitionHeaders = null
-			metricDefinitions = Imm.List()
-
-			Async.series [
-				(cb) =>
-					ActiveSession.persist.metrics.list (err, result) =>
-						if err
-							cb err
-							return
-
-						metricDefinitionHeaders = result
-						cb()
-
-				(cb) =>
-					Async.map metricDefinitionHeaders.toArray(), (metricDefinitionHeader, cb) =>
-						metricDefinitionId = metricDefinitionHeader.get('id')
-						ActiveSession.persist.metrics.readLatestRevisions metricDefinitionId, 1, cb
-					, (err, results) =>
-						if err
-							cb err
-							return
-
-						metricDefinitions = Imm.List(results).map (metricDefinition) ->
-							stripMetadata metricDefinition.first()
-
-						cb()
-
-			], (err) =>
-				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
-						return
-
-					CrashHandler.handle err
-					return
-
-				# Successfully loaded metric definitions
-				@setState {
-					dataIsReady: true
-					metricDefinitions
-				}
-
 		render: ->
+			unless @props.metricsById
+				# Probably won't ever appear, since metrics are loaded in the background
+				return R.div({
+					className: 'metricDefinitionManagerTab loading'
+				}, "Loading...")
+
 			isAdmin = global.ActiveSession.isAdmin()
 
+			# Get list of all metrics
+			metricDefinitions = @props.metricsById.valueSeq()
+				.map((m) -> stripMetadata m)
+
 			# Determine inactive metrics
-			inactiveMetricDefinitions = @state.metricDefinitions.filter (metric) ->
-				metric.get('status') isnt 'default'
+			inactiveMetricDefinitions = metricDefinitions
+				.filter (metric) ->
+					metric.get('status') isnt 'default'
 
 			hasInactiveMetrics = not inactiveMetricDefinitions.isEmpty()
-			hasData = not @state.metricDefinitions.isEmpty()
+			hasData = not metricDefinitions.isEmpty()
 
 			# Configure table data
-			tableData = @state.metricDefinitions
+			tableData = metricDefinitions
 
 			# UI Filters
 			unless @state.displayInactive
@@ -125,7 +97,6 @@ load = (win) ->
 								OpenDialogLink({
 									className: 'btn btn-primary'
 									dialog: DefineMetricDialog
-									onSuccess: @_createMetric
 								},
 									FaIcon('plus')
 									" New #{Term 'Metric'}"
@@ -135,7 +106,7 @@ load = (win) ->
 							(if hasInactiveMetrics
 								R.div({className: 'toggleInactive'},
 									R.label({},
-										"Show inactive (#{inactiveMetricDefinitions.size})"
+										"Show inactive (#{inactiveMetricDefinitions.count()})"
 										R.input({
 											type: 'checkbox'
 											checked: @state.displayInactive
@@ -149,111 +120,304 @@ load = (win) ->
 					)
 				)
 				R.div({className: 'main'},
-					(if @state.dataIsReady
-						(if hasData
-							R.div({className: 'responsiveTable animated fadeIn'},
-								DialogLayer({
-									ref: 'dialogLayer'
-									metricDefinitions: @state.metricDefinitions
-								},
-									BootstrapTable({
-										ref: 'metricTable'
-										data: tableData.toJS()
-										keyField: 'id'
-										bordered: false
-										options: {
-											defaultSortName: 'name'
-											defaultSortOrder: 'asc'
-											searchPosition: 'right'
-											onRowClick: ({id}) =>
-												return unless isAdmin
+					(if hasData
+						R.div({className: 'responsiveTable animated fadeIn'},
+							DialogLayer({
+								ref: 'dialogLayer'
+								metricsById: @props.metricsById
+							},
+								BootstrapTable({
+									ref: 'metricTable'
+									data: tableData.toJS()
+									keyField: 'id'
+									bordered: false
+									options: {
+										defaultSortName: 'name'
+										defaultSortOrder: 'asc'
+										searchPosition: 'right'
+										onRowClick: ({id}) =>
+											return unless isAdmin
 
-												@refs.dialogLayer.open ModifyMetricDialog, {
-													metricId: id
-													onSuccess: @_modifyMetric
-												}
-											noDataText: "No #{Term 'metric definitions'} to display"
-										}
-										trClassName: (row) -> 'inactive' if row.status isnt 'active'
-									},
-										TableHeaderColumn({
-											dataField: 'id'
-											className: 'colorKeyColumn'
-											columnClassName: 'colorKeyColumn'
-											dataFormat: -> null
-										})
-										TableHeaderColumn({
-											dataField: 'name'
-											className: 'nameColumn'
-											columnClassName: 'nameColumn'
-											dataSort: true
-										}, "#{Term 'Metric'} Name")
-										TableHeaderColumn({
-											dataField: 'definition'
-											className: [
-												'descriptionColumn'
-												'rightPadding' unless @state.displayInactive
-											].join ' '
-											columnClassName: [
-												'descriptionColumn'
-												'rightPadding' unless @state.displayInactive
-											].join ' '
-										}, "Definition")
-										TableHeaderColumn({
-											dataField: 'status'
-											className: [
-												'statusColumn'
-												'rightPadding' if @state.displayInactive
-											].join ' '
-											columnClassName: [
-												'statusColumn'
-												'rightPadding' if @state.displayInactive
-											].join ' '
-											dataSort: true
-											hidden: not @state.displayInactive
-											headerAlign: 'right'
-											dataAlign: 'right'
-										}, "Status")
-									)
-								)
-							)
-						else
-							R.div({className: 'noData'},
-								R.span({className: 'animated fadeInUp'},
-									"No #{Term 'metric definitions'} exist yet"
+											@refs.dialogLayer.open ModifyMetricDialog, {
+												metricId: id
+											}
+										noDataText: "No #{Term 'metric definitions'} to display"
+									}
+									trClassName: (row) -> 'inactive' if row.status isnt 'active'
+								},
+									TableHeaderColumn({
+										dataField: 'id'
+										className: 'colorKeyColumn'
+										columnClassName: 'colorKeyColumn'
+										dataFormat: -> null
+									})
+									TableHeaderColumn({
+										dataField: 'name'
+										className: 'nameColumn'
+										columnClassName: 'nameColumn'
+										dataSort: true
+									}, "#{Term 'Metric'} Name")
+									TableHeaderColumn({
+										dataField: 'definition'
+										className: [
+											'descriptionColumn'
+											'rightPadding' unless @state.displayInactive
+										].join ' '
+										columnClassName: [
+											'descriptionColumn'
+											'rightPadding' unless @state.displayInactive
+										].join ' '
+									}, "Definition")
+									TableHeaderColumn({
+										dataField: 'status'
+										className: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
+										columnClassName: [
+											'statusColumn'
+											'rightPadding' if @state.displayInactive
+										].join ' '
+										dataSort: true
+										hidden: not @state.displayInactive
+										headerAlign: 'right'
+										dataAlign: 'right'
+									}, "Status")
 								)
 							)
 						)
+					else
+						R.div({className: 'noData'},
+							R.span({className: 'animated fadeInUp'},
+								"No #{Term 'metric definitions'} exist yet"
+							)
+						)
 					)
+				)
+				R.div({className: 'footer'},
+					R.a({
+						className: 'importMetricsLink'
+						href: "#"
+						onClick: @_importMetrics
+					},
+						"Import #{Term 'metric definitions'}..."
+					)
+					R.input({
+						type: 'file'
+						className: 'hidden'
+						ref: 'importMetricsInput'
+					})
 				)
 			)
 
 		_handleTableSearch: (event) ->
 			@refs.metricTable.handleSearch(event.target.value)
 
-		_modifyMetric: (revisedMetric) ->
-			originalMetric = @state.metricDefinitions.find (metric) ->
-				metric.get('id') is revisedMetric.get('id')
-
-			index = @state.metricDefinitions.indexOf originalMetric
-
-			metricDefinitions = @state.metricDefinitions.set index, revisedMetric
-			@setState {metricDefinitions}
-
-		_createMetric: (createdMetric) ->
-			metricDefinitions = @state.metricDefinitions.push createdMetric
-			@setState {metricDefinitions}
-
 		_toggleDisplayInactive: ->
 			displayInactive = not @state.displayInactive
 			@setState {displayInactive}
+
+		_importMetrics: (event) ->
+			event.preventDefault()
+
+			filePath = null
+			csv = null
+			metricsToCreate = null
+			existingMetricNames = null
+
+			Async.series [
+				(cb) ->
+					Bootbox.alert "Select a CSV file with two columns: metric name and metric definition.", ->
+						cb()
+				(cb) =>
+					$(@refs.importMetricsInput)
+					.off()
+					.val('')
+					.attr('accept', ".csv")
+					.on 'change', (event) =>
+						filePath = event.target.value
+						console.log "Import metric defs from " + JSON.stringify(filePath)
+						cb()
+					.click()
+				(cb) ->
+					Fs.readFile filePath, 'utf8', (err, rawCsv) ->
+						if err
+							console.error err
+							console.error err.stack
+							Bootbox.alert("An error occured while reading the file at " + filePath)
+							return
+
+						# Add header row so that user doesn't have to
+						csv = 'name,definition\n' + rawCsv
+						cb()
+				(cb) ->
+					CSVConverter.csv2json csv, (err, result) =>
+						if err
+							console.error err
+							console.error err.stack
+							Bootbox.alert("The selected file does not seem to be a valid CSV file.")
+							return
+
+						if result.length is 0
+							Bootbox.alert "The selected file seems to be empty."
+							return
+
+						for m in result
+							if m.name is ''
+								Bootbox.alert "The selected file contains a metric with an empty name."
+								return
+
+							if m.name.length > maxMetricNameLength
+								Bootbox.alert "Metric names must be " + maxMetricNameLength +
+									" characters or less. \"#{_.escape m.name}\" is an invalid name."
+								return
+
+							if m.definition is ''
+								Bootbox.alert "The selected file contains a metric with an empty definition."
+								return
+
+						metricsToCreate = Imm.fromJS result
+						console.log JSON.stringify result
+						cb()
+					, {
+						trimFieldValues: true
+					}
+				(cb) ->
+					# Get names of existing metrics
+					ActiveSession.persist.metrics.list (err, result) ->
+						if err
+							if err instanceof Persist.IOError
+								Bootbox.alert """
+									Please check your network connection and try again.
+								"""
+								return
+
+							CrashHandler.handle err
+							return
+
+						existingMetricNames = result
+							.map (metric) -> metric.get('name')
+							.toSet()
+						cb()
+				(cb) ->
+					metricsToCreateNames = metricsToCreate
+						.map (m) -> m.get('name')
+					metricsToCreateNamesSet = metricsToCreateNames.toSet()
+
+					# If there are duplicate metric names in the input file
+					if metricsToCreateNames.size isnt metricsToCreateNamesSet.size
+						duplicatedNames = metricsToCreateNames
+							.countBy (name) -> name
+							.filter (occurrences) -> (occurrences > 1)
+							.keySeq()
+
+						Bootbox.alert "Could not complete import. " +
+							"The CSV file contains duplicate definitions of the following metrics:" +
+							"<ul>" +
+							(duplicatedNames
+								.sort()
+								.map (name) -> "<li>#{_.escape name}</li>"
+								.join('')) +
+							"</ul>"
+						return
+
+					overlappingNames = metricsToCreateNamesSet.intersect(existingMetricNames)
+
+					# If any metrics in the input file already exist
+					if overlappingNames.size > 0
+						Bootbox.alert(
+							"Could not complete import. The following metric names are already in use:" +
+								"<ul>" +
+								(overlappingNames
+									.sort()
+									.map (name) ->
+										return "<li>#{_.escape name}</li>"
+									.join('')) +
+								"</ul>"
+						)
+						return
+
+					cb()
+				(cb) ->
+					firstEntry = metricsToCreate.first()
+					Bootbox.dialog {
+						title: 'Import metric definitions file'
+						message: """
+							#{metricsToCreate.size} metric definition(s) were found in
+							"#{_.escape Path.basename filePath}".<br><br>
+							Please check that the first metric definition to be imported appears
+							correctly below:
+							<ul>
+								<li><strong>Name</strong>: #{_.escape firstEntry.get('name')}</li>
+								<li><strong>Description</strong>: #{_.escape firstEntry.get('definition')}</li>
+							</ul>
+							"""
+						buttons: {
+							cancel: {
+								label: 'Cancel'
+								className: 'btn-default'
+							}
+							continue: {
+								label: (
+									if metricsToCreate.size is 1
+										'Import 1 metric'
+									else
+										"Import #{metricsToCreate.size} metrics"
+								)
+								className: 'btn-primary'
+								callback: -> cb()
+							}
+						}
+					}
+				(cb) ->
+					Async.eachLimit metricsToCreate.toArray(), 20, (metricToCreate, cb) ->
+						newMetric = Imm.Map({
+							name: metricToCreate.get('name')
+							definition: metricToCreate.get('definition')
+							status: 'default'
+						})
+
+						ActiveSession.persist.metrics.create newMetric, (err, result) =>
+							if err
+								cb err
+								return
+
+							cb()
+					, (err) ->
+						if err
+							if err instanceof Persist.IOError
+								Bootbox.alert """
+									Please check your network connection and try again.
+								"""
+								return
+
+							CrashHandler.handle err
+							return
+
+						cb()
+				(cb) ->
+					Bootbox.alert "Import finished successfully.", -> cb()
+			], (err) ->
+				if err
+					console.error "Unexpected error during metric import"
+					console.error err
+					console.error err.stack
+					throw err
+
+				# OK
 
 
 	ModifyMetricDialog = React.createFactory React.createClass
 		mixins: [React.addons.PureRenderMixin]
 
 		getInitialState: ->
-			return @_getMetricDefinition().toJS()
+			metric = @props.metricsById.get(@props.metricId)
+
+			return {
+				name: metric.get('name')
+				definition: metric.get('definition')
+				status: metric.get('status')
+			}
 
 		componentDidMount: ->
 			@refs.nameField.focus()
@@ -272,7 +436,7 @@ load = (win) ->
 							className: 'form-control'
 							onChange: @_updateName
 							value: @state.name
-							maxLength: 128
+							maxLength: maxMetricNameLength
 						})
 					)
 					R.div({className: 'form-group'},
@@ -295,9 +459,8 @@ load = (win) ->
 									else 'btn btn-default'
 								onClick: @_updateStatus
 								value: 'default'
-
-								},
-							"Active"
+							},
+								"Active"
 							)
 							R.button({
 								className:
@@ -307,9 +470,8 @@ load = (win) ->
 										'default'
 								onClick: @_updateStatus
 								value: 'deactivated'
-
-								},
-							"Deactivated"
+							},
+								"Deactivated"
 							)
 						)
 					)
@@ -338,29 +500,54 @@ load = (win) ->
 		_updateStatus: (event) ->
 			@setState {status: event.target.value}
 
-		_getMetricDefinition: ->
-			@props.metricDefinitions.find (metric) =>
-				metric.get('id') is @props.metricId
-
 		_submit: ->
-			unless @state.name.trim()
+			name = @state.name.trim()
+			definition = @state.definition.trim()
+			status = @state.status
+
+			unless name
 				Bootbox.alert "#{Term 'Metric'} name is required"
 				return
 
-			unless @state.definition.trim()
+			unless definition
 				Bootbox.alert "#{Term 'Metric'} definition is required"
 				return
 
 			@refs.dialog.setIsLoading true
 
-			newMetricRevision = Imm.fromJS {
-				id: @_getMetricDefinition().get('id')
-				name: @state.name.trim()
-				definition: @state.definition.trim()
-				status: @state.status
-			}
+			result = null
 
-			ActiveSession.persist.metrics.createRevision newMetricRevision, (err, result) =>
+			Async.series [
+				(cb) =>
+					# Look for an existing metric with the same name
+					ActiveSession.persist.metrics.list (err, metricHeaders) =>
+						if err
+							cb err
+							return
+
+						existingMetricWithName = metricHeaders.find (m) ->
+							return m.get('name') is name
+
+						if existingMetricWithName
+							@refs.dialog.setIsLoading(false) if @refs.dialog?
+							Bootbox.alert "There is already a metric called \"#{_.escape name}\"."
+							return
+
+						cb()
+				(cb) =>
+					newMetricRevision = Imm.Map({
+						id: @props.metricId
+						name, definition, status
+					})
+
+					ActiveSession.persist.metrics.createRevision newMetricRevision, (err, newRev) =>
+						if err
+							cb err
+							return
+
+						result = newRev
+						cb()
+			], (err) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err

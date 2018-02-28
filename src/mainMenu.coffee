@@ -29,7 +29,7 @@ load = (win) ->
 
 		propTypes: {
 			isAdmin: React.PropTypes.bool.isRequired
-			programs: React.PropTypes.instanceOf(Imm.List).isRequired
+			programsById: React.PropTypes.instanceOf(Imm.Map).isRequired
 			userProgram: React.PropTypes.instanceOf(Imm.Map)
 			managerLayer: React.PropTypes.string
 			isSmallHeaderSet: React.PropTypes.bool
@@ -38,8 +38,7 @@ load = (win) ->
 		}
 
 		_overrideProgram: (programId) ->
-			program = @props.programs.find (p) =>
-				programId is p.get('id')
+			program = @props.programsById.get(programId)
 
 			currentProgramName = if @props.userProgram
 				@props.userProgram.get('name')
@@ -76,10 +75,10 @@ load = (win) ->
 					R.div({id: 'user'},
 						R.div({},
 							R.h3({}, ActiveSession.account.publicInfo.displayName or global.ActiveSession.userName)
-							(unless @props.programs.isEmpty()
+							(unless @props.programsById.isEmpty()
 								ProgramsDropdown({
 									selectedProgramId: userProgramId
-									programs: @props.programs
+									programsById: @props.programsById
 									onSelect: @_overrideProgram
 								})
 							)
