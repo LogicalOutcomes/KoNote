@@ -4,12 +4,13 @@
 
 # Dialog to create a new client file
 
+_ = require 'underscore'
 Async = require 'async'
+Imm = require 'immutable'
+Moment = require 'moment'
 
 Persist = require './persist'
-Imm = require 'immutable'
 Config = require './config'
-Moment = require 'moment'
 Term = require './term'
 
 load = (win) ->
@@ -330,48 +331,86 @@ load = (win) ->
 
 					clientList = clientsByStatus
 					.map (clients, status) ->
-						clients.map (clientFile) -> "<b>#{renderName clientFile.get('clientName')}</b> (#{status})"
+						clients.map (clientFile) ->
+							"<b>#{_.escape renderName clientFile.get('clientName')}</b> (#{_.escape status})"
 					.flatten()
 					.toList()
 
-					Bootbox.confirm {
-						title: "Warning: Duplicate ID"
-						message: """The #{renderRecordId recordId} is already in use by #{clientList.toJS().join(', ')}.
-							Are you sure you would like to continue creating a duplicate #{Config.clientFileRecordId.label}?"""
+					Bootbox.dialog {
+						title: "Error: duplicate ID"
+						message: """
+							#{_.escape renderRecordId recordId} is already in use by
+							#{clientList.join(', ')}.
+							<br><br>
+							The #{Term 'client file'} was not created.
+						"""
 						buttons: {
-							cancel: {
-								label: 'Cancel'
+							createAnyway: {
+								label: 'Create anyway (not recommended)'
+								className: 'btn-default'
+								callback: =>
+									cb()
 							},
-							confirm: {
-								label: 'Confirm'
+							ok: {
+								label: '&nbsp;&nbsp;&nbsp;OK&nbsp;&nbsp;&nbsp;'
+								className: 'btn-primary'
+								callback: =>
+									cb('CANCEL')
 							}
 						}
-						callback: (ok) =>
-							if ok then cb() else cb('CANCEL')
+						onEscape: ->
+							cb('CANCEL')
 					}
 
 				(cb) =>
 					# Warn if first & last name already used, but may continue
-					matchingClientName = clientFileHeaders.find (clientFile) ->
+					matchingClientFiles = clientFileHeaders.filter (clientFile) ->
 						sameFirstName = clientFile.getIn(['clientName', 'first']).toLowerCase() is first.toLowerCase()
 						sameLastName = clientFile.getIn(['clientName', 'last']).toLowerCase()  is last.toLowerCase()
 						return sameFirstName and sameLastName
 
-					return cb() unless matchingClientName
+					if matchingClientFiles.isEmpty()
+						cb()
+						return
 
+					clientFilesHtml = matchingClientFiles.map (clientFileHeader) ->
+						html = '<strong>'
+						html += _.escape renderName clientFileHeader.get('clientName')
+						html += '</strong>'
 
-					matchingClientRecordId = if Config.clientFileRecordId.isEnabled
-						" #{renderRecordId matchingClientName.get('recordId')}"
-					else
-						""
+						if Config.clientFileRecordId.isEnabled and clientFileHeader.get('recordId')
+							html += ' ('
+							html += _.escape renderRecordId clientFileHeader.get('recordId')
+							html += ')'
 
-					Bootbox.confirm {
-						title: "Warning: Duplicate Name"
-						message: """The name \"#{first} #{last}\" matches an existing #{Term 'client file'}:
-						\"#{renderName matchingClientName.get('clientName')}\", #{matchingClientRecordId}.
-						Would you like to create this new #{Term 'client file'} anyway?"""
-						callback: (ok) =>
-							if ok then cb() else cb('CANCEL')
+						return html
+
+					Bootbox.dialog {
+						title: "Error: duplicate name"
+						message: """
+							There is already a #{Term 'client file'} under the name
+							"#{first} #{last}":<br>
+							#{clientFilesHtml.join('<br>')}
+							<br>
+							<br>
+							The #{Term 'client file'} was not created.
+						"""
+						buttons: {
+							createAnyway: {
+								label: 'Create anyway'
+								className: 'btn-default'
+								callback: =>
+									cb()
+							},
+							ok: {
+								label: '&nbsp;&nbsp;&nbsp;OK&nbsp;&nbsp;&nbsp;'
+								className: 'btn-primary'
+								callback: =>
+									cb('CANCEL')
+							}
+						}
+						onEscape: ->
+							cb('CANCEL')
 					}
 
 				(cb) =>
