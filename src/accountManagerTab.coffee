@@ -103,7 +103,7 @@ load = (win) ->
 					userName is link.get('userName') and link.get('status') is 'assigned'
 
 				program = if programLink
-					@props.programs.find (program) -> program.get('id') is programLink.get('programId')
+					@props.programsById.get(programLink.get('programId'))
 				else
 					null
 
@@ -143,7 +143,7 @@ load = (win) ->
 							OpenDialogLink({
 								className: 'btn btn-primary'
 								dialog: CreateAccountDialog
-								programs: @props.programs
+								programsById: @props.programsById
 								onSuccess: @_addAccount
 							},
 								FaIcon('plus')
@@ -173,7 +173,7 @@ load = (win) ->
 							DialogLayer({
 								ref: 'dialogLayer'
 								userAccounts: @state.userAccounts
-								programs: @props.programs
+								programsById: @props.programsById
 								userProgramLinks: @props.userProgramLinks
 								updateAccount: @_updateAccount
 							},
@@ -276,7 +276,7 @@ load = (win) ->
 		propTypes: {
 			userName: React.PropTypes.string.isRequired
 			userAccounts: React.PropTypes.instanceOf(Imm.List).isRequired
-			programs: React.PropTypes.instanceOf(Imm.List).isRequired
+			programsById: React.PropTypes.instanceOf(Imm.Map).isRequired
 			userProgramLinks: React.PropTypes.instanceOf(Imm.List).isRequired
 			updateAccount: React.PropTypes.func.isRequired
 		}
@@ -305,13 +305,13 @@ load = (win) ->
 			programLink = @props.userProgramLinks.find (link) ->
 				userAccount.get('userName') is link.get('userName') and link.get('status') is 'assigned'
 
-			userProgramId = if not programLink then '' else (@props.programs.find (program) ->
-				program.get('id') is programLink.get('programId')
-			).get('id')
-
-			userProgramColor = if not programLink then '' else (@props.programs.find (program) ->
-				program.get('id') is programLink.get('programId')
-			).get('colorKeyHex')
+			userProgramId = ''
+			userProgramColor = ''
+			if programLink
+				userProgramId = programLink.get('programId')
+				userProgramColor = @props.programsById
+					.get(programLink.get('programId'))
+					.get('colorKeyHex')
 
 			isAdmin = userAccount.getIn(['publicInfo', 'accountType']) is 'admin'
 			isDeactivated = not userAccount.getIn(['publicInfo', 'isActive'])
@@ -358,7 +358,7 @@ load = (win) ->
 									ref: 'userProgramDropdown'
 									id: 'modifyUserProgramDropdown'
 									selectedProgramId: userProgramId
-									programs: @props.programs
+									programsById: @props.programsById
 									onSelect: @_reassignProgram.bind null, userAccount
 								})
 							)
@@ -702,8 +702,8 @@ load = (win) ->
 					R.div({className: 'form-group'},
 						R.label({}, "Assign to #{Term 'Program'}")
 						R.div({id: 'programsContainer'},
-							"No #{Term 'programs'} exist yet" if @props.programs.isEmpty()
-							(@props.programs.map (program) =>
+							"No #{Term 'programs'} exist yet" if @props.programsById.isEmpty()
+							(@props.programsById.valueSeq().map (program) =>
 								isSelected = @state.programId is program.get('id')
 
 								R.button({

@@ -24,7 +24,7 @@ load = (win) ->
 
 		propTypes: {
 			selectedProgramId: React.PropTypes.string
-			programs: React.PropTypes.instanceOf(Imm.List).isRequired
+			programsById: React.PropTypes.instanceOf(Imm.Map).isRequired
 			placeholder: React.PropTypes.string
 			onSelect: React.PropTypes.func.isRequired
 			bsStyle: React.PropTypes.string
@@ -48,13 +48,9 @@ load = (win) ->
 			# selectedProgram can be null, so bypasses getDefaultProps
 			selectedProgramId = @props.selectedProgramId or ''
 
-			selectedProgram = @props.programs.find (program) =>
-				selectedProgramId is program.get('id')
+			selectedProgram = @props.programsById.get(selectedProgramId) or Imm.Map()
 
-			selectedProgram = selectedProgram or Imm.Map()
-
-			remainingPrograms = @props.programs.filterNot (program) =>
-				selectedProgramId is program.get('id')
+			remainingPrograms = @props.programsById.delete(selectedProgramId).valueSeq().toList()
 
 
 			R.span({

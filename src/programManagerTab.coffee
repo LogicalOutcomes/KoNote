@@ -47,14 +47,14 @@ load = (win) ->
 
 		render: ->
 			isAdmin = global.ActiveSession.isAdmin()
-			hasData = not @props.programs.isEmpty()
+			hasData = not @props.programsById.isEmpty()
 
 			# Inject numberClients into each program
-			programs = @props.programs.map (program) =>
+			programs = @props.programsById.valueSeq().map (program) =>
 				programId = program.get('id')
 				numberClients = @props.clientFileProgramLinks
 				.filter (link) -> link.get('programId') is programId and link.get('status') is "enrolled"
-				.size
+				.count()
 
 				newProgram = program.set 'numberClients', numberClients
 				return newProgram
@@ -63,7 +63,7 @@ load = (win) ->
 				programs = programs.filter (program) ->
 					program.get('status') is 'default'
 
-			inactivePrograms = @props.programs.filter (program) ->
+			inactivePrograms = @props.programsById.valueSeq().filter (program) ->
 				program.get('status') isnt "default"
 
 			hasInactivePrograms = not inactivePrograms.isEmpty()
@@ -90,7 +90,7 @@ load = (win) ->
 							(if hasInactivePrograms
 								R.div({className: 'toggleInactive'},
 									R.label({},
-										"Show inactive (#{inactivePrograms.size})"
+										"Show inactive (#{inactivePrograms.count()})"
 										R.input({
 											type: 'checkbox'
 											checked: @state.displayInactive
@@ -108,7 +108,7 @@ load = (win) ->
 						R.div({className: 'responsiveTable animated fadeIn'},
 							DialogLayer({
 								ref: 'dialogLayer'
-								programs: @props.programs
+								programsById: @props.programsById
 								clientFileProgramLinks: @props.clientFileProgramLinks
 								clientFileHeaders: @props.clientFileHeaders
 							}
@@ -299,8 +299,7 @@ load = (win) ->
 		}
 
 		render: ->
-			program = @props.programs.find (program) =>
-				program.get('id') is @props.programId
+			program = @props.programsById.get(@props.programId)
 
 			return Dialog({
 				ref: 'dialog'
@@ -333,7 +332,7 @@ load = (win) ->
 								ModifyProgramView({
 									ref: 'modifyProgramView'
 									program
-									programs: @props.programs
+									programsById: @props.programsById
 									onSuccess: @props.onSuccess
 									onCancel: @props.onCancel
 									clientFileProgramLinks: @props.clientFileProgramLinks
@@ -401,11 +400,11 @@ load = (win) ->
 
 		propTypes: {
 			program: React.PropTypes.instanceOf(Imm.Map)
-			programs: React.PropTypes.instanceOf(Imm.List)
+			programsById: React.PropTypes.instanceOf(Imm.Map)
 		}
 
 		getInitialState: ->
-			return @props.program.toJS()
+			return stripMetadata(@props.program).toJS()
 
 		componentDidMount: ->
 			@refs.programName.focus()
@@ -424,8 +423,7 @@ load = (win) ->
 
 			# The current program should be excluded from the list of existing programs
 			# for ColorKeySelection
-			currentProgramIndex = @props.programs.indexOf(@props.program)
-			otherPrograms = @props.programs.remove(currentProgramIndex)
+			otherPrograms = @props.programsById.delete(@props.program.get('id')).valueSeq()
 
 
 			return R.div({className: 'modifyProgramView'},
@@ -510,7 +508,7 @@ load = (win) ->
 						R.label({}, "Colour Key")
 						ColorKeySelection({
 							colors: ProgramColors
-							data: otherPrograms
+							data: otherPrograms.toList()
 							selectedColorKeyHex: @state.colorKeyHex
 							onSelect: @_updateColorKeyHex
 						})
