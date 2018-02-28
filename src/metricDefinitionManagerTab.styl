@@ -1,14 +1,31 @@
 .metricDefinitionManagerTab
-	// Nothing here yet...
+	&.loading
+		padding 100px
 
-	.optionsMenu
-		margin-top 10px !important
-		width 44%
-		display flex
-		flex-wrap wrap
-		justify-content flex-end
+	> .header
+		.optionsMenu
+			margin-top 10px !important
+			width 44%
+			display flex
+			flex-wrap wrap
+			justify-content flex-end
 
-		#searchBar
-			flex 1
-			width 180px
-			margin-right 25px
+			#searchBar
+				flex 1
+				width 180px
+				margin-right 25px
+
+	> .footer
+		> .importMetricsLink
+			display block
+
+			padding 20px 25px
+
+			color #777
+			cursor pointer
+			text-decoration underline
+
+			transition color 0.2s
+
+			&:hover
+				color #333
