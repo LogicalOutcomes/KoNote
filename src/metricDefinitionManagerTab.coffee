@@ -498,24 +498,53 @@ load = (win) ->
 			@setState {status: event.target.value}
 
 		_submit: ->
-			unless @state.name.trim()
+			name = @state.name.trim()
+			definition = @state.definition.trim()
+			status = @state.status
+
+			unless name
 				Bootbox.alert "#{Term 'Metric'} name is required"
 				return
 
-			unless @state.definition.trim()
+			unless definition
 				Bootbox.alert "#{Term 'Metric'} definition is required"
 				return
 
 			@refs.dialog.setIsLoading true
 
-			newMetricRevision = Imm.fromJS {
-				id: @props.metricId
-				name: @state.name.trim()
-				definition: @state.definition.trim()
-				status: @state.status
-			}
+			result = null
 
-			ActiveSession.persist.metrics.createRevision newMetricRevision, (err, result) =>
+			Async.series [
+				(cb) =>
+					# Look for an existing metric with the same name
+					ActiveSession.persist.metrics.list (err, metricHeaders) =>
+						if err
+							cb err
+							return
+
+						existingMetricWithName = metricHeaders.find (m) ->
+							return m.get('name') is name
+
+						if existingMetricWithName
+							@refs.dialog.setIsLoading(false) if @refs.dialog?
+							Bootbox.alert "There is already a metric called \"#{_.escape name}\"."
+							return
+
+						cb()
+				(cb) =>
+					newMetricRevision = Imm.Map({
+						id: @props.metricId
+						name, definition, status
+					})
+
+					ActiveSession.persist.metrics.createRevision newMetricRevision, (err, newRev) =>
+						if err
+							cb err
+							return
+
+						result = newRev
+						cb()
+			], (err) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
 
 				if err
