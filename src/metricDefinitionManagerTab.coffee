@@ -315,6 +315,7 @@ load = (win) ->
 							"The CSV file contains duplicate definitions of the following metrics:" +
 							"<ul>" +
 							(duplicatedNames
+								.sort()
 								.map (name) -> "<li>#{_.escape name}</li>"
 								.join('')) +
 							"</ul>"
@@ -327,9 +328,11 @@ load = (win) ->
 						Bootbox.alert(
 							"Could not complete import. The following metric names are already in use:" +
 								"<ul>" +
-								overlappingNames.map (name) ->
-									return "<li>#{_.escape name}</li>"
-								.join('') +
+								(overlappingNames
+									.sort()
+									.map (name) ->
+										return "<li>#{_.escape name}</li>"
+									.join('')) +
 								"</ul>"
 						)
 						return
