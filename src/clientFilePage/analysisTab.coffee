@@ -204,11 +204,6 @@ load = (win) ->
 
 			visibleMetricValuesById = visibleMetricValues.groupBy (value) -> value.get('id')
 
-			# Booleans for the OTHER menu (TODO: Component-alize this stuff!)
-			otherEventTypesIsSelected = @state.selectedEventTypeIds.contains null
-			otherEventTypesIsPersistent = @state.starredEventTypeIds.contains null
-			visibleUntypedProgEvents = visibleProgEventsByTypeId.get('') or Imm.List()
-
 			# Establish event types selections for side menu
 			untypedEvents = allEvents.filter (e) -> not e.get('typeId')
 
@@ -391,97 +386,31 @@ load = (win) ->
 
 									R.div({className: 'dataOptions'},
 										(unless eventTypesWithData.isEmpty()
-											R.div({},
-												R.h3({}, Term 'Event Types')
-												R.section({},
-													(eventTypesWithData.map (eventType) =>
-														eventTypeId = eventType.get('id')
-
-														# TODO: Make this faster
-														progEventsWithType = allEvents.filter (progEvent) -> progEvent.get('typeId') is eventTypeId
-														visibleProgEvents = visibleProgEventsByTypeId.get(eventTypeId) or Imm.List()
-
-														isSelected = @state.selectedEventTypeIds.contains eventTypeId
-														isPersistent = @state.starredEventTypeIds.contains eventTypeId
-
-														(unless progEventsWithType.isEmpty()
-															R.div({
-																key: eventTypeId
-																className: [
-																	'checkbox'
-																	'isHighlighted' if isPersistent
-																].join ' '
-																onMouseEnter: @_highlightEventType.bind(null, eventTypeId) if isSelected
-																onMouseLeave: @_unhighlightEventType.bind(null, eventTypeId) if isSelected
-															},
-																R.label({},
-																	ColorKeyCount({
-																		isSelected
-																		colorKeyHex: eventType.get('colorKeyHex')
-																		count: visibleProgEvents.size
-																	})
-
-																	(if isSelected
-																		FaIcon('star', {
-																			onClick: @_toggleStarredEventType.bind null, eventTypeId
-																		})
-																	)
-
-																	R.input({
-																		type: 'checkbox'
-																		checked: @state.selectedEventTypeIds.contains eventTypeId
-																		onChange: @_updateSelectedEventTypes.bind null, eventTypeId
-																	})
-																	eventType.get('name')
-																)
-															)
-														)
-													)
-												)
-											)
+											EventTypesSelection({
+												selectedEventTypeIds: @state.selectedEventTypeIds
+												starredEventTypeIds: @state.starredEventTypeIds
+												allEvents
+												eventTypesWithData
+												visibleProgEventsByTypeId
+												highlightEventType: @_highlightEventType
+												unhighlightEventType: @_unhighlightEventType
+												toggleStarredEventType: @_toggleStarredEventType
+												updateSelectedEventTypes: @_updateSelectedEventTypes
+											})
 										)
 
 										(unless untypedEvents.isEmpty()
-											R.div({},
-												(unless eventTypesWithData.isEmpty()
-													R.h3({},
-														"Untyped"
-													)
-												)
-												R.section({},
-													R.div({
-														className: [
-															'checkbox'
-															'isHighlighted' if otherEventTypesIsPersistent
-														].join ' '
-														onMouseEnter: @_highlightEventType.bind(null, null) if otherEventTypesIsSelected
-														onMouseLeave: @_unhighlightEventType.bind(null, null) if otherEventTypesIsSelected
-													},
-														R.label({},
-															ColorKeyCount({
-																isSelected: otherEventTypesIsSelected
-																colorKeyHex: '#cadbe5'
-																count: visibleUntypedProgEvents.size
-															})
-
-															(if otherEventTypesIsSelected
-																FaIcon('star', {
-																	onClick: @_toggleStarredEventType.bind null, null
-																})
-															)
-
-															R.input({
-																type: 'checkbox'
-																checked: otherEventTypesIsSelected
-																onChange: @_updateSelectedEventTypes.bind null, null
-															})
-															untypedEvents.size
-															' '
-															Term (if untypedEvents.size is 1 then 'Event' else 'Events')
-														)
-													)
-												)
-											)
+											UntypedEventsSelection({
+												selectedEventTypeIds: @state.selectedEventTypeIds
+												starredEventTypeIds: @state.starredEventTypeIds
+												visibleProgEventsByTypeId
+												untypedEvents
+												eventTypesWithData
+												highlightEventType: @_highlightEventType
+												unhighlightEventType: @_unhighlightEventType
+												toggleStarredEventType: @_toggleStarredEventType
+												updateSelectedEventTypes: @_updateSelectedEventTypes
+											})
 										)
 									)
 								)
@@ -517,87 +446,25 @@ load = (win) ->
 								(unless planSectionsWithData.isEmpty()
 									R.div({className: 'dataOptions'},
 										(planSectionsWithData.map (section) =>
-											R.div({key: section.get('id')},
-												R.h3({}, section.get('name'))
-												R.section({key: section.get('id')},
-
-													(section.get('targets').map (target) =>
-														targetId = target.get('id')
-														targetIsInactive = target.get('status') isnt 'default'
-
-														R.div({
-															key: targetId
-															className: 'target'
-														},
-															R.h5({}, target.get('name'))
-
-															# TODO: Extract to component
-															(target.get('metrics').map (metric) =>
-																metricId = metric.get('id')
-																metricIsInactive = targetIsInactive or metric.get('status') isnt 'default'
-																visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
-																isSelected = @state.selectedMetricIds.contains metricId
-																metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
-
-																R.div({
-																	key: metricId
-																	className: 'checkbox metric'
-																},
-																	R.label({},
-																		ColorKeyCount({
-																			isSelected
-																			className: 'circle'
-																			colorKeyHex: metricColor
-																			count: visibleValues.size
-																		})
-																		R.input({
-																			type: 'checkbox'
-																			onChange: @_updateSelectedMetrics.bind null, metricId
-																			checked: isSelected
-																		})
-																		metric.get('name')
-																	)
-																)
-															)
-														)
-													)
-												)
-											)
+											PlanSectionMetricsSelection({
+												key: section.get('id')
+												sectionMetricsData: section
+												visibleMetricValuesById
+												selectedMetricIds: @state.selectedMetricIds
+												metricColors: @state.metricColors
+												updateSelectedMetrics: @_updateSelectedMetrics
+											})
 										)
 									)
 								)
 								(unless unassignedMetricsList.isEmpty()
-									R.div({className: 'inactive'},
-										R.h3({}, "Inactive")
-										R.section({},
-											(unassignedMetricsList.map (metric) =>
-												metricId = metric.get('id')
-												isSelected = @state.selectedMetricIds.contains metricId
-												visibleValues = visibleMetricValuesById.get(metricId) or Imm.List()
-												metricColor = if @state.metricColors? then @state.metricColors["y-#{metric.get('id')}"]
-
-												R.div({
-													key: metricId
-													className: 'checkbox metric'
-												},
-													R.label({},
-														ColorKeyCount({
-															isSelected
-															className: 'circle'
-															colorKeyHex: metricColor
-															count: visibleValues.size
-														})
-														R.input({
-															type: 'checkbox'
-															onChange: @_updateSelectedMetrics.bind null, metricId
-															checked: isSelected
-														})
-														metric.get('name')
-													)
-												)
-											)
-										)
-									)
+									UnassignedMetricsSelection({
+										unassignedMetricsList
+										visibleMetricValuesById
+										selectedMetricIds: @state.selectedMetricIds
+										metricColors: @state.metricColors
+										updateSelectedMetrics: @_updateSelectedMetrics
+									})
 								)
 							)
 						)
@@ -796,6 +663,331 @@ load = (win) ->
 			styles = "g.c3-region#{notStatements} {fill-opacity: #{fillOpacity} !important; stroke-opacity: #{fillOpacity}}"
 
 			return R.style({}, styles)
+
+
+	# TODO EventTypesSelection, UntypedEventsSelection,
+	# PlanSectionMetricsSelection, and UnassignedMetricsSelection are very
+	# similar stylistically and functionally and could probably be refactored
+	# into a generic "CollapsableSection" component.
+	#
+	# PlanTargetMetricsSelection is collapsable too, but otherwise not that similar.
+	# -- Tim McLean 2018-03-02
+
+
+	EventTypesSelection = React.createFactory React.createClass
+		displayName: 'EventTypesSelection'
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			return {
+				isCollapsed: false
+			}
+
+		render: ->
+			isCollapsed = @state.isCollapsed
+
+			return R.div({},
+				R.h3({
+					className: 'collapsable'
+					onClick: @_toggleCollapsed
+				},
+					FaIcon('angle-up', {className: showWhen not isCollapsed})
+					FaIcon('angle-down', {className: showWhen isCollapsed})
+					Term 'Event Types'
+				)
+				R.section({
+					className: showWhen(not isCollapsed)
+				},
+					(@props.eventTypesWithData.map (eventType) =>
+						eventTypeId = eventType.get('id')
+
+						# TODO: Make this faster
+						progEventsWithType = @props.allEvents.filter (progEvent) -> progEvent.get('typeId') is eventTypeId
+						visibleProgEvents = @props.visibleProgEventsByTypeId.get(eventTypeId) or Imm.List()
+
+						isSelected = @props.selectedEventTypeIds.contains eventTypeId
+						isPersistent = @props.starredEventTypeIds.contains eventTypeId
+
+						(unless progEventsWithType.isEmpty()
+							R.div({
+								key: eventTypeId
+								className: [
+									'checkbox'
+									'isHighlighted' if isPersistent
+								].join ' '
+								onMouseEnter: @props.highlightEventType.bind(null, eventTypeId) if isSelected
+								onMouseLeave: @props.unhighlightEventType.bind(null, eventTypeId) if isSelected
+							},
+								R.label({},
+									ColorKeyCount({
+										isSelected
+										colorKeyHex: eventType.get('colorKeyHex')
+										count: visibleProgEvents.count()
+									})
+
+									(if isSelected
+										FaIcon('star', {
+											onClick: @props.toggleStarredEventType.bind null, eventTypeId
+										})
+									)
+
+									R.input({
+										type: 'checkbox'
+										checked: @props.selectedEventTypeIds.contains eventTypeId
+										onChange: @props.updateSelectedEventTypes.bind null, eventTypeId
+									})
+									eventType.get('name')
+								)
+							)
+						)
+					)
+				)
+			)
+
+		_toggleCollapsed: ->
+			@setState (s) ->
+				return {
+					isCollapsed: not s.isCollapsed
+				}
+
+
+	UntypedEventsSelection = React.createFactory React.createClass
+		displayName: 'UntypedEventsSelection'
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			return {
+				isCollapsed: false
+			}
+
+		render: ->
+			isCollapsed = @state.isCollapsed
+			otherEventTypesIsSelected = @props.selectedEventTypeIds.contains null
+			otherEventTypesIsPersistent = @props.starredEventTypeIds.contains null
+			visibleUntypedProgEvents = @props.visibleProgEventsByTypeId.get('') or Imm.List()
+
+			return R.div({},
+				(unless @props.eventTypesWithData.isEmpty()
+					R.h3({
+						className: 'collapsable'
+						onClick: @_toggleCollapsed
+					},
+						FaIcon('angle-up', {className: showWhen not isCollapsed})
+						FaIcon('angle-down', {className: showWhen isCollapsed})
+						"Untyped"
+					)
+				)
+				R.section({
+					className: showWhen(not isCollapsed)
+				},
+					R.div({
+						className: [
+							'checkbox'
+							'isHighlighted' if otherEventTypesIsPersistent
+						].join ' '
+						onMouseEnter: @props.highlightEventType.bind(null, null) if otherEventTypesIsSelected
+						onMouseLeave: @props.unhighlightEventType.bind(null, null) if otherEventTypesIsSelected
+					},
+						R.label({},
+							ColorKeyCount({
+								isSelected: otherEventTypesIsSelected
+								colorKeyHex: '#cadbe5'
+								count: visibleUntypedProgEvents.size
+							})
+
+							(if otherEventTypesIsSelected
+								FaIcon('star', {
+									onClick: @props.toggleStarredEventType.bind null, null
+								})
+							)
+
+							R.input({
+								type: 'checkbox'
+								checked: otherEventTypesIsSelected
+								onChange: @props.updateSelectedEventTypes.bind null, null
+							})
+							@props.untypedEvents.count()
+							' '
+							Term (if @props.untypedEvents.count() is 1 then 'Event' else 'Events')
+						)
+					)
+				)
+			)
+
+		_toggleCollapsed: ->
+			@setState (s) ->
+				return {
+					isCollapsed: not s.isCollapsed
+				}
+
+
+	PlanSectionMetricsSelection = React.createFactory React.createClass
+		displayName: 'PlanSectionMetricsSelection'
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			return {
+				isCollapsed: false
+			}
+
+		render: ->
+			isCollapsed = @state.isCollapsed
+			section = @props.sectionMetricsData
+
+			return R.div({},
+				R.h3({
+					className: 'collapsable'
+					onClick: @_toggleCollapsed
+				},
+					FaIcon('angle-up', {className: showWhen not isCollapsed})
+					FaIcon('angle-down', {className: showWhen isCollapsed})
+					section.get('name')
+				)
+				R.section({
+					className: showWhen(not isCollapsed)
+				},
+					(section.get('targets').map (target) =>
+						PlanTargetMetricsSelection({
+							key: target.get('id')
+							targetMetricsData: target
+							visibleMetricValuesById: @props.visibleMetricValuesById
+							selectedMetricIds: @props.selectedMetricIds
+							metricColors: @props.metricColors
+							updateSelectedMetrics: @props.updateSelectedMetrics
+						})
+					)
+				)
+			)
+
+		_toggleCollapsed: ->
+			@setState (s) ->
+				return {
+					isCollapsed: not s.isCollapsed
+				}
+
+
+	PlanTargetMetricsSelection = React.createFactory React.createClass
+		displayName: 'PlanTargetMetricsSelection'
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			return {
+				isCollapsed: false
+			}
+
+		render: ->
+			isCollapsed = @state.isCollapsed
+			target = @props.targetMetricsData
+			targetId = target.get('id')
+			targetIsInactive = target.get('status') isnt 'default'
+
+			return R.div({
+				key: targetId
+				className: 'target'
+			},
+				R.h5({
+					className: 'collapsable'
+					onClick: @_toggleCollapsed
+				},
+					FaIcon('angle-up', {className: showWhen not isCollapsed})
+					FaIcon('angle-down', {className: showWhen isCollapsed})
+					target.get('name')
+				)
+
+				(target.get('metrics').map (metric) =>
+					metricId = metric.get('id')
+					metricIsInactive = targetIsInactive or metric.get('status') isnt 'default'
+					visibleValues = @props.visibleMetricValuesById.get(metricId) or Imm.List()
+					isSelected = @props.selectedMetricIds.contains metricId
+					metricColor = if @props.metricColors? then @props.metricColors["y-#{metric.get('id')}"]
+
+					R.div({
+						key: metricId
+						className: 'checkbox metric ' + showWhen(not isCollapsed)
+					},
+						R.label({},
+							ColorKeyCount({
+								isSelected
+								className: 'circle'
+								colorKeyHex: metricColor
+								count: visibleValues.count()
+							})
+							R.input({
+								type: 'checkbox'
+								onChange: @props.updateSelectedMetrics.bind null, metricId
+								checked: isSelected
+							})
+							metric.get('name')
+						)
+					)
+				)
+			)
+
+		_toggleCollapsed: ->
+			@setState (s) ->
+				return {
+					isCollapsed: not s.isCollapsed
+				}
+
+
+	UnassignedMetricsSelection = React.createFactory React.createClass
+		displayName: 'UnassignedMetricsSelection'
+		mixins: [React.addons.PureRenderMixin]
+
+		getInitialState: ->
+			return {
+				isCollapsed: false
+			}
+
+		render: ->
+			isCollapsed = @state.isCollapsed
+
+			return R.div({className: 'inactive'},
+				R.h3({
+					className: 'collapsable'
+					onClick: @_toggleCollapsed
+				},
+					FaIcon('angle-up', {className: showWhen not isCollapsed})
+					FaIcon('angle-down', {className: showWhen isCollapsed})
+					"Inactive"
+				)
+				R.section({
+					className: showWhen(not isCollapsed)
+				},
+					(@props.unassignedMetricsList.map (metric) =>
+						metricId = metric.get('id')
+						isSelected = @props.selectedMetricIds.contains metricId
+						visibleValues = @props.visibleMetricValuesById.get(metricId) or Imm.List()
+						metricColor = if @props.metricColors? then @props.metricColors["y-#{metric.get('id')}"]
+
+						R.div({
+							key: metricId
+							className: 'checkbox metric'
+						},
+							R.label({},
+								ColorKeyCount({
+									isSelected
+									className: 'circle'
+									colorKeyHex: metricColor
+									count: visibleValues.count()
+								})
+								R.input({
+									type: 'checkbox'
+									onChange: @props.updateSelectedMetrics.bind null, metricId
+									checked: isSelected
+								})
+								metric.get('name')
+							)
+						)
+					)
+				)
+			)
+
+		_toggleCollapsed: ->
+			@setState (s) ->
+				return {
+					isCollapsed: not s.isCollapsed
+				}
 
 
 	ColorKeyCount = ({isSelected, className, colorKeyHex, count}) ->

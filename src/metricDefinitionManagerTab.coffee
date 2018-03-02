@@ -525,8 +525,8 @@ load = (win) ->
 							cb err
 							return
 
-						existingMetricWithName = metricHeaders.find (m) ->
-							return m.get('name') is name
+						existingMetricWithName = metricHeaders.find (m) =>
+							return m.get('name') is name and m.get('id') isnt @props.metricId
 
 						if existingMetricWithName
 							@refs.dialog.setIsLoading(false) if @refs.dialog?
