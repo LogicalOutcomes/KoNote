@@ -34,6 +34,9 @@ load = (win) ->
 				onClose: @props.onClose
 			},
 				R.div({className: 'modifyTargetStatusDialog'},
+					(if @props.dangerMessage
+						R.div({className: 'alert alert-danger'}, @props.dangerMessage)
+					)
 					R.div({className: 'alert alert-warning'}, @props.message)
 					R.div({className: 'form-group'},
 						R.label({}, @props.reasonLabel),
