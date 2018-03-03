@@ -332,18 +332,23 @@ load = (win) ->
 					clientList = clientsByStatus
 					.map (clients, status) ->
 						clients.map (clientFile) ->
-							"<b>#{_.escape renderName clientFile.get('clientName')}</b> (#{_.escape status})"
+							R.span({key: clientFile.get('id')},
+								R.b({}, renderName clientFile.get('clientName')),
+								" (", status, ")"
+							)
 					.flatten()
 					.toList()
 
 					Bootbox.dialog {
 						title: "Error: duplicate ID"
-						message: """
-							#{_.escape renderRecordId recordId} is already in use by
-							#{clientList.join(', ')}.
-							<br><br>
-							The #{Term 'client file'} was not created.
-						"""
+						message: R.div({},
+							renderRecordId(recordId),
+							" is already in use by ",
+							clientList.interpose(', '),
+							"."
+							R.br(), R.br(),
+							"The #{Term 'client file'} was not created."
+						)
 						buttons: {
 							createAnyway: {
 								label: 'Create anyway (not recommended)'
@@ -352,7 +357,10 @@ load = (win) ->
 									cb()
 							},
 							ok: {
-								label: '&nbsp;&nbsp;&nbsp;OK&nbsp;&nbsp;&nbsp;'
+								label: R.span({style: {
+									paddingLeft: '20px',
+									paddingRight: '20px',
+								}}, 'OK')
 								className: 'btn-primary'
 								callback: =>
 									cb('CANCEL')
@@ -373,28 +381,25 @@ load = (win) ->
 						cb()
 						return
 
-					clientFilesHtml = matchingClientFiles.map (clientFileHeader) ->
-						html = '<strong>'
-						html += _.escape renderName clientFileHeader.get('clientName')
-						html += '</strong>'
-
-						if Config.clientFileRecordId.isEnabled and clientFileHeader.get('recordId')
-							html += ' ('
-							html += _.escape renderRecordId clientFileHeader.get('recordId')
-							html += ')'
-
-						return html
+					clientFilesElems = matchingClientFiles.map (clientFileHeader) ->
+						R.span({},
+							R.strong({}, renderName(clientFileHeader.get('clientName'))),
+							(if Config.clientFileRecordId.isEnabled and clientFileHeader.get('recordId')
+								R.span({},
+									' (', renderRecordId(clientFileHeader.get('recordId')), ')'
+								)
+							)
+						)
 
 					Bootbox.dialog {
 						title: "Error: duplicate name"
-						message: """
-							There is already a #{Term 'client file'} under the name
-							"#{first} #{last}":<br>
-							#{clientFilesHtml.join('<br>')}
-							<br>
-							<br>
-							The #{Term 'client file'} was not created.
-						"""
+						message: R.div({},
+							"There is already a #{Term 'client file'} under the name ",
+							"\"#{first} #{last}\":", R.br()
+							clientFilesElems.interpose(R.br()),
+							R.br(), R.br(),
+							"The #{Term 'client file'} was not created."
+						)
 						buttons: {
 							createAnyway: {
 								label: 'Create anyway'
@@ -403,7 +408,10 @@ load = (win) ->
 									cb()
 							},
 							ok: {
-								label: '&nbsp;&nbsp;&nbsp;OK&nbsp;&nbsp;&nbsp;'
+								label: R.span({style: {
+									paddingLeft: '20px',
+									paddingRight: '20px',
+								}}, 'OK')
 								className: 'btn-primary'
 								callback: =>
 									cb('CANCEL')

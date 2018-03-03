@@ -269,7 +269,7 @@ load = (win) ->
 
 							if m.name.length > maxMetricNameLength
 								Bootbox.alert "Metric names must be " + maxMetricNameLength +
-									" characters or less. \"#{_.escape m.name}\" is an invalid name."
+									" characters or less. \"#{m.name}\" is an invalid name."
 								return
 
 							if m.definition is ''
@@ -311,29 +311,32 @@ load = (win) ->
 							.filter (occurrences) -> (occurrences > 1)
 							.keySeq()
 
-						Bootbox.alert "Could not complete import. " +
-							"The CSV file contains duplicate definitions of the following metrics:" +
-							"<ul>" +
-							(duplicatedNames
-								.sort()
-								.map (name) -> "<li>#{_.escape name}</li>"
-								.join('')) +
-							"</ul>"
+						Bootbox.alert R.div({},
+							"Could not complete import. ",
+							"The CSV file contains duplicate definitions of the following metrics:",
+							R.ul({},
+								(duplicatedNames
+									.sort()
+									.map (name) -> R.li({}, name)
+									.toArray()
+								)...
+							)
+						)
 						return
 
 					overlappingNames = metricsToCreateNamesSet.intersect(existingMetricNames)
 
 					# If any metrics in the input file already exist
 					if overlappingNames.size > 0
-						Bootbox.alert(
-							"Could not complete import. The following metric names are already in use:" +
-								"<ul>" +
+						Bootbox.alert R.div({},
+							"Could not complete import. The following metric names are already in use:",
+							R.ul({},
 								(overlappingNames
 									.sort()
 									.map (name) ->
-										return "<li>#{_.escape name}</li>"
-									.join('')) +
-								"</ul>"
+										R.li({}, name)
+									)
+							)
 						)
 						return
 
@@ -342,16 +345,24 @@ load = (win) ->
 					firstEntry = metricsToCreate.first()
 					Bootbox.dialog {
 						title: 'Import metric definitions file'
-						message: """
-							#{metricsToCreate.size} metric definition(s) were found in
-							"#{_.escape Path.basename filePath}".<br><br>
-							Please check that the first metric definition to be imported appears
-							correctly below:
-							<ul>
-								<li><strong>Name</strong>: #{_.escape firstEntry.get('name')}</li>
-								<li><strong>Description</strong>: #{_.escape firstEntry.get('definition')}</li>
-							</ul>
-							"""
+						message: R.div({},
+							"#{metricsToCreate.size} metric definition(s) were found in \"",
+							Path.basename(filePath),
+							'".',
+							R.br(), R.br(),
+							"Please check that the first metric definition to be imported appears ",
+							"correctly below:",
+							R.ul({},
+								R.li({},
+									R.strong({}, "Name"),
+									": ", firstEntry.get('name')
+								)
+								R.li({},
+									R.strong({}, "Description"),
+									": ", firstEntry.get('definition')
+								)
+							)
+						)
 						buttons: {
 							cancel: {
 								label: 'Cancel'
@@ -530,7 +541,7 @@ load = (win) ->
 
 						if existingMetricWithName
 							@refs.dialog.setIsLoading(false) if @refs.dialog?
-							Bootbox.alert "There is already a metric called \"#{_.escape name}\"."
+							Bootbox.alert "There is already a metric called \"#{name}\"."
 							return
 
 						cb()

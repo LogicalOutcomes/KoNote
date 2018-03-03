@@ -125,33 +125,33 @@ load = (win) ->
 						cb()
 					else
 						# Build programDropdown markup
-						programDropdown = ReactDOMServer.renderToString(
-							R.select({
-								id: 'programDropdown'
-								className: 'form-control '
-							},
-								R.option({value: ''}, "All #{Term 'programs'}")
-								console.log programs
-								(programs.map (program) ->
-									R.option({
-										key: program.get('id')
-										value: program.get('id')
-									},
-										program.get('name')
-									)
+						programDropdown = R.select({
+							id: 'programDropdown'
+							className: 'form-control '
+						},
+							R.option({value: ''}, "All #{Term 'programs'}")
+							console.log programs
+							(programs.map (program) ->
+								R.option({
+									key: program.get('id')
+									value: program.get('id')
+								},
+									program.get('name')
 								)
 							)
 						)
 
 						Bootbox.dialog {
 							title: "Select #{Term 'program'}"
-							message: """
-								Your user is not currently assigned to any #{Term 'program'}.
-								<br><br>
-								Please select which #{Term 'program'} you would like to generate summaries for, or generate summaries for all #{Term 'programs'}.
-								<br><br>
-								#{programDropdown}
-							"""
+							message: R.div({},
+								"Your user is not currently assigned to any #{Term 'program'}.",
+								R.br(), R.br(),
+								"Please select which #{Term 'program'} you ",
+								"would like to generate summaries for, or ",
+								"generate summaries for all #{Term 'programs'}.",
+								R.br(), R.br(),
+								programDropdown
+							)
 							closeButton: false
 							buttons: {
 								cancel: {

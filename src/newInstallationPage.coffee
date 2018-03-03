@@ -395,11 +395,12 @@ load = (win) ->
 
 					Bootbox.alert {
 						title: "Data Import Failed"
-						message: """
-							Sorry, #{Config.productName} was unable to restore the data file.
-							If the problem persists, please contact technical support at <u>#{Config.supportEmailAddress}</u>
-							and include the following: \"#{err}\".
-						"""
+						message: R.div({},
+							"Sorry, #{Config.productName} was unable to restore the data file."
+							" If the problem persists, please contact technical support at"
+							R.u({}, Config.supportEmailAddress)
+							" and include the following: \"#{err}\"."
+						)
 					}
 					return
 
@@ -579,7 +580,7 @@ load = (win) ->
 						message: """
 							Sorry, we seem to be having some trouble installing #{Config.productName}.
 							Please check your network connection and try again, otherwise contact
-							technical support at <u>#{Config.supportEmailAddress}</u>
+							technical support at #{Config.supportEmailAddress}
 							with the Error Code: \"#{errCode}\" .
 						"""
 					}

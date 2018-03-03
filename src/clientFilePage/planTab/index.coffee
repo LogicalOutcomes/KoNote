@@ -511,39 +511,35 @@ load = (win) ->
 
 		_addSection: ->
 			# Build programDropdown markup
-			programDropdown = ReactDOMServer.renderToString(
-				R.select({
-					id: 'programDropdown'
-					className: 'form-control'
-				},
-					R.option({value: ''}, "All #{Term 'Programs'}")
-					(@props.clientPrograms.map (program) ->
-						R.option({
-							key: program.get('id')
-							value: program.get('id')
-						},
-							program.get('name')
-						)
+			programDropdown = R.select({
+				id: 'programDropdown'
+				className: 'form-control'
+			},
+				R.option({value: ''}, "All #{Term 'Programs'}")
+				(@props.clientPrograms.map (program) ->
+					R.option({
+						key: program.get('id')
+						value: program.get('id')
+					},
+						program.get('name')
 					)
 				)
 			)
 
 			Bootbox.dialog {
 				title: "New #{Term 'plan'} #{Term 'section'}"
-				message: """
-					<div style="display: flex;">
-						<div style="flex: 3;">
-							<input
-								id="sectionNameInput"
-								class="form-control"
-								placeholder="Enter a #{Term 'section'} name"
-							/>
-						</div>
-						<div style="flex: 2; padding-left: 10px;">
-							#{programDropdown}
-						</div>
-					</div>
-				"""
+				message: R.div({style: {display: 'flex'}},
+					R.div({style: {flex: 3}},
+						R.input({
+							id: "sectionNameInput"
+							className: "form-control"
+							placeholder: "Enter a #{Term 'section'} name"
+						})
+					),
+					R.div({style: {flex: 2, paddingLeft: "10px"}},
+						programDropdown
+					)
+				)
 				buttons: {
 					cancel: {
 						label: "Cancel"
@@ -682,41 +678,37 @@ load = (win) ->
 			programId = section.get('programId')
 
 			# Build programDropdown markup
-			programDropdown = ReactDOMServer.renderToString(
-				R.select({
-					id: 'programDropdown'
-					className: 'form-control'
-					defaultValue: programId or ''
-				},
-					R.option({value: ''}, "All #{Term 'Programs'}")
-					(@props.clientPrograms.map (program) ->
-						R.option({
-							key: program.get('id')
-							value: program.get('id')
-						},
-							program.get('name')
-						)
+			programDropdown = R.select({
+				id: 'programDropdown'
+				className: 'form-control'
+				defaultValue: programId or ''
+			},
+				R.option({value: ''}, "All #{Term 'Programs'}")
+				(@props.clientPrograms.map (program) ->
+					R.option({
+						key: program.get('id')
+						value: program.get('id')
+					},
+						program.get('name')
 					)
 				)
 			)
 
 			Bootbox.dialog {
 				title: "Modify #{Term 'plan'} #{Term 'section'}"
-				message: """
-					<div style="display: flex;">
-						<div style="flex: 3;">
-							<input
-								id="sectionNameInput"
-								class="form-control"
-								value="#{name}"
-								placeholder="Enter a #{Term 'section'} name"
-							/>
-						</div>
-						<div style="flex: 2; padding-left: 10px;">
-							#{programDropdown}
-						</div>
-					</div>
-				"""
+				message: R.div({style: {display: 'flex'}},
+					R.div({style: {flex: 3}},
+						R.input({
+							id: "sectionNameInput"
+							className: "form-control"
+							defaultValue: name
+							placeholder: "Enter a #{Term 'section'} name"
+						})
+					),
+					R.div({style: {flex: 2}, paddingLeft: '10px'},
+						programDropdown
+					)
+				)
 				buttons: {
 					cancel: {
 						label: "Cancel"

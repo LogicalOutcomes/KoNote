@@ -107,37 +107,40 @@ load = (win) ->
 			.concat(cancelledGlobalEvents)
 			.sortBy (event) -> event.get('startTimestamp')
 
-			# Build HTML for each event entry
-			eventsList = cancelledEvents.toJS().map ({title, startTimestamp, endTimestamp, relatedProgEventId}) ->
-				# relatedProgEventId indicates this is a globalEvent
-				if relatedProgEventId?
-					title += " (#{Term 'global event'})"
-
-				return """
-					<li>
-						<strong>#{title}</strong>\n
-						<div>From: <em>#{formatTimestamp startTimestamp}</em></div>
-						<div>Until: <em>#{formatTimestamp endTimestamp}</em></div>
-					</li>
-				"""
-			.join('')
-
 			# Build HTML for events warning
-			eventsMessage = """
-				<br><br>
-				The following #{Term 'events'} will also be cancelled:
-				<ul>
-					#{eventsList}
-				</ul>
-			"""
+			eventsMessage = R.div({},
+				R.br(),
+				"The following #{Term 'events'} will also be cancelled:",
+				R.ul({},
+					cancelledEvents.toJS().map ({
+						title, description, startTimestamp, endTimestamp, relatedProgEventId
+					}) ->
+						# relatedProgEventId indicates this is a globalEvent
+						if relatedProgEventId?
+							title += " (#{Term 'global event'})"
+
+						return R.li({},
+							R.strong({}, title),
+							R.div({}, description),
+							R.div({},
+								'From: ',
+								R.em({}, formatTimestamp startTimestamp)
+							),
+							R.div({},
+								'Until: ',
+								R.em({}, formatTimestamp endTimestamp)
+							)
+						)
+				)
+			)
 
 			eventsMessage = if cancelledEvents.isEmpty() then '' else eventsMessage
 
 			# Prompt the user, include eventsMessage if any to show
-			Bootbox.confirm """
-				Are you sure you want to cancel this #{Term 'progress note'}?
-				#{eventsMessage}
-			""", (ok) =>
+			Bootbox.confirm R.div({},
+				"Are you sure you want to cancel this #{Term 'progress note'}?",
+				eventsMessage
+			), (ok) =>
 				if ok
 					@_cancelProgNote cancelledProgNote, cancelledProgEvents, cancelledGlobalEvents
 
