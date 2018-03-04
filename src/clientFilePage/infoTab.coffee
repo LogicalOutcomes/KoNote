@@ -393,46 +393,51 @@ load = (win) ->
 				Bootbox.alert "Cannot save the #{Term 'client file'} without a first name"
 				return
 
-			else if not @state.lastName
+			if not @state.lastName
 				Bootbox.alert "Cannot save the #{Term 'client file'} without a last name"
 				return
 
-			else if (@state.birthDay? or @state.birthMonth? or @state.birthYear?) and not (@state.birthDay? and @state.birthMonth? and @state.birthYear?)
-				Bootbox.alert "Cannot save the #{Term 'client file'} without a valid birthdate"
-				return
+			if @state.birthDay? or @state.birthMonth? or @state.birthYear?
+				if not (@state.birthDay? and @state.birthMonth? and @state.birthYear?)
+					Bootbox.alert "Cannot save the #{Term 'client file'} without a valid birthdate"
+					return
 
+				parsed = Moment(@state.birthYear + @state.birthMonth + @state.birthDay, 'YYYYMMMDD', true)
+				if (not parsed.isValid()) or parsed.isAfter()
+					Bootbox.alert "Cannot save the #{Term 'client file'} without a valid birthdate"
+					return
+
+			updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
+				detailUnit.toJS()
+
+			if @state.birthYear? and @state.birthMonth? and @state.birthDay?
+				updatedBirthDate = Moment(@state.birthYear + @state.birthMonth + @state.birthDay, birthDateFormat, true).format(birthDateFormat)
 			else
-				updatedDetailUnits = @state.detailUnitsById.toArray().map (detailUnit) =>
-					detailUnit.toJS()
+				updatedBirthDate = ''
 
-				if @state.birthYear? and @state.birthMonth? and @state.birthDay?
-					updatedBirthDate = Moment(@state.birthYear + @state.birthMonth + @state.birthDay, birthDateFormat, true).format(birthDateFormat)
-				else
-					updatedBirthDate = ''
-
-				updatedClientFile = @props.clientFile
-				.setIn(['clientName', 'first'], @state.firstName)
-				.setIn(['clientName', 'middle'], @state.middleName)
-				.setIn(['clientName', 'last'], @state.lastName)
-				.set('recordId', @state.recordId)
-				.set('status', @state.status)
-				.set('detailUnits', updatedDetailUnits)
-				.set('birthDate', updatedBirthDate)
+			updatedClientFile = @props.clientFile
+			.setIn(['clientName', 'first'], @state.firstName)
+			.setIn(['clientName', 'middle'], @state.middleName)
+			.setIn(['clientName', 'last'], @state.lastName)
+			.set('recordId', @state.recordId)
+			.set('status', @state.status)
+			.set('detailUnits', updatedDetailUnits)
+			.set('birthDate', updatedBirthDate)
 
 
-				global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
-					@refs.dialog.setIsLoading(false) if @refs.dialog?
-					if err
-						if err instanceof Persist.IOError
-							console.error err
-							console.error err.stack
-							Bootbox.alert """
-								Please check your network connection and try again.
-							"""
-							return
-
-						CrashHandler.handle err
+			global.ActiveSession.persist.clientFiles.createRevision updatedClientFile, (err, obj) =>
+				@refs.dialog.setIsLoading(false) if @refs.dialog?
+				if err
+					if err instanceof Persist.IOError
+						console.error err
+						console.error err.stack
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
 						return
+
+					CrashHandler.handle err
+					return
 
 	return {InfoView}
 
