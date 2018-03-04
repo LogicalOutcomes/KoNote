@@ -645,7 +645,7 @@ load = (win) ->
 		}
 
 		getInitialState: -> {
-			displayInactive: null
+			displayInactive: false
 		}
 
 		render: ->
