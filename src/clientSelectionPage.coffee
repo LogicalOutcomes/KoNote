@@ -771,7 +771,11 @@ load = (win) ->
 					bordered: false
 					options: {
 						onRowClick: ({id}) => @props.onRowClick(id)
-						noDataText: "No #{Term 'client files'} matching \"#{@props.queryText}\""
+						noDataText: (if @props.queryText
+							"No #{Term 'client files'} matching \"#{@props.queryText}\"."
+						else
+							"No #{Term 'client files'} found."
+						)
 						defaultSortName: 'lastName'
 						defaultSortOrder: 'asc'
 					}
