@@ -176,6 +176,7 @@ load = (win) ->
 												onSelectMonth: @_updateBirthMonth
 												onSelectDay: @_updateBirthDay
 												onSelectYear: @_updateBirthYear
+												disabled: @props.isReadOnly
 											})
 										)
 									)
