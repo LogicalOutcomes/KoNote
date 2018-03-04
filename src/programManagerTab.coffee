@@ -219,7 +219,7 @@ load = (win) ->
 						R.label({}, "Color Key")
 						ColorKeySelection({
 							colors: ProgramColors
-							data: @props.data.programs
+							data: @props.data.programs.toList()
 							selectedColorKeyHex: @state.colorKeyHex
 							onSelect: @_updateColorKeyHex
 						})
