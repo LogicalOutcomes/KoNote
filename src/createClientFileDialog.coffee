@@ -234,11 +234,7 @@ load = (win) ->
 			birthday = true
 			if @state.birthDay or @state.birthMonth or @state.birthYear
 				unless @state.birthDay and @state.birthMonth and @state.birthYear and
-					@state.birthDay >= 1 and
-					@state.birthDay <= (
-						Moment(@state.birthYear + '-' + @state.birthMonth, "YYYY-MMM").daysInMonth()
-					) and
-					@state.birthYear <= Moment().year() and @state.birthYear >= 1900
+					Moment(@state.birthYear + @state.birthMonth + @state.birthDay, 'YYYYMMMD', true).isValid()
 						birthday = false
 
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
