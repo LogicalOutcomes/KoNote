@@ -132,11 +132,13 @@ load = (win) ->
 					console.log "Warning! Data version newer than app version"
 					Bootbox.dialog {
 						title: "Database Error"
-						message: """
-							The application cannot start because your database appears to be from a newer version of #{Config.productName}.<br><br>
-							You must upgrade #{Config.productName} from v#{appVersion} to v#{dbVersion} or greater to continue.<br><br>
-							If you believe you are seeing this message in error, please contact support at #{Config.supportEmailAddress}.
-						"""
+						message: R.div({},
+							"The application cannot start because your database appears to be from a newer version of #{Config.productName}.",
+							R.br(), R.br(),
+							"You must upgrade #{Config.productName} from v#{appVersion} to v#{dbVersion} or greater to continue.",
+							R.br(), R.br(),
+							"If you believe you are seeing this message in error, please contact support at #{Config.supportEmailAddress}."
+						)
 						closeButton: false
 						buttons: {
 							cancel: {
@@ -153,12 +155,27 @@ load = (win) ->
 			$ =>
 				Bootbox.dialog {
 					title: "Database Migration Required"
-					message: """
-						Your database is from an earlier version of #{Config.productName} (<strong>v#{dbVersion}</strong>), so a migration is required.<br><br>
-						To update the database to <strong>v#{appVersion}</strong>, please log in with an administrator account:<br><br>
-						<input id="username" name="username" type="text" placeholder="username" class="form-control input-md"><br>
-						<input id="password" name="password" type="password" placeholder="password" class="form-control input-md"><br>
-					"""
+					message: R.div({},
+						"Your database is from an earlier version of #{Config.productName} (v#{dbVersion}), so a migration is required.",
+						"To update the database to v#{appVersion}, please log in with an administrator account:",
+						R.br(), R.br(),
+						R.input({
+							id: "username",
+							name: "username",
+							type: "text",
+							placeholder: "username",
+							className: "form-control input-md",
+						}),
+						R.br(),
+						R.input({
+							id: "password"
+							name: "password"
+							type: "password"
+							placeholder: "password"
+							className: "form-control input-md"
+						}),
+						R.br()
+					)
 					closeButton: false
 					buttons: {
 						cancel: {

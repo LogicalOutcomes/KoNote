@@ -11,7 +11,7 @@
 /data*
 /dist/
 /node_modules/
-/build/releases/
 
-npm-debug.log
 develop.json
+error.log
+npm-debug.log

@@ -634,19 +634,17 @@ load = (win) ->
 				"(none)"
 
 			# Build programDropdown markup
-			programDropdown = ReactDOMServer.renderToString(
-				R.select({
-					id: 'programDropdown'
-					className: 'form-control '
-				},
-					R.option({value: ''}, "Select a #{Term 'client'} #{Term 'program'}")
-					(@props.clientPrograms.map (program) ->
-						R.option({
-							key: program.get('id')
-							value: program.get('id')
-						},
-							program.get('name')
-						)
+			programDropdown = R.select({
+				id: 'programDropdown'
+				className: 'form-control '
+			},
+				R.option({value: ''}, "Select a #{Term 'client'} #{Term 'program'}"),
+				(@props.clientPrograms.map (program) ->
+					R.option({
+						key: program.get('id')
+						value: program.get('id')
+					},
+						program.get('name')
 					)
 				)
 			)
@@ -660,13 +658,14 @@ load = (win) ->
 			# Prompt user about temporarily overriding their program
 			Bootbox.dialog {
 				title: "Switch to #{Term 'client'} #{Term 'program'}?"
-				message: """
-					#{clientName} is not enrolled in your assigned #{Term 'program'}: "<b>#{userProgramName}</b>".
-					<br><br>
-					Override your assigned #{Term 'program'} below, or click "Ignore".
-					<br><br>
-					#{programDropdown}
-				"""
+				message: R.div({},
+					"#{clientName} is not enrolled in your assigned #{Term 'program'}: ",
+					'"', R.b({}, userProgramName), '".',
+					R.br(), R.br(),
+					"Override your assigned #{Term 'program'} below, or click \"Ignore\"."
+					R.br(), R.br(),
+					programDropdown
+				)
 				buttons: {
 					cancel: {
 						label: "Cancel"
@@ -1389,7 +1388,6 @@ load = (win) ->
 
 					isReadOnly: @props.isReadOnly
 					progNote: @props.progNote
-					filteredProgNote: @props.filteredProgNote
 					progNoteHistory: @props.progNoteHistory
 					progEvents: @props.progEvents
 					globalEvents: @props.globalEvents
@@ -1914,7 +1912,7 @@ load = (win) ->
 								)
 							)
 
-							B.MenuItem({onClick: @_print.bind null, filteredProgNote, progEvents, clientFile},
+							B.MenuItem({onClick: @_print.bind null, filteredProgNote or progNote, progEvents, clientFile},
 								"Print"
 							)
 

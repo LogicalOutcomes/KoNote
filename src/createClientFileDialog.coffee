@@ -4,12 +4,13 @@
 
 # Dialog to create a new client file
 
+_ = require 'underscore'
 Async = require 'async'
+Imm = require 'immutable'
+Moment = require 'moment'
 
 Persist = require './persist'
-Imm = require 'immutable'
 Config = require './config'
-Moment = require 'moment'
 Term = require './term'
 
 load = (win) ->
@@ -169,7 +170,7 @@ load = (win) ->
 						)
 					)
 
-					(unless @props.programs.isEmpty()
+					(unless @props.programsById.isEmpty()
 						R.div({className: 'form-group'},
 							R.label({className: 'col-sm-4 control-label'}, "#{Term 'Program'}"),
 							R.div({className: 'col-sm-8'},
@@ -179,13 +180,16 @@ load = (win) ->
 									value: @state.programId
 								},
 									R.option({value: ''}, "Select a #{Term 'client'} #{Term 'program'}")
-									(@props.programs.sortBy((val, key) => val.get('name')).map (program) ->
-										R.option({
+									(@props.programsById
+										.valueSeq()
+										.sortBy((val, key) => val.get('name'))
+										.map (program) ->
+											R.option({
 												key: program.get('id')
 												value: program.get('id')
 											},
-											program.get('name')
-										)
+												program.get('name')
+											)
 									)
 								)
 							)
@@ -230,8 +234,7 @@ load = (win) ->
 			birthday = true
 			if @state.birthDay or @state.birthMonth or @state.birthYear
 				unless @state.birthDay and @state.birthMonth and @state.birthYear and
-					@state.birthDay <= Moment(@state.birthMonth, "MMM").daysInMonth() and
-					@state.birthYear <= Moment().year() and @state.birthYear >= 1900
+					Moment(@state.birthYear + @state.birthMonth + @state.birthDay, 'YYYYMMMD', true).isValid()
 						birthday = false
 
 			recordIdIsRequired = Config.clientFileRecordId.isRequired
@@ -317,60 +320,105 @@ load = (win) ->
 						cb()
 
 				(cb) =>
-						# Enforce uniqueness of clientFileRecordId
-						clientsWithRecordId = clientFileHeaders.filter (clientFile) ->
-							clientFile.get('recordId') and (clientFile.get('recordId') is recordId)
+					# Enforce uniqueness of clientFileRecordId
+					clientsWithRecordId = clientFileHeaders.filter (clientFile) ->
+						clientFile.get('recordId') and (clientFile.get('recordId') is recordId)
 
-						return cb() if clientsWithRecordId.isEmpty()
+					return cb() if clientsWithRecordId.isEmpty()
 
+					clientsByStatus = clientsWithRecordId.groupBy (clientFile) -> clientFile.get('status')
 
-						clientsByStatus = clientsWithRecordId.groupBy (clientFile) -> clientFile.get('status')
+					clientList = clientsByStatus
+					.map (clients, status) ->
+						clients.map (clientFile) ->
+							R.span({key: clientFile.get('id')},
+								R.b({}, renderName clientFile.get('clientName')),
+								" (", status, ")"
+							)
+					.flatten()
+					.toList()
 
-						clientList = clientsByStatus
-						.map (clients, status) ->
-							clients.map (clientFile) -> "<b>#{renderName clientFile.get('clientName')}</b> (#{status})"
-						.flatten()
-						.toList()
-
-						Bootbox.confirm {
-							title: "Warning: Duplicate ID"
-							message: """The #{renderRecordId recordId} is already in use by #{clientList.toJS().join(', ')}.
-								Are you sure you would like to continue creating a duplicate #{Config.clientFileRecordId.label}?"""
-							buttons: {
-								cancel: {
-									label: 'Cancel'
-								},
-								confirm: {
-									label: 'Confirm'
-								}
+					Bootbox.dialog {
+						title: "Error: duplicate ID"
+						message: R.div({},
+							renderRecordId(recordId),
+							" is already in use by ",
+							clientList.interpose(', '),
+							"."
+							R.br(), R.br(),
+							"The #{Term 'client file'} was not created."
+						)
+						buttons: {
+							createAnyway: {
+								label: 'Create anyway (not recommended)'
+								className: 'btn-default'
+								callback: =>
+									cb()
+							},
+							ok: {
+								label: R.span({style: {
+									paddingLeft: '20px',
+									paddingRight: '20px',
+								}}, 'OK')
+								className: 'btn-primary'
+								callback: =>
+									cb('CANCEL')
 							}
-							callback: (ok) =>
-								if ok then cb() else cb('CANCEL')
 						}
+						onEscape: ->
+							cb('CANCEL')
+					}
 
-					(cb) =>
-						# Warn if first & last name already used, but may continue
-						matchingClientName = clientFileHeaders.find (clientFile) ->
-							sameFirstName = clientFile.getIn(['clientName', 'first']).toLowerCase() is first.toLowerCase()
-							sameLastName = clientFile.getIn(['clientName', 'last']).toLowerCase()  is last.toLowerCase()
-							return sameFirstName and sameLastName
+				(cb) =>
+					# Warn if first & last name already used, but may continue
+					matchingClientFiles = clientFileHeaders.filter (clientFile) ->
+						sameFirstName = clientFile.getIn(['clientName', 'first']).toLowerCase() is first.toLowerCase()
+						sameLastName = clientFile.getIn(['clientName', 'last']).toLowerCase()  is last.toLowerCase()
+						return sameFirstName and sameLastName
 
-						return cb() unless matchingClientName
+					if matchingClientFiles.isEmpty()
+						cb()
+						return
 
+					clientFilesElems = matchingClientFiles.map (clientFileHeader) ->
+						R.span({},
+							R.strong({}, renderName(clientFileHeader.get('clientName'))),
+							(if Config.clientFileRecordId.isEnabled and clientFileHeader.get('recordId')
+								R.span({},
+									' (', renderRecordId(clientFileHeader.get('recordId')), ')'
+								)
+							)
+						)
 
-						matchingClientRecordId = if Config.clientFileRecordId.isEnabled
-							" #{renderRecordId matchingClientName.get('recordId')}"
-						else
-							""
-
-						Bootbox.confirm {
-							title: "Warning: Duplicate Name"
-							message: """The name \"#{first} #{last}\" matches an existing #{Term 'client file'}:
-							\"#{renderName matchingClientName.get('clientName')}\", #{matchingClientRecordId}.
-							Would you like to create this new #{Term 'client file'} anyway?"""
-							callback: (ok) =>
-								if ok then cb() else cb('CANCEL')
+					Bootbox.dialog {
+						title: "Error: duplicate name"
+						message: R.div({},
+							"There is already a #{Term 'client file'} under the name ",
+							"\"#{first} #{last}\":", R.br()
+							clientFilesElems.interpose(R.br()),
+							R.br(), R.br(),
+							"The #{Term 'client file'} was not created."
+						)
+						buttons: {
+							createAnyway: {
+								label: 'Create anyway'
+								className: 'btn-default'
+								callback: =>
+									cb()
+							},
+							ok: {
+								label: R.span({style: {
+									paddingLeft: '20px',
+									paddingRight: '20px',
+								}}, 'OK')
+								className: 'btn-primary'
+								callback: =>
+									cb('CANCEL')
+							}
 						}
+						onEscape: ->
+							cb('CANCEL')
+					}
 
 				(cb) =>
 					# Create the clientFile,

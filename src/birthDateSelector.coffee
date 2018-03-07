@@ -33,6 +33,7 @@ load = (win) ->
 					B.DropdownButton({
 						id: 'birthMonthDropdown'
 						title: if birthMonth? then birthMonth else "Month"
+						disabled: @props.disabled
 					},
 						(months.map (month) =>
 							B.MenuItem({
@@ -46,6 +47,7 @@ load = (win) ->
 					B.DropdownButton({
 						id: 'birthDayDropdown'
 						title: if birthDay? then birthDay else "Day"
+						disabled: @props.disabled
 					},
 						# TODO: Derive list of days from selected month
 						(for day in [1..31]
@@ -61,6 +63,7 @@ load = (win) ->
 					B.DropdownButton({
 						id: 'birthYearDropdown'
 						title: if birthYear? then birthYear else "Year"
+						disabled: @props.disabled
 					},
 						(for year in [currentYear..earlyYear]
 							B.MenuItem({

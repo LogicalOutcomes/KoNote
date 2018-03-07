@@ -175,8 +175,8 @@ load = (win) ->
 			@props.updateTimeSpan(timeSpan)
 
 		_shiftTimeSpanRange: (lastDay, firstDay, direction) ->
-			start = @props.timeSpan.get('start').clone()
-			end = @props.timeSpan.get('end').clone()
+			start = @props.timeSpan.get('start').clone().startOf('day');
+			end = @props.timeSpan.get('end').clone().endOf('day');
 			difference = end.diff(start, 'days') + 1
 
 			if direction is 'future'

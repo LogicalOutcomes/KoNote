@@ -29,7 +29,7 @@ load = (win) ->
 	ManagerLayer = require('./managerLayer').load(win)
 	CreateClientFileDialog = require('./createClientFileDialog').load(win)
 	CrashHandler = require('./crashHandler').load(win)
-	{FaIcon, openWindow, renderName, stripMetadata} = require('./utils').load(win)
+	{FaIcon, openWindow, renderName, stripMetadata, objectsAsIdMap} = require('./utils').load(win)
 
 
 	ClientSelectionPage = React.createFactory React.createClass
@@ -38,11 +38,12 @@ load = (win) ->
 			return {
 				status: 'init'
 				loadingFile: false
-				clientFileHeaders: Imm.List()
-				programs: Imm.List()
+				clientFileHeaders: null
+				metricsById: null
+				programsById: null
 				userProgramId: null
 				userProgramLinks: Imm.List()
-				clientFileProgramLinks: Imm.List()
+				clientFileProgramLinks: null
 			}
 
 		init: ->
@@ -59,7 +60,8 @@ load = (win) ->
 			@props.closeWindow()
 
 		render: ->
-			unless @state.status is 'ready' then return null
+			unless @state.status is 'ready'
+				return null
 
 			userProgram = @_getUserProgram()
 			isAdmin = global.ActiveSession.isAdmin()
@@ -80,21 +82,19 @@ load = (win) ->
 
 			return ClientSelectionPageUi {
 				openClientFile: @_openClientFile
-				status: @state.status
 				clientFileHeaders
 				clientFileProgramLinks: @state.clientFileProgramLinks
-				programs: @state.programs
+				programsById: @state.programsById
 				userProgram
 				userProgramLinks: @state.userProgramLinks
-				metricDefinitions: @state.metricDefinitions
+				metricsById: @state.metricsById
 			}
 
 		_getUserProgram: ->
 			if @state.userProgramId?
-				userProgram = @state.programs.find (program) => program.get('id') is @state.userProgramId
-				return userProgram
-			else
-				return null
+				return @state.programsById.get(@state.userProgramId)
+
+			return null
 
 		_openClientFile: (clientFileId) ->
 			# prevent opening twice on doubleclick; todo: improve this
@@ -132,40 +132,25 @@ load = (win) ->
 					@setState {loadingFile: false}
 				, 1500)
 
-		_setStatus: (status) ->
-			@setState {status}
-
 		_loadInitialData: ->
-			ActiveSession.persist.clientFiles.list (err, result) =>
-				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
-						return
-
-					CrashHandler.handle err
-					return
-
-				clientFileHeaders = result
-
-				@setState {
-					status: 'ready'
-					clientFileHeaders
-				}
-
-				@_loadAllData()
-
-		_loadAllData: ->
-			clientFileHeaders = @state.clientFileHeaders
-			programHeaders = null
-			programs = null
-			programsById = null
-			userProgramLinks = null
-			clientFileProgramLinkHeaders = null
-			clientFileProgramLinks = null
-
 			Async.parallel [
 				(cb) =>
-					# TODO: Lazy load this
+					ActiveSession.persist.clientFiles.list (err, result) =>
+						if err
+							cb err
+							return
+
+						@setState (s) ->
+							return {
+								clientFileHeaders: result
+							}
+						, cb
+				(cb) =>
+					programHeaders = null
+					programs = null
+					programsById = null
+					userProgramLinks = null
+
 					Async.series [
 						(cb) =>
 							ActiveSession.persist.programs.list (err, result) =>
@@ -185,12 +170,9 @@ load = (win) ->
 									cb err
 									return
 
-								programs = Imm.List(results).map (program) -> stripMetadata program.get(0)
-
-								programsById = programs
-								.map (program) -> [program.get('id'), program]
-								.fromEntrySeq().toMap()
-
+								programs = Imm.List(results)
+									.map (programRevs) -> programRevs.get(0)
+								programsById = objectsAsIdMap programs
 								cb()
 						(cb) =>
 							ActiveSession.persist.userProgramLinks.list (err, result) ->
@@ -198,12 +180,38 @@ load = (win) ->
 									cb err
 									return
 
+								# TODO why is metadata stripped here?
 								userProgramLinks = result.map (link) -> stripMetadata(link)
-
 								cb()
+						(cb) =>
+							# Figure out userProgramId (We currently assume there can only be one)
+							# TODO: Refactor to something a little nicer
+							matchingUserProgramLinks = userProgramLinks.filter (link) ->
+								return link.get('userName') is global.ActiveSession.userName and
+									link.get('status') is 'assigned'
+
+							if matchingUserProgramLinks.size > 1
+								console.warn(
+									"More than 1 assigned programLink found",
+									matchingUserProgramLinks.toJS()
+								)
+
+							userProgramLink = matchingUserProgramLinks.get(0, null)
+							userProgramId = userProgramLink?.get('programId')
+							global.ActiveSession.programId = userProgramId
+
+							@setState (s) ->
+								return {
+									programsById
+									userProgramId
+									userProgramLinks
+								}
+							, cb
 					], cb
 				(cb) =>
-					# TODO: Lazy load this
+					clientFileProgramLinkHeaders = null
+					clientFileProgramLinks = null
+
 					Async.series [
 						(cb) =>
 							ActiveSession.persist.clientFileProgramLinks.list (err, result) =>
@@ -223,8 +231,67 @@ load = (win) ->
 									cb err
 									return
 
-								clientFileProgramLinks = Imm.List(results).map (link) -> stripMetadata link.get(0)
+								clientFileProgramLinks = Imm.List(results)
+									# TODO why is metadata stripped here?
+									.map (linkRevs) -> stripMetadata linkRevs.get(0)
 								cb()
+						(cb) =>
+							@setState (s) ->
+								return {
+									clientFileProgramLinks
+								}
+							, cb
+					], cb
+				], (err) =>
+					if err
+						if err instanceof Persist.IOError
+							Bootbox.alert "Please check your network connection and try again."
+							return
+
+						CrashHandler.handle err
+						return
+
+					@setState {
+						status: 'ready'
+					}
+
+					@_loadSecondaryData()
+
+		# Load data not needed for default tab
+		_loadSecondaryData: ->
+			Async.parallel [
+				(cb) =>
+					# TODO Load metrics on first click to metric definition manager
+					metricHeaders = null
+					metrics = null
+
+					Async.series [
+						(cb) ->
+							ActiveSession.persist.metrics.list (err, result) =>
+								if err
+									cb err
+									return
+
+								metricHeaders = result
+								cb()
+						(cb) ->
+							Async.map metricHeaders.toArray(), (metricHeader, cb) =>
+								metricId = metricHeader.get('id')
+								ActiveSession.persist.metrics.readLatestRevisions metricId, 1, cb
+							, (err, results) =>
+								if err
+									cb err
+									return
+
+								metrics = Imm.List(results).map (metricRevs) ->
+									return metricRevs.first()
+								cb()
+						(cb) =>
+							@setState (s) ->
+								return {
+									metricsById: objectsAsIdMap metrics
+								}
+							, cb
 					], cb
 			], (err) =>
 				if err
@@ -235,38 +302,12 @@ load = (win) ->
 					CrashHandler.handle err
 					return
 
-
-				# Figure out userProgramId (We currently assume there can only be one)
-				# TODO: Refactor to something a little nicer
-				matchingUserProgramLinks = userProgramLinks.filter (link) ->
-					link.get('userName') is global.ActiveSession.userName and
-					link.get('status') is 'assigned'
-
-				if matchingUserProgramLinks.size > 1
-					console.warn "More than 1 assigned programLink found", matchingUserProgramLinks.toJS()
-
-				userProgramLink = if not matchingUserProgramLinks.isEmpty() then matchingUserProgramLinks.get(0) or null
-
-				userProgramId = if userProgramLink then userProgramLink.get('programId') else null
-				global.ActiveSession.programId = userProgramId
-
-				# Load in data
-				@setState {
-					status: 'ready'
-					programs
-					programsById
-					userProgramId
-					userProgramLinks
-					clientFileHeaders
-					clientFileProgramLinks
-				}
+				# Done
 
 		getPageListeners: ->
-
 			return {
 				# Custom listener for overriding userProgram in ActiveSession
 				'override:userProgram': (userProgram) =>
-
 					console.log "Override userProgram to:"
 					if userProgram?
 						console.log "Program:", userProgram.toJS()
@@ -302,53 +343,48 @@ load = (win) ->
 					@setState {userProgramLinks}
 
 				'create:clientFile': (newFile) =>
-					clientFileHeaders = @state.clientFileHeaders.push newFile
-					@setState {clientFileHeaders}
+					@setState (s) ->
+						return {
+							clientFileHeaders: s.clientFileHeaders.push newFile
+						}
 
 				'createRevision:clientFile': (newRev) =>
-					clientFileId = newRev.get('id')
-					existingClientFileHeader = @state.clientFileHeaders
-					.find (clientFileHeader) -> clientFileHeader.get('id') is newRev.get('id')
+					@setState (s) ->
+						return {
+							clientFileHeaders: s.clientFileHeaders.map (cf) ->
+								if cf.get('id') is newRev.get('id')
+									return newRev
 
-					@setState (state) ->
-						if existingClientFileHeader?
-							clientFileIndex = state.clientFileHeaders.indexOf existingClientFileHeader
-							clientFileHeaders = state.clientFileHeaders.set clientFileIndex, newRev
-						else
-							# clientFileHeaders = state.clientFileHeaders.push newRev
-							return
-						return {clientFileHeaders}
+								return cf
+						}
 
-				'create:program createRevision:program': (newRev) =>
-					programId = newRev.get('id')
-					# Updating or creating program?
-					existingProgram = @state.programs
-					.find (program) -> program.get('id') is programId
+				'create:program createRevision:program': (newObj) =>
+					@setState (s) ->
+						return {
+							programsById: s.programsById.set newObj.get('id'), newObj
+						}
 
-					@setState (state) ->
-						if existingProgram?
-							programIndex = state.programs.indexOf existingProgram
-							programs = state.programs.set programIndex, newRev
-						else
-							programs = state.programs.push newRev
+				'create:clientFileProgramLink': (newObj) =>
+					@setState (s) ->
+						return {
+							clientFileProgramLinks: s.clientFileProgramLinks.push newObj
+						}
 
-						return {programs}
+				'createRevision:clientFileProgramLink': (newRev) =>
+					@setState (s) ->
+						return {
+							clientFileProgramLinks: s.clientFileProgramLinks.map (obj) ->
+								if obj.get('id') is newRev.get('id')
+									return newRev
 
-				'create:clientFileProgramLink createRevision:clientFileProgramLink': (newRev) =>
-					linkId = newRev.get('id')
-					# Updating or creating link?
-					existingLink = @state.clientFileProgramLinks
-					.find (link) -> link.get('id') is linkId
+								return obj
+						}
 
-					@setState (state) ->
-						if existingLink?
-							linkIndex = state.clientFileProgramLinks.indexOf existingLink
-							clientFileProgramLinks = state.clientFileProgramLinks.set linkIndex, newRev
-						else
-							clientFileProgramLinks = state.clientFileProgramLinks.push newRev
-
-						return {clientFileProgramLinks}
-
+				'create:metric createRevision:metric': (newObj) =>
+					@setState (s) ->
+						return {
+							metricsById: s.metricsById.set newObj.get('id'), newObj
+						}
 			}
 
 
@@ -412,9 +448,10 @@ load = (win) ->
 						ManagerLayer({
 							name: @state.managerLayer
 							clientFileHeaders: @props.clientFileHeaders
-							programs: @props.programs
+							programsById: @props.programsById
 							userProgramLinks: @props.userProgramLinks
 							clientFileProgramLinks: @props.clientFileProgramLinks
+							metricsById: @props.metricsById
 							menuIsOpen: @state.menuIsOpen
 						})
 					)
@@ -452,7 +489,7 @@ load = (win) ->
 											className: 'input-group-btn'
 											ref: 'openCreateClientSmall'
 											dialog: CreateClientFileDialog
-											programs: @props.programs
+											programsById: @props.programsById
 										},
 											R.button({
 												className: 'btn btn-default'
@@ -488,7 +525,7 @@ load = (win) ->
 											OpenDialogLink({
 												className: 'btn btn-success'
 												dialog: CreateClientFileDialog
-												programs: @props.programs
+												programsById: @props.programsById
 												disabled: not isAdmin
 											},
 												"New #{Term 'Client File'} "
@@ -515,7 +552,7 @@ load = (win) ->
 							queryText: @state.queryText
 							clientFileHeaders: @props.clientFileHeaders
 							clientFileProgramLinks: @props.clientFileProgramLinks
-							programs: @props.programs
+							programsById: @props.programsById
 							onRowClick: @_onResultSelection
 						})
 					)
@@ -526,7 +563,7 @@ load = (win) ->
 						ref: 'userMenu'
 						className: 'menuIsOpen animated fadeInRight'
 						isAdmin
-						programs: @props.programs
+						programsById: @props.programsById
 						userProgram: @props.userProgram
 						managerLayer: @state.managerLayer
 						isSmallHeaderSet: @state.isSmallHeaderSet
@@ -602,13 +639,13 @@ load = (win) ->
 
 			clientFileHeaders: React.PropTypes.instanceOf(Imm.List).isRequired
 			clientFileProgramLinks: React.PropTypes.instanceOf(Imm.List).isRequired
-			programs: React.PropTypes.instanceOf(Imm.List).isRequired
+			programsById: React.PropTypes.instanceOf(Imm.Map).isRequired
 
 			onRowClick: React.PropTypes.func.isRequired
 		}
 
 		getInitialState: -> {
-			displayInactive: null
+			displayInactive: false
 		}
 
 		render: ->
@@ -624,7 +661,7 @@ load = (win) ->
 					.filter (link) =>
 						link.get('clientFileId') is clientFileId and link.get('status') is "enrolled"
 					.map (link) =>
-						@props.programs.find (program) -> program.get('id') is link.get('programId')
+						stripMetadata @props.programsById.get(link.get('programId'))
 
 				givenNames = clientFile.getIn(['clientName', 'first'])
 				middleName = clientFile.getIn(['clientName', 'middle'])
@@ -734,7 +771,11 @@ load = (win) ->
 					bordered: false
 					options: {
 						onRowClick: ({id}) => @props.onRowClick(id)
-						noDataText: "No #{Term 'client files'} matching \"#{@props.queryText}\""
+						noDataText: (if @props.queryText
+							"No #{Term 'client files'} matching \"#{@props.queryText}\"."
+						else
+							"No #{Term 'client files'} found."
+						)
 						defaultSortName: 'lastName'
 						defaultSortOrder: 'asc'
 					}

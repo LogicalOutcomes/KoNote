@@ -33,7 +33,6 @@ load = (win) ->
 		mixins: [React.addons.PureRenderMixin]
 
 		init: ->
-			@_testDataDirectory()
 			@_testLocalWritePermissions()
 
 		deinit: (cb=(->)) ->
@@ -45,24 +44,6 @@ load = (win) ->
 
 		suggestClose: ->
 			@refs.ui.suggestClose()
-
-		_testDataDirectory: ->
-			dataDirectory = Config.backend.dataDirectory
-
-			# Ensure a non-standard dataDirectory path actually exists
-			if dataDirectory isnt 'data' and not Fs.existsSync(dataDirectory)
-				Bootbox.alert {
-					title: "Database folder not found"
-					message: """
-						The destination folder specified for the database installation
-						can not be found on the file system.
-						Please check the 'dataDirectory' path in your configuration file.
-					"""
-					callback: =>
-						process.exit(1)
-				}
-			else
-				console.log "Data directory is valid!"
 
 		_testLocalWritePermissions: ->
 			fileTestPath = 'writeFileTest.txt'
@@ -414,11 +395,12 @@ load = (win) ->
 
 					Bootbox.alert {
 						title: "Data Import Failed"
-						message: """
-							Sorry, #{Config.productName} was unable to restore the data file.
-							If the problem persists, please contact technical support at <u>#{Config.supportEmailAddress}</u>
-							and include the following: \"#{err}\".
-						"""
+						message: R.div({},
+							"Sorry, #{Config.productName} was unable to restore the data file."
+							" If the problem persists, please contact technical support at"
+							R.u({}, Config.supportEmailAddress)
+							" and include the following: \"#{err}\"."
+						)
 					}
 					return
 
@@ -598,7 +580,7 @@ load = (win) ->
 						message: """
 							Sorry, we seem to be having some trouble installing #{Config.productName}.
 							Please check your network connection and try again, otherwise contact
-							technical support at <u>#{Config.supportEmailAddress}</u>
+							technical support at #{Config.supportEmailAddress}
 							with the Error Code: \"#{errCode}\" .
 						"""
 					}

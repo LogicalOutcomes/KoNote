@@ -77,7 +77,7 @@ dataModelDefinitions = [
 				indexes: [['status']]
 				schema: Joi.object().keys({
 					name: Joi.string()
-					description: Joi.string()
+					description: Joi.string().allow('')
 					status: ['default', 'deactivated', 'completed']
 					statusReason: Joi.string().optional()
 					metricIds: Joi.array().items(
@@ -138,7 +138,7 @@ dataModelDefinitions = [
 												Joi.object().keys({
 													id: IdSchema
 													name: Joi.string()
-													description: Joi.string()
+													description: Joi.string().allow('')
 													notes: Joi.string().allow('')
 													metrics: Joi.array().items(
 														Joi.object().keys({
@@ -236,7 +236,7 @@ dataModelDefinitions = [
 		indexes: [['status'], ['name']]
 		schema: Joi.object().keys({
 			name: Joi.string()
-			description: Joi.string()
+			description: Joi.string().allow('')
 			status: ['default', 'cancelled']
 			sections: Joi.array().items(
 				[
@@ -245,7 +245,7 @@ dataModelDefinitions = [
 						programId: IdSchema.allow('')
 						targets: Joi.array().items(
 							name: Joi.string()
-							description: Joi.string()
+							description: Joi.string().allow('')
 							metricIds: Joi.array().items(
 								IdSchema
 							)

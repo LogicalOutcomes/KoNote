@@ -17,9 +17,13 @@ load = (win) ->
 
 	{FaIcon} = require('../../utils').load(win)
 
+	# TODO this component is way too configurable
+	# should probably be a few smaller reusable components instead?
 
-	StatusButtonGroup = ({planElementType, data, parentData, isExisting, status, onRemove, dialog}) ->
-
+	StatusButtonGroup = ({
+		planElementType, data, parentData, isExisting, status,
+		dangerMessage, onRemove, dialog
+	}) ->
 		R.div({className: 'statusButtonGroup'},
 			# Will show remove (x) button for an empty section, rare case
 			if not isExisting and onRemove?
@@ -34,12 +38,14 @@ load = (win) ->
 
 				if status is 'default'
 					[
-						{
+						StatusButton({
+							key: 'deactivate'
 							className: 'deactivate'
 							tooltip: 'Deactivate'
 							icon: 'times'
 							dialog
 							title: "Deactivate #{planElementType}"
+							dangerMessage
 							message: """
 								This will remove the #{planElementType.toLowerCase()} from the #{Term 'client'}
 								#{Term 'plan'}, and future #{Term 'progress notes'}.
@@ -48,13 +54,15 @@ load = (win) ->
 							reasonLabel: "Reason for deactivation:"
 							newStatus: 'deactivated'
 							data, parentData
-						}
-						{
+						})
+						StatusButton({
+							key: 'complete'
 							className: 'complete'
 							tooltip: 'Complete'
 							icon: 'check'
 							dialog
 							title: "Mark #{planElementType} as Completed"
+							dangerMessage
 							message: """
 								This will mark the #{planElementType.toLowerCase()} as 'completed'. This often
 								means that the desired outcome has been reached.
@@ -62,8 +70,8 @@ load = (win) ->
 							reasonLabel: "Reason for completed:"
 							newStatus: 'completed'
 							data, parentData
-						}
-					].map (b) -> StatusButton(Object.assign {}, b, {key: b.className})
+						})
+					]
 
 				else
 					StatusButton({
@@ -72,6 +80,7 @@ load = (win) ->
 						icon: 'sign-in'
 						dialog
 						title: "Re-activate #{planElementType}"
+						dangerMessage
 						message: """
 							This will re-activate the #{planElementType.toLowerCase()} so it appears in the #{Term 'client'}
 							#{Term 'plan'}, and future #{Term 'progress notes'}.
@@ -84,7 +93,10 @@ load = (win) ->
 
 		)
 
-	StatusButton = ({className, tooltip, icon, onClick, dialog, title, message, newStatus, data, parentData, reasonLabel}) ->
+	StatusButton = ({
+		className, tooltip, icon, onClick, dialog, title, dangerMessage, message,
+		newStatus, data, parentData, reasonLabel
+	}) ->
 		WithTooltip({
 			title: tooltip
 			placement: 'top'
@@ -96,6 +108,7 @@ load = (win) ->
 				newStatus
 				data, parentData
 				title
+				dangerMessage
 				message
 				reasonLabel
 			},

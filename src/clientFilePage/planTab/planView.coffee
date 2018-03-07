@@ -54,7 +54,7 @@ load = (win) ->
 					size = sections.size
 
 					# Build the list of sections
-					PlanSectionsList = R.div({
+					planSectionsList = R.div({
 						key: status
 						className: 'sections'
 					},
@@ -85,11 +85,11 @@ load = (win) ->
 					},
 						switch status
 							when 'default'
-								PlanSectionsList
+								planSectionsList
 
 							when 'deactivated'
 								InactiveToggleWrapper({
-									children: PlanSectionsList
+									children: planSectionsList
 									dataType: 'section'
 									status, size
 									isExpanded: @state.displayDeactivatedSections
@@ -98,7 +98,7 @@ load = (win) ->
 
 							when 'completed'
 								InactiveToggleWrapper({
-									children: PlanSectionsList
+									children: planSectionsList
 									dataType: 'section'
 									status, size
 									isExpanded: @state.displayCompletedSections

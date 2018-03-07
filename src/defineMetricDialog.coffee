@@ -5,7 +5,9 @@
 # Dialog to define (i.e. create) a new metric
 
 Imm = require 'immutable'
+
 Persist = require './persist'
+Term = require './term'
 
 
 load = (win) ->
@@ -14,9 +16,9 @@ load = (win) ->
 	React = win.React
 	R = React.DOM
 
-	Term = require('./term')
 	CrashHandler = require('./crashHandler').load(win)
 	Dialog = require('./dialog').load(win)
+	{maxMetricNameLength} = require('./utils').load(win)
 
 
 	DefineMetricDialog = React.createFactory React.createClass
@@ -49,7 +51,7 @@ load = (win) ->
 							className: 'form-control'
 							onChange: @_updateName
 							value: @state.name
-							maxLength: 50
+							maxLength: maxMetricNameLength
 						})
 					)
 					R.div({className: 'form-group'},
@@ -97,6 +99,15 @@ load = (win) ->
 
 			ActiveSession.persist.metrics.list (err, result) =>
 				@refs.dialog.setIsLoading(false) if @refs.dialog?
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
+					CrashHandler.handle err
+					return
 
 				# Avoid duplicate metrics
 				# TODO: show the existing metric definition here to help the user decide how to continue

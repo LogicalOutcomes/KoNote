@@ -3,7 +3,6 @@
 // that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
 (function () {
-
 	var Config = require('./config');
 
 	// disable 'spelling suggestions' (do not send input to google)
@@ -29,8 +28,7 @@
 	/////////// DEVELOPMENT MODE ///////////
 	process.env.NODE_ENV = 'development';
 
-	// In order to avoid the need for Grunt or a similar build system,
-	// we'll compile the Stylus code at runtime.
+	// Compile Stylus code at runtime
 	var Stylus = require('stylus');
 	var Fs = require('fs');
 

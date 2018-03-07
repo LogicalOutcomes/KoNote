@@ -258,7 +258,7 @@ load = (win) ->
 			isExistingSection = clientFile.getIn(['plan','sections']).some (obj) =>
 				obj.get('id') is section.get('id')
 
-			canSetStatus = isExistingSection and (allTargetsAreInactive or sectionIsInactive) and not isReadOnly
+			canSetStatus = isExistingSection and not isReadOnly
 			canModify = not isReadOnly and not sectionIsInactive
 			isAdmin = global.ActiveSession.isAdmin()
 
@@ -311,6 +311,13 @@ load = (win) ->
 						parentData: clientFile
 						isExisting: isExistingSection
 						status: sectionStatus
+						dangerMessage: (
+							if allTargetsAreInactive or sectionStatus isnt 'default'
+								null
+							else
+								"Careful: this #{Term 'section'} still has #{Term 'targets'} " +
+								"that have not been deactivated or marked complete."
+						)
 						onRemove: onRemoveNewSection
 						dialog: ModifySectionStatusDialog
 						isDisabled: isReadOnly

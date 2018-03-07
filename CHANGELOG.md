@@ -1,3 +1,25 @@
+### 2.2.0 (Mar 7, 2018)
+
+This release brings a variety of new features and resolves several stability and usability issues.
+A general review during this release cycle also confirmed KoNote's continued fulfilment of the [HIPAA Security Rule Technical Safeguards](https://github.com/konode001/konote/wiki/HIPAA).
+
+#### Improvements
+
+- Support deactivating sections with active targets ([#1092](https://github.com/konode001/konote/issues/1092))
+- Improved analysis legend for metrics ([#1118](https://github.com/konode001/konote/issues/1118))
+- Windows installer allows user to specify custom locations for the database and application ([#1120](https://github.com/konode001/konote/issues/1120))
+- Option to show full plan description while writing a progress note ([#1126](https://github.com/konode001/konote/issues/1126))
+- Import metric definitions from CSV ([#1129](https://github.com/konode001/konote/issues/1129))
+
+#### Fixes
+
+- Fix chart navigation bug ([#1097](https://github.com/konode001/konote/issues/1097))
+- Allow target description to be blank ([#1124](https://github.com/konode001/konote/issues/1124))
+- Fix crash when printing quick note ([#1150](https://github.com/konode001/konote/issues/1150))
+- Fix potential XSS vulnerability in dialogs ([#1151](https://github.com/konode001/konote/issues/1151))
+- Various UI and stability improvements
+
+
 ### 2.1.12 (Jan 29, 2018)
 
 #### Fixes

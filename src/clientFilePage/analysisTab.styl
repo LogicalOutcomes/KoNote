@@ -339,21 +339,47 @@
 							margin-top -2px
 
 				h3
-					font-size 12px
-					letter-spacing 1px
-					font-weight 200
-					margin 0
-					//padding 10px
-					text-transform uppercase
+					margin 10px 0 0
+
 					color grey
+					cursor default
+					font-size 12px
+					font-weight 200
+					letter-spacing 1px
+					text-transform uppercase
+					user-select none
+
+					transition color 0.2s
+
+					&.collapsable:hover
+						color #000
+
+					> .fa
+						padding-right 5px
+
+						font-weight 400
 
 				.checkbox
 					margin 0
 					padding-bottom 5px
 
+					&:hover
+						label, input
+							color #333
+
+						.fa-star
+							opacity 1
+
 					label
 						width 100%
+
+						color #5c5c5c
 						font-size 13px
+
+						transition color 0.2s
+
+					input
+						transition color 0.2s
 
 					.colorKeyCount
 						float right
@@ -386,9 +412,6 @@
 						&:hover
 							color #337ab7
 
-					&:hover .fa-star
-						opacity 1
-
 					&.isHighlighted .fa-star
 						opacity 1
 						color yellow
@@ -396,9 +419,6 @@
 
 				.dataOptions
 					padding 10px
-
-					label
-						color #5c5c5c
 
 				.inactive
 					padding 10px
@@ -408,15 +428,30 @@
 						margin-bottom 10px
 
 				&.metrics
-
 					&.collapsed
 						display none
 
+					// TODO dead code?
 					h4
 						padding 0
 						margin 0
 						font-size 14px
 						font-weight 600
+
+					h5
+						color grey
+						cursor default
+						user-select none
+
+						transition color 0.2s
+
+						&.collapsable:hover
+							color #000
+
+						> .fa
+							padding-right 5px
+
+							font-weight 400
 
 					section
 						padding-left 10px
