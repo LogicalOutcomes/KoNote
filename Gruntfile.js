@@ -323,7 +323,7 @@ module.exports = function(grunt) {
 				files: [{
 					expand: true,
 					cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/src',
-					src: ['**/*.js', '!layeredComponentMixin.js', '!start.js', '!config/index.js'],
+					src: ['**/*.js', '!layeredComponentMixin.js', '!start.js', '!bootbox-noxss.js', '!config/index.js'],
 					dest: 'dist/temp/<%= grunt.task.current.args[0] %>/src',
 					ext: '.js'
 				}]
