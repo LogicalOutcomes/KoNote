@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "KoNote"
-#define MyAppVersion "1.13.1"
+#define MyAppVersion "2.2.1"
 #define MyAppPublisher "Konode"
 #define MyAppURL "http://www.konode.ca"
 #define MyAppExeName "KoNote.exe"
@@ -20,7 +20,7 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={userappdata}\{#MyAppName}
-DisableDirPage=yes
+DisableDirPage=no
 DefaultGroupName={#MyAppName}
 OutputBaseFilename=konote-{#MyAppVersion}-win-setup
 OutputDir=..\dist
@@ -46,15 +46,15 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\uninstall.exe"; Flags: runhidden
+;Filename: "{app}\uninstall.exe"; Flags: runhidden
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
 ; todo: add option to perform fresh installation instead of ugprade
-; Filename: "{app}\uninstall.exe"; Flags: runhidden
+Filename: "{app}\uninstall.exe"; Flags: runhidden
 
-[InstallDelete]
-Type: filesandordirs; Name: "{app}\data"
+;[InstallDelete]
+;Type: filesandordirs; Name: "{app}\data"
 
 [Code]
 var
@@ -73,20 +73,18 @@ begin
   TypePage.SelectedValueIndex := 0;
 
   DataDirPage := CreateInputDirPage(wpSelectDir,
-    'Select Installation Location', 'Where should {#MyAppName}''s files be installed?',
-    'Setup will install {#MyAppName} and its database into the following directories.'#13#10,
+    'Select Destination Location', 'Where should {#MyAppName} install its database?',
+    '{#MyAppName} will store its database in the following folder.'#13#10,
     False, '');
-  DataDirPage.Add('Application location');
-  DataDirPage.Add('Database location');
-  DataDirPage.Values[0] := GetPreviousData('AppDir', ExpandConstant('{userappdata}\{#MyAppName}')); 
-  DataDirPage.Values[1] := GetPreviousData('DataDir', ExpandConstant('{userappdata}\{#MyAppName}\data')); 
-  DataDirPageID := DataDirPage.ID; 
+  DataDirPage.Add('To continue, click Next. If you would like to select a different folder, click Browse.'#13#10);
+  DataDirPage.Values[0] := GetPreviousData('DataDir', ExpandConstant('{userappdata}\{#MyAppName}')); 
+  DataDirPageID := DataDirPage.ID;
 end;
+
 procedure RegisterPreviousData(PreviousDataKey: Integer);
 begin
   { Store the selected db folder for further reinstall/upgrade }
-  SetPreviousData(PreviousDataKey, 'AppDir', DataDirPage.Values[0]);
-  SetPreviousData(PreviousDataKey, 'DataDir', DataDirPage.Values[1]);
+  SetPreviousData(PreviousDataKey, 'DataDir', DataDirPage.Values[0]);
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
@@ -94,6 +92,8 @@ begin
   Result := False;
   if PageID = DataDirPageID then
     { if standard install is selected, skip the page }
+    Result := TypePage.SelectedValueIndex = 0;
+  if PageID = wpSelectDir then
     Result := TypePage.SelectedValueIndex = 0;
 end;
 
@@ -103,9 +103,9 @@ var DataDirConfig: String;
 begin
   if CurPageID = wpFinished then
 	begin
-		DataDirConfig := '{"devMode": false,"backend": {"type": "file-system","dataDirectory": "' + DataDirPage.Values[1] + '"}}';
+		DataDirConfig := '{"backend": {"type": "file-system","dataDirectory": "' + DataDirPage.Values[0] + '\data"}}';
     StringChangeEx(DataDirConfig, '\', '/', True);
-    SaveStringToFile(DataDirPage.Values[0]+'\src\config\production.json', DataDirConfig, False);  
+    SaveStringToFile(ExpandConstant('{app}\src\config\customer.json'), DataDirConfig, False);
 	end;
 end;
 
@@ -116,11 +116,10 @@ var
 begin
   { Fill the 'Ready Memo' with the normal settings and the custom settings }
   S := '';
-  S := S + 'Application location:' + NewLine;
-  S := S + Space + DataDirPage.Values[0] + NewLine;
+  S := S + MemoDirInfo + NewLine;
   S := S + NewLine;
   S := S + 'Database location:' + NewLine;
-  S := S + Space + DataDirPage.Values[1] + NewLine;
+  S := S + Space + DataDirPage.Values[0] + NewLine;
   S := S + NewLine;
   
   S := S + MemoTasksInfo;
