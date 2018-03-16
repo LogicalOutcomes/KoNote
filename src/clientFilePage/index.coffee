@@ -1242,11 +1242,11 @@ load = (win, {clientFileId}) ->
 
 		render: ->
 			return R.div({
-				className: "tab #{if @props.isActive then 'active' else ''}"
+				className: "tab #{if @props.isActive then 'active' else '' }"
 				onClick: @props.onClick
 			},
-				FaIcon @props.icon
-				' '
+				#FaIcon @props.icon
+				#' '
 				@props.name
 			)
 

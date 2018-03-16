@@ -1,8 +1,8 @@
 logo-maroon = #892652
 logo-teal = #70b0d3
 logo-light-blue = #83c4ea
-sidebar-bg = hsl(hue(logo-light-blue), 35%, 94%)
-sidebar-borders = darken(sidebar-bg, 10%)
+sidebar-bg = #212529
+sidebar-borders = #c8d6e5
 
 // TODO: Extract to component
 .loadingSpinnerContainer
@@ -107,10 +107,8 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 			width 250px
 
-			border-right 2px solid sidebar-borders
-
 			background sidebar-bg
-			color hsl(hue(sidebar-bg), 15%, 35%)
+			color #ffffff
 
 			> div
 				text-align left
@@ -131,6 +129,8 @@ sidebar-borders = darken(sidebar-bg, 10%)
 				margin 0 auto
 				max-width 150px
 				padding 15px 20px 5px
+				filter brightness(100)
+
 
 			> .logoSubtitle
 				color hsl(202, 15%, 55%)
@@ -197,16 +197,17 @@ sidebar-borders = darken(sidebar-bg, 10%)
 				text-align left
 
 				> .tab
-					padding 15px 20px
-
+					padding 10px 20px 10px 30px
 					cursor default
-					font-weight 600
+					//font-weight 400
+					font-size large
+					transition all .25s ease
 
 					&:hover
-						background darken(sidebar-bg, 5%)
+						background-color #495057
 
-					&.active
-						background darken(sidebar-bg, 5%)
+					//&.active
+						//background-color #495057
 
 					> .fa
 						padding-right 5px

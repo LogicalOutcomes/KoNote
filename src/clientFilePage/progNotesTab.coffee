@@ -1480,7 +1480,7 @@ load = (win) ->
 
 			R.div({
 				id: "entry-#{progNote.get('id')}"
-				className: 'entry full progNote'
+				className: 'entry full progNote animated fadeInUp'
 			},
 				EntryHeader({
 					revisionHistory: @props.progNoteHistory

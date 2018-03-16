@@ -65,12 +65,10 @@ load = (win) ->
 
 		render: ->
 			R.div({
-				className: 'clientAlerts animated fadeInUp'
+				className: 'clientAlerts'
 				onClick: @_beginEditing unless @state.isEditing
 			},
-				R.h3({className: 'animated fadeInUp'},
-					"Alerts"
-				)
+				"Alerts"
 				R.div({id: 'alertsContainer'},
 					(if @state.isEditing
 						R.div({id: 'isEditingContent'},

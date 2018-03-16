@@ -1,41 +1,39 @@
 .clientAlerts
-	position absolute
-	bottom 0px
-	border-top 2px solid #cadbe5
 	background inherit
 	width 100%
 	cursor default
+	padding 10px 20px 10px 30px
+	font-size large
+	margin 0
 
-	transition all .5s ease
+	transition all .25s ease
 
 	&:hover
-		background darken(sidebar-bg, 5%)
+		background-color #343a40
 
-	h3
-		padding 15px 20px
-		font-size 18px
-		margin 0
-
-		.fa
-			margin-right 5px
+	.fa
+		margin-right 5px
 
 	#alertsContainer
 		padding-top 0
 
 		#staticContent
-			padding 0px 10px 15px 20px
+			padding 20px
+			font-size 14px
+			font-weight 400
 			word-wrap break-word
 			max-height 175px
 			overflow auto
 			transition opacity .25s ease
-
-			&:hover
-				opacity .75
+			color #ff6b6b
 
 		.alertsTextarea
-			padding 5px
+			padding 10px
+			margin-top 10px
+			background-color #495057
 			width 100%
 			border 0
+			font-size medium
 
 		.btn-toolbar
 			padding 15px 5px

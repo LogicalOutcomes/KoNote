@@ -69,7 +69,7 @@ load = (win) ->
 				R.div({
 					id: "target-#{id}"
 					className: [
-						'planTarget'
+						'planTarget animated fadeInUp'
 						"status-#{status}"
 						'isSelected' if isSelected
 						'hasChanges' if hasChanges or not isExistingTarget

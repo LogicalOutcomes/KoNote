@@ -107,6 +107,7 @@
 			overflow-y auto
 			overflow-x hidden
 			overflow-wrap break-word
+			background-color sidebar-borders
 
 			// no top border for the first prognote
 			div.progNote:nth-child(2)
@@ -119,6 +120,9 @@
 
 			.entry
 				margin-right -7px // Offset against selectedTarget left-border
+				border-radius 8px
+				margin 10px 4px 10px 6px
+				background-color #ffffff
 
 				&.flashDestination
 					$duration = 1.25s
@@ -147,13 +151,10 @@
 			.entryHeader
 				display flex
 
-				border-top 6px solid sidebar-borders
 				border-bottom 1px dotted #eaf1f5
 
-				position sticky
+				//position sticky
 				top -10px
-
-				background white
 
 				z-index 2
 
