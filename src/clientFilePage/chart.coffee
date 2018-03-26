@@ -278,7 +278,7 @@ load = (win) ->
 				}
 				spline: {
 					interpolation: {
-						type: 'catmullRom'
+						type: 'monotone'
 					}
 				}
 				point: {

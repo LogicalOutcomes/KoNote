@@ -38,7 +38,7 @@ load = (win) ->
 			return {
 				daysOfData: null
 				selectedMetricIds: Imm.Set()
-				chartType: 'line'
+				chartType: 'spline'
 				selectedEventTypeIds: Imm.Set()
 				starredEventTypeIds: Imm.Set()
 				excludedTargetIds: Imm.Set()
@@ -326,8 +326,8 @@ load = (win) ->
 											"Line "
 											R.input({
 												type: 'checkbox'
-												checked: @state.chartType is 'line'
-												onChange: @_updateChartType.bind null, 'line'
+												checked: @state.chartType is 'spline'
+												onChange: @_updateChartType.bind null, 'spline'
 											})
 										)
 										R.label({},
