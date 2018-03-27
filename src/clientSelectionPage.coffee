@@ -44,6 +44,7 @@ load = (win) ->
 				userProgramId: null
 				userProgramLinks: Imm.List()
 				clientFileProgramLinks: null
+				displayAllPrograms: false
 			}
 
 		init: ->
@@ -68,7 +69,7 @@ load = (win) ->
 
 			# For regular users, we filter out clientFiles that
 			# and don't match the user's assigned program
-			clientFileHeaders = if not isAdmin and userProgram?
+			clientFileHeaders = if userProgram? and not @state.displayAllPrograms
 				@state.clientFileHeaders.filter (clientFile) =>
 					clientFileId = clientFile.get('id')
 
@@ -88,7 +89,12 @@ load = (win) ->
 				userProgram
 				userProgramLinks: @state.userProgramLinks
 				metricsById: @state.metricsById
+				displayAllPrograms: @state.displayAllPrograms
+				toggleAllPrograms: @_toggleAllPrograms
 			}
+
+		_toggleAllPrograms: ->
+			@setState {displayAllPrograms: not @state.displayAllPrograms}
 
 		_getUserProgram: ->
 			if @state.userProgramId?
@@ -554,6 +560,8 @@ load = (win) ->
 							clientFileProgramLinks: @props.clientFileProgramLinks
 							programsById: @props.programsById
 							onRowClick: @_onResultSelection
+							displayAllPrograms: @props.displayAllPrograms
+							toggleAllPrograms: @props.toggleAllPrograms
 						})
 					)
 				)
@@ -640,6 +648,7 @@ load = (win) ->
 			clientFileHeaders: React.PropTypes.instanceOf(Imm.List).isRequired
 			clientFileProgramLinks: React.PropTypes.instanceOf(Imm.List).isRequired
 			programsById: React.PropTypes.instanceOf(Imm.Map).isRequired
+			toggleAllPrograms: React.PropTypes.func.isRequired
 
 			onRowClick: React.PropTypes.func.isRequired
 		}
@@ -688,18 +697,28 @@ load = (win) ->
 
 			return R.div({className: 'clientTableWrapper'},
 				# TODO: Component for multiple kinds of filters/toggles
-				(if hasInactiveFiles
-					R.div({id: 'filterSelectionContainer'}
-						R.span({id: 'toggleDeactivated'},
-							R.div({className: "checkbox"},
-								R.label({}
-									R.input({
-										onChange: @_toggleInactive
-										type: 'checkbox'
-										checked: @state.displayInactive
-									})
-									"Show inactive (#{inactiveClientFiles.size})",
-								)
+				R.div({id: 'filterSelectionContainer'}
+					(if hasInactiveFiles or not hasInactiveFiles
+						R.div({className: "toggle animated fadeIn"},
+							R.label({}
+								R.input({
+									onChange: @_toggleInactive
+									type: 'checkbox'
+									checked: @state.displayInactive
+								})
+								" Show inactive (#{inactiveClientFiles.size})",
+							)
+						)
+					)
+					(if global.ActiveSession.isAdmin() and @props.programsById.size > 1
+						R.div({className: "toggle"},
+							R.label({}
+								R.input({
+									onChange: @props.toggleAllPrograms
+									type: 'checkbox'
+									checked: @props.displayAllPrograms
+								})
+								" All Programs",
 							)
 						)
 					)
