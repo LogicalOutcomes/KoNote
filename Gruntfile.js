@@ -93,6 +93,7 @@ module.exports = function(grunt) {
 				src: [
 					'**',
 					'!**/AUTHOR*',
+                    '!**/assets*',
 					'!**/bower.json',
 					'!**/changelog*',
 					'!**/changes*',
@@ -124,10 +125,18 @@ module.exports = function(grunt) {
 					'!**/test.js',
 					'!**/test/**',
 					'!**/tests/**',
+                    '!**/website/**',
 					'!**/__tests__/**',
+                    '!**/*.ignore',
+                    '!**/*.editorconfig',
+                    '!**/*.eslintrc',
+                    '!**/*.gitattributes',
+                    '!**/*.jshintrc',
+                    '!**/*.md',
+                    '!**/*.nyc_output',
 					'!**/*.yml'
 				],
-				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/temp_node_modules/',
+				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/temp_node_modules/'
 			},
 			production: {
 				src: 'build/production.json',
