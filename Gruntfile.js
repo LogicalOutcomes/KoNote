@@ -132,8 +132,10 @@ module.exports = function(grunt) {
 					'!**/*.eslintrc',
 					'!**/*.gitattributes',
 					'!**/*.jshintrc',
+					'!**/*.jst',
 					'!**/*.md',
 					'!**/*.nyc_output',
+					'!**/*.ts',
 					'!**/*.yml'
 				],
 				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/temp_node_modules/'
