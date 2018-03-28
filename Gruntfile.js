@@ -93,7 +93,7 @@ module.exports = function(grunt) {
 				src: [
 					'**',
 					'!**/AUTHOR*',
-                    '!**/assets*',
+					'!**/assets*',
 					'!**/bower.json',
 					'!**/changelog*',
 					'!**/changes*',
