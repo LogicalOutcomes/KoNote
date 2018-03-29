@@ -710,8 +710,8 @@ load = (win) ->
 							)
 						)
 					)
-					(if global.ActiveSession.isAdmin() and @props.programsById.size > 1
-						R.div({className: "toggle"},
+					(if global.ActiveSession.isAdmin() and global.ActiveSession.programId?
+						R.div({className: "toggle animated fadeIn"},
 							R.label({}
 								R.input({
 									onChange: @props.toggleAllPrograms
