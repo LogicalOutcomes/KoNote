@@ -369,11 +369,7 @@ load = (win) ->
 					height: @_calculateChartHeight()
 				}
 				legend: {
-					item: {
-						onclick: (itemId) =>
-							metricId = itemId.substr(2) # Cut out 'y-'
-							@props.updateSelectedMetrics(metricId)
-					}
+					show: false
 				}
 				onresize: @_refreshChartHeight # Manually calculate chart height
 			}
@@ -415,10 +411,12 @@ load = (win) ->
 		_refreshSelectedMetrics: ->
 			console.log "Refreshing selected metrics..."
 			@_chart.hide()
+			@_chart.legend.hide()
 			@_chart.show("y-#{hiddenId}")
 
 			@props.selectedMetricIds.forEach (metricId) =>
 				@_chart.show("y-" + metricId)
+				@_chart.legend.show("y-" + metricId)
 
 		_refreshProgEvents: ->
 			console.log "Refreshing progEvents..."
