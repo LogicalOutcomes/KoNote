@@ -20,7 +20,6 @@ load = (win) ->
 	{TimestampFormat} = require('../persist/utils')
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 	hiddenId = "-h-" # Fake/hidden datapoint's ID
-	minChartHeight = 400
 
 
 	Chart = React.createFactory React.createClass
@@ -356,18 +355,7 @@ load = (win) ->
 			@props.updateMetricColors @_chart.data.colors()
 
 		_calculateChartHeight: ->
-			fullHeight = $(@refs.chartInner).height() - 20
-
-			# Half-height for only metrics/events
-			if @props.selectedMetricIds.isEmpty() #or @props.progEvents.isEmpty()
-				# Can return minimum height instead
-				halfHeight = fullHeight / 2
-				if halfHeight > minChartHeight
-					return Math.floor halfHeight
-				else
-					return minChartHeight
-
-			return fullHeight
+			return $(@refs.chartInner).height() - 20
 
 		_refreshChartHeight: (isForced = false) ->
 			return unless @_chart?
