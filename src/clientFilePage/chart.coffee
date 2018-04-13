@@ -40,26 +40,6 @@ load = (win) ->
 				className: 'chartInner'
 				ref: 'chartInner'
 			},
-				ChartEventsStyling({
-					ref: (comp) => @chartEventsStyling = comp
-					selectedMetricIds: @props.selectedMetricIds
-					progEvents: @props.progEvents
-					eventRows: @state.eventRows
-				})
-
-				R.div({
-					id: 'eventInfo'
-					ref: 'eventInfo'
-				},
-					R.div({className: 'title'})
-					R.div({className: 'info'}
-						R.div({className: 'description'})
-						R.div({className: 'timeSpan'},
-							R.div({className: 'start'})
-							R.div({className: 'end'})
-						)
-					)
-				)
 				R.div({
 					className: "chart"
 					ref: 'chartDiv'
@@ -98,11 +78,6 @@ load = (win) ->
 				@_chart.destroy()
 				@componentDidMount()
 
-			# Update selected progEvents?
-			sameProgEvents = Imm.is @props.progEvents, oldProps.progEvents
-			unless sameProgEvents
-				@_refreshProgEvents()
-
 			# Update chart min/max range from changed xTicks?
 			sameXTicks = Imm.is @props.xTicks, oldProps.xTicks
 			unless sameXTicks
@@ -116,13 +91,11 @@ load = (win) ->
 			unless sameChartType
 				@_generateChart()
 				@_refreshSelectedMetrics()
-				@_refreshProgEvents()
 
 
 		componentDidMount: ->
 			@_generateChart()
 			@_refreshSelectedMetrics()
-			@_refreshProgEvents()
 			@_refreshChartHeight(true)
 
 		_generateChart: ->
@@ -237,7 +210,6 @@ load = (win) ->
 						class: 'yearLine'
 					}
 
-
 			# Generate and bind the chart
 			@_chart = C3.generate {
 				bindto: @refs.chartDiv
@@ -248,12 +220,12 @@ load = (win) ->
 				}
 				axis: {
 					x: {
-						min: minDate
-						max: maxDate
+						#min: minDate
+						#max: maxDate
 						type: 'timeseries'
 						tick: {
 							fit: false
-							format: '%b %d'
+							format: '%b %d' if (maxDate.diff(minDate, 'days') > 3)
 						}
 					}
 					y: {
@@ -262,6 +234,7 @@ load = (win) ->
 						min: 0
 					}
 				}
+				regions: @props.weekends.toJS()
 				data: {
 					type: @props.chartType
 					hide: true
@@ -386,7 +359,7 @@ load = (win) ->
 			fullHeight = $(@refs.chartInner).height() - 20
 
 			# Half-height for only metrics/events
-			if @props.selectedMetricIds.isEmpty() or @props.progEvents.isEmpty()
+			if @props.selectedMetricIds.isEmpty() #or @props.progEvents.isEmpty()
 				# Can return minimum height instead
 				halfHeight = fullHeight / 2
 				if halfHeight > minChartHeight
@@ -405,10 +378,6 @@ load = (win) ->
 			if not isForced and height is $(@refs.chartDiv).height()
 				return
 
-			# Update event regions' v-positioning if necessary
-			if not @props.progEvents.isEmpty() and @chartEventsStyling?
-				@chartEventsStyling.updateChartHeight(height)
-
 			# Proceed with resizing the chart itself
 			@_chart.resize {height}
 
@@ -420,215 +389,9 @@ load = (win) ->
 			@props.selectedMetricIds.forEach (metricId) =>
 				@_chart.show("y-" + metricId)
 
-		_refreshProgEvents: ->
-			console.log "Refreshing progEvents..."
-			# Generate c3 regions array
-			progEventRegions = @_generateProgEventRegions()
-
-			# Flush and re-apply regions to c3 chart
-			@_chart.regions.remove()
-
-			# C3 Regions have some kind of animation attached, which
-			# messes up remove/add
-			setTimeout(=>
-				@_chart.regions progEventRegions.toJS()
-				@_attachKeyBindings()
-			, 500)
-
-		_generateProgEventRegions: ->
-			# Build Imm.List of region objects
-			progEventRegions = @props.progEvents
-			.map (progEvent) =>
-				eventRegion = {
-					start: @_toUnixMs progEvent.get('startTimestamp')
-					class: "progEventRange #{progEvent.get('id')} typeId-"
-				}
-
-				eventRegion['class'] += if progEvent.get('typeId')
-					progEvent.get('typeId')
-				else
-					"null" # typeId-null is how we know it doesn't have an eventType
-
-				if Moment(progEvent.get('endTimestamp'), TimestampFormat).isValid()
-					eventRegion.end = @_toUnixMs progEvent.get('endTimestamp')
-
-				# TODO: Classify singular event
-				return eventRegion
-
-			# Sort regions in order of start timestamp
-			sortedEvents = progEventRegions.sortBy (event) => event['start']
-
-			# Setting up vars for row sorting
-			remainingEvents = sortedEvents
-			eventRows = Imm.List()
-			progEvents = Imm.List()
-			rowIndex = 0
-
-			# Process progEvents for regions while remaining events
-			while remainingEvents.size > 0
-
-				# Init new eventRow
-				eventRows = eventRows.push Imm.List()
-
-				# Loop through events, pluck any for the given row with non-conflicting dates
-				remainingEvents.forEach (thisEvent) =>
-
-					thisRow = eventRows.get(rowIndex)
-					# Can't rely on forEach index, because .delete() offsets it
-					liveIndex = remainingEvents.indexOf(thisEvent)
-
-					# Let's pluck this progEvent if no rows or timestamps don't conflict
-					if thisRow.size is 0 or (
-						not thisRow.last().get('end')? or
-						thisEvent.start >= thisRow.last().get('end')
-					)
-						# Append class with row number
-						progEvent = Imm.fromJS(thisEvent)
-						newClass = "#{progEvent.get('class')} row#{rowIndex}"
-
-						# Convert single-point event date to a short span
-						if not progEvent.get('end')
-							startDate = Moment progEvent.get('start')
-							progEvent = progEvent.set 'end', startDate.clone().add(6, 'hours')
-							newClass = newClass + " singlePoint"
-
-						# Update class (needs to be 'class' for C3js)
-						progEvent = progEvent.set('class', newClass)
-
-						# Update eventRows, remove from remainingEvents
-						updatedRow = eventRows.get(rowIndex).push progEvent
-						eventRows = eventRows.set rowIndex, updatedRow
-						remainingEvents = remainingEvents.delete(liveIndex)
-
-
-				# Concat to final (flat) output for c3
-				progEvents = progEvents.concat eventRows.get(rowIndex)
-
-				rowIndex++
-
-
-			# Determine regions height
-			chartHeightY = if eventRows.isEmpty() then 1 else 2
-
-			# Metrics can be bigger when only 1 progEvent row
-			if eventRows.size is 1
-				chartHeightY = 1.5
-
-			@setState {eventRows: eventRows.size}
-
-			@_chart.axis.max {
-				y: chartHeightY
-			}
-
-			return progEvents
-
-		_attachKeyBindings: ->
-			# TODO: Make sure listeners are removed when componentWillUnmount
-
-			# Find our hidden eventInfo box
-			eventInfo = $('#eventInfo')
-			dateFormat = 'Do MMM [at] h:mm A'
-
-			@props.progEvents.forEach (progEvent) =>
-				# Attach hover binding to progEvent region
-				$('.' + progEvent.get('id')).hover((event) =>
-
-					description = progEvent.get('description') or "(no description)"
-					if description.length > 1000
-						description = description.substring(0, 2000) + " . . ."
-
-					title = progEvent.get('title')
-
-					# Tack on eventType to title
-					# TODO: Do this earlier on, to save redundancy
-					if progEvent.get('typeId')
-						eventType = @props.eventTypes.find (eventType) -> eventType.get('id') is progEvent.get('typeId')
-						eventTypeName = eventType.get('name')
-						title = if title then "#{title} (#{eventTypeName})" else eventTypeName
-
-
-					eventInfo.addClass('show')
-					eventInfo.find('.title').text title
-					eventInfo.find('.description').text(description)
-
-					startTimestamp = new Moment(progEvent.get('startTimestamp'), TimestampFormat)
-					endTimestamp = new Moment(progEvent.get('endTimestamp'), TimestampFormat)
-
-					startText = startTimestamp.format(dateFormat)
-					endText = if endTimestamp.isValid() then endTimestamp.format(dateFormat) else null
-
-					if endText?
-						startText = "From: " + startText
-						endText = "Until: " + endText
-
-					eventInfo.find('.start').text startText
-					eventInfo.find('.end').text endText
-
-					# Make eventInfo follow the mouse
-					$(win.document).on('mousemove', (event) ->
-						eventInfo.css 'top', event.clientY + 25
-						eventInfo.css 'left', event.clientX
-					)
-				, =>
-					# Hide and unbind!
-					eventInfo.removeClass('show')
-					$(win.document).off('mousemove')
-				)
-
-
-				rect = $('.' + progEvent.get('id')).find('rect')[0]
-
-				# Fill progEvent region with eventType color if exists
-				if progEvent.get('typeId') and not @props.eventTypes.isEmpty()
-					eventType = @props.eventTypes
-					.find (type) -> type.get('id') is progEvent.get('typeId')
-
-					$(rect).attr({
-						style:
-							"fill: #{eventType.get('colorKeyHex')} !important;
-							stroke: #{eventType.get('colorKeyHex')} !important;"
-					})
-				else
-					# At least clear it for non-typed events
-					$(rect).attr({style: ''})
-
 		_toUnixMs: (timestamp) ->
 			# Converts to unix ms
 			return Moment(timestamp, TimestampFormat).valueOf()
-
-
-	ChartEventsStyling = React.createFactory React.createClass
-		displayName: 'ChartEventsStyling'
-
-		propTypes: {
-			eventRows: PropTypes.number.isRequired
-			progEvents: PropTypes.instanceOf(Imm.List).isRequired
-			selectedMetricIds: PropTypes.instanceOf(Imm.Set).isRequired
-		}
-
-		getInitialState: -> {
-			chartHeight: null
-		}
-
-		updateChartHeight: (chartHeight) ->
-			# This gets called alongside @_chart.resize
-			@setState {chartHeight}
-
-		render: ->
-			# Calculate scaled height of each region (larger if no metrics)
-			scaleFactor = if @props.selectedMetricIds.isEmpty() then 0.65 else 0.3
-			scaleY = (scaleFactor / @props.eventRows).toFixed(2)
-
-
-			R.style({},
-				(Imm.List([0..@props.eventRows]).map (rowNumber) =>
-					translateY = rowNumber * @state.chartHeight
-
-					return ".chart .c3-regions .c3-region.row#{rowNumber} > rect {
-						transform: scaleY(#{scaleY}) translateY(#{translateY}px) !important
-					}"
-				)
-			)
 
 
 	return Chart
