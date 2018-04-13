@@ -19,7 +19,6 @@ load = (win) ->
 
 	{TimestampFormat} = require('../persist/utils')
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
-	hiddenId = "-h-" # Fake/hidden datapoint's ID
 
 
 	Chart = React.createFactory React.createClass
@@ -102,14 +101,7 @@ load = (win) ->
 			# Create a Map from metric ID to data series,
 			# where each data series is a sequence of [x, y] pairs
 
-			# Inject hidden datapoint, with value well outside y-span
-			metricValues = @props.metricValues.push Imm.Map {
-				id: hiddenId
-				timestamp: Moment().format(TimestampFormat)
-				value: -99999
-			}
-
-			dataSeries = metricValues
+			dataSeries = @props.metricValues
 			.groupBy (metricValue) -> # group by metric
 				return metricValue.get('id')
 			.map (metricValues) -> # for each data series
@@ -118,11 +110,7 @@ load = (win) ->
 					return [metricValue.get('timestamp'), metricValue.get('value')]
 
 			seriesNamesById = dataSeries.keySeq().map (metricId) =>
-				# Ignore hidden datapoint
-				metricName = if metricId is hiddenId
-					metricId
-				else
-					@props.metricsById.get(metricId).get('name')
+				metricName = @props.metricsById.get(metricId).get('name')
 
 				return [metricId, metricName]
 			.fromEntrySeq().toMap()
@@ -156,8 +144,6 @@ load = (win) ->
 			scaledDataSeries = dataSeries.map (series) ->
 				# Scaling only applies to y series
 				return series if series.first()[0] isnt 'y'
-				# Ignore hidden datapoint
-				return series if series.first() is "y-#{hiddenId}"
 
 				# Filter out id's to figure out min & max
 				values = series.flatten()
@@ -241,9 +227,6 @@ load = (win) ->
 					columns: scaledDataSeries.toJS()
 					xs: xsMap.toJS()
 					names: dataSeriesNames.toJS()
-					classes: {
-						hiddenId: 'hiddenId'
-					}
 					# Get/destroy hovered metric point data in local memory
 					onmouseover: (d) => @hoveredMetric = d
 					onmouseout: (d) => @hoveredMetric = null if @hoveredMetric? and @hoveredMetric.id is d.id
@@ -369,7 +352,6 @@ load = (win) ->
 			console.log "Refreshing selected metrics..."
 			@_chart.hide()
 			@_chart.legend.hide()
-			@_chart.show("y-#{hiddenId}")
 
 			@props.selectedMetricIds.forEach (metricId) =>
 				@_chart.show("y-" + metricId)
