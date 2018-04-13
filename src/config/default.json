@@ -40,6 +40,7 @@
 	"printFooter": "",
 
 	"timestampFormat": "MMM Do, YYYY [-] h:mma",
+	"longTimestampFormat": "ddd MMM Do YYYY, h:mma",
 	"dateFormat": "MMM Do, YYYY",
 	"timeFormat": "h:mma",
 

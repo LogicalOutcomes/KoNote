@@ -266,7 +266,7 @@ load = (win) ->
 							return actualValue
 
 						title: (timestamp) ->
-							return Moment(timestamp).format(Config.timestampFormat)
+							return Moment(timestamp).format(Config.longTimestampFormat)
 					}
 					# Customization from original c3 tooltip DOM code: http://stackoverflow.com/a/25750639
 					contents: (metrics, defaultTitleFormat, defaultValueFormat, color) =>
