@@ -219,8 +219,8 @@ load = (win) ->
 				}
 				axis: {
 					x: {
-						#min: minDate
-						#max: maxDate
+						min: minDate
+						max: maxDate
 						type: 'timeseries'
 						tick: {
 							fit: false
