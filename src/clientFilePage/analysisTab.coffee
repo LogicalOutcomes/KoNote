@@ -361,6 +361,11 @@ load = (win) ->
 
 		_toggleSelectionPane: ->
 			showSelection = not @state.showSelection
+			@setState {showSelection}, =>
+				setTimeout(=>
+					if @refs.mainChart
+						@refs.mainChart._refreshChartHeight(true)
+				, 250)
 			@setState {showSelection}
 
 		_toggleTargetExclusionById: (targetId) ->
