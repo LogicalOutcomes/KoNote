@@ -82,6 +82,12 @@ load = (win) ->
 				if newMin is newMax
 					newMax = newMax.clone().endOf 'day'
 
+				# avoid repeating x axis labels bug
+				if (newMax.diff(newMin, 'days') > 3)
+					@_chart.internal.config.axis_x_tick_format = '%b %d'
+				else
+					@_chart.internal.config.axis_x_tick_format = null
+
 				@_chart.axis.min {x: newMin}
 				@_chart.axis.max {x: newMax}
 
