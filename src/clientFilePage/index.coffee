@@ -11,7 +11,7 @@
 # transient fields before saving, while `fromSavedFormat` initialize them with
 # some default values.
 
-
+Fs = require 'fs'
 Async = require 'async'
 Imm = require 'immutable'
 Moment = require 'moment'
@@ -552,6 +552,15 @@ load = (win, {clientFileId}) ->
 					if err instanceof Persist.IOError
 						console.error err
 						console.error err.stack
+
+            # temporary error logging for #1168
+            Fs.appendFileSync 'error.log', JSON.stringify({
+              platform: process.platform
+              appVersion: nw.App.manifest.version
+              cwd: process.cwd()
+              error: err.toString()
+              errorStackTrace: err.stack
+            })
 
 						@setState {loadErrorType: 'io-error', status: 'ready'}
 						return
