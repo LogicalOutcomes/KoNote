@@ -107,7 +107,7 @@ load = (win, {clientFileId}) ->
 
 			if @state.loadErrorType
 				return LoadError {
-					loadErrorType: @props.loadErrorType
+					loadErrorType: @state.loadErrorType
 					closeWindow: @props.closeWindow
 				}
 
