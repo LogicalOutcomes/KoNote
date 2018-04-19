@@ -105,6 +105,12 @@ load = (win, {clientFileId}) ->
 			if @state.status isnt 'ready'
 				return loadingSpinner({})
 
+			if @state.loadErrorType
+				return LoadError {
+					loadErrorType: @props.loadErrorType
+					closeWindow: @props.closeWindow
+				}
+
 			clientName = renderName @state.clientFile.get('clientName')
 
 			# Ensure revisions of each progNote are in chronological order (of creation)
