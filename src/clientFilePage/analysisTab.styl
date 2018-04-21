@@ -207,38 +207,6 @@
 						.c3-zoom-rect
 							display none !important
 
-						.c3-regions
-
-							.c3-region
-								fill-opacity 1
-								min-width 1px !important
-
-								&:hover
-									fill-opacity 0.75 !important
-									stroke-opacity 1 !important
-
-								> rect
-									min-width 1px !important
-									fill-opacity inherit !important
-									// 10% of original height
-									transform scaleY(0.1)
-									fill sidebar-borders
-									stroke sidebar-borders
-									stroke-width 2px
-									stroke-opacity inherit
-
-									&[width="0"]
-										width 1px !important
-
-								&.singlePoint > rect
-									fill sidebar-borders
-									stroke sidebar-borders
-									stroke-width 2
-
-									&:hover
-										stroke #1d6977
-
-
 			.chartOptionsContainer
 				display flex
 				justify-content space-between
