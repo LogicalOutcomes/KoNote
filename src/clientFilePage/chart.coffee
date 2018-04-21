@@ -209,6 +209,9 @@ load = (win) ->
 						lines: newYearLines.toJS()
 					}
 				}
+				transition: {
+					duration: 0
+				}
 				axis: {
 					x: {
 						min: minDate
