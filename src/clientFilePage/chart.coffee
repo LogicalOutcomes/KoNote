@@ -268,6 +268,9 @@ load = (win) ->
 						min: 0
 					}
 				}
+				transition: {
+					duration: 0
+				}
 				data: {
 					type: @props.chartType
 					hide: true
