@@ -291,7 +291,7 @@ load = (win) ->
 					}
 				}
 				point: {
-					r: 4.5
+					r: 5
 				}
 				tooltip: {
 					format: {
