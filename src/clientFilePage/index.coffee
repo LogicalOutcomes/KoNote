@@ -62,6 +62,8 @@ load = (win, {clientFileId}) ->
 			return {
 				status: 'init' # Either init or ready
 
+				userProgramId: global.ActiveSession.programId
+
 				clientFile: null
 				clientFileLock: null
 				readOnlyData: null
@@ -147,6 +149,8 @@ load = (win, {clientFileId}) ->
 				status: @state.status
 				readOnlyData: @state.readOnlyData
 				loadErrorType: @state.loadErrorType
+
+				userProgramId: @state.userProgramId
 
 				clientFile: @state.clientFile
 				clientName
@@ -1021,6 +1025,10 @@ load = (win, {clientFileId}) ->
 					}
 				}
 			else
+				# reset any program overrides
+				userProgram = if @props.userProgramId then @props.programsById.get(@props.userProgramId) else null
+				global.ActiveSession.persist.eventBus.trigger 'override:userProgram', userProgram
+
 				@props.closeWindow()
 
 		componentDidMount: ->
