@@ -391,11 +391,11 @@ load = (win) ->
 									timestamp
 									authorUsername: progNote.get('author')
 									clientFileId
-									clientName: "\"#{clientName}\""
+									clientName: clientName
 									metricId: metric.get('id')
-									programs: "\"#{programNames.toJS().join(", ")}\""
-									metricName: "\"#{metric.get('name')}\""
-									metricDefinition: "\"#{metric.get('definition')}\""
+									programs: programNames.toJS().join(", ")
+									metricName: metric.get('name')
+									metricDefinition: metric.get('definition')
 									metricValue: metric.get('value')
 								})
 								return Imm.List([progNoteMetricCsv])
@@ -435,13 +435,13 @@ load = (win) ->
 				metricsList = Imm.List(results).flatten(true)
 				# console.log "Final Metrics result: " + JSON.stringify metricsList.toJS()
 
-				csv = Papa.unparse metricsList.toJS()
+				csv = Papa.unparse metricsList.toJS(), {newline: "\n"}
 				@_updateProgress 100
 
 
 				# Destination path must exist in order to save
 				if path.length > 1
-					Fs.writeFile path, csv, (err) =>
+					Fs.writeFile path, '\ufeff' + csv, {encoding:'utf8'}, (err) =>
 						if err
 							CrashHandler.handle err
 							return
