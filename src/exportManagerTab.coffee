@@ -209,10 +209,10 @@ load = (win) ->
 									id: progEvent.get('id')
 									timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									author: progEvent.get('author')
-									clientName: "\"#{clientName}\""
-									programs: "\"#{programNames.toJS().join(", ")}\""
-									title: "\"#{progEvent.get('title')}\""
-									description: "\"#{progEvent.get('description')}\""
+									clientName: clientName
+									programs: programNames.toJS().join(", ")
+									title: progEvent.get('title')
+									description: progEvent.get('description')
 									startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									endDate: Moment(progEvent.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 								}
@@ -239,12 +239,12 @@ load = (win) ->
 					progEvents = Imm.List(results).flatten()
 
 					# TODO: Move to series
-					csv = Papa.unparse progEvents.toJS()
+					csv = Papa.unparse progEvents.toJS(), {newline: "\n"}
 					@_updateProgress(100)
 
 					# destination path must exist in order to save
 					if path.length > 1
-						Fs.writeFile path, csv, (err) =>
+						Fs.writeFile path, '\ufeff' + csv, {encoding:'utf8'}, (err) =>
 							@setState {isLoading: false}
 
 							if err
