@@ -414,12 +414,11 @@ load = (win) ->
 			@_chart.resize {height}
 
 		_refreshSelectedMetrics: ->
-			console.log "Refreshing selected metrics..."
-			@_chart.hide()
-			@_chart.legend.hide()
-			@_chart.show(hiddenId)
-
-			@_chart.show(@props.selectedMetricIds.toJS(), {withLegend: true})
+			@_chart.hide(null, {withLegend: true})
+			unless @props.selectedMetricIds.size > 0
+				# for events to work
+				@_chart.show(hiddenId)
+				return
 
 			@props.selectedMetricIds.forEach (metricId) =>
 				# choose metric color from palette
@@ -434,6 +433,8 @@ load = (win) ->
 						else
 							@_chart.data.colors({"#{metricId}": palette[index]})
 							return
+
+			@_chart.show(@props.selectedMetricIds.toJS(), {withLegend: true})
 
 			# fire metric colors back up to analysis tab
 			@props.updateMetricColors Imm.Map(@_chart.data.colors())
