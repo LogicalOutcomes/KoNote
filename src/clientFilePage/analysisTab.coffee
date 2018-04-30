@@ -44,6 +44,7 @@ load = (win) ->
 				excludedTargetIds: Imm.Set()
 				timeSpan: null
 				showSelection: true
+				metricColors: Imm.Map()
 			}
 
 		# # Leave this here, need for diff-checking renders/vs/state-props
@@ -620,6 +621,7 @@ load = (win) ->
 			@setState ({selectedMetricIds}) =>
 				if selectedMetricIds.contains metricId
 					selectedMetricIds = selectedMetricIds.delete metricId
+					@refs.mainChart._chart.data.colors({"#{metricId}": null})
 				else
 					selectedMetricIds = selectedMetricIds.add metricId
 
@@ -899,7 +901,7 @@ load = (win) ->
 					metricIsInactive = targetIsInactive or metric.get('status') isnt 'default'
 					visibleValues = @props.visibleMetricValuesById.get(metricId) or Imm.List()
 					isSelected = @props.selectedMetricIds.contains metricId
-					metricColor = if @props.metricColors? then @props.metricColors["y-#{metric.get('id')}"]
+					metricColor = if @props.metricColors? then @props.metricColors.get(metricId)
 
 					R.div({
 						key: metricId
@@ -958,7 +960,7 @@ load = (win) ->
 						metricId = metric.get('id')
 						isSelected = @props.selectedMetricIds.contains metricId
 						visibleValues = @props.visibleMetricValuesById.get(metricId) or Imm.List()
-						metricColor = if @props.metricColors? then @props.metricColors["y-#{metric.get('id')}"]
+						metricColor = if @props.metricColors? then @props.metricColors.get(metricId)
 
 						R.div({
 							key: metricId
