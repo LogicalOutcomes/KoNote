@@ -73,7 +73,8 @@ sidebar-borders = darken(sidebar-bg, 10%)
 
 	> #readOnlyNotice
 		display flex
-		background rgba(255, 174, 0, 0.5)
+		background #ffe699
+		font-size small
 		border-bottom 2px solid sidebar-borders
 
 		color #515151
@@ -87,13 +88,9 @@ sidebar-borders = darken(sidebar-bg, 10%)
 				background #94F27F
 				cursor default
 
-		> .mode
-			padding 5px 10px
-			flex 1
-			text-align center
-
-			background sidebar-borders
-			color hsl(hue(sidebar-bg), 15%, 35%)
+			.mode
+				padding-right 10px
+				font-weight bold
 
 	> .wrapper
 		height 100%

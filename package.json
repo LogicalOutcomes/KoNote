@@ -51,7 +51,7 @@
     "diff": "^3.2.0",
     "diff-match-patch": "^1.0.0",
     "es-decorate": "^1.0.0",
-    "graceful-fs": "^4.1.11",
+    "graceful-fs": "konode001/node-graceful-fs",
     "immutable": "3.8.1",
     "joi": "^9.2.0",
     "mkdirp": "^0.5.1",
