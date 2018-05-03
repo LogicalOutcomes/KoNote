@@ -8,7 +8,7 @@
   "chromium-args": "--enable-spell-checking --enable-smooth-scrolling",
   "nwjsBuilder": {
     "companyName": "KoNote",
-    "copyright": "Copyright 2017 Konode"
+    "copyright": "Copyright 2018 Konode"
   },
   "window": {
     "icon": "src/icon.png",
