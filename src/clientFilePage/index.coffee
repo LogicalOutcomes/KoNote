@@ -668,7 +668,7 @@ load = (win, {clientFileId}) ->
 						# this could occur if the system is too busy to write lock
 						if lockOwner is global.ActiveSession.userName
 							pingInterval = 0.1 # minutes
-							readOnlyMessage = "#{Term 'Client file'} in use. When it becomes available for editing this will disappear."
+							readOnlyMessage = "#{Term 'Client File'} in use. When it becomes available for editing this will disappear."
 						else
 							readOnlyMessage = "File currently in use by user: \"#{lockOwner}\""
 
