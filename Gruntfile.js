@@ -93,6 +93,7 @@ module.exports = function(grunt) {
 				src: [
 					'**',
 					'!**/AUTHOR*',
+					'!**/assets*',
 					'!**/bower.json',
 					'!**/changelog*',
 					'!**/changes*',
@@ -124,10 +125,20 @@ module.exports = function(grunt) {
 					'!**/test.js',
 					'!**/test/**',
 					'!**/tests/**',
+					'!**/website/**',
 					'!**/__tests__/**',
+					'!**/*.ignore',
+					'!**/*.editorconfig',
+					'!**/*.eslintrc',
+					'!**/*.gitattributes',
+					'!**/*.jshintrc',
+					'!**/*.jst',
+					'!**/*.md',
+					'!**/*.nyc_output',
+					'!**/*.ts',
 					'!**/*.yml'
 				],
-				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/temp_node_modules/',
+				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/temp_node_modules/'
 			},
 			production: {
 				src: 'build/production.json',
@@ -323,7 +334,7 @@ module.exports = function(grunt) {
 				files: [{
 					expand: true,
 					cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/src',
-					src: ['**/*.js', '!layeredComponentMixin.js', '!start.js', '!config/index.js'],
+					src: ['**/*.js', '!layeredComponentMixin.js', '!start.js', '!bootbox-noxss.js', '!config/index.js'],
 					dest: 'dist/temp/<%= grunt.task.current.args[0] %>/src',
 					ext: '.js'
 				}]

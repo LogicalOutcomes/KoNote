@@ -823,10 +823,11 @@ load = (win) ->
 				return
 
 			# Metric exists in another target
-			existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
+			existingTarget = @state.currentTargetRevisionsById.find (target) =>
 				return target.get('metricIds').contains(metricId)
-			if existsElsewhere
-				Bootbox.alert "This #{Term 'metric'} already exists for another #{Term 'plan target'}"
+			if existingTarget
+				targetStatus = if existingTarget.get('status') is 'default' then '' else '(' + existingTarget.get('status') + ')'
+				Bootbox.alert "This #{Term 'metric'} already exists in #{Term 'plan target'}: #{existingTarget.get('name')} #{targetStatus}"
 				return
 
 			@setState {

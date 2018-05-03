@@ -21,6 +21,7 @@ load = (win) ->
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 	hiddenId = "-h-" # Fake/hidden datapoint's ID
 	minChartHeight = 400
+	palette = ['#66c088', '#43c5f1', '#5f707e', '#f06362', '#e5be31', '#9560ab', '#e883c0', '#ef8f39', '#42a795', '#999999', '#ccc5a8']
 
 
 	Chart = React.createFactory React.createClass
@@ -81,6 +82,12 @@ load = (win) ->
 				# todo check this
 				if newMin is newMax
 					newMax = newMax.clone().endOf 'day'
+
+				# avoid repeating x axis labels bug
+				if (newMax.diff(newMin, 'days') > 3)
+					@_chart.internal.config.axis_x_tick_format = '%b %d'
+				else
+					@_chart.internal.config.axis_x_tick_format = null
 
 				@_chart.axis.min {x: newMin}
 				@_chart.axis.max {x: newMax}
@@ -158,13 +165,13 @@ load = (win) ->
 			# Create set to show which x maps to which y
 			xsMap = dataSeries.keySeq()
 			.map (seriesId) ->
-				return ['y-' + seriesId, 'x-' + seriesId]
+				return [seriesId, 'x-' + seriesId]
 			.fromEntrySeq().toMap()
 
 
 			dataSeriesNames = dataSeries.keySeq()
 			.map (seriesId) =>
-				return ['y-' + seriesId, seriesNamesById.get(seriesId)]
+				return [seriesId, seriesNamesById.get(seriesId)]
 			.fromEntrySeq().toMap()
 
 
@@ -176,16 +183,16 @@ load = (win) ->
 				xValues = Imm.List(['x-' + seriesId]).concat(
 					orderedDataPoints.map ([x, y]) -> x
 				)
-				yValues = Imm.List(['y-' + seriesId]).concat(
+				yValues = Imm.List([seriesId]).concat(
 					orderedDataPoints.map ([x, y]) -> y
 				)
 				return Imm.List([xValues, yValues])
 
 			scaledDataSeries = dataSeries.map (series) ->
 				# Scaling only applies to y series
-				return series if series.first()[0] isnt 'y'
+				return series if series.first()[0] is 'x'
 				# Ignore hidden datapoint
-				return series if series.first() is "y-#{hiddenId}"
+				return series if series.first() is hiddenId
 
 				# Filter out id's to figure out min & max
 				values = series.flatten()
@@ -262,6 +269,9 @@ load = (win) ->
 						min: 0
 					}
 				}
+				transition: {
+					duration: 0
+				}
 				data: {
 					type: @props.chartType
 					hide: true
@@ -278,11 +288,11 @@ load = (win) ->
 				}
 				spline: {
 					interpolation: {
-						type: 'catmullRom'
+						type: 'monotone'
 					}
 				}
 				point: {
-					r: 4.5
+					r: 5
 				}
 				tooltip: {
 					format: {
@@ -294,7 +304,7 @@ load = (win) ->
 							return actualValue
 
 						title: (timestamp) ->
-							return Moment(timestamp).format(Config.timestampFormat)
+							return Moment(timestamp).format(Config.longTimestampFormat)
 					}
 					# Customization from original c3 tooltip DOM code: http://stackoverflow.com/a/25750639
 					contents: (metrics, defaultTitleFormat, defaultValueFormat, color) =>
@@ -342,8 +352,7 @@ load = (win) ->
 
 							# TODO: Show definitions for other metrics w/ overlapping regular or scaled values
 							if isHoveredMetric
-								metricId = currentMetric.id.substr(2) # Cut out "y-" for raw ID
-								metricDefinition = @props.metricsById.getIn [metricId, 'definition']
+								metricDefinition = @props.metricsById.getIn [currentMetric.id, 'definition']
 
 								# Truncate definition to 100ch + ...
 								if metricDefinition.length > 100
@@ -369,18 +378,10 @@ load = (win) ->
 					height: @_calculateChartHeight()
 				}
 				legend: {
-					item: {
-						onclick: (itemId) =>
-							metricId = itemId.substr(2) # Cut out 'y-'
-							@props.updateSelectedMetrics(metricId)
-					}
+					show: false
 				}
 				onresize: @_refreshChartHeight # Manually calculate chart height
 			}
-
-			# Fire metric colors up to analysisTab
-			# TODO: Define these manually/explicitly, to avoid extra analysisTab render
-			@props.updateMetricColors @_chart.data.colors()
 
 		_calculateChartHeight: ->
 			fullHeight = $(@refs.chartInner).height() - 20
@@ -413,12 +414,30 @@ load = (win) ->
 			@_chart.resize {height}
 
 		_refreshSelectedMetrics: ->
-			console.log "Refreshing selected metrics..."
-			@_chart.hide()
-			@_chart.show("y-#{hiddenId}")
+			@_chart.hide(null, {withLegend: true})
+			unless @props.selectedMetricIds.size > 0
+				# for events to work
+				@_chart.show(hiddenId)
+				return
 
 			@props.selectedMetricIds.forEach (metricId) =>
-				@_chart.show("y-" + metricId)
+				# choose metric color from palette
+				# todo: move to analysis tab to save a render?
+				if palette.includes(@_chart.data.colors()[metricId])
+					# do not change the color if already set for this metric
+					return
+				else
+					# assign a color from the palette that is not already in use
+					for index, color of palette
+						if Object.values(@_chart.data.colors()).includes color
+						else
+							@_chart.data.colors({"#{metricId}": palette[index]})
+							return
+
+			@_chart.show(@props.selectedMetricIds.toJS(), {withLegend: true})
+
+			# fire metric colors back up to analysis tab
+			@props.updateMetricColors Imm.Map(@_chart.data.colors())
 
 		_refreshProgEvents: ->
 			console.log "Refreshing progEvents..."

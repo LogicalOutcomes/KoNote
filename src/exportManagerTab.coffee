@@ -120,7 +120,7 @@ load = (win) ->
 			.click()
 
 		_saveEvents: (path) ->
-			CSVConverter = require 'json-2-csv'
+			Papa = require 'papaparse'
 			isConfirmClosed = false
 			# Map over client files
 
@@ -209,10 +209,10 @@ load = (win) ->
 									id: progEvent.get('id')
 									timestamp: Moment(progEvent.get('timestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									author: progEvent.get('author')
-									clientName: "\"#{clientName}\""
-									programs: "\"#{programNames.toJS().join(", ")}\""
-									title: "\"#{progEvent.get('title')}\""
-									description: "\"#{progEvent.get('description')}\""
+									clientName: clientName
+									programs: programNames.toJS().join(", ")
+									title: progEvent.get('title')
+									description: progEvent.get('description')
 									startDate: Moment(progEvent.get('startTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 									endDate: Moment(progEvent.get('endTimestamp'), TimestampFormat).format('YYYY-MM-DD HH:mm:ss')
 								}
@@ -239,35 +239,29 @@ load = (win) ->
 					progEvents = Imm.List(results).flatten()
 
 					# TODO: Move to series
-					CSVConverter.json2csv progEvents.toJS(), (err, result) =>
-						if err
-							CrashHandler.handle err
-							return
+					csv = Papa.unparse progEvents.toJS(), {newline: "\n"}
+					@_updateProgress(100)
 
-						csv = result
-						@_updateProgress(100)
+					# destination path must exist in order to save
+					if path.length > 1
+						Fs.writeFile path, '\ufeff' + csv, {encoding:'utf8'}, (err) =>
+							@setState {isLoading: false}
 
+							if err
+								# TODO: Account for write errors without hard-crash
+								CrashHandler.handle err
+								return
 
-						# destination path must exist in order to save
-						if path.length > 1
-							Fs.writeFile path, csv, (err) =>
-								@setState {isLoading: false}
-
-								if err
-									# TODO: Account for write errors without hard-crash
-									CrashHandler.handle err
-									return
-
-								if isConfirmClosed isnt true
-									Bootbox.alert {
-										title: "Save Successful"
-										message: "Events exported to: #{path}"
-									}
-									# isConfirmClosed = true
+							if isConfirmClosed isnt true
+								Bootbox.alert {
+									title: "Save Successful"
+									message: "Events exported to: #{path}"
+								}
+								# isConfirmClosed = true
 
 
 		_saveMetrics: (path) ->
-			CSVConverter = require 'json-2-csv'
+			Papa = require 'papaparse'
 			isConfirmClosed = false
 			metrics = null
 			count = 0
@@ -397,11 +391,11 @@ load = (win) ->
 									timestamp
 									authorUsername: progNote.get('author')
 									clientFileId
-									clientName: "\"#{clientName}\""
+									clientName: clientName
 									metricId: metric.get('id')
-									programs: "\"#{programNames.toJS().join(", ")}\""
-									metricName: "\"#{metric.get('name')}\""
-									metricDefinition: "\"#{metric.get('definition')}\""
+									programs: programNames.toJS().join(", ")
+									metricName: metric.get('name')
+									metricDefinition: metric.get('definition')
 									metricValue: metric.get('value')
 								})
 								return Imm.List([progNoteMetricCsv])
@@ -441,36 +435,26 @@ load = (win) ->
 				metricsList = Imm.List(results).flatten(true)
 				# console.log "Final Metrics result: " + JSON.stringify metricsList.toJS()
 
+				csv = Papa.unparse metricsList.toJS(), {newline: "\n"}
+				@_updateProgress 100
 
-				CSVConverter.json2csv metricsList.toJS(), (err, result) =>
-					if err
+
+				# Destination path must exist in order to save
+				if path.length > 1
+					Fs.writeFile path, '\ufeff' + csv, {encoding:'utf8'}, (err) =>
+						if err
+							CrashHandler.handle err
+							return
+
+						# console.info "Destination Path:", path
 						@setState {isLoading: false}
-						Bootbox.alert {
-							title: "Data export failed!"
-							message: err.toString().substring(0, 300)
-						}
-						return
 
-					csv = result
-					@_updateProgress 100
-
-
-					# Destination path must exist in order to save
-					if path.length > 1
-						Fs.writeFile path, csv, (err) =>
-							if err
-								CrashHandler.handle err
-								return
-
-							# console.info "Destination Path:", path
-							@setState {isLoading: false}
-
-							if isConfirmClosed isnt true
-								Bootbox.alert {
-									title: "Save Successful"
-									message: "Metrics exported to: #{path}"
-								}
-								isConfirmClosed = true
+						if isConfirmClosed isnt true
+							Bootbox.alert {
+								title: "Save Successful"
+								message: "Metrics exported to: #{path}"
+							}
+							isConfirmClosed = true
 
 
 		_saveBackup: (savepath) ->

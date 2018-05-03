@@ -71,6 +71,11 @@ class Lock
 			(cb) ->
 				lockDirOp.commit (err) ->
 					if err
+						# if system unable to write the lock #1168
+						if err instanceof IOError and err.cause.code in ['EBUSY']
+							Lock._readMetadata(lockDir, cb)
+							return
+
 						# If lock is already taken
 						if err instanceof IOError and err.cause.code in ['EPERM', 'ENOTEMPTY']
 							Lock._cleanIfStale session, lockId, cb

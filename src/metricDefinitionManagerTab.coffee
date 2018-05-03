@@ -6,7 +6,7 @@
 
 _ = require 'underscore'
 Async = require 'async'
-CSVConverter = require 'json-2-csv'
+Papa = require 'papaparse'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
@@ -251,18 +251,18 @@ load = (win) ->
 						csv = 'name,definition\n' + rawCsv
 						cb()
 				(cb) ->
-					CSVConverter.csv2json csv, (err, result) =>
-						if err
-							console.error err
-							console.error err.stack
+
+					Papa.parse(csv,{header:true, skipEmptyLines: true, trimHeader:true, complete: (results) =>
+						if results.errors.length > 0
+							console.error results.errors
 							Bootbox.alert("The selected file does not seem to be a valid CSV file.")
 							return
 
-						if result.length is 0
+						if results.data.length is 0
 							Bootbox.alert "The selected file seems to be empty."
 							return
 
-						for m in result
+						for m in results.data
 							if m.name is ''
 								Bootbox.alert "The selected file contains a metric with an empty name."
 								return
@@ -276,12 +276,11 @@ load = (win) ->
 								Bootbox.alert "The selected file contains a metric with an empty definition."
 								return
 
-						metricsToCreate = Imm.fromJS result
-						console.log JSON.stringify result
+						metricsToCreate = Imm.fromJS results.data
+						# console.log JSON.stringify results.data
 						cb()
-					, {
-						trimFieldValues: true
-					}
+					})
+
 				(cb) ->
 					# Get names of existing metrics
 					ActiveSession.persist.metrics.list (err, result) ->

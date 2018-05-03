@@ -62,6 +62,8 @@ load = (win, {clientFileId}) ->
 			return {
 				status: 'init' # Either init or ready
 
+				userProgramId: global.ActiveSession.programId
+
 				clientFile: null
 				clientFileLock: null
 				readOnlyData: null
@@ -105,6 +107,12 @@ load = (win, {clientFileId}) ->
 			if @state.status isnt 'ready'
 				return loadingSpinner({})
 
+			if @state.loadErrorType
+				return LoadError {
+					loadErrorType: @state.loadErrorType
+					closeWindow: @props.closeWindow
+				}
+
 			clientName = renderName @state.clientFile.get('clientName')
 
 			# Ensure revisions of each progNote are in chronological order (of creation)
@@ -141,6 +149,8 @@ load = (win, {clientFileId}) ->
 				status: @state.status
 				readOnlyData: @state.readOnlyData
 				loadErrorType: @state.loadErrorType
+
+				userProgramId: @state.userProgramId
 
 				clientFile: @state.clientFile
 				clientName
@@ -655,10 +665,12 @@ load = (win, {clientFileId}) ->
 
 						# Prepare readOnly message
 						lockOwner = err.metadata.userName
-						readOnlyMessage = if lockOwner is global.ActiveSession.userName
-							"You already have this file open in another window"
+						# this could occur if the system is too busy to write lock
+						if lockOwner is global.ActiveSession.userName
+							pingInterval = 0.1 # minutes
+							readOnlyMessage = "#{Term 'Client File'} in use. When it becomes available for editing this will disappear."
 						else
-							"File currently in use by username: \"#{lockOwner}\""
+							readOnlyMessage = "File currently in use by user: \"#{lockOwner}\""
 
 						@setState {
 							readOnlyData: {message: readOnlyMessage}
@@ -673,7 +685,7 @@ load = (win, {clientFileId}) ->
 									# Alert user about lock acquisition
 									clientName = if @state.clientFile then renderName(@state.clientFile.get('clientName')) else Term 'Client File'
 									new Notification "#{clientName} file unlocked", {
-										body: "You now have the read/write permissions for this #{Term 'client file'}"
+										body: "You now have read/write permissions for this #{Term 'client file'}"
 										icon: Config.iconNotification
 									}
 									@setState {
@@ -1015,6 +1027,10 @@ load = (win, {clientFileId}) ->
 					}
 				}
 			else
+				# reset any program overrides
+				userProgram = if @props.userProgramId then @props.programsById.get(@props.userProgramId) else null
+				global.ActiveSession.persist.eventBus.trigger 'override:userProgram', userProgram
+
 				@props.closeWindow()
 
 		componentDidMount: ->
@@ -1284,10 +1300,10 @@ load = (win, {clientFileId}) ->
 					].join ' '
 					onClick: @props.data.clickAction
 				},
+					R.span({className: 'mode'},
+						@props.data.mode or "Read-Only Mode"
+					)
 					@props.data.message
-				)
-				R.div({className: 'mode'},
-					@props.data.mode or "Read-Only Mode"
 				)
 			)
 
