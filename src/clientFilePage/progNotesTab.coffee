@@ -626,6 +626,14 @@ load = (win) ->
 				cb()
 				return
 
+			# override by default if client only in a single program
+			if @props.clientPrograms.size is 1
+				userProgramId = @props.clientPrograms.first().get('id')
+				userProgram = @props.programsById.get userProgramId
+				global.ActiveSession.persist.eventBus.trigger 'override:userProgram', userProgram
+				cb()
+				return
+
 			clientName = renderName @props.clientFile.get('clientName')
 
 			userProgramName = if userProgramId
