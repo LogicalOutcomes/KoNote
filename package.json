@@ -1,14 +1,14 @@
 {
   "name": "KoNote",
   "displayName": "KoNote",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "author": "KoNote",
   "description": "KoNote",
   "main": "src/start.html",
   "chromium-args": "--enable-spell-checking --enable-smooth-scrolling",
   "nwjsBuilder": {
     "companyName": "KoNote",
-    "copyright": "Copyright 2017 Konode"
+    "copyright": "Copyright 2018 Konode"
   },
   "window": {
     "icon": "src/icon.png",
