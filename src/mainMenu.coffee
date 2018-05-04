@@ -40,24 +40,8 @@ load = (win) ->
 		_overrideProgram: (programId) ->
 			program = @props.programsById.get(programId)
 
-			currentProgramName = if @props.userProgram
-				@props.userProgram.get('name')
-			else
-				"none"
-
-			newProgramName = if program
-				program.get('name')
-			else
-				"none"
-
-			Bootbox.confirm """
-				Override your current #{Term 'program'} (#{currentProgramName})
-				to #{newProgramName} for this session?
-			"""
-			, (ok) =>
-				if ok
-					# clientSelectionPage listens for new userProgram
-					global.ActiveSession.persist.eventBus.trigger 'override:userProgram', program
+			# clientSelectionPage listens for new userProgram
+			global.ActiveSession.persist.eventBus.trigger 'override:userProgram', program
 
 		render: ->
 			{isAdmin} = @props
