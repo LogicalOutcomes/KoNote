@@ -21,7 +21,7 @@ load = (win) ->
 	D3TimestampFormat = '%Y%m%dT%H%M%S%L%Z'
 	hiddenId = "-h-" # Fake/hidden datapoint's ID
 	minChartHeight = 400
-	palette = ['#66c088', '#43c5f1', '#5f707e', '#f06362', '#e5be31', '#9560ab', '#e883c0', '#ef8f39', '#42a795', '#999999', '#ccc5a8']
+	palette = ['#66c088', '#43c5f1', '#5f707e', '#f06362', '#e5be31', '#9560ab', '#e883c0', '#ef8f39', '#42a795', '#999999', '#ccc5a8', '5569d8']
 
 
 	Chart = React.createFactory React.createClass
@@ -165,7 +165,7 @@ load = (win) ->
 			# Create set to show which x maps to which y
 			xsMap = dataSeries.keySeq()
 			.map (seriesId) ->
-				return [seriesId, 'x-' + seriesId]
+				return [seriesId, '?x-' + seriesId]
 			.fromEntrySeq().toMap()
 
 
@@ -180,7 +180,7 @@ load = (win) ->
 				orderedDataPoints = dataPoints
 				.sortBy ([x, y]) -> x
 
-				xValues = Imm.List(['x-' + seriesId]).concat(
+				xValues = Imm.List(['?x-' + seriesId]).concat(
 					orderedDataPoints.map ([x, y]) -> x
 				)
 				yValues = Imm.List([seriesId]).concat(
@@ -190,7 +190,7 @@ load = (win) ->
 
 			scaledDataSeries = dataSeries.map (series) ->
 				# Scaling only applies to y series
-				return series if series.first()[0] is 'x'
+				return series if series.first()[0] is '?'
 				# Ignore hidden datapoint
 				return series if series.first() is hiddenId
 
