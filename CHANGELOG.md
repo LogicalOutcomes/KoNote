@@ -1,3 +1,8 @@
+### 2.2.2 (May 4, 2018)
+
+Maintenance release to fix a regression in the analysis tab introduced in v2.2.1
+
+
 ### 2.2.1 (May 3, 2018)
 
 This release refines some workflows and generally improves the UX, especially in the client file.
