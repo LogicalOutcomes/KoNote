@@ -1,3 +1,26 @@
+### 2.2.1 (May 3, 2018)
+
+This release refines some workflows and generally improves the UX, especially in the client file. The analysis
+tab gets a number of improvements and the application is more stable when working on busy networks, including
+DropBox.
+
+#### Improvements
+
+- Improve analysis performance ([#1175](https://github.com/konode001/konote/issues/1175))
+- Only show selected metrics on chart legend ([a0f5b53](https://github.com/konode001/konote/commit/a0f5b53))
+- Include day of week on chart tooltips, better X-axis labelling ([de9a2c3](https://github.com/konode001/konote/commit/de9a2c3)), ([7daa4c9](https://github.com/konode001/konote/commit/7daa4c9))
+- Filter clients by program on search page ([#1128](https://github.com/konode001/konote/issues/1128))
+- More informative messaging when adding assigned metrics to plan ([#600](https://github.com/konode001/konote/issues/600))
+
+#### Fixes
+
+- Improve MS Excel compatibility of CSV exports ([#1174](https://github.com/konode001/konote/issues/1174))
+- Dropbox file locking fix ([#1168](https://github.com/konode001/konote/issues/1168))
+- Progress note does not prompt for program override when client in a single program ([#1180](https://github.com/konode001/konote/issues/1180))
+- Progress note program override cleared when client file closed ([#1171](https://github.com/konode001/konote/issues/1171))
+- New chart palette prevents metrics from sharing similar colors ([#1176](https://github.com/konode001/konote/issues/1176))
+
+
 ### 2.2.0 (Mar 7, 2018)
 
 This release brings a variety of new features and resolves several stability and usability issues.
