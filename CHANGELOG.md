@@ -1,8 +1,7 @@
 ### 2.2.1 (May 3, 2018)
 
-This release refines some workflows and generally improves the UX, especially in the client file. The analysis
-tab gets a number of improvements and the application is more stable when working on busy networks, including
-DropBox.
+This release refines some workflows and generally improves the UX, especially in the client file.
+The analysis tab gets a number of improvements and the application is more stable when working on busy networks, including DropBox.
 
 #### Improvements
 
