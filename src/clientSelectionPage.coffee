@@ -58,6 +58,10 @@ load = (win) ->
 			cb()
 
 		suggestClose: ->
+			appWindows = chrome.app.window.getAll()
+			appWindows.forEach (appWindow) ->
+				unless appWindow.contentWindow.pathname is '/src/start.html'
+					nw.Window.get(appWindow.contentWindow).close()
 			@props.closeWindow()
 
 		render: ->
