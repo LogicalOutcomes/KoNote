@@ -131,7 +131,7 @@ load = (win) ->
 								clientFileId
 							}
 				else
-					openWindow {page: 'clientFile', clientFileId}, maximize:true, (clientFileWindow) =>
+					openWindow {page: 'clientFile', clientFileId}, offset:true, (clientFileWindow) =>
 						# prevent window from closing before its ready
 						clientFileWindow.on 'close', =>
 							clientFileWindow = null
