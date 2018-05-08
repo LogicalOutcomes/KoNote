@@ -32,7 +32,6 @@ load = (win) ->
 		getInitialState: ->
 			return {
 				isSetUp: null
-				isNewSetUp: null
 				isLoading: false
 			}
 
@@ -53,7 +52,6 @@ load = (win) ->
 				ref: 'ui'
 				isLoading: @state.isLoading
 				loadingMessage: @state.loadingMessage
-				isNewSetUp: @state.isNewSetUp
 				checkVersionsMatch: @_checkVersionsMatch
 				login: @_login
 			})
@@ -80,33 +78,8 @@ load = (win) ->
 					return
 
 				# Falsy isSetUp triggers NewInstallationPage
-				console.log "Not set up, redirecting to installation page..."
 				@setState {isSetUp: false}
-
-				nw.Window.open 'src/main.html?' + $.param(page:'newInstallation'), {
-					focus: false
-					show: false
-					width: 400
-					height: 500
-					min_width: 400
-					min_height: 500
-					icon: "src/icon.png"
-				}, (newInstallationWindow) =>
-
-					# Hide loginPage while installing
-					Window.hide()
-
-					newInstallationWindow.on 'closed', (event) =>
-						if global.isSetUp
-							# Successfully installed, show login with isNewSetUp
-							@setState {
-								isSetUp: true
-								isNewSetUp: true
-							}, Window.show()
-						else
-							# Didn't complete installation, so close window and quit the app
-							@props.closeWindow()
-							Window.quit()
+				@props.navigateTo {page:'newInstallation'}
 
 		_checkVersionsMatch: ->
 			dataDir = Config.backend.dataDirectory
@@ -317,14 +290,8 @@ load = (win) ->
 				password: ''
 			}
 
-		componentWillMount: ->
-			if @props.isNewSetUp
-				@setState {userName: 'admin'}
-
 		componentDidMount: ->
 			@props.checkVersionsMatch()
-			if @props.isNewSetUp
-				@refs.passwordField.focus()
 			Persist.initializeCrypto()
 
 		onLoginError: (type, cb=(->)) ->
