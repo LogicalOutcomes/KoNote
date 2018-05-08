@@ -208,7 +208,7 @@ load = (win) ->
 										className: 'nameColumn'
 										columnClassName: 'nameColumn'
 										dataSort: true
-									}, "User Name")
+									}, "Username")
 									TableHeaderColumn({
 										dataField: 'displayName'
 										className: 'displayNameColumn'
@@ -648,7 +648,7 @@ load = (win) ->
 			},
 				R.div({className: 'createAccountDialog'},
 					R.div({className: 'form-group'},
-						R.label({}, "User name"),
+						R.label({}, "Username"),
 						R.input({
 							ref: 'userNameField'
 							className: 'form-control'
