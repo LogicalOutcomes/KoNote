@@ -21,7 +21,7 @@ that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 			body {
 				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 				font-weight: 200;
-				margin: 0px;
+				margin: 0;
 			}
 			#preloader {
 				display: flex;
@@ -32,40 +32,33 @@ that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 				animation-timing-function: ease-in;
 				animation-duration: 2s;
 			}
-			.spinner {
-				margin: 100px auto;
-				width: 50px;
-				height: 40px;
-				text-align: center;
-				font-size: 10px;
+			.lds-dual-ring {
+				width: 64px;
+				height: 64px;
+				margin: 8px;
+				border-radius: 50%;
+				border: 2px solid;
+				border-color: #559fdf transparent #559fdf transparent;
+				animation: lds-dual-ring 1.2s linear infinite;
 			}
-			.spinner > div {
-				background-color: #337ab7;
-				height: 100%;
-				width: 6px;
-				display: inline-block;
-				animation: sk-stretchdelay 1.2s infinite ease-in-out;
-			}
-			.spinner .rect2 {
-				animation-delay: -1.1s;
-			}
-			.spinner .rect3 {
-				animation-delay: -1.0s;
-			}
-			.spinner .rect4 {
-				animation-delay: -0.9s;
-			}
-			.spinner .rect5 {
-				animation-delay: -0.8s;
-			}
-			@keyframes sk-stretchdelay {
-				0%, 40%, 100% { transform: scaleY(0.4); }
-				20% { transform: scaleY(1.0); }
+			@keyframes lds-dual-ring {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
 			}
 			@keyframes showEffect {
-				0%  {  opacity: 0; }
-				25%  {  opacity: 0; }
-				100% {  opacity: 1; }
+				0% {
+					opacity: 0;
+				}
+				25% {
+					opacity: 0;
+				}
+				100% {
+					opacity: 1;
+				}
 			}
 		</style>
 		<style id="main-css">/* see start.js */</style>
@@ -74,12 +67,7 @@ that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 	<body>
 		<div id="container">
 			<div id="preloader">
-				<div class="spinner">
-					<div class="rect1"></div>
-					<div class="rect2"></div>
-					<div class="rect3"></div>
-					<div class="rect4"></div>
-					<div class="rect5"></div>
+				<div class="lds-dual-ring">
 				</div>
 			</div>
 			<!-- JavaScript will inject content here. -->
