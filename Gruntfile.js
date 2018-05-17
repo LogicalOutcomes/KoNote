@@ -81,9 +81,9 @@ module.exports = function(grunt) {
 			},
 			uninstallerbinary: {
 				expand: true,
-				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/uninstall-win-x64/',
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/uninstall-win-x64/',
 				src: 'uninstall.exe',
-				dest: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-x64/'
+				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-win-x64/'
 			},
 			nodemodules: {
 				expand: true,
@@ -221,20 +221,20 @@ module.exports = function(grunt) {
 		},
 		exec: {
 			zip: {
-				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-x64',
-				cmd: 'zip -r --quiet ../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-win-x64',
+				cmd: 'zip -r --quiet ../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
 			},
 			setup :{
-				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-x64',
-				cmd: '../../../../build/innosetup.sh ../../../../build/konote-innosetup.iss'
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-win-x64',
+				cmd: '../../../../../build/innosetup.sh ../../../../../build/konote-innosetup.iss'
 			},
 			codesign: {
-				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-osx-x64',
-				cmd: '../../../../build/codesign-osx.sh'
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-mac-x64',
+				cmd: '../../../../../build/codesign-osx.sh'
 			},
 			codesignWin: {
-				cwd: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-win-x64',
-				cmd: '../../../../build/codesign-win.sh <%= grunt.config("codesignPassword") %> KoNote.exe'
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-win-x64',
+				cmd: '../../../../../build/codesign-win.sh <%= grunt.config("codesignPassword") %> KoNote.exe'
 			},
 			npm: {
 				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>',
@@ -252,20 +252,20 @@ module.exports = function(grunt) {
 				cmd: 'npm test'
 			},
 			nwjsuninstaller: {
-				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p win64 -o ./nwjs-<%= grunt.task.current.args[0] %>/ ./uninstaller'
+				cwd: 'dist/temp/uninstaller',
+				cmd: '../../../node_modules/.bin/build --tasks win-x64 .'
 			},
 			nwjswin: {
-				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p win64 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/',
+				cmd: '../../../node_modules/.bin/build --tasks win-x64 .'
 			},
 			nwjswinSDK: {
 				cwd: 'dist/temp/',
 				cmd: 'nwb nwbuild -v <%= pkg.devDependencies.nw %> -p win64 --win-ico ./<%= grunt.task.current.args[0] %>/src/icon.ico -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
 			},
 			nwjsosx: {
-				cwd: 'dist/temp/',
-				cmd: 'nwb nwbuild -v <%= (pkg.devDependencies.nw).substring(0, 6) %> -p osx64 --mac-icns ./<%= grunt.task.current.args[0] %>/src/icon.icns -o ./nwjs-<%= grunt.task.current.args[0] %>/ --side-by-side ./<%= grunt.task.current.args[0] %>/'
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/',
+				cmd: '../../../node_modules/.bin/build --tasks mac-x64 .'
 			}
 		},
 		appdmg: {
@@ -274,7 +274,7 @@ module.exports = function(grunt) {
 					title: 'KoNote-<%= pkg.version %>',
 					background: 'dist/temp/<%= grunt.task.current.args[0] %>/src/background.tiff', 'icon-size': 104,
 					contents: [
-						{x: 130, y: 150, type: 'file', path: 'dist/temp/nwjs-<%= grunt.task.current.args[0] %>/konote-osx-x64/konote.app'},
+						{x: 130, y: 150, type: 'file', path: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-mac-x64/konote.app'},
 						{x: 320, y: 150, type: 'link', path: '/Applications'}
 					]
 				},
