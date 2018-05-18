@@ -25,6 +25,7 @@ load = (win) ->
 
 			$(@refs.name).tooltip {
 				html: true
+				placement: 'auto top'
 				title: ReactDOMServer.renderToString tooltipContent
 				viewport: {
 					selector: @props.tooltipViewport or 'body'
