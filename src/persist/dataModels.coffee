@@ -275,7 +275,7 @@ dataModelDefinitions = [
 		indexes: [['status'], ['name'], ['colorKeyHex']]
 		schema: Joi.object().keys({
 			name: Joi.string()
-			description: Joi.string()
+			description: Joi.string().allow('')
 			colorKeyHex: Joi.string().regex(/^#[A-Fa-f0-9]{6}/)
 			status: ['default', 'cancelled']
 		})
