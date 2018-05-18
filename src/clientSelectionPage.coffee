@@ -126,10 +126,9 @@ load = (win) ->
 								nw.Window.get(appWindow.contentWindow).focus()
 								return
 						if clientFileOpen is false
-							openWindow {
-								page: 'clientFile'
-								clientFileId
-							}
+							openWindow {page: 'clientFile', clientFileId}, offset:true, (clientFileWindow) =>
+								clientFileWindow.on 'close', =>
+									clientFileWindow = null
 				else
 					openWindow {page: 'clientFile', clientFileId}, offset:true, (clientFileWindow) =>
 						# prevent window from closing before its ready
