@@ -5,7 +5,7 @@
 # Dialog for creating a new plan template from the provided plan section(s)
 
 Imm = require 'immutable'
-
+Term = require '../term'
 Persist = require '../persist'
 
 
@@ -28,6 +28,8 @@ load = (win) ->
 
 		getInitialState: -> {
 			templateName: ''
+			templateDescription: ''
+			includeInactive: false
 		}
 
 		render: ->
@@ -38,7 +40,6 @@ load = (win) ->
 			},
 				R.div({className: 'createPlanTemplateDialog'},
 					R.div({className: 'form-group'},
-						R.label({}, "Template Name"),
 						R.input({
 							className: 'form-control'
 							ref: 'templateNameField'
@@ -48,7 +49,6 @@ load = (win) ->
 						})
 					)
 					R.div({className: 'form-group'},
-						R.label({}, "Template Description"),
 						R.textarea({
 							className: 'form-control'
 							style: {minWidth: 350, minHeight: 100}
@@ -58,6 +58,19 @@ load = (win) ->
 							placeholder: "Template Description"
 						})
 					)
+					R.div({className: 'form-group'},
+						R.input({
+							ref: 'includeInactiveField'
+							id: 'includeInactiveField'
+							onChange: @_updateInactive
+							type: 'checkbox'
+							checked: @state.includeInactive
+						})
+						R.label({
+							className: 'inactiveTargetsLabel'
+							htmlFor: 'includeInactiveField'
+						}, " Include inactive #{Term 'targets'}")
+					)
 					R.div({className: 'btn-toolbar'},
 						R.button({
 							className: 'btn btn-default'
@@ -66,7 +79,7 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-							disabled: not @state.templateName or not @state.templateDescription
+							disabled: not @state.templateName
 						}, "Confirm")
 					)
 				)
@@ -75,12 +88,24 @@ load = (win) ->
 		_updateTemplateName: (event) ->
 			@setState {templateName: event.target.value}
 
+		_updateInactive: ->
+			includeInactive = not @state.includeInactive
+			@setState {includeInactive}
+
 		_updateTemplateDescription: (event) ->
 			@setState {templateDescription: event.target.value}
 
 		_submit: ->
-			templateSections = @props.sections.map (section) =>
-				sectionTargets = section.get('targetIds').map (targetId) =>
+			templateSections = @props.sections
+			.filter (section) =>
+				if @state.includeInactive then return section
+				else return section.get('status') is 'default'
+			.map (section) =>
+				sectionTargets = section.get('targetIds')
+				.filter (targetId) =>
+					if @state.includeInactive then return targetId
+					else return @props.currentTargetRevisionsById.get(targetId).get('status') is 'default'
+				.map (targetId) =>
 					target = @props.currentTargetRevisionsById.get(targetId)
 					# Removing irrelevant data from object
 					return target
@@ -96,27 +121,31 @@ load = (win) ->
 					targets: sectionTargets
 				}
 
-			planTemplate = Imm.fromJS {
-				name: @state.templateName
-				description: @state.templateDescription
-				status: 'default'
-				sections: templateSections
-			}
+			if templateSections.size > 0
+				planTemplate = Imm.fromJS {
+					name: @state.templateName
+					description: @state.templateDescription
+					status: 'default'
+					sections: templateSections
+				}
 
-			global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
-				if err
-					if err instanceof Persist.IOError
-						console.error err
-						Bootbox.alert """
-							Please check your network connection and try again
-						"""
+				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
+					if err
+						if err instanceof Persist.IOError
+							console.error err
+							Bootbox.alert """
+								Please check your network connection and try again
+							"""
+							return
+
+						CrashHandler.handle(err)
 						return
 
-					CrashHandler.handle(err)
-					return
-
-				Bootbox.alert "New template: '#{@state.templateName}' created."
-				@props.onSuccess()
+					Bootbox.alert "New template: '#{@state.templateName}' created."
+					@props.onSuccess()
+			else
+				Bootbox.alert "Cannot save a template without any active sections!"
+				return
 
 
 	return CreatePlanTemplateDialog
