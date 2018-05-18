@@ -12,7 +12,7 @@
   },
   "build": {
     "appId": "ca.konode.konote",
-    "nwVersion": "0.30.4",
+    "nwVersion": "0.30.5",
     "outputPattern": "${NAME}-${PLATFORM}-${ARCH}",
     "mac": {
       "icon": "./src/icon.icns"
@@ -60,7 +60,7 @@
     "diff": "^3.2.0",
     "diff-match-patch": "^1.0.0",
     "es-decorate": "^1.0.0",
-    "graceful-fs": "konode001/node-graceful-fs",
+    "graceful-fs": "^4.1.11",
     "immutable": "3.8.1",
     "joi": "^9.2.0",
     "mkdirp": "^0.5.1",
