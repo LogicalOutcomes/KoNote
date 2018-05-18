@@ -1027,7 +1027,6 @@ load = (win, {clientFileId}) ->
 
 		componentDidMount: ->
 			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
-			Window.focus()
 
 			# It's now OK to close the window
 			@hasMounted = true
