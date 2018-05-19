@@ -6,16 +6,17 @@
   "description": "KoNote",
   "main": "src/start.html",
   "chromium-args": "--enable-spell-checking --enable-smooth-scrolling",
-  "nwjsBuilder": {
-    "companyName": "KoNote",
-    "copyright": "Copyright 2018 Konode"
-  },
   "build": {
     "appId": "ca.konode.konote",
     "nwVersion": "0.30.5",
     "outputPattern": "${NAME}-${PLATFORM}-${ARCH}",
     "mac": {
-      "icon": "./src/icon.icns"
+      "copyright": "Copyright 2018 Konode",
+      "icon": "src/icon.icns"
+    },
+    "win": {
+      "copyright": "Copyright 2018 Konode",
+      "icon": "src/icon.ico"
     }
   },
   "window": {
