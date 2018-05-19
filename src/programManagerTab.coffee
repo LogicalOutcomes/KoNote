@@ -241,7 +241,7 @@ load = (win) ->
 						}, "Cancel")
 						R.button({
 							className: 'btn btn-success'
-							disabled: not @state.name or not @state.description or not @state.colorKeyHex
+							disabled: not @state.name or not @state.colorKeyHex
 							onClick: @_submit
 						},
 							"Create #{Term 'Program'}"

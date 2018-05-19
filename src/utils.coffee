@@ -111,8 +111,14 @@ load = (win) ->
 		height = 700
 		screenWidth = nw.Screen.screens[0].work_area.width
 		screenHeight = nw.Screen.screens[0].work_area.height
+		x = null
+		y = null
 
 		if options instanceof Function then cb = options
+
+		if options.offset
+			x = nw.Window.get(win).x + 25
+			y = nw.Window.get(win).y + 25
 
 		if options.maximize or Config.mobile
 			width = screenWidth
@@ -132,6 +138,8 @@ load = (win) ->
 		nw.Window.open page + $.param(params), {
 			focus: false
 			show: false
+			x
+			y
 			width
 			height
 			min_width: 640

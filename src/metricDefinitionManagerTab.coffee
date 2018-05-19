@@ -247,6 +247,8 @@ load = (win) ->
 							Bootbox.alert("An error occured while reading the file at " + filePath)
 							return
 
+						# strip utf-8 byte-order-mark
+						rawCsv = rawCsv.replace(/^\ufeff/, "");
 						# Add header row so that user doesn't have to
 						csv = 'name,definition\n' + rawCsv
 						cb()

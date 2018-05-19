@@ -139,7 +139,7 @@ load = (win) ->
 							disabled: @props.isReadOnly or not hasChanges
 							onClick: @_save
 						},
-							FaIcon('save', {className:'menuItemIcon'})
+							FaIcon('save', {className:'menuItemIcon',title:'Save'})
 							R.span({className: 'menuItemText'},
 								"Save"
 							)
@@ -150,7 +150,7 @@ load = (win) ->
 							disabled: @props.isReadOnly or not hasChanges
 							onClick: @_resetChanges
 						},
-							FaIcon('undo', {className:'menuItemIcon'})
+							FaIcon('undo', {className:'menuItemIcon',title:'Discard'})
 							R.span({className: 'menuItemText'},
 								"Discard"
 							)
@@ -162,14 +162,14 @@ load = (win) ->
 						},
 							(if @state.isCollapsedView
 								R.div({},
-									FaIcon('expand', {className:'menuItemIcon'})
+									FaIcon('expand', {className:'menuItemIcon',title:'Expand View'})
 									R.span({className: 'menuItemText'},
 										" Expand"
 									)
 								)
 							else
 								R.div({},
-									FaIcon('compress', {className:'menuItemIcon'})
+									FaIcon('compress', {className:'menuItemIcon',title:'Collapse View'})
 									R.span({className: 'menuItemText'},
 										"Collapse"
 									)
@@ -199,7 +199,7 @@ load = (win) ->
 							id: 'planTemplatesDropdown'
 							key: 'planTemplatesDropdownButton'
 							title: R.span({},
-								FaIcon('wpforms', {className:'menuItemIcon'})
+								FaIcon('wpforms', {className:'menuItemIcon',title:'Templates'})
 								R.span({className: 'menuItemText'},
 									"Templates"
 								)
@@ -236,7 +236,7 @@ load = (win) ->
 							onClick: @_addSection
 							disabled: @props.isReadOnly
 						},
-							FaIcon('plus', {className:'menuItemIcon'})
+							FaIcon('plus', {className:'menuItemIcon',title:'Add Section'})
 							R.span({className: 'menuItemText'},
 								"#{Term 'Section'}"
 							)
@@ -247,7 +247,7 @@ load = (win) ->
 							onClick: @_toggleHistoryPane
 						},
 							(if @state.showHistory
-								FaIcon('angle-right', {className:'menuItemIcon'})
+								FaIcon('angle-right', {className:'menuItemIcon',title:'Hide History'})
 							else
 								FaIcon('angle-left', {className:'menuItemIcon'})
 							)

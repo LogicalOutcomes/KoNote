@@ -33,7 +33,7 @@
 		"label": "ID#"
 	},
 
-	"defaultClientFileTab": "plan",
+	"defaultClientFileTab": "progressNotes",
 
 	"printHeaderFooterEnabled": false,
 	"printHeader": "",

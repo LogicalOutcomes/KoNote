@@ -10,6 +10,14 @@
     "companyName": "KoNote",
     "copyright": "Copyright 2018 Konode"
   },
+  "build": {
+    "appId": "ca.konode.konote",
+    "nwVersion": "0.30.5",
+    "outputPattern": "${NAME}-${PLATFORM}-${ARCH}",
+    "mac": {
+      "icon": "./src/icon.icns"
+    }
+  },
   "window": {
     "icon": "src/icon.png",
     "title": "KoNote",
@@ -35,8 +43,9 @@
     "grunt-prompt": "^1.3.2",
     "grunt-text-replace": "^0.4.0",
     "mocha": "^3.1.0",
-    "nw": "0.29.4-sdk",
+    "nw": "0.30.2-sdk",
     "nwjs-builder": "^1.13.1",
+    "nwjs-builder-phoenix": "^1.14.6",
     "stylus": "^0.54.5"
   },
   "optionalDependencies": {
@@ -46,16 +55,16 @@
     "archiver": "^1.3.0",
     "async": "^2.1.2",
     "backbone": "^1.3.3",
-    "base64url": "^2.0.0",
+    "base64url": "^3.0.0",
     "buffer-equal-constant-time": "^1.0.1",
     "diff": "^3.2.0",
     "diff-match-patch": "^1.0.0",
     "es-decorate": "^1.0.0",
-    "graceful-fs": "konode001/node-graceful-fs",
+    "graceful-fs": "^4.1.11",
     "immutable": "3.8.1",
     "joi": "^9.2.0",
     "mkdirp": "^0.5.1",
-    "moment": "2.17.1",
+    "moment": "^2.17.1",
     "nlp_compromise": "6.5.0",
     "officegen": "^0.4.5",
     "papaparse": "^4.4.0",
@@ -69,6 +78,7 @@
   },
   "scripts": {
     "start": "nw . --enable-logging=stderr --remote-debugging-port=9222 --load-extension=scripts/react-devtools-immutable/",
-    "test": "mocha --compilers coffee:coffee-script/register --recursive --bail"
+    "test": "mocha --compilers coffee:coffee-script/register --recursive --bail",
+    "dist": "build --tasks mac-x64 --mirror https://dl.nwjs.io/ ."
   }
 }

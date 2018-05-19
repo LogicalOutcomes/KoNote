@@ -43,15 +43,7 @@ load = (win, {clientFileId}) ->
 		mixins: [React.addons.PureRenderMixin]
 		render: ->
 			return R.div({className: "loadingSpinnerContainer"},
-				R.div({className: "preloaderSpinner"},
-					R.div({className: "spinnerContainer"},
-						R.div({className: "rect10"})
-						R.div({className: "rect20"})
-						R.div({className: "rect30"})
-						R.div({className: "rect40"})
-						R.div({className: "rect50"})
-					)
-				)
+				R.div({className:"loadingSpinner"})
 			)
 
 
@@ -1035,7 +1027,6 @@ load = (win, {clientFileId}) ->
 
 		componentDidMount: ->
 			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
-			Window.focus()
 
 			# It's now OK to close the window
 			@hasMounted = true

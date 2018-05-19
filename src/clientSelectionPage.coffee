@@ -58,6 +58,7 @@ load = (win) ->
 			cb()
 
 		suggestClose: ->
+			nw.App.closeAllWindows()
 			@props.closeWindow()
 
 		render: ->
@@ -125,12 +126,11 @@ load = (win) ->
 								nw.Window.get(appWindow.contentWindow).focus()
 								return
 						if clientFileOpen is false
-							openWindow {
-								page: 'clientFile'
-								clientFileId
-							}
+							openWindow {page: 'clientFile', clientFileId}, offset:true, (clientFileWindow) =>
+								clientFileWindow.on 'close', =>
+									clientFileWindow = null
 				else
-					openWindow {page: 'clientFile', clientFileId}, maximize:true, (clientFileWindow) =>
+					openWindow {page: 'clientFile', clientFileId}, offset:true, (clientFileWindow) =>
 						# prevent window from closing before its ready
 						clientFileWindow.on 'close', =>
 							clientFileWindow = null

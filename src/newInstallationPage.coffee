@@ -39,7 +39,6 @@ load = (win) ->
 			cb()
 
 		componentDidMount: ->
-			Window.show()
 			Window.focus()
 
 		suggestClose: ->
@@ -85,6 +84,7 @@ load = (win) ->
 			return NewInstallationPageUi({
 				ref: 'ui'
 				closeWindow: @props.closeWindow
+				navigateTo: @props.navigateTo
 			})
 
 
@@ -176,7 +176,7 @@ load = (win) ->
 									className: 'btn btn-default'
 									onClick: @_import.bind null, {
 										extension: 'zip'
-										onImport: @_confirmRestore
+										onImport: @_restoreBackup
 									}
 								},
 									"Restore Backup"
@@ -297,24 +297,15 @@ load = (win) ->
 			.on('change', (event) => onImport event.target.value)
 			.click()
 
-		_confirmRestore: (backupfile) ->
-			Bootbox.confirm {
-				title: "Warning"
-				message: "Restoring from a backup will overwrite any existing data. Are you sure you want to continue?"
-				callback: (confirmed) =>
-					unless confirmed
-						return
-					@setState {
-						isLoading: true
-						installProgress: {message: "Restoring data file. This may take some time..."}
-					}
-					@_restoreBackup(backupfile)
-			}
-
 		_restoreBackup: (backupfile) ->
 			dataDir = Config.backend.dataDirectory
 			tmpDir = dataDir + '_tmp_import' + Date.now()
 			atomicOp = null
+
+			@setState {
+				isLoading: true
+				installProgress: {message: "Restoring data file. This may take some time..."}
+			}
 
 			Async.series [
 
@@ -408,8 +399,7 @@ load = (win) ->
 					title: "Data Import Successful!"
 					message: "KoNote will now restart..."
 					callback: ->
-						global.isSetUp = true
-						win.close(true)
+						chrome.runtime.reload()
 				}
 
 		_copyHelpEmail: (emailAddress) ->
@@ -594,8 +584,7 @@ load = (win) ->
 
 				# Allow 1s for success animation before closing
 				setTimeout(=>
-					global.isSetUp = true
-					win.close(true)
+					@props.navigateTo {page:'login'}
 				, 1000)
 
 
