@@ -297,12 +297,12 @@ load = (win) ->
 							return
 
 						existingMetricNames = result
-							.map (metric) -> metric.get('name')
+							.map (metric) -> metric.get('name').trim().toLowerCase()
 							.toSet()
 						cb()
 				(cb) ->
 					metricsToCreateNames = metricsToCreate
-						.map (m) -> m.get('name')
+						.map (m) -> m.get('name').trim().toLowerCase()
 					metricsToCreateNamesSet = metricsToCreateNames.toSet()
 
 					# If there are duplicate metric names in the input file
