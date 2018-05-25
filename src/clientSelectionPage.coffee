@@ -58,8 +58,8 @@ load = (win) ->
 			cb()
 
 		suggestClose: ->
-			nw.App.closeAllWindows()
 			@props.closeWindow()
+			nw.App.closeAllWindows()
 
 		render: ->
 			unless @state.status is 'ready'

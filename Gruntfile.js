@@ -81,7 +81,7 @@ module.exports = function(grunt) {
 			},
 			uninstallerbinary: {
 				expand: true,
-				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/uninstall-win-x64/',
+				cwd: 'dist/temp/uninstaller/dist/uninstall-win-x64/',
 				src: 'uninstall.exe',
 				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-win-x64/'
 			},
