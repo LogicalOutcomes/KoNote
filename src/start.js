@@ -12,6 +12,9 @@
 	}
 
 	/////////// DEVELOPMENT MODE ///////////
+    process.env.NODE_ENV = 'development';
+    global.console.info("*** Developer Mode ***");
+
 	// Compile Stylus code at runtime
 	var Stylus = require('stylus');
 	var Fs = require('fs');
