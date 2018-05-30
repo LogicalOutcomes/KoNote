@@ -536,7 +536,7 @@ load = (win) ->
 							placeholder: "Enter a #{Term 'section'} name"
 						})
 					),
-					R.div({style: {flex: 2, paddingLeft: "10px"}},
+					R.div({style: {flex: 2, paddingLeft: "10px", display: "none" if @props.programsById.size <= 0}},
 						programDropdown
 					)
 				)
