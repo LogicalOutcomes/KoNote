@@ -4,16 +4,8 @@
 
 (function () {
     var Config = require('./config');
-
     chrome.privacy.services.passwordSavingEnabled.set({ value: false });
     chrome.privacy.services.spellingServiceEnabled.set({ value: false });
     chrome.settingsPrivate.setPref('spellcheck.dictionaries', [Config.language], "null", function() {console.log("language set!")});
-
-	if (Config.devMode) {
-        process.env.NODE_ENV = 'development';
-        global.console.info("*** Developer Mode ***");
-	} else {
-        process.env.NODE_ENV = 'production';
-	}
 
 })();

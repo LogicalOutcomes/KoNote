@@ -95,6 +95,21 @@ load = (win) ->
 		_updateTemplateDescription: (event) ->
 			@setState {templateDescription: event.target.value}
 
+		_saveTemplateRevision: (template) ->
+				global.ActiveSession.persist.planTemplates.createRevision template, (err, obj) =>
+					if err
+						if err instanceof Persist.IOError
+							console.error err
+							Bootbox.alert """
+								Please check your network connection and try again
+							"""
+							return
+						CrashHandler.handle(err)
+						return
+
+					Bootbox.alert "Template: '#{@state.templateName}' saved."
+					@props.onSuccess()
+
 		_submit: ->
 			templateSections = @props.sections
 			.filter (section) =>
@@ -122,6 +137,7 @@ load = (win) ->
 				}
 
 			if templateSections.size > 0
+
 				planTemplate = Imm.fromJS {
 					name: @state.templateName
 					description: @state.templateDescription
@@ -129,24 +145,57 @@ load = (win) ->
 					sections: templateSections
 				}
 
-				global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
+				# Look for an existing template
+				ActiveSession.persist.planTemplates.list (err, templateHeaders) =>
 					if err
 						if err instanceof Persist.IOError
-							console.error err
-							Bootbox.alert """
-								Please check your network connection and try again
-							"""
+							Bootbox.alert "Please check your network connection and try again"
 							return
-
 						CrashHandler.handle(err)
 						return
 
-					Bootbox.alert "New template: '#{@state.templateName}' created."
-					@props.onSuccess()
+					existingTemplate = templateHeaders.find (template) =>
+						return template.get('name') is @state.templateName
+
+					if existingTemplate
+						planTemplate = planTemplate.set 'id', existingTemplate.get 'id'
+
+						Bootbox.dialog {
+							message: R.div({},
+								R.b({}, "'#{@state.templateName}' already exists. Do you want to replace it?")
+								R.br({})
+								R.br({})
+								"A template with the same name already exists. Replacing it will overwrite its current contents."
+							)
+							buttons: {
+								cancel: {
+									label: "Cancel"
+								}
+								success: {
+									label: "Replace"
+									callback: => @_saveTemplateRevision(planTemplate)
+								}
+							}
+						}
+
+					else
+						global.ActiveSession.persist.planTemplates.create planTemplate, (err, obj) =>
+							if err
+								if err instanceof Persist.IOError
+									console.error err
+									Bootbox.alert """
+										Please check your network connection and try again
+									"""
+									return
+
+								CrashHandler.handle(err)
+								return
+
+							Bootbox.alert "New template: '#{@state.templateName}' created."
+							@props.onSuccess()
 			else
 				Bootbox.alert "Cannot save a template without any active sections!"
 				return
-
 
 	return CreatePlanTemplateDialog
 
