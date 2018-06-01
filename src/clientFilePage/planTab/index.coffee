@@ -204,7 +204,7 @@ load = (win) ->
 									"Templates"
 								)
 							)
-							disabled: @props.isReadOnly
+							disabled: @props.isReadOnly or hasChanges
 							noCaret: true
 						},
 
