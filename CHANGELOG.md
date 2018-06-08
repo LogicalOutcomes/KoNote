@@ -1,3 +1,35 @@
+### 2.2.5 (May 20, 2018)
+
+This release includes some bugfixes and improvements to the plan templates system.
+
+- Can save templates with name of existing template ([#1192](https://github.com/konode001/konote/issues/1192))
+
+
+### 2.2.4 (May 25, 2018)
+
+This release updates our build process to remain compatible with the latest versions of nwjs and macOS, and includes
+a number of general fixes and improvements.
+
+- Migrate to nwjs-builder-phoenix ([#1195](https://github.com/konode001/konote/issues/1195))
+- Fix crash on exit for mac ([#1201](https://github.com/konode001/konote/issues/1201))
+- Metric import fixes ([#1202](https://github.com/konode001/konote/issues/1202))
+
+
+### 2.2.3 (May 19, 2018)
+
+#### Improvements
+
+- Close all windows on exit ([#1111](https://github.com/konode001/konote/issues/1111))
+- Templates exclude inactive targets by default ([#1191](https://github.com/konode001/konote/issues/1191))
+- Plan is now default client file tab ([#1166](https://github.com/konode001/konote/issues/1166))
+
+#### Fixes
+
+- Fix metric import of UTF-8 csv files ([#1187](https://github.com/konode001/konote/issues/1187))
+- Program description now optional ([#1197](https://github.com/konode001/konote/issues/1197))
+- Better metric tooltip positining ([#1199](https://github.com/konode001/konote/issues/1199))
+
+
 ### 2.2.2 (May 4, 2018)
 
 Maintenance release to fix a regression in the analysis tab introduced in v2.2.1

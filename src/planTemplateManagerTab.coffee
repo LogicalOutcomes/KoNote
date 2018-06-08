@@ -347,6 +347,18 @@ load = (win) ->
 				Bootbox.alert "Template description is required"
 				return
 
+			existingTemplate = @props.planTemplates.find (template) =>
+				return template.get('name') is @state.name.trim() and template.get('id') isnt @props.planTemplateId
+
+			if existingTemplate
+				Bootbox.alert R.div({},
+					R.b({}, "The name '#{@state.name}' is already taken.")
+					R.br({})
+					R.br({})
+					"Please choose a different name."
+				)
+				return
+
 			# @refs.dialog.setIsLoading true
 
 			newPlanTemplateRevision = Imm.fromJS {

@@ -168,7 +168,7 @@ module.exports = function(grunt) {
 				replacements: [
 					{
 						from: '<script src="start.js"></script>',
-						to: '<script>process.env.NODE_ENV = "production"; require("./main").init(window);</script>'
+						to: '<script>require("./main").init(window);</script>'
 					},
 					{
 						from: 'react-with-addons.js',
@@ -185,6 +185,16 @@ module.exports = function(grunt) {
 					{
 						from: '<style id="main-css">/* see start.js */</style>',
 						to: '<link rel="stylesheet" href="main.css">'
+					}
+				]
+			},
+			start: {
+				src: ['dist/temp/<%= grunt.task.current.args[0] %>/src/start.html'],
+				overwrite: true,
+				replacements: [
+					{
+						from: '<script src="startOnce.js"></script>',
+						to: '<script>process.env.NODE_ENV = "production";</script><script src="startOnce.js"></script>'
 					}
 				]
 			},
@@ -334,7 +344,7 @@ module.exports = function(grunt) {
 				files: [{
 					expand: true,
 					cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/src',
-					src: ['**/*.js', '!layeredComponentMixin.js', '!start.js', '!bootbox-noxss.js', '!config/index.js'],
+					src: ['**/*.js', '!layeredComponentMixin.js', '!start.js', '!startOnce.js', '!bootbox-noxss.js', '!config/index.js'],
 					dest: 'dist/temp/<%= grunt.task.current.args[0] %>/src',
 					ext: '.js'
 				}]
@@ -366,6 +376,7 @@ module.exports = function(grunt) {
 		release.forEach(function(entry) {
 			grunt.task.run('copy:main:'+entry);
 			grunt.task.run('replace:main:'+entry);
+            grunt.task.run('replace:start:'+entry);
 			grunt.task.run('replace:config:'+entry);
 			grunt.task.run('copy:production:'+entry);
 			grunt.task.run('copy:eula:'+entry);
