@@ -86,8 +86,9 @@ class Lock
 						# If lock is already taken
 						if err instanceof IOError and err.cause.code in ['EPERM', 'ENOTEMPTY']
 							Rimraf lockDir, (err) =>
-								Lock._cleanIfStale session, lockId, cb
 								return
+							Lock._cleanIfStale session, lockId, cb
+							return
 
 						cb err
 						return
