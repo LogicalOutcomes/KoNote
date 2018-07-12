@@ -9,6 +9,7 @@ Fs = require 'fs'
 Imm = require 'immutable'
 Moment = require 'moment'
 Path = require 'path'
+Rimraf = require 'rimraf'
 
 Atomic = require './atomic'
 
@@ -72,12 +73,20 @@ class Lock
 				lockDirOp.commit (err) ->
 					if err
 						# if system unable to write the lock #1168
+						# proceed in read-only using _tmp lock for metadata
 						if err instanceof IOError and err.cause.code in ['EBUSY']
-							Lock._readMetadata(lockDir, cb)
-							return
+							Fs.readFile Path.join(lockDir, "metadata"), (err, data) ->
+								unless err
+									Rimraf lockDir, (err) =>
+										cb new LockInUseError JSON.parse(data)
+										return
+								cb new IOError err
+								return
 
 						# If lock is already taken
 						if err instanceof IOError and err.cause.code in ['EPERM', 'ENOTEMPTY']
+							Rimraf lockDir, (err) =>
+								return
 							Lock._cleanIfStale session, lockId, cb
 							return
 

@@ -1,3 +1,13 @@
+### 2.2.6 (Jul 12, 2018)
+
+This maintenance release reduces the number of temp files KoNote creates and improves CSV parsing to accommodate more edge cases.
+
+- Automatically purge temporary lock files ([#1034](https://github.com/konode001/konote/issues/1034))
+- Disable templates button until plan has been saved ([#1210](https://github.com/konode001/konote/issues/1210))
+- Fix CSV parsing of Excel files ([#1226](https://github.com/konode001/konote/issues/1226))
+- Several minor fixes
+
+
 ### 2.2.5 (May 20, 2018)
 
 This release includes some bugfixes and improvements to the plan templates system.

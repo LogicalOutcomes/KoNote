@@ -120,7 +120,7 @@ load = (win) ->
 			.click()
 
 		_saveEvents: (path) ->
-			Papa = require 'papaparse'
+			Stringify = require 'csv-stringify/lib/sync'
 			isConfirmClosed = false
 			# Map over client files
 
@@ -239,7 +239,7 @@ load = (win) ->
 					progEvents = Imm.List(results).flatten()
 
 					# TODO: Move to series
-					csv = Papa.unparse progEvents.toJS(), {newline: "\n"}
+					csv = Stringify progEvents.toJS()
 					@_updateProgress(100)
 
 					# destination path must exist in order to save
@@ -261,7 +261,7 @@ load = (win) ->
 
 
 		_saveMetrics: (path) ->
-			Papa = require 'papaparse'
+			Stringify = require 'csv-stringify/lib/sync'
 			isConfirmClosed = false
 			metrics = null
 			count = 0
@@ -435,7 +435,7 @@ load = (win) ->
 				metricsList = Imm.List(results).flatten(true)
 				# console.log "Final Metrics result: " + JSON.stringify metricsList.toJS()
 
-				csv = Papa.unparse metricsList.toJS(), {newline: "\n"}
+				csv = Stringify metricsList.toJS()
 				@_updateProgress 100
 
 

@@ -314,7 +314,7 @@ load = (win, {clientFileId}) ->
 														null, unitId, unit.get 'notes'
 													)
 												},
-													R.span({className:'flagText'},'Flag Important ')
+													R.span({className:'flagText'},'Important ')
 													FaIcon('flag-o',className:"fa-lg")
 												)
 											)
@@ -373,7 +373,7 @@ load = (win, {clientFileId}) ->
 																		null, unitId, sectionId, targetId, target.get 'notes'
 																	)
 																},
-																	R.span({className:'flagText'},'Flag Important ')
+																	R.span({className:'flagText'},'Important ')
 																	FaIcon('flag-o',className:"fa-lg")
 																)
 															)

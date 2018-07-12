@@ -103,25 +103,24 @@ load = (win) ->
 					@_showMigrationDialog(dbVersion, appVersion)
 				else if Semver.gt(dbVersion, appVersion)
 					console.log "Warning! Data version newer than app version"
-					Bootbox.dialog {
-						title: "Database Error"
-						message: R.div({},
-							"The application cannot start because your database appears to be from a newer version of #{Config.productName}.",
-							R.br(), R.br(),
-							"You must upgrade #{Config.productName} from v#{appVersion} to v#{dbVersion} or greater to continue.",
-							R.br(), R.br(),
-							"If you believe you are seeing this message in error, please contact support at #{Config.supportEmailAddress}."
-						)
-						closeButton: false
-						buttons: {
-							cancel: {
-								label: "OK"
-								className: 'btn-primary'
-								callback: =>
-									@props.closeWindow()
+					$ =>
+						Bootbox.dialog {
+							title: "Database Error"
+							message: R.div({},
+								"The application cannot start because your database appears to be from a newer version of #{Config.productName}.",
+								R.br(), R.br(),
+								"You must upgrade #{Config.productName} from v#{appVersion} to v#{dbVersion} or greater to continue."
+							)
+							closeButton: false
+							buttons: {
+								cancel: {
+									label: "OK"
+									className: 'btn-primary'
+									callback: =>
+										@props.closeWindow()
+								}
 							}
 						}
-					}
 
 
 		_showMigrationDialog: (dbVersion, appVersion) ->
