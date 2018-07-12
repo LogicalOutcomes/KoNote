@@ -6,7 +6,7 @@
 
 _ = require 'underscore'
 Async = require 'async'
-Papa = require 'papaparse'
+Parse = require 'csv-parse'
 Fs = require 'fs'
 Imm = require 'immutable'
 Path = require 'path'
@@ -248,23 +248,21 @@ load = (win) ->
 							return
 
 						# strip utf-8 byte-order-mark
-						rawCsv = rawCsv.replace(/^\ufeff/, "");
-						# Add header row so that user doesn't have to
-						csv = 'name,definition\n' + rawCsv
+						csv = rawCsv.replace(/^\ufeff/, "");
 						cb()
 				(cb) ->
 
-					Papa.parse(csv,{header:true, skipEmptyLines: true, trimHeader:true, complete: (results) =>
-						if results.errors.length > 0
-							console.error results.errors
+					Parse(csv,{skip_empty_lines: true, trim:true, columns:['name','definition']}, (err, results) =>
+						if err
+							console.error err
 							Bootbox.alert("The selected file does not seem to be a valid CSV file.")
 							return
 
-						if results.data.length is 0
+						if results.length is 0
 							Bootbox.alert "The selected file seems to be empty."
 							return
 
-						for m in results.data
+						for m in results
 							if m.name is ''
 								Bootbox.alert "The selected file contains a metric with an empty name."
 								return
@@ -278,10 +276,10 @@ load = (win) ->
 								Bootbox.alert "The selected file contains a metric with an empty definition."
 								return
 
-						metricsToCreate = Imm.fromJS results.data
-						# console.log JSON.stringify results.data
+						metricsToCreate = Imm.fromJS results
+
 						cb()
-					})
+					)
 
 				(cb) ->
 					# Get names of existing metrics
