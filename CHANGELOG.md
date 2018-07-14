@@ -1,3 +1,8 @@
+### 2.2.7 (Jul 14, 2018)
+
+Hotfix to address crash which could occur when opening a client file on Dropbox ([#1230](https://github.com/konode001/konote/issues/1230))
+
+
 ### 2.2.6 (Jul 12, 2018)
 
 This maintenance release reduces the number of temp files KoNote creates and improves CSV parsing to accommodate more edge cases.
