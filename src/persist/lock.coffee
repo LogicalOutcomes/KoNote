@@ -72,16 +72,12 @@ class Lock
 			(cb) ->
 				lockDirOp.commit (err) ->
 					if err
-						# if system unable to write the lock #1168
-						# proceed in read-only using _tmp lock for metadata
+						# proceed in read-only mode if system unable to write the lock #1168
 						if err instanceof IOError and err.cause.code in ['EBUSY']
-							Fs.readFile Path.join(lockDir, "metadata"), (err, data) ->
-								unless err
-									Rimraf lockDir, (err) =>
-										cb new LockInUseError JSON.parse(data)
-										return
-								cb new IOError err
+							Rimraf lockDir, (err) =>
+								cb new LockInUseError {userName: session.userName}
 								return
+							return
 
 						# If lock is already taken
 						if err instanceof IOError and err.cause.code in ['EPERM', 'ENOTEMPTY']
