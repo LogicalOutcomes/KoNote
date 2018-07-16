@@ -252,7 +252,7 @@ load = (win) ->
 						cb()
 				(cb) ->
 
-					Parse(csv,{skip_empty_lines: true, trim:true, columns:['name','definition']}, (err, results) =>
+					Parse(csv,{skip_empty_lines: true, skip_lines_with_empty_values:true, trim:true, columns:['name','definition']}, (err, results) =>
 						if err
 							console.error err
 							Bootbox.alert("The selected file does not seem to be a valid CSV file.")
