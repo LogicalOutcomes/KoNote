@@ -2,7 +2,7 @@
 # This source code is subject to the terms of the Mozilla Public License, v. 2.0
 # that can be found in the LICENSE file or at: http://mozilla.org/MPL/2.0
 
-
+_ = require 'underscore'
 Imm = require 'immutable'
 Async = require 'async'
 
@@ -83,7 +83,7 @@ load = (win) ->
 
 
 			return ClientSelectionPageUi {
-				openClientFile: @_openClientFile
+				openClientFile: _.debounce @_openClientFile, 1000, true
 				clientFileHeaders
 				clientFileProgramLinks: @state.clientFileProgramLinks
 				programsById: @state.programsById
@@ -104,39 +104,33 @@ load = (win) ->
 			return null
 
 		_openClientFile: (clientFileId) ->
-			# prevent opening twice on doubleclick; todo: improve this
-			unless @state.loadingFile
-				@setState {loadingFile: true}
-				appWindows = chrome.app.window.getAll()
-				# skip if no client files open
-				if appWindows.length > 2
-					clientName = ''
-					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
-						if err
-							# fail silently, let user retry
+			appWindows = chrome.app.window.getAll()
+			# skip if no client files open
+			if appWindows.length > 2
+				clientName = ''
+				ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
+					if err
+						# fail silently, let user retry
+						return
+					clientFile = stripMetadata revisions.get(0)
+					clientName = renderName clientFile.get('clientName')
+					clientFileOpen = false
+					appWindows.forEach (appWindow) ->
+						winTitle = nw.Window.get(appWindow.contentWindow).window.document.title
+						if winTitle.includes(clientName)
+							# already open, focus
+							clientFileOpen = true
+							nw.Window.get(appWindow.contentWindow).focus()
 							return
-						clientFile = stripMetadata revisions.get(0)
-						clientName = renderName clientFile.get('clientName')
-						clientFileOpen = false
-						appWindows.forEach (appWindow) ->
-							winTitle = nw.Window.get(appWindow.contentWindow).window.document.title
-							if winTitle.includes(clientName)
-								# already open, focus
-								clientFileOpen = true
-								nw.Window.get(appWindow.contentWindow).focus()
-								return
-						if clientFileOpen is false
-							openWindow {page: 'clientFile', clientFileId}, offset:true, (clientFileWindow) =>
-								clientFileWindow.on 'close', =>
-									clientFileWindow = null
-				else
-					openWindow {page: 'clientFile', clientFileId}, offset:true, (clientFileWindow) =>
-						# prevent window from closing before its ready
-						clientFileWindow.on 'close', =>
-							clientFileWindow = null
-				setTimeout(=>
-					@setState {loadingFile: false}
-				, 1500)
+					if clientFileOpen is false
+						openWindow {page: 'clientFile', clientFileId}, offset:true, (clientFileWindow) =>
+							clientFileWindow.on 'close', =>
+								clientFileWindow = null
+			else
+				openWindow {page: 'clientFile', clientFileId}, offset:true, (clientFileWindow) =>
+					# prevent window from closing before its ready
+					clientFileWindow.on 'close', =>
+						clientFileWindow = null
 
 		_loadInitialData: ->
 			Async.parallel [
