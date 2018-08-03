@@ -354,39 +354,50 @@ load = (win) ->
 								" (admin)" if isAdmin
 							)
 							R.div({id: 'userProgram'},
-								ProgramsDropdown({
-									ref: 'userProgramDropdown'
-									id: 'modifyUserProgramDropdown'
-									selectedProgramId: userProgramId
-									programsById: @props.programsById
-									onSelect: @_reassignProgram.bind null, userAccount
-								})
+								unless isDeactivated
+									ProgramsDropdown({
+										ref: 'userProgramDropdown'
+										id: 'modifyUserProgramDropdown'
+										selectedProgramId: userProgramId
+										programsById: @props.programsById
+										onSelect: @_reassignProgram.bind null, userAccount
+									})
+								else
+									if programLink
+										@props.programsById.get(programLink.get('programId')).get('name')
 							)
 						)
 					)
+					R.section({id: 'accountActions'},
+						(switch @state.view
+							when 'reactivateAccount'
+								ReactivateAccountView({
+									userAccount
+									setIsLoading: @refs.dialog.setIsLoading
+									onCancel: @_closeView
+									onSuccess: @_closeView
+									updateAccount: @props.updateAccount
+								})
+							when 'resetPassword'
+								ResetPasswordView({
+									userName: userAccount.get('userName')
+									setIsLoading: @refs.dialog.setIsLoading
+									onCancel: @_closeView
+									onSuccess: @_closeView
+								})
+							when 'updateDisplayName'
+								UpdateDisplayNameView({
+									userAccount
+									userName: userAccount.get('userName')
+									displayName: userAccount.get('publicInfo').get('displayName')
+									setIsLoading: @refs.dialog.setIsLoading
+									onCancel: @_closeView
+									onSuccess: @_closeView
+									updateAccount: @props.updateAccount
+								})
 
-					(unless isDeactivated
-						R.section({id: 'accountActions'},
-							(switch @state.view
-								when 'resetPassword'
-									ResetPasswordView({
-										userName: userAccount.get('userName')
-										setIsLoading: @refs.dialog.setIsLoading
-										onCancel: @_closeView
-										onSuccess: @_closeView
-									})
-								when 'updateDisplayName'
-									UpdateDisplayNameView({
-										userAccount
-										userName: userAccount.get('userName')
-										displayName: userAccount.get('publicInfo').get('displayName')
-										setIsLoading: @refs.dialog.setIsLoading
-										onCancel: @_closeView
-										onSuccess: @_closeView
-										updateAccount: @props.updateAccount
-									})
-
-								else
+							else
+								(unless isDeactivated
 									R.div({id: 'actionsList'},
 										R.ul({},
 											R.li({},
@@ -424,7 +435,16 @@ load = (win) ->
 											)
 										)
 									)
-							)
+								else
+									R.div({},
+										R.button({
+											className: 'btn btn-link'
+											onClick: @_switchView.bind(
+												null, 'reactivateAccount', "Reactivate Account"
+											)
+										}, "Reactivate Account")
+									)
+								)
 						)
 					)
 				)
@@ -838,6 +858,172 @@ load = (win) ->
 				# Manually deliver successfully created account to managerTab
 				@props.onSuccess(newAccount)
 
+
+	ReactivateAccountView = React.createFactory React.createClass
+		displayName: 'ReactivateAccountView'
+		mixins: [React.addons.PureRenderMixin]
+
+		propTypes: {
+			onCancel: React.PropTypes.func.isRequired
+			onSuccess: React.PropTypes.func.isRequired
+		}
+
+		getInitialState: ->
+			return {
+				password: ''
+				confirmPassword: ''
+			}
+
+		componentDidMount: ->
+			@refs.password.focus()
+
+		render: ->
+			formIsValid = @_formIsValid()
+
+
+			R.div({className: 'resetPasswordDialog'},
+
+				R.div({
+						className: [
+							'form-group'
+							'has-feedback has-success' if @state.password
+						].join ' '
+					},
+					R.label({}, "New password"),
+					R.input({
+						ref: 'password'
+						className: 'form-control'
+						type: 'password'
+						onChange: @_updatePassword
+						value: @state.password
+						onKeyDown: @_onEnterKeyDown
+					})
+					R.span({
+						className: [
+							'glyphicon'
+							'glyphicon-ok' if @state.password
+							'form-control-feedback'
+						].join ' '
+					})
+				)
+
+				R.div({
+						className: [
+							'form-group'
+							'has-feedback' if @state.confirmPassword
+							'has-warning' if @state.confirmPassword and not formIsValid
+							'has-success' if formIsValid
+						].join ' '
+					},
+					R.label({}, "Confirm password"),
+					R.input({
+						className: 'form-control'
+						type: 'password'
+						onChange: @_updateConfirmPassword
+						value: @state.confirmPassword
+						onKeyDown: @_onEnterKeyDown
+					})
+					R.span({
+						className: [
+							'glyphicon'
+							'glyphicon-warning-sign' if @state.confirmPassword and not formIsValid
+							'glyphicon-ok' if formIsValid
+							'form-control-feedback'
+						].join ' '
+					})
+				)
+
+				R.div({className: 'buttonToolbar'},
+					R.div({},
+						R.button({
+								className: 'btn btn-default'
+								onClick: @props.onCancel
+							},
+							"Cancel"
+						)
+					)
+					R.div({},
+						R.button({
+								className: 'btn btn-primary'
+								onClick: @_submit
+								disabled: not formIsValid
+							},
+							"Reactivate Account"
+						)
+					)
+				)
+
+			)
+
+		_formIsValid: ->
+			@state.password and @state.confirmPassword and @state.confirmPassword is @state.password
+
+		_updatePassword: (event) ->
+			@setState {password: event.target.value}
+
+		_updateConfirmPassword: (event) ->
+			@setState {confirmPassword: event.target.value}
+
+		_onEnterKeyDown: (event) ->
+			if event.which is 13 and @_formIsValid()
+				@_submit()
+
+		_submit: ->
+			unless @state.password is @state.confirmPassword
+				Bootbox.alert "Passwords do not match"
+				return
+
+			@props.setIsLoading true
+
+			password = @state.password
+			userName = @props.userAccount.get('userName')
+
+			userAccountOp = null
+
+			Async.series [
+				(cb) =>
+					Persist.Users.Account.read Config.backend, userName, (err, account) =>
+						if err
+							cb err
+							return
+
+						userAccountOp = account
+						cb()
+
+				(cb) =>
+					userAccountOp.reactivate password, (err) =>
+						if err
+							cb err
+							return
+
+						cb()
+
+			], (err) =>
+				@props.setIsLoading false
+
+				if err
+					if err instanceof Persist.Users.UnknownUserNameError
+						Bootbox.alert "Unknown user! Please check user name and try again"
+						return
+
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+							Please check your network connection and try again.
+						"""
+						return
+
+					if err instanceof Persist.Users.DeactivatedAccountError
+						Bootbox.alert "The specified user account has already been activated."
+						return
+
+					CrashHandler.handle err
+					return
+
+				# Success
+				userAccount = @props.userAccount.setIn(['publicInfo', 'isActive'], true)
+				@props.updateAccount userAccount, =>
+					Bootbox.alert "Account reactivated", @props.onSuccess
 
 	ResetPasswordView = React.createFactory React.createClass
 		displayName: 'ResetPasswordView'
