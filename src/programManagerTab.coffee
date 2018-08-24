@@ -578,7 +578,7 @@ load = (win) ->
 			@refs.clientSearchBox.focus()
 
 		hasChanges: ->
-			Imm.is @state.clientFileProgramLinks, @_originalLinks()
+			not Imm.is @state.clientFileProgramLinks, @_originalLinks()
 
 		render: ->
 			enrolledLinks = @state.clientFileProgramLinks.filter (link) ->
@@ -589,9 +589,6 @@ load = (win) ->
 				clientFileId = clientFile.get('id')
 				return not enrolledLinks.some (link) ->
 					link.get('clientFileId') is clientFileId
-
-			hasChanges = @hasChanges()
-
 
 			return R.div({className: 'manageProgramClientsView'},
 				R.div({className: 'innerContainer'},
@@ -731,7 +728,7 @@ load = (win) ->
 					R.button({
 						className: 'btn btn-success btn-large'
 						onClick: @_submit
-						disabled: hasChanges
+						disabled: not @hasChanges()
 					},
 						"Save"
 						' '
