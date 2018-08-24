@@ -85,6 +85,7 @@ load = (win) ->
 			return ClientSelectionPageUi {
 				openClientFile: _.debounce @_openClientFile, 1000, true
 				clientFileHeaders
+				allClientFileHeaders: @state.clientFileHeaders
 				clientFileProgramLinks: @state.clientFileProgramLinks
 				programsById: @state.programsById
 				userProgram
@@ -447,7 +448,7 @@ load = (win) ->
 					(if @state.managerLayer?
 						ManagerLayer({
 							name: @state.managerLayer
-							clientFileHeaders: @props.clientFileHeaders
+							clientFileHeaders: @props.allClientFileHeaders
 							programsById: @props.programsById
 							userProgramLinks: @props.userProgramLinks
 							clientFileProgramLinks: @props.clientFileProgramLinks
