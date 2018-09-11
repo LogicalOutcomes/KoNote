@@ -386,6 +386,42 @@ class Account
 				, cb
 		], cb
 
+	reactivate: (newPassword, cb) =>
+		publicInfo = null
+		publicInfoPath = Path.join(@_userDir, 'public-info')
+		tmpDirPath = Path.join(@dataDirectory, '_tmp')
+
+		Async.series [
+			(cb) =>
+				# Get existing public-info from user
+				Fs.readFile publicInfoPath, (err, buf) =>
+					if err
+						cb new IOError err
+						return
+
+					publicInfo = JSON.parse buf
+
+					if publicInfo.isActive
+						cb new DeactivatedAccountError()
+						return
+
+					cb()
+			(cb) =>
+				# Change isActive attribute
+				publicInfo.isActive = true
+
+				# Atomically write publicInfo to file as JSON
+				Atomic.writeJSONToFile publicInfoPath, tmpDirPath, JSON.stringify(publicInfo), cb
+			(cb) =>
+				# Set new password (previous password was deleted on deactivation)
+				@publicInfo.isActive = true
+				@decryptWithSystemKey global.ActiveSession.account, (err, result) =>
+					if err
+						cb err
+						return
+					result.setPassword newPassword, cb
+		], cb
+
 	# Check if the specified password is valid for this user account.
 	#
 	# Errors:
