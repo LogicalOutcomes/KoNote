@@ -21,7 +21,8 @@
 
 	"terminology": {
 		"metric": "indicator",
-		"target": "goal"
+		"target": "goal",
+		"program": "program"
 	},
 
 	"printHeaderFooterEnabled": true,
