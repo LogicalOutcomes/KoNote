@@ -4,7 +4,7 @@ This release adds support for reactivating user accounts and improves program st
 
 - Improved support for CSV files created by MS Excel ([#1226](https://github.com/konode001/konote/issues/1226))
 - Allow reactivation of user accounts ([#1224](https://github.com/konode001/konote/issues/1224))
-- Several bug fixes ([#1229](https://github.com/konode001/konote/issues/1229), ([#1245](https://github.com/konode001/konote/issues/1245)), ([#1193](https://github.com/konode001/konote/issues/1193)))
+- Several bug fixes ([#1229](https://github.com/konode001/konote/issues/1229), [#1245](https://github.com/konode001/konote/issues/1245), [#1193](https://github.com/konode001/konote/issues/1193))
 
 
 ### 2.2.7 (Jul 14, 2018)
