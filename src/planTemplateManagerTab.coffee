@@ -348,7 +348,7 @@ load = (win) ->
 				return
 
 			existingTemplate = @props.planTemplates.find (template) =>
-				return template.get('name') is @state.name.trim() and template.get('id') isnt @props.planTemplateId
+				return template.get('name').trim().toLowerCase() is @state.name.trim().toLowerCase() and template.get('id') isnt @props.planTemplateId
 
 			if existingTemplate
 				Bootbox.alert R.div({},

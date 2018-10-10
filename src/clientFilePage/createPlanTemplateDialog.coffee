@@ -155,7 +155,7 @@ load = (win) ->
 						return
 
 					existingTemplate = templateHeaders.find (template) =>
-						return template.get('name') is @state.templateName
+						return template.get('name').trim().toLowerCase() is @state.templateName.trim().toLowerCase()
 
 					if existingTemplate
 						planTemplate = planTemplate.set 'id', existingTemplate.get 'id'

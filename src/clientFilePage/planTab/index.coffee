@@ -209,14 +209,14 @@ load = (win) ->
 						},
 
 							MenuItem({onClick: @_openCreateTemplateDialog},
-								"Create Plan Template"
+								"Save #{Term 'Plan'} as Template"
 							)
 
 							(unless @props.planTemplateHeaders.isEmpty()
 								[
 									MenuItem({divider: true})
 
-									MenuItem({header: true}, R.h5({}, "Apply #{Term 'Template'}"))
+									MenuItem({header: true}, R.h5({}, "Load #{Term 'Template'}"))
 
 									(@props.planTemplateHeaders.map (planTemplateHeader) =>
 										MenuItem({
@@ -585,7 +585,8 @@ load = (win) ->
 					clientFileHeaders = null
 					selectedPlanTemplate = null
 					templateSections = null
-					existsElsewhere = null
+					existingTarget = null
+					existingMetric = null
 					newCurrentRevs = null
 					newPlan = null
 					targetIds = Imm.List()
@@ -610,9 +611,10 @@ load = (win) ->
 									target.get('metricIds').forEach (metricId) =>
 
 										# Metric exists in another target
-										existsElsewhere = @state.currentTargetRevisionsById.some (target) =>
+										existingTarget = @state.currentTargetRevisionsById.find (target) =>
 											return target.get('metricIds').contains(metricId)
-										if existsElsewhere
+										if existingTarget
+											existingMetric = @props.metricsById.get(metricId).get('name')
 											return
 
 									targetId = '__transient__' + Persist.generateId()
@@ -636,7 +638,7 @@ load = (win) ->
 
 								return section
 
-							if existsElsewhere
+							if existingTarget
 								cb('CANCEL')
 								return
 							cb()
@@ -656,7 +658,14 @@ load = (win) ->
 					], (err) =>
 						if err
 							if err is 'CANCEL'
-								Bootbox.alert "A #{Term 'metric'} in this template already exists for another #{Term 'plan target'}"
+								Bootbox.alert {
+									title: "Unable to apply template"
+									message: R.div({},
+										"The template contains a #{Term 'metric'} that is already in use by this #{Term 'plan'}.", R.br(),R.br(),
+										R.b({},"Metric: "), " #{existingMetric}", R.br(),
+										R.b({},"#{Term 'Target'}: "), " #{existingTarget.get('name')}"
+									)
+								}
 								return
 
 							if err instanceof Persist.IOError
