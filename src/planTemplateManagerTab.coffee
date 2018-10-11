@@ -343,10 +343,6 @@ load = (win) ->
 				Bootbox.alert "Template name is required"
 				return
 
-			unless @state.description.trim()
-				Bootbox.alert "Template description is required"
-				return
-
 			existingTemplate = @props.planTemplates.find (template) =>
 				return template.get('name').trim().toLowerCase() is @state.name.trim().toLowerCase() and template.get('id') isnt @props.planTemplateId
 
