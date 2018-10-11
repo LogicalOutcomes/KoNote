@@ -29,6 +29,7 @@ load = (win) ->
 		getInitialState: -> {
 			name: @props.metricQuery or ''
 			definition: ''
+			customId: ''
 		}
 
 		componentDidMount: ->
@@ -64,6 +65,17 @@ load = (win) ->
 							rows: 4
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "#{Term 'Custom Id'}"),
+						R.input({
+							ref: 'customIdField'
+							className: 'form-control'
+							onChange: @_updateCustomId
+							value: @state.customId
+							placeholder: "Unique ID (optional)"
+							maxLength: maxMetricNameLength
+						})
+					)
 					R.div({className: 'btn-toolbar pull-right'},
 						R.button({
 							className: 'btn btn-default'
@@ -85,6 +97,9 @@ load = (win) ->
 
 		_updateDefinition: (event) ->
 			@setState {definition: event.target.value}
+
+		_updateCustomId: (event) ->
+			@setState {customId: event.target.value}
 
 		_submit: ->
 			unless @state.name.trim()
@@ -124,6 +139,7 @@ load = (win) ->
 					newMetric = Imm.fromJS {
 						name: @state.name.trim()
 						definition: @state.definition.trim()
+						customId: @state.customId.trim()
 						status: 'default'
 					}
 
