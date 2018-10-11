@@ -552,7 +552,7 @@ load = (win) ->
 							return
 
 						existingMetricWithName = metricHeaders.find (m) =>
-							return m.get('name') is name and m.get('id') isnt @props.metricId
+							return m.get('name').toLowerCase() is name.toLowerCase() and m.get('id') isnt @props.metricId
 
 						if existingMetricWithName
 							@refs.dialog.setIsLoading(false) if @refs.dialog?
