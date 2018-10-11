@@ -426,6 +426,7 @@ load = (win) ->
 			return {
 				name: metric.get('name')
 				definition: metric.get('definition')
+				customId: metric.get('customId') or ''
 				status: metric.get('status')
 			}
 
@@ -457,6 +458,17 @@ load = (win) ->
 							value: @state.definition
 							onChange: @_updateDefinition
 							rows: 5
+						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "#{Term 'Custom Id'}"),
+						R.input({
+							ref: 'customIdField'
+							className: 'form-control'
+							onChange: @_updateCustomId
+							value: @state.customId
+							placeholder: "Unique ID (optional)"
+							maxLength: maxMetricNameLength
 						})
 					)
 					R.div({className: 'form-group'},
@@ -507,12 +519,16 @@ load = (win) ->
 		_updateDefinition: (event) ->
 			@setState {definition: event.target.value}
 
+		_updateCustomId: (event) ->
+			@setState {customId: event.target.value}
+
 		_updateStatus: (event) ->
 			@setState {status: event.target.value}
 
 		_submit: ->
 			name = @state.name.trim()
 			definition = @state.definition.trim()
+			customId = @state.customId.trim()
 			status = @state.status
 
 			unless name
@@ -543,11 +559,19 @@ load = (win) ->
 							Bootbox.alert "There is already a metric called \"#{name}\"."
 							return
 
+						existingMetricWithId = metricHeaders.find (m) =>
+							return customId and m.get('customId') is customId and m.get('id') isnt @props.metricId
+
+						if existingMetricWithId
+							@refs.dialog.setIsLoading(false) if @refs.dialog?
+							Bootbox.alert "There is already a metric with that #{Term 'custom id'}."
+							return
+
 						cb()
 				(cb) =>
 					newMetricRevision = Imm.Map({
 						id: @props.metricId
-						name, definition, status
+						name, definition, customId, status
 					})
 
 					ActiveSession.persist.metrics.createRevision newMetricRevision, (err, newRev) =>
