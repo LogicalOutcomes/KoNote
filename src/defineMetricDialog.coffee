@@ -126,11 +126,16 @@ load = (win) ->
 
 				# Avoid duplicate metrics
 				# TODO: show the existing metric definition here to help the user decide how to continue
-				existingMetric = result.toJS().filter (match) => match.name.toLowerCase() is @state.name.trim().toLowerCase()
-				if existingMetric[0]
+				existingMetric = result.find (match) => match.get('name').trim().toLowerCase() is @state.name.trim().toLowerCase()
+				existingMetricId = result.find (match) => @state.customId and match.get('customId').trim() is @state.customId.trim()
+				if existingMetric
+					message = "A #{Term 'metric'} with this name already exists. Choose a new name to define this #{Term 'metric'}, or cancel and use the preexisting #{Term 'metric'}."
+				if existingMetricId
+					message = "A #{Term 'metric'} with this #{Term 'custom id'} already exists!"
+				if existingMetric or existingMetricId
 					Bootbox.alert {
 						title: "Unable to Create #{Term 'Metric'}"
-						message: "A metric with this name already exists. Choose a new name to define this #{Term 'metric'}, or cancel and use the preexisting #{Term 'metric'}."
+						message
 					}
 					.on 'hidden.bs.modal', =>
 						@refs.nameField.focus()
