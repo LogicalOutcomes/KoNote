@@ -212,7 +212,7 @@ load = (win) ->
 						@refs.ui.onLoginError('DeactivatedAccountError', @_checkVersionsMatch)
 						return
 
-					if err instanceof Persist.Session.IOError
+					if err instanceof Persist.IOError
 						@refs.ui.onLoginError('IOError', @_checkVersionsMatch)
 						return
 
@@ -272,7 +272,7 @@ load = (win) ->
 						@refs.ui.onLoginError('DeactivatedAccountError')
 						return
 
-					if err instanceof Persist.Session.IOError
+					if err instanceof Persist.IOError
 						@refs.ui.onLoginError('IOError')
 						return
 
