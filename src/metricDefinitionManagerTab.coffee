@@ -224,10 +224,11 @@ load = (win) ->
 			csv = null
 			metricsToCreate = null
 			existingMetricNames = null
+			existingMetricCustomIds = null
 
 			Async.series [
 				(cb) ->
-					Bootbox.alert "Select a CSV file with two columns: metric name and metric definition.", ->
+					Bootbox.alert "Select a CSV file with three columns: metric name, metric definition, and metric ID (optional).", ->
 						cb()
 				(cb) =>
 					$(@refs.importMetricsInput)
@@ -252,7 +253,7 @@ load = (win) ->
 						cb()
 				(cb) ->
 
-					Parse(csv,{skip_empty_lines: true, skip_lines_with_empty_values:true, trim:true, columns:['name','definition']}, (err, results) =>
+					Parse(csv,{skip_empty_lines: true, skip_lines_with_empty_values:true, trim:true, columns:['name','definition','customId']}, (err, results) =>
 						if err
 							console.error err
 							Bootbox.alert("The selected file does not seem to be a valid CSV file.")
@@ -297,11 +298,43 @@ load = (win) ->
 						existingMetricNames = result
 							.map (metric) -> metric.get('name').trim().toLowerCase()
 							.toSet()
+
+						existingMetricCustomIds = result
+							.map (metric) -> metric.get('customId').trim().toLowerCase()
+							.toSet()
+
 						cb()
 				(cb) ->
 					metricsToCreateNames = metricsToCreate
 						.map (m) -> m.get('name').trim().toLowerCase()
 					metricsToCreateNamesSet = metricsToCreateNames.toSet()
+
+					metricsToCreateCustomIds = metricsToCreate
+						.map (m) -> m.get('customId').trim().toLowerCase()
+					.filter(Boolean)
+
+					metricsToCreateCustomIdsSet = metricsToCreateCustomIds.toSet()
+
+					console.log metricsToCreateCustomIds.toJS()
+
+					# If there are duplicate IDs in the input CSV
+					if metricsToCreateCustomIds.size isnt metricsToCreateCustomIdsSet.size
+						duplicatedCustomIds = metricsToCreateCustomIds
+							.countBy (customId) -> customId
+							.filter (occurrences) -> (occurrences > 1)
+							.keySeq()
+						Bootbox.alert R.div({},
+							"Could not complete import. The CSV file contains duplicate metric IDs:",
+							R.br(),R.br(),
+							R.ul({},
+								(duplicatedCustomIds
+									.sort()
+									.map (customId) -> R.li({}, customId)
+									.toArray()
+								)...
+							)
+						)
+						return
 
 					# If there are duplicate metric names in the input file
 					if metricsToCreateNames.size isnt metricsToCreateNamesSet.size
@@ -324,8 +357,25 @@ load = (win) ->
 						return
 
 					overlappingNames = metricsToCreateNamesSet.intersect(existingMetricNames)
+					overlappingCustomIds = metricsToCreateCustomIdsSet.intersect(existingMetricCustomIds)
 
 					# If any metrics in the input file already exist
+					if overlappingCustomIds.size > 0
+						console.log overlappingCustomIds.toJS()
+						console.log metricsToCreate.toJS()
+						Bootbox.alert R.div({},
+							"Could not complete import. The file contains metric IDs that are already in use:",
+							R.br(),R.br(),
+							R.ul({},
+								(overlappingCustomIds
+									.sort()
+									.map (customId) ->
+										R.li({}, customId)
+									)
+							)
+						)
+						return
+
 					if overlappingNames.size > 0
 						Bootbox.alert R.div({},
 							"Could not complete import. The following metric names are already in use:",
@@ -360,6 +410,10 @@ load = (win) ->
 									R.strong({}, "Description"),
 									": ", firstEntry.get('definition')
 								)
+								R.li({},
+									R.strong({}, "ID (optional)"),
+									": ", firstEntry.get('customId')
+								)
 							)
 						)
 						buttons: {
@@ -384,6 +438,7 @@ load = (win) ->
 						newMetric = Imm.Map({
 							name: metricToCreate.get('name')
 							definition: metricToCreate.get('definition')
+							customId: metricToCreate.get('customId')
 							status: 'default'
 						})
 
