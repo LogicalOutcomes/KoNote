@@ -594,6 +594,14 @@ load = (win) ->
 				Bootbox.alert "#{Term 'Metric'} definition is required"
 				return
 
+			if customId
+				return Bootbox.confirm "You are modifying a metric with a standard definition. Are you sure?", (ok) =>
+					if ok then @_submitMetric name, definition, customId, status
+
+			@_submitMetric name, definition, customId, status
+
+		_submitMetric: (name, definition, customId, status) ->
+
 			@refs.dialog.setIsLoading true
 
 			result = null
