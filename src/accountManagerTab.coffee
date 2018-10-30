@@ -182,7 +182,7 @@ load = (win) ->
 									keyField: 'userName'
 									bordered: false
 									options: {
-										defaultSortName: 'lastName'
+										defaultSortName: 'userName'
 										defaultSortOrder: 'asc'
 										onRowClick: ({userName}) =>
 											@refs.dialogLayer.open ManageAccountDialog, {userName}
