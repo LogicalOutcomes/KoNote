@@ -24,6 +24,10 @@
 		},
 		"clientAvatar": {
 			"isEnabled": false
+		},
+		"programs": {
+			"isEnabled": true,
+			"allowOverride": true
 		}
 	},
 
