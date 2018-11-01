@@ -560,13 +560,20 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-						}, "Modify #{Term 'Metric'}")
+							disabled: not @state.name or not @state.definition or not @_hasChanges()
+						}, "Save Changes")
 					)
 				)
 			)
 
 		_cancel: ->
 			@props.onCancel()
+
+		_hasChanges: ->
+			originalMetric = @props.metricsById.get(@props.metricId).filter (val, key) =>
+				['name', 'definition', 'customId', 'status'].includes key
+			modifiedMetric = Imm.fromJS {name:@state.name, definition:@state.definition, customId:@state.customId, status:@state.status}
+			return not Imm.is originalMetric, modifiedMetric
 
 		_updateName: (event) ->
 			@setState {name: event.target.value}

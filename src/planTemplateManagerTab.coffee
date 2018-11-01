@@ -314,13 +314,28 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-						}, "Modify Template")
+							disabled: not @state.name or not @_hasChanges()
+						}, "Save Changes")
 					)
 				)
 			)
 
 		_cancel: ->
 			@props.onCancel()
+
+		_hasChanges: ->
+			originalTemplate = @props.planTemplates.find (template) =>
+				template.get('id') is @props.planTemplateId
+			.filter (val, key) =>
+				['name', 'description', 'status'].includes key
+
+			modifiedTemplate = Imm.fromJS {
+				name: @state.name
+				description: @state.description
+				status: @state.status
+			}
+
+			return not Imm.is originalTemplate, modifiedTemplate
 
 		_updateName: (event) ->
 			@setState {name: event.target.value}
