@@ -3,5 +3,27 @@
 		"programs": {
 			"allowOverride": false
 		}
-	}
+	},
+	"clientDetailDefinitionGroups": [
+		{
+			"title": "Emergency Contact",
+			"fields": [
+				{
+					"name": "Name",
+					"inputType": "input",
+					"placeholder": "Name"
+				},
+				{
+					"name": "Relation to Client",
+					"inputType": "input",
+					"placeholder": "Relation to client"
+				},
+				{
+					"name": "Phone",
+					"inputType": "input",
+					"placeholder": "Phone"
+				}
+			]
+		}
+	]
 }
