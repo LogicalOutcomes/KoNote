@@ -314,6 +314,7 @@ load = (win) ->
 					.get('colorKeyHex')
 
 			isAdmin = userAccount.getIn(['publicInfo', 'accountType']) is 'admin'
+			userAccountType = userAccount.getIn(['publicInfo', 'accountType'])
 			isDeactivated = not userAccount.getIn(['publicInfo', 'isActive'])
 
 
@@ -351,7 +352,11 @@ load = (win) ->
 							)
 							R.h4({},
 								userAccount.get('userName')
-								" (admin)" if isAdmin
+							)
+							R.h5({},
+								"Full Admin" if userAccountType is 'admin'
+								"Basic Admin" if userAccountType is 'basicAdmin'
+								"Standard Account" if userAccountType is 'normal'
 							)
 							R.div({id: 'userProgram'},
 								unless isDeactivated
@@ -395,6 +400,16 @@ load = (win) ->
 									onSuccess: @_closeView
 									updateAccount: @props.updateAccount
 								})
+							when 'changeAccountType'
+								ChangeAccountTypeView({
+									userAccount
+									userName: userAccount.get('userName')
+									accountType: userAccount.getIn(['publicInfo', 'accountType'])
+									setIsLoading: @refs.dialog.setIsLoading
+									onCancel: @_closeView
+									onSuccess: @_closeView
+									updateAccount: @props.updateAccount
+								})
 
 							else
 								(unless isDeactivated
@@ -419,13 +434,10 @@ load = (win) ->
 											R.li({},
 												R.button({
 													className: 'btn btn-link'
-													onClick: @_changeAccountType.bind null, userAccount, isAdmin
-												}, (if isAdmin
-														"Revoke Admin Rights"
-													else
-														"Grant Admin Rights"
+													onClick: @_switchView.bind(
+														null, 'changeAccountType', "Change Account Type"
 													)
-												)
+												}, "Change Account Type")
 											)
 											R.li({},
 												R.button({
@@ -455,72 +467,6 @@ load = (win) ->
 
 		_closeView: ->
 			@_switchView null, null
-
-		_changeAccountType: (userAccount, isAdmin) ->
-			userName = userAccount.get('userName')
-			isAdmin = userAccount.getIn(['publicInfo', 'accountType']) is 'admin'
-
-			newAccountType = if isAdmin then 'normal' else 'admin'
-
-			sessionAccount = global.ActiveSession.account
-			userAccountOp = null
-			decryptedUserAccount = null
-
-			Async.series [
-				(cb) =>
-					action = if newAccountType is 'admin' then "Grant" else "Revoke"
-
-					Bootbox.confirm "#{action} admin privileges for #{userName}?", (ok) =>
-						cb() if ok
-						return
-
-				(cb) =>
-					Persist.Users.Account.read Config.backend, userName, (err, account) =>
-						if err
-							cb err
-							return
-
-						userAccountOp = account
-						cb()
-
-				(cb) =>
-					userAccountOp.decryptWithSystemKey global.ActiveSession.account, (err, result) =>
-						if err
-							cb err
-							return
-
-						decryptedUserAccount = result
-						cb()
-
-				(cb) =>
-					decryptedUserAccount.changeAccountType sessionAccount, newAccountType, (err) =>
-						if err
-							cb err
-							return
-						cb()
-
-			], (err) =>
-				if err
-					if err instanceof Persist.IOError
-						Bootbox.alert "Please check your network connection and try again."
-						return
-
-					if err instanceof Persist.Users.AccountTypeError
-						Bootbox.alert {
-							title: "Error modifying account"
-							message: err.message
-						}
-						return
-
-					CrashHandler.handle err
-					return
-
-				# Success
-				userAccount = userAccount.setIn(['publicInfo', 'accountType'], newAccountType)
-
-				@props.updateAccount userAccount, ->
-					action = if newAccountType is 'admin' then "granted to" else "revoked from"
-					Bootbox.alert "Administrator privileges #{action} #{userName}."
 
 		_reassignProgram: (userAccount, newProgramId) ->
 			userAccountProgramId = userAccount.getIn(['program', 'id'])
@@ -655,6 +601,7 @@ load = (win) ->
 				passwordConfirm: ''
 				programId: ''
 				isAdmin: false
+				accountType: 'normal'
 			}
 
 		componentDidMount: ->
@@ -740,14 +687,43 @@ load = (win) ->
 							)
 						)
 					)
-					R.div({className: 'checkbox'},
-						R.label({},
-							R.input({
-								type: 'checkbox'
-								onChange: @_updateIsAdmin
-								checked: @state.isAdmin
-							}),
-							"Give this user administrative powers"
+					R.div({className: 'form-group'},
+						R.label({}, "Account Type")
+						R.div({className: 'radio'},
+							R.label({},
+								R.input({
+									type: 'radio'
+									name: 'accountType'
+									onChange: @_updateIsAdmin
+									value: 'normal'
+									checked: @state.accountType is 'normal'
+								}),
+								"Standard", R.br(), "Can write #{Term 'progress notes'} for #{Term 'clients'} in their #{Term 'program'}."
+							)
+						)
+						R.div({className: 'radio'},
+							R.label({},
+								R.input({
+									type: 'radio'
+									name: 'accountType'
+									onChange: @_updateIsAdmin
+									value: 'basicAdmin'
+									checked: @state.accountType is 'basicAdmin'
+								}),
+								"Basic Admin", R.br(), "Can setup #{Term 'client'} files, but cannot access #{Term 'plans'} or #{Term 'progress notes'}."
+							)
+						)
+						R.div({className: 'radio'},
+							R.label({},
+								R.input({
+									type: 'radio'
+									name: 'accountType'
+									onChange: @_updateIsAdmin
+									value: 'admin'
+									checked: @state.accountType is 'admin'
+								}),
+								"Full Admin", R.br(), "Complete access to #{Term 'client'} files and user accounts."
+							)
 						)
 					)
 					R.div({className: 'btn-toolbar'},
@@ -786,7 +762,7 @@ load = (win) ->
 			@setState {programId}
 
 		_updateIsAdmin: (event) ->
-			@setState {isAdmin: event.target.checked}
+			@setState {accountType: event.target.value}
 
 		_cancel: ->
 			@props.onCancel()
@@ -799,10 +775,10 @@ load = (win) ->
 			@refs.dialog.setIsLoading true
 
 			userName = @state.userName
-			displayName = @state.displayName
+			displayName = @state.displayNam3e
 			password = @state.password
 			programId = @state.programId
-			accountType = if @state.isAdmin then 'admin' else 'normal'
+			accountType = @state.accountType
 
 			adminAccount = global.ActiveSession.account
 			newAccount = null
@@ -1337,6 +1313,160 @@ load = (win) ->
 					global.ActiveSession.account.publicInfo.displayName = @state.displayName
 
 				@props.onSuccess()
+
+	ChangeAccountTypeView = React.createFactory React.createClass
+		displayName: 'ChangeAccountTypeView'
+		mixins: [React.addons.PureRenderMixin]
+
+		propTypes: {
+			onCancel: React.PropTypes.func.isRequired
+			updateAccount: React.PropTypes.func.isRequired
+			onSuccess: React.PropTypes.func.isRequired
+			userName: React.PropTypes.string.isRequired
+		}
+
+		getInitialState: ->
+			return {
+				accountType: @props.accountType
+			}
+
+		render: ->
+			R.div({className: 'resetDisplayNameDialog'},
+
+				R.div({className: 'form-group'},
+					R.label({}, "Account Type")
+					R.div({className: 'radio'},
+						R.label({},
+							R.input({
+								type: 'radio'
+								name: 'accountType'
+								onChange: @_updateAccountType
+								value: 'normal'
+								checked: @state.accountType is 'normal'
+							}),
+							"Standard", R.br(), "Can write #{Term 'progress notes'} for #{Term 'clients'} in their #{Term 'program'}."
+						)
+					)
+					R.div({className: 'radio'},
+						R.label({},
+							R.input({
+								type: 'radio'
+								name: 'accountType'
+								onChange: @_updateAccountType
+								value: 'basicAdmin'
+								checked: @state.accountType is 'basicAdmin'
+							}),
+							"Basic Admin", R.br(), "Can setup #{Term 'client'} files, but cannot access #{Term 'plans'} or #{Term 'progress notes'}."
+						)
+					)
+					R.div({className: 'radio'},
+						R.label({},
+							R.input({
+								type: 'radio'
+								name: 'accountType'
+								onChange: @_updateAccountType
+								value: 'admin'
+								checked: @state.accountType is 'admin'
+							}),
+							"Full Admin", R.br(), "Complete access to #{Term 'client'} files and user accounts."
+						)
+					)
+				)
+
+				R.div({className: 'buttonToolbar'},
+					R.div({},
+						R.button({
+								className: 'btn btn-default'
+								onClick: @props.onCancel
+							},
+							"Cancel"
+						)
+					)
+					R.div({},
+						R.button({
+								className: 'btn btn-primary'
+								onClick: @_submit
+							},
+							"Update"
+						)
+					)
+				)
+
+			)
+
+		_updateAccountType: (event) ->
+			@setState {accountType: event.target.value}
+
+		_submit: ->
+			userName = @props.userName
+			newAccountType = @state.accountType
+			sessionAccount = global.ActiveSession.account
+			userAccountOp = null
+			decryptedUserAccount = null
+
+			if sessionAccount.userName is userName
+				Bootbox.alert "You cannot change your own account type."
+				return
+
+			@props.setIsLoading true
+
+			Async.series [
+				(cb) =>
+					Persist.Users.Account.read Config.backend, userName, (err, account) =>
+						if err
+							cb err
+							return
+
+						userAccountOp = account
+						cb()
+
+				(cb) =>
+					console.log "cb2"
+					userAccountOp.decryptWithSystemKey global.ActiveSession.account, (err, result) =>
+						if err
+							cb err
+							return
+
+						decryptedUserAccount = result
+						cb()
+
+				(cb) =>
+					console.log "cb3"
+					decryptedUserAccount.changeAccountType sessionAccount, newAccountType, (err) =>
+						if err
+							cb err
+							return
+						cb()
+
+			], (err) =>
+				console.log "done.."
+				@props.setIsLoading false
+				if err
+					if err instanceof Persist.IOError
+						Bootbox.alert "Please check your network connection and try again."
+						return
+
+					if err instanceof Persist.Users.DeactivatedAccountError
+						Bootbox.alert "The specified user account has been deactivated."
+						return
+
+					if err instanceof Persist.Users.AccountTypeError
+						Bootbox.alert {
+							title: "Error modifying account"
+							message: err.message
+						}
+						return
+
+					CrashHandler.handle err
+					return
+
+				# Success
+				userAccount = @props.userAccount.setIn(['publicInfo', 'accountType'], newAccountType)
+				@props.updateAccount userAccount, ->
+					Bootbox.alert "Account updated."
+				console.log "ok!"
+				@props.onSuccess()
+
 
 
 	return AccountManagerTab

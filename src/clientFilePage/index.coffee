@@ -909,7 +909,7 @@ load = (win, {clientFileId}) ->
 
 		getInitialState: ->
 			return {
-				activeTabId: Config.defaultClientFileTab
+				activeTabId: if ActiveSession.accountType is 'basicAdmin' then 'info' else Config.defaultClientFileTab
 			}
 
 		hasChanges: ->
@@ -1214,24 +1214,28 @@ load = (win, {clientFileId}) ->
 						icon: 'sitemap'
 						isActive: activeTabId is 'plan'
 						onClick: @props.onTabChange.bind null, 'plan'
+						visible: ActiveSession.accountType isnt 'basicAdmin'
 					})
 					SidebarTab({
 						name: Term('Progress Notes')
 						icon: 'pencil-square-o'
 						isActive: activeTabId is 'progressNotes'
 						onClick: @props.onTabChange.bind null, 'progressNotes'
+						visible: ActiveSession.accountType isnt 'basicAdmin'
 					})
 					SidebarTab({
 						name: Term('Analysis')
 						icon: 'line-chart'
 						isActive: activeTabId is 'analysis'
 						onClick: @props.onTabChange.bind null, 'analysis'
+						visible: ActiveSession.accountType isnt 'basicAdmin'
 					})
 					SidebarTab({
 						name: "Information"
 						icon: 'info'
 						isActive: activeTabId is 'info'
 						onClick: @props.onTabChange.bind null, 'info'
+						visible: true
 					})
 				)
 
@@ -1249,7 +1253,7 @@ load = (win, {clientFileId}) ->
 
 		render: ->
 			return R.div({
-				className: "tab #{if @props.isActive then 'active' else ''}"
+				className: "tab #{if @props.isActive then 'active' else ''} #{showWhen @props.visible}"
 				onClick: @props.onClick
 			},
 				FaIcon @props.icon

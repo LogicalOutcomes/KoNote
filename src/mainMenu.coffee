@@ -59,7 +59,7 @@ load = (win) ->
 					R.div({id: 'user'},
 						R.div({},
 							R.h3({}, ActiveSession.account.publicInfo.displayName or global.ActiveSession.userName)
-							(unless @props.programsById.isEmpty()
+							(unless @props.programsById.isEmpty() or Config.features.programs.allowOverride is false
 								ProgramsDropdown({
 									selectedProgramId: userProgramId
 									programsById: @props.programsById
@@ -112,14 +112,14 @@ load = (win) ->
 								isActive: @props.managerLayer is 'programManagerTab'
 							})
 							MenuItem({
-								isVisible: isAdmin
+								isVisible: isAdmin and ActiveSession.accountType isnt 'basicAdmin'
 								title: "Export Data"
 								icon: 'upload'
 								onClick: @props.updateManagerLayer.bind null, 'exportManagerTab'
 								isActive: @props.managerLayer is 'exportManagerTab'
 							})
 							MenuItem({
-								isVisible: isAdmin
+								isVisible: isAdmin and ActiveSession.accountType isnt 'basicAdmin'
 								title: "User #{Term 'Accounts'}"
 								icon: 'key'
 								onClick: @props.updateManagerLayer.bind null, 'accountManagerTab'
