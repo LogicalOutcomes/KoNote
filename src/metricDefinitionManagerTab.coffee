@@ -224,10 +224,11 @@ load = (win) ->
 			csv = null
 			metricsToCreate = null
 			existingMetricNames = null
+			existingMetricCustomIds = null
 
 			Async.series [
 				(cb) ->
-					Bootbox.alert "Select a CSV file with two columns: metric name and metric definition.", ->
+					Bootbox.alert "Select a CSV file with three columns: metric name, metric definition, and metric ID (optional).", ->
 						cb()
 				(cb) =>
 					$(@refs.importMetricsInput)
@@ -252,7 +253,7 @@ load = (win) ->
 						cb()
 				(cb) ->
 
-					Parse(csv,{skip_empty_lines: true, skip_lines_with_empty_values:true, trim:true, columns:['name','definition']}, (err, results) =>
+					Parse(csv,{skip_empty_lines: true, skip_lines_with_empty_values:true, trim:true, columns:['name','definition','customId']}, (err, results) =>
 						if err
 							console.error err
 							Bootbox.alert("The selected file does not seem to be a valid CSV file.")
@@ -297,11 +298,43 @@ load = (win) ->
 						existingMetricNames = result
 							.map (metric) -> metric.get('name').trim().toLowerCase()
 							.toSet()
+
+						existingMetricCustomIds = result
+							.map (metric) -> metric.get('customId').trim().toLowerCase()
+							.toSet()
+
 						cb()
 				(cb) ->
 					metricsToCreateNames = metricsToCreate
 						.map (m) -> m.get('name').trim().toLowerCase()
 					metricsToCreateNamesSet = metricsToCreateNames.toSet()
+
+					metricsToCreateCustomIds = metricsToCreate
+						.map (m) -> m.get('customId').trim().toLowerCase()
+					.filter(Boolean)
+
+					metricsToCreateCustomIdsSet = metricsToCreateCustomIds.toSet()
+
+					console.log metricsToCreateCustomIds.toJS()
+
+					# If there are duplicate IDs in the input CSV
+					if metricsToCreateCustomIds.size isnt metricsToCreateCustomIdsSet.size
+						duplicatedCustomIds = metricsToCreateCustomIds
+							.countBy (customId) -> customId
+							.filter (occurrences) -> (occurrences > 1)
+							.keySeq()
+						Bootbox.alert R.div({},
+							"Could not complete import. The CSV file contains duplicate metric IDs:",
+							R.br(),R.br(),
+							R.ul({},
+								(duplicatedCustomIds
+									.sort()
+									.map (customId) -> R.li({}, customId)
+									.toArray()
+								)...
+							)
+						)
+						return
 
 					# If there are duplicate metric names in the input file
 					if metricsToCreateNames.size isnt metricsToCreateNamesSet.size
@@ -324,8 +357,25 @@ load = (win) ->
 						return
 
 					overlappingNames = metricsToCreateNamesSet.intersect(existingMetricNames)
+					overlappingCustomIds = metricsToCreateCustomIdsSet.intersect(existingMetricCustomIds)
 
 					# If any metrics in the input file already exist
+					if overlappingCustomIds.size > 0
+						console.log overlappingCustomIds.toJS()
+						console.log metricsToCreate.toJS()
+						Bootbox.alert R.div({},
+							"Could not complete import. The file contains metric IDs that are already in use:",
+							R.br(),R.br(),
+							R.ul({},
+								(overlappingCustomIds
+									.sort()
+									.map (customId) ->
+										R.li({}, customId)
+									)
+							)
+						)
+						return
+
 					if overlappingNames.size > 0
 						Bootbox.alert R.div({},
 							"Could not complete import. The following metric names are already in use:",
@@ -360,6 +410,10 @@ load = (win) ->
 									R.strong({}, "Description"),
 									": ", firstEntry.get('definition')
 								)
+								R.li({},
+									R.strong({}, "ID (optional)"),
+									": ", firstEntry.get('customId')
+								)
 							)
 						)
 						buttons: {
@@ -384,6 +438,7 @@ load = (win) ->
 						newMetric = Imm.Map({
 							name: metricToCreate.get('name')
 							definition: metricToCreate.get('definition')
+							customId: metricToCreate.get('customId')
 							status: 'default'
 						})
 
@@ -426,6 +481,7 @@ load = (win) ->
 			return {
 				name: metric.get('name')
 				definition: metric.get('definition')
+				customId: metric.get('customId') or ''
 				status: metric.get('status')
 			}
 
@@ -457,6 +513,17 @@ load = (win) ->
 							value: @state.definition
 							onChange: @_updateDefinition
 							rows: 5
+						})
+					)
+					R.div({className: 'form-group'},
+						R.label({}, "#{Term 'Custom Id'}"),
+						R.input({
+							ref: 'customIdField'
+							className: 'form-control'
+							onChange: @_updateCustomId
+							value: @state.customId
+							placeholder: "Unique ID (optional)"
+							maxLength: maxMetricNameLength
 						})
 					)
 					R.div({className: 'form-group'},
@@ -493,7 +560,8 @@ load = (win) ->
 						R.button({
 							className: 'btn btn-primary'
 							onClick: @_submit
-						}, "Modify #{Term 'Metric'}")
+							disabled: not @state.name or not @state.definition or not @_hasChanges()
+						}, "Save Changes")
 					)
 				)
 			)
@@ -501,11 +569,20 @@ load = (win) ->
 		_cancel: ->
 			@props.onCancel()
 
+		_hasChanges: ->
+			originalMetric = @props.metricsById.get(@props.metricId).filter (val, key) =>
+				['name', 'definition', 'customId', 'status'].includes key
+			modifiedMetric = Imm.fromJS {name:@state.name, definition:@state.definition, customId:@state.customId, status:@state.status}
+			return not Imm.is originalMetric, modifiedMetric
+
 		_updateName: (event) ->
 			@setState {name: event.target.value}
 
 		_updateDefinition: (event) ->
 			@setState {definition: event.target.value}
+
+		_updateCustomId: (event) ->
+			@setState {customId: event.target.value}
 
 		_updateStatus: (event) ->
 			@setState {status: event.target.value}
@@ -513,6 +590,7 @@ load = (win) ->
 		_submit: ->
 			name = @state.name.trim()
 			definition = @state.definition.trim()
+			customId = @state.customId.trim()
 			status = @state.status
 
 			unless name
@@ -522,6 +600,14 @@ load = (win) ->
 			unless definition
 				Bootbox.alert "#{Term 'Metric'} definition is required"
 				return
+
+			if customId
+				return Bootbox.confirm "You are modifying a metric with a standard definition. Are you sure?", (ok) =>
+					if ok then @_submitMetric name, definition, customId, status
+
+			@_submitMetric name, definition, customId, status
+
+		_submitMetric: (name, definition, customId, status) ->
 
 			@refs.dialog.setIsLoading true
 
@@ -536,18 +622,26 @@ load = (win) ->
 							return
 
 						existingMetricWithName = metricHeaders.find (m) =>
-							return m.get('name') is name and m.get('id') isnt @props.metricId
+							return m.get('name').toLowerCase() is name.toLowerCase() and m.get('id') isnt @props.metricId
 
 						if existingMetricWithName
 							@refs.dialog.setIsLoading(false) if @refs.dialog?
 							Bootbox.alert "There is already a metric called \"#{name}\"."
 							return
 
+						existingMetricWithId = metricHeaders.find (m) =>
+							return customId and m.get('customId') is customId and m.get('id') isnt @props.metricId
+
+						if existingMetricWithId
+							@refs.dialog.setIsLoading(false) if @refs.dialog?
+							Bootbox.alert "There is already a metric with that #{Term 'custom id'}."
+							return
+
 						cb()
 				(cb) =>
 					newMetricRevision = Imm.Map({
 						id: @props.metricId
-						name, definition, status
+						name, definition, customId, status
 					})
 
 					ActiveSession.persist.metrics.createRevision newMetricRevision, (err, newRev) =>

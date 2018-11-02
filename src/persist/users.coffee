@@ -151,12 +151,12 @@ class Account
 	# (DecryptedAccount loggedInAccount, string userName, string displayName, string password, string accountType,
 	#  function cb(Error err, Account newAccount)) -> undefined
 	@create: (loggedInAccount, userName, displayName, password, accountType, cb) ->
-		unless accountType in ['normal', 'admin']
+		unless accountType in ['normal', 'basicAdmin', 'admin']
 			cb new Error "unknown account type #{JSON.stringify accountType}"
 			return
 
 		if accountType is 'admin'
-			Assert.strictEqual loggedInAccount.publicInfo.accountType, 'admin', 'only admins can create admins'
+			Assert.strictEqual loggedInAccount.publicInfo.accountType, 'admin', 'only full admins can create other admin accounts'
 
 		publicInfo = {accountType, displayName, isActive: true}
 		kdfParams = generateKdfParams()
@@ -653,7 +653,7 @@ class DecryptedAccount extends Account
 		unless loggedInAccount.publicInfo.accountType is 'admin'
 			cb new Error "only admins can change account types"
 			return
-		unless newType in ['normal', 'admin']
+		unless newType in ['normal', 'basicAdmin', 'admin']
 			cb new Error "unknown account type: #{JSON.stringify newType}"
 			return
 		# prevent admin from demoting themselves

@@ -1,10 +1,20 @@
+### 2.2.9 (Nov 2, 2018)
+
+2.2.9 brings additional user access levels, support for custom metric identifiers, and a better user experience when working with plan templates.
+
+- New 'Basic Admin' role can create and edit basic info in client files ([#1147](https://github.com/konode001/konote/issues/1147))
+- Metrics can have optional unique identifier ([#1242](https://github.com/konode001/konote/issues/1242))
+- Program override can be disabled via Config ([#1172](https://github.com/konode001/konote/issues/1172))
+- Various fixes and improvements ([#1248](https://github.com/konode001/konote/issues/1248), [#1249](https://github.com/konode001/konote/issues/1249), [#1250](https://github.com/konode001/konote/issues/1250))
+
+
 ### 2.2.8 (Sep 11, 2018)
 
 This release adds support for reactivating user accounts and improves program stability.
 
 - Improved support for CSV files created by MS Excel ([#1226](https://github.com/konode001/konote/issues/1226))
 - Allow reactivation of user accounts ([#1224](https://github.com/konode001/konote/issues/1224))
-- Several bug fixes ([#1229](https://github.com/konode001/konote/issues/1229), ([#1245](https://github.com/konode001/konote/issues/1245)), ([#1193](https://github.com/konode001/konote/issues/1193)))
+- Several bug fixes ([#1229](https://github.com/konode001/konote/issues/1229), [#1245](https://github.com/konode001/konote/issues/1245), [#1193](https://github.com/konode001/konote/issues/1193))
 
 
 ### 2.2.7 (Jul 14, 2018)

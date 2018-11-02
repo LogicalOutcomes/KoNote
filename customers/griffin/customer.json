@@ -21,7 +21,9 @@
 
 	"terminology": {
 		"metric": "indicator",
-		"target": "goal"
+		"target": "goal",
+		"treatment plan": "treatment plan / interventions",
+		"program": "program"
 	},
 
 	"printHeaderFooterEnabled": true,

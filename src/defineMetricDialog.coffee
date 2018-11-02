@@ -29,6 +29,7 @@ load = (win) ->
 		getInitialState: -> {
 			name: @props.metricQuery or ''
 			definition: ''
+			customId: ''
 		}
 
 		componentDidMount: ->
@@ -64,6 +65,17 @@ load = (win) ->
 							rows: 4
 						})
 					)
+					R.div({className: 'form-group'},
+						R.label({}, "#{Term 'Custom Id'}"),
+						R.input({
+							ref: 'customIdField'
+							className: 'form-control'
+							onChange: @_updateCustomId
+							value: @state.customId
+							placeholder: "Unique ID (optional)"
+							maxLength: maxMetricNameLength
+						})
+					)
 					R.div({className: 'btn-toolbar pull-right'},
 						R.button({
 							className: 'btn btn-default'
@@ -85,6 +97,9 @@ load = (win) ->
 
 		_updateDefinition: (event) ->
 			@setState {definition: event.target.value}
+
+		_updateCustomId: (event) ->
+			@setState {customId: event.target.value}
 
 		_submit: ->
 			unless @state.name.trim()
@@ -111,11 +126,16 @@ load = (win) ->
 
 				# Avoid duplicate metrics
 				# TODO: show the existing metric definition here to help the user decide how to continue
-				existingMetric = result.toJS().filter (match) => match.name.toLowerCase() is @state.name.trim().toLowerCase()
-				if existingMetric[0]
+				existingMetric = result.find (match) => match.get('name').trim().toLowerCase() is @state.name.trim().toLowerCase()
+				existingMetricId = result.find (match) => @state.customId and match.get('customId').trim() is @state.customId.trim()
+				if existingMetric
+					message = "A #{Term 'metric'} with this name already exists. Choose a new name to define this #{Term 'metric'}, or cancel and use the preexisting #{Term 'metric'}."
+				if existingMetricId
+					message = "A #{Term 'metric'} with this #{Term 'custom id'} already exists!"
+				if existingMetric or existingMetricId
 					Bootbox.alert {
 						title: "Unable to Create #{Term 'Metric'}"
-						message: "A metric with this name already exists. Choose a new name to define this #{Term 'metric'}, or cancel and use the preexisting #{Term 'metric'}."
+						message
 					}
 					.on 'hidden.bs.modal', =>
 						@refs.nameField.focus()
@@ -124,6 +144,7 @@ load = (win) ->
 					newMetric = Imm.fromJS {
 						name: @state.name.trim()
 						definition: @state.definition.trim()
+						customId: @state.customId.trim()
 						status: 'default'
 					}
 

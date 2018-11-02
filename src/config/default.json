@@ -24,6 +24,10 @@
 		},
 		"clientAvatar": {
 			"isEnabled": false
+		},
+		"programs": {
+			"isEnabled": true,
+			"allowOverride": true
 		}
 	},
 
@@ -78,10 +82,12 @@
 
 		"metric": "metric",
 		"metric definition": "metric definition",
+		"custom id": "identifier",
+
 		"event": "event",
 		"global event": "global event",
 		"event type": "event type",
-		"program": "program",
+		"program": "service",
 
 		"analysis": "analysis",
 		"analyze": "analyze"
