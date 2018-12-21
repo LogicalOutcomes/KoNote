@@ -175,7 +175,7 @@ load = (win) ->
 								R.button({
 									className: 'btn btn-default'
 									onClick: @_import.bind null, {
-										extension: 'zip'
+										extension: 'bak'
 										onImport: @_restoreBackup
 									}
 								},
