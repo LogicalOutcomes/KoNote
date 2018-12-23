@@ -18,12 +18,12 @@ BufferEq = require 'buffer-equal-constant-time'
 Crypto = require 'crypto'
 
 symmKeyV1Prefix = 'symmkey-v1'
-symmCiphertextV1Prefix = new Buffer([1])
+symmCiphertextV1Prefix = Buffer.from([1])
 
 rsaKeyLength = 3072
 privKeyV1Prefix = 'privkey-v1'
 pubKeyV1Prefix = 'pubkey-v1'
-asymmCiphertextV1Prefix = new Buffer([1])
+asymmCiphertextV1Prefix = Buffer.from([1])
 
 # This is a function instead of a reference so that the test suite still works.
 # This won't be necessary any more if the test is run inside NW.js instead of plain Node.js,
@@ -80,7 +80,7 @@ class SymmetricEncryptionKey
 		salt = params.salt
 
 		# Workaround for bug in NW.js v0.14 (see issue #584)
-		password = new Buffer(password, 'utf8')
+		password = Buffer.from(password, 'utf8')
 
 		Crypto.pbkdf2 password, salt, iterationCount, 32, 'sha256', (err, keyMat) ->
 			if err
@@ -100,7 +100,7 @@ class SymmetricEncryptionKey
 		unless prefix is symmKeyV1Prefix
 			throw new Error "error while importing encryption key"
 
-		keyMat = new Buffer(keyMatHex, 'hex')
+		keyMat = Buffer.from(keyMatHex, 'hex')
 
 		if keyMat.length isnt 32
 			throw new Error "key is wrong length"
@@ -114,7 +114,7 @@ class SymmetricEncryptionKey
 	# Encrypt the provided string or Buffer
 	encrypt: (msg) ->
 		if typeof msg is 'string'
-			msg = new Buffer(msg, 'utf8')
+			msg = Buffer.from(msg, 'utf8')
 
 		unless Buffer.isBuffer msg
 			throw new Error "expected msg to be a string or Buffer"
@@ -125,7 +125,7 @@ class SymmetricEncryptionKey
 		outputBuffers.push symmCiphertextV1Prefix
 
 		# Add length field
-		lenField = new Buffer(4)
+		lenField = Buffer.allocUnsafe(4)
 		lenField.writeUInt32LE 12 + msg.length + 16
 		outputBuffers.push lenField
 
@@ -213,14 +213,14 @@ class WeakSymmetricEncryptionKey
 		# This avoids the same key being used for multiple algorithms
 		# New key is HMAC-SHA256(symmKey, "new key for weak encryption")
 		kdf = Crypto.createHmac('sha256', symmKey._rawKeyMaterial)
-		kdf.update new Buffer('new key for weak encryption', 'utf8')
+		kdf.update Buffer.from('new key for weak encryption', 'utf8')
 		@_rawKeyMaterial = kdf.digest()
 
 		@_tagLength = tagLength
 
 	encrypt: (msg) ->
 		if typeof msg is 'string'
-			msg = new Buffer(msg, 'utf8')
+			msg = Buffer.from(msg, 'utf8')
 
 		unless Buffer.isBuffer msg
 			throw new Error "expected msg to be a string or Buffer"
@@ -504,7 +504,7 @@ class PublicKey
 
 	encrypt: (msg, cb) ->
 		if typeof msg is 'string'
-			msg = new Buffer(msg, 'utf8')
+			msg = Buffer.from(msg, 'utf8')
 
 		unless Buffer.isBuffer msg
 			throw new Error "expected message to be a string or Buffer"
@@ -530,7 +530,7 @@ class PublicKey
 				return
 
 			usePromise WebCryptoApi().encrypt(
-				{name: 'RSA-OAEP'}, webCryptoKey, toUint8Array(new Buffer(contentKey.export()))
+				{name: 'RSA-OAEP'}, webCryptoKey, toUint8Array(Buffer.from(contentKey.export()))
 			), (err, encryptedContentKey) =>
 				if err
 					cb err
@@ -571,7 +571,7 @@ padBufferRight = (buf, padByte, length) ->
 	if buf.length > length
 		throw new Error "input buffer already exceeds desired length"
 
-	result = new Buffer(length)
+	result = Buffer.allocUnsafe(length)
 	result.fill padByte
 
 	buf.copy result
@@ -602,7 +602,7 @@ toPemKeyFormat = (fileType, buf) ->
 
 fromUint8Array = (uint8s) ->
 	uint8s = new Uint8Array uint8s
-	result = new Buffer(uint8s.length)
+	result = Buffer.allocUnsafe(uint8s.length)
 
 	for i in [0...result.length]
 		result[i] = uint8s[i]

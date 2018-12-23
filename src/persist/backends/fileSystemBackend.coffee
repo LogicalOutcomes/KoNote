@@ -517,7 +517,7 @@ encodeObjectHeader = (obj, indexes) ->
 
 	for index in indexes
 		indexValue = obj.getIn(index, '').toString()
-		components.push new Buffer(indexValue, 'utf8')
+		components.push Buffer.from(indexValue, 'utf8')
 
 	# ID is always indexed
 	# For space efficiency, we'll take advantage of the fact that IDs are
@@ -542,7 +542,7 @@ decodeObjectHeader = (header, indexes, dirPath) ->
 
 encodeObjectRevisionHeader = (obj) ->
 	return encodeHeader [
-		new Buffer(obj.get('timestamp'), 'utf8')
+		Buffer.from(obj.get('timestamp'), 'utf8')
 		Base64url.toBuffer obj.get('revisionId') # decode revision ID to save space
 	]
 
@@ -575,7 +575,7 @@ decodeObjectRevisionHeader = (header) ->
 # decoded unambiguously.
 
 encodeHeader = (components) ->
-	delimiter = new Buffer([0x00, 0x53])
+	delimiter = Buffer.from([0x00, 0x53])
 
 	result = []
 
@@ -591,7 +591,7 @@ encodeHeader = (components) ->
 decodeHeader = (header, componentCount, parentName) ->
 	comps = []
 
-	nextComp = createZeroedBuffer(header.length)
+	nextComp = Buffer.alloc(header.length)
 	nextCompOffset = 0
 	i = 0
 	while i < header.length
@@ -614,7 +614,7 @@ decodeHeader = (header, componentCount, parentName) ->
 					comps.push nextComp.slice(0, nextCompOffset)
 
 					# Reset for next component
-					nextComp = createZeroedBuffer(header.length)
+					nextComp = Buffer.alloc(header.length)
 					nextCompOffset = 0
 				else
 					throw new Error "unexpected byte sequence at #{i} in header: #{header.toJSON()}"
@@ -643,7 +643,7 @@ encodeHeaderComponent = (comp) ->
 	unless Buffer.isBuffer comp
 		throw new Error "expected header component to be a buffer"
 
-	literalNulByte = new Buffer([0x00, 0x4C])
+	literalNulByte = Buffer.from([0x00, 0x4C])
 
 	result = []
 
@@ -667,7 +667,8 @@ isValidFileName = (fileName) ->
 # When a Buffer is first created, its contents are leftover from whatever used
 # that area of memory last, which might mean that it contains sensitive
 # information.  By zeroing Buffers before use, we avoid that security risk.
-# todo: remove if nwjs updated >= v0.23.0 (buffers are zeroed by default in node8)
+# not required for nwjs >= v0.23.0 (buffers are zeroed by default in node8)
+# preserved here only for compatibility with old migration files
 createZeroedBuffer = (bufferSize) ->
 	result = new Buffer(bufferSize)
 	result.fill(0)

@@ -831,7 +831,7 @@ load = (win) ->
 				filesize = (filesize / 1048576).toFixed() + " MB"
 
 			# Convert to base64 encoded string
-			encodedAttachment = new Buffer(attachment).toString 'base64'
+			encodedAttachment = Buffer.from(attachment).toString 'base64'
 
 			@setState {
 				attachment: {
@@ -1456,7 +1456,7 @@ load = (win) ->
 				if filename?
 					# Absolute path required for windows
 					filepath = Path.join process.cwd(), Config.backend.dataDirectory, '_tmp', filename
-					file = new Buffer(encodedData, 'base64')
+					file = Buffer.from(encodedData, 'base64')
 					# TODO cleanup file...
 					Fs.writeFile filepath, file, (err) ->
 						if err
