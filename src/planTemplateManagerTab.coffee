@@ -218,7 +218,105 @@ load = (win) ->
 						)
 					)
 				)
+				R.div({className: 'footer'},
+					R.a({
+							className: 'importTemplatesLink'
+							href: "#"
+							onClick: @_importTemplates
+						},
+						"Import #{Term 'plan'} template..."
+					)
+					R.input({
+						type: 'file'
+						className: 'hidden'
+						ref: 'importTemplatesInput'
+					})
+				)
 			)
+
+		_importTemplates: (event) ->
+			event.preventDefault()
+
+			filePath = null
+			template = null
+
+			Async.series [
+				(cb) =>
+					$(@refs.importTemplatesInput)
+						.off()
+						.val('')
+						.attr('accept', ".json")
+						.on 'change', (event) =>
+							filePath = event.target.value
+							cb()
+						.click()
+				(cb) ->
+					Fs.readFile filePath, 'utf8', (err, templateJSON) ->
+						if err
+							console.error err
+							console.error err.stack
+							Bootbox.alert("An error occurred while reading the file at " + filePath)
+							return
+						templateJSON = JSON.parse templateJSON
+						template = Imm.fromJS templateJSON
+
+						cb()
+				(cb) ->
+					Async.map template.get('sections').toArray(), (section, cb) ->
+						Async.map section.get('targets').toArray(), (target, cb) ->
+							Async.map target.get('metrics').toArray(), (metric, cb) ->
+								ActiveSession.persist.metrics.create metric, (err, result) =>
+									if err
+										cb err
+										return
+									cb null, result.get('id')
+
+							, (err, results) ->
+								results = Imm.List(results)
+								if err
+									cb err
+									return
+
+								newTarget = target.set 'metricIds', results
+								.delete 'metrics'
+								cb null, newTarget
+
+						, (err, results) ->
+							results = Imm.List(results)
+							if err
+								cb err
+								return
+							newSection = section.set 'targets', results
+							cb null, newSection
+
+					, (err, results) ->
+						results = Imm.List(results)
+						if err
+							cb err
+							return
+						template = template.set 'sections', results
+						cb()
+
+				(cb) ->
+					global.ActiveSession.persist.planTemplates.create template, (err, result) =>
+						if err
+							cb err
+							return
+						template = result
+						cb()
+			], (err) =>
+				if err
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+									Please check your network connection and try again
+								"""
+						return
+					CrashHandler.handle err
+					return
+				# OK
+				planTemplates = @state.planTemplates.push template
+				@setState {planTemplates}
 
 		_toggleDisplayInactive: ->
 			displayInactive = not @state.displayInactive
@@ -381,7 +479,9 @@ load = (win) ->
 			newSections = template.get('sections').map (section) =>
 				newTargets = section.get('targets').map (target) =>
 					newMetrics = target.get('metricIds').map (metricId) =>
-						return stripMetadata @props.metricsById.get(metricId)
+						newMetric = stripMetadata @props.metricsById.get(metricId)
+						.delete 'id'
+						return newMetric
 					newTarget = target.set 'metrics', newMetrics
 					.delete 'metricIds'
 					return newTarget
