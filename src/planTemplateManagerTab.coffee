@@ -257,7 +257,17 @@ load = (win) ->
 							console.error err.stack
 							Bootbox.alert("An error occurred while reading the file at " + filePath)
 							return
-						templateJSON = JSON.parse templateJSON
+
+						try
+							templateJSON = JSON.parse templateJSON
+						catch err
+							console.error err
+							Bootbox.alert("Error: The file at '" + filePath + "' is not a valid template")
+							return
+						unless templateJSON.name and templateJSON.sections
+							Bootbox.alert("Error: The file at '" + filePath + "' is not a valid template")
+							return
+
 						template = Imm.fromJS templateJSON
 
 						cb()
