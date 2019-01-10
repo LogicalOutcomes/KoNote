@@ -315,7 +315,7 @@ class Lock
 		expiryTimestamp = Moment().add(leaseTime, 'ms').format(TimestampFormat)
 		expiryTimestampFile = Path.join(lockDir, 'expire-' + expiryTimestamp)
 
-		fileData = new Buffer('expiry-time', 'utf8') # some filler data
+		fileData = Buffer.from('expiry-time', 'utf8') # some filler data
 
 		Atomic.writeBufferToFile expiryTimestampFile, tmpDirPath, fileData, (err) ->
 			if err
@@ -327,7 +327,7 @@ class Lock
 	@_writeMetadata: (session, lockDir, tmpDirPath, cb) ->
 		metadataFile = Path.join(lockDir, 'metadata')
 
-		metadata = new Buffer(JSON.stringify({
+		metadata = Buffer.from(JSON.stringify({
 			userName: session.userName
 		}), 'utf8')
 

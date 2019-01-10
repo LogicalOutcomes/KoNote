@@ -68,7 +68,7 @@ load = (win) ->
 							extension: 'csv'
 							runExport: @_saveMetrics
 						}
-					}, "Export #{Term 'Metrics'} to CSV")
+					}, "Export #{Term 'Metric'} Data to CSV")
 					R.button({
 						className: 'btn btn-default btn-lg'
 						onClick: @_export.bind null, {
@@ -76,15 +76,15 @@ load = (win) ->
 							extension: 'csv'
 							runExport: @_saveEvents
 						}
-					}, "Export #{Term 'Events'} to CSV")
+					}, "Export #{Term 'Event'} Data to CSV")
 					R.button({
 						className: 'btn btn-default btn-lg'
 						onClick: @_export.bind null, {
 							defaultName: "konote-backup"
-							extension: 'zip'
+							extension: 'bak'
 							runExport: @_saveBackup
 						}
-					}, "Backup All Data to ZIP")
+					}, "Backup All Data")
 				)
 			)
 

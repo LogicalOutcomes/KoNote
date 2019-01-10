@@ -775,7 +775,7 @@ load = (win) ->
 			@refs.dialog.setIsLoading true
 
 			userName = @state.userName
-			displayName = @state.displayNam3e
+			displayName = @state.displayName
 			password = @state.password
 			programId = @state.programId
 			accountType = @state.accountType

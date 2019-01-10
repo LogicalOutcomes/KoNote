@@ -171,15 +171,28 @@ load = (win) ->
 									className: 'hidden'
 									type: 'file'
 								})
+								R.input({
+									ref: 'nwbrowsedir'
+									className: 'hidden'
+									type: 'file'
+								})
 								R.p({}, "Let's get started!")
 								R.button({
 									className: 'btn btn-default'
 									onClick: @_import.bind null, {
-										extension: 'zip'
+										extension: 'bak'
 										onImport: @_restoreBackup
 									}
 								},
 									"Restore Backup"
+								)
+								R.button({
+										className: 'btn btn-default'
+										onClick: @_browse.bind null, {
+											onImport: @_useDatabase
+										}
+									},
+									"Use OneDrive Database"
 								)
 								R.button({
 									className: 'btn btn-success'
@@ -296,6 +309,39 @@ load = (win) ->
 			.attr('accept', ".#{extension}")
 			.on('change', (event) => onImport event.target.value)
 			.click()
+
+		_browse: ({onImport}) ->
+			Bootbox.alert {
+				title: "Setup OneDrive database"
+				message: "Select the shared OneDrive folder for KoNote to use. KoNote will create a new database if one does not already exist."
+				callback: =>
+					defaultDir = process.env.OneDrive or ''
+					$nwbrowse = $(@refs.nwbrowsedir)
+					$nwbrowse
+					.off()
+					.attr('nwdirectory', '')
+					.attr('nwworkingdir', defaultDir)
+					.on('change', (event) => onImport event.target.value)
+					.click()
+			}
+
+		_useDatabase: (dataDir) ->
+			productionConfig = null
+
+			try
+				productionConfig = require('./config/production.json');
+				productionConfig.backend.dataDirectory = dataDir
+
+			catch err
+				if err.code is 'MODULE_NOT_FOUND'
+					productionConfig = {"backend": {"dataDirectory": dataDir}}
+
+			Fs.writeFileSync 'src/config/production.json', JSON.stringify productionConfig, 'utf8'
+
+			if Fs.existsSync(path.join(dataDir, 'version.json'))
+				chrome.runtime.reload()
+
+			@_switchTab 'createAdmin'
 
 		_restoreBackup: (backupfile) ->
 			dataDir = Config.backend.dataDirectory

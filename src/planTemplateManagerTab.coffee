@@ -6,6 +6,7 @@
 
 Async = require 'async'
 Imm = require 'immutable'
+Fs = require 'graceful-fs'
 
 Persist = require './persist'
 Term = require './term'
@@ -153,6 +154,7 @@ load = (win) ->
 											onRowClick: (row) =>
 												@refs.dialogLayer.open ModifyPlanTemplateDialog, {
 													planTemplateId: row.id
+													metricsById: @props.metricsById
 													onSuccess: @_updatePlanTemplates
 												}
 											noDataText: "No #{Term 'plan templates'} to display"
@@ -216,7 +218,115 @@ load = (win) ->
 						)
 					)
 				)
+				R.div({className: 'footer'},
+					R.a({
+							className: 'importTemplatesLink'
+							href: "#"
+							onClick: @_importTemplates
+						},
+						"Import #{Term 'plan'} template..."
+					)
+					R.input({
+						type: 'file'
+						className: 'hidden'
+						ref: 'importTemplatesInput'
+					})
+				)
 			)
+
+		_importTemplates: (event) ->
+			event.preventDefault()
+
+			filePath = null
+			template = null
+
+			Async.series [
+				(cb) =>
+					$(@refs.importTemplatesInput)
+						.off()
+						.val('')
+						.attr('accept', ".json")
+						.on 'change', (event) =>
+							filePath = event.target.value
+							cb()
+						.click()
+				(cb) ->
+					Fs.readFile filePath, 'utf8', (err, templateJSON) ->
+						if err
+							console.error err
+							console.error err.stack
+							Bootbox.alert("An error occurred while reading the file at " + filePath)
+							return
+
+						try
+							templateJSON = JSON.parse templateJSON
+						catch err
+							console.error err
+							Bootbox.alert("Error: The file at '" + filePath + "' is not a valid template")
+							return
+						unless templateJSON.name and templateJSON.sections
+							Bootbox.alert("Error: The file at '" + filePath + "' is not a valid template")
+							return
+
+						template = Imm.fromJS templateJSON
+
+						cb()
+				(cb) ->
+					Async.map template.get('sections').toArray(), (section, cb) ->
+						Async.map section.get('targets').toArray(), (target, cb) ->
+							Async.map target.get('metrics').toArray(), (metric, cb) ->
+								ActiveSession.persist.metrics.create metric, (err, result) =>
+									if err
+										cb err
+										return
+									cb null, result.get('id')
+
+							, (err, results) ->
+								results = Imm.List(results)
+								if err
+									cb err
+									return
+
+								newTarget = target.set 'metricIds', results
+								.delete 'metrics'
+								cb null, newTarget
+
+						, (err, results) ->
+							results = Imm.List(results)
+							if err
+								cb err
+								return
+							newSection = section.set 'targets', results
+							cb null, newSection
+
+					, (err, results) ->
+						results = Imm.List(results)
+						if err
+							cb err
+							return
+						template = template.set 'sections', results
+						cb()
+
+				(cb) ->
+					global.ActiveSession.persist.planTemplates.create template, (err, result) =>
+						if err
+							cb err
+							return
+						template = result
+						cb()
+			], (err) =>
+				if err
+					if err instanceof Persist.IOError
+						console.error err
+						Bootbox.alert """
+									Please check your network connection and try again
+								"""
+						return
+					CrashHandler.handle err
+					return
+				# OK
+				planTemplates = @state.planTemplates.push template
+				@setState {planTemplates}
 
 		_toggleDisplayInactive: ->
 			displayInactive = not @state.displayInactive
@@ -259,6 +369,12 @@ load = (win) ->
 			},
 				R.div({id: 'modifyPlanTemplateDialog'},
 					R.div({className: 'form-group'},
+						# Hidden input for file saving
+						R.input({
+							ref: 'nwsaveas'
+							className: 'hidden'
+							type: 'file'
+						})
 						R.label({}, "Name")
 						R.input({
 							ref: 'nameField'
@@ -304,6 +420,15 @@ load = (win) ->
 								},
 							"Deactivated"
 							)
+						)
+					)
+					R.div({className: 'form-group'},
+						R.a({
+								className: 'exportTemplateLink'
+								href: "#"
+								onClick: @_exportTemplate
+							},
+							"Export template..."
 						)
 					)
 					R.div({className: 'btn-toolbar pull-right'},
@@ -352,6 +477,59 @@ load = (win) ->
 
 		_updateStatus: (event) ->
 			@setState {status: event.target.value}
+
+		_exportTemplate: ->
+			template = @props.planTemplates.find (template) =>
+				template.get('id') is @props.planTemplateId
+			templateName = template.get('name')
+
+			console.log template.toJS()
+
+			# replace metricIds with actual metric definitions so they can be created on import
+			newSections = template.get('sections').map (section) =>
+				newTargets = section.get('targets').map (target) =>
+					newMetrics = target.get('metricIds').map (metricId) =>
+						newMetric = stripMetadata @props.metricsById.get(metricId)
+						.delete 'id'
+						return newMetric
+					newTarget = target.set 'metrics', newMetrics
+					.delete 'metricIds'
+					return newTarget
+				newSection = section.set 'targets', newTargets
+				return newSection
+
+			template = template.set 'sections', newSections
+			.toJS()
+
+			delete template.id
+			delete template.revisionId
+
+			templateJSON = JSON.stringify template
+
+			# Configures hidden file inputs with custom attributes, and clicks it
+			$nwsaveasInput = $(@refs.nwsaveas)
+
+			$nwsaveasInput
+				.off()
+				.val('')
+				.attr('nwsaveas', "template-#{templateName}")
+				.attr('accept', ".json")
+				.on('change', (event) =>
+					Fs.writeFile event.target.value, templateJSON, {encoding:'utf8'}, (err) =>
+						if err
+							if err instanceof Persist.IOError
+								Bootbox.alert """
+										Please check your network connection and try again.
+									"""
+								return
+
+							Bootbox.alert """
+										Error: Unable to write file. Please check the file path and try again.
+									"""
+							return
+						Bootbox.alert "Template exported successfully", -> return
+				)
+				.click()
 
 		_submit: ->
 			unless @state.name.trim()
