@@ -1,3 +1,12 @@
+### 2.3.0 (Jan 10, 2019)
+
+2.3.0 adds support for OneDrive data directory and the ability to import and export plan templates. It also completes support for Node v10+.
+
+- Import/Export Plan Templates between instances ([#1240](https://github.com/konode001/konote/issues/1240))
+- OneDrive for Business compatibility ([#1243](https://github.com/konode001/konote/issues/1243))
+- Various minor fixes ([#1194](https://github.com/konode001/konote/issues/1194), ([666369e](https://github.com/konode001/konote/commit/666369e)), ([851ad6f](https://github.com/konode001/konote/commit/851ad6f)))
+
+
 ### 2.2.9 (Nov 2, 2018)
 
 2.2.9 brings additional user access levels, support for custom metric identifiers, and a better user experience when working with plan templates.
