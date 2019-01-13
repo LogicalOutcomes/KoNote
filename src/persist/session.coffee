@@ -79,7 +79,13 @@ class Session
 
 	isAdmin: ->
 		# required for basic admins to create client files. todo: tidy up
-		return @accountType is 'admin' or 'basicAdmin'
+		switch @accountType
+			when 'admin'
+				return true
+			when 'basicAdmin'
+				return true
+			else
+				return false
 
 	confirmPassword: (password, cb) ->
 		@account.checkPassword password, cb
