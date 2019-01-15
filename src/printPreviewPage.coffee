@@ -438,7 +438,9 @@ load = (win, {dataSet}) ->
 		render: ->
 			R.div({className: 'plan unit'},
 				R.div({className: 'sections'},
-					(@props.data.get('sections').map (section) =>
+					(@props.data.get('sections').filter (section) =>
+						section.get('status') is 'default'
+					.map (section) =>
 						R.section({className: 'section planTargets', key: section.get('id')},
 							R.h2({className: 'name'}, section.get('name'))
 							(if section.get('targetIds').size is 0
