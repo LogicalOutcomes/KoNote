@@ -314,7 +314,7 @@ load = (win) ->
 		_browse: ({onImport}) ->
 			Bootbox.alert {
 				title: "Setup #{Term 'Shared Database'}"
-				message: "Select the #{Term 'shared database'} folder for KoNote to use. KoNote will create a new database if one does not already exist."
+				message: "Select the #{Term 'shared database'} folder for KoNote to use."
 				callback: =>
 					defaultDir = process.env.OneDrive or ''
 					$nwbrowse = $(@refs.nwbrowsedir)
@@ -327,22 +327,27 @@ load = (win) ->
 			}
 
 		_useDatabase: (dataDir) ->
-			productionConfig = null
+			customerConfig = null
 
 			try
-				productionConfig = require('./config/production.json');
-				productionConfig.backend.dataDirectory = dataDir
+				customerConfig = require('./config/customer.json');
+				if customerConfig.backend
+					customerConfig.backend.dataDirectory = dataDir
+				else customerConfig.backend = {"type":"file-system","dataDirectory": dataDir}
 
 			catch err
 				if err.code is 'MODULE_NOT_FOUND'
-					productionConfig = {"backend": {"dataDirectory": dataDir}}
-
-			Fs.writeFileSync 'src/config/production.json', JSON.stringify productionConfig, 'utf8'
+					customerConfig = {"backend": {"type":"file-system","dataDirectory": dataDir}}
 
 			if Fs.existsSync(path.join(dataDir, 'version.json'))
+				Fs.writeFileSync 'src/config/customer.json', JSON.stringify customerConfig, 'utf8'
 				chrome.runtime.reload()
 
-			@_switchTab 'createAdmin'
+			else
+				Bootbox.alert {
+					title: "Database not found!"
+					message: "Please check the folder path and try again."
+				}
 
 		_restoreBackup: (backupfile) ->
 			dataDir = Config.backend.dataDirectory
