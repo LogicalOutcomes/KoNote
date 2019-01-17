@@ -9,6 +9,7 @@ Async = require 'async'
 Rimraf = require 'rimraf'
 
 Config = require './config'
+Term = require './term'
 Persist = require './persist'
 Atomic = require './persist/atomic'
 
@@ -192,7 +193,7 @@ load = (win) ->
 											onImport: @_useDatabase
 										}
 									},
-									"Use OneDrive Database"
+									"Use #{Term 'Shared Database'}"
 								)
 								R.button({
 									className: 'btn btn-success'
@@ -312,8 +313,8 @@ load = (win) ->
 
 		_browse: ({onImport}) ->
 			Bootbox.alert {
-				title: "Setup OneDrive database"
-				message: "Select the shared OneDrive folder for KoNote to use. KoNote will create a new database if one does not already exist."
+				title: "Setup #{Term 'Shared Database'}"
+				message: "Select the #{Term 'shared database'} folder for KoNote to use. KoNote will create a new database if one does not already exist."
 				callback: =>
 					defaultDir = process.env.OneDrive or ''
 					$nwbrowse = $(@refs.nwbrowsedir)
@@ -434,7 +435,7 @@ load = (win) ->
 						title: "Data Import Failed"
 						message: R.div({},
 							"Sorry, #{Config.productName} was unable to restore the data file."
-							" If the problem persists, please contact technical support at"
+							" If the problem persists, please contact technical support at "
 							R.u({}, Config.supportEmailAddress)
 							" and include the following: \"#{err}\"."
 						)
