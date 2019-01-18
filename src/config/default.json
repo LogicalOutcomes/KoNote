@@ -15,7 +15,7 @@
 	"logoCustomerSm": "customer-logo-sm.png",
 	"iconNotification": "src/logo-notification.jpg",
 
-	"logoSubtitle": "beta",
+	"logoSubtitle": "",
 	"logoSubtitleColor": "hsl(205, 78%, 47%)",
 
 	"features": {
