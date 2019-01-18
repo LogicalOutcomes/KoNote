@@ -90,7 +90,9 @@
 		"program": "service",
 
 		"analysis": "analysis",
-		"analyze": "analyze"
+		"analyze": "analyze",
+
+		"shared database": "shared database"
 	},
 
 	"useTemplate": "simpleDemoTemplate",
