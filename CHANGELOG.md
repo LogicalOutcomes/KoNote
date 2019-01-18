@@ -1,3 +1,12 @@
+### 2.2.1 (Jan 17, 2019)
+
+Maintenance release.
+
+- Exclude deactivated sections from printed plan
+- Shared folder option of a new install requires an existing database
+- Main menu display fix
+
+
 ### 2.3.0 (Jan 10, 2019)
 
 2.3.0 adds support for OneDrive data directory and the ability to import and export plan templates. It also completes support for Node v10+.
