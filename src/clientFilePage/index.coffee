@@ -1086,6 +1086,7 @@ load = (win, {clientFileId}) ->
 							planTemplateHeaders: @props.planTemplateHeaders
 							# Plan is disabled for regular users
 							isReadOnly: isReadOnly or ActiveSession.accountType isnt 'admin'
+							activeTabId: activeTabId
 						})
 					)
 					R.div({

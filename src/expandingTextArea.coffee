@@ -29,6 +29,10 @@ load = (win) ->
 			onClick: React.PropTypes.func
 		}
 
+		getInitialState: -> {
+			loadedOnce: false
+		}
+
 		render: ->
 			return R.div({ref: 'outer'},
 				R.textarea({
@@ -49,6 +53,12 @@ load = (win) ->
 		componentDidMount: ->
 			win.addEventListener 'resize', @_resize
 			@_initialSize()
+
+		componentDidUpdate: ->
+			# fixes bug on plan tab where text area sizes are 0 since the tab is hidden by default
+			return if @state.loadedOnce
+			@_resize()
+			@setState { loadedOnce: true }
 
 		componentWillUnmount: ->
 			win.removeEventListener 'resize', @_resize

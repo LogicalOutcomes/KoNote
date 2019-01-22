@@ -136,6 +136,7 @@ load = (win) ->
 								onChange: @_updateField.bind null, 'description'
 								onFocus: @props.onTargetSelection
 								onClick: @props.onTargetSelection
+								activeTabId: @props.activeTabId
 							})
 						)
 
