@@ -57,7 +57,7 @@ load = (win) ->
 		componentDidUpdate: ->
 			# fixes bug on plan tab where text area sizes are 0 since the tab is hidden by default
 			return if @state.loadedOnce
-			@_resize()
+			@_initialSize()
 			@setState { loadedOnce: true }
 
 		componentWillUnmount: ->
