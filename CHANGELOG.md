@@ -1,4 +1,14 @@
-### 2.2.1 (Jan 17, 2019)
+### 2.3.2 (Feb 1, 2019)
+
+Maintenance release.
+
+- Fix text area autosizing
+- Serialize client file data loading to improve compatibility with slow networks/drives
+- Target description uses generic term instead of "treatment plan"
+- Removed 'beta' subtitle
+
+
+### 2.3.1 (Jan 17, 2019)
 
 Maintenance release.
 
