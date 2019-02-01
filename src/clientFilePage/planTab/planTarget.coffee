@@ -130,7 +130,7 @@ load = (win) ->
 						R.div({className: 'descriptionContainer'},
 							ExpandingTextArea({
 								className: 'description field'
-								placeholder: "Describe the current #{Term 'treatment plan'} . . ."
+								placeholder: "Details (optional)"
 								value: description
 								disabled: isDisabled
 								onChange: @_updateField.bind null, 'description'
