@@ -1,3 +1,22 @@
+### 2.3.2 (Feb 1, 2019)
+
+Maintenance release.
+
+- Fix text area autosizing
+- Serialize client file data loading to improve compatibility with slow networks/drives
+- Target description uses generic term instead of "treatment plan"
+- Removed 'beta' subtitle
+
+
+### 2.3.1 (Jan 17, 2019)
+
+Maintenance release.
+
+- Exclude deactivated sections from printed plan
+- Shared folder option of a new install requires an existing database
+- Main menu display fix
+
+
 ### 2.3.0 (Jan 10, 2019)
 
 2.3.0 adds support for OneDrive data directory and the ability to import and export plan templates. It also completes support for Node v10+.

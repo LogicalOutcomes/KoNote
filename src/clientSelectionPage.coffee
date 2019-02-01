@@ -476,8 +476,10 @@ load = (win) ->
 									},
 										Config.logoSubtitle
 									)
-									R.div({className: 'versionNumber'},
+									(if not Config.logoSubtitle
+										R.div({className: 'versionNumber'},
 										"v" + nw.App.manifest.version
+										)
 									)
 								)
 							)

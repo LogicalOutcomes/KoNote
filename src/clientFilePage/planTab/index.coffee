@@ -283,6 +283,8 @@ load = (win) ->
 
 						reorderSection: @_reorderSection
 						reorderTargetId: @_reorderTargetId
+
+						activeTabId: @props.activeTabId
 					})
 				)
 

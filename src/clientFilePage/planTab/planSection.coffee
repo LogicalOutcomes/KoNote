@@ -181,6 +181,8 @@ load = (win) ->
 									section
 									sectionIndex
 									index
+
+									activeTabId: @props.activeTabId
 								})
 							)
 						)

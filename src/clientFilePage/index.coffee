@@ -218,140 +218,132 @@ load = (win, {clientFileId}) ->
 						cb()
 
 				(cb) =>
-					# load headers in parallel (TODO: confirm whether reading directories can cause EMFILE issues)
-					Async.parallel [
-						(cb) =>
-							ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
-								if err
-									cb err
-									return
-
-								clientFile = stripMetadata revisions.get(0)
-
-								checkFileSync clientFile, @state.clientFile
-								cb()
-
-						(cb) =>
-							ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
-								if err
-									cb err
-									return
-
-								planTargetHeaders = results
-								cb()
-
-						(cb) =>
-							ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
-								if err
-									cb err
-									return
-
-								# fast first pass
-								if @state.status is "init"
-									# need the count for fast second pass
-									@progNoteTotal = results.size
-
-									allProgNoteHeaders = results
-									.sortBy (header) ->
-										createdAt = header.get('backdate') or header.get('timestamp')
-										return Moment createdAt, Persist.TimestampFormat
-
-									progNoteHeaders = allProgNoteHeaders.slice(-10)
-								else
-									progNoteHeaders = results
-
-								cb()
-
-						(cb) =>
-							ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
-								if err
-									cb err
-									return
-
-								progEventHeaders = results
-								cb()
-
-						(cb) =>
-							ActiveSession.persist.attachments.list clientFileId, (err, results) =>
-								if err
-									cb err
-									return
-
-								attachmentHeaders = results
-								cb()
-
-						(cb) =>
-							ActiveSession.persist.globalEvents.list (err, results) =>
-								if err
-									cb err
-									return
-
-								globalEventHeaders = results
-								cb()
-
-						(cb) =>
-							ActiveSession.persist.metrics.list (err, results) =>
-								if err
-									cb err
-									return
-
-								metricHeaders = results
-								cb()
-
-						(cb) =>
-							ActiveSession.persist.clientFileProgramLinks.list (err, results) =>
-								if err
-									cb err
-									return
-
-								clientFileProgramLinkHeaders = results
-								.filter (link) ->
-									link.get('clientFileId') is clientFileId and
-									link.get('status') is "enrolled"
-								cb()
-
-						(cb) =>
-							ActiveSession.persist.programs.list (err, results) =>
-								if err
-									cb err
-									return
-
-								programHeaders = results
-								cb()
-
-						(cb) =>
-							ActiveSession.persist.eventTypes.list (err, result) =>
-								if err
-									cb err
-									return
-
-								eventTypeHeaders = result
-								cb()
-
-						(cb) =>
-							ActiveSession.persist.alerts.list clientFileId, (err, result) =>
-								if err
-									cb err
-									return
-								alertHeaders = result
-								cb()
-
-						(cb) =>
-							ActiveSession.persist.planTemplates.list (err, result) =>
-								if err
-									cb err
-									return
-
-								planTemplateHeaders = result
-								.filter (template) -> template.get('status') is 'default'
-								cb()
-
-					], (err) =>
+					# load headers
+					ActiveSession.persist.clientFiles.readLatestRevisions clientFileId, 1, (err, revisions) =>
 						if err
 							cb err
 							return
-						# headers loaded, carry on in series
+
+						clientFile = stripMetadata revisions.get(0)
+
+						checkFileSync clientFile, @state.clientFile
 						cb()
+
+				(cb) =>
+					ActiveSession.persist.planTargets.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						planTargetHeaders = results
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.progNotes.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						# fast first pass
+						if @state.status is "init"
+							# need the count for fast second pass
+							@progNoteTotal = results.size
+
+							allProgNoteHeaders = results
+							.sortBy (header) ->
+								createdAt = header.get('backdate') or header.get('timestamp')
+								return Moment createdAt, Persist.TimestampFormat
+
+							progNoteHeaders = allProgNoteHeaders.slice(-10)
+						else
+							progNoteHeaders = results
+
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.progEvents.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						progEventHeaders = results
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.attachments.list clientFileId, (err, results) =>
+						if err
+							cb err
+							return
+
+						attachmentHeaders = results
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.globalEvents.list (err, results) =>
+						if err
+							cb err
+							return
+
+						globalEventHeaders = results
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.metrics.list (err, results) =>
+						if err
+							cb err
+							return
+
+						metricHeaders = results
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.clientFileProgramLinks.list (err, results) =>
+						if err
+							cb err
+							return
+
+						clientFileProgramLinkHeaders = results
+						.filter (link) ->
+							link.get('clientFileId') is clientFileId and
+							link.get('status') is "enrolled"
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.programs.list (err, results) =>
+						if err
+							cb err
+							return
+
+						programHeaders = results
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.eventTypes.list (err, result) =>
+						if err
+							cb err
+							return
+
+						eventTypeHeaders = result
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.alerts.list clientFileId, (err, result) =>
+						if err
+							cb err
+							return
+						alertHeaders = result
+						cb()
+
+				(cb) =>
+					ActiveSession.persist.planTemplates.list (err, result) =>
+						if err
+							cb err
+							return
+
+						planTemplateHeaders = result
+						.filter (template) -> template.get('status') is 'default'
+						cb()
+
 
 				(cb) =>
 					Async.map planTargetHeaders.toArray(), (planTargetHeader, cb) =>
@@ -1086,6 +1078,7 @@ load = (win, {clientFileId}) ->
 							planTemplateHeaders: @props.planTemplateHeaders
 							# Plan is disabled for regular users
 							isReadOnly: isReadOnly or ActiveSession.accountType isnt 'admin'
+							activeTabId: activeTabId
 						})
 					)
 					R.div({
