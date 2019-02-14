@@ -71,7 +71,7 @@ load = (win, {dataSet}) ->
 				footerString: Config.printFooter
 
 		_exportPage: ->
-			# todo: enable/disable via config (griffin-oriented feature)
+			# feature enabled/disabled via config
 			data = @props.printDataSet.first().get('data')
 			clientFile = @props.printDataSet.first().get('clientFile')
 			clientFirstName = clientFile.get('clientName').get('first')
@@ -187,14 +187,16 @@ load = (win, {dataSet}) ->
 								"Print"
 							)
 
-							R.button({
-								ref: 'export'
-								className: 'print btn btn-primary'
-								onClick: @_exportPage
-							},
-								FaIcon('download')
-								" "
-								"Export"
+							(if printObj.get('format') is 'plan' and Config.features.planExportToWord.isEnabled
+								R.button({
+									ref: 'export'
+									className: 'print btn btn-primary'
+									onClick: @_exportPage
+								},
+									FaIcon('download')
+									" "
+									"Export"
+								)
 							)
 
 							(if printObj.get('format') is 'plan'

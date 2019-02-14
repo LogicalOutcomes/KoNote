@@ -28,6 +28,9 @@
 		"programs": {
 			"isEnabled": true,
 			"allowOverride": true
+		},
+		"planExportToWord" : {
+			"isEnabled": false
 		}
 	},
 
