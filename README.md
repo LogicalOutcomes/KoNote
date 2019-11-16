@@ -24,4 +24,4 @@ Additional documentation is available on the [wiki](https://github.com/konode001
 
 Copyright (c) Konode. All rights reserved.
 
-Licensed under MIT(https://opensource.org/licenses/MIT)
+Licensed under the [MIT license](https://opensource.org/licenses/MIT)
