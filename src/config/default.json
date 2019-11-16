@@ -90,7 +90,7 @@
 		"event": "event",
 		"global event": "global event",
 		"event type": "event type",
-		"program": "service",
+		"program": "role",
 
 		"analysis": "analysis",
 		"analyze": "analyze",
