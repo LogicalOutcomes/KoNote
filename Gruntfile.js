@@ -189,12 +189,12 @@ module.exports = function(grunt) {
 				src: 'build/uninstaller/uninstall.exe',
 				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/uninstall.exe'
 			},
+			customerConfig: {
+				src: 'customers/<%= grunt.task.current.args[1] %>/customer.json',
+				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/src/config/customer.json'
+			},
 			griffin: {
 				files: [
-					{
-						src: 'customers/griffin/customer.json',
-						dest: 'dist/temp/<%= grunt.task.current.args[0] %>/src/config/customer.json'
-					},
 					{
 						src: 'customers/griffin/gc-logo.svg',
 						dest: 'dist/temp/<%= grunt.task.current.args[0] %>/src/gc-logo.svg'
@@ -463,53 +463,69 @@ module.exports = function(grunt) {
 		releases.forEach(function ([platformId, customerId]) {
 			var releaseId = customerId ? customerId + '-' + platformId : platformId;
 
-			grunt.task.run('copy:main:'+releaseId);
-			grunt.task.run('replace:main:'+releaseId);
-            grunt.task.run('replace:start:'+releaseId);
-			grunt.task.run('replace:config:'+releaseId);
-			grunt.task.run('copy:production:'+releaseId);
-			grunt.task.run('copy:eula:'+releaseId);
+			grunt.task.run('copy:main:' + releaseId);
+			grunt.task.run('replace:main:' + releaseId);
+			grunt.task.run('replace:start:' + releaseId);
+			grunt.task.run('replace:config:' + releaseId);
+			grunt.task.run('copy:production:' + releaseId);
+			grunt.task.run('copy:eula:' + releaseId);
+
 			if (platformId === "win") {
-				//grunt.task.run('copy:generic:'+releaseId);
-				grunt.task.run('copy:uninstaller:'+releaseId);
-				grunt.task.run('exec:npmUninstaller:'+releaseId);
-				grunt.task.run('exec:nwjsuninstaller:'+releaseId);
+				//grunt.task.run('copy:generic:' + releaseId);
+
+				// Copy uninstaller app code to /dist
+				grunt.task.run('copy:uninstaller:' + releaseId);
+
+				// Run npm install on uninstaller app code in /dist
+				grunt.task.run('exec:npmUninstaller:' + releaseId);
+
+				// Run NW.js builder on uninstaller app to produce .exe
+				grunt.task.run('exec:nwjsuninstaller:' + releaseId);
 			}
+
+			// Add customer-specific configuration file if not a generic build
+			if (customerId) {
+				grunt.task.run('copy:customerConfig:' + releaseId + ':' + customerId);
+			}
+
+			// Griffin-specific customizations
+			// TODO All configurations should be done through customer.json
 			if (customerId === "griffin") {
-				grunt.task.run('copy:griffin:'+releaseId);
-				grunt.task.run('replace:griffin:'+releaseId);
+				grunt.task.run('copy:griffin:' + releaseId);
+				grunt.task.run('replace:griffin:' + releaseId);
 			}
-			grunt.task.run('exec:npm:'+releaseId);
-			grunt.task.run('copy:nodemodules:'+releaseId);
-			grunt.task.run('clean:nodemodules:'+releaseId);
-			grunt.task.run('exec:renamemodules:'+releaseId);
-			grunt.task.run('replace:bootstrap:'+releaseId);
-			grunt.task.run('stylus:compile:'+releaseId);
-			grunt.task.run('coffee:compileMultiple:'+releaseId);
-			grunt.task.run('uglify:all:'+releaseId);
-			grunt.task.run('clean:coffee:'+releaseId);
-			grunt.task.run('clean:styl:'+releaseId);
+
+			grunt.task.run('exec:npm:' + releaseId);
+			grunt.task.run('copy:nodemodules:' + releaseId);
+			grunt.task.run('clean:nodemodules:' + releaseId);
+			grunt.task.run('exec:renamemodules:' + releaseId);
+			grunt.task.run('replace:bootstrap:' + releaseId);
+			grunt.task.run('stylus:compile:' + releaseId);
+			grunt.task.run('coffee:compileMultiple:' + releaseId);
+			grunt.task.run('uglify:all:' + releaseId);
+			grunt.task.run('clean:coffee:' + releaseId);
+			grunt.task.run('clean:styl:' + releaseId);
 			if (platformId === "win") {
-				grunt.task.run('exec:nwjswin:'+releaseId);
-				grunt.task.run('copy:uninstallerbinary:'+releaseId);
+				grunt.task.run('exec:nwjswin:' + releaseId);
+				grunt.task.run('copy:uninstallerbinary:' + releaseId);
 				// codesign and create setup file
 				//grunt.task.run('prompt:codesignPassword');
-				//grunt.task.run('exec:codesignWin:'+releaseId);
-				//grunt.task.run('exec:setup:'+releaseId);
-				grunt.task.run('exec:zip:'+releaseId);
+				//grunt.task.run('exec:codesignWin:' + releaseId);
+				//grunt.task.run('exec:setup:' + releaseId);
+				grunt.task.run('exec:zip:' + releaseId);
 			}
 			if (platformId === "winsdk") {
-				grunt.task.run('exec:nwjswinSDK:'+releaseId);
-				grunt.task.run('copy:uninstallerbinary:'+releaseId);
+				grunt.task.run('exec:nwjswinSDK:' + releaseId);
+				grunt.task.run('copy:uninstallerbinary:' + releaseId);
 				// codesign and create setup file
-				//grunt.task.run('exec:setup:'+releaseId)
-				grunt.task.run('exec:zip:'+releaseId);
+				//grunt.task.run('exec:setup:' + releaseId)
+				grunt.task.run('exec:zip:' + releaseId);
 			}
 			if (platformId === "mac") {
-				grunt.task.run('exec:nwjsosx:'+releaseId);
+				grunt.task.run('exec:nwjsosx:' + releaseId);
 				if (process.platform === 'darwin') {
-					grunt.task.run('exec:codesign:'+releaseId);
-					grunt.task.run('appdmg:main:'+releaseId);
+					grunt.task.run('exec:codesign:' + releaseId);
+					grunt.task.run('appdmg:main:' + releaseId);
 				}
 			}
 		});
