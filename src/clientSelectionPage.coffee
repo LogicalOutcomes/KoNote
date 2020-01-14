@@ -48,9 +48,13 @@ load = (win) ->
 			}
 
 		init: ->
-			@props.setWindowTitle """
-				#{Config.productName} (#{global.ActiveSession.userName})
-			"""
+			windowTitle = "#{Config.productName} (#{global.ActiveSession.userName})"
+
+			if Config.logoSubtitle
+				windowTitle = "#{Config.logoSubtitle} - #{windowTitle}"
+
+			@props.setWindowTitle(windowTitle)
+
 			@_loadInitialData()
 
 		deinit: (cb=(->)) ->

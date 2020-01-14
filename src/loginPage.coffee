@@ -36,6 +36,9 @@ load = (win) ->
 			}
 
 		init: ->
+			if Config.logoSubtitle
+				@props.setWindowTitle("#{Config.logoSubtitle} - #{Config.productName}")
+
 			@_checkSetUp()
 
 		deinit: (cb=(->)) ->
@@ -350,6 +353,19 @@ load = (win) ->
 							className: 'animated rotateIn'
 							src: 'img/konode-kn.svg'
 						})
+					)
+					R.div({className: 'subtitleContainer'},
+						R.div({
+							className: 'subtitleText'
+							style: {color: Config.logoSubtitleColor}
+						},
+							Config.logoSubtitle
+						)
+						(if not Config.logoSubtitle
+							R.div({className: 'versionNumber'},
+							"v" + nw.App.manifest.version
+							)
+						)
 					)
 					R.div({
 						id: 'formContainer'
