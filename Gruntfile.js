@@ -98,6 +98,9 @@ module.exports = function(grunt) {
 							'package.json',
 							'src/**',
 							'lib/**',
+							'build/eula.txt',
+							'build/innosetup.sh',
+							'build/konote-innosetup.iss',
 							'!src/config/develop.json'
 						],
 						dest: 'dist/temp/<%= grunt.task.current.args[0] %>/',
@@ -275,9 +278,10 @@ module.exports = function(grunt) {
 				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/KoNote-win-x64',
 				cmd: 'zip -r --quiet ../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
 			},
-			setup :{
-				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/KoNote-win-x64',
-				cmd: '../../../../../build/innosetup.sh ../../../../../build/konote-innosetup.iss'
+			setup: {
+				// TODO somehow pass (or sed) app name, version number, etc into the innosetup script
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>',
+				cmd: 'bash build/innosetup.sh build/konote-innosetup.iss'
 			},
 			codesign: {
 				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/KoNote-mac-x64',
@@ -511,14 +515,14 @@ module.exports = function(grunt) {
 				// codesign and create setup file
 				//grunt.task.run('prompt:codesignPassword');
 				//grunt.task.run('exec:codesignWin:' + releaseId);
-				//grunt.task.run('exec:setup:' + releaseId);
+				grunt.task.run('exec:setup:' + releaseId);
 				grunt.task.run('exec:zip:' + releaseId);
 			}
 			if (platformId === "winsdk") {
 				grunt.task.run('exec:nwjswinSDK:' + releaseId);
 				grunt.task.run('copy:uninstallerbinary:' + releaseId);
 				// codesign and create setup file
-				//grunt.task.run('exec:setup:' + releaseId)
+				grunt.task.run('exec:setup:' + releaseId)
 				grunt.task.run('exec:zip:' + releaseId);
 			}
 			if (platformId === "mac") {
@@ -529,6 +533,6 @@ module.exports = function(grunt) {
 				}
 			}
 		});
-		grunt.task.run('clean:temp');
+		//grunt.task.run('clean:temp');
 	});
 };

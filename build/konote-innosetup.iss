@@ -23,8 +23,8 @@ DefaultDirName={userappdata}\{#MyAppName}
 DisableDirPage=no
 DefaultGroupName={#MyAppName}
 OutputBaseFilename=konote-{#MyAppVersion}-win-setup
-OutputDir=..\dist
-SetupIconFile=..\dist\temp\nwjs-win\KoNote-win-ia32\src\icon.ico
+OutputDir=..\..
+SetupIconFile=..\src\icon.ico
 LicenseFile=eula.txt
 Compression=lzma
 SolidCompression=yes
@@ -37,8 +37,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 
 [Files]
-Source: "..\dist\temp\nwjs-win\KoNote-win-ia32\KoNote.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\dist\temp\nwjs-win\KoNote-win-ia32\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\KoNote-win-x64\KoNote.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\KoNote-win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
