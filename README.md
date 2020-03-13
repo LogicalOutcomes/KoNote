@@ -14,9 +14,9 @@ npm start
 
 ## Contributing
 
-- [Development Workflow](https://github.com/konode001/konote/wiki/Release-workflow)
-- [Packaging](https://github.com/konode001/konote/wiki/Packaging)
-- [Deployment Notes](https://github.com/konode001/konote/wiki/Deployment-Notes)
+- [Development Workflow](https://github.com/LogicalOutcomes/KoNote/wiki/Deployment-Notes)
+- [Packaging](https://github.com/LogicalOutcomes/KoNote/wiki/Packaging)
+- [Deployment Notes](https://github.com/LogicalOutcomes/KoNote/wiki/Deployment-Notes)
 
 Additional documentation is available on the [wiki](https://github.com/konode001/konote/wiki)
 
