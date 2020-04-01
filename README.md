@@ -6,7 +6,7 @@ You will need [git](https://git-scm.com/) and a recent version of [Node.js](http
 Then run the following:
 
 ```
-git clone https://github.com/konode001/konote
+git clone https://github.com/LogicalOutcomes/KoNote
 cd konote
 npm install
 npm start
@@ -14,11 +14,11 @@ npm start
 
 ## Contributing
 
-- [Development Workflow](https://github.com/LogicalOutcomes/KoNote/wiki/Release-Workflow)
-- [Packaging](https://github.com/LogicalOutcomes/KoNote/wiki/Packaging%2C-testing-and-known-issues)
-- [Deployment Notes](https://github.com/LogicalOutcomes/KoNote/wiki/Deployment-Notes)
+-   [Development Workflow](https://github.com/LogicalOutcomes/KoNote/wiki/Release-Workflow)
+-   [Packaging](https://github.com/LogicalOutcomes/KoNote/wiki/Packaging%2C-testing-and-known-issues)
+-   [Deployment Notes](https://github.com/LogicalOutcomes/KoNote/wiki/Deployment-Notes)
 
-Additional documentation is available on the [wiki](https://github.com/konode001/konote/wiki)
+Additional documentation is available on the [wiki](https://github.com/LogicalOutcomes/KoNote/wiki)
 
 ## License
 
