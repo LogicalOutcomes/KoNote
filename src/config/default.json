@@ -29,7 +29,7 @@
 			"isEnabled": true,
 			"allowOverride": true
 		},
-		"planExportToWord" : {
+		"planExportToWord": {
 			"isEnabled": false
 		}
 	},
