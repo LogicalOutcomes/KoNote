@@ -1018,7 +1018,12 @@ load = (win, {clientFileId}) ->
 				@props.closeWindow()
 
 		componentDidMount: ->
-			@props.setWindowTitle "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
+			windowTitle = "#{Config.productName} (#{global.ActiveSession.userName}) - #{@props.clientName}"
+
+			if Config.logoSubtitle
+				windowTitle = "#{Config.logoSubtitle} - #{windowTitle}"
+
+			@props.setWindowTitle(windowTitle)
 
 			# It's now OK to close the window
 			@hasMounted = true

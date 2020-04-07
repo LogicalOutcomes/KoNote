@@ -9,31 +9,72 @@ creates a 'dist' directory containing compiled mac dmg and windows zip files.
 
 // TODO: bundle innosetup and codesign utility for windows?
 
-var release = [];
+const _ = require('underscore');
+const Fs = require('fs');
+const Path = require('path');
+
+const SUPPORTED_PLATFORMS = [
+	// [id, name]
+	// id must be file path safe and not include hyphens
+	['mac', 'Mac'],
+	['win', 'Windows'],
+	['winsdk', 'Windows (SDK)'],
+];
+const SUPPORTED_PLATFORM_IDS = SUPPORTED_PLATFORMS.map(function (p) {
+	return p[0];
+});
+
+const SUPPORTED_CUSTOMER_IDS =
+	// Include null customerId to indicate default/generic configuration
+	[null].concat(
+		Fs.readdirSync('customers')
+			.filter(function (dirName) {
+				return Fs.existsSync(Path.join('customers', dirName, 'customer.json'));
+			})
+	);
+
+function customerIdToDisplayName(customerId) {
+	if (customerId === null) {
+		return 'Generic';
+	}
+
+	return customerId.split('_').map(capitalizeWord).join(' ');
+}
+
+function capitalizeWord(word) {
+	return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+
+var releases = [];
 
 module.exports = function(grunt) {
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 
 		prompt: {
-			platformType: {
+			releases: {
 				options: {
 					questions: [
 						{
-							config: 'platformType',
+							config: 'releases',
 							type: 'checkbox',
 							message: 'Please select release platform(s) for <%= pkg.displayName %> <%= pkg.version %>',
-							choices: [
-								{name: ' Generic - Mac', value: 'mac'},
-								{name: ' Generic - Windows', value: 'win'},
-								{name: ' Generic - Windows - SDK', value: 'SDK'},
-								{name: ' Griffin - Mac', value: 'griffin-mac'},
-								{name: ' Griffin - Windows', value: 'griffin-win'}
-							]
+							choices: _.flatten(SUPPORTED_CUSTOMER_IDS.map(function (customerId) {
+								const customerDisplayName = customerIdToDisplayName(customerId);
+
+								return SUPPORTED_PLATFORMS.map(function ([platformId, platformName]) {
+									return {
+										name: ' ' + customerDisplayName + ' - ' + platformName,
+										value: [platformId, customerId],
+									};
+								});
+							}), true),
 						}
 					],
 					then: function(results) {
-						release = results.platformType
+						// Save in global for later use
+						releases = results.releases;
 					}
 				}
 			},
@@ -57,6 +98,9 @@ module.exports = function(grunt) {
 							'package.json',
 							'src/**',
 							'lib/**',
+							'build/eula.txt',
+							'build/innosetup.sh',
+							'build/konote-innosetup.iss',
 							'!src/config/develop.json'
 						],
 						dest: 'dist/temp/<%= grunt.task.current.args[0] %>/',
@@ -83,7 +127,7 @@ module.exports = function(grunt) {
 				expand: true,
 				cwd: 'dist/temp/uninstaller/dist/uninstall-win-x64/',
 				src: 'uninstall.exe',
-				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-win-x64/'
+				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/KoNote-win-x64/'
 			},
 			nodemodules: {
 				expand: true,
@@ -148,12 +192,12 @@ module.exports = function(grunt) {
 				src: 'build/uninstaller/uninstall.exe',
 				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/uninstall.exe'
 			},
+			customerConfig: {
+				src: 'customers/<%= grunt.task.current.args[1] %>/customer.json',
+				dest: 'dist/temp/<%= grunt.task.current.args[0] %>/src/config/customer.json'
+			},
 			griffin: {
 				files: [
-					{
-						src: 'customers/griffin/customer.json',
-						dest: 'dist/temp/<%= grunt.task.current.args[0] %>/src/config/customer.json'
-					},
 					{
 						src: 'customers/griffin/gc-logo.svg',
 						dest: 'dist/temp/<%= grunt.task.current.args[0] %>/src/gc-logo.svg'
@@ -231,19 +275,20 @@ module.exports = function(grunt) {
 		},
 		exec: {
 			zip: {
-				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-win-x64',
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/KoNote-win-x64',
 				cmd: 'zip -r --quiet ../../../../konote-<%= pkg.version %>-<%= grunt.task.current.args[0] %>.zip *'
 			},
-			setup :{
-				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-win-x64',
-				cmd: '../../../../../build/innosetup.sh ../../../../../build/konote-innosetup.iss'
+			setup: {
+				// TODO somehow pass (or sed) app name, version number, etc into the innosetup script
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>',
+				cmd: 'bash build/innosetup.sh build/konote-innosetup.iss'
 			},
 			codesign: {
-				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-mac-x64',
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/KoNote-mac-x64',
 				cmd: '../../../../../build/codesign-osx.sh'
 			},
 			codesignWin: {
-				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-win-x64',
+				cwd: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/KoNote-win-x64',
 				cmd: '../../../../../build/codesign-win.sh <%= grunt.config("codesignPassword") %> KoNote.exe'
 			},
 			npm: {
@@ -284,7 +329,7 @@ module.exports = function(grunt) {
 					title: 'KoNote-<%= pkg.version %>',
 					background: 'dist/temp/<%= grunt.task.current.args[0] %>/src/background.tiff', 'icon-size': 104,
 					contents: [
-						{x: 130, y: 150, type: 'file', path: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/konote-mac-x64/konote.app'},
+						{x: 130, y: 150, type: 'file', path: 'dist/temp/<%= grunt.task.current.args[0] %>/dist/KoNote-mac-x64/konote.app'},
 						{x: 320, y: 150, type: 'link', path: '/Applications'}
 					]
 				},
@@ -365,65 +410,129 @@ module.exports = function(grunt) {
 		grunt.loadNpmTasks('grunt-appdmg');
 	}
 
-	grunt.registerTask('build', function() {
-		grunt.task.run('prompt:platformType');
-		grunt.task.run('release');
+	grunt.registerTask('build', function () {
+		if (process.env.RELEASES) {
+			// e.g. win:griffin,mac:griffin,mac,win
+			releases = process.env.RELEASES.split(',').map(function (r) {
+				const parts = r.split(':');
+
+				if (parts.length === 1) {
+					return [parts[0], null];
+				}
+				if (parts.length === 2) {
+					return parts;
+				}
+
+				throw new Error("could not parse RELEASES env var");
+			});
+
+			releases.forEach(function (r) {
+				if (!SUPPORTED_PLATFORM_IDS.includes(r[0])) {
+					throw new Error("RELEASES env var has unknown platform ID " + JSON.stringify(r[0]));
+				}
+
+				if (!SUPPORTED_CUSTOMER_IDS.includes(r[1])) {
+					throw new Error("RELEASES env var has unknown customer ID " + JSON.stringify(r[1]));
+				}
+			});
+		} else {
+			grunt.task.run('prompt:releases');
+		}
+		grunt.task.run('build-releases');
 	});
 
-	grunt.registerTask('release', function() {
+	grunt.registerTask('build-all-customers', function () {
+		if (!process.env.PLATFORM) {
+			throw new Error("build-all-customers requires env var PLATFORM");
+		}
+
+		const platformId = process.env.PLATFORM;
+
+		if (!SUPPORTED_PLATFORM_IDS.includes(platformId)) {
+			throw new Error("unknown platform ID " + JSON.stringify(platformId));
+		}
+
+		releases = SUPPORTED_CUSTOMER_IDS.map(function (customerId) {
+			return [platformId, customerId];
+		});
+
+		grunt.task.run('build-releases');
+	});
+
+	// internal use only
+	grunt.registerTask('build-releases', function () {
 		grunt.task.run('clean:temp');
 		grunt.task.run('exec:test');
-		release.forEach(function(entry) {
-			grunt.task.run('copy:main:'+entry);
-			grunt.task.run('replace:main:'+entry);
-            grunt.task.run('replace:start:'+entry);
-			grunt.task.run('replace:config:'+entry);
-			grunt.task.run('copy:production:'+entry);
-			grunt.task.run('copy:eula:'+entry);
-			if (entry === "win") {
-				//grunt.task.run('copy:generic:'+entry);
-				grunt.task.run('copy:uninstaller:'+entry);
-				grunt.task.run('exec:npmUninstaller:'+entry);
-				grunt.task.run('exec:nwjsuninstaller:'+entry);
+
+		releases.forEach(function ([platformId, customerId]) {
+			var releaseId = customerId ? customerId + '-' + platformId : platformId;
+
+			grunt.task.run('copy:main:' + releaseId);
+			grunt.task.run('replace:main:' + releaseId);
+			grunt.task.run('replace:start:' + releaseId);
+			grunt.task.run('replace:config:' + releaseId);
+			grunt.task.run('copy:production:' + releaseId);
+			grunt.task.run('copy:eula:' + releaseId);
+
+			if (platformId === "win") {
+				//grunt.task.run('copy:generic:' + releaseId);
+
+				// Copy uninstaller app code to /dist
+				grunt.task.run('copy:uninstaller:' + releaseId);
+
+				// Run npm install on uninstaller app code in /dist
+				grunt.task.run('exec:npmUninstaller:' + releaseId);
+
+				// Run NW.js builder on uninstaller app to produce .exe
+				grunt.task.run('exec:nwjsuninstaller:' + releaseId);
 			}
-			if (entry === "griffin-mac" || entry === "griffin-win") {
-				grunt.task.run('copy:griffin:'+entry);
-				grunt.task.run('replace:griffin:'+entry);
+
+			// Add customer-specific configuration file if not a generic build
+			if (customerId) {
+				grunt.task.run('copy:customerConfig:' + releaseId + ':' + customerId);
 			}
-			grunt.task.run('exec:npm:'+entry);
-			grunt.task.run('copy:nodemodules:'+entry);
-			grunt.task.run('clean:nodemodules:'+entry);
-			grunt.task.run('exec:renamemodules:'+entry);
-			grunt.task.run('replace:bootstrap:'+entry);
-			grunt.task.run('stylus:compile:'+entry);
-			grunt.task.run('coffee:compileMultiple:'+entry);
-			grunt.task.run('uglify:all:'+entry);
-			grunt.task.run('clean:coffee:'+entry);
-			grunt.task.run('clean:styl:'+entry);
-			if (entry.includes("win")) {
-				grunt.task.run('exec:nwjswin:'+entry);
-				grunt.task.run('copy:uninstallerbinary:'+entry);
+
+			// Griffin-specific customizations
+			// TODO All configurations should be done through customer.json
+			if (customerId === "griffin") {
+				grunt.task.run('copy:griffin:' + releaseId);
+				grunt.task.run('replace:griffin:' + releaseId);
+			}
+
+			grunt.task.run('exec:npm:' + releaseId);
+			grunt.task.run('copy:nodemodules:' + releaseId);
+			grunt.task.run('clean:nodemodules:' + releaseId);
+			grunt.task.run('exec:renamemodules:' + releaseId);
+			grunt.task.run('replace:bootstrap:' + releaseId);
+			grunt.task.run('stylus:compile:' + releaseId);
+			grunt.task.run('coffee:compileMultiple:' + releaseId);
+			grunt.task.run('uglify:all:' + releaseId);
+			grunt.task.run('clean:coffee:' + releaseId);
+			grunt.task.run('clean:styl:' + releaseId);
+			if (platformId === "win") {
+				grunt.task.run('exec:nwjswin:' + releaseId);
+				grunt.task.run('copy:uninstallerbinary:' + releaseId);
 				// codesign and create setup file
 				//grunt.task.run('prompt:codesignPassword');
-				//grunt.task.run('exec:codesignWin:'+entry);
-				//grunt.task.run('exec:setup:'+entry);
-				grunt.task.run('exec:zip:'+entry);
+				//grunt.task.run('exec:codesignWin:' + releaseId);
+				grunt.task.run('exec:setup:' + releaseId);
+				grunt.task.run('exec:zip:' + releaseId);
 			}
-			if (entry.includes("SDK")) {
-				grunt.task.run('exec:nwjswinSDK:'+entry);
-				grunt.task.run('copy:uninstallerbinary:'+entry);
+			if (platformId === "winsdk") {
+				grunt.task.run('exec:nwjswinSDK:' + releaseId);
+				grunt.task.run('copy:uninstallerbinary:' + releaseId);
 				// codesign and create setup file
-				//grunt.task.run('exec:setup:'+entry)
-				grunt.task.run('exec:zip:'+entry);
+				grunt.task.run('exec:setup:' + releaseId)
+				grunt.task.run('exec:zip:' + releaseId);
 			}
-			if (entry.includes("mac")) {
-				grunt.task.run('exec:nwjsosx:'+entry);
+			if (platformId === "mac") {
+				grunt.task.run('exec:nwjsosx:' + releaseId);
 				if (process.platform === 'darwin') {
-					grunt.task.run('exec:codesign:'+entry);
-					grunt.task.run('appdmg:main:'+entry);
+					grunt.task.run('exec:codesign:' + releaseId);
+					grunt.task.run('appdmg:main:' + releaseId);
 				}
 			}
 		});
-		grunt.task.run('clean:temp');
+		//grunt.task.run('clean:temp');
 	});
 };

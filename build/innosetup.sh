@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # For installation and usage, please refer to my blog post:
-# http://derekstavis.github.io/posts/creating-a-installer-using-inno-setup-on-linux-and-mac-os-x/
+# http://derek.github.stavis.me/posts/creating-a-installer-using-inno-setup-on-linux-and-mac-os-x
 #
 # The MIT License (MIT)
 #

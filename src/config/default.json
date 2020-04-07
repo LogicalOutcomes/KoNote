@@ -15,7 +15,7 @@
 	"logoCustomerSm": "customer-logo-sm.png",
 	"iconNotification": "src/logo-notification.jpg",
 
-	"logoSubtitle": "",
+	"logoSubtitle": "Example Application",
 	"logoSubtitleColor": "hsl(205, 78%, 47%)",
 
 	"features": {
@@ -28,6 +28,9 @@
 		"programs": {
 			"isEnabled": true,
 			"allowOverride": true
+		},
+		"planExportToWord": {
+			"isEnabled": false
 		}
 	},
 
@@ -87,7 +90,7 @@
 		"event": "event",
 		"global event": "global event",
 		"event type": "event type",
-		"program": "service",
+		"program": "role",
 
 		"analysis": "analysis",
 		"analyze": "analyze",
