@@ -65,18 +65,23 @@ createCollectionApi = (backend, session, eventBus, context, modelDef) ->
 			return
 
 		# We allow explicit metadata for development purposes, such as seeding.
-		if process.env.NODE_ENV isnt 'development'
-			if obj.has('author')
-				cb new Error "new objects cannot already have an author"
-				return
 
-			if obj.has('timestamp')
-				cb new Error "new objects cannot already have a timestamp"
-				return
+		# This is commented out for now, to prevent the application failing here
+		# when trying to import data that might somehow still have these metadata properties attached
+		# (which get overwritten here anyway)
+		
+		# if process.env.NODE_ENV isnt 'development'
+		# 	if obj.has('author')
+		# 		cb new Error "new objects cannot already have an author"
+		# 		return
 
-			if obj.has('authorDisplayName')
-				cb new Error "new objects cannot already have a displayName"
-				return
+		# 	if obj.has('timestamp')
+		# 		cb new Error "new objects cannot already have a timestamp"
+		# 		return
+
+		# 	if obj.has('authorDisplayName')
+		# 		cb new Error "new objects cannot already have a displayName"
+		# 		return
 
 		# Add metadata fields
 		obj = obj
