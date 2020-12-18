@@ -14,6 +14,7 @@ load = (win) ->
 	R = React.DOM
 	{findDOMNode} = win.ReactDOM
 	{DragSource, DropTarget} = win.ReactDnD
+	Bootbox = win.bootbox
 
 	PlanTarget = require('./planTarget').load(win)
 	InactiveToggleWrapper = require('./inactiveToggleWrapper').load(win)
@@ -264,6 +265,7 @@ load = (win) ->
 			canModify = not isReadOnly and not sectionIsInactive
 			isAdmin = global.ActiveSession.isAdmin()
 
+			hasValidTargets = currentTargetRevisionsById.every((target) => target.get('name'));
 
 			return R.div({className: 'sectionHeader'},
 				connectDragSource (
@@ -339,22 +341,29 @@ load = (win) ->
 							" Add #{Term 'Target'}"
 						)
 
-						WithTooltip({
-							title: "Create #{Term 'Section'} #{Term 'Template'}"
-							placement: 'top'
-							container: 'body'
-						},
-							OpenDialogLink({
-								className: 'btn btn-default'
-								dialog: CreatePlanTemplateDialog
-								title: "Create #{Term 'Template'} from #{Term 'Section'}"
-								sections: Imm.List([section])
-								currentTargetRevisionsById
-								disabled: isReadOnly
+							WithTooltip({
+								title: "Create #{Term 'Section'} #{Term 'Template'}"
+								placement: 'top'
+								container: 'body'
 							},
-								FaIcon 'wpforms'
+								if hasValidTargets then OpenDialogLink({
+									className: 'btn btn-default'
+									dialog: CreatePlanTemplateDialog
+									title: "Create #{Term 'Template'} from #{Term 'Section'}"
+									sections: Imm.List([section])
+									currentTargetRevisionsById
+									disabled: isReadOnly
+								},
+									FaIcon 'wpforms'
+								)
+								else R.div({
+									className: 'btn btn-default',
+									onClick: () => Bootbox.alert {
+										title: "Oops! One or more #{Term 'target'} are missing a name"
+										message: "All #{Term 'targets'} in a new #{Term 'section'} #{Term 'template'} must have a name. Please fix any empty #{Term 'target'} names, and try again."
+									}
+								}, FaIcon 'wpforms')
 							)
-						)
 					)
 				)
 			)
