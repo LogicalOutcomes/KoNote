@@ -34,7 +34,7 @@
 		"chai": "^3.5.0",
 		"coffee-script": "^1.12.7",
 		"faker": "^3.1.0",
-		"grunt": "^1.0.3",
+		"grunt": "^1.5.2",
 		"grunt-contrib-clean": "^1.0.0",
 		"grunt-contrib-coffee": "^1.0.0",
 		"grunt-contrib-copy": "^1.0.0",
