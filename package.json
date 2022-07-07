@@ -64,7 +64,7 @@
 		"immutable": "3.8.1",
 		"joi": "^9.2.0",
 		"mkdirp": "^0.5.1",
-		"moment": "^2.22.1",
+		"moment": "^2.29.4",
 		"nlp_compromise": "6.5.0",
 		"officegen": "^0.4.5",
 		"pluralize": "^1.1.2",
